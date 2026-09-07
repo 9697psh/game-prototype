@@ -934,7 +934,7 @@ const HERO_POOL=["나이코스","카제","굴라","헥토","트리스탄","인�
  "쿠렘타이","이테리오","데린저","리페","그슨대","오토","보아"];
 
 /* ═══════════ 보상 ═══════════ */
-const R=(n,g,d,fx)=>({n,g,d,fx});
+const R=(n,g,d,fx,w)=>({n:n,g:g,d:d,fx:fx,w:w});
 const COMMON=[
  /* ── 하급 ── */
  R("아이템: 파편","하급","무작위 파편 아이템을 얻습니다.",
@@ -943,27 +943,27 @@ const COMMON=[
  R("하급: 부정 보호막 강화","하급","전투 시작 시, 부정 보호막을 1 얻습니다.",
    h=>h.tag.negShield=(h.tag.negShield||0)+1),
  R("하급: 에너지 강화","하급","전투 시작 시, 에너지 보호막을 5 얻습니다.",
-   h=>h.tag.eshield=(h.tag.eshield||0)+5),
+   h=>h.tag.eshield=(h.tag.eshield||0)+5,0.3),
  R("아이템: 제련석","하급","제련석을 3개 얻습니다.",h=>{ run.stone=(run.stone||0)+3 }),
  R("오염 정화","하급","현재 오염도가 15 감소합니다.",h=>addTaint(-15)),
  R("발 마사지","하급","활동량을 3 얻습니다.",h=>{ run.act+=3; if(run.act>0) run.night=0 }),
  R("하급: 회복","하급","체력을 20% 회복합니다.",
    h=>{ h.hp=Math.min(h.maxHp,h.hp+Math.round(h.maxHp*0.2)) }),
  R("하급: 가시 두르기","하급","가시를 1 얻습니다.",h=>h.tag.thorn=(h.tag.thorn||0)+1),
- R("전장의 바람","하급","전투 시작 시, 모든 적을 공중에 뜸 상태로 만듭니다.",h=>h.tag.startStorm=1),
+ R("전장의 바람","하급","전투 시작 시, 모든 적을 공중에 뜸 상태로 만듭니다.",h=>h.tag.startStorm=1,0.3),
  R("전장의 칼날","하급","전투 시작 시, 모든 적에게 피해를 5 줍니다.",
    h=>h.tag.startBlade=(h.tag.startBlade||0)+5),
  R("전장의 방패","하급","전투 시작 시, 모든 아군에게 에너지 보호막을 3 부여합니다.",
    h=>h.tag.startAura=(h.tag.startAura||0)+3),
  R("하급: 회피 기동","하급","전투 시작 시, 회피를 1 얻습니다.",
-   h=>h.tag.startEvade=(h.tag.startEvade||0)+1),
+   h=>h.tag.startEvade=(h.tag.startEvade||0)+1,0.12),
  R("하급: 달리기","하급","내 턴이 끝날 때, 추진력을 최대 3만큼 소모하고 그만큼 에너지 보호막을 얻습니다.",
    h=>{ h.tag.dashMax=Math.max(h.tag.dashMax||0,3); h.tag.dashMul=Math.max(h.tag.dashMul||0,1) }),
  /* ── 중급 ── */
  R("중급: 달리기","중급","내 턴이 끝날 때, 추진력을 최대 5만큼 소모하고 그 2배만큼 에너지 보호막을 얻습니다.",
    h=>{ h.tag.dashMax=Math.max(h.tag.dashMax||0,5); h.tag.dashMul=Math.max(h.tag.dashMul||0,2) }),
  R("중급: 회피 기동","중급","전투 시작 시, 회피를 3 얻습니다.",
-   h=>h.tag.startEvade=(h.tag.startEvade||0)+3),
+   h=>h.tag.startEvade=(h.tag.startEvade||0)+3,0.12),
  R("중급: 가시 두르기","중급","가시를 4 얻습니다.",h=>h.tag.thorn=(h.tag.thorn||0)+4),
  R("중급: 회복","중급","체력을 40% 회복합니다.",
    h=>{ h.hp=Math.min(h.maxHp,h.hp+Math.round(h.maxHp*0.4)) }),
@@ -971,7 +971,7 @@ const COMMON=[
  R("오염 정화","중급","현재 오염도가 30 감소합니다.",h=>addTaint(-30)),
  R("아이템: 제련석","중급","제련석을 8개 얻습니다.",h=>{ run.stone=(run.stone||0)+8 }),
  R("중급: 에너지 강화","중급","전투 시작 시, 에너지 보호막을 20 얻습니다.",
-   h=>h.tag.eshield=(h.tag.eshield||0)+20),
+   h=>h.tag.eshield=(h.tag.eshield||0)+20,0.3),
  R("중급: 부정 보호막 강화","중급","전투 시작 시, 부정 보호막을 2 얻습니다.",
    h=>h.tag.negShield=(h.tag.negShield||0)+2),
  R("중급: 보호력 강화","중급","영구히 보호력을 1 얻습니다.",h=>h.def+=1),
@@ -984,7 +984,7 @@ const COMMON=[
  R("상급: 달리기","상급","내 턴이 끝날 때, 추진력을 모두 소모하고 그 3배만큼 에너지 보호막을 얻습니다.",
    h=>{ h.tag.dashMax=99; h.tag.dashMul=Math.max(h.tag.dashMul||0,3) }),
  R("상급: 회피 기동","상급","전투 시작 시, 회피를 5 얻습니다.",
-   h=>h.tag.startEvade=(h.tag.startEvade||0)+5),
+   h=>h.tag.startEvade=(h.tag.startEvade||0)+5,0.12),
  R("한계 해방","상급","사용한도 기술들의 한도가 1 증가합니다.",
    h=>h.sk.forEach(k=>{ if(k.limit) k.limit++; if(k.alt&&k.alt.limit) k.alt.limit++ })),
  R("상급: 가시 두르기","상급","가시를 10 얻습니다.",h=>h.tag.thorn=(h.tag.thorn||0)+10),
@@ -994,7 +994,7 @@ const COMMON=[
  R("오염 정화","상급","현재 오염도가 50 감소합니다.",h=>addTaint(-50)),
  R("아이템: 제련석","상급","제련석을 20개 얻습니다.",h=>{ run.stone=(run.stone||0)+20 }),
  R("상급: 에너지 강화","상급","전투 시작 시, 에너지 보호막을 50 얻습니다.",
-   h=>h.tag.eshield=(h.tag.eshield||0)+50),
+   h=>h.tag.eshield=(h.tag.eshield||0)+50,0.3),
  R("상급: 부정 보호막 강화","상급","전투 시작 시, 부정 보호막을 5 얻습니다.",
    h=>h.tag.negShield=(h.tag.negShield||0)+5),
  R("상급: 보호력 강화","상급","영구히 보호력을 4 얻습니다.",h=>h.def+=4),
@@ -4201,6 +4201,17 @@ function drawItem(app){
   app.appendChild(sk);
 }
 function toBag(it){ (run.bag=run.bag||[]).push(it) }
+function pickWeighted(pool,n){
+  const out=[], p=pool.slice();
+  while(out.length<n&&p.length){
+    const tot=p.reduce((a,r)=>a+(r.w==null?1:r.w),0);
+    let x=Math.random()*tot, k=0;
+    for(;k<p.length;k++){ x-=(p[k].w==null?1:p[k].w); if(x<=0) break }
+    if(k>=p.length) k=p.length-1;
+    out.push(p.splice(k,1)[0]);
+  }
+  return out;
+}
 function rewardIcon(r){
   const t=(r.n||"")+" "+(r.d||"");
   const has=w=>t.indexOf(w)>=0;
@@ -4315,8 +4326,7 @@ function offerCards(app,hero,grade,done){
   const own=(HERO_REWARDS[hero.name]||[]).filter(r=>r.g===grade&&!(hero.tag.taken||[]).includes(r.n));
   const com=COMMON.filter(r=>r.g===grade);
   const pool=own.concat(com);
-  const picks=[];
-  while(picks.length<3&&pool.length){ const r=rnd(pool); if(!picks.includes(r)) picks.push(r); if(pool.length<3) break }
+  const picks=pickWeighted(pool,3);
   const row=el(`<div class="rewards"></div>`);
   picks.forEach(r=>{
     const c=el(`<div class="rw"><div class="rwi">${rewardIcon(r)}</div>
