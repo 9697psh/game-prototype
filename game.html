@@ -2690,11 +2690,18 @@ function backToMap(){
 const CARD_LIB={
  "불덩이":{d:"대상 적에게 피해를 6 줍니다.",foe:1,
    use:(f,h)=>{ hurt(f,6,"불덩이","boom") }},
- "빵":       {d:"아군 대상의 체력을 1 회복시킵니다.", use:a=>{ a.hp=Math.min(a.maxHp,a.hp+1); say(`빵 — ${a.name} 체력 +1`) }},
+ "빵":       {d:"아군 대상의 체력을 1 회복시킵니다.",
+              use:a=>{ const v=Math.min(1,a.maxHp-a.hp); a.hp+=v;
+                       fx({side:"mine",slot:a.slot,s:"heal",ring:"#7fd39a",txt:"+1",cls:"heal",gap:60});
+                       say(`빵 — ${a.name} 체력 +1`) }},
  "맥주":     {d:"아군 대상의 체력을 5 회복시키고 기절합니다.",
-              use:a=>{ a.hp=Math.min(a.maxHp,a.hp+5); a.stun=(a.stun||0)+1;
+              use:a=>{ a.hp=Math.min(a.maxHp,a.hp+5); addDeb(a,"stun",1);
+                       fx({side:"mine",slot:a.slot,s:"heal",ring:"#7fd39a",txt:"+5",cls:"heal",gap:60});
                        say(`맥주 — ${a.name} 체력 +5, 기절 1`) }},
- "소형 방패":{d:"아군 영웅에게 보호막을 5 부여합니다.", use:a=>{ a.shield+=5; say(`소형 방패 — ${a.name} 보호막 +5`) }}
+ "소형 방패":{d:"아군 영웅에게 보호막을 5 부여합니다.",
+              use:a=>{ a.shield+=5;
+                       fx({side:"mine",slot:a.slot,s:"shield",ring:"#e0c85a",txt:"+5",cls:"shd",gap:60});
+                       say(`소형 방패 — ${a.name} 보호막 +5`) }}
 };
 function addCard(r,name,n){
   const e=(r.cards=r.cards||[]).find(x=>x.n===name);
@@ -3343,6 +3350,7 @@ function startBattle(kind){
       h.tunes=[]; h.encore=0; h.venom=0; h.verdictUsed=0;
       h.eshield=0; h.lastStandUsed=0;
       h.windUses=0; h.first={}; h.limitUsed={};
+      h.cutGrow=0; h.cutSum=0; h.endCount=0; h.deathSaveUsed=0; h.emptyDefOn=0;
       const hpl=itemBt(h,'hpPerLv'); if(hpl){ h.hp+=hpl*h.lv }
       h.mana=h.maxMana+itemBt(h,"firstMana")+(h.tag.firstMana||0);
       if(h.name==="쿠렘타이") h.lock[3]=(h.sk[3].startLock||2)+1;
@@ -4272,6 +4280,7 @@ function playCard(i,slot,side){
     const h=unitAt(slot);
     if(!h){ say("카드를 쓸 아군이 없는 칸입니다.","t2"); return }
     c.use(h);
+    if(!c.stock||!CARD_LIB[c.stock]) SFX.play("shield");
     if(c.stock){ useCard(c.stock);
       const e=(run.cards||[]).find(x=>x.n===c.stock);
       if(e){ c.d=CARD_LIB[c.stock].d+` (보유 ${e.c})` } else B.hand.splice(i,1);
