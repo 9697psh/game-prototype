@@ -183,6 +183,8 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .rcrow i{color:var(--brass);font-style:normal;text-align:right}
 .rw.no{opacity:.4;cursor:default}
 .rw.no:hover{border-color:#4a3f63;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+.rw.ro{cursor:default;min-height:170px;justify-content:center}
+.rw.ro:hover{border-color:#4a3f63;box-shadow:0 6px 18px rgba(0,0,0,.4)}
 /* ── 이펙트 ── */
 #fx{position:fixed;inset:0;pointer-events:none;z-index:900;overflow:hidden}
 .pop{position:absolute;transform:translate(-50%,-50%);font-family:var(--serif);font-weight:700;
@@ -1376,7 +1378,8 @@ function moveTo2(r,c){
     toast(cell.t==="empty"
       ? "인기척 하나 없는 자리입니다. 어둠 속에서 무언가 달려듭니다."
       : "발을 들이기도 전에 무언가 달려듭니다.");
-    startDungeon({t:"ambush",waves:1},r,c); return;
+    if(cell.t!=="empty") run.pendingEnter={r:r,c:c};   /* 이기면 원래 볼일을 본다 */
+    startDungeon({t:"ambush",waves:1},null,null); return;
   }
   enterCell(r,c);
 }
@@ -1533,8 +1536,9 @@ function nextWave(){
 }
 function dungeonCleared(){
   const d=run.dun;
-  if(d.r!=null&&run.grid[d.r]&&run.grid[d.r][d.c]) run.grid[d.r][d.c]={t:"empty"};
-  addTaint(-20);
+  if(d.kind!=="ambush"&&d.r!=null&&run.grid[d.r]&&run.grid[d.r][d.c])
+    run.grid[d.r][d.c]={t:"empty"};
+  addTaint(d.kind==="ambush"?-10:-20);
   if(d.kind==="boss") run.bossDone=1;
   openChest(d.kind);
 }
@@ -1604,7 +1608,7 @@ function drawChest(app){
     const label=x.t==="금화"?`금화 ${x.v}`:x.t==="경험치"?`경험치 ${x.v}`
       :x.t==="파편"?"무작위 파편 아이템":x.t==="일반"?"무작위 일반 아이템"
       :x.t==="동료"?"새로운 동료 영입":`${x.t} 보상 선택`;
-    row.appendChild(el(`<div class="rw"><div class="rwi">${chestIcon(x.t)}</div>
+    row.appendChild(el(`<div class="rw ro"><div class="rwi">${chestIcon(x.t)}</div>
       <b>${esc(label)}</b></div>`));
   });
   wrap.appendChild(row);
@@ -1649,6 +1653,11 @@ function backToMap(){
   }
   if(run.bossDone){ run.bossDone=0; run.dun=null; nextField(); return }
   run.dun=null;
+  if(run.pendingEnter){
+    const e=run.pendingEnter; run.pendingEnter=null;
+    toast("습격을 물리치고 다시 걸음을 옮깁니다.");
+    enterCell(e.r,e.c); return;
+  }
   view="map"; render();
 }
 
@@ -2968,7 +2977,7 @@ function battleLost(){
   veil("radial-gradient(circle,rgba(142,43,43,.5),transparent 70%)");
   addTaint(30);
   say("물러납니다. 오염도가 30 올랐습니다.","t3");
-  run.dun=null;
+  run.dun=null; run.pendingEnter=null;
   setTimeout(()=>{ toast("쓰러진 대원은 주둔지 치료소에서 일으킬 수 있습니다.");
     if(view!=="over"){ view="map"; render() } },1200);
 }
