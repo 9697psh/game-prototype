@@ -1625,19 +1625,26 @@ function buildGrid(fi){
       g[rc[0]][rc[1]]=Object.assign({t:t},mk?mk():{});
     }
   };
-  const sc=S/7;
   const dun=()=>({waves:1+Math.floor(Math.random()*3),style:rnd(DUN_STYLE),loot:rnd(DUN_LOOT)});
-  put("dungeon",Math.round(10*sc),dun);
-  put("elite",Math.round(3*sc),()=>({waves:1+Math.floor(Math.random()*2),style:rnd(DUN_STYLE),loot:rnd(DUN_LOOT)}));
-  put("shop",2); put("rest",2); put("event",5);
+  put("dungeon",nodeCount("dungeon",fi),dun);
+  put("elite",nodeCount("elite",fi),()=>({waves:1+Math.floor(Math.random()*2),style:rnd(DUN_STYLE),loot:rnd(DUN_LOOT)}));
+  put("shop",nodeCount("shop",fi));
+  put("rest",nodeCount("rest",fi));
+  put("event",nodeCount("event",fi));
   return g;
+}
+/* 구역이 넓어질수록 칸도 함께 늘어난다 (7x7 / 9x9 / 11x11) */
+const NODE_N={dungeon:[10,16,22], elite:[3,5,7], shop:[2,3,4], rest:[2,4,6], event:[5,9,13]};
+function nodeCount(t,fi){
+  const a=NODE_N[t]; if(!a) return 0;
+  return a[Math.min(fi==null?(run?run.field:0):fi, a.length-1)];
 }
 /* 이미 들른 상점·휴식소·미지의 구역은 다른 날 다른 자리에 다시 나타난다 */
 function respawn(){
   const S=run.size, free=[];
   for(let r=0;r<S;r++) for(let c=0;c<S;c++) if(run.grid[r][c].t==="empty") free.push([r,c]);
   ["shop","rest","event"].forEach(t=>{
-    const want={shop:2,rest:2,event:5}[t];
+    const want=nodeCount(t,run.field);
     let have=0;
     for(let r=0;r<S;r++) for(let c=0;c<S;c++) if(run.grid[r][c].t===t) have++;
     for(let i=have;i<want&&free.length;i++){
@@ -1651,7 +1658,7 @@ function respawn(){
   for(let r=0;r<S;r++) for(let c=0;c<S;c++){ const x=run.grid[r][c];
     if(x.t==="dungeon"||x.t==="elite") left++ }
   if(!left){
-    const n=4+Math.floor(Math.random()*3);
+    const n=4+Math.floor(Math.random()*3)+run.field*2;
     for(let i=0;i<n&&free.length;i++){
       const k=Math.floor(Math.random()*free.length), rc=free.splice(k,1)[0];
       run.grid[rc[0]][rc[1]]={t:i<2?"elite":"dungeon",waves:1+Math.floor(Math.random()*3),
@@ -2813,7 +2820,8 @@ function startBattle(kind){
   const fresh=!run.dun||run.dun.wave<=1;
   if(fresh) run.heroes.forEach(clearTmp);
   run.heroes.forEach(h=>{
-    if(h.hp<=0) h.hp=1;
+    /* 기절한 대원은 그대로 기절해 있는다 — 주둔지 치료소에서만 일어난다 */
+    if(h.hp<=0){ h.hp=0; h.down=1; h.slot=0 }
     /* ── 라운드마다 새로 잡는 것 ── */
     h.shield=0; h.keepShield=0; h.slot=0; h.armor=0; h.deb={};
     h.hide=0; h.shadowAt=0; h.darkAt=0; h.stance=0; h.stanceTurn=0;
@@ -2835,8 +2843,11 @@ function startBattle(kind){
       h.mana=h.maxMana+itemBt(h,"firstMana")+(h.tag.firstMana||0);
       if(h.name==="쿠렘타이") h.lock[3]=(h.sk[3].startLock||2)+1;
     }
-    B.hand.push({type:"hero",hero:h});
+    if(!h.down) B.hand.push({type:"hero",hero:h});
   });
+  const down=run.heroes.filter(h=>h.down);
+  if(down.length&&!B.hand.some(x=>x.type==="hero"))
+    { B.over=1; say("나설 수 있는 대원이 없습니다.","t3"); battleLost(); render(); return }
   const sc=foeScale(kind);
   foeSet(kind).forEach(([n,s],i)=>{
     const d=FOE[n];
@@ -2857,6 +2868,7 @@ function startBattle(kind){
   say(`${FIELDS[run.field].n} — ${kind==="boss"?"우두머리":kind==="elite"?"정예":"교전"} `
      +`${run.dun&&run.dun.waves>1?`${run.dun.wave}/${run.dun.waves}라운드`:"시작"}`,"t1");
   say("손패의 영웅 카드를 원하는 칸으로 끌어다 놓으세요.","t2");
+  if(down.length) say(`기절한 대원은 나서지 못합니다 — ${down.map(h=>h.name).join(", ")}`,"t3");
   rollIntents(); sel=null; view="battle"; render();
 }
 function say(t,c){ t=icoify(t); B.log.push({t,c}); const l=document.getElementById("log");
@@ -4633,7 +4645,8 @@ function drawWaveGap(app){
   const rs=el(`<div class="roster" style="justify-content:center;margin-top:18px"></div>`);
   run.heroes.forEach(h=>rs.appendChild(el(`<div class="rost ${h.down?"down":""}">
     <div class="art">${figure(h.name)}</div>
-    <div><b>${esc(h.name)}</b><small>${ic("hp")}${Math.max(0,h.hp)}/${h.maxHp}</small></div></div>`)));
+    <div><b>${esc(h.name)}</b>${h.down?`<span class="chip on">기절</span>`:""}
+      <small>${ic("hp")}${Math.max(0,h.hp)}/${h.maxHp}</small></div></div>`)));
   wrap.appendChild(rs);
   const b=el(`<div style="margin-top:24px"><button class="go">${d.wave+1}라운드로 →</button></div>`);
   b.querySelector("button").onclick=()=>{ nextWave() };
