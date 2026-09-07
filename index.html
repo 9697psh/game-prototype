@@ -249,6 +249,26 @@ button.dtl{padding:3px 10px;font-size:11.5px}
   border:1px solid var(--brass);border-radius:6px;background:rgba(201,162,39,.08);font-size:12.5px}
 .sandbar b{color:var(--brass)}
 .sandbar span{color:var(--dim)}
+.blackout{position:fixed;inset:0;z-index:300;background:#000;opacity:0;pointer-events:none;
+  animation:boIn .55s ease-in forwards}
+@keyframes boIn{to{opacity:1}}
+.blackout.out{animation:boOut .7s ease-out forwards}
+@keyframes boOut{from{opacity:1}to{opacity:0}}
+.daycard{position:fixed;inset:0;z-index:310;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:6px;pointer-events:none;
+  animation:dcIn .7s cubic-bezier(.2,.9,.3,1) forwards}
+@keyframes dcIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+.daycard.out{animation:dcOut .55s ease-in forwards}
+@keyframes dcOut{from{opacity:1}to{opacity:0;transform:scale(1.05)}}
+.dsun{width:120px;height:120px;border-radius:50%;margin-bottom:10px;
+  background:radial-gradient(circle,rgba(201,162,39,.55),rgba(201,162,39,.12) 55%,transparent 70%);
+  animation:dsA 1.9s ease-out forwards}
+@keyframes dsA{0%{transform:translateY(34px) scale(.6);opacity:0}
+  40%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-6px) scale(1.06);opacity:.85}}
+.dnum{font-family:var(--serif);font-size:74px;font-weight:700;color:var(--brass);
+  line-height:1;letter-spacing:.02em;text-shadow:0 0 30px rgba(201,162,39,.4)}
+.dnum span{font-size:26px;margin-left:9px;color:var(--fg)}
+.dsub{font-size:13.5px;color:var(--dim);letter-spacing:.06em}
 .tutbox{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:200;
   width:min(620px,calc(100vw - 28px));background:#171310;border:1px solid var(--brass);
   border-radius:8px;padding:14px 18px;box-shadow:0 10px 34px rgba(0,0,0,.65)}
@@ -1514,24 +1534,27 @@ const COMMON=[
  /* ── 하급 ── */
  R("아이템: 파편","하급","무작위 파편 아이템을 얻습니다.",
    h=>{ (run.after=run.after||[]).push({item:rnd(ITEMS.filter(i=>i.g==="파편"))}) }),
- R("하급: 체력 강화","하급","최대 체력을 2 얻습니다.",h=>{ h.maxHp+=2; h.hp+=2 }),
+ R("하급: 체력 강화","하급","최대 체력을 3 얻습니다.",h=>{ h.maxHp+=3; h.hp+=3 }),
  R("하급: 부정 보호막 강화","하급","전투 시작 시, 부정 보호막을 1 얻습니다.",
    h=>h.tag.negShield=(h.tag.negShield||0)+1),
  R("하급: 에너지 강화","하급","전투 시작 시, 에너지 보호막을 5 얻습니다.",
    h=>h.tag.eshield=(h.tag.eshield||0)+5,0.3),
  R("아이템: 제련석","하급","제련석을 3개 얻습니다.",h=>{ run.stone=(run.stone||0)+3 }),
  R("오염 정화","하급","현재 오염도가 15 감소합니다.",h=>addTaint(-15)),
- R("발 마사지","하급","활동량을 3 얻습니다.",h=>{ run.act+=3; if(run.act>0) run.night=0 }),
+ R("발 마사지","하급","활동량을 3 얻습니다. 금화를 3개 얻습니다.",
+   h=>{ run.act+=3; run.gold+=3; if(run.act>0) run.night=0 }),
  R("하급: 회복","하급","체력을 20% 회복합니다.",
    h=>{ healUp(h,Math.round(h.maxHp*0.2)) }),
  R("하급: 가시 두르기","하급","가시를 1 얻습니다.",h=>h.tag.thorn=(h.tag.thorn||0)+1),
  R("전장의 바람","하급","영웅 배치 시, 모든 적을 공중에 뜸 상태로 만듭니다.",h=>h.tag.startStorm=1,0.3),
- R("전장의 칼날","하급","영웅 배치 시, 모든 적에게 피해를 5 줍니다.",
-   h=>h.tag.startBlade=(h.tag.startBlade||0)+5),
+ R("전장의 칼날","하급","영웅 배치 시, 모든 적에게 피해를 4 줍니다.",
+   h=>h.tag.startBlade=(h.tag.startBlade||0)+4),
  R("전장의 방패","하급","전투 시작 시, 모든 아군에게 에너지 보호막을 3 부여합니다.",
    h=>h.tag.startAura=(h.tag.startAura||0)+3),
  R("하급: 회피 기동","하급","전투 시작 시, 회피를 1 얻습니다.",
    h=>h.tag.startEvade=(h.tag.startEvade||0)+1,0.12),
+ R("행상인 수레 방문","하급","빵, 소형 방패, 맥주 카드를 1장씩 얻습니다.",
+   h=>{ addCard(run,"빵",1); addCard(run,"소형 방패",1); addCard(run,"맥주",1) }),
  R("하급: 달리기","하급","내 턴이 끝날 때, 추진력을 최대 3만큼 소모하고 그만큼 에너지 보호막을 얻습니다.",
    h=>{ h.tag.dashMax=Math.max(h.tag.dashMax||0,3); h.tag.dashMul=Math.max(h.tag.dashMul||0,1) }),
  /* ── 중급 ── */
@@ -1542,10 +1565,11 @@ const COMMON=[
  R("중급: 가시 두르기","중급","가시를 4 얻습니다.",h=>h.tag.thorn=(h.tag.thorn||0)+4),
  R("중급: 회복","중급","체력을 40% 회복합니다.",
    h=>{ healUp(h,Math.round(h.maxHp*0.4)) }),
- R("발 마사지","중급","활동량을 6 얻습니다.",h=>{ run.act+=6; if(run.act>0) run.night=0 }),
+ R("발 마사지","중급","활동량을 6 얻습니다. 금화를 6개 얻습니다.",
+   h=>{ run.act+=6; run.gold+=6; if(run.act>0) run.night=0 }),
  R("오염 정화","중급","현재 오염도가 30 감소합니다.",h=>addTaint(-30)),
  R("아이템: 제련석","중급","제련석을 8개 얻습니다.",h=>{ run.stone=(run.stone||0)+8 }),
- R("중급: 에너지 강화","중급","전투 시작 시, 에너지 보호막을 20 얻습니다.",
+ R("중급: 에너지 강화","중급","전투 시작 시, 에너지 보호막을 12 얻습니다.",
    h=>h.tag.eshield=(h.tag.eshield||0)+20,0.3),
  R("중급: 부정 보호막 강화","중급","전투 시작 시, 부정 보호막을 2 얻습니다.",
    h=>h.tag.negShield=(h.tag.negShield||0)+2),
@@ -1560,20 +1584,22 @@ const COMMON=[
    h=>{ h.tag.dashMax=99; h.tag.dashMul=Math.max(h.tag.dashMul||0,3) }),
  R("상급: 회피 기동","상급","전투 시작 시, 회피를 5 얻습니다.",
    h=>h.tag.startEvade=(h.tag.startEvade||0)+5,0.12),
+ R("마나석 발견","상급","최대 마나가 1 증가합니다.",h=>{ h.maxMana+=1; h.mana=h.maxMana }),
  R("한계 해방","상급","사용한도 기술들의 한도가 1 증가합니다.",
    h=>h.sk.forEach(k=>{ if(k.limit) k.limit++; if(k.alt&&k.alt.limit) k.alt.limit++ })),
  R("상급: 가시 두르기","상급","가시를 10 얻습니다.",h=>h.tag.thorn=(h.tag.thorn||0)+10),
  R("상급: 회복","상급","체력을 80% 회복합니다.",
    h=>{ healUp(h,Math.round(h.maxHp*0.8)) }),
- R("발 마사지","상급","활동량을 10 얻습니다.",h=>{ run.act+=10; if(run.act>0) run.night=0 }),
+ R("발 마사지","상급","활동량을 10 얻습니다. 금화를 12개 얻습니다.",
+   h=>{ run.act+=10; run.gold+=12; if(run.act>0) run.night=0 }),
  R("오염 정화","상급","현재 오염도가 50 감소합니다.",h=>addTaint(-50)),
  R("아이템: 제련석","상급","제련석을 20개 얻습니다.",h=>{ run.stone=(run.stone||0)+20 }),
- R("상급: 에너지 강화","상급","전투 시작 시, 에너지 보호막을 50 얻습니다.",
+ R("상급: 에너지 강화","상급","전투 시작 시, 에너지 보호막을 30 얻습니다.",
    h=>h.tag.eshield=(h.tag.eshield||0)+50,0.3),
  R("상급: 부정 보호막 강화","상급","전투 시작 시, 부정 보호막을 5 얻습니다.",
    h=>h.tag.negShield=(h.tag.negShield||0)+5),
  R("상급: 보호력 강화","상급","영구히 보호력을 4 얻습니다.",h=>h.def+=4),
- R("상급: 마법력 강화","상급","영구히 마법력을 1 얻습니다.",h=>h.mag+=1),
+ R("상급: 마법력 강화","상급","영구히 마법력을 4 얻습니다.",h=>h.mag+=4),
  R("상급: 공격력 강화","상급","영구히 공격력을 4 얻습니다.",h=>h.atk+=4),
  R("아이템: 희귀","상급","무작위 희귀 아이템을 얻습니다.",
    h=>{ (run.after=run.after||[]).push({item:rnd(ITEMS.filter(i=>i.g==="희귀"))}) })
@@ -2218,7 +2244,27 @@ function nextDay(){
   run.time=6; run.act=run.actMax; run.night=0; run.campDone=0;
   addTaint(10);
   respawn();
+  const left=FIELDS[run.field].days-run.day;
+  dayBreak(run.day, left>0?`${FIELDS[run.field].n} · 남은 날 ${left}일`:`${FIELDS[run.field].n} · 마지막 날`);
   toast(`${run.day}일차 아침이 밝았습니다.`);
+}
+/* 눈을 감았다 뜬다 — 화면이 어두워졌다가 일차가 크게 떠오른다 */
+function dayBreak(day,label){
+  document.querySelectorAll(".blackout,.daycard").forEach(x=>x.remove());
+  const bo=el(`<div class="blackout"></div>`);
+  document.body.appendChild(bo);
+  setTimeout(()=>{
+    const card=el(`<div class="daycard">
+      <div class="dsun"></div>
+      <div class="dnum">${day}<span>일차</span></div>
+      <div class="dsub">${esc(label||"")}</div></div>`);
+    document.body.appendChild(card);
+    SFX.play("turn");
+    setTimeout(()=>{ card.classList.add("out") },1500);
+    setTimeout(()=>card.remove(),2100);
+  },560);
+  setTimeout(()=>{ bo.classList.add("out") },1500);
+  setTimeout(()=>bo.remove(),2200);
 }
 function lose(msg){ run.lost=msg; view="over"; render() }
 let TOAST="";
@@ -2233,6 +2279,7 @@ function nextField(){
   run.day=1; run.time=6; run.actMax=f.act; run.act=f.act;
   run.night=0; run.taint=0; run.campDone=0; run.remapUsed=0;
   run.heroes.forEach(h=>{ h.hp=h.maxHp; h.down=0 });
+  dayBreak(1,`${f.n} · ${f.days}일 안에 우두머리를 넘어야 합니다`);
   toast(`${f.n}에 들어섭니다. 대원 전원이 회복되었습니다.`);
   view="map"; render();
 }
