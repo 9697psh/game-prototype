@@ -499,6 +499,8 @@ button.dtl{padding:3px 10px;font-size:11.5px}
 .flashg{animation:flg .5s} @keyframes flg{0%,100%{box-shadow:none}
   40%{box-shadow:0 0 0 2px var(--brass) inset,0 0 22px rgba(201,162,39,.5)}}
 .kw.kwq{border-bottom:1px dotted currentColor;cursor:help}
+.kw.ikw{display:inline-flex;align-items:center;border-bottom:1px dotted var(--faint);padding-bottom:1px}
+#kwtip{white-space:pre-line}
 #kwtip{position:fixed;z-index:1200;max-width:280px;padding:8px 11px;border-radius:7px;
   background:#181410;border:1px solid var(--brass);box-shadow:0 6px 22px rgba(0,0,0,.6);
   font-size:12.5px;line-height:1.55;color:#e8dfcc;pointer-events:none;display:none}
@@ -535,53 +537,58 @@ const ICON={
  exp :'M12 1.8 L21.6 11.4 H16.4 V22.2 H7.6 V11.4 H2.4 Z'
 };
 const ic=(k,c)=>`<svg class="ic" viewBox="0 0 24 24" style="color:var(--${c||k})"><path fill="currentColor" d="${ICON[k]}"/></svg>`;
-const KW={"에너지 보호막":"buff","부정 보호막":"buff","공중에 뜸":"debuff","사용한도":"skill","공격약화":"debuff","마법약화":"debuff","보호약화":"debuff","소환물":"plain","보호막":"buff","성장력":"buff","소멸성":"debuff","치명타":"atk","추진력":"move","거리":"plain","선택":"plain","전환":"plain","연계":"plain","이동":"plain","잠금":"skill","도발":"buff","회피":"buff","가시":"buff","은신":"buff","갑피":"buff","냉각":"debuff","속박":"debuff","기절":"debuff","화상":"debuff","공포":"debuff","감전":"debuff","감염":"debuff","관통":"atk","회복":"hp","흡수":"hp","체력":"hp"};
-const KW_NAMES=["에너지 보호막", "부정 보호막", "공중에 뜸", "사용한도", "공격약화", "마법약화", "보호약화", "소환물", "보호막", "성장력", "소멸성", "치명타", "추진력", "거리", "선택", "전환", "연계", "이동", "잠금", "도발", "회피", "가시", "은신", "갑피", "냉각", "속박", "기절", "화상", "공포", "감전", "감염", "관통", "회복", "흡수", "체력"];
+/* 키워드 — 기획노트 원문 그대로 */
+const KW_TAB=[
+ {n:"거리",c:"plain",d:"명시된 거리 내의 대상에게만 상호작용 가능"},
+ {n:"선택",c:"plain",d:"제시된 선택지 중 하나를 골라 시전 가능"},
+ {n:"전환",c:"plain",d:"전환 기술을 사용한 후 특정 기술로 변경됨"},
+ {n:"소환물",c:"plain",d:"기술이나 카드에 의해 소환된 대상"},
+ {n:"연계",c:"plain",d:"이전에 해당 속성 기술을 사용했다면 발동"},
+ {n:"이동",c:"plain",d:"위치를 변경\n해당 자리에 이미 대상이 존재한다면, 서로 위치를 변경\n(직접 이동하지 않은 경우, 이동으로 인한 효과를 받을 수 없음)"},
+ {n:"잠금",c:"skill",d:"해당 기술을 일정 턴 동안 사용할 수 없음"},
+ {n:"사용한도",c:"skill",d:"사용 한도의 횟수만큼 사용 시 그 전투에서 기술이 사용 불가 상태가 됨"},
+ {n:"보호막",c:"buff",d:"한 턴간 누적된 보호막만큼 피해를 막음. 턴이 끝나면 사라짐"},
+ {n:"에너지 보호막",c:"buff",d:"한 턴간 누적된 보호막만큼 피해를 막음. 턴이 끝나도 사라지지 않음"},
+ {n:"부정 보호막",c:"buff",d:"부정적인 효과를 1회 제거. 이미 적용된 효과 먼저 제거"},
+ {n:"도발",c:"buff",d:"이 캐릭터의 뒤에 있는 대상들은 상대가 대상으로 지정할 수 없음"},
+ {n:"회피",c:"buff",d:"다음 공격을 무시"},
+ {n:"가시",c:"buff",d:"피해를 받으면 중첩된 가시만큼 그 대상에게 피해를 줌"},
+ {n:"은신",c:"buff",d:"대상으로 지정할 수 없는 상태. 전장에 혼자 남으면 자동 해제"},
+ {n:"성장력",c:"buff",d:"영웅의 레벨에 비례한 능력치 (⇧)"},
+ {n:"갑피",c:"buff",d:"받을 수 있는 최대 피해량이 ( )로 제한됩니다."},
+ {n:"냉각",c:"debuff",d:"기술 사용시 중첩된 냉각만큼 피해. 턴 종료시 초기화"},
+ {n:"속박",c:"debuff",d:"중첩된 속박 턴만큼 이동불가 상태가 됨"},
+ {n:"기절",c:"debuff",d:"누적된 기절 중첩만큼 다음 사용 기술이 아무 효과도 발동하지 않음. 턴이 끝나면 초기화"},
+ {n:"화상",c:"debuff",d:"턴이 끝날 때 중첩된 화상만큼 피해. 턴 종료시 중첩 1 감소"},
+ {n:"공포",c:"debuff",d:"기술의 대상을 지정할 수 없음"},
+ {n:"공중에 뜸",c:"debuff",d:"다른 기술과 상호작용"},
+ {n:"감전",c:"debuff",d:"이동시 중첩된 감전만큼 피해받음. 턴 종료시 초기화"},
+ {n:"공격약화",c:"debuff",d:"중첩된 턴만큼 공격 피해량이 50% 감소. 턴 종료시 중첩 1 감소"},
+ {n:"마법약화",c:"debuff",d:"중첩된 턴만큼 마법 피해량이 50% 감소. 턴 종료시 중첩 1 감소"},
+ {n:"보호약화",c:"debuff",d:"중첩된 턴만큼 보호막 및 회복 효과가 50% 감소. 턴 종료시 중첩 1 감소"},
+ {n:"소멸성",c:"debuff",d:"전투 종료시 사라짐"},
+ {n:"감염",c:"debuff",d:"감염은 중첩될 수 있고, 감염된 적에게는 턴이 끝날 때 피해를 1(추가 ∴ ) 주고 감염 중첩을 1 감소"},
+ {n:"관통",c:"atk",d:"일정량의 피해가 보호막을 무시함"},
+ {n:"치명타",c:"atk",d:"치명타 조건을 만족하면 피해가 2배로 적용"},
+ {n:"공격력",c:"atk",d:"근거리 공격 영웅이 주로 사용 (†)"},
+ {n:"마법력",c:"mag",d:"원거리 공격 영웅이 주로 사용 (∴)"},
+ {n:"보호력",c:"def",d:"보호막이나 치유 증폭에 사용 (¤)"},
+ {n:"회복",c:"hp",d:"생명력을 회복시킴"},
+ {n:"흡수",c:"hp",d:"준 피해의 일정량만큼 체력을 회복"},
+ {n:"체력",c:"hp",d:"0이 되면 전투불능 상태가 됨 (♡)"},
+ {n:"추진력",c:"move",d:"이동 관련 기술이나 효과에 연관된 자원"},
+];
+const KW={}, KW_DESC={};
+KW_TAB.forEach(k=>{ KW[k.n]=k.c; KW_DESC[k.n]=k.d });
+/* 긴 이름부터 찾아야 "에너지 보호막"이 "보호막"에 먹히지 않는다 */
+const KW_NAMES=KW_TAB.map(k=>k.n).sort((a,b)=>b.length-a.length);
 const KW_COLOR={plain:"#c8bda8",skill:"#e0a86a",buff:"#7fd39a",debuff:"#c58fd0",
   atk:"#e0705a",mag:"#6aa8e0",def:"#e0c85a",hp:"#7fd39a",move:"#5fd8cf"};
-const KW_DESC={
- "보호막":"받는 피해를 대신 깎아 준다. 내 턴이 시작할 때 사라진다. 보호력만큼 더 얻는다.",
- "에너지 보호막":"보호막과 달리 턴이 지나도 사라지지 않는다. 피해를 받을 때 일반 보호막보다 먼저 깎인다.",
- "부정 보호막":"상태 이상을 한 번 대신 막아 준다. 막을 때마다 하나씩 사라진다.",
- "갑피":"한 번에 받는 피해가 그 수치를 넘지 못한다. 보호막으로 막는 몫까지 포함해 잘라내며, 막아도 닳지 않는다.",
- "회피":"다음에 받을 공격 하나를 통째로 무시한다. 한 번 쓰면 하나 줄어든다.",
- "도발":"적이 다른 아군 대신 도발한 대상만 노린다.",
- "가시":"공격을 받을 때 때린 적에게 수치만큼 되돌려 준다.",
- "은신":"들키지 않는다. 은신 중에 넣는 다음 공격은 치명타가 된다.",
- "추진력":"이동으로 쌓이는 자원. 일부 기술의 비용으로 쓴다.",
- "성장력":"보아가 쌓는 자원. 비늘 기술의 비용이자 위력이 된다.",
- "소멸성":"한 번 쓰면 사라진다. 그 전투에서 다시 쓸 수 없다.",
- "공중에 뜸":"땅에서 떨어져 다음 피해가 늘고, 근접 반격을 하지 못한다.",
- "감염":"쌓인 만큼 턴마다 갉아먹히고, 인비디아의 기술이 이를 퍼뜨린다.",
- "화상":"턴이 끝날 때 중첩만큼 피해를 입고, 중첩이 1 줄어든다.",
- "감전":"이동할 때 중첩만큼 피해를 입는다. 턴이 끝나면 사라진다.",
- "냉각":"기술을 쓸 때마다 중첩만큼 피해를 입는다. 턴이 끝나면 사라진다.",
- "속박":"중첩된 턴 동안 자리를 옮길 수 없다.",
- "기절":"중첩만큼 다음 기술이 불발되어 아무 효과도 내지 못한다.",
- "공포":"적을 겨누는 기술을 쓸 수 없다.",
- "공격약화":"공격 계열 피해가 절반으로 줄어든다.",
- "마법약화":"마법 계열 피해가 절반으로 줄어든다.",
- "보호약화":"얻는 보호막과 회복량이 절반으로 줄어든다.",
- "치명타":"피해가 2배가 된다. 전용 연출과 함께 터진다.",
- "관통":"보호막을 무시하고 체력에 곧바로 피해를 준다.",
- "흡수":"준 피해의 일부만큼 체력을 회복한다.",
- "잠금":"쓰고 나면 적힌 턴 수만큼 그 기술을 다시 쓸 수 없다.",
- "사용한도":"한 전투에서 쓸 수 있는 횟수가 정해져 있다.",
- "전환":"쓰고 나면 짝이 되는 다른 기술로 바뀐다.",
- "선택":"쓸 때 여러 갈래 중 하나를 골라 시전한다.",
- "연계":"앞선 기술과 이어질 때 추가 효과가 붙는다.",
- "거리":"내 칸과 대상 칸 사이의 칸 수. 맞은편 1번끼리는 거리 1이다.",
- "이동":"자리를 옮긴다. 갈 칸에 아군이 있으면 서로 자리를 바꾼다.",
- "소환물":"내가 불러낸 아군. 칸을 차지하고 대신 맞아 준다.",
- "회복":"체력을 되돌린다. 최대 체력을 넘지 않는다.",
- "체력":"0이 되면 쓰러진다. 주둔지 치료소에서 일으킬 수 있다."
-};
 let KW_RE=null;
 function kwRegex(){
   if(KW_RE) return KW_RE;
   const esc2=x=>x.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
-  const parts=["_[^_]+_","\\*[^*]+\\*","공격력","마법력","보호력"]
-    .concat(KW_NAMES.map(esc2));
+  const parts=["_[^_]+_","\\*[^*]+\\*"].concat(KW_NAMES.map(esc2));
   KW_RE=new RegExp(parts.join("|"),"g");
   return KW_RE;
 }
@@ -590,9 +597,8 @@ function icoify(html){
   return String(html).replace(kwRegex(),m=>{
     if(m.charAt(0)==="_"&&m.length>2) return '<u>'+m.slice(1,-1)+'</u>';
     if(m.charAt(0)==="*"&&m.length>2) return '<i>'+m.slice(1,-1)+'</i>';
-    if(m==="공격력") return ic("atk");
-    if(m==="마법력") return ic("mag");
-    if(m==="보호력") return ic("def");
+    const st={"공격력":"atk","마법력":"mag","보호력":"def"}[m];
+    if(st) return '<span class="kw kwq ikw" data-kw="'+m+'">'+ic(st)+'</span>';
     const c=KW_COLOR[KW[m]]||KW_COLOR.plain;
     const d=KW_DESC[m];
     return '<b class="kw'+(d?' kwq':'')+'" style="color:'+c+'"'
@@ -2892,6 +2898,11 @@ function makeMin(name,slot){
 }
 
 function defVal(f){ return Math.max(0,f.def-(f.weak||0)) }
+/* 도발 — 도발한 아군보다 뒤(번호가 작은 칸)에 있는 대상은 겨눌 수 없다 */
+function tauntWall(a){
+  return allUnits().find(x=>x.taunt&&x!==a&&x.slot>a.slot)||null;
+}
+function canAim(a){ return !tauntWall(a) }
 function intentKey(o){
   if(!o) return "";
   if(o.t==="atk") return "atk:"+(o.pat||"");
@@ -2900,9 +2911,14 @@ function intentKey(o){
 }
 function rollIntents(){
   const USED={};
+  /* 은신 — 전장에 혼자 남으면 숨을 곳이 없다 */
+  if(allUnits().length<=1) allUnits().forEach(a=>{ if(a.hide){ a.hide=0;
+    say(`${a.name}${jo(a.name,"eun")} 혼자 남아 은신이 풀립니다.`,"t2") } });
   let allies=allUnits();
   const seen=allies.filter(a=>!a.hide);
   if(seen.length) allies=seen;
+  const open=allies.filter(canAim);
+  if(open.length) allies=open;
   B.foes.forEach(f=>{
     if(!f.alive) return;
     if(f.isPhantom){ f.intent={t:"wait"}; return }
@@ -4520,8 +4536,9 @@ function endTurn(){
       fx({side:"foe",slot:f.slot,s:"shield",ring:"#e0c85a",txt:"+"+f.intent.v,cls:"shd"});
       say(`${f.name} 방어 +${f.intent.v}`) }
     else if(f.intent.t==="atk"){
-      const taunt=allUnits().find(h=>h.taunt);
-      let t=taunt||unitAt(f.intent.to)||allUnits()[0];
+      let t=unitAt(f.intent.to)||allUnits().filter(canAim)[0]||allUnits()[0];
+      const wall=t&&tauntWall(t);
+      if(wall){ say(`${wall.name}${jo(wall.name,"ig")} 앞을 막아섭니다.`,"t2"); t=wall }
       if(!t) return;
       if(!f.intent.far&&dist(t.slot,f.slot)>f.rng){ say(`${f.name} 공격 — 거리 밖.`,"t2"); return }
       if(t.evade>0){ t.evade--;
