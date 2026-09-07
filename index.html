@@ -1550,30 +1550,39 @@ const LV_GRADE=[0,
 /* ═══════════ 적 · 맵 ═══════════ */
 const FOE={
  "작은 죄수":  {hp:15,atk:3,def:4,rng:3,exp:2,
+   el:"공격",
    ai:{near:10,weak:2,back:1,any:4,def:2,heal:1,curse:1,debs:[]},
    hit:"몽둥이질"},
  "사슬 광인":  {hp:22,atk:6,def:6,rng:4,exp:3,
+   el:"공격",
    ai:{near:5,weak:9,back:1,any:5,def:1,buff:3,curse:1,debs:["burn"]},
    hit:"사슬 후려치기"},
  "굶주린 그림자":{hp:18,atk:5,def:3,rng:3,exp:2,demon:1,
+   el:"공격",
    ai:{near:2,weak:5,back:10,any:2,def:1,curse:2,debs:["fear"]},
    hit:"목덜미 물기"},
  "부서진 파수병":{hp:30,atk:4,def:12,rng:2,exp:3,
+   el:"공격",
    ai:{near:8,weak:1,back:1,any:1,def:5,heal:5,debs:["bind"]},
    hit:"방패 내려치기"},
  "균열 벌레":  {hp:12,atk:7,def:2,rng:5,exp:3,demon:1,
+   el:"마법",
    ai:{ret:0.35,near:1,weak:3,back:7,any:2,def:1,volley:5,debs:["shock"]},
    hit:"산성 침"},
  "얼음 정령":  {hp:26,atk:7,def:8,rng:4,exp:3,
+   el:"마법",
    ai:{ret:0.25,near:4,weak:2,back:3,any:2,def:2,volley:4,debs:["chill","magDn"]},
    hit:"서릿발"},
  "간수장":    {hp:46,atk:8,def:10,rng:4,exp:8,boss:1,
+   el:"공격",
    ai:{near:10,weak:6,back:2,any:2,def:1,buff:3,volley:2,debs:["bind","stun"]},
    hit:"철퇴 내려찍기"},
  "고철 거인":  {hp:70,atk:10,def:14,rng:3,exp:12,boss:1,
+   el:"공격",
    ai:{near:8,weak:2,back:2,any:2,def:2,buff:4,volley:6,debs:["stun","atkDn"]},
    hit:"고철 주먹"},
  "서리 군주":  {hp:95,atk:11,def:14,rng:5,exp:18,boss:1,demon:1,
+   el:"마법",
    ai:{ret:0.2,near:6,weak:5,back:4,any:2,def:1,volley:6,buff:2,debs:["chill","fear","atkDn"]},
    hit:"서리 창"}
 };
@@ -1589,7 +1598,7 @@ const DEBUFF={
  shock:{n:"감전",  d:"이동할 때 중첩만큼 피해. 턴 종료 시 사라짐",       c:"#e0c85a"},
  bind :{n:"속박",  d:"중첩된 턴 동안 이동할 수 없음",                    c:"#9c8d77"},
  stun :{n:"기절",  d:"중첩만큼 다음 기술이 아무 효과도 내지 않음",        c:"#a06ae0"},
- fear :{n:"공포",  d:"대상을 지정하는 기술을 쓸 수 없음",                 c:"#8f5fd0"},
+ fear :{n:"공포",  d:"공포를 부여한 상대를 기술의 대상으로 지정할 수 없음",  c:"#8f5fd0"},
  chill:{n:"냉각",  d:"기술을 쓸 때마다 중첩만큼 피해. 턴 종료 시 사라짐", c:"#6aa8e0"},
  atkDn:{n:"공격약화",d:"공격 피해가 50% 감소",                          c:"#e0705a"},
  magDn:{n:"마법약화",d:"마법 피해가 50% 감소",                          c:"#6aa8e0"},
@@ -1597,19 +1606,25 @@ const DEBUFF={
 };
 const DEB_KEYS=Object.keys(DEBUFF);
 function deb(u,k){ return (u&&u.deb&&u.deb[k])||0 }
-function addDeb(u,k,n){
+const uid=x=>!x?"":(x.isFoe||x.id!=null&&x.maxHp!=null&&!x.sk?"F"+x.id:"H"+x.name);
+function addDeb(u,k,n,src){
   if(!u) return;
   u.deb=u.deb||{};
-  /* 부정 보호막이 있으면 한 번 막아준다 */
-  if(u.negShield>0){ u.negShield--;
-    fx({side:u.isFoe?"foe":"mine",slot:u.slot,ring:"#7fd39a",txt:"막음",cls:"shd",gap:70});
-    say(`부정 보호막이 ${DEBUFF[k].n}${jo(DEBUFF[k].n,"eul")} 막아냅니다.`,"t2");
+  if(k==="fear"&&src){ u.fearSrc=uid(src); u.fearName=src.name }
+  /* 부정 보호막은 부정적인 효과를 1회(중첩 하나) 걷어낸다 */
+  if(u.negShield>0&&n>0){
+    const cut=Math.min(u.negShield,n);
+    u.negShield-=cut; n-=cut;
+    fx({side:u.isFoe?"foe":"mine",slot:u.slot,ring:"#7fd39a",txt:"−"+cut,cls:"shd",gap:70});
+    say(`부정 보호막이 ${DEBUFF[k].n} ${cut}${jo(String(cut),"eul")} 걷어냅니다.${
+      n>0?` (${DEBUFF[k].n} ${n} 남음)`:""}`,"t2");
     if(u.tag&&u.tag.negHeal){ u.hp=Math.min(u.maxHp,u.hp+u.tag.negHeal) }
-    return;
+    if(n<=0) return;
   }
   u.deb[k]=(u.deb[k]||0)+n;
   fx({side:u.isFoe?"foe":"mine",slot:u.slot,ring:DEBUFF[k].c,txt:DEBUFF[k].n+u.deb[k],cls:"miss",gap:80});
-  say(`${u.name} ${DEBUFF[k].n} ${u.deb[k]}`,"t3");
+  say(`${u.name} ${DEBUFF[k].n} ${u.deb[k]}${
+    (k==="fear"&&u.fearName)?` (${u.fearName}${jo(u.fearName,"eul")} 겨눌 수 없음)`:""}`,"t3");
   if(u.tag&&u.tag.negHeal){ u.hp=Math.min(u.maxHp,u.hp+u.tag.negHeal) }
 }
 function debChips(u){
@@ -2068,7 +2083,7 @@ function enterCell(r,c){
     run.grid[r][c]={t:"empty"};      /* 한 번 들르면 사라진다 */
     if(cell.t==="shop"){ makeShop(); view="shop" }
     else if(cell.t==="rest"){ view="rest" }
-    else { run.ev=rnd(EVENTS); run.evMsg=null; view="relic" }
+    else { run.ev=pickEvent(); run.evMsg=null; view="relic" }
     render(); return;
   }
   if(cell.t==="dungeon"||cell.t==="elite"||cell.t==="boss"){ startDungeon(cell,r,c); return }
@@ -2397,11 +2412,13 @@ function drawChest(app){
   }
   const row=el(`<div class="rewards"></div>`);
   ch.list.forEach(x=>{
-    const label=x.t==="금화"?`금화 ${x.v}`:x.t==="경험치"?`경험치 ${x.v}`
+    const gm=run.goldMul||1;
+    const label=x.t==="금화"?(gm>1?`금화 ${Math.round(x.v*gm)}`:`금화 ${x.v}`):x.t==="경험치"?`경험치 ${x.v}`
       :x.t==="파편"?"무작위 파편 아이템":x.t==="일반"?"무작위 일반 아이템"
       :x.t==="동료"?"새로운 동료 영입":`${x.t} 보상 선택`;
     row.appendChild(el(`<div class="rw ro"><div class="rwi">${chestIcon(x.t)}</div>
-      <b>${esc(label)}</b></div>`));
+      <b>${esc(label)}</b>${(x.t==="금화"&&gm>1)
+        ?`<p style="color:var(--brass)">저주의 목걸이 +${Math.round((gm-1)*100)}% (원래 ${x.v})</p>`:""}</div>`));
   });
   wrap.appendChild(row);
   const b=el(`<div style="margin-top:24px"><button class="go">전부 챙긴다</button></div>`);
@@ -2412,7 +2429,12 @@ function takeChest(){
   const ch=run.chest, later=[];
   let exp=0;
   ch.list.forEach(x=>{
-    if(x.t==="금화") run.gold+=x.v;
+    if(x.t==="금화"){
+      const base=x.v, mul=run.goldMul||1;
+      const got=Math.round(base*mul);
+      run.gold+=got;
+      if(mul>1) toast(`저주의 목걸이 — 금화 ${base} → ${got} (+${Math.round((mul-1)*100)}%)`);
+    }
     else if(x.t==="경험치") exp+=x.v;
     else if(x.t==="파편"||x.t==="일반") later.push({item:rnd(ITEMS.filter(i=>i.g===x.t))});
     else if(x.t==="동료") later.push({recruit:1});
@@ -2628,62 +2650,227 @@ const EVENTS=[
   t:"어디선가 시큼한 냄새가 납니다. 돌아보니 넝마를 걸친 자가 손을 내밀고 있습니다.",
   o:[{t:"도와주기",d:"금화를 잃고 대원 하나가 회복합니다.",
       f:()=>{ const g=rr([2,4]); run.gold=Math.max(0,run.gold-g);
-        const h=rnd(run.heroes.filter(x=>!x.down)||run.heroes);
-        const v=rr([5,7]); if(h) h.hp=Math.min(h.maxHp,h.hp+v);
+        const h=someHero(); const v=rr([5,7]); if(h) h.hp=Math.min(h.maxHp,h.hp+v);
         return `금화 ${g}을 건넸습니다. ${h?h.name+"의 체력이 "+v+" 회복되었습니다.":""}` }},
      {t:"무시하기",d:"그냥 지나갑니다.",f:()=>"뒤에서 욕지거리가 들려옵니다."},
-     {t:"약탈하기",d:"금화를 빼앗지만 오염도가 크게 오릅니다.",
-      f:()=>{ const g=rr([2,5]), s=rr([10,15]); run.gold+=g; addTaint(s);
-        return `금화 ${g}을 빼앗았습니다. 오염도가 ${s} 올랐습니다.` }}]},
+     {t:"약탈하기",d:"금화를 빼앗지만 오염도가 오릅니다.",
+      f:()=>{ const g=rr([1,3])*ST(), sc=rr([2,4]); run.gold+=g; addTaint(sc);
+        return `금화 ${g}을 빼앗았습니다. 오염도가 ${sc} 올랐습니다.` }}]},
+
  {n:"떨어진 금화", face:"작은 죄수",
   t:"길 한복판에 금화가 떨어져 있습니다. 너무 눈에 잘 띄는 자리입니다.",
   o:[{t:"금화 줍기",d:"금화를 얻습니다.",
-      f:()=>{ const g=rr([3,6]); run.gold+=g; return `금화 ${g}을 주웠습니다.` }},
-     {t:"지나가기",d:"오염도가 크게 낮아집니다.",
-      f:()=>{ const s=rr([25,35]); addTaint(-s); return `욕심을 접었습니다. 오염도가 ${s} 낮아집니다.` }}]},
+      f:()=>{ const g=rr([3,6])*ST(); run.gold+=g; return `금화 ${g}을 주웠습니다.` }},
+     {t:"지나가기",d:"오염도가 낮아집니다.",
+      f:()=>{ const sc=rr([10,15]); addTaint(-sc); return `욕심을 접었습니다. 오염도가 ${sc} 낮아집니다.` }}]},
+
  {n:"룰렛의 달인", face:"사슬 광인",
   wheel:["붉은 칸 — 대원 하나가 다친다","금화 칸 — 금화가 쏟아진다","검은 칸 — 오염도가 오른다",
          "쇳조각 칸 — 파편 아이템","깨달음 칸 — 하급 보상"],
   t:"천막 아래에서 한 사내가 낡은 룰렛을 돌리고 있습니다. 운을 시험해 보겠느냐고 묻습니다.",
-  o:[{t:"룰렛 돌리기",d:"무엇이 나올지 모릅니다.",
+  o:[{t:"룰렛 돌리기",d:"다섯 칸 중 하나가 나옵니다.",
       f:()=>{
         const r=Math.floor(Math.random()*5);
         run.evRoll=r;
-        if(r===0){ const h=rnd(run.heroes), v=rr([3,5]); h.hp=Math.max(1,h.hp-v);
-          return `바늘이 붉은 칸에 멈췄습니다. ${h.name}의 체력이 ${v} 줄었습니다.` }
-        if(r===1){ const g=rr([4,6]); run.gold+=g; return `금화 ${g}이 쏟아집니다.` }
-        if(r===2){ addTaint(30); return "검은 칸입니다. 오염도가 30 올랐습니다." }
+        if(r===0){ const h=someHero(), v=rr([3,5]); if(h) h.hp=Math.max(1,h.hp-v);
+          return `바늘이 붉은 칸에 멈췄습니다. ${h?h.name:"대원"}의 체력이 ${v} 줄었습니다.` }
+        if(r===1){ const g=rr([4,6])*ST(); run.gold+=g; return `금화 ${g}이 쏟아집니다.` }
+        if(r===2){ addTaint(15); return "검은 칸입니다. 오염도가 15 올랐습니다." }
         if(r===3){ run.after=[{item:rnd(ITEMS.filter(i=>i.g==="파편"))}];
           return "파편 하나가 굴러 나옵니다." }
         run.after=[{grade:"하급"}]; return "무언가 깨달음이 스칩니다.";
       }},
-     {t:"지나가기",d:"오염도가 크게 낮아집니다.",
-      f:()=>{ const s=rr([25,35]); addTaint(-s); return `발길을 돌렸습니다. 오염도가 ${s} 낮아집니다.` }}]},
+     {t:"지나가기",d:"오염도가 낮아집니다.",
+      f:()=>{ const sc=rr([10,15]); addTaint(-sc); return `발길을 돌렸습니다. 오염도가 ${sc} 낮아집니다.` }}]},
+
  {n:"술집 난동꾼", face:"사슬 광인",
   t:"부서진 문틈으로 고성이 새어 나옵니다. 덩치 하나가 탁자를 뒤엎고 있습니다.",
   o:[{t:"난동 제압",d:"싸웁니다. 정예보다 조금 셉니다.",
       f:()=>{ run.brawl=1; return null }},
      {t:"난동 참가",d:"모두 다치지만 금화를 챙깁니다.",
-      f:()=>{ const v=rr([4,6]), g=rr([6,10]);
+      f:()=>{ const v=rr([4,6]), g=rr([6,10])*ST();
         run.heroes.forEach(h=>{ if(!h.down) h.hp=Math.max(1,h.hp-v) }); run.gold+=g;
         return `한바탕 뒤엉켰습니다. 모두 체력 ${v}을 잃고 금화 ${g}을 챙겼습니다.` }},
      {t:"술 한잔",d:"맥주 카드를 얻습니다.",
       f:()=>{ addCard(run,"맥주",1); return "맥주 한 병을 챙겼습니다." }}]},
+
  {n:"수상한 구멍", face:"균열 벌레",
   t:"바위 틈에 팔뚝만 한 구멍이 뚫려 있습니다. 안쪽에서 미지근한 바람이 나옵니다.",
   o:[{t:"발 집어넣기",d:"활동량을 얻습니다.",
-      f:()=>{ run.act+=3; return "발끝에 무언가 닿습니다. 활동량을 3 얻었습니다." }},
+      f:()=>{ run.act+=2; return "발끝에 무언가 닿습니다. 활동량을 2 얻었습니다." }},
      {t:"손 집어넣기",d:"금화를 얻습니다.",
-      f:()=>{ const g=rr([3,6]); run.gold+=g; return `손끝에 금화 ${g}이 잡혔습니다.` }}]},
- {n:"무너진 제련소", face:"부서진 파수병",
-  t:"지붕이 내려앉은 제련소입니다. 아직 쓸 만한 것이 남아 있을지도 모릅니다.",
+      f:()=>{ const g=rr([3,6])*ST(); run.gold+=g; return `손끝에 금화 ${g}이 잡혔습니다.` }}]},
+
+ {n:"무너진 조련소", face:"부서진 파수병",
+  t:"지붕이 내려앉은 건물입니다. 녹슨 사슬과 부서진 틀이 널브러져 있습니다.",
   o:[{t:"제련석 줍기",d:"제련석을 얻습니다.",
-      f:()=>{ const g=rr([1,3]); run.stone=(run.stone||0)+g; return `제련석 ${g}개를 챙겼습니다.` }},
-     {t:"조각난 틀 조립하기",d:"운이 좋으면 파편이 나옵니다.",
+      f:()=>{ const g=rr([1,3])+run.field; run.stone=(run.stone||0)+g; return `제련석 ${g}개를 챙겼습니다.` }},
+     {t:"조각난 틀 조립하기",d:"20% 확률로 파편, 아니면 금화.",
       f:()=>{ if(Math.random()<0.2){ run.after=[{item:rnd(ITEMS.filter(i=>i.g==="파편"))}];
           return "틀이 맞아 들어가며 파편 하나가 떨어집니다." }
-        const g=rr([1,5]); run.gold+=g; return `쓸 만한 건 없고 금화 ${g}만 나왔습니다.` }}]}
+        const g=rr([1,5])*ST(); run.gold+=g; return `쓸 만한 건 없고 금화 ${g}만 나왔습니다.` }}]},
+
+ {n:"길 잃은 야영객", face:"작은 죄수", when:()=>run.night,
+  t:"어둠 속에서 등불 하나가 흔들립니다. 길을 잃었다며 다가옵니다.",
+  o:[{t:"길 알려주기",d:"활동량을 얻지만 시간이 듭니다.",
+      f:()=>{ run.act+=3; const sc=rr([5,10]); addTaint(sc);
+        return `길을 일러 주었습니다. 활동량 3을 얻고 오염도가 ${sc} 올랐습니다.` }},
+     {t:"무시하기",d:"등불에 든 금화만 챙깁니다.",
+      f:()=>{ const g=rr([1,3])*ST(); run.gold+=g; return `못 본 척 지나쳤습니다. 떨어진 금화 ${g}을 주웠습니다.` }}]},
+
+ {n:"해시계 파편", face:"부서진 파수병",
+  t:"깨진 해시계가 반쯤 묻혀 있습니다. 바늘이 아직 미세하게 떨립니다.",
+  o:[{t:"태엽 감기",d:"시간을 5시간 되돌립니다.",
+      f:()=>{ run.time=Math.max(6,run.time-5); run.night=run.time>=18?1:0;
+        return `바늘이 거꾸로 돕니다. 지금은 ${clock()}입니다.` }},
+     {t:"부수기",d:"제련석 3개를 얻습니다.",
+      f:()=>{ run.stone=(run.stone||0)+3; return "산산이 부수자 제련석 3개가 굴러 나옵니다." }}]},
+
+ {n:"야행성 짐승 무리", face:"굶주린 그림자",
+  t:"덤불 속에서 여러 쌍의 눈이 이쪽을 봅니다. 아직 움직이지는 않습니다.",
+  o:[{t:"조심히 지나가기",d:"낮에만 고를 수 있습니다.",when:()=>!run.night,
+      f:()=>{ const g=rr([2,4])*ST(); run.gold+=g;
+        return `숨을 죽이고 빠져나왔습니다. 둥지에서 금화 ${g}을 주웠습니다.` }},
+     {t:"코털 건드리기",d:"밤에만 고를 수 있습니다. 싸우고 더 좋은 보상을 받습니다.",when:()=>run.night,
+      f:()=>{ run.brawl=1; return null }}]},
+
+ {n:"정화의 샘", face:"얼음 정령", when:()=>run.taint>=50,
+  t:"바위 틈에서 맑은 물이 솟습니다. 균열의 기운이 닿지 않는 자리입니다.",
+  o:[{t:"샘물 마시기",d:"오염도가 40 감소합니다.",
+      f:()=>{ addTaint(-40); return "탁한 기운이 씻겨 나갑니다. 오염도가 40 낮아집니다." }},
+     {t:"목욕하기",d:"대원 하나의 최대 체력이 늘어납니다.",
+      f:()=>{ const h=someHero(); if(!h) return "물에 발만 담갔습니다.";
+        h.maxHp+=6; h.hp+=6; return `${h.name}의 최대 체력이 영구히 6 늘었습니다.` }}]},
+
+ {n:"균열의 목소리", face:"균열 벌레", when:()=>run.field>=1,
+  t:"땅속에서 이름을 부르는 소리가 들립니다. 아무도 그런 이름을 부른 적이 없습니다.",
+  o:[{t:"귀를 기울이기",d:"오염도 20을 받고 중급 보상 하나.",
+      f:()=>{ addTaint(20); run.after=[{grade:"중급"}];
+        return "속삭임이 머릿속에 남습니다. 오염도가 20 올랐습니다." }},
+     {t:"귀 막기",d:"모든 대원이 체력 5를 잃습니다.",
+      f:()=>{ run.heroes.forEach(h=>{ if(!h.down) h.hp=Math.max(1,h.hp-5) });
+        return "귀를 틀어막았지만 두통이 남습니다. 모두 체력 5를 잃었습니다." }}]},
+
+ {n:"버려진 사원", face:"부서진 파수병", when:()=>run.field>=1,
+  t:"무너진 기둥 사이에 낯선 신상이 서 있습니다. 발치에 헌금함이 놓여 있습니다.",
+  o:[{t:"숭배하기",d:"금화를 전부 바치고 대원 하나가 완전히 회복합니다.",
+      f:()=>{ const g=run.gold; run.gold=0;
+        const h=someHero(); if(h) h.hp=h.maxHp;
+        return `금화 ${g}을 바쳤습니다. ${h?h.name+"의 몸이 온전해집니다.":""}` }},
+     {t:"우상 부수기",d:"금화 12. 다음 전투를 모두 기절한 채로 시작합니다.",
+      f:()=>{ run.gold+=12; run.curseDown=1;
+        return "신상이 부서지며 금화 12가 쏟아집니다. 등 뒤가 서늘합니다." }}]},
+
+ {n:"떠돌이 감정사", face:"사슬 광인", when:()=>hasGrade("파편"),
+  t:"돋보기를 든 사내가 배낭을 뒤적입니다. 값을 매겨 주겠다고 합니다.",
+  o:[{t:"감정 맡기기",d:"파편 하나를 주고 절반의 확률로 일반 아이템.",
+      f:()=>{ const it=takeGrade("파편"); if(!it) return "맡길 파편이 없습니다.";
+        if(Math.random()<0.5){ run.after=[{item:rnd(ITEMS.filter(i=>i.g==="일반"))}];
+          return `${it.n}이 다듬어져 쓸 만한 물건이 됩니다.` }
+        return `${it.n}이 사내의 손에서 바스러졌습니다.` }},
+     {t:"도둑질하기",d:"파편 하나를 훔칩니다. 오염도 5.",
+      f:()=>{ addTaint(5); run.after=[{item:rnd(ITEMS.filter(i=>i.g==="파편"))}];
+        return "배낭에서 파편 하나를 슬쩍했습니다. 오염도가 5 올랐습니다." }}]},
+
+ {n:"녹슨 상자", face:"부서진 파수병", when:()=>run.field>=1,
+  t:"자물쇠가 삭아 버린 상자입니다. 억지로 열려면 제련석을 갈아 넣어야 합니다.",
+  o:[{t:"상자 열기",d:"제련석 10개 소모. 희귀 20% · 일반 30% · 파편 50%.",
+      when:()=>(run.stone||0)>=10,
+      f:()=>{ run.stone-=10; const r=Math.random();
+        const g=r<0.2?"희귀":r<0.5?"일반":"파편";
+        const pool=ITEMS.filter(i=>i.g===g);
+        run.after=[{item:rnd(pool.length?pool:ITEMS.filter(i=>i.g==="파편"))}];
+        return `자물쇠가 부서집니다. ${g} 아이템이 들어 있습니다.` }},
+     {t:"지나가기",d:"그냥 둡니다.",f:()=>"손대지 않는 편이 나을 것 같습니다."}]},
+
+ {n:"깨진 진열대", face:"작은 죄수", when:()=>hasGrade("일반"),
+  t:"엎어진 좌판에 물건들이 나뒹굽니다. 주인은 보이지 않습니다.",
+  o:[{t:"진열대 정리",d:"일반 아이템 하나를 같은 등급의 다른 것으로 바꿉니다.",
+      f:()=>{ const it=takeGrade("일반"); if(!it) return "바꿀 물건이 없습니다.";
+        run.after=[{item:rnd(ITEMS.filter(i=>i.g==="일반"&&i.n!==it.n))}];
+        return `${it.n}을 내려놓고 다른 물건을 집었습니다.` }},
+     {t:"그냥 두기",d:"오염도가 조금 낮아집니다.",
+      f:()=>{ addTaint(-8); return "제자리에 돌려놓았습니다. 마음이 조금 가벼워집니다." }}]},
+
+ {n:"돌팔이 의사", face:"사슬 광인",
+  when:()=>run.field>=1&&run.heroes.some(h=>h.down),
+  t:"피 묻은 앞치마를 두른 자가 톱을 들고 웃습니다. 고쳐 주겠다고 합니다.",
+  o:[{t:"진료 받기",d:"금화 15. 쓰러진 대원을 체력 10으로 일으킵니다.",
+      when:()=>run.gold>=15,
+      f:()=>{ run.gold-=15; const h=run.heroes.find(x=>x.down);
+        if(h){ h.down=0; h.hp=10 }
+        return h?`${h.name}이 눈을 뜹니다. 체력 10.`:"일으킬 대원이 없습니다." }},
+     {t:"진료 거부하기",d:"오염도가 10 오릅니다.",
+      f:()=>{ addTaint(10); return "톱날이 등 뒤에서 웃습니다. 오염도가 10 올랐습니다." }}]},
+
+ {n:"낯선 동행자", face:"굶주린 그림자",
+  when:()=>run.field>=1&&run.heroes.length<=2&&Math.random()<0.5,
+  t:"두건을 눌러쓴 자가 말없이 뒤를 따라옵니다. 한참 만에 입을 엽니다.",
+  o:[{t:"동료 영입",d:"지금 새 동료를 얻습니다. 오염도 30.",
+      when:()=>run.heroes.length<=2,
+      f:()=>{ addTaint(30); run.after=[{recruit:1}];
+        return "두건이 벗겨집니다. 낯익은 얼굴은 아닙니다." }},
+     {t:"선의 베풀기",d:"금화를 잃고 오염도가 낮아집니다.",
+      f:()=>{ const g=rr([3,6]); run.gold=Math.max(0,run.gold-g); addTaint(-20);
+        return `금화 ${g}을 쥐여 보냈습니다. 오염도가 20 낮아집니다.` }}]},
+
+ {n:"희생의 제단", face:"균열 벌레", when:()=>run.heroes.filter(h=>!h.down).length>=2,
+  t:"검붉은 돌판 위에 홈이 파여 있습니다. 무엇을 흘려보내야 할지 알 것 같습니다.",
+  o:[{t:"희생 선택",d:"대원 하나가 절반을 잃고 나머지가 절반 회복합니다.",
+      f:()=>{ const list=run.heroes.filter(h=>!h.down); const v=rnd(list);
+        v.hp=Math.max(1,Math.floor(v.hp/2));
+        list.forEach(h=>{ if(h!==v) h.hp=Math.min(h.maxHp,h.hp+Math.round(h.maxHp*0.5)) });
+        return `${v.name}이 돌판에 손을 얹었습니다. 나머지 대원이 크게 회복합니다.` }},
+     {t:"협동심 다지기",d:"모든 대원이 체력 5를 회복합니다.",
+      f:()=>{ run.heroes.forEach(h=>{ if(!h.down) h.hp=Math.min(h.maxHp,h.hp+5) });
+        return "서로의 등을 두드렸습니다. 모두 체력 5를 회복합니다." }}]},
+
+ {n:"저주받은 성소", face:"굶주린 그림자", when:()=>Math.random()<0.35,
+  t:"검은 천으로 덮인 제단이 있습니다. 천 아래에서 쇠붙이가 짤랑거립니다.",
+  o:[{t:"성소 방문하기",d:"저주의 목걸이를 걸고, 전투 보상 금화가 50% 늘어납니다.",
+      f:()=>{ run.goldMul=(run.goldMul||1)+0.5;
+        const h=someHero(); if(h) h.cursedNeck=1;
+        return `${h?h.name+"의 목에 ":""}차가운 목걸이가 걸립니다. 이제부터 전투에서 얻는 금화가 50% 늘어납니다.` }},
+     {t:"성소 문 닫기",d:"오염도가 10 오릅니다.",
+      f:()=>{ addTaint(10); return "천을 도로 덮었습니다. 등 뒤에서 짤랑거리는 소리가 따라옵니다." }}]},
+
+ {n:"지름길 발견", face:"작은 죄수",
+  t:"덤불 사이로 사람이 다닌 흔적이 보입니다. 주둔지 쪽으로 이어지는 것 같습니다.",
+  o:[{t:"지름길로 이동",d:"주둔지로 즉시 돌아갑니다.",
+      f:()=>{ const S=run.size, mid=Math.floor(S/2); run.pos={r:S-1,c:mid};
+        return "덤불을 헤치자 주둔지의 불빛이 보입니다." }},
+     {t:"돌아가기",d:"활동량을 3 얻습니다.",
+      f:()=>{ run.act+=3; return "길을 눈에 익혀 두었습니다. 활동량 3을 얻었습니다." }}]},
+
+ {n:"행상인 수레", face:"작은 죄수",
+  t:"바퀴가 빠진 수레에 잡동사니가 가득합니다. 주인은 한참 전에 떠난 듯합니다.",
+  o:[{t:"골동품 수집하기",d:"빵 · 소형 방패 · 맥주를 한 장씩 얻습니다.",
+      f:()=>{ addCard(run,"빵",1); addCard(run,"소형 방패",1); addCard(run,"맥주",1);
+        return "쓸 만한 것 세 가지를 챙겼습니다." }},
+     {t:"고서 읽기",d:"모든 대원이 경험치 8을 얻습니다.",
+      f:()=>{ giveExp(8,run.heroes.filter(h=>!h.down),true); return "낡은 책장을 넘겼습니다. 모두 경험치 8을 얻습니다." }}]}
 ];
+/* 등장 조건 · 스테이지 배수 · 아이템 꺼내기 */
+const ST=()=>1+run.field;
+const someHero=()=>{ const p=run.heroes.filter(h=>!h.down); return p.length?rnd(p):null };
+function ownedItems(){
+  const out=[];
+  run.heroes.forEach(h=>(h.items||[]).forEach((it,i)=>out.push({it:it,h:h,i:i})));
+  (run.bag||[]).forEach((it,i)=>out.push({it:it,bag:1,i:i}));
+  return out;
+}
+const hasGrade=g=>ownedItems().some(x=>x.it.g===g);
+function takeGrade(g){
+  const list=ownedItems().filter(x=>x.it.g===g);
+  if(!list.length) return null;
+  const pick=rnd(list);
+  if(pick.bag) run.bag.splice(pick.i,1); else pick.h.items.splice(pick.i,1);
+  return pick.it;
+}
+function pickEvent(){
+  const ok=EVENTS.filter(e=>!e.when||e.when());
+  return rnd(ok.length?ok:EVENTS.filter(e=>!e.when));
+}
 function spinRoulette(e,msg){
   run.evSpin=1; render();
   const n=e.wheel.length, target=run.evRoll;
@@ -2739,7 +2926,10 @@ function drawRelic(app){
     return;
   }
   e.o.forEach(o=>{
-    const c=el(`<div class="choice"><b>${esc(o.t)}</b><span>${rich(o.d)}</span></div>`);
+    const usable=!o.when||o.when();
+    const c=el(`<div class="choice ${usable?"":"no"}"><b>${esc(o.t)}</b><span>${rich(o.d)}</span>${
+      usable?"":`<span style="color:var(--faint)">지금은 고를 수 없습니다.</span>`}</div>`);
+    if(!usable){ row.appendChild(c); return }
     c.onclick=()=>{
       run.evRoll=null;
       const msg=o.f();
@@ -2877,6 +3067,9 @@ function startBattle(kind){
   /* 전투(옛 던전) 하나는 여러 라운드로 이루어진다.
      "전투 시작" 효과는 첫 라운드에 딱 한 번만 걸리고, 그 결과는 라운드를 넘어 남는다. */
   const fresh=!run.dun||run.dun.wave<=1;
+  if(fresh&&run.curseDown){ run.curseDown=0;
+    run.heroes.forEach(h=>{ h.hp=0; h.down=1; h.slot=0 });
+    toast("부서진 우상의 저주 — 대원들이 쓰러진 채로 눈을 뜹니다."); }
   if(fresh) run.heroes.forEach(clearTmp);
   run.heroes.forEach(h=>{
     /* 기절한 대원은 그대로 기절해 있는다 — 주둔지 치료소에서만 일어난다 */
@@ -2950,7 +3143,18 @@ function makeMin(name,slot){
     lock:{},limitUsed:{},tag:{},items:[],first:{},minions:[]};
 }
 
-function defVal(f){ return Math.max(0,f.def-(f.weak||0)) }
+function defVal(f){
+  let v=Math.max(0,f.def-(f.weak||0));
+  if(deb(f,"defDn")) v=Math.ceil(v*0.5);
+  return v;
+}
+/* 적이 내놓는 피해 — 속성에 따라 공격약화/마법약화를 받는다 */
+function foeDmg(f,v,el){
+  let d=Math.max(0,v-(f.weakAtk||0));
+  if(el==="마법"){ if(deb(f,"magDn")) d=Math.ceil(d*0.5) }
+  else { if(deb(f,"atkDn")) d=Math.ceil(d*0.5) }
+  return d;
+}
 /* 도발 — 도발한 아군보다 뒤(번호가 작은 칸)에 있는 대상은 겨눌 수 없다 */
 function tauntWall(a){
   return allUnits().find(x=>x.taunt&&x!==a&&x.slot>a.slot)||null;
@@ -2977,6 +3181,10 @@ function rollIntents(){
     if(f.isPhantom){ f.intent={t:"wait"}; return }
     if(!allies.length){ f.intent={t:"wait"}; return }
     if(f.forceDef){ f.forceDef=0; f.intent={t:"def",v:defVal(f)}; return }
+    if(deb(f,"fear")&&f.fearSrc){
+      const brave=allies.filter(a=>uid(a)!==f.fearSrc);
+      if(brave.length) allies=brave;
+    }
     const inR=allies.filter(a=>dist(a.slot,f.slot)<=f.rng);
     const far=!inR.length;
     if(far){
@@ -3001,19 +3209,20 @@ function rollIntents(){
     const FM=far?0.7:1, FP=far?"무리한 ":"";
     const dv=x=>Math.max(1,Math.round(x*FM));
     const D=(FOE[f.name]&&FOE[f.name].ai)||{};
+    const EL=(FOE[f.name]&&FOE[f.name].el)||"공격";
     const A=Object.assign({near:8,weak:4,back:2,any:2,def:1,volley:0,buff:0,heal:2,curse:1,debs:["burn"]},D);
     const hit=(FOE[f.name]&&FOE[f.name].hit)||"내려찍기";
-    add({t:"atk",v:dv(f.atk),to:near.slot,pat:FP+hit,far:far},A.near);
-    add({t:"atk",v:dv(f.atk*1.35),to:weak.slot,pat:FP+"약점 노리기",far:far},A.weak);
-    add({t:"atk",v:dv(f.atk),to:back.slot,pat:FP+"후방 급습",far:far},A.back);
-    add({t:"atk",v:dv(f.atk),to:any.slot,pat:FP+"난타",far:far},A.any);
+    add({t:"atk",v:dv(f.atk),to:near.slot,pat:FP+hit,el:EL,far:far},A.near);
+    add({t:"atk",v:dv(f.atk*1.35),to:weak.slot,pat:FP+"약점 노리기",el:EL,far:far},A.weak);
+    add({t:"atk",v:dv(f.atk),to:back.slot,pat:FP+"후방 급습",el:EL,far:far},A.back);
+    add({t:"atk",v:dv(f.atk),to:any.slot,pat:FP+"난타",el:EL,far:far},A.any);
     /* 연타 — 같은 총량을 여러 번에 나눠 때린다. 가시·갑피·공격 강화가 크게 작용한다 */
     { const n3=3, p3=Math.max(1,Math.round(f.atk*FM/n3));
-      add({t:"atk",v:p3,hits:n3,to:near.slot,pat:FP+"연타",far:far},Math.max(2,Math.round(A.near*0.4)));
+      add({t:"atk",v:p3,hits:n3,to:near.slot,pat:FP+"연타",el:EL,far:far},Math.max(2,Math.round(A.near*0.4)));
       const n2=2, p2=Math.max(1,Math.round(f.atk*1.2*FM/n2));
-      add({t:"atk",v:p2,hits:n2,to:weak.slot,pat:FP+"쌍격",far:far},Math.max(1,Math.round(A.weak*0.4))); }
+      add({t:"atk",v:p2,hits:n2,to:weak.slot,pat:FP+"쌍격",el:EL,far:far},Math.max(1,Math.round(A.weak*0.4))); }
     add({t:"def",v:defVal(f)},far?A.def+1:A.def);
-    add({t:"volley",v:dv(f.atk*0.6)},far?A.volley+2:A.volley);
+    add({t:"volley",v:dv(f.atk*0.6),el:EL},far?A.volley+2:A.volley);
     if((f.buffs||0)<3) add({t:"buff",v:Math.max(1,Math.round(f.atk*0.35))},A.buff);
     const mate=B.foes.filter(x=>x.alive&&x!==f&&x.hp<x.maxHp*0.6)[0];
     if(mate) add({t:"heal",v:Math.max(2,Math.round(f.def*0.8)),to:mate.id},A.heal);
@@ -3022,7 +3231,7 @@ function rollIntents(){
     (A.debs||[]).forEach(k=>{
       const to=(k==="shock"||k==="fear")?back.slot:(k==="stun"?weak.slot:near.slot);
       const v={burn:2,bind:2,stun:1,fear:1,shock:3,chill:3,atkDn:2,magDn:2}[k]||1;
-      add({t:"deb",k:k,to:to,v:v},far?1:2);
+      add({t:"deb",k:k,to:to,v:v,el:EL},far?1:2);
     });
     /* 이미 같은 행동을 고른 적이 있으면 다른 것을 우선한다 */
     let best=null;
@@ -3048,7 +3257,8 @@ function intentHtml(f){
   if(I.t==="curse") return `<span class="intent" title="다음 턴 마나 -1">${ic("mag")} 저주</span>`;
   if(I.t==="deb")   return `<span class="intent" title="${esc(DEBUFF[I.k].d)}" style="color:${DEBUFF[I.k].c}">${esc(DEBUFF[I.k].n)} ${I.v} → ${I.to}번</span>`;
   if(I.t==="volley")return `<span class="intent" title="아군 전체">${ic("atk")}<b>${I.v}</b> 전체</span>`;
-  if(I.t==="atk")   return `<span class="intent" title="${esc(I.pat||"")}">${ic("atk")}<b>${I.v}</b>${
+  if(I.t==="atk")   return `<span class="intent" title="${esc((I.pat||"")+" · "+(I.el||"공격"))}">${
+    ic(I.el==="마법"?"mag":"atk")}<b>${I.v}</b>${
     I.hits>1?`<span class="hits">×${I.hits}</span>`:""} → ${I.to}번</span>`;
   return `<span class="intent">대기</span>`;
 }
@@ -3159,7 +3369,8 @@ function drawBattle(app){
           ${f.infect?`<span class="chip on">감염${f.infect}</span>`:""}
           ${f.stun?`<span class="chip on">기절</span>`:""}
           ${f.burn?`<span class="chip on">화상${f.burn}</span>`:""}
-          ${f.mark?`<span class="chip on">표식${f.mark}</span>`:""}</div>`;
+          ${f.mark?`<span class="chip on">표식${f.mark}</span>`:""}
+          ${debChips(f)}</div>`;
       d.onclick=()=>{ if(sel&&sel.step===4&&canHit) doSkill(s) };
     }else if(tgMode==="any"&&emptyOkAny(sel.hero.sk[sel.skill])){
       d.classList.add("pick");
@@ -3507,6 +3718,7 @@ function pinnedFoe(h,sk){
 }
 function validTarget(h,sk,slot){
   if(!inReach(h,sk,slot)) return false;
+  if(deb(h,"fear")){ const f2=foeAt(slot); if(f2&&uid(f2)===h.fearSrc) return false }
   const p=pinnedFoe(h,sk);
   if(p) return p.slot===slot;
   return true;
@@ -3848,7 +4060,11 @@ function doSkill(target){
     if(B.over||h.hp<=0) break;
     const s=h.sk[i];
     if(deb(h,"fear")&&(s.tg==="foe"||s.tg==="any")){
-      say(`${h.name}${jo(h.name,"eun")} 공포에 질려 대상을 노려보지 못합니다.`,"t3"); break }
+      const tg2=foeAt(Math.abs(target));
+      if(tg2&&uid(tg2)===h.fearSrc){
+        say(`${h.name}${jo(h.name,"eun")} ${tg2.name}${jo(tg2.name,"eul")} 마주 볼 수 없습니다. 다른 적을 노리세요.`,"t3");
+        break }
+    }
     /* 전환(방패 막기 ↔ 방패 밀치기)처럼 도중에 대상 종류가 바뀌면 겨눌 적을 다시 고른다 */
     if(s.tg==="foe"&&(target==null||!foeAt(target)||!inReach(h,s,target))){
       const re=pinnedFoe(h,s)
@@ -4564,7 +4780,7 @@ function hurtAlly(f,t,raw,label){
     t.dark=(t.dark||0)+1;
     if(t.dark%3===0){ bumpTmp(t,"atk",1); say(`커져가는 악몽 — ${t.name} 공격력 +1`,"t1") }
     if(t.stance==="nightmare") B.foes.filter(x=>x.alive).forEach(x=>hurt(x,4+t.atk,"악몽 태세","slash"));
-    if(t.stance==="terror") B.foes.filter(x=>x.alive).forEach(x=>{ addDeb(x,"fear",1); addDeb(x,"atkDn",1) });
+    if(t.stance==="terror") B.foes.filter(x=>x.alive).forEach(x=>{ addDeb(x,"fear",1,t); addDeb(x,"atkDn",1) });
   }
   if(t.hp<=0) unitDown(t);
 }
@@ -4653,7 +4869,7 @@ function endTurn(){
       if(!t) return;
       if(!f.intent.far&&dist(t.slot,f.slot)>f.rng){ say(`${f.name} 공격 — 거리 밖.`,"t2"); return }
       const hits=Math.max(1,f.intent.hits||1);
-      const one=Math.max(0,f.intent.v-(f.weakAtk||0));
+      const one=foeDmg(f,f.intent.v,f.intent.el);
       if(hits>1) say(`${f.name} ${f.intent.pat||"연타"} — ${hits}번 몰아칩니다.`,"t2");
       for(let q=0;q<hits;q++){
         if(!t.alive&&t.isMin) break;
@@ -4697,12 +4913,13 @@ function endTurn(){
     }
     else if(f.intent.t==="deb"){
       const t=unitAt(f.intent.to)||allUnits()[0];
-      if(t) addDeb(t,f.intent.k,f.intent.v);
+      if(t) addDeb(t,f.intent.k,f.intent.v,f);
       else say(`${f.name}의 저주가 허공에 흩어집니다.`,"t2");
     }
     else if(f.intent.t==="volley"){
       say(`${f.name} 일제 사격!`,"t3");
-      allUnits().slice().forEach(a=>{ if(a.hp>0) hurtAlly(f,a,f.intent.v,"일제 사격") });
+      { const v=foeDmg(f,f.intent.v,f.intent.el);
+        allUnits().slice().forEach(a=>{ if(a.hp>0) hurtAlly(f,a,v,"일제 사격") }); }
     }
   });
   if(!run.heroes.some(h=>h.hp>0)&&!liveMins().length){ B.over=1; battleLost(); render(); return }
@@ -4732,6 +4949,8 @@ function endTurn(){
     }
   });
   B.foes.forEach(f=>{ f.air=0; f.weakAtk=0;
+    if(f.deb){ ["atkDn","magDn","defDn"].forEach(k=>{ if(f.deb[k]>0) f.deb[k]-- });
+      if(!f.deb.fear){ f.fearSrc=null; f.fearName=null } }
     if(f.alive&&f.burn) hurt(f,f.burn,"화상","mag");
     if(f.alive&&f.infect){
       const inv=run.heroes.find(x=>x.name==="인비디아"&&x.slot>0);
