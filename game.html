@@ -3839,6 +3839,23 @@ function txtEntries(){
     });
   });
   SHOP_STOCK.forEach(g=>add("상점","shop:"+g.n,g.n,()=>g.d,v=>g.d=v,true));
+  /* 대사 — 한 줄이 대사 하나 */
+  const BCAT=[["in","전장에 설 때"],["atk","기술을 쓸 때"],["hurt","맞을 때"],
+              ["kill","처치할 때"],["down","쓰러질 때"]];
+  const barkOwner=n=>{
+    const foe=!!FOE_NAMES[n];
+    return "대사 · "+(foe?"적":"영웅")+" · "+n;
+  };
+  Object.keys(BARK).forEach(n=>{
+    BCAT.forEach(([k,label])=>{
+      add(barkOwner(n),"bark:"+n+":"+k,n+" ▸ "+label,
+        ()=>(BARK[n][k]||[]).join("\n"),
+        v=>{ BARK[n][k]=String(v).split("\n").map(x=>x.trim()).filter(Boolean) },true);
+    });
+  });
+  BCAT.forEach(([k,label])=>add("대사 · 공통","barkany:"+k,"이름 없는 대상 ▸ "+label,
+    ()=>(BARK_ANY[k]||[]).join("\n"),
+    v=>{ BARK_ANY[k]=String(v).split("\n").map(x=>x.trim()).filter(Boolean) },true));
   Object.keys(HEROES).forEach(hn=>{
     const H=HEROES[hn];
     add("영웅 소개","hero:"+hn+":focus",hn+" — 한 줄 소개",()=>H.focus,v=>H.focus=v,true);
@@ -3863,7 +3880,8 @@ function drawText(app){
   app.appendChild(el(`<div class="center">
     <div class="title" style="font-size:22px">설 명 고 치 기</div>
     <div class="sub">고친 글은 이 브라우저에 저장되고 곧바로 게임에 반영됩니다.
-      지금 고친 항목 <b style="color:var(--brass)">${changed}</b>개</div></div>`));
+      지금 고친 항목 <b style="color:var(--brass)">${changed}</b>개
+      <br><span style="color:var(--faint);font-size:12px">대사 항목은 <b>한 줄이 대사 하나</b>입니다. 줄을 더하면 그만큼 후보가 늘어납니다.</span></div></div>`));
   const wrap=app.querySelector(".center");
 
   const bar=el(`<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:16px"></div>`);
