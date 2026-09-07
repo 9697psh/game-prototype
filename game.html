@@ -210,6 +210,20 @@ button.dtl{padding:3px 10px;font-size:11.5px}
 .rw .rcp{font-size:10px;color:#8f86a8;margin:7px 0 0;line-height:1.5;
   border-top:1px solid #372f4d;padding-top:6px;width:100%;word-break:keep-all}
 .rcp:nth-of-type(n+2){border-top:0;padding-top:2px}
+.gotit{--gc:#c9a227}
+.gotit .ub-tag{color:var(--gc)}
+.gotit .ub-n{color:var(--gc)}
+.bagfly{position:absolute;transform:translate(-50%,-50%);width:64px;height:64px;
+  pointer-events:none;z-index:1000}
+.bagfly svg{width:100%;height:100%}
+.bagbtn{position:fixed;right:18px;bottom:18px;z-index:60;display:flex;align-items:center;gap:8px;
+  padding:10px 15px;border:1px solid var(--brass);border-radius:10px;background:#171310;
+  color:var(--brass);font-size:13px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.5)}
+.bagbtn:hover{background:#1e1913}
+.bagbtn b{font-size:15px}
+.bagbtn.pop{animation:bagpop .45s cubic-bezier(.3,1.6,.5,1)}
+@keyframes bagpop{0%{transform:scale(1)}40%{transform:scale(1.22);
+  box-shadow:0 0 0 4px rgba(201,162,39,.25),0 6px 20px rgba(0,0,0,.5)}100%{transform:scale(1)}}
 .unlock{position:relative;overflow:hidden;margin:22px auto 4px;max-width:520px;
   background:linear-gradient(180deg,#2b2415,#1b1710);
   border:1px solid var(--brass);border-radius:12px;padding:22px 24px 20px;
@@ -2158,10 +2172,22 @@ function render0(){
   }
   if(run){ const b=el(`<button>처음부터</button>`);
     b.onclick=()=>{ run=null; startPicks=null; view="title"; render() }; hb.appendChild(b) }
+  document.querySelectorAll(".bagbtn").forEach(x=>x.remove());
+  if(run&&view!=="title"&&view!=="over"&&view!=="clear"&&view!=="bag"){
+    const n=(run.bag||[]).length, c=(run.cards||[]).reduce((a,x)=>a+x.c,0);
+    const bb=el(`<div class="bagbtn" title="가방 — 아이템과 카드 (B 키)">
+      <svg viewBox="0 0 24 24" style="width:18px;height:18px">
+        <path d="M4 8h16l-1.4 12H5.4L4 8Z" fill="none" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M9 8V6a3 3 0 0 1 6 0v2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+      <span>가방</span><b>${n}</b>${c?`<span style="color:var(--faint)">· 카드 ${c}</span>`:""}</div>`);
+    bb.onclick=()=>{ run.bagBack=view; view="bag"; render() };
+    document.body.appendChild(bb);
+  }
   app.innerHTML="";
   if(TOAST&&view!=="battle"){
     app.appendChild(el(`<p class="toast">${rich(TOAST)}</p>`)); TOAST="";
   }
+  if(view==="bag")      return drawBag(app);
   if(view==="title")    return drawTitle(app);
   if(view==="heropick") return drawStart(app);
   if(view==="map")      return drawMap(app);
@@ -4148,6 +4174,13 @@ function pickCount(n){
   window.addEventListener("scroll",hide,true);
 })();
 document.addEventListener("keydown",e=>{
+  if(!run||view==="title"||view==="over"||view==="clear") return;
+  if(e.key==="b"||e.key==="B"){
+    if(view==="bag"){ view=run.bagBack||"map" } else { run.bagBack=view; view="bag" }
+    render(); return;
+  }
+});
+document.addEventListener("keydown",e=>{
   if(view!=="battle") return;
   if(e.key==="Escape"){ sel=null; render(); return }
   if(e.key==="Enter"){ endTurn(); return }
@@ -5520,11 +5553,41 @@ function itemDone(){
   afterChest();
 }
 function incomingCard(it){
-  return el(`<div class="rewards" style="margin-top:16px">
-    <div class="rw ro new" title="${esc(itemTip(it))}">
-      <div class="g">얻는 것 · ${esc(it.g)} 아이템</div>
-      <div class="rwi">${rewardIcon(it)}</div>
-      <b>${esc(it.n)}</b><p>${rich(it.d)}</p>${recipeHtml(it)}</div></div>`);
+  SFX.play("unlock");
+  setTimeout(()=>{
+    const box=document.querySelector(".gotit");
+    if(!box) return;
+    const r=box.getBoundingClientRect();
+    const p={x:r.left+r.width/2,y:r.top+r.height/2};
+    sparks(p,"#ffe08a",16);
+    at(spawn('<div class="ring" style="border-color:#ffd45e"></div>'),p);
+    veil("radial-gradient(circle,rgba(201,162,39,.28),transparent 70%)");
+  },110);
+  const gr={"파편":"#6aa8e0","일반":"#7fd39a","희귀":"#e0a86a","특수":"#a06ae0","전설":"#e0705a"}[it.g]||"#c9a227";
+  return el(`<div class="unlock gotit" style="--gc:${gr}">
+    <div class="ub-rays"></div>
+    <div class="ub-tag">${esc(it.g)} 아 이 템 획 득</div>
+    <div class="ub-i">${rewardIcon(it)}</div>
+    <div class="ub-n">${esc(it.n)}</div>
+    <div class="ub-d">${rich(it.d)}</div>
+    ${recipeHtml(it)}</div>`);
+}
+/* 가방으로 빨려 들어가는 연출 */
+function flyToBag(){
+  const from=document.querySelector(".gotit .ub-i")||document.querySelector(".gotit");
+  const to=document.querySelector(".bagbtn");
+  if(!from||!to) return;
+  const a=from.getBoundingClientRect(), b=to.getBoundingClientRect();
+  const nd=spawn('<div class="bagfly"></div>');
+  if(!nd) return;
+  nd.innerHTML=from.innerHTML;
+  nd.style.left=(a.left+a.width/2)+"px"; nd.style.top=(a.top+a.height/2)+"px";
+  void nd.offsetWidth;
+  nd.style.transition="left .5s cubic-bezier(.5,-0.1,.6,1),top .5s cubic-bezier(.3,.6,.4,1),transform .5s,opacity .45s";
+  nd.style.left=(b.left+b.width/2)+"px"; nd.style.top=(b.top+b.height/2)+"px";
+  nd.style.transform="translate(-50%,-50%) scale(.28)"; nd.style.opacity=".2";
+  to.classList.remove("pop"); void to.offsetWidth; setTimeout(()=>to.classList.add("pop"),420);
+  SFX.play("click");
 }
 function drawItem(app){
   const st=pending.stage;
@@ -5566,8 +5629,9 @@ function drawItem(app){
     const sk=el(`<div style="text-align:center;margin-top:18px">
       <button class="go">가방에 넣는다 (${(run.bag||[]).length})</button>
       <button style="margin-left:8px">버린다</button></div>`);
-    sk.querySelectorAll("button")[0].onclick=()=>{ toBag(pending.item);
-      toast(`${pending.item.n}${jo(pending.item.n,"eul")} 가방에 넣었습니다.`); itemDone() };
+    sk.querySelectorAll("button")[0].onclick=()=>{ const nm=pending.item.n;
+      toBag(pending.item);
+      setTimeout(()=>{ toast(`${nm}${jo(nm,"eul")} 가방에 넣었습니다.`); itemDone() },520) };
     sk.querySelectorAll("button")[1].onclick=itemDone;
     app.appendChild(sk);
     return;
@@ -5596,7 +5660,49 @@ function drawItem(app){
   sk.querySelectorAll("button")[1].onclick=itemDone;
   app.appendChild(sk);
 }
-function toBag(it){ (run.bag=run.bag||[]).push(it) }
+function toBag(it){ (run.bag=run.bag||[]).push(it); flyToBag() }
+function drawBag(app){
+  run.bag=run.bag||[]; run.cards=run.cards||[];
+  const worn=[];
+  run.heroes.forEach(h=>(h.items||[]).forEach(it=>worn.push({it:it,h:h})));
+  app.appendChild(el(`<div class="center">
+    <div class="title" style="font-size:22px">가 방</div>
+    <div class="sub">가방 ${run.bag.length}개 · 착용 ${worn.length}개 · 카드 ${
+      run.cards.reduce((a,x)=>a+x.c,0)}장 · 제련석 ${run.stone||0} · 금화 ${run.gold}</div></div>`));
+  const wrap=app.querySelector(".center");
+
+  wrap.appendChild(el(`<div class="hint" style="margin-top:20px">가방에 든 아이템 — 주둔지에서 대원에게 채울 수 있습니다</div>`));
+  const r1=el(`<div class="rewards"></div>`);
+  if(!run.bag.length) r1.appendChild(el(`<div class="hint">비어 있습니다.</div>`));
+  run.bag.forEach(it=>r1.appendChild(el(`<div class="rw ro" title="${esc(itemTip(it))}">
+    <div class="g">${esc(it.g)}</div><div class="rwi">${rewardIcon(it)}</div>
+    <b>${esc(it.n)}</b><p>${rich(it.d)}</p>${recipeHtml(it)}</div>`)));
+  wrap.appendChild(r1);
+
+  wrap.appendChild(el(`<div class="hint" style="margin-top:24px">대원이 차고 있는 아이템</div>`));
+  const r2=el(`<div class="rewards"></div>`);
+  if(!worn.length) r2.appendChild(el(`<div class="hint">아직 없습니다.</div>`));
+  worn.forEach(x=>r2.appendChild(el(`<div class="rw ro" title="${esc(itemTip(x.it))}">
+    <div class="g">${esc(x.h.name)}</div><div class="rwi">${rewardIcon(x.it)}</div>
+    <b>${esc(x.it.n)}${x.it.bind?" 🔒":""}</b><p>${rich(x.it.d)}</p></div>`)));
+  wrap.appendChild(r2);
+
+  wrap.appendChild(el(`<div class="hint" style="margin-top:24px">카드 — 전투에서 손패로 들어옵니다 (최대 10종)</div>`));
+  const r3=el(`<div class="rewards"></div>`);
+  if(!run.cards.length) r3.appendChild(el(`<div class="hint">가진 카드가 없습니다.</div>`));
+  run.cards.forEach(cd=>{
+    const L=CARD_LIB[cd.n]||{d:""};
+    r3.appendChild(el(`<div class="rw ro">
+      <div class="g">${cd.c}장${L.foe?" · 적 대상":""}</div>
+      <div class="rwi">${shopIcon("card")}</div>
+      <b>${esc(cd.n)}</b><p>${rich(L.d)}</p></div>`));
+  });
+  wrap.appendChild(r3);
+
+  const out=el(`<div style="margin-top:26px"><button class="go">닫기</button></div>`);
+  out.querySelector("button").onclick=()=>{ view=run.bagBack||"map"; render() };
+  wrap.appendChild(out);
+}
 function pickWeighted(pool,n){
   const out=[], p=pool.slice();
   while(out.length<n&&p.length){
