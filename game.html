@@ -1148,7 +1148,24 @@ const SFX=(()=>{
                     {w:"sine",f:90,f2:38,d:0.4,v:0.2,at:0.04}]),
    arrow  :()=>seq([{noise:1,f:1800,f2:5200,d:0.14,q:4,v:0.16},
                     {noise:1,f:900,f2:200,d:0.12,q:0.8,v:0.2,at:0.14},
-                    {w:"square",f:200,f2:70,d:0.1,v:0.12,at:0.14}])
+                    {w:"square",f:200,f2:70,d:0.1,v:0.12,at:0.14}]),
+   /* 초침 — 톱니가 한 칸 넘어가는 마른 소리, 뒤에 얇은 쇳소리가 남는다 */
+   tock   :()=>seq([{noise:1,ftype:"highpass",f:3800,d:0.024,q:0.8,v:0.16,decay:3.2},
+                    {w:"square",f:2100,f2:1500,d:0.026,v:0.07},
+                    {w:"sine",f:640,f2:520,d:0.05,v:0.05,at:0.004},
+                    {noise:1,f:6200,f2:4200,d:0.06,q:7,v:0.045,at:0.006},
+                    {noise:1,ftype:"highpass",f:2600,d:0.02,q:0.7,v:0.06,decay:3,at:0.115},
+                    {w:"square",f:1500,f2:1150,d:0.022,v:0.035,at:0.115}]),
+   /* 밤의 습격 — 낮게 깔리는 경보와 어긋난 두 음, 뒤이어 달려드는 바람 */
+   danger :()=>seq([{w:"sine",f:58,f2:44,d:0.95,v:0.3},
+                    {w:"sawtooth",f:146,f2:139,d:0.7,v:0.13},
+                    {w:"sawtooth",f:207,f2:196,d:0.7,v:0.12,at:0.02},
+                    {noise:1,ftype:"lowpass",f:260,f2:90,d:0.9,q:0.5,v:0.22,decay:1.1},
+                    {w:"square",f:392,f2:370,d:0.3,v:0.1,at:0.30},
+                    {w:"square",f:554,f2:523,d:0.3,v:0.1,at:0.32},
+                    {noise:1,f:600,f2:3400,d:0.5,q:2.4,v:0.2,at:0.42},
+                    {w:"sawtooth",f:110,f2:52,d:0.6,v:0.2,at:0.5},
+                    {noise:1,ftype:"lowpass",f:900,f2:140,d:0.55,q:0.7,v:0.24,at:0.62,decay:1.4}])
   };
   return { play(k){ if(on&&K[k]){ try{ K[k]() }catch(e){} } },
            toggle(){ on=!on; if(on) ctx(); return on },
@@ -3257,7 +3274,7 @@ function itemSlots(h){
   return out+'</div>';
 }
 const LV_GRADE=[0,
- "하급","하급","하급","하급","중급","하급","하급","하급","하급","하급",
+ "하급","하급","하급","하급","하급","하급","하급","하급","하급","하급",
  "하급","하급","중급","하급","중급","하급","하급","중급","하급","상급",
  "하급","하급","중급","하급","중급","하급","하급","중급","중급","상급"
 ];
@@ -4412,11 +4429,14 @@ function ambushChance(cell){
 function moveTo2(r,c){
   const cell=run.grid[r][c];
   const tired=run.act<=0;
+  SFX.play("tock");                 /* 한 칸 = 한 시간. 초침이 넘어간다 */
   costPop(r,c,tired);
   run.pos={r:r,c:c};
   spend(1,1); addTaint(6);
   if(run.taint>=100) return;
   if(cell.t!=="camp"&&Math.random()<ambushChance(cell)){
+    SFX.play("danger");
+    veil("radial-gradient(circle,rgba(120,40,60,.42),transparent 72%)");
     toast(cell.t==="empty"
       ? "인기척 하나 없는 자리입니다. 어둠 속에서 무언가 달려듭니다."
       : "발을 들이기도 전에 무언가 달려듭니다.");
