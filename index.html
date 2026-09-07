@@ -1154,6 +1154,23 @@ const SFX=(()=>{
    arrow  :()=>seq([{noise:1,f:1800,f2:5200,d:0.14,q:4,v:0.16},
                     {noise:1,f:900,f2:200,d:0.12,q:0.8,v:0.2,at:0.14},
                     {w:"square",f:200,f2:70,d:0.1,v:0.12,at:0.14}]),
+   /* 보호막이 깨진다 — 쇠판이 쪼개지고 조각이 흩어진다 */
+   shbreak:()=>seq([{noise:1,f:2300,f2:620,d:0.13,q:2.2,v:0.24},
+                    {w:"sawtooth",f:300,f2:82,d:0.18,v:0.18},
+                    {w:"sine",f:120,f2:48,d:0.26,v:0.20,at:0.01},
+                    {w:"square",f:1760,f2:1600,d:0.07,v:0.075,at:0.06},
+                    {w:"square",f:2340,f2:2100,d:0.06,v:0.06,at:0.10},
+                    {w:"square",f:3100,f2:2800,d:0.05,v:0.045,at:0.15},
+                    {noise:1,ftype:"lowpass",f:1400,f2:260,d:0.30,q:0.6,v:0.14,at:0.05,decay:1.8}]),
+   /* 에너지 보호막이 깨진다 — 유리질 파열과 흩어지는 잔향 */
+   eshbreak:()=>seq([{noise:1,f:6400,f2:1800,d:0.16,q:3.6,v:0.20},
+                     {w:"sine",f:2600,f2:420,d:0.24,v:0.14},
+                     {w:"triangle",f:1320,f2:660,d:0.26,v:0.10,at:0.02},
+                     {w:"triangle",f:1397,f2:698,d:0.26,v:0.08,at:0.03},
+                     {w:"square",f:2794,d:0.10,v:0.05,at:0.09},
+                     {w:"square",f:3520,d:0.09,v:0.04,at:0.14},
+                     {w:"sine",f:104,f2:44,d:0.30,v:0.16,at:0.01},
+                     {noise:1,f:4200,f2:9000,d:0.34,q:5,v:0.07,at:0.10}]),
    /* 초침 — 톱니가 한 칸 넘어가는 마른 소리, 뒤에 얇은 쇳소리가 남는다 */
    tock   :()=>seq([{noise:1,ftype:"highpass",f:3800,d:0.024,q:0.8,v:0.16,decay:3.2},
                     {w:"square",f:2100,f2:1500,d:0.026,v:0.07},
@@ -1479,6 +1496,8 @@ function hpAnim(){
     setTimeout(()=>{ bar.classList.remove("hurt","healed") },660);
   });
 }
+/* 지금 줄 서 있는 연출이 다 흐르는 데 걸리는 시간 */
+function fxDuration(){ return FXQ.reduce((a,o)=>a+(o.gap==null?110:o.gap),0) }
 function flushFX(){
   let t=0;
   while(FXQ.length){
@@ -6136,7 +6155,8 @@ function drawBattle(app){
   }
   app.appendChild(synHtml?el(synHtml()):el("<span></span>"));
   { const tr=el(`<div class="turnrow"></div>`);
-    const eb=el(`<button class="go" id="turnend">턴 종료 <i>(Enter)</i></button>`);
+    const eb=el(`<button class="go" id="turnend"${B.busy?" disabled":""}>${
+      B.busy?"턴 종료 효과…":"턴 종료 <i>(Enter)</i>"}</button>`);
     eb.onclick=endTurn; tr.appendChild(eb);
     const rb=el(`<button class="mini" title="이 전투를 시작 시점으로 되감습니다. 적 구성·능력치·행동 패턴은 그대로입니다.">전투 초기화</button>`);
     rb.onclick=resetBattle; tr.appendChild(rb);
@@ -6727,6 +6747,17 @@ function singTune(h,t){
   if(t==="shock"){ const f=nearestFoe(h);
     if(f){ addDeb(f,"stun",1); say(`충격의 음율 — ${f.name} 기절`) } }
 }
+/* 막이 깨지는 연출 — 아군이든 적이든 같은 규칙 */
+function breakFX(u,kind){
+  if(!u) return;
+  const side=(u.isMin||u.sk||u.lv!=null)?"mine":"foe";
+  const e=(kind==="e");
+  fx({side:side, slot:u.slot,
+      s:e?"eshbreak":"shbreak",
+      ring:e?"#e07b28":"#8fa2c9",
+      txt:e?"에너지 보호막 파괴":"보호막 파괴",
+      cls:e?"shd":"miss", glow:1, gap:150});
+}
 function endShield(h,v){
   if(!v) return;
   h.shield+=v;
@@ -6748,6 +6779,7 @@ function veilCheck(h){
       fx({side:"mine",slot:a.slot,ring:"#5fd8cf",txt:"+"+v,cls:"shd"}) } });
 }
 function playCard(i,slot,side){
+  if(B.busy) return;
   const c=B.hand[i]; if(!c) return;
   const wantFoe=!!(c.stock&&CARD_LIB[c.stock]&&CARD_LIB[c.stock].foe)||!!c.foe;
   if(wantFoe){
@@ -6801,7 +6833,9 @@ function hurt(f,amt,tag,art,pierce,crit){
   const pr=pierceRate(pierce);
   const thru=Math.round(amt*pr/100);       /* 보호막을 무시하고 체력으로 */
   let rest=amt-thru;
+  const hadS=f.shield||0;
   if(rest>0){ s=Math.min(f.shield,rest); f.shield-=s; rest-=s }
+  if(hadS>0&&f.shield<=0) breakFX(f,"s");
   d=thru+rest;
   /* 적의 회피 */
   if(f.evade>0){ f.evade--; d=0; s=0;
@@ -6891,6 +6925,7 @@ function airborne(h,f){
   }
 }
 function doSkill(target){
+  if(B.busy) return;
   const h=sel.hero,i=sel.skill,n=sel.count,s0=h.sk[i];
   if(isMoveSkill(s0)){
     const why=moveBlock(h,s0,target);
@@ -7741,8 +7776,12 @@ function hurtAlly(f,t,raw,label){
     fx({side:"mine",slot:t.slot,s:"miss",txt:"회피",cls:"miss"});
     say(`${label} — ${t.name} 회피!`,"t2"); return }
   let d=raw;
+  const hadE=t.eshield||0, hadS=t.shield||0;
   const eh=Math.min(t.eshield||0,d); if(eh){ t.eshield-=eh; d-=eh }
   let sh=Math.min(t.shield,d); t.shield-=sh; d-=sh;
+  /* 막이 다 깎여 나가는 순간에만 울린다 */
+  if(hadE>0&&t.eshield<=0) breakFX(t,"e");
+  if(hadS>0&&t.shield<=0)  breakFX(t,"s");
   if(!t.deathSaveUsed&&itemBt(t,"deathSave")&&d>=t.hp){
     t.deathSaveUsed=1; d=0; raw=0;
     healUp(t,Math.round(t.maxHp*itemBt(t,"deathSave")/100));
@@ -7796,56 +7835,89 @@ function unitDown(t){
   }
 }
 function endTurn(){
-  if(B.over) return;
+  if(B.over||B.busy) return;
   if(run&&run.sandbox){
     B.turn++; sandboxTick(); sel=null;
     say(`— ${B.turn}턴 · 연습장 —`,"t2");
     render(); return;
   }
   if(!allUnits().length){ say("전장에 아군이 없습니다. 먼저 영웅을 소환하세요.","t3"); return }
+  /* 마당 ① 턴 종료 효과 → 눈과 귀로 확인 → 마당 ② 적 행동 → 마당 ③ 다음 턴 */
+  const n=endPhase();
+  if(n>0){
+    B.busy=1; sel=null;
+    const wait=Math.min(2200, Math.max(520, fxDuration()+320));
+    render();
+    setTimeout(()=>{ B.busy=0; if(B&&!B.over) foePhase(); }, wait);
+  }else foePhase();
+}
+/* 마당 ① — 턴이 끝날 때 발동하는 것들. 적이 움직이기 전에 전부 여기서 끝난다 */
+function endPhase(){
+  let n=0; const bump=()=>{ n++ };
+  const mark=B.log.length;              /* 머리말은 나중에 이 자리에 끼워 넣는다 */
   allUnits().forEach(tickDebEnd);
   liveMins().forEach(m=>{ if(m.perma) m.taunt=1 });
   onField().forEach(h=>{
-    { const en=itemBt(h,"endNeg"); if(en) h.negShield=(h.negShield||0)+en;
+    { const en=itemBt(h,"endNeg"); if(en){ h.negShield=(h.negShield||0)+en; bump();
+        fx({side:"mine",slot:h.slot,s:"guard",ring:"#7fd39a",txt:"부정 보호막 "+h.negShield,cls:"shd",gap:150}) }
       const mn=itemBt(h,"momNeg");
-      if(mn&&h.mom>0){ const use=Math.min(5,h.mom); h.mom-=use; h.negShield=(h.negShield||0)+use }
+      if(mn&&h.mom>0){ const use=Math.min(5,h.mom); h.mom-=use; h.negShield=(h.negShield||0)+use; bump();
+        fx({side:"mine",slot:h.slot,s:"guard",ring:"#7fd39a",txt:"부정 보호막 "+h.negShield,cls:"shd",gap:150}) }
       const em=itemBt(h,"endMag");
       if(em){ h.endCount=(h.endCount||0)+1;
-        if(h.endCount%2===0){ bumpTmp(h,"mag",1); say(`사색의 등 — ${h.name} 마법력 +1`,"t2") } } }
+        if(h.endCount%2===0){ bumpTmp(h,"mag",1); bump();
+          fx({side:"mine",slot:h.slot,s:"pick",ring:"#6aa8e0",txt:"마법력+1",cls:"mag",gap:150});
+          say(`사색의 등 — ${h.name} 마법력 +1`,"t2") } } }
     const es=itemBt(h,"endShield");
     if(es){ const add=es+(itemBt(h,"endShieldDef")?h.def:0);
-      endShield(h,add); fx({side:"mine",slot:h.slot,ring:"#e0c85a",txt:"+"+add,cls:"shd",gap:70}) }
+      endShield(h,add); bump();
+      fx({side:"mine",slot:h.slot,s:"shield",ring:"#e0c85a",glow:1,txt:"보호막 +"+add,cls:"shd",gap:190});
+      say(`턴 종료 — ${h.name} 보호막 +${add}`,"t2") }
     const ms=itemBt(h,"manaShield");
-    if(ms&&h.manaUsed){ endShield(h,h.manaUsed*ms); h.manaUsed=0 }
+    if(ms&&h.manaUsed){ const v=h.manaUsed*ms; endShield(h,v); h.manaUsed=0; bump();
+      fx({side:"mine",slot:h.slot,s:"shield",ring:"#8fa2c9",txt:"보호막 +"+v,cls:"shd",gap:170});
+      say(`마나 방벽 — ${h.name} 보호막 +${v}`,"t2") }
     const qs=itemBt(h,"momShield");
-    if(qs&&h.mom>0){ const use=Math.min(6,h.mom); h.mom-=use; endShield(h,use*qs) }
+    if(qs&&h.mom>0){ const use=Math.min(6,h.mom); h.mom-=use; const v=use*qs; endShield(h,v); bump();
+      fx({side:"mine",slot:h.slot,s:"shield",ring:"#5fd8cf",txt:"보호막 +"+v,cls:"shd",gap:170});
+      say(`추진력 방벽 — ${h.name} 보호막 +${v}`,"t2") }
     if(h.name==="오토"){ const conv=Math.min(5,h.shield);
-      if(conv){ h.shield-=conv; h.eshield=(h.eshield||0)+conv;
-        fx({side:"mine",slot:h.slot,ring:"#e07b28",txt:"◆"+conv,cls:"shd",gap:60});
+      if(conv){ h.shield-=conv; h.eshield=(h.eshield||0)+conv; bump();
+        fx({side:"mine",slot:h.slot,s:"pulse",ring:"#e07b28",txt:"◆"+conv,cls:"shd",gap:170});
         say(`돌봄 — ${h.name} 보호막 ${conv}을 에너지 보호막으로 바꿉니다.`) } }
     if(h.name==="보아"){ const sc=h.scaleTurn||0, v=1+h.def+sc;
-      endShield(h,v); h.scaleTurn=0;
-      fx({side:"mine",slot:h.slot,ring:"#9ad06a",txt:"+"+v,cls:"shd",gap:60});
+      endShield(h,v); h.scaleTurn=0; bump();
+      fx({side:"mine",slot:h.slot,s:"shield",ring:"#9ad06a",glow:1,txt:"보호막 +"+v,cls:"shd",gap:190});
       say(`적응성 비늘 — ${h.name} 보호막 +${v} (기본 1 + 보호력 ${h.def}${sc?` + 이번 턴 비늘 ${sc}`:""})`) }
     if(h.tag.dashMul&&h.mom>0){
       const use=Math.min(h.tag.dashMax||3,h.mom); h.mom-=use;
-      const v=use*h.tag.dashMul; h.eshield=(h.eshield||0)+v;
-      fx({side:"mine",slot:h.slot,ring:"#e07b28",txt:"◆+"+v,cls:"shd",gap:70});
+      const v=use*h.tag.dashMul; h.eshield=(h.eshield||0)+v; bump();
+      fx({side:"mine",slot:h.slot,s:"pulse",ring:"#e07b28",txt:"◆+"+v,cls:"shd",gap:170});
       say(`달리기 — ${h.name} 에너지 보호막 +${v}`) }
     const eb=itemBt(h,"endBurnRange");
-    if(eb) B.foes.filter(f=>f.alive&&dist(h.slot,f.slot)<=2).forEach(f=>hurt(f,eb,"불타는 호각","slash"));
+    if(eb){ const list=B.foes.filter(f=>f.alive&&dist(h.slot,f.slot)<=2);
+      if(list.length) bump();
+      list.forEach(f=>hurt(f,eb,"불타는 호각","slash")) }
     if(h.name==="헥토"){
       const v=(h.tag.allyShield||2)+h.def;
-      allUnits().forEach(a=>{ if(a!==h){ endShield(a,v);
-        fx({side:"mine",slot:a.slot,ring:"#8fa2c9",txt:"+"+v,cls:"shd",gap:70}) } });
+      let first=1;
+      allUnits().forEach(a=>{ if(a!==h){ endShield(a,v); bump();
+        fx({side:"mine",slot:a.slot,s:first?"shield":null,ring:"#8fa2c9",txt:"보호막 +"+v,cls:"shd",gap:150});
+        first=0 } });
       say(`든든한 아군 — 다른 아군 보호막 +${v}`,"t2");
     }
   });
   (B.portals||[]).forEach(p=>{
     if(p.side!=="foe") return;
     const f=foeAt(p.slot);
-    if(f&&f.alive) hurt(f,p.dmg,"균열 차원문","mag");
+    if(f&&f.alive){ bump(); hurt(f,p.dmg,"균열 차원문","mag") }
   });
+  if(n) B.log.splice(mark,0,{t:icoify("— 턴 종료 효과 —"),c:"t2"});
+  return n;
+}
+/* 마당 ② — 적의 차례 */
+function foePhase(){
+  if(!B||B.over) return;
   say(`— ${B.turn}턴 적 행동 —`,"t1");
   B.lastAttacker=null;
   fx({s:"turn",gap:220});
