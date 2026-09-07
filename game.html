@@ -5311,7 +5311,8 @@ function endTurn(){
   if(!run.heroes.some(h=>!h.down)&&!liveMins().length){ B.over=1; battleLost(); render(); return }
   B.turn++;
   if(B.turn>20){ B.over=1; say("20턴이 지나 물러납니다.","t3"); battleLost(); render(); return }
-  liveMins().forEach(m=>{ m.mana=m.maxMana; m.shield=m.keepShield||0; m.keepShield=0; m.armor=0;
+  liveMins().forEach(m=>{ m.mana=m.maxMana;
+    m.shield=Math.min(m.shield||0,m.keepShield||0); m.keepShield=0; m.armor=0;
     if(m.perma) m.taunt=1; else if(m.taunt) m.taunt--; });
   run.heroes.forEach(h=>{
     if(h.hp<=0) return;
@@ -5320,7 +5321,9 @@ function endTurn(){
     h.headshotUsed=0; h.mobile=0;
     if(h.stanceTurn&&--h.stanceTurn<=0) h.stance=0;
     clearTurnTmp(h);
-    h.shield=h.keepShield||0; h.keepShield=0; h.cutSum=0;
+    /* 턴 종료에 얻은 보호막은 '남은 만큼만' 다음 내 턴까지 이어진다.
+       적에게 깎인 몫이 되살아나면 안 된다. */
+    h.shield=Math.min(h.shield||0,h.keepShield||0); h.keepShield=0; h.cutSum=0;
     { const mt=itemBt(h,"manaTick");
       if(mt&&B.turn%mt===0){ h.mana++; say(`마나석 — ${h.name} 이번 턴 마나 +1`,"t2") } }
     if(h.tag.armorTurn&&h.slot>0) giveArmor(h,rnd(h.tag.armors||["강철 갑옷"]));
