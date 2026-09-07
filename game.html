@@ -70,8 +70,10 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .bar > i{display:block;height:100%;background:var(--hp);transition:width .18s}
 .bar.mn > i{background:var(--mana)}
 .bar > u{position:absolute;top:0;right:0;height:100%;background:var(--def);opacity:.9;
-  border-left:1px solid var(--panel);transition:width .18s}
+  border-left:1px solid var(--panel);transition:width .18s,right .18s}
+.bar > u.es{background:#e07b28;opacity:.95;box-shadow:0 0 6px rgba(224,123,40,.6)}
 .shd{color:var(--def);font-weight:700;white-space:nowrap}
+.esh{color:#e07b28;font-weight:700;white-space:nowrap}
 .mini{font-size:10.5px;color:var(--dim);display:flex;flex-wrap:wrap;gap:4px;align-items:center;justify-content:center}
 .chip{font-size:10px;border:1px solid var(--rule2);border-radius:2px;padding:0 4px;color:var(--dim)}
 .chip.on{color:var(--brass);border-color:#5c4a1f}
@@ -2756,15 +2758,19 @@ function drawBattle(app){
       if(tgMode==="self"&&sel.hero===h) d.classList.add("pick");
       const pm=B.portals&&B.portals.find(p=>p.side==="mine"&&p.slot===s);
       if(pm) d.innerHTML+=`<svg class="portal" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#a06ae0" stroke-width="2.5"/><circle cx="12" cy="12" r="3.5" fill="#a06ae0"/></svg>`;
+      const esW=h.eshield?Math.max(6,Math.min(45,h.eshield/h.maxHp*100)):0;
+      const shW=h.shield?Math.max(6,Math.min(45,h.shield/h.maxHp*100)):0;
       d.innerHTML+=`<div class="res">${manaPips(h)}${heroRes(h)}${
-          h.mom?`<span class="rr">${ic("move")}${h.mom}</span>`:""}${
-          h.eshield?`<span class="rr es" title="에너지 보호막">◆${h.eshield}</span>`:""}</div>
+          h.mom?`<span class="rr">${ic("move")}${h.mom}</span>`:""}</div>
         <div class="art">${figure(h.name)}</div>
         <div class="nm">${esc(h.name)}</div>
         <div class="bar"><i style="width:${Math.max(0,h.hp/h.maxHp*100)}%"></i>
-          ${h.shield?`<u style="width:${Math.min(60,h.shield/h.maxHp*100)}%"></u>`:""}</div>
+          ${h.eshield?`<u class="es" style="width:${esW}%" title="에너지 보호막 ${h.eshield}"></u>`:""}
+          ${h.shield?`<u style="right:${esW}%;width:${shW}%" title="보호막 ${h.shield}"></u>`:""}</div>
         ${progHtml(h)}
-        <div class="mini">${ic("hp")}${h.hp}/${h.maxHp}${h.shield?` <span class="shd">${ic("def")}${h.shield}</span>`:""}</div>
+        <div class="mini">${ic("hp")}${h.hp}/${h.maxHp}${
+          h.eshield?` <span class="esh" title="에너지 보호막">◆${h.eshield}</span>`:""}${
+          h.shield?` <span class="shd">${ic("def")}${h.shield}</span>`:""}</div>
         <div class="stats">
           ${h.atk?`<span>${ic("atk")}${h.atk}</span>`:""}
           ${h.mag?`<span>${ic("mag")}${h.mag}</span>`:""}
@@ -3033,7 +3039,7 @@ function skillPanel(h){
   const p=el(`<div class="skwrap"></div>`);
   p.appendChild(el(`<div class="skhead">
     <b>${esc(h.name)}</b>
-    <span class="hint">${ic("hp")}${h.hp}/${h.maxHp}${h.shield?` · <span class="shd">${ic("def")}${h.shield}</span>`:""} · ${ic("mana")}${h.mana}/${h.maxMana}${h.mom?` · ${ic("move")}${h.mom}`:""}</span>
+    <span class="hint">${ic("hp")}${h.hp}/${h.maxHp}${h.eshield?` · <span class="esh">◆${h.eshield}</span>`:""}${h.shield?` · <span class="shd">${ic("def")}${h.shield}</span>`:""} · ${ic("mana")}${h.mana}/${h.maxMana}${h.mom?` · ${ic("move")}${h.mom}`:""}</span>
     <span class="grow"></span>
     <span class="hint">${(h.items||[]).length
       ? "장비 · "+h.items.map(it=>esc(it.n)).join(" / ")
@@ -3464,7 +3470,7 @@ function doSkill(target){
       const back=h.slot-1;
       if(back>=1&&!unitAt(back)) moveTo(h,back);
       else { const v=1+h.mag; h.eshield=(h.eshield||0)+v;
-        fx({side:"mine",slot:h.slot,ring:"#6aa8e0",txt:"◆+"+v,cls:"shd",gap:60}) }
+        fx({side:"mine",slot:h.slot,ring:"#e07b28",txt:"◆+"+v,cls:"shd",gap:60}) }
     }
     if(s.alt){
       const back=Object.assign({},s); const nx=Object.assign({},s.alt);
@@ -3709,7 +3715,7 @@ function runEffect(h,i,s,target){
     if(to!==h.slot&&Math.abs(to-h.slot)<=2) moveTo(h,to);
     h.mom+=2;
     allUnits().forEach(a=>{ if(Math.abs(a.slot-h.slot)<=1){ a.eshield=(a.eshield||0)+4;
-      fx({side:"mine",slot:a.slot,ring:"#7fd39a",txt:"◆+4",cls:"shd",gap:70}) } });
+      fx({side:"mine",slot:a.slot,ring:"#e07b28",txt:"◆+4",cls:"shd",gap:70}) } });
     say(`${h.name} 주변 아군에게 에너지 보호막 +4 · 추진력 +2`);
     return;
   }
@@ -4107,7 +4113,7 @@ function endTurn(){
     if(qs&&h.mom>0){ const use=Math.min(6,h.mom); h.mom-=use; h.shield+=use*qs }
     if(h.name==="오토"){ const conv=Math.min(5,h.shield);
       if(conv){ h.shield-=conv; h.eshield=(h.eshield||0)+conv;
-        fx({side:"mine",slot:h.slot,ring:"#7fd39a",txt:"◆"+conv,cls:"shd",gap:60});
+        fx({side:"mine",slot:h.slot,ring:"#e07b28",txt:"◆"+conv,cls:"shd",gap:60});
         say(`돌봄 — ${h.name} 보호막 ${conv}을 에너지 보호막으로 바꿉니다.`) } }
     if(h.name==="보아"){ const sc=h.scaleTurn||0, v=1+h.def+sc;
       h.shield+=v; h.scaleTurn=0;
@@ -4116,7 +4122,7 @@ function endTurn(){
     if(h.tag.dashMul&&h.mom>0){
       const use=Math.min(h.tag.dashMax||3,h.mom); h.mom-=use;
       const v=use*h.tag.dashMul; h.eshield=(h.eshield||0)+v;
-      fx({side:"mine",slot:h.slot,ring:"#5fd8cf",txt:"◆+"+v,cls:"shd",gap:70});
+      fx({side:"mine",slot:h.slot,ring:"#e07b28",txt:"◆+"+v,cls:"shd",gap:70});
       say(`달리기 — ${h.name} 에너지 보호막 +${v}`) }
     const eb=itemBt(h,"endBurnRange");
     if(eb) B.foes.filter(f=>f.alive&&dist(h.slot,f.slot)<=2).forEach(f=>hurt(f,eb,"불타는 호각","slash"));
