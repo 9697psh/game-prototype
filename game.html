@@ -311,6 +311,21 @@ button.dtl{padding:3px 10px;font-size:11.5px}
   line-height:1;letter-spacing:.02em;text-shadow:0 0 30px rgba(201,162,39,.4)}
 .dnum span{font-size:26px;margin-left:9px;color:var(--fg)}
 .dsub{font-size:13.5px;color:var(--dim);letter-spacing:.06em}
+.txttabs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:14px}
+.txttabs button{font-size:12px;padding:5px 11px}
+.txttabs button i{font-style:normal;color:var(--faint);font-size:10.5px;margin-left:3px}
+.txttabs button.go i{color:rgba(23,19,15,.6)}
+.txtlist{display:flex;flex-direction:column;gap:8px;margin-top:12px;text-align:left;
+  max-width:760px;margin-inline:auto;width:100%}
+.txtrow{border:1px solid var(--rule);border-radius:var(--rd);background:var(--panel);padding:10px 12px}
+.txtrow.on{border-color:var(--brass)}
+.txtrow .tl{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12.5px}
+.txtrow textarea,.txtrow input{width:100%;background:#100e0c;color:var(--fg);
+  border:1px solid var(--rule);border-radius:4px;padding:7px 9px;font:inherit;font-size:12.5px;
+  line-height:1.6;resize:vertical}
+.txtrow textarea:focus,.txtrow input:focus{outline:none;border-color:var(--brass)}
+.txtpv{margin-top:6px;font-size:12px;color:var(--dim);line-height:1.7;
+  border-left:2px solid var(--rule2);padding-left:9px;white-space:pre-line}
 .tutbox{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:200;
   width:min(620px,calc(100vw - 28px));background:#171310;border:1px solid var(--brass);
   border-radius:8px;padding:14px 18px;box-shadow:0 10px 34px rgba(0,0,0,.65)}
@@ -3102,6 +3117,7 @@ function render0(){
   if(TOAST&&view!=="battle"){
     app.appendChild(el(`<p class="toast">${rich(TOAST)}</p>`)); TOAST="";
   }
+  if(view==="text")     return drawText(app);
   if(view==="codex")    return drawCodex(app);
   if(view==="bag")      return drawBag(app);
   if(view==="title")    return drawTitle(app);
@@ -3137,10 +3153,141 @@ function drawTitle(app){
   const cx=el(`<div style="margin-top:10px"><button style="padding:9px 24px">영웅 도감 — 기술을 미리 써 본다</button></div>`);
   cx.querySelector("button").onclick=()=>{ CODEX.pick=HERO_POOL[0]; view="codex"; render() };
   app.querySelector(".center").appendChild(cx);
+  const tx=el(`<div style="margin-top:10px"><button style="padding:7px 18px;font-size:12.5px">설명 고치기</button></div>`);
+  tx.querySelector("button").onclick=()=>{ view="text"; render() };
+  app.querySelector(".center").appendChild(tx);
   app.querySelector(".center").appendChild(el(`<div class="hint" style="margin-top:26px;max-width:420px">
     한 판은 세 구역으로 이어집니다. 구역마다 정해진 날짜 안에 <b>우두머리</b>를 잡아야 하고,
     <b>오염도</b>가 100이 되면 그 자리에서 끝납니다.</div>`));
 }
+
+
+/* ═══════════ 설명 편집기 ═══════════
+   고친 글은 이 브라우저에 저장되고 곧바로 게임에 반영됩니다.
+   [내보내기]로 받은 파일을 주시면 게임에 영구히 넣습니다. */
+const TXT_KEY="kyunyeol.text.v1";
+let TXT={};
+try{ TXT=JSON.parse(localStorage.getItem(TXT_KEY)||"{}") }catch(e){ TXT={} }
+function txtSave(){ try{ localStorage.setItem(TXT_KEY,JSON.stringify(TXT)) }catch(e){} }
+/* 고칠 수 있는 글 목록을 한 곳에서 만든다 */
+function txtEntries(){
+  const out=[];
+  const add=(cat,key,label,get,set,area)=>out.push({cat,key,label,get,set,area:!!area});
+  Object.keys(SKILL_TEXT).forEach(n=>add("기술 요약","skill:"+n,n,
+    ()=>SKILL_TEXT[n], v=>SKILL_TEXT[n]=v, true));
+  Object.keys(SKILL_FULL).forEach(n=>add("기술 원문","full:"+n,n,
+    ()=>SKILL_FULL[n], v=>SKILL_FULL[n]=v, true));
+  KW_TAB.forEach(k=>add("키워드","kw:"+k.n,k.n,
+    ()=>KW_DESC[k.n], v=>{ KW_DESC[k.n]=v; k.d=v }, true));
+  ITEMS.forEach(it=>add("아이템","item:"+it.n,it.n+" ("+it.g+")",
+    ()=>it.d, v=>it.d=v, true));
+  COMMON.forEach((r,i)=>add("공용 보상","common:"+r.g+":"+r.n,"["+r.g+"] "+r.n,
+    ()=>r.d, v=>r.d=v, true));
+  Object.keys(HERO_REWARDS).forEach(hn=>HERO_REWARDS[hn].forEach(r=>
+    add("전용 보상 · "+hn,"hr:"+hn+":"+r.n,"["+r.g+"] "+r.n, ()=>r.d, v=>r.d=v, true)));
+  EVENTS.forEach(e=>{
+    add("미지의 구역","ev:"+e.n+":t",e.n+" — 상황 문구",()=>e.t,v=>e.t=v,true);
+    e.o.forEach((o,i)=>{
+      add("미지의 구역","ev:"+e.n+":o"+i+":t",e.n+" ▸ 선택지 "+(i+1)+" 이름",()=>o.t,v=>o.t=v);
+      add("미지의 구역","ev:"+e.n+":o"+i+":d",e.n+" ▸ 선택지 "+(i+1)+" 설명",()=>o.d,v=>o.d=v,true);
+    });
+  });
+  SHOP_STOCK.forEach(g=>add("상점","shop:"+g.n,g.n,()=>g.d,v=>g.d=v,true));
+  Object.keys(HEROES).forEach(hn=>{
+    const H=HEROES[hn];
+    add("영웅 소개","hero:"+hn+":focus",hn+" — 한 줄 소개",()=>H.focus,v=>H.focus=v,true);
+    add("영웅 소개","hero:"+hn+":pass",hn+" — 지속 능력",()=>H.passive.d,v=>H.passive.d=v,true);
+    H.skills.forEach((sk,i)=>add("영웅 기술 요약","hsk:"+hn+":"+i,hn+" ▸ "+sk.n,
+      ()=>sk.d,v=>sk.d=v,true));
+  });
+  return out;
+}
+/* 저장해 둔 수정을 표에 다시 입힌다 */
+function txtApply(){
+  const E=txtEntries();
+  E.forEach(e=>{ if(TXT[e.key]!=null) e.set(TXT[e.key]) });
+  KW_RE=null;   /* 키워드가 바뀌었을 수 있으니 다시 만든다 */
+}
+let TXT_CAT=null, TXT_Q="";
+function drawText(app){
+  const E=txtEntries();
+  const cats=[...new Set(E.map(x=>x.cat))];
+  if(!TXT_CAT||cats.indexOf(TXT_CAT)<0) TXT_CAT=cats[0];
+  const changed=Object.keys(TXT).length;
+  app.appendChild(el(`<div class="center">
+    <div class="title" style="font-size:22px">설 명 고 치 기</div>
+    <div class="sub">고친 글은 이 브라우저에 저장되고 곧바로 게임에 반영됩니다.
+      지금 고친 항목 <b style="color:var(--brass)">${changed}</b>개</div></div>`));
+  const wrap=app.querySelector(".center");
+
+  const bar=el(`<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:16px"></div>`);
+  const q=el(`<input placeholder="이름으로 찾기" style="min-width:200px">`);
+  q.value=TXT_Q;
+  q.addEventListener("input",()=>{ TXT_Q=q.value; render();
+    setTimeout(()=>{ const n=document.querySelector(".txtq"); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length) } },0) });
+  q.className="txtq";
+  bar.appendChild(q);
+  const ex=el(`<button>내보내기</button>`);
+  ex.onclick=()=>{
+    const blob=new Blob([JSON.stringify(TXT,null,1)],{type:"application/json"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob); a.download="균열-설명수정.json"; a.click();
+    toast("내려받은 파일을 주시면 게임에 영구히 넣겠습니다."); render();
+  };
+  const im=el(`<button>불러오기</button>`);
+  im.onclick=()=>{
+    const f=document.createElement("input"); f.type="file"; f.accept=".json";
+    f.onchange=()=>{ const r=new FileReader();
+      r.onload=()=>{ try{ TXT=Object.assign(TXT,JSON.parse(r.result)); txtSave(); txtApply();
+        toast("불러왔습니다."); render() }catch(e){ toast("파일을 읽지 못했습니다.") } };
+      r.readAsText(f.files[0]) };
+    f.click();
+  };
+  const rs=el(`<button class="mini danger">전부 되돌리기</button>`);
+  rs.onclick=()=>askConfirm2("고친 글을 전부 버리고 원래대로 되돌릴까요?",()=>{
+    TXT={}; txtSave(); location.reload() });
+  bar.append(ex,im,rs);
+  wrap.appendChild(bar);
+
+  const tabs=el(`<div class="txttabs"></div>`);
+  cats.forEach(c=>{
+    const n=E.filter(x=>x.cat===c).length;
+    const b=el(`<button class="${c===TXT_CAT?"go":""}">${esc(c)} <i>${n}</i></button>`);
+    b.onclick=()=>{ TXT_CAT=c; render() };
+    tabs.appendChild(b);
+  });
+  wrap.appendChild(tabs);
+
+  const term=TXT_Q.trim();
+  const list=E.filter(x=>term? (x.label+" "+(x.get()||"")).includes(term) : x.cat===TXT_CAT);
+  wrap.appendChild(el(`<div class="hint" style="margin-top:10px">${
+    term?`"${esc(term)}" 로 찾은 ${list.length}개`:`${esc(TXT_CAT)} — ${list.length}개`}</div>`));
+  const box=el(`<div class="txtlist"></div>`);
+  list.slice(0,120).forEach(e=>{
+    const on=TXT[e.key]!=null;
+    const row=el(`<div class="txtrow ${on?"on":""}">
+      <div class="tl"><b>${esc(e.label)}</b>${on?`<span class="chip on">고침</span>`:""}
+        <span class="grow"></span></div></div>`);
+    const ta=el(e.area?`<textarea rows="3"></textarea>`:`<input>`);
+    ta.value=e.get()||"";
+    ta.addEventListener("input",()=>{ TXT[e.key]=ta.value; e.set(ta.value); txtSave() });
+    row.appendChild(ta);
+    const pv=el(`<div class="txtpv">${rich(e.get()||"")}</div>`);
+    ta.addEventListener("input",()=>{ pv.innerHTML=rich(ta.value) });
+    row.appendChild(pv);
+    if(on){ const u=el(`<button class="mini">되돌리기</button>`);
+      u.onclick=()=>{ delete TXT[e.key]; txtSave(); location.reload() };
+      row.querySelector(".tl").appendChild(u) }
+    box.appendChild(row);
+  });
+  if(list.length>120) box.appendChild(el(`<p class="hint">120개까지만 보입니다. 찾기를 쓰세요.</p>`));
+  wrap.appendChild(box);
+
+  const out=el(`<div style="margin-top:22px"><button class="go">돌아가기</button></div>`);
+  out.querySelector("button").onclick=()=>{ view=run?(run.txtBack||"map"):"title"; render() };
+  wrap.appendChild(out);
+}
+function askConfirm2(t,fn){ if(confirm(t)) fn() }
 
 /* ═══════════ 영웅 도감 · 연습장 ═══════════ */
 const CODEX={pick:null};
@@ -5312,6 +5459,10 @@ function pickCount(n){
 })();
 document.addEventListener("keydown",e=>{
   if(!run||view==="title"||view==="over"||view==="clear") return;
+  if(e.key==="t"||e.key==="T"){
+    if(view==="text"){ view=run.txtBack||"map" } else { run.txtBack=view; view="text" }
+    render(); return;
+  }
   if(e.key==="b"||e.key==="B"){
     if(view==="bag"){ view=run.bagBack||"map" } else { run.bagBack=view; view="bag" }
     render(); return;
@@ -7100,6 +7251,7 @@ function offerCards(app,hero,grade,done){
   skip.querySelector("button").onclick=done;
   app.appendChild(skip);
 }
+txtApply();
 render();
 </script>
 </body>
