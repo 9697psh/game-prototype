@@ -1299,7 +1299,7 @@ const SYNERGY=[
  {n:"왕실",    k:"진영",t:[]},
  {n:"전투가",  k:"직업",t:[{c:2,d:"전투가 영웅의 공격력 +2"}]},
  {n:"영광 숭배자",k:"직업",t:[{c:2,d:"전투 중 치명적인 피해를 받으면 그 피해를 1회 무시합니다."}]},
- {n:"방랑자",  k:"직업",t:[{c:1,d:"전장에 다른 아군이 없다면 공격력·마법력·보호력 +5"},
+ {n:"방랑자",  k:"직업",t:[{c:1,d:"2구역부터 · 전장에 다른 아군이 없다면 공격력·마법력·보호력 +5"},
                           {c:3,d:"전장 아군이 모두 방랑자라면 공격력·마법력·보호력 +10"}]},
  {n:"마법사",  k:"직업",t:[{c:2,d:"마법사 영웅의 마법력 +2"}]},
  {n:"수호자",  k:"직업",t:[{c:2,d:"수호자 영웅의 보호력 +2"},{c:3,d:"수호자 영웅들의 보호력 +5"}]},
@@ -1341,8 +1341,9 @@ function wanderCheck(){
   const on=onField();
   run.heroes.forEach(h=>{
     if(!hasTag(h,"방랑자")) return;
-    const want=(on.length===1&&on[0]===h)?5
-              :(on.length>=3&&on.every(a=>hasTag(a,"방랑자")))?10:0;
+    const solo=(run.field>=1)?5:0;      /* 홀로 서는 보너스는 2구역부터 */
+    const want=(on.length>=3&&on.every(a=>hasTag(a,"방랑자")))?10
+              :(on.length===1&&on[0]===h)?solo:0;
     const cur=h.wanderBonus||0;
     if(want===cur) return;
     const d=want-cur;
@@ -3301,16 +3302,16 @@ function partyPower(){
 }
 function foeScale(kind){
   const f=run.field, l=(run.day-1)+(run.dun?run.dun.wave-1:0), n=Math.min(run.heroes.length,5);
-  let m=(1+f*0.85)*(1+l*0.05)*partyPower();
-  if(kind==="elite")  m*=1.5;
-  if(kind==="boss")   m*=1.45;
+  let m=(1+f*0.95)*(1+l*0.06)*partyPower()*1.12;
+  if(kind==="elite")  m*=1.55;
+  if(kind==="boss")   m*=1.5;
   if(kind==="ambush") m*=1.3+nightDepth()*0.08;
   /* 대원이 적을수록 적도 약해진다 */
   const hpP =[0,0.68,0.86,1,1.08,1.15][n];
   const atkP=[0,0.58,0.82,1,1.06,1.12][n];
   const defP=[0,0.7 ,0.88,1,1.05,1.1 ][n];
   return {m:m, hpP:hpP, atkP:atkP, defP:defP,
-          hpAdd:Math.round((f*3+l)*hpP), atkAdd:Math.floor(f*1.2*atkP), defAdd:Math.round(f*2*defP)};
+          hpAdd:Math.round((f*4+l*1.5)*hpP), atkAdd:Math.round(f*1.6*atkP), defAdd:Math.round(f*2.4*defP)};
 }
 function startBattle(kind){
   const _k=kind;
