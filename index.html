@@ -120,14 +120,24 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .skhead{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
 .skhead b{font-family:var(--serif);font-size:14px;color:var(--brass)}
 .skills{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-.sk{display:flex;gap:7px;align-items:flex-start;min-width:0;padding:8px 9px;border-radius:4px;
-  border:1px solid var(--rule);background:var(--raise);cursor:pointer}
-.sk:hover{border-color:var(--brass)}
+.sk{position:relative;display:flex;gap:8px;align-items:flex-start;min-width:0;
+  padding:9px 10px 9px 12px;border-radius:var(--rd);
+  border:1px solid var(--rule);background:linear-gradient(180deg,var(--raise),var(--panel));
+  cursor:pointer;transition:transform .11s,border-color .11s}
+.sk::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--rule2);border-radius:var(--rd) 0 0 var(--rd)}
+.sk[data-el="공격"]::before{background:var(--atk)}
+.sk[data-el="마법"]::before{background:var(--mag)}
+.sk[data-el="보호"]::before{background:var(--def)}
+.sk[data-el="이동"]::before{background:var(--move)}
+.sk[data-el="집중"]::before{background:var(--brass)}
+.sk[data-el="지속"]::before{background:var(--dim)}
+.sk:hover{border-color:var(--brass);transform:translateY(-2px)}
 .sk.on{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass) inset}
 .sk.off{opacity:.4;cursor:default}
 .sk.off:hover{border-color:var(--rule)}
-.sk .k{font-size:10px;color:#17130f;background:var(--rule2);border-radius:2px;padding:0 5px;
-  font-weight:700;flex:none;margin-top:2px}
+.sk .k{font-size:11px;color:#17130f;background:var(--rule2);border-radius:3px;padding:1px 6px;
+  font-weight:800;flex:none;margin-top:2px;font-variant-numeric:tabular-nums}
 .sk.on .k{background:var(--brass)}
 .sk .t{flex:1;min-width:0}
 .sk .t b{font-size:12.5px}
@@ -176,7 +186,9 @@ button.dtl{padding:3px 10px;font-size:11.5px}
 
 /* ── 손패 ── */
 .hand{margin-top:14px;display:flex;gap:9px;flex-wrap:wrap;align-items:flex-start;min-height:10px}
-.card{width:118px;border:1px solid var(--rule2);border-radius:6px;background:var(--panel);
+.card{width:120px;border:1px solid var(--rule2);border-radius:var(--rd2);
+  background:linear-gradient(180deg,var(--raise),var(--panel) 60%);
+  box-shadow:0 4px 12px rgba(0,0,0,.4);transition:transform .12s,border-color .12s;
   padding:8px;cursor:grab;touch-action:none;position:relative}
 .card:hover{border-color:var(--brass)}
 .card.hero{border-color:#3d7a72}
@@ -3699,7 +3711,8 @@ function drawCamp(app){
   acts.forEach(a=>{
     const used=doneToday;
     const off=used||!a.ok;
-    const c=el(`<div class="rw ${off?"no":""}">
+    const ck={revive:"g5",heal:"g5",train:"g2",forge:"g6"}[a.k]||"g0";
+    const c=el(`<div class="rw ${ck} ${off?"no":""}">
       <div class="rwi">${nodeArt(a.k==="revive"?"rest":a.k==="heal"?"rest":a.k==="train"?"elite":"shop")}</div>
       <b>${esc(a.n)}</b><p>${rich(a.d)}</p>
       ${used?`<p style="color:var(--faint)">오늘 몫은 이미 썼습니다.</p>`
@@ -5293,7 +5306,7 @@ function skillPanel(h){
     const ok=!locked&&!lk&&canPay(h,i,1);
     const cost = s.costType==="mom" ? ic("move")+" "+payCost(h,i)
                : s.costType==="scale" ? "비늘 "+payCost(h,i) : ic("mana")+" "+payCost(h,i);
-    const e=el(`<div class="sk ${sel.skill===i?"on":""} ${ok?"":"off"}">
+    const e=el(`<div class="sk ${sel.skill===i?"on":""} ${ok?"":"off"}" data-el="${esc(s.el||"")}">
       <span class="k">${i+1}</span><div class="t">
       <b>${esc(s.pick?s.pick:s.n)}</b>${(sel.skill===i&&sel.step===4&&sel.count>1)?`<span class="xn">×${sel.count}</span>`:""}
       ${s.opts?`<span class="chip pk">선택 · ${esc(s.n)}</span>`:""}
