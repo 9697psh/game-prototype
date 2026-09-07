@@ -91,6 +91,7 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .slot.foe::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
   background:radial-gradient(90% 50% at 50% 105%,rgba(142,43,43,.28),transparent 70%)}
 /* 격 표시 띠 */
+.intent.purge{color:#e0c85a;border-color:#7a6742;background:rgba(224,200,90,.1);font-weight:800}
 .slot .tier{display:flex;align-items:center;justify-content:center;gap:3px;
   font-size:9.5px;font-weight:800;letter-spacing:.1em;margin:-2px 0 2px;
   text-transform:none;text-shadow:0 1px 0 rgba(0,0,0,.7)}
@@ -2489,6 +2490,10 @@ const COMMON=[
  R("아이템: 희귀","상급","무작위 희귀 아이템을 얻습니다.",
    h=>{ (run.after=run.after||[]).push({item:rnd(ITEMS.filter(i=>i.g==="희귀"))}) })
 ];
+/* 판 전체 자원(오염도·활동량)에만 작용하는 보상.
+   시작 꾸러미의 첫 레벨업이나 우두머리 보상처럼 곧 판이 새로 깔리는 자리에서는
+   아무 값어치가 없으므로 후보에서 뺀다. */
+COMMON.forEach(r=>{ if(r.n==="오염 정화"||r.n==="발 마사지") r.rr=1 });
 const HERO_REWARDS={
  "나이코스":[
   /* ── 하급 ── */
@@ -3642,7 +3647,7 @@ const PACKS=[
   fx:r=>{ r.pendant=1 }},
  {n:"버려진 시계",d:"레벨을 3 얻습니다.",i:"clock",
   fx:r=>{ const h=r.heroes[0], q=[];
-          for(let i=0;i<3;i++){ h.lv++; h.maxHp+=h.hpLv; h.hp+=h.hpLv; q.push({hero:h,lv:h.lv}) }
+          for(let i=0;i<3;i++){ h.lv++; h.maxHp+=h.hpLv; h.hp+=h.hpLv; q.push({hero:h,lv:h.lv,noRun:1}) }
           r.bonusLv=q }}
 ];
 function packArt(i){
@@ -4721,6 +4726,7 @@ function drawChest(app){
 }
 function takeChest(){
   const ch=run.chest, later=[];
+  const isBoss=(ch.kind==="boss");
   let exp=0;
   ch.list.forEach(x=>{
     if(x.t==="금화"){
@@ -4733,11 +4739,12 @@ function takeChest(){
     else if(x.t==="경험치") exp+=x.v;
     else if(x.t==="파편"||x.t==="일반") later.push({item:rnd(ITEMS.filter(i=>i.g===x.t))});
     else if(x.t==="동료") later.push({recruit:1});
-    else later.push({grade:x.t});
+    else later.push({grade:x.t,noRun:isBoss?1:0});
   });
   run.chest=null;
   run.after=later;
   if(exp) giveExp(exp,run.heroes.filter(h=>!h.down&&h.joined!==0));
+  if(isBoss&&run.pendingLv) run.pendingLv.forEach(x=>x.noRun=1);
   afterChest();
 }
 function afterChest(){
@@ -4753,7 +4760,7 @@ function afterChest(){
       run.heroOffer.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
     view="recruit"; render(); return;
   }
-  pending={hero:null,grade:nx.grade,free:1,back:"chain"}; view="reward"; render();
+  pending={hero:null,grade:nx.grade,free:1,back:"chain",noRun:nx.noRun||0}; view="reward"; render();
 }
 function backToMap(){
   if(run.pendingLv&&run.pendingLv.length){
@@ -5551,10 +5558,38 @@ function tauntWall(a){
   return allUnits().find(x=>x.taunt&&x!==a&&x.slot>a.slot)||null;
 }
 function canAim(a){ return !tauntWall(a) }
+/* ═══════════ 우두머리의 정화 ═══════════
+   우두머리는 홀로 서는 일이 많아 상태 이상에 그대로 노출된다.
+   그래서 몸에 걸린 것을 떨쳐내는 패턴을 여럿 가지고 있다. */
+const BOSS_PURGE={
+ "간수장":   {shake:"사슬 끊기",    roar:"간수의 호통", ward:"쇠창살 두르기"},
+ "고철 거인":{shake:"부품 털어내기", roar:"과부하 포효", ward:"고철 갑주"},
+ "서리 군주":{shake:"서릿결 정화",  roar:"혹한의 노호", ward:"서리 결계"}
+};
+const PURGE_DEF={shake:"떨쳐내기",roar:"포효",ward:"결계"};
+function purgeName(f,k){ return (BOSS_PURGE[f.name]&&BOSS_PURGE[f.name][k])||PURGE_DEF[k] }
+/* 지금 몸에 걸려 있는 나쁜 것의 중첩 수 */
+function foeAil(f){
+  if(!f) return 0;
+  let n=0;
+  if(f.deb) DEB_KEYS.forEach(k=>{ n+=f.deb[k]||0 });
+  n+=(f.infect||0)+(f.burn||0)+(f.mark||0)+(f.weak||0)+(f.stun||0)+(f.weakAtk?1:0)+(f.air?1:0);
+  return n;
+}
+/* 전부 걷어낸다. 걷어낸 중첩 수를 돌려준다 */
+function foePurge(f){
+  const n=foeAil(f);
+  if(f.deb) DEB_KEYS.forEach(k=>{ delete f.deb[k] });
+  f.fearSrc=null; f.fearName=null;
+  f.infect=0; f.burn=0; f.mark=0; f.markBy=null;
+  f.weak=0; f.weakAtk=0; f.air=0; f.stun=0;
+  return n;
+}
 function intentKey(o){
   if(!o) return "";
   if(o.t==="atk") return "atk:"+(o.pat||"")+(o.hits||1);
   if(o.t==="deb") return "deb:"+o.k;
+  if(o.t==="purge") return "purge:"+o.k;
   return o.t;
 }
 function rollIntents(){
@@ -5620,6 +5655,18 @@ function rollIntents(){
     const mate=B.foes.filter(x=>x.alive&&x!==f&&x.hp<x.maxHp*0.6)[0];
     if(mate) add({t:"heal",v:Math.max(2,Math.round(f.def*0.8)),to:mate.id},A.heal);
     add({t:"curse"},A.curse);
+    /* ── 우두머리는 몸에 걸린 것을 떨쳐낸다 ──
+       걸린 게 많을수록 그쪽을 고를 확률이 크게 오르고,
+       깨끗할 때는 미리 부정 보호막을 둘러 다음 것을 막는다. */
+    if(f.boss){
+      const ail=foeAil(f);
+      if(ail>0){
+        add({t:"purge",k:"shake"}, 4+Math.min(14,ail*3));
+        add({t:"purge",k:"roar",v:Math.max(1,Math.round(f.atk*0.15))}, 3+Math.min(10,ail*2));
+      }
+      if((f.negShield||0)<4)
+        add({t:"purge",k:"ward",v:2+Math.floor(run.field/2)}, ail>0?3:7);
+    }
     /* 이 적만의 상태 이상 */
     (A.debs||[]).forEach(k=>{
       const to=(k==="shock"||k==="fear")?back.slot:(k==="stun"?weak.slot:near.slot);
@@ -5791,6 +5838,10 @@ function intentHtml(f){
   if(I.t==="heal")  return `<span class="intent" title="동료 치료">${ic("hp")}<b>+${I.v}</b> 치료</span>`;
   if(I.t==="curse") return `<span class="intent" title="다음 턴 마나 -1">${ic("mag")} 저주</span>`;
   if(I.t==="deb")   return `<span class="intent" title="${esc(DEBUFF[I.k].d)}" style="color:${DEBUFF[I.k].c}">${esc(DEBUFF[I.k].n)} ${I.v} → ${I.to}번</span>`;
+  if(I.t==="purge") return `<span class="intent purge" title="${
+      I.k==="ward"?"미리 부정 보호막을 둘러 다음 상태 이상을 막습니다"
+      :I.k==="roar"?"몸에 걸린 상태 이상을 모두 걷어내고, 걷어낸 만큼 공격력을 얻습니다"
+      :"몸에 걸린 상태 이상을 모두 걷어냅니다"}">✦ ${esc(purgeName(f,I.k))}</span>`;
   if(I.t==="volley")return `<span class="intent" title="아군 전체">${ic("atk")}<b>${I.v}</b> 전체</span>`;
   if(I.t==="atk")   return `<span class="intent" title="${esc((I.pat||"")+" · "+(I.el||"공격"))}">${
     ic(I.el==="마법"?"mag":"atk")}<b>${I.v}</b>${
@@ -5919,7 +5970,7 @@ function drawBattle(app){
           ${f.negShield?`<span class="chip on">부정 보호막${f.negShield}</span>`:""}
           ${foeHidden(f)?`<span class="chip on">은신</span>`:""}
           ${f.infect?`<span class="chip on">감염${f.infect}</span>`:""}
-          ${f.stun?`<span class="chip on">기절</span>`:""}
+          ${(f.stun||deb(f,"stun"))?`<span class="chip on">기절</span>`:""}
           ${f.burn?`<span class="chip on">화상${f.burn}</span>`:""}
           ${f.mark?`<span class="chip on">표식${f.mark}</span>`:""}
           ${debChips(f)}</div>`;
@@ -7686,7 +7737,10 @@ function endTurn(){
   B.foes.forEach(f=>{ f.shield=0 });   /* 지난 턴에 얻은 보호막은 여기서 사라진다 */
   B.foes.forEach(f=>{
     if(!f.alive||!f.intent) return;
-    if(f.stun){ f.stun--;
+    const stunned=(f.stun||0)>0||deb(f,"stun")>0;
+    const purging=f.boss&&f.intent&&f.intent.t==="purge"&&f.intent.k!=="ward";
+    if(stunned&&!purging){
+      if(f.stun>0) f.stun--; else f.deb.stun--;
       fx({side:"foe",slot:f.slot,txt:"기절",cls:"miss",gap:130});
       say(`${f.name} 기절 — 움직이지 못합니다.`,"t2"); return }
     if(f.intent.t==="move"){
@@ -7733,6 +7787,27 @@ function endTurn(){
         fx({side:"foe",slot:f.slot,s:"step",ring:"#9c8d77",gap:130});
         say(`${f.name} 물러섭니다 → ${f.slot}번`) }
       else say(`${f.name} 물러서지 못했습니다.`,"t2");
+    }
+    else if(f.intent.t==="purge"){
+      const nm=purgeName(f,f.intent.k);
+      if(f.intent.k==="ward"){
+        f.negShield=(f.negShield||0)+f.intent.v;
+        fx({side:"foe",slot:f.slot,s:"shield",ring:"#7fd39a",txt:"부정 보호막 "+f.negShield,cls:"shd",gap:140});
+        pulseFX("foe",f.slot,"#7fd39a",2);
+        say(`${f.name} — ${nm}. 부정 보호막 ${f.negShield}`,"t3");
+      }else{
+        const n=foePurge(f);
+        pulseFX("foe",f.slot,"#e0c85a",3);
+        fx({side:"foe",slot:f.slot,s:"quake",quake:1,ring:"#e0c85a",txt:n?"정화 "+n:"정화",cls:"crit",gap:200});
+        if(n) say(`${f.name} — ${nm}. 몸에 걸린 것을 ${n} 모두 떨쳐냅니다.`,"t3");
+        else  say(`${f.name} — ${nm}. 몸을 크게 떨칩니다.`,"t3");
+        if(f.intent.k==="roar"&&n&&(f.buffs||0)<4){
+          const up=f.intent.v*Math.min(3,n);
+          f.atk+=up; f.buffs=(f.buffs||0)+1;
+          fx({side:"foe",slot:f.slot,ring:"#e0705a",txt:"공격+"+up,cls:"dmg",gap:120});
+          say(`${f.name}의 포효 — 떨쳐낸 만큼 공격력 +${up}`,"t3");
+        }
+      }
     }
     else if(f.intent.t==="buff"){
       f.atk+=f.intent.v; f.buffs=(f.buffs||0)+1;
@@ -8246,9 +8321,21 @@ function pickBurst(card,grade){
   const w=spawn('<div class="pickword" style="color:'+col+'">'+esc(grade)+' 획득</div>');
   if(w){ w.style.left=p.x+"px"; w.style.top=(p.y-14)+"px" }
 }
+/* 이 보상 자리가 '판 자원 보상을 빼야 하는' 자리인가 */
+function noRunRes(){
+  if(!pending) return false;
+  if(pending.noRun) return true;
+  const cur=pending.queue&&pending.queue[pending.idx];
+  return !!(cur&&cur.noRun);
+}
 function offerCards(app,hero,grade,done){
   const own=(HERO_REWARDS[hero.name]||[]).filter(r=>r.g===grade&&!(hero.tag.taken||[]).includes(r.n));
-  const com=COMMON.filter(r=>r.g===grade);
+  let com=COMMON.filter(r=>r.g===grade);
+  if(noRunRes()){
+    const cut=com.filter(r=>!r.rr);
+    /* 걸러내고도 고를 게 남아 있을 때만 걸러 준다 */
+    if(own.length+cut.length>=3) com=cut;
+  }
   const pool=own.concat(com);
   const picks=pickWeighted(pool,3);
   const row=el(`<div class="rewards"></div>`);
