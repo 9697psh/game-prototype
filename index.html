@@ -652,7 +652,15 @@ const COMMON=[
    h=>h.tag.startBlade=(h.tag.startBlade||0)+5),
  R("전장의 방패","하급","전투 시작 시, 모든 아군에게 에너지 보호막을 3 부여합니다.",
    h=>h.tag.startAura=(h.tag.startAura||0)+3),
+ R("하급: 회피 기동","하급","전투 시작 시, 회피를 1 얻습니다.",
+   h=>h.tag.startEvade=(h.tag.startEvade||0)+1),
+ R("하급: 달리기","하급","내 턴이 끝날 때, 추진력을 최대 3만큼 소모하고 그만큼 에너지 보호막을 얻습니다.",
+   h=>{ h.tag.dashMax=Math.max(h.tag.dashMax||0,3); h.tag.dashMul=Math.max(h.tag.dashMul||0,1) }),
  /* ── 중급 ── */
+ R("중급: 달리기","중급","내 턴이 끝날 때, 추진력을 최대 5만큼 소모하고 그 2배만큼 에너지 보호막을 얻습니다.",
+   h=>{ h.tag.dashMax=Math.max(h.tag.dashMax||0,5); h.tag.dashMul=Math.max(h.tag.dashMul||0,2) }),
+ R("중급: 회피 기동","중급","전투 시작 시, 회피를 3 얻습니다.",
+   h=>h.tag.startEvade=(h.tag.startEvade||0)+3),
  R("중급: 가시 두르기","중급","가시를 4 얻습니다.",h=>h.tag.thorn=(h.tag.thorn||0)+4),
  R("중급: 회복","중급","체력을 40% 회복합니다.",
    h=>{ h.hp=Math.min(h.maxHp,h.hp+Math.round(h.maxHp*0.4)) }),
@@ -670,6 +678,10 @@ const COMMON=[
  R("아이템: 일반","중급","무작위 일반 아이템을 얻습니다.",
    h=>{ (run.after=run.after||[]).push({item:rnd(ITEMS.filter(i=>i.g==="일반"))}) }),
  /* ── 상급 ── */
+ R("상급: 달리기","상급","내 턴이 끝날 때, 추진력을 모두 소모하고 그 3배만큼 에너지 보호막을 얻습니다.",
+   h=>{ h.tag.dashMax=99; h.tag.dashMul=Math.max(h.tag.dashMul||0,3) }),
+ R("상급: 회피 기동","상급","전투 시작 시, 회피를 5 얻습니다.",
+   h=>h.tag.startEvade=(h.tag.startEvade||0)+5),
  R("한계 해방","상급","사용한도 기술들의 한도가 1 증가합니다.",
    h=>h.sk.forEach(k=>{ if(k.limit) k.limit++; if(k.alt&&k.alt.limit) k.alt.limit++ })),
  R("상급: 가시 두르기","상급","가시를 10 얻습니다.",h=>h.tag.thorn=(h.tag.thorn||0)+10),
@@ -1059,9 +1071,12 @@ function clock(){
   return (h<10?"0":"")+h+":"+m;
 }
 function spend(hours){
-  run.act-=hours; run.time+=hours;
-  if(run.act<=0&&!run.night){ run.night=1;
-    toast("해가 집니다. 주둔지로 돌아가지 않으면 밤길이 위험합니다.") }
+  const tired=run.act<=0;
+  run.act=Math.max(0,run.act-hours);
+  run.time+=tired?hours*2:hours;
+  if(run.time>=18&&!run.night){ run.night=1;
+    toast("해가 집니다. 밤길에는 무엇이 튀어나올지 모릅니다.") }
+  if(run.time>=30){ toast("길에서 밤을 지새웠습니다."); nextDay() }
 }
 function addTaint(v){
   run.taint=Math.max(0,Math.min(100,run.taint+v));
@@ -1193,7 +1208,7 @@ function drawMap(app){
   const f=FIELDS[run.field], S=run.size;
   app.appendChild(el(`<div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
     <div class="title" style="font-size:20px">${esc(f.n)}</div>
-    <div class="hint">${run.night?"밤길에는 무엇이 튀어나올지 모릅니다.":"인접한 칸을 눌러 이동합니다. 한 칸에 활동량 1, 오염도 2."}</div></div>`));
+    <div class="hint">${run.night?"밤길에는 무엇이 튀어나올지 모릅니다.":run.act<=0?"활동량이 바닥났습니다. 이제 한 칸에 2시간이 걸립니다.":"인접한 칸을 눌러 이동합니다. 한 칸에 활동량 1 · 1시간 · 오염도 2."}</div></div>`));
   const g=el(`<div class="gridmap" style="grid-template-columns:repeat(${S},1fr)"></div>`);
   for(let r=0;r<S;r++) for(let c=0;c<S;c++){
     const cell=run.grid[r][c], here=(run.pos.r===r&&run.pos.c===c);
@@ -1231,7 +1246,6 @@ function drawMap(app){
   app.appendChild(rs);
 }
 function moveTo2(r,c){
-  if(run.act<=0&&!run.night){ run.night=1 }
   const cell=run.grid[r][c];
   run.pos={r:r,c:c};
   spend(1); addTaint(2);
@@ -2796,6 +2810,11 @@ function endTurn(){
     if(ms&&h.manaUsed){ h.shield+=h.manaUsed*ms; h.manaUsed=0 }
     const qs=itemBt(h,"momShield");
     if(qs&&h.mom>0){ const use=Math.min(6,h.mom); h.mom-=use; h.shield+=use*qs }
+    if(h.tag.dashMul&&h.mom>0){
+      const use=Math.min(h.tag.dashMax||3,h.mom); h.mom-=use;
+      const v=use*h.tag.dashMul; h.eshield=(h.eshield||0)+v;
+      fx({side:"mine",slot:h.slot,ring:"#5fd8cf",txt:"◆+"+v,cls:"shd",gap:70});
+      say(`달리기 — ${h.name} 에너지 보호막 +${v}`) }
     const eb=itemBt(h,"endBurnRange");
     if(eb) B.foes.filter(f=>f.alive&&dist(h.slot,f.slot)<=2).forEach(f=>hurt(f,eb,"불타는 호각","slash"));
     if(h.name==="헥토"){
