@@ -251,6 +251,38 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .itm{display:flex;gap:6px;align-items:center;font-size:11px;color:var(--dim)}
 .rw.no{opacity:.4;cursor:default}
 .rw.no:hover{border-color:var(--rule)}
+/* ── 시그니처 연출 ── */
+.sweep{position:absolute;transform:translate(-50%,-50%);width:118px;height:118px;
+  opacity:.95;transition:opacity .18s}
+.sweep .spin{width:100%;height:100%;animation:spin .32s linear infinite}
+.sweep .spin svg{width:100%;height:100%}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.wake{position:absolute;transform:translate(-50%,-50%);width:52px;height:52px;
+  animation:wakeA .5s ease-out forwards;opacity:.7}
+.wake svg{width:100%;height:100%}
+@keyframes wakeA{0%{opacity:.75;transform:translate(-50%,-50%) scale(.6) rotate(0)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.5) rotate(200deg)}}
+.shockw{position:absolute;transform:translate(-50%,-50%);border-radius:50%;
+  border:3px solid #e0c85a;width:20px;height:20px;animation:shockA .55s cubic-bezier(.2,.8,.3,1) forwards}
+@keyframes shockA{0%{opacity:.95;width:20px;height:20px;border-width:5px}
+  100%{opacity:0;width:260px;height:150px;border-width:1px}}
+.dust{position:absolute;width:5px;height:5px;border-radius:50%;background:#9c8d77;
+  animation:dustA .6s ease-out forwards}
+@keyframes dustA{0%{opacity:.9;transform:translate(-50%,-50%)}
+  100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% - var(--dy))) scale(.4)}}
+.streak{position:absolute;height:3px;transform-origin:0 50%;border-radius:2px;
+  background:linear-gradient(90deg,transparent,#fff6e0,#e0c85a);
+  animation:strA .34s ease-out forwards}
+@keyframes strA{0%{opacity:0;transform:scaleX(0)}
+  25%{opacity:1}100%{opacity:0;transform:scaleX(1)}}
+.field.quake{animation:qk .5s}
+@keyframes qk{0%,100%{transform:translate(0,0)}
+  12%{transform:translate(-4px,3px)}28%{transform:translate(5px,-2px)}
+  46%{transform:translate(-3px,4px)}64%{transform:translate(4px,-3px)}
+  82%{transform:translate(-2px,1px)}}
+.slot.leap{animation:leapA .5s cubic-bezier(.3,-0.4,.5,1.6)}
+@keyframes leapA{0%{transform:translateY(-42px)}
+  62%{transform:translateY(4px)}78%{transform:translateY(-3px)}100%{transform:translateY(0)}}
 .shake{animation:shk .28s}
 @keyframes shk{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}
   45%{transform:translateX(5px)}70%{transform:translateX(-3px)}}
@@ -357,7 +389,17 @@ const SFX=(()=>{
                    {w:"triangle",f:784,d:0.14,v:0.12,at:0.24},{w:"triangle",f:1046,d:0.36,v:0.12,at:0.36}]),
    win   :()=>seq([{w:"square",f:523,d:0.12,v:0.09},{w:"square",f:784,d:0.12,v:0.09,at:0.11},
                    {w:"square",f:1046,d:0.4,v:0.1,at:0.22}]),
-   boom  :()=>seq([{noise:1,f:220,f2:60,d:0.6,q:0.5,v:0.26,decay:2.2},{w:"sawtooth",f:110,f2:35,d:0.42,v:0.14}])
+   boom  :()=>seq([{noise:1,f:220,f2:60,d:0.6,q:0.5,v:0.26,decay:2.2},{w:"sawtooth",f:110,f2:35,d:0.42,v:0.14}]),
+   tornado:()=>seq([{noise:1,f:300,f2:2800,d:0.5,q:3.2,v:0.2},
+                    {noise:1,f:2400,f2:400,d:0.55,q:2.4,v:0.18,at:0.34},
+                    {w:"sine",f:180,f2:520,d:0.7,v:0.09},
+                    {w:"triangle",f:740,f2:300,d:0.5,v:0.06,at:0.3}]),
+   quake  :()=>seq([{noise:1,ftype:"lowpass",f:180,f2:50,d:0.8,q:0.4,v:0.3,decay:1.1},
+                    {w:"sine",f:70,f2:32,d:0.6,v:0.28},
+                    {w:"sawtooth",f:140,f2:45,d:0.28,v:0.12}]),
+   arrow  :()=>seq([{noise:1,f:1800,f2:5200,d:0.14,q:4,v:0.16},
+                    {noise:1,f:900,f2:200,d:0.12,q:0.8,v:0.2,at:0.14},
+                    {w:"square",f:200,f2:70,d:0.1,v:0.12,at:0.14}])
   };
   return { play(k){ if(on&&K[k]){ try{ K[k]() }catch(e){} } },
            toggle(){ on=!on; if(on) ctx(); return on },
@@ -408,6 +450,10 @@ const ART={
 function playFX(o){
   if(o.s) SFX.play(o.s);
   const p=ctrOf(o.side,o.slot); if(!p) return;
+  if(o.sweep){ const q=ctrOf(o.sweep.side,o.sweep.slot); if(q) sweepFX(q,p) }
+  if(o.streak){ const q=ctrOf(o.streak.side,o.streak.slot); if(q) streakFX(q,p) }
+  if(o.quake) quakeFX(p);
+  if(o.leap){ p.e.classList.remove("leap"); void p.e.offsetWidth; p.e.classList.add("leap") }
   if(o.hit){ p.e.classList.remove("shake","flashd"); void p.e.offsetWidth; p.e.classList.add("shake","flashd"); }
   if(o.glow){ p.e.classList.remove("flashg"); void p.e.offsetWidth; p.e.classList.add("flashg"); }
   if(o.art&&ART[o.art]){
@@ -416,6 +462,41 @@ function playFX(o){
   }
   if(o.ring) at(spawn('<div class="ring" style="border-color:'+o.ring+'"></div>'),p);
   if(o.txt) popText(p,o.cls||"dmg",o.txt);
+}
+function sweepFX(from,to){
+  const nd=spawn('<div class="sweep"><div class="spin">'+ART.wind+'</div></div>');
+  if(!nd) return;
+  nd.style.left=from.x+"px"; nd.style.top=from.y+"px";
+  void nd.offsetWidth;
+  nd.style.transition="left .6s cubic-bezier(.25,.7,.35,1), top .6s ease-in-out, opacity .2s";
+  nd.style.left=to.x+"px"; nd.style.top=to.y+"px";
+  setTimeout(()=>{ nd.style.opacity=0 },520);
+  for(let i=1;i<=5;i++) setTimeout(()=>{
+    const t=i/6, w=spawn('<div class="wake">'+ART.wind+'</div>');
+    if(w){ w.style.left=(from.x+(to.x-from.x)*t)+"px";
+           w.style.top=(from.y+(to.y-from.y)*t-6+Math.sin(i)*8)+"px" }
+  }, i*80);
+}
+function quakeFX(p){
+  const f=document.querySelector(".field");
+  if(f){ f.classList.remove("quake"); void f.offsetWidth; f.classList.add("quake") }
+  at(spawn('<div class="shockw"></div>'),p);
+  for(let i=0;i<12;i++){
+    const d=spawn('<div class="dust"></div>');
+    if(!d) continue;
+    d.style.left=(p.x+(Math.random()*70-35))+"px"; d.style.top=(p.y+26)+"px";
+    d.style.setProperty("--dx",(Math.random()*70-35)+"px");
+    d.style.setProperty("--dy",(14+Math.random()*26)+"px");
+  }
+}
+function streakFX(from,to){
+  const nd=spawn('<div class="streak"></div>');
+  if(!nd) return;
+  const dx=to.x-from.x, dy=to.y-from.y;
+  nd.style.left=from.x+"px"; nd.style.top=from.y+"px";
+  nd.style.width=Math.sqrt(dx*dx+dy*dy)+"px";
+  nd.style.transform="rotate("+Math.atan2(dy,dx)+"rad)";
+  nd.style.transformOrigin="0 50%";
 }
 function flushFX(){
   let t=0;
@@ -2527,6 +2608,7 @@ function runEffect(h,i,s,target){
     const to=s.vanguard?SLOTS:1, step=s.vanguard?1:-1, passed=[];
     for(let q=h.slot+step; (s.vanguard?q<=SLOTS:q>=1); q+=step){ const a=allyAt(q); if(a&&a!==h) passed.push(a) }
     if(h.slot!==to) moveTo(h,to);
+    fx({side:"mine",slot:h.slot,quake:1,leap:1,s:"quake",gap:280});
     if(s.vanguard){
       const v=((h.tag.vanShield||5)+h.def)*passed.length;
       h.shield+=v; h.taunt=2;
@@ -2552,6 +2634,7 @@ function runEffect(h,i,s,target){
   if(s.farshot){
     const f=B.foes.filter(x=>x.alive).sort((a,b)=>dist(h.slot,b.slot)-dist(h.slot,a.slot))[0];
     if(!f){ say("적이 없습니다.","t2"); return }
+    fx({side:"foe",slot:f.slot,streak:{side:"mine",slot:h.slot},s:"arrow",gap:120});
     hurt(f,s.dmg+mod(s,"dmg")+h.atk,"페일노트","slash"); return;
   }
   if(s.armorUp){
@@ -2579,6 +2662,7 @@ function runEffect(h,i,s,target){
   }
   if(s.burst){
     const x=h.tag.burstX||2;
+    fx({side:"mine",slot:h.slot,quake:1,s:"boom",gap:200});
     B.foes.filter(f=>f.alive).forEach(f=>{
       const d=3+h.mag+(f.infect||0)*x; f.infect=0; hurt(f,d,"숙주 폭발","mag") });
     return;
@@ -2629,6 +2713,10 @@ function runEffect(h,i,s,target){
       for(let q=1;q<=SLOTS;q++){ const f=foeAt(q); if(f){ hurt(f,v,"참회의 기류","mag"); v++ } }
       for(let q=SLOTS;q>=1;q--){ const f=foeAt(q); if(f){ hurt(f,v,"참회의 기류","mag"); v++ } }
     }
+    const fars=B.foes.filter(f=>f.alive);
+    if(fars.length){ const far=fars.reduce((a,b)=>a.slot>=b.slot?a:b);
+      fx({side:"foe",slot:far.slot,sweep:{side:"mine",slot:h.slot},s:"tornado",gap:240});
+      fx({side:"mine",slot:h.slot,sweep:{side:"foe",slot:far.slot},gap:240}); }
     say("참회의 기류가 오갑니다.","t1"); return;
   }
   if(s.el==="이동"){
@@ -2719,6 +2807,11 @@ function runEffect(h,i,s,target){
         ? B.foes.filter(f=>f.alive&&dist(h.slot,f.slot)<=reach)
         : (tgt&&dist(h.slot,tgt.slot)<=reach?[tgt]:[]);
       if(!list.length) say(`사거리 ${reach} 안에 적이 없습니다.`,"t2");
+      if(strong&&list.length){
+        const far=list.reduce((a,b)=>dist(h.slot,a.slot)>=dist(h.slot,b.slot)?a:b);
+        fx({side:"foe",slot:far.slot,sweep:{side:"mine",slot:h.slot},s:"tornado",gap:260});
+        say("회오리가 전장을 훑고 지나갑니다.","t1");
+      }
       list.forEach(f=>hurt(f,dmg,`진선풍도${strong?"(강화)":""}`,"wind"));
       if(strong&&list.length) (h.potential?list:[list[list.length-1]]).forEach(f=>airborne(h,f));
       h.windBuff=0; return;
@@ -2740,6 +2833,8 @@ function runEffect(h,i,s,target){
     }
     const times=(h.name==="나이코스"&&i===0&&h.sk[0].twice)?2:1;
     for(let t=0;t<times;t++){
+      if(s.markKill||s.pierce)
+        fx({side:"foe",slot:tgt.slot,streak:{side:"mine",slot:h.slot},s:"arrow",gap:130});
       const was=tgt.alive; hurt(tgt,dmg,s.n,s.el==="마법"?"mag":(h.name==="굴라"?"claw":"slash"),s.pierce);
       if(was&&!tgt.alive){
         if(s.markKill){ h.sk[1].limit++; say("명중 — 피부 강화의 사용한도가 늘어납니다.","t1") }
@@ -2906,6 +3001,7 @@ function endTurn(){
     if(h.bomb&&--h.bomb===0){
       const v=Math.floor(h.hp*0.2);
       say("응축 폭발 — 압축된 힘이 터집니다.","t1");
+      fx({side:"mine",slot:h.slot,quake:1,s:"quake",gap:260});
       B.foes.filter(f=>f.alive).forEach(f=>hurt(f,v,"응축 폭발","boom"));
     }
   });
