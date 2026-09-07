@@ -229,6 +229,26 @@ button.dtl{padding:3px 10px;font-size:11.5px}
   25%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}
   45%{transform:translate(-50%,-50%) scale(1)}
   75%{opacity:1}100%{opacity:0;transform:translate(-50%,-160%) scale(1.05)}}
+.codexrow{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:22px}
+.cxh{width:96px;padding:8px 6px;border:1px solid var(--rule);border-radius:6px;background:var(--panel);
+  cursor:pointer;text-align:center;display:flex;flex-direction:column;align-items:center;gap:3px}
+.cxh:hover{border-color:var(--brass)}
+.cxh.on{border-color:var(--brass);background:#221c14;box-shadow:0 0 0 1px var(--brass) inset}
+.cxh .art{width:46px;height:46px}
+.cxh b{font-size:12.5px}
+.cxh span{font-size:10.5px;color:var(--faint)}
+.cxinfo{margin-top:22px;border:1px solid var(--rule);border-radius:7px;background:var(--panel);padding:16px}
+.cxtop{display:flex;gap:16px;align-items:flex-start;text-align:left}
+.cxtop .art{width:74px;height:74px;flex:0 0 74px}
+.cxn{font-family:var(--serif);font-size:19px;color:var(--brass)}
+.cxr{font-size:13px;color:var(--dim);margin-top:2px}
+.cxt{font-family:var(--sans);font-size:11.5px;color:var(--faint);margin-top:4px;letter-spacing:.03em}
+.cxp{margin-top:9px;font-size:12.5px;line-height:1.7}
+.cxp b{color:var(--brass)}
+.sandbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;padding:9px 14px;
+  border:1px solid var(--brass);border-radius:6px;background:rgba(201,162,39,.08);font-size:12.5px}
+.sandbar b{color:var(--brass)}
+.sandbar span{color:var(--dim)}
 .tutbox{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:200;
   width:min(620px,calc(100vw - 28px));background:#171310;border:1px solid var(--brass);
   border-radius:8px;padding:14px 18px;box-shadow:0 10px 34px rgba(0,0,0,.65)}
@@ -2308,6 +2328,7 @@ function render0(){
   if(TOAST&&view!=="battle"){
     app.appendChild(el(`<p class="toast">${rich(TOAST)}</p>`)); TOAST="";
   }
+  if(view==="codex")    return drawCodex(app);
   if(view==="bag")      return drawBag(app);
   if(view==="title")    return drawTitle(app);
   if(view==="heropick") return drawStart(app);
@@ -2339,9 +2360,90 @@ function drawTitle(app){
   const t=el(`<div style="margin-top:14px"><button style="padding:9px 24px">튜토리얼 — 처음이라면</button></div>`);
   t.querySelector("button").onclick=startTutorial;
   app.querySelector(".center").appendChild(t);
+  const cx=el(`<div style="margin-top:10px"><button style="padding:9px 24px">영웅 도감 — 기술을 미리 써 본다</button></div>`);
+  cx.querySelector("button").onclick=()=>{ CODEX.pick=HERO_POOL[0]; view="codex"; render() };
+  app.querySelector(".center").appendChild(cx);
   app.querySelector(".center").appendChild(el(`<div class="hint" style="margin-top:26px;max-width:420px">
     한 판은 세 구역으로 이어집니다. 구역마다 정해진 날짜 안에 <b>우두머리</b>를 잡아야 하고,
     <b>오염도</b>가 100이 되면 그 자리에서 끝납니다.</div>`));
+}
+
+/* ═══════════ 영웅 도감 · 연습장 ═══════════ */
+const CODEX={pick:null};
+function drawCodex(app){
+  const name=CODEX.pick||HERO_POOL[0], d=HEROES[name];
+  app.appendChild(el(`<div class="center"><div class="title" style="font-size:22px">영 웅 도 감</div>
+    <div class="sub">영웅을 고르고, 연습장에서 기술을 마음껏 써 볼 수 있습니다</div></div>`));
+  const wrap=app.querySelector(".center");
+  const list=el(`<div class="codexrow"></div>`);
+  HERO_POOL.forEach(n=>{
+    const c=el(`<div class="cxh ${n===name?"on":""}"><div class="art">${figure(n)}</div>
+      <b>${esc(n)}</b><span>${esc(HEROES[n].title)}</span></div>`);
+    c.onclick=()=>{ CODEX.pick=n; render() };
+    list.appendChild(c);
+  });
+  wrap.appendChild(list);
+
+  const info=el(`<div class="cxinfo">
+    <div class="cxtop"><div class="art">${figure(name)}</div>
+      <div><div class="cxn">${esc(name)} · ${esc(d.title)}</div>
+        <div class="cxr">${esc(d.role)} — ${rich(d.focus)}</div>
+        <div class="cxt">${esc(tagsOf(name).fac)} · ${(tagsOf(name).job||[]).join(" / ")} · ${esc(tagsOf(name).race)}</div>
+        <div class="cxp"><b>지속 · ${esc(d.passive.n)}</b> ${rich(d.passive.d)}</div></div></div>`);
+  wrap.appendChild(info);
+
+  const sk=el(`<div class="rewards"></div>`);
+  d.skills.forEach((x,i)=>{
+    const lockLv=[1,1,7,15][i];
+    sk.appendChild(el(`<div class="rw ro">
+      <div class="g">${x.costType==="mom"?"추진력":x.costType==="scale"?"비늘":"마나"} ${x.cost} · ${esc(x.el)}${
+        lockLv>1?` · ${lockLv}레벨`:""}</div>
+      <div class="rwi">${rewardIcon({n:x.n,d:x.d||""})}</div>
+      <b>${esc(x.pick||x.n)}</b><p>${rich(SKILL_TEXT[x.n]||x.d||"")}</p>
+      ${SKILL_FULL[x.n]?`<div class="fullx"><span>기획 원문</span>${rich(SKILL_FULL[x.n])}</div>`:""}</div>`));
+  });
+  wrap.appendChild(sk);
+
+  const go=el(`<div style="margin-top:24px">
+    <button class="go" style="font-size:15px;padding:11px 28px">연습장에서 써 보기</button>
+    <button style="margin-left:8px">타이틀로</button></div>`);
+  go.querySelectorAll("button")[0].onclick=()=>startSandbox(name);
+  go.querySelectorAll("button")[1].onclick=()=>{ view="title"; render() };
+  wrap.appendChild(go);
+}
+/* 연습장 — 죽지 않는 허수아비를 두고 기술만 시험한다 */
+function startSandbox(name){
+  const f=FIELDS[0], S=f.size, mid=Math.floor(S/2);
+  run={heroes:[makeHero(name)], gold:99, stone:99, cards:[], bag:[],
+       field:0, size:S, grid:buildGrid(0), pos:{r:S-1,c:mid},
+       day:1, time:6, act:99, actMax:99, taint:0, night:0, campDone:0,
+       remapUsed:0, bonusLv:null, sandbox:1, souls:200};
+  const h=run.heroes[0];
+  h.lv=20; h.maxHp=300; h.hp=300; h.maxMana=9;
+  run.dun={cell:{},r:null,c:null,wave:1,waves:1,kind:"battle"};
+  startBattle("battle");
+  /* 허수아비 셋 */
+  B.foes=[];
+  ["작은 죄수","사슬 광인","부서진 파수병"].forEach((n,i)=>{
+    B.foes.push({name:n,slot:i+1,maxHp:9999,hp:9999,atk:0,def:0,rng:0,exp:0,
+      demon:0,boss:0,shield:0,air:0,alive:1,id:i,infect:0,stun:0,weak:0,
+      taunt:0,thorn:0,evade:0,negShield:0,hide:0,deb:{}});
+  });
+  /* 바로 세워 준다 */
+  h.slot=5; B.hand=B.hand.filter(x=>x.type!=="hero");
+  onSummon(h); wanderCheck();
+  h.mana=h.maxMana;
+  say("연습장 — 허수아비는 반격하지 않습니다. 마나와 잠금은 턴마다 풀립니다.","t1");
+  rollIntents(); sel=null; view="battle"; render();
+}
+function sandboxTick(){
+  const h=run.heroes[0];
+  h.hp=h.maxHp; h.mana=h.maxMana; h.lock={}; h.limitUsed={};
+  h.verdictUsed=0; h.free=0; h.deb={};
+  run.souls=200;
+  B.foes.forEach(f=>{ f.alive=1; f.hp=f.maxHp; f.shield=0; f.stun=0;
+    f.deb={}; f.thorn=0; f.thornTurn=0; f.evade=0; f.hide=0; f.taunt=0; f.intent={t:"wait"} });
+  B.mins=[]; B.over=0;
 }
 
 /* ═══════════ 튜토리얼 ═══════════ */
@@ -3778,6 +3880,7 @@ function rollIntents(){
   if(open.length) allies=open;
   B.foes.forEach(f=>{
     if(!f.alive) return;
+    if(run&&run.sandbox){ f.intent={t:"wait"}; return }
     if(f.isPhantom){ f.intent={t:"wait"}; return }
     if(!allies.length){ f.intent={t:"wait"}; return }
     if(f.forceDef){ f.forceDef=0; f.intent={t:"def",v:defVal(f)}; return }
@@ -3986,7 +4089,14 @@ function drawBattle(app){
     fs.appendChild(d);
   }
 
-  app.appendChild(el(synHtml()));
+  if(run.sandbox){
+    const sb=el(`<div class="sandbar">
+      <b>연습장</b><span>허수아비는 반격하지 않습니다 · 턴 종료마다 마나·잠금·체력이 되돌아옵니다</span>
+      <span class="grow"></span><button>도감으로</button></div>`);
+    sb.querySelector("button").onclick=()=>{ B=null; run=null; view="codex"; render() };
+    app.appendChild(sb);
+  }
+  app.appendChild(synHtml?el(synHtml()):el("<span></span>"));
   if(sel&&sel.hero&&sel.step>=2&&sel.step<5) app.appendChild(skillPanel(sel.hero));
   const hand=el(`<div class="hand" id="hand"></div>`);
   B.hand.forEach((c,i)=>{
@@ -4835,6 +4945,7 @@ function shadowGoTo(slot){
 function emptyOkAny(sk){ return !!(sk&&(sk.phantom||sk.minion)) }
 function giveArmor(h,nm){
   const A=ARMOR_CARDS[nm];
+  pulseFX("mine",h.slot,"#e0c85a",2);
   B.hand.push({type:"item",name:nm,d:A?A.d:"아군에게 보호막 10",
     use:a=>{ if(A) A.use(a,h); else { a.shield+=10; say(`${nm} — ${a.name} 보호막 +10`) } }});
   fx({side:"mine",slot:h.slot,s:"summon",ring:"#c9a227",glow:1,txt:nm,cls:"shd",gap:70});
@@ -4861,6 +4972,9 @@ function moveTo(h,to){
 }
 function infectFoe(f,n){
   if(!f.alive) return;
+  { const src=B.lastAttacker;
+    if(src&&src.slot>0){ const a=ctrOf("mine",src.slot), b=ctrOf("foe",f.slot);
+      if(a&&b) beamFX(a,b,"#8f5fd0",4) } }
   f.infect=(f.infect||0)+n;
   fx({side:"foe",slot:f.slot,ring:"#8f5fd0",txt:"감염"+f.infect,cls:"mag",gap:80});
 }
@@ -4869,6 +4983,8 @@ function addRead(h,n){
   h.read=(h.read||0)+n+(h.tag.readPlus||0);
   const need=h.tag.readNeed||10;
   if(h.read>=need&&!h.blessed){ h.read-=need; h.blessed=1;
+    pulseFX("mine",h.slot,"#c9a227",3);
+    veil("radial-gradient(circle,rgba(201,162,39,.22),transparent 70%)");
     fx({side:"mine",slot:h.slot,s:"summon",ring:"#c9a227",txt:"축복",cls:"crit"});
     say(`${h.name} 축복 상태 — 다음 기술이 강화됩니다.`,"t1") }
 }
@@ -5074,6 +5190,8 @@ function runEffect(h,i,s,target){
   }
   if(s.stance){
     h.stance=s.stance; h.stanceTurn=2;
+    pulseFX("mine",h.slot,s.stance==="nightmare"?"#a06ae0":"#c58fd0",3);
+    veil("radial-gradient(circle,rgba(122,74,176,.24),transparent 70%)");
     if(s.shield){ const v=s.shield+mod(s,"shield")+h.def;
       h.shield+=v; fx({side:"mine",slot:h.slot,s:"shield",ring:"#e0c85a",txt:"+"+v,cls:"shd",gap:70}) }
     fx({side:"mine",slot:h.slot,ring:"#a06ae0",txt:s.stance==="nightmare"?"악몽":"공포",cls:"shd"});
@@ -5089,6 +5207,7 @@ function runEffect(h,i,s,target){
   }
   /* ── 오토 ── */
   if(s.soothe){
+    pulseFX("mine",h.slot,"#e07b28",2);
     const to=Math.max(1,Math.min(SLOTS,target||h.slot));
     if(to!==h.slot&&Math.abs(to-h.slot)<=2) moveTo(h,to);
     h.mom+=2;
@@ -5104,11 +5223,16 @@ function runEffect(h,i,s,target){
       if(a.slot>0) fx({side:"mine",slot:a.slot,ring:"#7fd39a",txt:"+1/+1",cls:"shd",gap:70}) });
     liveMins().forEach(m=>{ bumpTmp(m,"mag",1); bumpTmp(m,"def",1); got.push(m);
       fx({side:"mine",slot:m.slot,ring:"#7fd39a",txt:"+1/+1",cls:"shd",gap:70}) });
-    fx({side:"mine",slot:h.slot,art:"mag",s:"summon",txt:"성장",cls:"crit"});
+    pulseFX("mine",h.slot,"#84a468",3);
+    got.forEach(a=>{ if(a.slot>0) pulseFX("mine",a.slot,"#84a468",1) });
+    fx({side:"mine",slot:h.slot,art:"mag",s:"summon",txt:"성장",cls:"crit",gap:260});
     say(`녹슨 성장 — 모든 아군(${got.map(a=>a.name).join(", ")})이 이번 전투 동안 마법력·보호력 +1`,"t1");
     return;
   }
   if(s.seed){
+    { const f0=B.foes.filter(x=>x.alive).sort((a,b)=>b.hp-a.hp)[0];
+      if(f0){ pillarFX("foe",f0.slot,"rgba(132,164,104,.95)");
+        soulFX({side:"mine",slot:h.slot},{side:"foe",slot:f0.slot},"#84a468",6) } }
     const f=B.foes.filter(x=>x.alive).sort((a,b)=>b.hp-a.hp)[0];
     if(!f){ say("적이 없습니다.","t2"); return }
     fx({side:"foe",slot:f.slot,quake:1,s:"quake",gap:240});
@@ -5248,6 +5372,8 @@ function runEffect(h,i,s,target){
     say(`${f.name} 다음 턴 공격력 -3`); return;
   }
   if(s.shackle){
+    { const near0=B.foes.filter(x=>x.alive).sort((a,b)=>dist(h.slot,a.slot)-dist(h.slot,b.slot))[0];
+      if(near0) chainFX({side:"mine",slot:h.slot},{side:"foe",slot:near0.slot},"#c9a227") }
     const gain=h.atk+h.mag;
     bumpTmp(h,"def",gain); bumpTmp(h,"atk",-h.atk); bumpTmp(h,"mag",-h.mag);
     if(gain) say(`영광의 족쇄 — 공격력·마법력 ${gain}을 보호력으로 전환`);
@@ -5333,7 +5459,9 @@ function runEffect(h,i,s,target){
     hurt(t2,v,"찌르기","slash");
     return;
   }
-  if(s.bomb){ h.bomb=2 }
+  if(s.bomb){ h.bomb=2;
+    pulseFX("mine",h.slot,"#e0705a",3);
+    say("몸이 부풀어 오릅니다. 2턴 뒤 터집니다.","t3"); }
   if(s.fuse){
     liveMins().filter(m=>m.owner===h.name).forEach(m=>
       soulFX({side:"mine",slot:m.slot},{side:"mine",slot:h.slot},"#e0705a",5));
@@ -5467,8 +5595,11 @@ function runEffect(h,i,s,target){
             fx({side:"mine",slot:h.slot,ring:"#e0c85a",txt:"+"+h.tag.killShield,cls:"shd",gap:60});
             say(`아드레날린 분비 — 보호막 +${h.tag.killShield}`) }
         }
-        if(s.markKill){ h.sk[1].limit++; say("명중 — 피부 강화의 사용한도가 늘어납니다.","t1") }
+        if(s.markKill){ h.sk[1].limit++;
+          pillarFX("foe",tgt.slot,"rgba(224,200,90,.9)");
+          say("명중 — 피부 강화의 사용한도가 늘어납니다.","t1") }
         if(s.exec){ const v=1+(h.tag.execPlus||0);
+          pillarFX("foe",tgt.slot,"rgba(201,162,39,.9)");
           addMod(h,"베기","dmg",v,"승리의 일격"); say(`승리의 일격 — 베기가 영구히 ${v} 강해집니다.`,"t1") }
         if(h.tag.killShield&&i===0){ h.shield+=h.tag.killShield }
         break;
@@ -5562,6 +5693,11 @@ function unitDown(t){
 }
 function endTurn(){
   if(B.over) return;
+  if(run&&run.sandbox){
+    B.turn++; sandboxTick(); sel=null;
+    say(`— ${B.turn}턴 · 연습장 —`,"t2");
+    render(); return;
+  }
   if(!allUnits().length){ say("전장에 아군이 없습니다. 먼저 영웅을 소환하세요.","t3"); return }
   allUnits().forEach(tickDebEnd);
   liveMins().forEach(m=>{ if(m.perma) m.taunt=1 });
@@ -5747,6 +5883,7 @@ function endTurn(){
   checkEnd(); render();
 }
 function checkEnd(){
+  if(run&&run.sandbox) return;
   if(B.over) return;
   if(!B.foes.some(f=>f.alive)){
     B.over=1;
