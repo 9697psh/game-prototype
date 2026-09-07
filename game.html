@@ -675,7 +675,7 @@ HEROES["트리스탄"]={title:"저주받은 궁수",role:"원거리 · 관통",h
   focus:"체력은 늘지 않지만 레벨마다 활이 날카로워진다",
   passive:{n:"저주받은 육체",d:"레벨업으로 최대 체력을 얻지 못하는 대신 공격력 +1"},
   skills:[
-   {n:"페일노트",cost:1,el:"공격",tg:"self",farshot:1,dmg:4,d:"가장 먼 적에게 피해 4"},
+   {n:"페일노트",cost:1,el:"공격",tg:"foe",farshot:1,dmg:4,d:"가장 먼 적에게 피해 4"},
    {n:"피부 강화",cost:1,el:"보호",tg:"self",limit:2,armorUp:1,d:"사용한도(2) · 다음 적 턴 동안 갑피 1"},
    {n:"꿰뚫는 화살",cost:1,el:"공격",tg:"foe",lock:1,dmg:10,pierce:1,d:"잠금(1) · 관통 피해 10"},
    {n:"명중",cost:3,el:"공격",tg:"foe",limit:1,dmg:25,markKill:1,d:"사용한도(1) · 피해 25 · 처치 시 피부 강화 한도 +1"}
@@ -717,7 +717,7 @@ const SKILL_TEXT={
  "선두 방어":"가장 앞(5번 칸)으로 이동하고 도발을 얻는다. 지나친 아군 하나당 보호막을 얻는다. 후미 준비로 전환된다.",
  "후미 준비":"잠금(1). 가장 뒤(1번 칸)로 이동하고 체력을 회복한다. 지나친 아군에게 보호막을 준다. 선두 방어로 전환된다.",
  "굳건한 성벽":"사용한도(2). 성벽 카드를 손에 넣는다. 카드를 빈 칸에 끌어다 놓으면 체력 30의 성벽이 소환된다. 성벽은 항상 도발 상태이고 움직일 수 없다.",
- "페일노트":"가장 멀리 있는 적을 쏜다. 거리 제한이 없다.",
+ "페일노트":"가장 멀리 있는 적을 쏜다. 거리 제한은 없지만, 겨눌 수 있는 것은 맨 뒤의 적뿐이다.",
  "피부 강화":"사용한도(2). 다음 적 턴 동안 갑피를 얻는다. 갑피는 맞는 피해를 그만큼 깎는다.",
  "꿰뚫는 화살":"잠금(1). 보호막을 무시하고 그대로 체력을 깎는다.",
  "명중":"사용한도(1). 이 피해로 적을 처치하면 피부 강화의 사용한도가 1 늘어난다.",
@@ -740,7 +740,7 @@ const SUMMONS={
    d:"부서질 때 거리 1 내의 적에게 보호약화를 2 부여합니다. 이동할 수 없습니다.",sk:[]},
  "망자의 육체":{hp:15,mana:1,owner:"트리스탄",revive:1,
    d:"전투가 끝날 때 살아 있으면 트리스탄을 부활시키고 최대 체력으로 회복시킵니다.",
-   sk:[{n:"조각난 페일노트",cost:1,el:"공격",tg:"self",farshot:1,dmg:4,d:"가장 먼 적에게 피해 4"}]}
+   sk:[{n:"조각난 페일노트",cost:1,el:"공격",tg:"foe",farshot:1,dmg:4,d:"가장 먼 적에게 피해 4"}]}
 };
 const ARMOR_CARDS={
  "강철 갑옷":{d:"아군 영웅에게 보호막을 12 부여합니다.",
@@ -2372,7 +2372,7 @@ function drawBattle(app){
     d.dataset.slot=s;
     if(f){
       const canHit = tgMode!=="foe"&&tgMode!=="any" ? false
-                   : inReach(sel.hero,sel.hero.sk[sel.skill],s);
+                   : validTarget(sel.hero,sel.hero.sk[sel.skill],s);
       if(tgMode==="foe"||tgMode==="any"){ d.classList.add(canHit?"pick":"far") }
       const pf=B.portals&&B.portals.find(p=>p.side==="foe"&&p.slot===s);
       if(pf) d.innerHTML+=`<svg class="portal" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#a06ae0" stroke-width="2.5"/><circle cx="12" cy="12" r="3.5" fill="#a06ae0"/></svg>`;
@@ -2460,6 +2460,7 @@ function valueLines(h,sk){
   if(sk.heal)   L.push(`체력을 ${numHtml(h,sk,"heal")} 회복합니다.`);
   if(sk.justice) L.push(`지금 보호막 <b class="big">${h.shield}</b>만큼 피해를 줍니다.`);
   if(sk.armorUp) L.push(`갑피를 <b class="big">${1+(h.tag.armorPlus||0)}</b> 얻습니다.`);
+  if(sk.farshot) L.push(`가장 멀리 있는 적만 겨눌 수 있습니다.`);
   if(sk.vanguard) L.push(`지나친 아군 하나당 보호막 <b class="big">${(h.tag.vanShield||5)+h.def}</b>`);
   if(sk.rearguard) L.push(`체력 <b class="big">${h.tag.rearHeal||5}</b> · 지나친 아군 보호막 <b class="big">${5+h.def}</b>`);
   return L;
@@ -2614,6 +2615,14 @@ function reachOf(h,sk){
 function inReach(h,sk,slot){
   const r=reachOf(h,sk);
   return r==null || dist(h.slot,slot)<=r;
+}
+function farthestFoe(h){
+  return B.foes.filter(f=>f.alive).sort((a,b)=>dist(h.slot,b.slot)-dist(h.slot,a.slot))[0];
+}
+function validTarget(h,sk,slot){
+  if(!inReach(h,sk,slot)) return false;
+  if(sk&&sk.farshot){ const f=farthestFoe(h); return !!f&&f.slot===slot }
+  return true;
 }
 function payCost(h,i){
   const s=h.sk[i];
@@ -2830,6 +2839,11 @@ function doSkill(target){
       fx({side:"foe",slot:target,s:"miss",txt:"사거리 "+r,cls:"miss"});
       say(`사거리 ${r} 밖입니다. 다른 대상을 고르세요.`,"t2"); render(); return;
     }
+    if(s0.farshot&&!validTarget(h,s0,target)){
+      const f=farthestFoe(h);
+      say(`${s0.n}${jo(s0.n,"eun")} 가장 멀리 있는 적${f?`(${f.slot}번)`:""}만 겨눌 수 있습니다.`,"t2");
+      render(); return;
+    }
   }
   say(`▸ ${h.name} — ${s0.n} ×${n}`,"t1");
   for(let k=0;k<n;k++){
@@ -2838,6 +2852,7 @@ function doSkill(target){
     if(deb(h,"fear")&&(s.tg==="foe"||s.tg==="any")){
       say(`${h.name}${jo(h.name,"eun")} 공포에 질려 대상을 노려보지 못합니다.`,"t3"); break }
     if(s.tg==="foe"&&!inReach(h,s,target)){ say("사거리를 벗어나 중단합니다.","t2"); break }
+    if(s.farshot){ const f=farthestFoe(h); if(!f) break; target=f.slot }
     if(!canPay(h,i,1)){ say("자원이 부족해 중단합니다.","t2"); break }
     /* 비용 지불 */
     if(s.costType==="mom"){ h.mom-=s.cost+h.airUp; h.airUp++ }
@@ -2863,8 +2878,10 @@ function doSkill(target){
     }
     if(h.name==="카제"&&(s.el==="이동"||s.dmg!=null)){ h.acts=(h.acts||0)+1; veilCheck(h) }
     if(s.tg==="foe"&&!foeAt(target)&&k<n-1){
-      const alt=B.foes.filter(f=>f.alive&&inReach(h,h.sk[i],f.slot))
-                      .sort((a,b)=>dist(h.slot,a.slot)-dist(h.slot,b.slot))[0];
+      const _s=h.sk[i];
+      const alt=_s.farshot ? farthestFoe(h)
+        : B.foes.filter(f=>f.alive&&inReach(h,_s,f.slot))
+                .sort((a,b)=>dist(h.slot,a.slot)-dist(h.slot,b.slot))[0];
       if(!alt) break;
       target=alt.slot; say(`대상이 쓰러져 ${alt.name}(${alt.slot}번)으로 옮깁니다.`,"t2");
     }
