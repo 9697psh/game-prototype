@@ -4345,6 +4345,7 @@ function playCard(i,slot,side){
     if(side!=="foe"){ say(`${c.name}${jo(c.name,"eun")} 적의 칸에 던져야 합니다.`,"t2"); return }
     const f=foeAt(slot);
     if(!f){ say("그 칸에는 적이 없습니다.","t2"); return }
+    B.lastAttacker=null;     /* 카드는 되받아칠 사람이 없다 */
     c.use(f);
     if(c.stock){ useCard(c.stock);
       const e=(run.cards||[]).find(x=>x.n===c.stock);
@@ -4404,8 +4405,13 @@ function hurt(f,amt,tag,art,pierce,crit){
       s:crit?null:(art==="wind"?"wind":(art==="mag"?"mag":(art==="boom"?"boom":"slash")))});
   say(`${tag} → ${f.name}(${f.slot}번) ${crit?"치명타 ":""}피해 ${amt}${
     pr?` (관통 ${pr}%${pr<100?` · 체력 ${thru}`:""})`:""}${s?` (보호막 ${s})`:""} · 남은 ${Math.max(0,f.hp)}`,crit?"t1":undefined);
-  if(f.thorn&&f.alive&&d>0){ const src=B.lastAttacker;
-    if(src&&src.hp>0){ hurtAlly(f,src,f.thorn,"가시") } }
+  if(f.thorn&&f.alive&&d>0&&!f.thornBusy){
+    const src=B.lastAttacker;
+    if(src&&src.hp>0&&src.slot>0&&!src.isFoe){
+      f.thornBusy=1;                 /* 가시끼리 무한히 주고받지 않게 */
+      hurtAlly(f,src,f.thorn,`${f.name}의 가시`);
+      f.thornBusy=0;
+    } }
   if(f.hp<=0&&f.alive){ f.alive=0;
     fx({side:"foe",slot:f.slot,s:"die",txt:"처치",cls:"crit",gap:170});
     say(`${f.name} 처치.`,"t1");
@@ -4620,6 +4626,7 @@ function addRead(h,n){
     say(`${h.name} 축복 상태 — 다음 기술이 강화됩니다.`,"t1") }
 }
 function runEffect(h,i,s,target){
+  B.lastAttacker=h;          /* 가시가 되받아칠 상대 */
   const tgt=foeAt(target);
   /* ── 쿠렘타이 ── */
   if(s.drain){
@@ -5167,7 +5174,6 @@ function runEffect(h,i,s,target){
         PR+=itemBt(h,"pierce");
         if(tgt.taunt) PR+=itemBt(h,"tauntPierce");
       }
-      B.lastAttacker=h;
       hurt(tgt,dmg,s.n,s.el==="마법"?"mag":(h.name==="굴라"?"claw":"slash"),PR,CRIT);
       if(h.leech){ const heal=Math.round(dmg*0.2); healUp(h,heal);
         if(heal) fx({side:"mine",slot:h.slot,s:"heal",txt:"+"+heal,cls:"heal",gap:60});
@@ -5252,7 +5258,8 @@ function hurtAlly(f,t,raw,label){
   }
   fx({side:"mine",slot:t.slot,hit:1,art:"claw",s:"hit",txt:"-"+raw,cls:"dmg",gap:170});
   say(`${f.name} → ${t.name} ${label} 피해 ${raw}${sh?` (보호막 ${sh})`:""} · ${Math.max(0,t.hp)}/${t.maxHp}`);
-  if(t.tag&&t.tag.thorn&&f.alive) hurt(f,t.tag.thorn,"가시","slash");
+  if(t.tag&&t.tag.thorn&&f.alive&&!t.thornBusy){
+    t.thornBusy=1; hurt(f,t.tag.thorn,`${t.name}의 가시`,"slash"); t.thornBusy=0; }
   if(t.name==="그슨대"&&raw>0){
     t.dark=(t.dark||0)+1;
     if(t.dark%3===0){ bumpTmp(t,"atk",1); say(`커져가는 악몽 — ${t.name} 공격력 +1`,"t1") }
@@ -5331,6 +5338,7 @@ function endTurn(){
     if(f&&f.alive) hurt(f,p.dmg,"균열 차원문","mag");
   });
   say(`— ${B.turn}턴 적 행동 —`,"t1");
+  B.lastAttacker=null;
   fx({s:"turn",gap:220});
   B.foes.forEach(f=>{ f.shield=0 });   /* 지난 턴에 얻은 보호막은 여기서 사라진다 */
   B.foes.forEach(f=>{
