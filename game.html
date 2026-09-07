@@ -128,9 +128,35 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .syn{font-size:11.5px;padding:3px 10px}
 .bar::after{content:"";position:absolute;inset:0;pointer-events:none;
   background:repeating-linear-gradient(90deg,transparent 0 11px,rgba(0,0,0,.45) 11px 12px)}
-.bar > i{display:block;height:100%;background:var(--hp);transition:width .18s}
+.bar > i{display:block;height:100%;background:var(--hp);transition:width .18s;position:relative;z-index:2}
+/* 잔상 — 줄어든 몫이 뒤늦게 따라 내려간다 */
+.bar > em.gh{position:absolute;left:0;top:0;height:100%;display:block;z-index:1;
+  background:linear-gradient(180deg,#ffe9bd,#ff7a52);
+  box-shadow:0 0 8px rgba(255,140,90,.7);
+  transition:width .72s cubic-bezier(.22,.72,.24,1) .16s;pointer-events:none}
+.bar.healed > em.gh{background:linear-gradient(180deg,#dcffe8,#4fd08a);
+  box-shadow:0 0 8px rgba(90,220,150,.7)}
+/* 깜박임 */
+.bar.hurt{animation:hpHurt .62s ease-out}
+@keyframes hpHurt{
+  0%  {filter:brightness(2.6) saturate(.5);box-shadow:0 0 0 2px rgba(255,130,95,.95),0 0 16px rgba(224,80,60,.9)}
+  16% {filter:brightness(1);      box-shadow:0 0 0 1px rgba(255,130,95,.3)}
+  34% {filter:brightness(2.3) saturate(.6);box-shadow:0 0 0 2px rgba(255,130,95,.8),0 0 13px rgba(224,80,60,.7)}
+  52% {filter:brightness(1);      box-shadow:0 0 0 1px rgba(255,130,95,.2)}
+  70% {filter:brightness(1.7);    box-shadow:0 0 0 1px rgba(255,130,95,.5)}
+  100%{filter:brightness(1);      box-shadow:0 1px 0 rgba(255,255,255,.04) inset}}
+.bar.healed{animation:hpHeal .62s ease-out}
+@keyframes hpHeal{
+  0%  {filter:brightness(2.3) saturate(.6);box-shadow:0 0 0 2px rgba(127,211,154,.95),0 0 16px rgba(80,200,140,.85)}
+  20% {filter:brightness(1);      box-shadow:0 0 0 1px rgba(127,211,154,.3)}
+  42% {filter:brightness(2);      box-shadow:0 0 0 2px rgba(127,211,154,.75),0 0 12px rgba(80,200,140,.6)}
+  66% {filter:brightness(1);      box-shadow:0 0 0 1px rgba(127,211,154,.2)}
+  100%{filter:brightness(1);      box-shadow:0 1px 0 rgba(255,255,255,.04) inset}}
+@media (prefers-reduced-motion: reduce){
+  .bar.hurt,.bar.healed{animation:none}
+  .bar > em.gh{transition:none}}
 .bar.mn > i{background:var(--mana)}
-.bar > u{position:absolute;top:0;right:0;height:100%;background:var(--def);opacity:.9;
+.bar > u{position:absolute;top:0;right:0;height:100%;background:var(--def);opacity:.9;z-index:3;
   border-left:1px solid var(--panel);transition:width .18s,right .18s}
 .bar > u.es{background:#e07b28;opacity:.95;box-shadow:0 0 6px rgba(224,123,40,.6)}
 .synbar{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:8px}
@@ -1401,6 +1427,35 @@ function rainFX(color,n){
 function punchIn(side,slot){
   const p=ctrOf(side,slot); if(!p||!p.e) return;
   p.e.classList.remove("punch"); void p.e.offsetWidth; p.e.classList.add("punch");
+}
+/* ═══════════ 체력바 연출 ═══════════
+   체력이 달라졌으면 바가 깜박이면서 천천히 줄거나 찬다.
+   잔상(em.gh)이 한 박자 늦게 따라와 얻어맞은 몫을 보여 준다. */
+let HKSEQ=0, HPMEM={};
+function hpKey(u){ if(!u) return ""; if(!u._hk) u._hk="U"+(++HKSEQ); return u._hk }
+function hpAnim(){
+  document.querySelectorAll(".bar[data-hpk]").forEach(bar=>{
+    const k=bar.dataset.hpk, now=parseFloat(bar.dataset.hpv)||0;
+    const fill=bar.querySelector("i"), gh=bar.querySelector("em.gh");
+    const prev=HPMEM[k];
+    HPMEM[k]=now;
+    if(!fill||!gh) return;
+    if(prev==null||Math.abs(prev-now)<0.05){ gh.style.width=now+"%"; return }
+    const hurt=(now<prev);
+    /* 시작점에 세워 둔다 */
+    gh.style.transition="none";   gh.style.width=prev+"%";
+    fill.style.transition="none"; fill.style.width=prev+"%";
+    bar.classList.remove("hurt","healed");
+    void bar.offsetWidth;                       /* 애니메이션을 다시 물린다 */
+    bar.classList.add(hurt?"hurt":"healed");
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      fill.style.transition="width .46s cubic-bezier(.24,.74,.28,1)";
+      fill.style.width=now+"%";
+      gh.style.transition="";                   /* CSS 쪽 느린 전환으로 되돌린다 */
+      gh.style.width=now+"%";
+    }));
+    setTimeout(()=>{ bar.classList.remove("hurt","healed") },660);
+  });
 }
 function flushFX(){
   let t=0;
@@ -3753,9 +3808,10 @@ function nextField(){
 /* ═══════════ 화면 ═══════════ */
 let _lastView=null;
 function render(){
-  if(_lastView!==view){ const l=document.getElementById("fx"); if(l) l.innerHTML=""; _lastView=view }
+  if(_lastView!==view){ const l=document.getElementById("fx"); if(l) l.innerHTML=""; HPMEM={}; _lastView=view }
   document.querySelectorAll(".peek,.tutbox,.tuthi").forEach(x=>x.remove());
   render0();
+  hpAnim();
   tutPanel();
   if(run&&run.mapPeek&&view!=="map"&&view!=="title") drawMapPeek();
   flushFX();
@@ -5893,7 +5949,8 @@ function drawBattle(app){
           h.mom?`<span class="rr">${ic("move")}${h.mom}</span>`:""}</div>
         <div class="art">${figure(h.name)}</div>
         <div class="nm">${esc(h.name)}</div>
-        <div class="bar"><i style="width:${Math.max(0,h.hp/h.maxHp*100)}%"></i>
+        <div class="bar" data-hpk="${hpKey(h)}" data-hpv="${Math.max(0,h.hp/h.maxHp*100)}">
+          <em class="gh"></em><i style="width:${Math.max(0,h.hp/h.maxHp*100)}%"></i>
           ${h.eshield?`<u class="es" style="width:${esW}%" title="에너지 보호막 ${h.eshield}"></u>`:""}
           ${h.shield?`<u style="right:${esW}%;width:${shW}%" title="보호막 ${h.shield}"></u>`:""}</div>
         ${progHtml(h)}
@@ -5959,7 +6016,8 @@ function drawBattle(app){
         <div class="intentbar">${intentHtml(f)}</div>
         <div class="art ${fsz}">${figure(f.name)}</div>
         <div class="nm">${esc(f.name)}</div>
-        <div class="bar"><i style="width:${Math.max(0,f.hp/f.maxHp*100)}%"></i>
+        <div class="bar" data-hpk="${hpKey(f)}" data-hpv="${Math.max(0,f.hp/f.maxHp*100)}">
+          <em class="gh"></em><i style="width:${Math.max(0,f.hp/f.maxHp*100)}%"></i>
           ${f.shield?`<u style="width:${Math.min(60,f.shield/f.maxHp*100)}%"></u>`:""}</div>
         <div class="mini">${ic("hp")}${f.hp}/${f.maxHp}${f.shield?` <span class="shd">${ic("def")}${f.shield}</span>`:""}
           
