@@ -279,6 +279,8 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .rw.no{opacity:.4;cursor:default}
 .rw.no:hover{border-color:#4a3f63;box-shadow:0 6px 18px rgba(0,0,0,.4)}
 .rw.ro{cursor:default;min-height:170px;justify-content:center}
+.rw.ro.new{border-color:var(--brass);box-shadow:0 0 26px rgba(201,162,39,.28);min-height:0}
+.rw.ro.new .g{color:var(--brass)}
 .rw.ro:hover{border-color:#4a3f63;box-shadow:0 6px 18px rgba(0,0,0,.4)}
 /* ── 이펙트 ── */
 #fx{position:fixed;inset:0;pointer-events:none;z-index:900;overflow:hidden}
@@ -4134,6 +4136,13 @@ function itemDone(){
   if(back==="shop"){ view="shop"; render(); return }
   afterChest();
 }
+function incomingCard(it){
+  return el(`<div class="rewards" style="margin-top:16px">
+    <div class="rw ro new" title="${esc(itemTip(it))}">
+      <div class="g">얻는 것 · ${esc(it.g)} 아이템</div>
+      <div class="rwi">${rewardIcon(it)}</div>
+      <b>${esc(it.n)}</b><p>${rich(it.d)}</p>${recipeHtml(it)}</div></div>`);
+}
 function drawItem(app){
   const st=pending.stage;
   if(st==="pick"){
@@ -4154,8 +4163,9 @@ function drawItem(app){
     return;
   }
   if(st==="hero"){
-    app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">${esc(pending.item.n)}</div>
+    app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">새 아이템</div>
       <div class="sub">누구에게 채울까요 (한 명당 ${ITEM_MAX}칸) · 칸이 없으면 가방에 넣어 두었다가 주둔지에서 정리할 수 있습니다</div></div>`));
+    app.querySelector(".center").appendChild(incomingCard(pending.item));
     const row=el(`<div class="picks"></div>`);
     run.heroes.forEach(h=>{
       const c=el(`<div class="pick" style="width:200px"><div class="art">${figure(h.name)}</div>
@@ -4181,7 +4191,9 @@ function drawItem(app){
   }
   const h=pending.hero;
   app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">칸이 가득 찼습니다</div>
-    <div class="sub">${esc(h.name)}의 장비 하나를 ${esc(pending.item.n)}${jo(pending.item.n,"eu")}로 바꿉니다</div></div>`));
+    <div class="sub">${esc(h.name)}의 장비 하나를 아래 아이템과 바꿉니다. 버릴 장비를 고르세요.</div></div>`));
+  app.querySelector(".center").appendChild(incomingCard(pending.item));
+  app.querySelector(".center").appendChild(el(`<div class="hint" style="margin-top:18px">지금 차고 있는 장비</div>`));
   const row=el(`<div class="rewards"></div>`);
   h.items.forEach((it,idx)=>{
     const c=el(`<div class="rw" title="${esc(itemTip(it))}"><div class="rwi">${rewardIcon(it)}</div><div class="g">${esc(it.g)}</div><b>${esc(it.n)}</b><p>${rich(it.d)}</p>${recipeHtml(it)}</div>`);
