@@ -340,6 +340,23 @@ button.dtl{padding:3px 10px;font-size:11.5px}
   animation:liftA .7s ease-out forwards;pointer-events:none;filter:blur(1px)}
 @keyframes liftA{0%{opacity:0;transform:translate(-50%,-20%) scaleY(.5)}
   30%{opacity:1}100%{opacity:0;transform:translate(-50%,-95%) scaleY(1.25)}}
+.bark{position:absolute;transform:translate(-50%,-100%);z-index:120;
+  max-width:190px;padding:6px 10px;border-radius:7px;pointer-events:none;
+  background:#efe6d2;color:#1a1410;font-size:12px;font-weight:700;line-height:1.45;
+  border:2px solid #0a0809;box-shadow:0 3px 0 rgba(0,0,0,.55);word-break:keep-all;
+  text-align:center;white-space:pre-line;
+  animation:barkA 2.4s cubic-bezier(.2,1.3,.4,1) forwards}
+.bark::after{content:"";position:absolute;left:50%;bottom:-9px;transform:translateX(-50%);
+  border:5px solid transparent;border-top-color:#0a0809}
+.bark::before{content:"";position:absolute;left:50%;bottom:-5px;transform:translateX(-50%);
+  border:4px solid transparent;border-top-color:#efe6d2;z-index:1}
+.bark.f{background:#2a1416;color:#f0cfc6;border-color:#0a0809}
+.bark.f::before{border-top-color:#2a1416}
+@keyframes barkA{0%{opacity:0;transform:translate(-50%,-70%) scale(.7)}
+  12%{opacity:1;transform:translate(-50%,-100%) scale(1.06)}
+  20%{transform:translate(-50%,-100%) scale(1)}
+  82%{opacity:1;transform:translate(-50%,-100%) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-125%) scale(.97)}}
 .costpop{position:absolute;transform:translate(-50%,-50%);font-size:13px;font-weight:800;
   pointer-events:none;white-space:nowrap;text-shadow:0 0 6px rgba(0,0,0,.95),0 1px 0 #000;
   animation:cpA 1.05s cubic-bezier(.2,.9,.3,1) forwards;opacity:0}
@@ -5360,6 +5377,8 @@ function startBattle(kind){
     if(!L) return;
     B.hand.push({type:"item",name:cd.n,d:L.d+` (보유 ${cd.c})`,stock:cd.n,use:L.use});
   });
+  setTimeout(()=>{ const f=B&&B.foes&&B.foes.filter(x=>x.alive);
+    if(f&&f.length) bark(f[0].boss?f[0]:rnd(f),"in") },700);
   say(`${FIELDS[run.field].n} — ${kind==="boss"?"우두머리":kind==="elite"?"정예":"교전"} `
      +`${run.dun&&run.dun.waves>1?`${run.dun.wave}/${run.dun.waves}라운드`:"시작"}`,"t1");
   say("손패의 영웅 카드를 원하는 칸으로 끌어다 놓으세요.","t2");
@@ -5521,6 +5540,144 @@ function rollIntents(){
 const tierCrown=()=>'<svg viewBox="0 0 24 24"><path d="M3 8l4 5 5-8 5 8 4-5-2 12H5Z" fill="currentColor"/></svg>';
 const tierStar =()=>'<svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9Z" fill="currentColor"/></svg>';
 const tierMoon =()=>'<svg viewBox="0 0 24 24"><path d="M16 3.4A9 9 0 1 0 20.6 14 7.4 7.4 0 0 1 16 3.4Z" fill="currentColor"/></svg>';
+
+/* ═══════════ 대사 ═══════════
+   in 전장에 설 때 · atk 기술을 쓸 때 · hurt 맞을 때 · kill 처치할 때 · down 쓰러질 때 */
+const BARK={
+ "나이코스":{
+  in:["관중은 어디 있지.","오늘도 이름을 남긴다.","자, 시작하자."],
+  atk:["받아라!","이 한 번으로 끝낸다.","베는 건 늘 하던 일이다."],
+  hurt:["이 정도로는.","아직 서 있다.","좋아, 화가 난다."],
+  kill:["다음.","기록에 남겨 두지.","약했군."],
+  down:["아직… 끝나지 않았어…"]},
+ "카제":{
+  in:["바람이 분다.","조용하군.","길게 끌지 말자."],
+  atk:["휘익—","따라올 수 있나.","여기다."],
+  hurt:["스쳤을 뿐이다.","느려.","가까웠군."],
+  kill:["바람처럼.","이미 지나갔다."],
+  down:["바람이… 멎는다…"]},
+ "굴라":{
+  in:["배가 고프군.","냄새가 난다.","먹을 게 있나."],
+  atk:["씹어 주마!","크아아!","한 입이면 충분해."],
+  hurt:["더! 더 때려라!","간지럽군.","커지는 기분이야."],
+  kill:["잘 먹었다.","다음 접시는."],
+  down:["아직… 배가… 고픈데…"]},
+ "헥토":{
+  in:["뒤는 맡겨라.","이 자리는 내가 지킨다.","방패를 세운다."],
+  atk:["물러서지 않는다.","이걸로 막아라!","왕실의 이름으로."],
+  hurt:["막았다.","이 정도야 견딘다.","뒤로 물러서라!"],
+  kill:["질서를 되찾았다.","한 놈 정리."],
+  down:["뒤를… 부탁한다…"]},
+ "트리스탄":{
+  in:["숨을 죽여라.","이미 겨누고 있다.","죽은 몸이라 손이 떨리지 않는군."],
+  atk:["멈춰 있어라.","심장이다.","놓치지 않는다."],
+  hurt:["아프지 않다. 이미 죽었으니.","살점은 얼마든지."],
+  kill:["다음 화살.","조준 완료."],
+  down:["두 번째… 죽음인가…"]},
+ "인비디아":{
+  in:["다들 참 건강해 보이네.","부럽구나. 정말로.","곧 나눠 줄게."],
+  atk:["기침 한 번이면 돼.","퍼져라.","너도 앓아 보렴."],
+  hurt:["아파? 나도 아파.","같이 앓자."],
+  kill:["이제 공평하지.","곪아 터졌구나."],
+  down:["아무도… 나눠주지 않아…"]},
+ "도미니코":{
+  in:["기록을 시작하지.","몇 쪽이나 넘겨야 할까.","왕실의 지혜가 함께한다."],
+  atk:["여기 적혀 있었다.","읽은 대로.","조용히 하거라."],
+  hurt:["책장이 찢어졌군.","계산이 어긋났다."],
+  kill:["한 줄 지웠다.","각주로 남길 만하군."],
+  down:["아직… 다 읽지… 못했는데…"]},
+ "쿠렘타이":{
+  in:["영혼 냄새가 짙군.","셈을 시작하지.","죽음은 서두르지 않는다."],
+  atk:["내놓아라.","네 몫은 여기까지.","조용히 흘러라."],
+  hurt:["살아 있는 자의 방식이군.","이미 한 번 겪었다."],
+  kill:["하나 더.","좋은 영혼이다."],
+  down:["셈이… 맞지 않는군…"]},
+ "이테리오":{
+  in:["출력 정상.","계산은 끝났다.","조준선 확보."],
+  atk:["표식 확인.","여기가 급소다.","과부하 개시."],
+  hurt:["부품이 나갔군.","수치 이내다."],
+  kill:["예측대로.","오차 없음."],
+  down:["회로가… 끊긴다…"]},
+ "그슨대":{
+  in:["…","그림자는 이미 네 뒤에 있다.","보이지 않겠지."],
+  atk:["여기다.","뒤를 봐라.","이미 늦었다."],
+  hurt:["아프면… 더 날카로워진다.","좋아.","더 줘."],
+  kill:["소리도 없이.","악몽이었다고 해 두지."],
+  down:["어둠으로… 돌아간다…"]},
+ "오토":{
+  in:["다들 다치지 마세요.","제가 지켜 드릴게요.","삐걱… 준비됐습니다."],
+  atk:["미안해요.","아프게 하고 싶진 않지만.","조금만 참아요."],
+  hurt:["괜찮아요, 아직 움직여요.","부품은 갈면 됩니다."],
+  kill:["편히 쉬세요.","이걸로 끝났으면 좋겠네요."],
+  down:["다들… 무사히… 돌아가세요…"]},
+ /* ── 적 ── */
+ "작은 죄수":{
+  in:["살려줘…","여긴 왜 온 거야.","나가고 싶어."],
+  atk:["저리 가!","때리지 마!"],
+  hurt:["으윽!","아파!"],
+  down:["드디어… 나가는구나…"]},
+ "사슬 광인":{
+  in:["짤랑… 짤랑…","사슬이 노래한다.","가까이 와."],
+  atk:["감아 주마!","묶어 줄게!"],
+  hurt:["더 조여!","하하, 아프다!"],
+  down:["사슬이… 풀렸다…"]},
+ "굶주린 그림자":{
+  in:["…배고파.","냄새가 나.","어둠 속에서."],
+  atk:["물어뜯는다.","목이다."],
+  hurt:["크르르…","성가시군."],
+  down:["다시… 어둠으로…"]},
+ "부서진 파수병":{
+  in:["침입자 확인.","통과 불가.","이 문은 닫혀 있다."],
+  atk:["배제한다.","경고는 없다."],
+  hurt:["장갑 손상.","기능 유지."],
+  down:["임무… 종료…"]},
+ "균열 벌레":{
+  in:["치익—","끼이익…"],
+  atk:["치이익!","녹여 주마."],
+  hurt:["끼약!","치익!"],
+  down:["끼…익…"]},
+ "얼음 정령":{
+  in:["…추워질 거야.","숨을 아껴.","물이 멈춘다."],
+  atk:["얼어붙어라.","서리를."],
+  hurt:["금이 갔다.","차가움은 깨지지 않아."],
+  down:["녹아… 내린다…"]},
+ "간수장":{
+  in:["또 도망칠 셈인가.","여긴 내 감옥이다.","열쇠는 내가 쥐고 있다."],
+  atk:["무릎 꿇어라!","형을 집행한다.","철퇴다."],
+  hurt:["그 정도로 문이 열릴 것 같나.","건방지군."],
+  down:["이 감옥은… 아직… 닫혀 있다…"]},
+ "고철 거인":{
+  in:["가동 개시.","쿠웅… 쿠웅…","분쇄 대상 확인."],
+  atk:["분쇄한다.","짓눌러라."],
+  hurt:["외장 손상. 계속.","경미함."],
+  down:["동력… 정지…"]},
+ "서리 군주":{
+  in:["샘은 내 것이다.","무릎 꿇거나 얼거나.","숨소리마저 얼려 주지."],
+  atk:["얼어붙어라.","겨울이 왔다.","서리 창을 받아라."],
+  hurt:["감히.","이 정도 냉기로는 부족한가."],
+  down:["봄은… 오지… 않는다…"]}
+};
+const BARK_ANY={
+ in:["…"], atk:["하압!"], hurt:["윽!"], kill:["끝."], down:["크윽…"]
+};
+let BARK_AT=0;
+function bark(u,cat,force){
+  if(!u||!B||B.over) return;
+  const now=Date.now();
+  if(!force&&now-BARK_AT<1800) return;          /* 너무 자주 떠들지 않게 */
+  const P=(BARK[u.of||u.name]||{})[cat]||(u.isMin?null:BARK_ANY[cat]);
+  if(!P||!P.length) return;
+  const rate={in:0.42,atk:0.13,hurt:0.16,kill:0.3,down:0.85}[cat]||0.12;
+  if(!force&&Math.random()>rate) return;
+  BARK_AT=now;
+  const foe=!!u.isFoe||B.foes.indexOf(u)>=0;
+  const p=ctrOf(foe?"foe":"mine",u.slot);
+  if(!p) return;
+  const nd=spawn('<div class="bark'+(foe?" f":"")+'">'+esc(rnd(P))+'</div>');
+  if(!nd) return;
+  nd.style.left=p.x+"px";
+  nd.style.top=(p.y-58)+"px";
+}
 function intentHtml(f){
   if(!f.alive||!f.intent) return "";
   const I=f.intent;
@@ -6338,6 +6495,7 @@ function playCard(i,slot,side){
     c.hero.slot=slot; B.hand.splice(i,1);
     fx({side:"mine",slot:slot,s:"summon",ring:"#7fd39a",glow:1,gap:60});
     onSummon(c.hero);
+    bark(c.hero,"in");
     wanderCheck();
     rollIntents();
     say(`${c.hero.name}${jo(c.hero.name,"ig")} ${slot}번 칸에 자리를 잡습니다.`,"t1");
@@ -6384,7 +6542,8 @@ function hurt(f,amt,tag,art,pierce,crit){
       hurtAlly(f,src,f.thorn,`${f.name}의 가시`);
       f.thornBusy=0;
     } }
-  if(f.hp<=0&&f.alive){ f.alive=0;
+  if(f.hp>0&&d>0) bark(f,"hurt");
+  if(f.hp<=0&&f.alive){ f.alive=0; bark(f,"down",1);
     fx({side:"foe",slot:f.slot,s:"die",txt:"처치",cls:"crit",gap:170});
     say(`${f.name} 처치.`,"t1");
     if(f.isPhantom){
@@ -6471,6 +6630,7 @@ function doSkill(target){
     sel.target=target; sel.step=5; SFX.play("click"); render(); return;
   }
   h.shadowGo=(sel.moveTo!=null?sel.moveTo:0);
+  bark(h,"atk");
   say(`▸ ${h.name} — ${s0.n} ×${n}`,"t1");
   for(let k=0;k<n;k++){
     if(B.over||h.hp<=0) break;
@@ -7216,6 +7376,7 @@ function runEffect(h,i,s,target){
       if(h.name==="이테리오"&&s.mark&&tgt.alive){ tgt.mark=(tgt.mark||0)+1;
         fx({side:"foe",slot:tgt.slot,ring:"#6aa8e0",txt:"표식",cls:"mag",gap:60}) }
       if(was&&!tgt.alive){
+        bark(h,"kill");
         if(!tgt.isPhantom){
           const ke=itemBt(h,"killEsh");
           if(ke){ h.eshield=(h.eshield||0)+ke;
@@ -7304,7 +7465,7 @@ function hurtAlly(f,t,raw,label){
     if(t.stance==="nightmare") B.foes.filter(x=>x.alive).forEach(x=>hurt(x,4+t.atk,"악몽 태세","slash"));
     if(t.stance==="terror") B.foes.filter(x=>x.alive).forEach(x=>{ addDeb(x,"fear",1,t); addDeb(x,"atkDn",1) });
   }
-  if(t.hp<=0) unitDown(t);
+  if(t.hp<=0) unitDown(t); else if(raw>0) bark(t,"hurt");
 }
 function unitDown(t){
   fx({side:"mine",slot:t.slot,s:"down",txt:t.isMin?"파괴":"쓰러짐",cls:"miss",gap:180});
@@ -7319,6 +7480,7 @@ function unitDown(t){
         fx({side:"foe",slot:x.slot,ring:"#8f5fd0",txt:"약화",cls:"miss",gap:80}) });
     t.alive=0; t.slot=0; onDeath("min",t); return;
   }
+  bark(t,"down",1);
   say(`${t.name} 쓰러짐.`,"t3"); t.slot=0; t.down=1; onDeath("ally");
   if(t.name==="트리스탄"&&!B.corpseUsed){
     B.corpseUsed=1; B.hand.push({type:"summon",name:"망자의 육체"});
@@ -7408,6 +7570,7 @@ function endTurn(){
       if(wall){ say(`${wall.name}${jo(wall.name,"ig")} 앞을 막아섭니다.`,"t2"); t=wall }
       if(!t) return;
       if(!f.intent.far&&dist(t.slot,f.slot)>f.rng){ say(`${f.name} 공격 — 거리 밖.`,"t2"); return }
+      bark(f,"atk");
       const hits=Math.max(1,f.intent.hits||1);
       const one=foeDmg(f,f.intent.v,f.intent.el);
       if(hits>1) say(`${f.name} ${f.intent.pat||"연타"} — ${hits}번 몰아칩니다.`,"t2");
