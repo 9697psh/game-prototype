@@ -1491,11 +1491,18 @@ function drawCamp(app){
     row.appendChild(c);
   });
   wrap.appendChild(row);
+  const CAMP_CLEANSE=55;
   const sleep=el(`<div style="margin-top:24px">
-    <button class="go">숙면 — 밤을 넘긴다</button>
-    ${run.night?"":`<div class="hint" style="margin-top:6px">아직 해가 지지 않았습니다. 18시가 지나야 잠자리에 들 수 있습니다.</div>`}</div>`);
+    <button class="go">숙면 — 밤을 넘기고 오염도를 ${CAMP_CLEANSE} 씻어낸다</button>
+    <div class="hint" style="margin-top:6px">${run.night
+      ? `주둔지의 불빛이 균열의 기운을 밀어냅니다. (지금 오염도 ${run.taint})`
+      : "아직 해가 지지 않았습니다. 18시가 지나야 잠자리에 들 수 있습니다."}</div></div>`);
   sleep.querySelector("button").disabled=!run.night;
-  sleep.querySelector("button").onclick=()=>{ nextDay(); if(view!=="over"){ view="map"; render() } };
+  sleep.querySelector("button").onclick=()=>{
+    addTaint(-CAMP_CLEANSE);
+    toast(`주둔지에서 밤을 보내며 오염도를 ${CAMP_CLEANSE} 씻어냈습니다.`);
+    nextDay(); if(view!=="over"){ view="map"; render() }
+  };
   wrap.appendChild(sleep);
   const gear=el(`<div style="margin-top:12px">
     <button>장비 정리 — 가방 ${(run.bag||[]).length}개</button>
