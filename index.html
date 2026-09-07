@@ -421,6 +421,31 @@ button.dtl{padding:3px 10px;font-size:11.5px}
   animation:strA .34s ease-out forwards}
 @keyframes strA{0%{opacity:0;transform:scaleX(0)}
   25%{opacity:1}100%{opacity:0;transform:scaleX(1)}}
+.hidev{position:absolute;transform:translate(-50%,-50%);width:96px;height:96px;border-radius:50%;
+  background:radial-gradient(circle,rgba(122,74,176,.55),rgba(20,20,25,.85) 55%,transparent 72%);
+  animation:hdv .6s ease-out forwards;pointer-events:none}
+@keyframes hdv{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}
+  35%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1.35)}}
+.wisp{position:absolute;width:6px;height:10px;border-radius:50%;background:#7a4ab0;
+  filter:blur(1px);animation:wsp .62s ease-out forwards;pointer-events:none}
+@keyframes wsp{0%{opacity:.9;transform:translate(-50%,-50%)}
+  100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(.3)}}
+.slot.vanish{animation:vns .6s ease-out}
+@keyframes vns{0%{opacity:1}40%{opacity:.15;filter:brightness(.3)}100%{opacity:1}}
+.slot.emerge{animation:emg .45s ease-out}
+@keyframes emg{0%{opacity:.1;transform:scale(.86)}60%{opacity:1;transform:scale(1.05)}100%{transform:scale(1)}}
+.shade{position:absolute;transform:translate(-50%,-50%);width:56px;height:66px;border-radius:26px;
+  background:linear-gradient(180deg,rgba(160,106,224,.75),rgba(20,20,26,.9));
+  filter:blur(2px);pointer-events:none}
+.smoke{position:absolute;transform:translate(-50%,-50%);width:34px;height:34px;border-radius:50%;
+  background:radial-gradient(circle,rgba(122,74,176,.5),transparent 70%);
+  animation:smk .5s ease-out forwards;pointer-events:none}
+@keyframes smk{0%{opacity:.85;transform:translate(-50%,-50%) scale(.6)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.6)}}
+.shmark{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);
+  width:40px;height:40px;opacity:.7;pointer-events:none;animation:shp 2s ease-in-out infinite}
+@keyframes shp{0%,100%{opacity:.45;transform:translate(-50%,-50%) scale(.94)}
+  50%{opacity:.8;transform:translate(-50%,-50%) scale(1.06)}}
 .field.quake{animation:qk .5s}
 @keyframes qk{0%,100%{transform:translate(0,0)}
   12%{transform:translate(-4px,3px)}28%{transform:translate(5px,-2px)}
@@ -667,6 +692,31 @@ function streakFX(from,to){
   nd.style.width=Math.sqrt(dx*dx+dy*dy)+"px";
   nd.style.transform="rotate("+Math.atan2(dy,dx)+"rad)";
   nd.style.transformOrigin="0 50%";
+}
+function hideFX(slot){
+  const p=ctrOf("mine",slot); if(!p) return;
+  at(spawn('<div class="hidev"></div>'),p);
+  if(p.e){ p.e.classList.remove("vanish"); void p.e.offsetWidth; p.e.classList.add("vanish") }
+  for(let i=0;i<10;i++){
+    const d=spawn('<div class="wisp"></div>'); if(!d) continue;
+    at(d,p);
+    d.style.setProperty("--dx",(Math.random()*46-23)+"px");
+    d.style.setProperty("--dy",(-14-Math.random()*30)+"px");
+  }
+}
+function shadeDash(from,to){
+  const a=ctrOf("mine",from), b=ctrOf("mine",to); if(!a||!b) return;
+  const nd=spawn('<div class="shade"></div>');
+  if(nd){ nd.style.left=a.x+"px"; nd.style.top=a.y+"px"; void nd.offsetWidth;
+    nd.style.transition="left .34s cubic-bezier(.3,.85,.3,1),top .34s ease,opacity .28s";
+    nd.style.left=b.x+"px"; nd.style.top=b.y+"px";
+    setTimeout(()=>{ nd.style.opacity=0 },250) }
+  for(let i=1;i<=6;i++) setTimeout(()=>{
+    const t=i/7, w=spawn('<div class="smoke"></div>');
+    if(w){ w.style.left=(a.x+(b.x-a.x)*t)+"px"; w.style.top=(a.y+(b.y-a.y)*t)+"px" }
+  }, i*42);
+  if(b.e){ b.e.classList.remove("emerge"); void b.e.offsetWidth;
+    setTimeout(()=>b.e.classList.add("emerge"),300) }
 }
 function flushFX(){
   let t=0;
@@ -1001,7 +1051,7 @@ HEROES["쿠렘타이"]={title:"영혼 수확자",role:"마법 · 성장",hp:20,m
   passive:{n:"영혼 수확",d:"무언가 죽을 때마다 영혼을 모은다. 영혼 40개마다 마법력 +1 (영구)"},
   skills:[
    {n:"착취",cost:1,el:"마법",tg:"foe",dmg:2,drain:1,d:"피해 2 · 영혼이 쌓이면 앞뒤로 번지고 관통·연발까지"},
-   {n:"영혼 분리",cost:2,el:"마법",tg:"any",phantom:1,d:"체력이 가장 낮은 적의 환영을 아군 칸이나 적 칸에 소환"},
+   {n:"영혼 분리",cost:2,el:"마법",tg:"any",phantom:1,d:"체력이 가장 낮은 적의 환영을 아군·적의 빈 칸에 소환"},
    {n:"환상통",cost:0,el:"마법",tg:"self",lock:1,phantomPain:1,d:"잠금(1) · 추가 마법력만큼 모든 적에게 피해"},
    {n:"사형 선고",cost:3,el:"마법",tg:"any",limit:1,verdict:1,startLock:2,
     d:"우두머리가 아닌 대상을 처치하고 절반의 체력으로 되살림"}
@@ -1046,7 +1096,7 @@ HEROES["그슨대"]={title:"그림자 학살자",role:"은신 · 기습",hp:20,m
   focus:"맞을수록 날카로워지고, 그림자를 밟아 사라진다",
   passive:{n:"커져가는 악몽",d:"공격 피해를 받을 때마다 어둠 조각. 3개마다 이번 전투 공격력 +1"},
   skills:[
-   {n:"그림자 기습",cost:1,el:"공격",tg:"foe",dmg:3,shadow:1,d:"피해 3 · 그림자를 남기고 이동 (그림자가 있으면 그리로 사라짐)"},
+   {n:"그림자 기습",cost:1,el:"공격",tg:"foe",dmg:3,shadow:1,d:"피해 3 · 자리에 그림자를 남기고 최대 2칸 이동 (그림자가 있으면 그리로 사라져 은신)"},
    {n:"생기 갈취",cost:1,el:"보호",tg:"self",leech:1,d:"다음 기술이 흡수 20% (그림자가 있으면 관통 50%도)"},
    {n:"악몽 태세",cost:2,el:"보호",tg:"self",stance:"nightmare",shield:10,
     d:"보호막 10 · 다음 턴까지 맞을 때마다 모든 적에게 피해 4",
@@ -1513,9 +1563,10 @@ const PACKS=[
   fx:r=>{ addCard(r,"소형 방패",3) }},
  {n:"금속 펜던트",d:"가장 처음 중급 보상을 얻을 때, 하나 더 얻습니다.",i:"charm",
   fx:r=>{ r.pendant=1 }},
- {n:"버려진 시계",d:"레벨을 1 얻습니다.",i:"clock",
-  fx:r=>{ const h=r.heroes[0]; h.lv++; h.maxHp+=h.hpLv; h.hp+=h.hpLv;
-          r.bonusLv=[{hero:h,lv:h.lv}] }}
+ {n:"버려진 시계",d:"레벨을 3 얻습니다.",i:"clock",
+  fx:r=>{ const h=r.heroes[0], q=[];
+          for(let i=0;i<3;i++){ h.lv++; h.maxHp+=h.hpLv; h.hp+=h.hpLv; q.push({hero:h,lv:h.lv}) }
+          r.bonusLv=q }}
 ];
 function packArt(i){
   const c={gold:"#c9a227",item:"#6aa8e0",card:"#7fd39a",charm:"#e0a86a",clock:"#a06ae0"}[i]||"#c9a227";
@@ -1544,7 +1595,7 @@ function newRun(name,pack){
   run={heroes:[makeHero(name)], gold:0, stone:0, cards:[], bag:[],
        field:0, size:S, grid:buildGrid(0),
        pos:{r:S-1,c:mid}, day:1, time:6, act:f.act, actMax:f.act,
-       taint:0, night:0, campDone:0, bonusLv:null};
+       taint:0, night:0, campDone:0, remapUsed:0, bonusLv:null};
   if(pack) pack.fx(run);
   const q=run.bonusLv; run.bonusLv=null;
   view="map";
@@ -1590,7 +1641,7 @@ function nextField(){
   run.size=S; run.grid=buildGrid(run.field);
   run.pos={r:S-1,c:mid};
   run.day=1; run.time=6; run.actMax=f.act; run.act=f.act;
-  run.night=0; run.taint=0; run.campDone=0;
+  run.night=0; run.taint=0; run.campDone=0; run.remapUsed=0;
   run.heroes.forEach(h=>{ h.hp=h.maxHp; h.down=0 });
   toast(`${f.n}에 들어섭니다. 대원 전원이 회복되었습니다.`);
   view="map"; render();
@@ -1903,6 +1954,22 @@ function drawCamp(app){
     nextDay(); if(view!=="over"){ view="map"; render() }
   };
   wrap.appendChild(sleep);
+  const remap=el(`<div style="margin-top:12px">
+    <button>지도 재편성 ${run.remapUsed?"— 이번 구역에서는 이미 썼습니다":"— 이번 구역에서 한 번"}</button>
+    <div class="hint" style="margin-top:6px">주둔지에서 정찰대를 풀어 구역을 다시 그립니다.
+      던전·정예·상점·휴식소·미지의 구역이 모두 새 자리에 놓입니다. 구역마다 한 번뿐입니다.</div></div>`);
+  remap.querySelector("button").disabled=!!run.remapUsed;
+  remap.querySelector("button").onclick=()=>{
+    if(run.remapUsed) return;
+    run.remapUsed=1;
+    const S=run.size, mid=Math.floor(S/2);
+    run.grid=buildGrid(run.field);
+    run.pos={r:S-1,c:mid};
+    SFX.play("unlock");
+    toast("정찰대가 구역을 다시 그렸습니다.");
+    view="map"; render();
+  };
+  wrap.appendChild(remap);
   const gear=el(`<div style="margin-top:12px">
     <button>장비 정리 — 가방 ${(run.bag||[]).length}개</button>
     <div class="hint" style="margin-top:6px">장비 정리는 하루 한 번 제한에 들어가지 않습니다.</div></div>`);
@@ -2698,49 +2765,37 @@ function rollIntents(){
     if(!allies.length){ f.intent={t:"wait"}; return }
     if(f.forceDef){ f.forceDef=0; f.intent={t:"def",v:defVal(f)}; return }
     const inR=allies.filter(a=>dist(a.slot,f.slot)<=f.rng);
-    if(!inR.length){
-      if(f.slot>1&&!foeAt(f.slot-1)){ f.intent={t:"move"}; return }
-      if(f.slot>1&&foeAt(f.slot-1)){ f.intent={t:"push"}; return }
-      /* 더 다가갈 수 없다면 웅크리기만 하지 말고 판을 준비한다 */
-      const idle=[], put=(o,w)=>{ for(let q=0;q<w;q++) idle.push(o) };
-      const D0=(FOE[f.name]&&FOE[f.name].ai)||{};
-      if((f.buffs||0)<3) put({t:"buff",v:Math.max(1,Math.round(f.atk*0.35))},2+(D0.buff||0));
-      put({t:"curse"},1+(D0.curse||0));
-      const m0=B.foes.filter(x=>x.alive&&x!==f&&x.hp<x.maxHp)[0];
-      if(m0) put({t:"heal",v:Math.max(2,Math.round(f.def*0.8)),to:m0.id},2+(D0.heal||0));
-      put({t:"def",v:defVal(f)},2+(D0.def||0));
-      const t0=allies[0];
-      if(t0) (D0.debs||["burn"]).forEach(k=>{
-        const v={burn:2,bind:2,stun:1,fear:1,shock:3,chill:3,atkDn:2,magDn:2}[k]||1;
-        put({t:"deb",k:k,to:t0.slot,v:v},1) });
-      let bi=null;
-      for(let t=0;t<4;t++){
-        const c=rnd(idle), k=intentKey(c), n=USED[k]||0;
-        if(!n||Math.random()<1/(1+n*1.6)){ bi=c; break }
-        if(!bi) bi=c;
+    const far=!inR.length;
+    if(far){
+      /* 먼저 거리를 좁혀 본다 */
+      if(f.slot>1&&!foeAt(f.slot-1)&&Math.random()<0.55){ f.intent={t:"move"}; return }
+      if(f.slot>1&&foeAt(f.slot-1)&&Math.random()<0.4){ f.intent={t:"push"}; return }
+      /* 다가갈 수 없어도 손 놓고 있지는 않는다 — 무리해서 노린다 */
+    }else{
+      /* 원거리형은 붙으면 물러선다 */
+      const RET=((FOE[f.name]&&FOE[f.name].ai)||{}).ret||0;
+      if(RET&&dist(inR[0].slot,f.slot)<=1&&f.slot<SLOTS&&!foeAt(f.slot+1)&&Math.random()<RET){
+        f.intent={t:"back"}; return;
       }
-      USED[intentKey(bi)]=(USED[intentKey(bi)]||0)+1;
-      f.intent=bi; return;
     }
-    /* 원거리형은 붙으면 물러선다 */
-    const RET=((FOE[f.name]&&FOE[f.name].ai)||{}).ret||0;
-    if(RET&&dist(inR[0].slot,f.slot)<=1&&f.slot<SLOTS&&!foeAt(f.slot+1)&&Math.random()<RET){
-      f.intent={t:"back"}; return;
-    }
+    const T=far?allies:inR;
     const pool=[], add=(o,w)=>{ for(let q=0;q<(w||0);q++) pool.push(o) };
-    const near=inR.reduce((a,b)=>dist(a.slot,f.slot)<=dist(b.slot,f.slot)?a:b);
-    const weak=inR.reduce((a,b)=>a.hp<=b.hp?a:b);
-    const back=inR.reduce((a,b)=>a.slot>=b.slot?a:b);
-    const any =rnd(inR);
+    const near=T.reduce((a,b)=>dist(a.slot,f.slot)<=dist(b.slot,f.slot)?a:b);
+    const weak=T.reduce((a,b)=>a.hp<=b.hp?a:b);
+    const back=T.reduce((a,b)=>a.slot>=b.slot?a:b);
+    const any =rnd(T);
+    /* 사거리 밖이면 무리하게 뻗느라 위력이 준다 */
+    const FM=far?0.7:1, FP=far?"무리한 ":"";
+    const dv=x=>Math.max(1,Math.round(x*FM));
     const D=(FOE[f.name]&&FOE[f.name].ai)||{};
     const A=Object.assign({near:8,weak:4,back:2,any:2,def:1,volley:0,buff:0,heal:2,curse:1,debs:["burn"]},D);
     const hit=(FOE[f.name]&&FOE[f.name].hit)||"내려찍기";
-    add({t:"atk",v:f.atk,to:near.slot,pat:hit},A.near);
-    add({t:"atk",v:Math.round(f.atk*1.35),to:weak.slot,pat:"약점 노리기"},A.weak);
-    add({t:"atk",v:f.atk,to:back.slot,pat:"후방 급습"},A.back);
-    add({t:"atk",v:f.atk,to:any.slot,pat:"난타"},A.any);
-    add({t:"def",v:defVal(f)},A.def);
-    add({t:"volley",v:Math.max(1,Math.round(f.atk*0.6))},A.volley);
+    add({t:"atk",v:dv(f.atk),to:near.slot,pat:FP+hit,far:far},A.near);
+    add({t:"atk",v:dv(f.atk*1.35),to:weak.slot,pat:FP+"약점 노리기",far:far},A.weak);
+    add({t:"atk",v:dv(f.atk),to:back.slot,pat:FP+"후방 급습",far:far},A.back);
+    add({t:"atk",v:dv(f.atk),to:any.slot,pat:FP+"난타",far:far},A.any);
+    add({t:"def",v:defVal(f)},far?A.def+1:A.def);
+    add({t:"volley",v:dv(f.atk*0.6)},far?A.volley+2:A.volley);
     if((f.buffs||0)<3) add({t:"buff",v:Math.max(1,Math.round(f.atk*0.35))},A.buff);
     const mate=B.foes.filter(x=>x.alive&&x!==f&&x.hp<x.maxHp*0.6)[0];
     if(mate) add({t:"heal",v:Math.max(2,Math.round(f.def*0.8)),to:mate.id},A.heal);
@@ -2749,7 +2804,7 @@ function rollIntents(){
     (A.debs||[]).forEach(k=>{
       const to=(k==="shock"||k==="fear")?back.slot:(k==="stun"?weak.slot:near.slot);
       const v={burn:2,bind:2,stun:1,fear:1,shock:3,chill:3,atkDn:2,magDn:2}[k]||1;
-      add({t:"deb",k:k,to:to,v:v},2);
+      add({t:"deb",k:k,to:to,v:v},far?1:2);
     });
     /* 이미 같은 행동을 고른 적이 있으면 다른 것을 우선한다 */
     let best=null;
@@ -2797,11 +2852,21 @@ function drawBattle(app){
   const preSkill = (sel && sel.skill!=null) ? sel.hero.sk[sel.skill] : null;
   const preReach = preSkill ? reachOf(sel.hero,preSkill) : null;
   const selfPick = tgMode==="ally" || tgMode==="any" || tgMode==="self";
+  const moveStep = !!(sel && sel.step===5);
+  const shOwner = allUnits().find(x=>x.shadowAt);
+  const shMark = dk=>`<svg class="shmark" viewBox="0 0 24 24">`
+      +`<ellipse cx="12" cy="18" rx="8" ry="3.5" fill="${dk?"#7a4ab0":"#4a3a5e"}" opacity=".85"/>`
+      +`<path d="M12 3c3.2 3.4 4.4 6.4 4.4 8.6a4.4 4.4 0 0 1-8.8 0C7.6 9.4 8.8 6.4 12 3z" `
+      +`fill="${dk?"#a06ae0":"#5f5070"}" opacity=".9"/></svg>`;
   for(let s=1;s<=SLOTS;s++){
     const h=unitAt(s);
     const d=el(`<div class="slot ${h?"":"empty"}"><span class="no">${s}</span></div>`);
     d.dataset.slot=s;
-    if(h){
+    if(shOwner&&shOwner.shadowAt===s) d.innerHTML+=shMark(shOwner.darkAt===s);
+    if(moveStep&&Math.abs(s-sel.hero.slot)<=2){
+      d.classList.add("pick"); d.onclick=()=>shadowGoTo(s);
+    }
+    else if(h){
       if(sel&&sel.hero===h&&sel.step===2) d.classList.add("pick");
       if(tgMode==="self"&&sel.hero===h) d.classList.add("pick");
       const pm=B.portals&&B.portals.find(p=>p.side==="mine"&&p.slot===s);
@@ -2877,11 +2942,14 @@ function drawBattle(app){
           ${f.burn?`<span class="chip on">화상${f.burn}</span>`:""}
           ${f.mark?`<span class="chip on">표식${f.mark}</span>`:""}</div>`;
       d.onclick=()=>{ if(sel&&sel.step===4&&canHit) doSkill(s) };
+    }else if(tgMode==="any"&&emptyOkAny(sel.hero.sk[sel.skill])){
+      d.classList.add("pick");
+      d.onclick=()=>doSkill(s);
     }
     fs.appendChild(d);
   }
 
-  if(sel&&sel.hero&&sel.step>=2) app.appendChild(skillPanel(sel.hero));
+  if(sel&&sel.hero&&sel.step>=2&&sel.step<5) app.appendChild(skillPanel(sel.hero));
   const hand=el(`<div class="hand" id="hand"></div>`);
   B.hand.forEach((c,i)=>{
     const card=el(`<div class="card ${c.type==="hero"||c.type==="summon"?"hero":""}" data-i="${i}">
@@ -2903,6 +2971,7 @@ function drawBattle(app){
     <span class="step ${sel&&sel.step===2?"on":""}">2 · 기술</span>
     <span class="step ${sel&&sel.step===3?"on":""}">3 · 횟수</span>
     <span class="step ${sel&&sel.step===4?"on":""}">4 · 대상</span>
+    ${sel&&sel.step===5?`<span class="step on">5 · 이동</span>`:""}
     <span class="hint">${promptMsg()}</span>
     <span class="grow"></span><span class="hint">Esc 취소</span></div>`);
   app.appendChild(pr);
@@ -2916,10 +2985,11 @@ function promptMsg(){
   const s=sel.hero.sk[sel.skill!=null?sel.skill:0];
   if(sel.step===2) return "기술 번호(1~4) · 클릭하면 1회 사용 · 같은 기술을 또 누르면 횟수가 늘어납니다";
   if(sel.step===3) return `${s.n} — 횟수를 누르세요 (1~9)`;
+  if(sel.step===5) return `${s.n} — 그림자를 남기고 옮겨갈 칸을 고르세요 (최대 2칸)`;
   if(s.tg==="self") return `${s.n} ×${sel.count} — 내 칸을 누르거나 아래 [시전] 버튼으로 발동`
     +" · 같은 기술을 또 누르면 횟수 +1";
   return s.tg==="ally"?`${s.n} ×${sel.count} — 이동할 칸을 고르세요`
-       : s.tg==="any" ?`${s.n} ×${sel.count} — 아군 칸 또는 적 칸을 클릭하세요`
+       : s.tg==="any" ?`${s.n} ×${sel.count} — 아군 칸 또는 적 칸(빈 칸 포함)을 클릭하세요`
        : s.tg==="foe" ?`${s.n} ×${sel.count} — 적의 칸을 고르세요`
           +(reachOf(sel.hero,s)!=null?` (사거리 ${reachOf(sel.hero,s)})`:"")
           +" · 같은 기술을 또 누르면 횟수 +1" : "";
@@ -3269,7 +3339,8 @@ document.addEventListener("keydown",e=>{
   if(!sel){ pickUnit(n); return }
   if(sel.step===2){ if(n<=4) pickSkill(n-1,null); return }
   if(sel.step===3){ pickCount(n); return }
-  if(sel.step===4){ if(n<=SLOTS) doSkill(n) }
+  if(sel.step===4){ if(n<=SLOTS) doSkill(n); return }
+  if(sel.step===5){ if(n<=SLOTS) shadowGoTo(n) }
 });
 
 /* ─ 드래그 소환 ─ */
@@ -3490,6 +3561,10 @@ function doSkill(target){
       render(); return;
     }
   }
+  if(s0.shadow&&!h.shadowAt&&sel.moveTo==null){
+    sel.target=target; sel.step=5; SFX.play("click"); render(); return;
+  }
+  h.shadowGo=(sel.moveTo!=null?sel.moveTo:0);
   say(`▸ ${h.name} — ${s0.n} ×${n}`,"t1");
   for(let k=0;k<n;k++){
     if(B.over||h.hp<=0) break;
@@ -3542,6 +3617,14 @@ function doSkill(target){
   }
   sel=null; checkEnd(); render();
 }
+function shadowGoTo(slot){
+  if(!sel||sel.step!==5) return;
+  const h=sel.hero;
+  if(Math.abs(slot-h.slot)>2){ say("최대 2칸까지만 움직일 수 있습니다.","t2"); return }
+  sel.moveTo=slot; sel.step=4; SFX.play("click");
+  doSkill(sel.target);
+}
+function emptyOkAny(sk){ return !!(sk&&(sk.phantom||sk.minion)) }
 function moveTo(h,to){
   if(deb(h,"bind")){ say(`${h.name}${jo(h.name,"eun")} 속박되어 움직일 수 없습니다.`,"t3"); return }
   const from=h.slot, occ=unitAt(to);
@@ -3726,24 +3809,31 @@ function runEffect(h,i,s,target){
       h.hide?"그림자 기습(치명타)":"그림자 기습","slash");
     if(h.hide){ h.hide=0 }
     if(h.shadowAt){
-      const to=h.shadowAt; h.shadowAt=0;
-      if(to!==h.slot) moveTo(h,to);
-      h.hide=1;
-      fx({side:"mine",slot:h.slot,ring:"#a06ae0",txt:"은신",cls:"shd"});
-      say(`${h.name}${jo(h.name,"ig")} 그림자 속으로 사라집니다.`);
+      const to=h.shadowAt, dark=(h.darkAt===to);
+      h.shadowAt=0; h.darkAt=0;
+      if(to!==h.slot){ shadeDash(h.slot,to); moveTo(h,to) }
+      if(dark){
+        h.taunt=1; h.armor=(h.armor||0)+4;
+        fx({side:"mine",slot:h.slot,ring:"#7a4ab0",txt:"도발·갑피4",cls:"mag",gap:120});
+        say(`${h.name}${jo(h.name,"ig")} 어두운 그림자에서 솟아납니다 — 도발 · 갑피 4`,"t1");
+      }else{
+        h.hide=1; hideFX(h.slot);
+        fx({side:"mine",slot:h.slot,ring:"#a06ae0",txt:"은신",cls:"shd",gap:160});
+        say(`${h.name}${jo(h.name,"ig")} 그림자 속으로 사라집니다.`,"t1");
+      }
     }else{
+      const go=h.shadowGo||0; h.shadowGo=0;
       h.shadowAt=h.slot;
-      const to=Math.max(1,Math.min(SLOTS,h.slot+(Math.random()<0.5?-2:2)));
-      const free=[to,to-1,to+1].find(x=>x>=1&&x<=SLOTS&&!unitAt(x));
-      if(free) moveTo(h,free);
-      say(`${h.name}${jo(h.name,"ig")} ${h.shadowAt}번 칸에 그림자를 남깁니다.`);
+      fx({side:"mine",slot:h.slot,ring:"#7a4ab0",txt:"그림자",cls:"mag",gap:60});
+      if(go&&go!==h.slot&&Math.abs(go-h.slot)<=2){ shadeDash(h.slot,go); moveTo(h,go) }
+      say(`${h.name}${jo(h.name,"ig")} ${h.shadowAt}번 칸에 그림자를 남기고 빠져나갑니다.`);
     }
     return;
   }
   if(s.leech){
     h.leech=1;
-    if(h.shadowAt){ const to=h.shadowAt; h.shadowAt=0;
-      if(to!==h.slot) moveTo(h,to);
+    if(h.shadowAt){ const to=h.shadowAt; h.shadowAt=0; h.darkAt=0;
+      if(to!==h.slot){ shadeDash(h.slot,to); moveTo(h,to) }
       h.pierceNext=1; say(`${h.name} 흡수 20% · 관통 50%`) }
     else say(`${h.name} 다음 기술이 흡수 20%를 얻습니다.`);
     return;
@@ -4210,7 +4300,7 @@ function endTurn(){
       const taunt=allUnits().find(h=>h.taunt);
       let t=taunt||unitAt(f.intent.to)||allUnits()[0];
       if(!t) return;
-      if(dist(t.slot,f.slot)>f.rng){ say(`${f.name} 공격 — 거리 밖.`,"t2"); return }
+      if(!f.intent.far&&dist(t.slot,f.slot)>f.rng){ say(`${f.name} 공격 — 거리 밖.`,"t2"); return }
       if(t.evade>0){ t.evade--;
         fx({side:"mine",slot:t.slot,s:"miss",txt:"회피",cls:"miss"});
         say(`${f.name} 공격 — ${t.name} 회피!`,"t2"); return }
