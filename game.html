@@ -208,6 +208,10 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .cell.adj{cursor:pointer;border-color:var(--rule2);background:#211d17}
 .cell.adj:hover{border-color:var(--brass);background:var(--raise)}
 .cell.here{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass) inset;opacity:1}
+.cell.risk{border-color:#6b2b2b;background:#241416;opacity:.8}
+.cell.risk:hover{border-color:var(--blood);background:#301a1c}
+.cell.risk::after{content:"";position:absolute;inset:0;border-radius:4px;
+  background:radial-gradient(circle at 50% 50%,rgba(142,43,43,.35),transparent 70%)}
 .cell .you{position:absolute;bottom:-2px;right:2px;color:var(--brass);font-size:11px}
 .cell .cl{position:absolute;top:-8px;left:50%;transform:translateX(-50%);
   font-size:8.5px;background:var(--ink);border:1px solid var(--rule);border-radius:3px;
@@ -1289,12 +1293,13 @@ function drawMap(app){
   const f=FIELDS[run.field], S=run.size;
   app.appendChild(el(`<div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
     <div class="title" style="font-size:20px">${esc(f.n)}</div>
-    <div class="hint">${run.night?"밤길에는 무엇이 튀어나올지 모릅니다.":run.act<=0?"활동량이 바닥났습니다. 이제 한 칸에 2시간이 걸립니다.":"인접한 칸을 눌러 이동합니다. 한 칸에 활동량 1 · 1시간 · 오염도 2."}</div></div>`));
+    <div class="hint">${run.night?`밤입니다. 빈 칸을 지날 때 습격당할 확률 ${Math.round(Math.min(85,45+nightDepth()*5))}% · 표시된 칸은 ${Math.round(Math.min(85,12+nightDepth()*5))}%`:run.act<=0?"활동량이 바닥났습니다. 이제 한 칸에 2시간이 걸립니다.":"인접한 칸을 눌러 이동합니다. 한 칸에 활동량 1 · 1시간 · 오염도 2."}</div></div>`));
   const g=el(`<div class="gridmap" style="grid-template-columns:repeat(${S},1fr)"></div>`);
   for(let r=0;r<S;r++) for(let c=0;c<S;c++){
     const cell=run.grid[r][c], here=(run.pos.r===r&&run.pos.c===c);
     const adj=near(run.pos,{r:r,c:c});
-    const d=el(`<div class="cell ${cell.t==="empty"?"emp":""} ${here?"here":""} ${adj?"adj":""} ${cell.done?"done":""}">
+    const risky=run.night&&cell.t==="empty"&&adj;
+    const d=el(`<div class="cell ${cell.t==="empty"?"emp":""} ${here?"here":""} ${adj?"adj":""} ${cell.done?"done":""} ${risky?"risk":""}">
       ${nodeArt(cell.t)}
       ${here?`<span class="you">●</span>`:""}
       ${cell.t!=="empty"&&!cell.done?`<span class="cl">${esc(NODE[cell.t].label)}</span>`:""}
@@ -1326,13 +1331,21 @@ function drawMap(app){
     </div></div>`)));
   app.appendChild(rs);
 }
+function nightDepth(){ return run.night?Math.max(0,run.time-18):0 }
+function ambushChance(cell){
+  if(!run.night) return 0;
+  const base=(cell.t==="empty")?0.45:0.12;
+  return Math.min(0.85, base+nightDepth()*0.05);
+}
 function moveTo2(r,c){
   const cell=run.grid[r][c];
   run.pos={r:r,c:c};
   spend(1,1); addTaint(2);
   if(run.taint>=100) return;
-  if(run.night&&Math.random()<0.4&&cell.t!=="camp"){
-    toast("어둠 속에서 무언가 달려듭니다.");
+  if(cell.t!=="camp"&&Math.random()<ambushChance(cell)){
+    toast(cell.t==="empty"
+      ? "인기척 하나 없는 자리입니다. 어둠 속에서 무언가 달려듭니다."
+      : "발을 들이기도 전에 무언가 달려듭니다.");
     startDungeon({t:"ambush",waves:1},r,c); return;
   }
   enterCell(r,c);
@@ -1894,7 +1907,7 @@ function foeScale(kind){
   let m=(1+f*0.85)*(1+l*0.05);
   if(kind==="elite")  m*=1.2;
   if(kind==="boss")   m*=1.35;
-  if(kind==="ambush") m*=1.3;
+  if(kind==="ambush") m*=1.3+nightDepth()*0.08;
   /* 대원이 적을수록 적도 약해진다 */
   const hpP =[0,0.68,0.86,1,1.08,1.15][n];
   const atkP=[0,0.58,0.82,1,1.06,1.12][n];
