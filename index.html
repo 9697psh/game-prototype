@@ -5815,6 +5815,8 @@ function drawBattle(app){
   const preReach = preSkill ? reachOf(sel.hero,preSkill) : null;
   const selfPick = tgMode==="ally" || tgMode==="any" || tgMode==="self";
   const moveStep = !!(sel && sel.step===5);
+  /* 이동 기술이면 갈 수 없는 칸은 켜지 않는다 */
+  const canGo = n => !(sel && tgMode==="ally" && moveBlock(sel.hero,preSkill,n));
   const shOwner = allUnits().find(x=>x.shadowAt);
   const shMark = dk=>`<svg class="shmark" viewBox="0 0 24 24">`
       +`<ellipse cx="12" cy="18" rx="8" ry="3.5" fill="${dk?"#7a4ab0":"#4a3a5e"}" opacity=".85"/>`
@@ -5825,12 +5827,13 @@ function drawBattle(app){
     const d=el(`<div class="slot ${h?"":"empty"}"><span class="no">${s}</span></div>`);
     d.dataset.slot=s;
     if(shOwner&&shOwner.shadowAt===s) d.innerHTML+=shMark(shOwner.darkAt===s);
-    if(moveStep&&Math.abs(s-sel.hero.slot)<=2){
+    if(moveStep&&s!==sel.hero.slot&&Math.abs(s-sel.hero.slot)<=2){
       d.classList.add("pick"); d.onclick=()=>shadowGoTo(s);
     }
     else if(h){
       if(sel&&sel.hero===h&&sel.step===2) d.classList.add("pick");
       if(tgMode==="self"&&sel.hero===h) d.classList.add("pick");
+      if(tgMode==="ally"&&canGo(s)) d.classList.add("pick");
       const pm=B.portals&&B.portals.find(p=>p.side==="mine"&&p.slot===s);
       if(pm) d.innerHTML+=`<svg class="portal" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#a06ae0" stroke-width="2.5"/><circle cx="12" cy="12" r="3.5" fill="#a06ae0"/></svg>`;
       const esW=h.eshield?Math.max(6,Math.min(45,h.eshield/h.maxHp*100)):0;
@@ -5867,15 +5870,21 @@ function drawBattle(app){
           ${debChips(h)}
         </div>`;
       d.onclick=()=>{
-        if(tgMode==="ally") doSkill(s);
+        if(tgMode==="ally"){ const why=moveBlock(sel.hero,preSkill,s);
+          if(why){ say(why,"t2"); render(); return }
+          doSkill(s) }
         else if(tgMode==="any") doSkill(-s);
         else if(tgMode==="self"){ if(sel.hero.slot===s) doSkill(null) }
         else pickUnit(s);
       };
 
     }else{
-      if(selfPick&&tgMode!=="self") d.classList.add("pick");
-      d.onclick=()=>{ if(tgMode==="ally") doSkill(s); else if(tgMode==="any") doSkill(-s) };
+      if(selfPick&&tgMode!=="self"&&canGo(s)) d.classList.add("pick");
+      d.onclick=()=>{
+        if(tgMode==="ally"){ const why=moveBlock(sel.hero,preSkill,s);
+          if(why){ say(why,"t2"); render(); return }
+          doSkill(s) }
+        else if(tgMode==="any") doSkill(-s) };
     }
     my.appendChild(d);
   }
@@ -6009,6 +6018,7 @@ function promptMsg(){
   if(s.tg==="self") return `${s.n} ×${sel.count} — 내 칸을 누르거나 아래 [시전] 버튼으로 발동`
     +" · 같은 기술을 또 누르면 횟수 +1";
   return s.tg==="ally"?`${s.n} ×${sel.count} — 이동할 칸을 고르세요`
+       +(isMoveSkill(s)&&!moveStayOk(sel.hero,s)?" (지금 칸은 고를 수 없습니다)":"")
        : s.tg==="any" ?`${s.n} ×${sel.count} — 아군 칸 또는 적 칸(빈 칸 포함)을 클릭하세요`
        : s.tg==="foe" ?`${s.n} ×${sel.count} — 적의 칸을 고르세요`
           +(reachOf(sel.hero,s)!=null?` (사거리 ${reachOf(sel.hero,s)})`:"")
@@ -6716,6 +6726,10 @@ function airborne(h,f){
 }
 function doSkill(target){
   const h=sel.hero,i=sel.skill,n=sel.count,s0=h.sk[i];
+  if(isMoveSkill(s0)){
+    const why=moveBlock(h,s0,target);
+    if(why){ say(why,"t2"); render(); return }
+  }
   if(s0.tg==="foe"){
     if(!foeAt(target)){ say("그 칸에는 적이 없습니다.","t2"); return }
     { const why=foeBlockReason(foeAt(target));
@@ -6819,9 +6833,28 @@ function doSkill(target){
   }
   sel=null; checkEnd(); render();
 }
+/* ═══ 이동 기술의 목적지 판정 ═══
+   '이동' 속성으로 칸을 고르는 기술은, 특별한 예외가 없는 한
+   지금 서 있는 칸을 고를 수 없다. */
+function isMoveSkill(sk){ return !!(sk&&sk.el==="이동"&&sk.tg==="ally") }
+/* 예외 — 카제의 '제자리바람' 특성은 움직이지 않고도 쓸 수 있게 해 준다 */
+function moveStayOk(h,sk){ return !!(h&&h.tag&&h.tag.gustStay&&sk&&sk.el==="이동") }
+/* 고를 수 있는 거리 — 산들바람은 방향만 고르면 알아서 한 칸 나아간다 */
+function movePickRange(sk){ return (sk&&(sk.jumpback||sk.soothe))?2:SLOTS }
+/* 못 고르는 칸이면 그 이유를 돌려준다 */
+function moveBlock(h,sk,to){
+  if(!isMoveSkill(sk)||to==null) return "";
+  if(to===h.slot&&!moveStayOk(h,sk))
+    return `${sk.n}${jo(sk.n,"eun")} 지금 서 있는 칸으로는 갈 수 없습니다. 다른 칸을 고르세요.`;
+  const r=movePickRange(sk);
+  if(Math.abs(to-h.slot)>r)
+    return `${sk.n}${jo(sk.n,"eun")} ${r}칸까지만 움직입니다.`;
+  return "";
+}
 function shadowGoTo(slot){
   if(!sel||sel.step!==5) return;
   const h=sel.hero;
+  if(slot===h.slot){ say("그림자를 남기려면 자리를 떠야 합니다. 다른 칸을 고르세요.","t2"); return }
   if(Math.abs(slot-h.slot)>2){ say("최대 2칸까지만 움직일 수 있습니다.","t2"); return }
   sel.moveTo=slot; sel.step=4; SFX.play("click");
   doSkill(sel.target);
