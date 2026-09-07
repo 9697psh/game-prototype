@@ -50,7 +50,7 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .reach{position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:9.5px;
   color:var(--faint);pointer-events:none}
 .slot.pick .reach{color:var(--brass)}
-.no{position:absolute;top:-9px;left:7px;background:var(--ink);border:1px solid var(--rule);
+.slot .no{position:absolute;top:-9px;left:7px;background:var(--ink);border:1px solid var(--rule);
   border-radius:3px;font-size:10px;padding:0 6px;color:var(--faint)}
 .slot.pick .no{color:var(--brass);border-color:var(--brass)}
 .art{height:56px;display:flex;align-items:flex-end;justify-content:center}
@@ -1362,9 +1362,15 @@ function enterCell(r,c){
   const cell=run.grid[r][c];
   if(cell.done||cell.t==="empty"){ view="map"; render(); return }
   if(cell.t==="camp"){ view="camp"; render(); return }
-  if(cell.t==="shop"){ spend(0.5,0); makeShop(); run.here={r:r,c:c}; view="shop"; render(); return }
-  if(cell.t==="rest"){ spend(0.5,0); run.here={r:r,c:c}; view="rest"; render(); return }
-  if(cell.t==="event"){ spend(0.5,0); run.ev=rnd(EVENTS); run.evMsg=null; run.here={r:r,c:c}; view="relic"; render(); return }
+  if(cell.t==="shop"||cell.t==="rest"||cell.t==="event"){
+    spend(0.5,0);
+    run.here={r:r,c:c};
+    run.grid[r][c]={t:"empty"};      /* 한 번 들르면 사라진다 */
+    if(cell.t==="shop"){ makeShop(); view="shop" }
+    else if(cell.t==="rest"){ view="rest" }
+    else { run.ev=rnd(EVENTS); run.evMsg=null; view="relic" }
+    render(); return;
+  }
   if(cell.t==="dungeon"||cell.t==="elite"||cell.t==="boss"){ startDungeon(cell,r,c); return }
   view="map"; render();
 }
@@ -1409,7 +1415,10 @@ function drawCamp(app){
     row.appendChild(c);
   });
   wrap.appendChild(row);
-  const sleep=el(`<div style="margin-top:24px"><button class="go">숙면 — 밤을 넘긴다</button></div>`);
+  const sleep=el(`<div style="margin-top:24px">
+    <button class="go">숙면 — 밤을 넘긴다</button>
+    ${run.night?"":`<div class="hint" style="margin-top:6px">아직 해가 지지 않았습니다. 18시가 지나야 잠자리에 들 수 있습니다.</div>`}</div>`);
+  sleep.querySelector("button").disabled=!run.night;
   sleep.querySelector("button").onclick=()=>{ nextDay(); if(view!=="over"){ view="map"; render() } };
   wrap.appendChild(sleep);
   const out=el(`<div style="margin-top:12px"><button>주둔지를 나선다</button></div>`);
@@ -1749,8 +1758,13 @@ function drawRest(app){
   const b=el(`<div class="rw"><div class="rwi">${nodeArt("elite")}</div>
     <b>몸을 단련한다</b><p>${esc(grade)} 보상을 ${n}개 고릅니다.</p></div>`);
   b.onclick=()=>{ run.after=[]; for(let i=0;i<n;i++) run.after.push({grade:grade});
-    run.restLeave=1; afterChest() };
-  row.appendChild(a); row.appendChild(b);
+    afterChest() };
+  const c=el(`<div class="rw ${run.night?"":"no"}"><div class="rwi">${nodeArt("camp")}</div>
+    <b>노숙한다</b><p>여기서 밤을 보내고 다음 날 아침을 맞습니다. 주둔지가 아니라 오염도가 5 더 오릅니다.</p>
+    ${run.night?"":`<p style="color:var(--faint)">해가 진 뒤에만 할 수 있습니다.</p>`}</div>`);
+  if(run.night) c.onclick=()=>{ addTaint(5); nextDay();
+    if(view!=="over"){ run.here=null; toast("모닥불 곁에서 밤을 보냈습니다."); view="map"; render() } };
+  row.appendChild(a); row.appendChild(b); row.appendChild(c);
   wrap.appendChild(row);
 }
 
@@ -1826,7 +1840,7 @@ function drawRelic(app){
   const row=box.querySelector("#ch");
   if(run.evMsg){
     const b=el(`<div class="choice go2">길을 계속 간다</div>`);
-    b.onclick=()=>{ if(run.after&&run.after.length){ run.restLeave=1; afterChest() } else leaveNode() };
+    b.onclick=()=>{ if(run.after&&run.after.length){ afterChest() } else leaveNode() };
     row.appendChild(b);
     return;
   }
@@ -1843,10 +1857,7 @@ function drawRelic(app){
     row.appendChild(c);
   });
 }
-function leaveNode(){
-  if(run.here){ const h=run.here; if(run.grid[h.r]&&run.grid[h.r][h.c]) run.grid[h.r][h.c]={t:"empty"}; run.here=null }
-  backToMap();
-}
+function leaveNode(){ run.here=null; backToMap() }
 
 /* ═══════════ 영입 · 종료 화면 ═══════════ */
 function drawRecruit(app){
@@ -1929,7 +1940,15 @@ function foeSet(kind){
     for(let i=0;i<extra;i++) out.push([rnd(pool),2+i]);
     return out;
   }
-  const base=kind==="elite"?4:(2+Math.floor(Math.random()*2));
+  if(kind==="elite"){
+    /* 정예는 대원 수 제한을 덜 받고, 앞자리에 가장 단단한 놈이 선다 */
+    const k=Math.max(3,Math.min(5,n+2));
+    const lead=pool.slice().sort((a,b)=>FOE[b].hp-FOE[a].hp)[0];
+    out.push([lead,1]);
+    for(let i=2;i<=k;i++) out.push([rnd(pool),i]);
+    return out;
+  }
+  const base=2+Math.floor(Math.random()*2);
   const k=Math.max(1,Math.min(base,n+1));
   for(let i=1;i<=k;i++) out.push([rnd(pool),i]);
   return out;
@@ -1937,8 +1956,8 @@ function foeSet(kind){
 function foeScale(kind){
   const f=run.field, l=(run.day-1)+(run.dun?run.dun.wave-1:0), n=Math.min(run.heroes.length,5);
   let m=(1+f*0.85)*(1+l*0.05);
-  if(kind==="elite")  m*=1.2;
-  if(kind==="boss")   m*=1.35;
+  if(kind==="elite")  m*=1.5;
+  if(kind==="boss")   m*=1.45;
   if(kind==="ambush") m*=1.3+nightDepth()*0.08;
   /* 대원이 적을수록 적도 약해진다 */
   const hpP =[0,0.68,0.86,1,1.08,1.15][n];
@@ -1948,6 +1967,7 @@ function foeScale(kind){
           hpAdd:Math.round((f*3+l)*hpP), atkAdd:Math.floor(f*1.2*atkP), defAdd:Math.round(f*2*defP)};
 }
 function startBattle(kind){
+  const _k=kind;
   B={kind,turn:1,over:0,log:[],hand:[],units:[],foes:[],drag:null};
   run.heroes.forEach(clearTmp);
   run.heroes.forEach(h=>{
@@ -1964,10 +1984,12 @@ function startBattle(kind){
   });
   const sc=foeScale(kind);
   foeSet(kind).forEach(([n,s],i)=>{
-    const d=FOE[n], hp=Math.round(d.hp*sc.m*sc.hpP)+sc.hpAdd;
+    const d=FOE[n];
+    const lead=(kind==="elite"&&s===1)?1.35:1;
+    const hp=Math.round(d.hp*sc.m*sc.hpP*lead)+sc.hpAdd;
     B.foes.push({name:n,slot:s,maxHp:hp,hp:hp,
-      atk:Math.max(1,Math.round(d.atk*(1+(sc.m-1)*0.5)*sc.atkP))+sc.atkAdd,
-      def:Math.round(d.def*(1+(sc.m-1)*0.55)*sc.defP)+sc.defAdd,
+      atk:Math.max(1,Math.round(d.atk*(1+(sc.m-1)*0.5)*sc.atkP*lead))+sc.atkAdd,
+      def:Math.round(d.def*(1+(sc.m-1)*0.55)*sc.defP*(lead>1?1.15:1))+sc.defAdd,
       rng:d.rng,exp:d.exp+run.field*3+Math.floor(run.day/2),demon:d.demon||0,boss:d.boss||0,
       shield:0,air:0,alive:1,id:i,infect:0,stun:0,weak:0});
   });
