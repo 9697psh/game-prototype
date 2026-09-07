@@ -931,7 +931,7 @@ function figure(name){
 const HEROES={
  "나이코스":{title:"승리의 전사",role:"근접 · 방어구",hp:20,mana:3,hpLv:2,
   focus:"평타를 거듭 휘두르고 방어구 카드를 쌓는 정공법",
-  passive:{n:"전장의 승자",d:"던전에서 이길 때마다 공격력 +1 (최대 2). 넘친 몫은 금화가 된다"},
+  passive:{n:"전장의 승자",d:"전투에서 이길 때마다 공격력 +1 (최대 2). 넘친 몫은 금화가 된다"},
   skills:[
    {n:"베기",cost:1,el:"공격",tg:"foe",dmg:3,d:"피해 3"},
    {n:"막기",cost:1,el:"보호",tg:"self",shield:3,d:"보호막 3"},
@@ -949,7 +949,7 @@ const HEROES={
   ]},
  "굴라":{title:"탐욕의 악마",role:"방어 · 소환",hp:25,mana:3,hpLv:3,
   focus:"두들겨 맞으며 커지고, 하수인을 삼켜 몸집을 불림",
-  passive:{n:"탐욕의 악마",d:"누군가 죽을 때마다 최대 체력 +1 (던전당 5)"},
+  passive:{n:"탐욕의 악마",d:"누군가 죽을 때마다 최대 체력 +1 (전투당 5)"},
   skills:[
    {n:"씹어먹기",cost:2,el:"공격",tg:"foe",dmg:4,heal:2,d:"피해 4 · 체력 2 회복"},
    {n:"균열 차원문",cost:2,el:"마법",tg:"any",dmg:3,minion:1,d:"칸에 차원문 설치 · 적 칸이면 턴 종료 시 피해 3 · 아군 칸이면 턴 시작 시 보호막 3 · 같은 칸 재사용 시 악마 하수인 카드"},
@@ -1070,7 +1070,7 @@ const SKILL_FULL={
   "저주받은 육체":"레벨 당 증가하는 최대 체력을 얻을 수 없습니다. 대신 영구히 공격력 +1을 얻습니다.\n\n전투 당 1회, 트리스탄이 죽은 후 망자의 육체 카드를 가져옵니다.",
   "적응성 비늘":"내 턴이 끝날 때, 보호막을 1(추가 ¤ + 이번 턴에 얻은 비늘 조각의 수) 얻습니다.",
   "전두엽 감염":"잠금 (1). 감염이 3회 이상 중첩된 적들이 감염 중첩을 1 얻고, 다음 턴에 시전하는 각 기술의 첫 시전시 필요 마나가 1 증가합니다.",
-  "전장의 승자":"던전에서 승리할 때마다 영구적으로 공격력을 1 얻습니다. (최대 2)\n패배할 시 얻은 공격력을 모두 잃습니다.\n초과로 얻은 공격력은 금화 1으로 대체됩니다.",
+  "전장의 승자":"전투에서 승리할 때마다 영구적으로 공격력을 1 얻습니다. (최대 2)\n패배할 시 얻은 공격력을 모두 잃습니다.\n초과로 얻은 공격력은 금화 1으로 대체됩니다.",
   "점프백":"최대 2칸 이동하고 _기동 상태_에 돌입합니다.\n_기동 상태_에서는 다른 기술을 시전한 후 1칸 뒤로 이동합니다.\n이때 이동하지 못하는 상태라면, 에너지 보호막을 1(추가 ∴ ) 얻습니다.",
   "정밀 타격":"이테리오가 마법 피해를 주면 대상에게 _정밀 표식_을 남깁니다.\n_정밀 표식_이 있는 적에게는 이테리오의 공격 피해가 치명타로 적용되고 표식을 하나 제거합니다.",
   "정의의 기운":"잠금 (1). 헥토의 보호막*( )*만큼 가장 가까운 적에게 피해를 줍니다.",
@@ -1265,8 +1265,8 @@ const COMMON=[
  R("하급: 회복","하급","체력을 20% 회복합니다.",
    h=>{ h.hp=Math.min(h.maxHp,h.hp+Math.round(h.maxHp*0.2)) }),
  R("하급: 가시 두르기","하급","가시를 1 얻습니다.",h=>h.tag.thorn=(h.tag.thorn||0)+1),
- R("전장의 바람","하급","전투 시작 시, 모든 적을 공중에 뜸 상태로 만듭니다.",h=>h.tag.startStorm=1,0.3),
- R("전장의 칼날","하급","전투 시작 시, 모든 적에게 피해를 5 줍니다.",
+ R("전장의 바람","하급","영웅 배치 시, 모든 적을 공중에 뜸 상태로 만듭니다.",h=>h.tag.startStorm=1,0.3),
+ R("전장의 칼날","하급","영웅 배치 시, 모든 적에게 피해를 5 줍니다.",
    h=>h.tag.startBlade=(h.tag.startBlade||0)+5),
  R("전장의 방패","하급","전투 시작 시, 모든 아군에게 에너지 보호막을 3 부여합니다.",
    h=>h.tag.startAura=(h.tag.startAura||0)+3),
@@ -1343,7 +1343,7 @@ const HERO_REWARDS={
   R("눈보다 빠르게","하급","전투 시작 후 추진력을 2 얻음",h=>h.tag.startMom=(h.tag.startMom||0)+2),
   R("날카로운 칼끝","하급","전투 시작 후 첫 진선풍도의 피해 +4",h=>h.tag.firstWind=(h.tag.firstWind||0)+4),
   R("자취 감추기","중급","전투 시작 후 회피를 1 얻음",h=>h.tag.startEvade=(h.tag.startEvade||0)+1),
-  R("폭풍","중급","전투 시작 후 모든 적을 공중에 뜨게 함",h=>h.tag.startStorm=1),
+  R("폭풍","중급","영웅 배치 시 모든 적을 공중에 뜨게 함",h=>h.tag.startStorm=1),
   R("더 빠른 회오리","중급","회오리 장막 발동에 필요한 횟수 영구히 -1",h=>h.tag.veilNeed=(h.tag.veilNeed||12)-1),
   R("제자리바람","중급","산들바람을 이동하지 않고도 쓸 수 있음",h=>h.tag.gustStay=1),
   R("건들바람","중급","산들바람으로 이동하는 거리 영구히 +1",h=>h.tag.gustRange=(h.tag.gustRange||1)+1),
@@ -1397,7 +1397,7 @@ const HERO_REWARDS={
  "굴라":[
   R("굶주림","하급","씹어먹기 회복량 +2",(h,rn)=>addMod(h,"씹어먹기","heal",2,rn)),
   R("두꺼운 가죽","하급","최대 체력 +5",h=>{h.maxHp+=5;h.hp+=5}),
-  R("탐식","중급","탐욕의 악마 던전당 한도 +5",h=>h.tag.greedCap=(h.tag.greedCap||5)+5),
+  R("탐식","중급","탐욕의 악마 전투당 한도 +5",h=>h.tag.greedCap=(h.tag.greedCap||5)+5),
   R("차원 확장","중급","균열 차원문 피해 +3",(h,rn)=>addMod(h,"균열 차원문","dmg",3,rn)),
   R("포식자","상급","융합으로 얻는 능력치 2배",h=>h.tag.fuseX=2)
  ]
@@ -1585,8 +1585,8 @@ const FIELDS=[
 const NODE={
  camp   :{label:"주둔지",     c:"#c9a227"},
  boss   :{label:"우두머리",   c:"#8e2b2b"},
- dungeon:{label:"던전",       c:"#e0705a"},
- elite  :{label:"정예 던전",  c:"#e0a86a"},
+ dungeon:{label:"전투",       c:"#e0705a"},
+ elite  :{label:"정예 전투",  c:"#e0a86a"},
  shop   :{label:"상점",       c:"#e0c85a"},
  rest   :{label:"휴식소",     c:"#7fd39a"},
  event  :{label:"미지의 구역",c:"#6aa8e0"},
@@ -1646,7 +1646,7 @@ function respawn(){
       run.grid[rc[0]][rc[1]]={t:t};
     }
   });
-  /* 던전을 모두 정복하면 새 던전이 생긴다 */
+  /* 전투 칸을 모두 정복하면 새 전투 칸이 생긴다 */
   let left=0;
   for(let r=0;r<S;r++) for(let c=0;c<S;c++){ const x=run.grid[r][c];
     if(x.t==="dungeon"||x.t==="elite") left++ }
@@ -1657,7 +1657,7 @@ function respawn(){
       run.grid[rc[0]][rc[1]]={t:i<2?"elite":"dungeon",waves:1+Math.floor(Math.random()*3),
         style:rnd(DUN_STYLE),loot:rnd(DUN_LOOT)};
     }
-    if(n) toast("정복하지 않은 던전이 사라지고, 새 던전이 나타났습니다.");
+    if(n) toast("정복하지 않은 전투 칸이 사라지고, 새 전투 칸이 나타났습니다.");
   }
 }
 
@@ -1799,7 +1799,7 @@ function drawMapPeek(){
       ${nodeArt(cell.t)}${here?`<span class="you">●</span>`:""}
       ${cell.t!=="empty"?`<span class="cl">${esc(NODE[cell.t].label)}</span>`:""}</div>`);
     if(cell.t==="dungeon"||cell.t==="elite"||cell.t==="boss")
-      d.title=`${NODE[cell.t].label}${cell.waves?` · ${cell.waves}차 전투`:""}`
+      d.title=`${NODE[cell.t].label}${cell.waves?` · ${cell.waves}라운드`:""}`
         +`${cell.style?NL1+cell.style:""}${cell.loot?NL1+cell.loot:""}`;
     g.appendChild(d);
   }
@@ -1932,7 +1932,7 @@ function drawMap(app){
     </div>`);
     if(cell.t==="dungeon"||cell.t==="elite")
       d.title=`적 강화 +${Math.round((foeScale(cell.t).m-1)*100)}%
-${NODE[cell.t].label} · ${cell.waves}차 전투\n${cell.style}\n${cell.loot}`;
+${NODE[cell.t].label} · ${cell.waves}라운드\n${cell.style}\n${cell.loot}`;
     if(adj) d.onclick=()=>moveTo2(r,c);
     else if(here&&cell.t==="camp") d.onclick=()=>{ view="camp"; render() };
     g.appendChild(d);
@@ -2076,7 +2076,7 @@ function drawCamp(app){
   const remap=el(`<div style="margin-top:12px">
     <button>지도 재편성 ${run.remapUsed?"— 이번 구역에서는 이미 썼습니다":"— 이번 구역에서 한 번"}</button>
     <div class="hint" style="margin-top:6px">주둔지에서 정찰대를 풀어 구역을 다시 그립니다.
-      던전·정예·상점·휴식소·미지의 구역이 모두 새 자리에 놓입니다. 구역마다 한 번뿐입니다.</div></div>`);
+      전투·정예·상점·휴식소·미지의 구역이 모두 새 자리에 놓입니다. 구역마다 한 번뿐입니다.</div></div>`);
   remap.querySelector("button").disabled=!!run.remapUsed;
   remap.querySelector("button").onclick=()=>{
     if(run.remapUsed) return;
@@ -2248,9 +2248,9 @@ function recipeBook(){
   return box;
 }
 
-/* ═══════════ 던전 (여러 차례의 전투) ═══════════ */
+/* ═══════════ 전투 = 여러 라운드 (옛 던전) ═══════════ */
 function startDungeon(cell,r,c){
-  run.heroes.forEach(h=>{ h.greed=0 });   /* 탐욕의 악마는 던전 단위 */
+  run.heroes.forEach(h=>{ h.greed=0 });   /* 탐욕의 악마는 전투 단위 */
   run.dun={cell:cell,r:r,c:c,wave:0,waves:cell.waves||1,
            kind:cell.t==="boss"?"boss":cell.t==="elite"?"elite":cell.t==="ambush"?"ambush":"battle"};
   nextWave();
@@ -2319,9 +2319,9 @@ function chestIcon(t){
 }
 function drawChest(app){
   const ch=run.chest;
-  const nm={battle:"던전 보상 상자",elite:"정예 던전 보상 상자",boss:"우두머리 보상 상자",ambush:"밤길의 전리품"}[ch.kind];
+  const nm={battle:"전투 보상 상자",elite:"정예 전투 보상 상자",boss:"우두머리 보상 상자",ambush:"밤길의 전리품"}[ch.kind];
   app.appendChild(el(`<div class="center"><div class="title" style="font-size:22px">${esc(nm)}</div>
-    <div class="sub">${ch.opened?"이번 던전에서 얻은 것":"상자를 열어 봅니다"}</div></div>`));
+    <div class="sub">${ch.opened?"이번 전투에서 얻은 것":"상자를 열어 봅니다"}</div></div>`));
   const wrap=app.querySelector(".center");
   if(!ch.opened){
     const b=el(`<div style="margin-top:26px"><button class="go" style="font-size:16px;padding:12px 30px">상자를 연다</button></div>`);
@@ -2808,21 +2808,33 @@ function foeScale(kind){
 function startBattle(kind){
   const _k=kind;
   B={kind,turn:1,over:0,log:[],hand:[],units:[],foes:[],drag:null};
-  run.heroes.forEach(clearTmp);
+  /* 전투(옛 던전) 하나는 여러 라운드로 이루어진다.
+     "전투 시작" 효과는 첫 라운드에 딱 한 번만 걸리고, 그 결과는 라운드를 넘어 남는다. */
+  const fresh=!run.dun||run.dun.wave<=1;
+  if(fresh) run.heroes.forEach(clearTmp);
   run.heroes.forEach(h=>{
     if(h.hp<=0) h.hp=1;
-    h.mana=h.maxMana; h.shield=0; h.mom=0; h.evade=0; h.slot=0;
-    h.acts=0; h.veilDone=0; h.armor=0; h.read=0; h.blessed=0;
-    h.deb={}; h.negShield=itemBt(h,'negShield')+(h.tag.negShield||0);
-    h.ammo=5; h.scale=0; h.scaleTurn=0; h.dark=0; h.hide=0; h.shadowAt=0; h.darkAt=0;
-    h.stance=0; h.leech=0; h.pierceNext=0; h.tunes=[]; h.encore=0; h.aimAt=null;
-    h.headshotUsed=0; h.venom=0; h.mobile=0; h.verdictUsed=0;
-    h.eshield=0; h.manaUsed=0; h.lastStandUsed=0;
-    const hpl=itemBt(h,'hpPerLv'); if(hpl){ h.hp+=hpl*h.lv }
-    h.mana=h.maxMana+itemBt(h,"firstMana")+(h.tag.firstMana||0);
-    h.windUses=0; h.windBuff=0; h.free=0; h.potential=0; h.lock={}; h.airUp=0;
-    if(h.name==="쿠렘타이") h.lock[3]=(h.sk[3].startLock||2)+1;
-    h.portal=null; h.bomb=0; h.minions=[]; h.first={}; h.limitUsed={};
+    /* ── 라운드마다 새로 잡는 것 ── */
+    h.shield=0; h.keepShield=0; h.slot=0; h.armor=0; h.deb={};
+    h.hide=0; h.shadowAt=0; h.darkAt=0; h.stance=0; h.stanceTurn=0;
+    h.leech=0; h.pierceNext=0; h.aimAt=null; h.headshotUsed=0; h.mobile=0;
+    h.windBuff=0; h.potential=0; h.lock={}; h.airUp=0; h.manaUsed=0;
+    h.portal=null; h.bomb=0; h.minions=[];
+    h.mana=h.maxMana;
+    if(fresh){
+      /* ── 전투 하나에 한 번만 ── */
+      h.summoned=0;
+      h.mom=0; h.evade=0; h.free=0;
+      h.acts=0; h.veilDone=0; h.read=0; h.blessed=0;
+      h.negShield=itemBt(h,'negShield')+(h.tag.negShield||0);
+      h.ammo=5; h.scale=0; h.scaleTurn=0; h.dark=0;
+      h.tunes=[]; h.encore=0; h.venom=0; h.verdictUsed=0;
+      h.eshield=0; h.lastStandUsed=0;
+      h.windUses=0; h.first={}; h.limitUsed={};
+      const hpl=itemBt(h,'hpPerLv'); if(hpl){ h.hp+=hpl*h.lv }
+      h.mana=h.maxMana+itemBt(h,"firstMana")+(h.tag.firstMana||0);
+      if(h.name==="쿠렘타이") h.lock[3]=(h.sk[3].startLock||2)+1;
+    }
     B.hand.push({type:"hero",hero:h});
   });
   const sc=foeScale(kind);
@@ -2842,7 +2854,8 @@ function startBattle(kind){
     if(!L) return;
     B.hand.push({type:"item",name:cd.n,d:L.d+` (보유 ${cd.c})`,stock:cd.n,use:L.use});
   });
-  say(`${FIELDS[run.field].n} — ${kind==="boss"?"우두머리":kind==="elite"?"정예":"교전"} 시작`,"t1");
+  say(`${FIELDS[run.field].n} — ${kind==="boss"?"우두머리":kind==="elite"?"정예":"교전"} `
+     +`${run.dun&&run.dun.waves>1?`${run.dun.wave}/${run.dun.waves}라운드`:"시작"}`,"t1");
   say("손패의 영웅 카드를 원하는 칸으로 끌어다 놓으세요.","t2");
   rollIntents(); sel=null; view="battle"; render();
 }
@@ -3154,7 +3167,7 @@ function bk(base,parts){
 }
 const PASSIVE_INFO={
  "나이코스":[{n:"전장의 승자",p:"전장의 승자",
-   d:h=>`던전에서 이길 때마다 공격력을 영구히 1 얻습니다. (최대 ${h.tag.winCap||2}) 넘친 몫은 금화 1로 바뀝니다.`}],
+   d:h=>`전투에서 이길 때마다 공격력을 영구히 1 얻습니다. (최대 ${h.tag.winCap||2}) 넘친 몫은 금화 1로 바뀝니다.`}],
  "카제":[
   {n:"바람처럼 사라져라",
    d:h=>`내 턴에 적이 공중에 뜬 뒤, 피해를 ${bk(4,[{n:"추가 공격력",v:h.atk},{n:"강화",v:h.tag.airBonus||0}])} 줍니다.`
@@ -3164,7 +3177,7 @@ const PASSIVE_INFO={
         +`${bk(h.tag.veilAmt||4,[{n:"추가 보호력",v:h.def}])} 얻습니다.`
         +(h.tag.veilAll?" 다른 아군에게도 부여합니다.":"")}],
  "굴라":[{n:"탐욕의 악마",p:"탐욕의 악마",
-   d:h=>`소환물이 아닌 누군가 죽을 때마다 최대 체력을 1 얻습니다. (던전당 ${h.tag.greedCap||5})`}],
+   d:h=>`소환물이 아닌 누군가 죽을 때마다 최대 체력을 1 얻습니다. (전투당 ${h.tag.greedCap||5})`}],
  "헥토":[{n:"든든한 아군",
    d:h=>`내 턴이 끝날 때 다른 모든 아군에게 보호막을 `
         +`${bk(h.tag.allyShield||2,[{n:"추가 보호력",v:h.def}])} 부여합니다.`
@@ -3537,18 +3550,22 @@ function startDrag(card,i){
 }
 function onSummon(h){
   const t=h.tag;
-  if(t.startMom){ h.mom+=t.startMom; say(`${h.name} 추진력 +${t.startMom} (눈보다 빠르게)`,"t2") }
-  if(t.startEvade){ h.evade+=t.startEvade; say(`${h.name} 회피 +${t.startEvade} (자취 감추기)`,"t2") }
+  /* ── 영웅을 배치할 때마다 (라운드마다 다시) ── */
   if(t.startStorm){ say("폭풍 — 전장의 모든 적이 떠오릅니다.","t1");
     B.foes.filter(f=>f.alive).forEach(f=>airborne(h,f)) }
+  if(t.startBlade){ say("전장의 칼날 — 첫 일격이 전장을 훑습니다.","t1");
+    B.foes.filter(f=>f.alive).forEach(f=>hurt(f,t.startBlade,"전장의 칼날","slash")) }
+  /* ── 아래는 전투 시작 효과 : 그 전투에서 처음 나설 때 한 번만 ── */
+  if(h.summoned) return;
+  h.summoned=1;
+  if(t.startMom){ h.mom+=t.startMom; say(`${h.name} 추진력 +${t.startMom} (눈보다 빠르게)`,"t2") }
+  if(t.startEvade){ h.evade+=t.startEvade; say(`${h.name} 회피 +${t.startEvade} (자취 감추기)`,"t2") }
   const es=itemBt(h,"eshield")+(t.eshield||0);
   if(es){ h.eshield+=es; say(`${h.name} 에너지 보호막 +${es}`,"t2") }
   if(itemBt(h,"alwaysTaunt")){ h.taunt=99; h.permaTaunt=1 }
   const hm=itemBt(h,"hpMag"); if(hm) bumpTmp(h,"mag",Math.floor(h.hp*hm/100));
   const da=itemBt(h,"defAura"); if(da){ h.eshield+=h.def*da;
     say(`수호의 각인 — ${h.name} 에너지 보호막 +${h.def*da}`,"t2") }
-  if(t.startBlade){ say("전장의 칼날 — 첫 일격이 전장을 훑습니다.","t1");
-    B.foes.filter(f=>f.alive).forEach(f=>hurt(f,t.startBlade,"전장의 칼날","slash")) }
   if(t.startAura){ allUnits().forEach(a=>{ a.eshield=(a.eshield||0)+t.startAura });
     say(`전장의 방패 — 모든 아군 에너지 보호막 +${t.startAura}`,"t2") }
   const sm=itemBt(h,"startMom"), ss=itemBt(h,"startShield")+(t.startShield||0);
@@ -4609,15 +4626,16 @@ function afterWave(){
 function drawWaveGap(app){
   const d=run.dun;
   app.appendChild(el(`<div class="center">
-    <div class="title" style="font-size:20px">${d.wave}차 전투를 넘겼습니다</div>
-    <div class="sub">안쪽에서 아직 기척이 납니다. (${d.wave}/${d.waves})</div></div>`));
+    <div class="title" style="font-size:20px">${d.wave}라운드를 넘겼습니다</div>
+    <div class="sub">안쪽에서 아직 기척이 납니다. (${d.wave}/${d.waves}라운드)
+      <br>전투는 아직 끝나지 않았습니다 — 보호막·자원·사용한도는 그대로 이어집니다.</div></div>`));
   const wrap=app.querySelector(".center");
   const rs=el(`<div class="roster" style="justify-content:center;margin-top:18px"></div>`);
   run.heroes.forEach(h=>rs.appendChild(el(`<div class="rost ${h.down?"down":""}">
     <div class="art">${figure(h.name)}</div>
     <div><b>${esc(h.name)}</b><small>${ic("hp")}${Math.max(0,h.hp)}/${h.maxHp}</small></div></div>`)));
   wrap.appendChild(rs);
-  const b=el(`<div style="margin-top:24px"><button class="go">${d.wave+1}차 전투로 →</button></div>`);
+  const b=el(`<div style="margin-top:24px"><button class="go">${d.wave+1}라운드로 →</button></div>`);
   b.querySelector("button").onclick=()=>{ nextWave() };
   wrap.appendChild(b);
 }
