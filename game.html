@@ -684,7 +684,7 @@ HEROES["인비디아"]={title:"질투의 악마",role:"마법 · 감염",hp:20,m
   focus:"감염을 쌓아두었다가 한 번에 터뜨린다",
   passive:{n:"질투의 악마",d:"감염된 적은 턴이 끝날 때 피해 1(+마법력)를 받고 중첩이 1 줄어든다"},
   skills:[
-   {n:"죄악의 기침",cost:2,el:"마법",tg:"self",nearest:1,dmg:2,infect:1,d:"가장 가까운 적에게 피해 2 · 감염 1 (3중첩이면 체력 4 회복)"},
+   {n:"죄악의 기침",cost:2,el:"마법",tg:"foe",nearest:1,dmg:2,infect:1,d:"가장 가까운 적에게 피해 2 · 감염 1 (3중첩이면 체력 4 회복)"},
    {n:"확산",cost:2,el:"마법",tg:"foe",spread:1,d:"감염된 적에게 보호약화 1 · 대상 주변을 감염"},
    {n:"숙주 폭발",cost:1,el:"마법",tg:"self",lock:2,burst:1,d:"잠금(2) · 모든 적에게 피해 3 + 감염×2 · 감염 제거"},
    {n:"전두엽 감염",cost:2,el:"마법",tg:"self",lock:1,frontal:1,d:"잠금(1) · 감염 3 이상인 적은 감염 +1, 다음 턴 방어만 함"}
@@ -721,7 +721,7 @@ const SKILL_TEXT={
  "피부 강화":"사용한도(2). 다음 적 턴 동안 갑피를 얻는다. 갑피는 맞는 피해를 그만큼 깎는다.",
  "꿰뚫는 화살":"잠금(1). 보호막을 무시하고 그대로 체력을 깎는다.",
  "명중":"사용한도(1). 이 피해로 적을 처치하면 피부 강화의 사용한도가 1 늘어난다.",
- "죄악의 기침":"가장 가까운 적을 치고 감염시킨다. 감염이 3 이상 쌓인 적에게 쓰면 체력을 4 회복한다.",
+ "죄악의 기침":"가장 가까운 적을 치고 감염시킨다. 겨눌 수 있는 것은 맨 앞의 적뿐이다. 감염이 3 이상 쌓인 적에게 쓰면 체력을 4 회복한다.",
  "확산":"감염된 적들에게 보호약화를 1 주고, 고른 적과 그 주변을 감염시킨다.",
  "숙주 폭발":"잠금(2). 모든 적에게 3(+마법력 + 감염 중첩의 2배) 피해를 주고 감염을 모두 없앤다.",
  "전두엽 감염":"잠금(1). 감염이 3 이상인 적의 감염을 1 늘리고, 그 적들은 다음 턴에 방어만 한다.",
@@ -2247,14 +2247,13 @@ function rollIntents(){
       if(f.slot>1&&!foeAt(f.slot-1)){ f.intent={t:"move"}; return }
       /* 더 다가갈 수 없다면 웅크리기만 하지 말고 판을 준비한다 */
       const idle=[], put=(o,w)=>{ for(let q=0;q<w;q++) idle.push(o) };
-      put({t:"buff",v:Math.max(1,Math.round(f.atk*0.35))},3);
-      put({t:"curse"},3);
+      if((f.buffs||0)<3) put({t:"buff",v:Math.max(1,Math.round(f.atk*0.35))},3);
+      put({t:"curse"},2);
       const m0=B.foes.filter(x=>x.alive&&x!==f&&x.hp<x.maxHp)[0];
       if(m0) put({t:"heal",v:Math.max(2,Math.round(f.def*0.8)),to:m0.id},3);
-      put({t:"def",v:defVal(f)},1);
+      put({t:"def",v:defVal(f)},4);
       const t0=allies[0];
-      if(t0){ put({t:"deb",k:"burn",to:t0.slot,v:2},2);
-              put({t:"deb",k:"fear",to:t0.slot,v:1},1) }
+      if(t0) put({t:"deb",k:"burn",to:t0.slot,v:2},1);
       f.intent=rnd(idle); return;
     }
     /* 원거리형은 붙으면 물러선다 */
@@ -2266,22 +2265,23 @@ function rollIntents(){
     const weak=inR.reduce((a,b)=>a.hp<=b.hp?a:b);
     const back=inR.reduce((a,b)=>a.slot>=b.slot?a:b);
     const any =rnd(inR);
-    add({t:"atk",v:f.atk,to:near.slot,pat:"내려찍기"},4);
-    add({t:"atk",v:Math.round(f.atk*1.35),to:weak.slot,pat:"약점 노리기"},2);
-    add({t:"atk",v:f.atk,to:back.slot,pat:"후방 급습"},f.rng>=3?3:1);
-    add({t:"atk",v:f.atk,to:any.slot,pat:"난타"},1);
+    add({t:"atk",v:f.atk,to:near.slot,pat:"내려찍기"},8);
+    add({t:"atk",v:Math.round(f.atk*1.35),to:weak.slot,pat:"약점 노리기"},4);
+    add({t:"atk",v:f.atk,to:back.slot,pat:"후방 급습"},f.rng>=3?4:2);
+    add({t:"atk",v:f.atk,to:any.slot,pat:"난타"},2);
     add({t:"def",v:defVal(f)},1);
     if(f.rng>=3||f.boss) add({t:"volley",v:Math.max(1,Math.round(f.atk*0.6))},2);
-    if(f.def>=6||f.boss)  add({t:"buff",v:Math.max(1,Math.round(f.atk*0.35))},2);
+    if((f.def>=6||f.boss)&&(f.buffs||0)<3) add({t:"buff",v:Math.max(1,Math.round(f.atk*0.35))},1);
     const mate=B.foes.filter(x=>x.alive&&x!==f&&x.hp<x.maxHp*0.6)[0];
     if(mate) add({t:"heal",v:Math.max(2,Math.round(f.def*0.8)),to:mate.id},2);
     add({t:"curse"},1);
-    add({t:"deb",k:"burn", to:near.slot,v:2},2);
-    add({t:"deb",k:"shock",to:back.slot,v:3},1);
+    /* 상태 이상은 양념 정도로 */
+    add({t:"deb",k:"burn", to:near.slot,v:2},1);
     add({t:"deb",k:"bind", to:near.slot,v:2},1);
     add({t:"deb",k:"stun", to:weak.slot,v:1},1);
-    add({t:"deb",k:"fear", to:any.slot, v:1},1);
-    if(f.boss||f.rng>=3) add({t:"deb",k:"atkDn",to:near.slot,v:2},1);
+    if(f.rng>=3) add({t:"deb",k:"shock",to:back.slot,v:3},1);
+    if(f.boss||f.rng>=3) add({t:"deb",k:"fear", to:any.slot, v:1},1);
+    if(f.boss) add({t:"deb",k:"atkDn",to:near.slot,v:2},1);
     if(f.boss) add({t:"deb",k:"chill",to:any.slot,v:3},1);
     f.intent=rnd(pool);
   });
@@ -2461,6 +2461,7 @@ function valueLines(h,sk){
   if(sk.justice) L.push(`지금 보호막 <b class="big">${h.shield}</b>만큼 피해를 줍니다.`);
   if(sk.armorUp) L.push(`갑피를 <b class="big">${1+(h.tag.armorPlus||0)}</b> 얻습니다.`);
   if(sk.farshot) L.push(`가장 멀리 있는 적만 겨눌 수 있습니다.`);
+  if(sk.nearest) L.push(`가장 가까이 있는 적만 겨눌 수 있습니다.`);
   if(sk.vanguard) L.push(`지나친 아군 하나당 보호막 <b class="big">${(h.tag.vanShield||5)+h.def}</b>`);
   if(sk.rearguard) L.push(`체력 <b class="big">${h.tag.rearHeal||5}</b> · 지나친 아군 보호막 <b class="big">${5+h.def}</b>`);
   return L;
@@ -2619,9 +2620,19 @@ function inReach(h,sk,slot){
 function farthestFoe(h){
   return B.foes.filter(f=>f.alive).sort((a,b)=>dist(h.slot,b.slot)-dist(h.slot,a.slot))[0];
 }
+function nearestFoe(h){
+  return B.foes.filter(f=>f.alive).sort((a,b)=>dist(h.slot,a.slot)-dist(h.slot,b.slot))[0];
+}
+function pinnedFoe(h,sk){
+  if(!sk) return null;
+  if(sk.farshot) return farthestFoe(h);
+  if(sk.nearest) return nearestFoe(h);
+  return null;
+}
 function validTarget(h,sk,slot){
   if(!inReach(h,sk,slot)) return false;
-  if(sk&&sk.farshot){ const f=farthestFoe(h); return !!f&&f.slot===slot }
+  const p=pinnedFoe(h,sk);
+  if(p) return p.slot===slot;
   return true;
 }
 function payCost(h,i){
@@ -2839,9 +2850,9 @@ function doSkill(target){
       fx({side:"foe",slot:target,s:"miss",txt:"사거리 "+r,cls:"miss"});
       say(`사거리 ${r} 밖입니다. 다른 대상을 고르세요.`,"t2"); render(); return;
     }
-    if(s0.farshot&&!validTarget(h,s0,target)){
-      const f=farthestFoe(h);
-      say(`${s0.n}${jo(s0.n,"eun")} 가장 멀리 있는 적${f?`(${f.slot}번)`:""}만 겨눌 수 있습니다.`,"t2");
+    const pin=pinnedFoe(h,s0);
+    if(pin&&pin.slot!==target){
+      say(`${s0.n}${jo(s0.n,"eun")} 가장 ${s0.farshot?"멀리":"가까이"} 있는 적(${pin.slot}번)만 겨눌 수 있습니다.`,"t2");
       render(); return;
     }
   }
@@ -2852,7 +2863,7 @@ function doSkill(target){
     if(deb(h,"fear")&&(s.tg==="foe"||s.tg==="any")){
       say(`${h.name}${jo(h.name,"eun")} 공포에 질려 대상을 노려보지 못합니다.`,"t3"); break }
     if(s.tg==="foe"&&!inReach(h,s,target)){ say("사거리를 벗어나 중단합니다.","t2"); break }
-    if(s.farshot){ const f=farthestFoe(h); if(!f) break; target=f.slot }
+    { const pn=pinnedFoe(h,s); if(pn) target=pn.slot; else if(s.farshot||s.nearest) break }
     if(!canPay(h,i,1)){ say("자원이 부족해 중단합니다.","t2"); break }
     /* 비용 지불 */
     if(s.costType==="mom"){ h.mom-=s.cost+h.airUp; h.airUp++ }
@@ -2879,9 +2890,9 @@ function doSkill(target){
     if(h.name==="카제"&&(s.el==="이동"||s.dmg!=null)){ h.acts=(h.acts||0)+1; veilCheck(h) }
     if(s.tg==="foe"&&!foeAt(target)&&k<n-1){
       const _s=h.sk[i];
-      const alt=_s.farshot ? farthestFoe(h)
-        : B.foes.filter(f=>f.alive&&inReach(h,_s,f.slot))
-                .sort((a,b)=>dist(h.slot,a.slot)-dist(h.slot,b.slot))[0];
+      const alt=pinnedFoe(h,_s)
+        || B.foes.filter(f=>f.alive&&inReach(h,_s,f.slot))
+                 .sort((a,b)=>dist(h.slot,a.slot)-dist(h.slot,b.slot))[0];
       if(!alt) break;
       target=alt.slot; say(`대상이 쓰러져 ${alt.name}(${alt.slot}번)으로 옮깁니다.`,"t2");
     }
@@ -2966,7 +2977,7 @@ function runEffect(h,i,s,target){
   }
   /* ── 인비디아 ── */
   if(s.nearest){
-    const f=B.foes.filter(x=>x.alive).sort((a,b)=>dist(h.slot,a.slot)-dist(h.slot,b.slot))[0];
+    const f=foeAt(target)||nearestFoe(h);
     if(!f){ say("적이 없습니다.","t2"); return }
     if((f.infect||0)>=3){ h.hp=Math.min(h.maxHp,h.hp+4);
       fx({side:"mine",slot:h.slot,s:"heal",txt:"+4",cls:"heal"}); say(`${h.name} 체력 +4`) }
@@ -3279,7 +3290,7 @@ function endTurn(){
       else say(`${f.name} 물러서지 못했습니다.`,"t2");
     }
     else if(f.intent.t==="buff"){
-      f.atk+=f.intent.v;
+      f.atk+=f.intent.v; f.buffs=(f.buffs||0)+1;
       fx({side:"foe",slot:f.slot,ring:"#e0705a",txt:"공격+"+f.intent.v,cls:"dmg"});
       say(`${f.name} 스스로를 벼립니다 — 공격력 +${f.intent.v}`,"t3");
     }
