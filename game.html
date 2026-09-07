@@ -72,6 +72,11 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .bar > u{position:absolute;top:0;right:0;height:100%;background:var(--def);opacity:.9;
   border-left:1px solid var(--panel);transition:width .18s,right .18s}
 .bar > u.es{background:#e07b28;opacity:.95;box-shadow:0 0 6px rgba(224,123,40,.6)}
+.synbar{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:8px}
+.syn{font-size:11px;padding:3px 9px;border-radius:11px;border:1px solid var(--line);
+  color:var(--faint);cursor:help}
+.syn.on{color:#0f0d0a;background:var(--brass);border-color:var(--brass);font-weight:700}
+.syn b{font-weight:inherit}
 .hits{color:#e0705a;font-weight:800;font-size:10.5px;margin-left:1px}
 .shd{color:var(--def);font-weight:700;white-space:nowrap}
 .esh{color:#e07b28;font-weight:700;white-space:nowrap}
@@ -1255,6 +1260,98 @@ const START_PICKS=["나이코스","카제","굴라"];
 const HERO_POOL=["나이코스","카제","굴라","헥토","트리스탄","인비디아","도미니코",
  "쿠렘타이","이테리오","그슨대","오토"];
 
+function synHtml(){
+  const A=synActive().filter(x=>x.on||x.next);
+  if(!A.length) return `<div class="hint"></div>`;
+  A.sort((a,b)=>(b.on?1:0)-(a.on?1:0));
+  return `<div class="synbar">${A.map(x=>`<span class="syn ${x.on?"on":""}"
+    title="${esc(x.k+" · "+(x.on?x.on.d:"아직 켜지지 않음")+(x.next?`
+다음 ${x.next.c}명: ${x.next.d}`:""))}">
+    <b>${esc(x.n)}</b> ${x.c}${x.next?`/${x.next.c}`:""}</span>`).join("")}</div>`;
+}
+/* ═══════════ 대원 조합 ═══════════ */
+const HERO_TAGS={
+ "나이코스":{fac:"피의 투기장",job:["전투가","영광 숭배자"],race:"인간"},
+ "카제":    {fac:"정령숲",    job:["전투가","방랑자"],    race:"인간"},
+ "쿠렘타이":{fac:"사후",      job:["마법사","수확자"],    race:"망자"},
+ "굴라":    {fac:"균열",      job:["수호자"],             race:"악마"},
+ "이테리오":{fac:"고철의 무덤",job:["무기 전문가","방랑자"],race:"기계"},
+ "데린저":  {fac:"고철의 무덤",job:["약탈자","모험가"],    race:"인간"},
+ "인비디아":{fac:"피의 투기장",job:["마법사"],             race:"악마"},
+ "리페":    {fac:"정령숲",    job:["지원가","음악가"],    race:"정령"},
+ "도미니코":{fac:"왕실",      job:["지원가","영광 숭배자"],race:"인간"},
+ "그슨대":  {fac:"사후",      job:["학살자","방랑자"],    race:"망자"},
+ "헥토":    {fac:"왕실",      job:["수호자"],             race:"인간"},
+ "트리스탄":{fac:"왕실",      job:["궁수"],               race:"망자"},
+ "오토":    {fac:"정령숲",    job:["수호자","지원가"],    race:"기계"},
+ "보아":    {fac:"균열",      job:["학살자"],             race:"야수"}
+};
+const tagsOf=n=>HERO_TAGS[n]||{fac:"",job:[],race:""};
+const hasTag=(h,t)=>{ const g=tagsOf(h.name);
+  return g.fac===t||g.race===t||(g.job||[]).indexOf(t)>=0 };
+/* 기획노트 synergies — 효과가 적힌 것만 실제로 작동합니다 */
+const SYNERGY=[
+ {n:"피의 투기장",k:"진영",t:[{c:2,d:"소환물이 아닌 적을 처치한 후 체력을 3 회복합니다."}]},
+ {n:"정령숲",  k:"진영",t:[]},
+ {n:"사후",    k:"진영",t:[]},
+ {n:"균열",    k:"진영",t:[]},
+ {n:"고철의 무덤",k:"진영",t:[]},
+ {n:"왕실",    k:"진영",t:[]},
+ {n:"전투가",  k:"직업",t:[{c:2,d:"전투가 영웅의 공격력 +2"}]},
+ {n:"영광 숭배자",k:"직업",t:[{c:2,d:"전투 중 치명적인 피해를 받으면 그 피해를 1회 무시합니다."}]},
+ {n:"방랑자",  k:"직업",t:[{c:1,d:"전장에 다른 아군이 없다면 공격력·마법력·보호력 +5"},
+                          {c:3,d:"전장 아군이 모두 방랑자라면 공격력·마법력·보호력 +10"}]},
+ {n:"마법사",  k:"직업",t:[{c:2,d:"마법사 영웅의 마법력 +2"}]},
+ {n:"수호자",  k:"직업",t:[{c:2,d:"수호자 영웅의 보호력 +2"},{c:3,d:"수호자 영웅들의 보호력 +5"}]},
+ {n:"지원가",  k:"직업",t:[{c:1,d:"전투가 끝날 때 모든 아군의 체력을 2 회복"},
+                          {c:2,d:"전투가 끝날 때 모든 아군의 체력을 4 회복"},
+                          {c:3,d:"전투가 끝날 때 모든 아군의 체력을 8 회복"}]},
+ {n:"수확자",  k:"직업",t:[]},{n:"무기 전문가",k:"직업",t:[]},{n:"약탈자",k:"직업",t:[]},
+ {n:"음악가",  k:"직업",t:[]},{n:"학살자",k:"직업",t:[]},
+ {n:"인간",    k:"종족",t:[]},{n:"악마",k:"종족",t:[]},{n:"기계",k:"종족",t:[]}
+];
+function synCount(t){ return run?run.heroes.filter(h=>!h.down&&hasTag(h,t)).length:0 }
+/* 지금 켜져 있는 조합 — [{n,k,c,need,d}] */
+function synActive(){
+  const out=[];
+  SYNERGY.forEach(sy=>{
+    const c=synCount(sy.n); if(!c) return;
+    let best=null;
+    sy.t.forEach(x=>{ if(c>=x.c&&(!best||x.c>best.c)) best=x });
+    out.push({n:sy.n,k:sy.k,c:c,on:best,next:sy.t.find(x=>x.c>c)||null});
+  });
+  return out;
+}
+/* 전투 시작에 능력치 조합을 걸어 준다 (전투 단위, clearTmp 로 함께 풀림) */
+function applySynergy(){
+  const A=synActive(); run.synOn=A;
+  const has=(n,c)=>A.some(x=>x.n===n&&x.c>=c);
+  const each=(t,fn)=>run.heroes.forEach(h=>{ if(!h.down&&hasTag(h,t)) fn(h) });
+  if(has("전투가",2)) each("전투가",h=>bumpTmp(h,"atk",2));
+  if(has("마법사",2)) each("마법사",h=>bumpTmp(h,"mag",2));
+  if(has("수호자",3)) each("수호자",h=>bumpTmp(h,"def",5));
+  else if(has("수호자",2)) each("수호자",h=>bumpTmp(h,"def",2));
+  if(has("영광 숭배자",2)) each("영광 숭배자",h=>{ h.gloryGuard=1 });
+  if(has("피의 투기장",2)) each("피의 투기장",h=>{ h.arenaHeal=3 });
+  const sup=synCount("지원가");
+  run.synSupport=sup>=3?8:sup>=2?4:sup>=1?2:0;
+}
+/* 방랑자는 전장 상황을 보므로 배치될 때마다 다시 잰다 */
+function wanderCheck(){
+  const on=onField();
+  run.heroes.forEach(h=>{
+    if(!hasTag(h,"방랑자")) return;
+    const want=(on.length===1&&on[0]===h)?5
+              :(on.length>=3&&on.every(a=>hasTag(a,"방랑자")))?10:0;
+    const cur=h.wanderBonus||0;
+    if(want===cur) return;
+    const d=want-cur;
+    bumpTmp(h,"atk",d); bumpTmp(h,"mag",d); bumpTmp(h,"def",d);
+    h.wanderBonus=want;
+    if(want>cur) say(`방랑자 — ${h.name}의 능력치가 ${want} 올랐습니다.`,"t1");
+  });
+}
+
 /* ═══════════ 보상 ═══════════ */
 const R=(n,g,d,fx,w)=>({n:n,g:g,d:d,fx:fx,w:w});
 const COMMON=[
@@ -2029,6 +2126,7 @@ ${NODE[cell.t].label} · ${cell.waves}라운드\n${cell.style}\n${cell.loot}`;
     app.appendChild(b);
   }
   app.appendChild(el(`<div style="margin-top:20px" class="hint">대원${(run.bag||[]).length?` · 가방에 아이템 ${run.bag.length}개 (주둔지에서 정리)`:""}</div>`));
+  app.appendChild(el(synHtml()));
   const rs=el(`<div class="roster"></div>`);
   run.heroes.forEach((h,i)=>{
     const card=el(`<div class="rost pick2 ${h.down?"down":""} ${run.showHero===i?"on":""}">
@@ -2343,6 +2441,9 @@ function nextWave(){
 }
 function dungeonCleared(){
   const d=run.dun;
+  if(run.synSupport){ const v=run.synSupport;
+    run.heroes.forEach(h=>{ if(!h.down) h.hp=Math.min(h.maxHp,h.hp+v) });
+    toast(`지원가 — 모든 대원이 체력을 ${v} 회복했습니다.`); }
   if(d.kind!=="ambush"&&d.r!=null&&run.grid[d.r]&&run.grid[d.r][d.c])
     run.grid[d.r][d.c]={t:"empty"};
   addTaint(d.kind==="ambush"?-10:-20);
@@ -3138,6 +3239,8 @@ function startBattle(kind){
     }
     if(!h.down) B.hand.push({type:"hero",hero:h});
   });
+  if(fresh){ run.heroes.forEach(h=>{ h.wanderBonus=0; h.gloryGuard=0; h.arenaHeal=0 });
+    applySynergy(); }
   const down=run.heroes.filter(h=>h.down);
   if(down.length&&!B.hand.some(x=>x.type==="hero"))
     { B.over=1; say("나설 수 있는 대원이 없습니다.","t3"); battleLost(); render(); return }
@@ -3420,6 +3523,7 @@ function drawBattle(app){
     fs.appendChild(d);
   }
 
+  app.appendChild(el(synHtml()));
   if(sel&&sel.hero&&sel.step>=2&&sel.step<5) app.appendChild(skillPanel(sel.hero));
   const hand=el(`<div class="hand" id="hand"></div>`);
   B.hand.forEach((c,i)=>{
@@ -4007,6 +4111,7 @@ function playCard(i,slot,side){
     c.hero.slot=slot; B.hand.splice(i,1);
     fx({side:"mine",slot:slot,s:"summon",ring:"#7fd39a",glow:1,gap:60});
     onSummon(c.hero);
+    wanderCheck();
     rollIntents();
     say(`${c.hero.name}${jo(c.hero.name,"ig")} ${slot}번 칸에 자리를 잡습니다.`,"t1");
   }else{
@@ -4776,6 +4881,9 @@ function runEffect(h,i,s,target){
       if(h.name==="이테리오"&&s.mark&&tgt.alive){ tgt.mark=(tgt.mark||0)+1;
         fx({side:"foe",slot:tgt.slot,ring:"#6aa8e0",txt:"표식",cls:"mag",gap:60}) }
       if(was&&!tgt.alive){
+        if(h.arenaHeal&&!tgt.isPhantom){ h.hp=Math.min(h.maxHp,h.hp+h.arenaHeal);
+          fx({side:"mine",slot:h.slot,s:"heal",txt:"+"+h.arenaHeal,cls:"heal",gap:60});
+          say(`피의 투기장 — ${h.name} 체력 +${h.arenaHeal}`,"t2") }
         if(h.name==="나이코스"&&i===0){
           if(h.tag.killGrow){ h.cutGrow=(h.cutGrow||0)+h.tag.killGrow;
             say(`늘어가는 실력 — 이번 전투 베기 피해 +${h.cutGrow}`,"t1") }
@@ -4824,7 +4932,11 @@ function hurtAlly(f,t,raw,label){
     say(`${label} — ${t.name} 회피!`,"t2"); return }
   let d=raw;
   const eh=Math.min(t.eshield||0,d); if(eh){ t.eshield-=eh; d-=eh }
-  let sh=Math.min(t.shield,d); t.shield-=sh; d-=sh; t.hp-=d;
+  let sh=Math.min(t.shield,d); t.shield-=sh; d-=sh;
+  if(t.gloryGuard&&d>=t.hp){ t.gloryGuard=0; d=0; raw=0;
+    fx({side:"mine",slot:t.slot,ring:"#c9a227",txt:"버팀",cls:"crit",gap:80});
+    say(`영광 숭배자 — ${t.name}${jo(t.name,"ig")} 치명적인 일격을 한 번 흘려냅니다.`,"t1") }
+  t.hp-=d;
   sh+=eh;
   if(t.tag&&itemBt(t,"lastStand")&&!t.lastStandUsed&&t.hp<=t.maxHp*0.5){
     t.lastStandUsed=1; const v=itemBt(t,"lastStand");
