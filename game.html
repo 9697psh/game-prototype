@@ -3257,7 +3257,7 @@ function itemSlots(h){
   return out+'</div>';
 }
 const LV_GRADE=[0,
- "하급","하급","하급","하급","중급","하급","하급","하급","하급","중급",
+ "하급","하급","하급","하급","중급","하급","하급","하급","하급","하급",
  "하급","하급","중급","하급","중급","하급","하급","중급","하급","상급",
  "하급","하급","중급","하급","중급","하급","하급","중급","중급","상급"
 ];
@@ -5472,8 +5472,14 @@ function foeScale(kind){
   return {m:m, hpP:hpP, atkP:atkP, defP:defP,
           hpAdd:Math.round((f*3+l)*hpP), atkAdd:Math.floor(f*1.2*atkP), defAdd:Math.round(f*2*defP)};
 }
-function startBattle(kind){
+/* 전투를 시작한 그 순간의 판을 적어 둔다. 되감기의 원본이 된다 */
+let BSNAP=null;
+function startBattle(kind,pinned){
   const _k=kind;
+  if(!pinned){
+    BSNAP=null;
+    try{ BSNAP={kind:kind,run:JSON.stringify(run)} }catch(e){ BSNAP=null }
+  }
   B={kind,turn:1,over:0,log:[],hand:[],units:[],foes:[],drag:null};
   /* 전투(옛 던전) 하나는 여러 라운드로 이루어진다.
      "전투 시작" 효과는 첫 라운드에 딱 한 번만 걸리고, 그 결과는 라운드를 넘어 남는다. */
@@ -5514,6 +5520,10 @@ function startBattle(kind){
   const down=run.heroes.filter(h=>h.down);
   if(down.length&&!B.hand.some(x=>x.type==="hero"))
     { B.over=1; say("나설 수 있는 대원이 없습니다.","t3"); battleLost(); render(); return }
+  if(pinned&&pinned.length){
+    /* 되감기 — 적의 구성·능력치·가진 기믹을 그대로 되살린다 */
+    B.foes=pinned;
+  }else{
   const sc=foeScale(kind);
   foeSet(kind).forEach(([n,s],i)=>{
     const d=FOE[n];
@@ -5535,6 +5545,7 @@ function startBattle(kind){
     if(G.neg)   f.negShield=G.neg;
     if(G.hide)  f.hide=1;
   });
+  }
   B.portals=[]; B.mins=[]; B.corpseUsed=0;
   (run.cards||[]).forEach(cd=>{
     const L=CARD_LIB[cd.n];
@@ -5547,7 +5558,22 @@ function startBattle(kind){
      +`${run.dun&&run.dun.waves>1?`${run.dun.wave}/${run.dun.waves}라운드`:"시작"}`,"t1");
   say("손패의 영웅 카드를 원하는 칸으로 끌어다 놓으세요.","t2");
   if(down.length) say(`기절한 대원은 나서지 못합니다 — ${down.map(h=>h.name).join(", ")}`,"t3");
-  rollIntents(); sel=null; view="battle"; render();
+  if(pinned) sel=null; else rollIntents();
+  sel=null; view="battle";
+  /* 적의 첫 의도까지 적어 둬야 되감았을 때 패턴이 같다 */
+  if(!pinned&&BSNAP){ try{ BSNAP.foes=JSON.stringify(B.foes) }catch(e){ BSNAP=null } }
+  HPMEM={}; render();
+}
+/* 이 전투를 시작 시점으로 되감는다 — 적도 배치도 패턴도 그대로 */
+function resetBattle(){
+  if(!BSNAP||!BSNAP.foes){ startBattle(B.kind); return }
+  try{
+    const kind=BSNAP.kind;
+    const foes=JSON.parse(BSNAP.foes);
+    run=JSON.parse(BSNAP.run);
+    startBattle(kind,foes);
+    say("전투를 처음으로 되감았습니다 — 적과 패턴은 그대로입니다.","t2");
+  }catch(e){ startBattle(B.kind) }
 }
 function say(t,c){ t=icoify(t); B.log.push({t,c}); const l=document.getElementById("log");
   if(l){ l.insertAdjacentHTML("beforeend",`<div class="${c||""}">${t}</div>`); l.scrollTop=l.scrollHeight } }
@@ -6081,8 +6107,8 @@ function drawBattle(app){
   { const tr=el(`<div class="turnrow"></div>`);
     const eb=el(`<button class="go" id="turnend">턴 종료 <i>(Enter)</i></button>`);
     eb.onclick=endTurn; tr.appendChild(eb);
-    const rb=el(`<button class="mini">전투 초기화</button>`);
-    rb.onclick=()=>startBattle(B.kind); tr.appendChild(rb);
+    const rb=el(`<button class="mini" title="이 전투를 시작 시점으로 되감습니다. 적 구성·능력치·행동 패턴은 그대로입니다.">전투 초기화</button>`);
+    rb.onclick=resetBattle; tr.appendChild(rb);
     app.appendChild(tr); }
   if(sel&&sel.hero&&sel.step>=2&&sel.step<5) app.appendChild(skillPanel(sel.hero));
   const hand=el(`<div class="hand" id="hand"></div>`);
