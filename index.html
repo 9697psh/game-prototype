@@ -651,7 +651,7 @@ const HEROES={
   ]},
  "굴라":{title:"탐욕의 악마",role:"방어 · 소환",hp:25,mana:3,hpLv:3,
   focus:"두들겨 맞으며 커지고, 하수인을 삼켜 몸집을 불림",
-  passive:{n:"탐욕의 악마",d:"누군가 죽을 때마다 최대 체력 +1 (전투당 5)"},
+  passive:{n:"탐욕의 악마",d:"누군가 죽을 때마다 최대 체력 +1 (던전당 5)"},
   skills:[
    {n:"씹어먹기",cost:2,el:"공격",tg:"foe",dmg:4,heal:2,d:"피해 4 · 체력 2 회복"},
    {n:"균열 차원문",cost:2,el:"마법",tg:"any",dmg:3,minion:1,d:"칸에 차원문 설치 · 적 칸이면 턴 종료 시 피해 3 · 아군 칸이면 턴 시작 시 보호막 3 · 같은 칸 재사용 시 악마 하수인 카드"},
@@ -915,7 +915,7 @@ const HERO_REWARDS={
  "굴라":[
   R("굶주림","하급","씹어먹기 회복량 +2",(h,rn)=>addMod(h,"씹어먹기","heal",2,rn)),
   R("두꺼운 가죽","하급","최대 체력 +5",h=>{h.maxHp+=5;h.hp+=5}),
-  R("탐식","중급","탐욕의 악마 전투당 한도 +5",h=>h.tag.greedCap=(h.tag.greedCap||5)+5),
+  R("탐식","중급","탐욕의 악마 던전당 한도 +5",h=>h.tag.greedCap=(h.tag.greedCap||5)+5),
   R("차원 확장","중급","균열 차원문 피해 +3",(h,rn)=>addMod(h,"균열 차원문","dmg",3,rn)),
   R("포식자","상급","융합으로 얻는 능력치 2배",h=>h.tag.fuseX=2)
  ]
@@ -1658,6 +1658,7 @@ function recipeBook(){
 
 /* ═══════════ 던전 (여러 차례의 전투) ═══════════ */
 function startDungeon(cell,r,c){
+  run.heroes.forEach(h=>{ h.greed=0 });   /* 탐욕의 악마는 던전 단위 */
   run.dun={cell:cell,r:r,c:c,wave:0,waves:cell.waves||1,
            kind:cell.t==="boss"?"boss":cell.t==="elite"?"elite":cell.t==="ambush"?"ambush":"battle"};
   nextWave();
@@ -2192,7 +2193,7 @@ function startBattle(kind){
     const hpl=itemBt(h,'hpPerLv'); if(hpl){ h.hp+=hpl*h.lv }
     h.mana=h.maxMana+itemBt(h,"firstMana")+(h.tag.firstMana||0);
     h.windUses=0; h.windBuff=0; h.free=0; h.potential=0; h.lock={}; h.airUp=0;
-    h.greed=0; h.portal=null; h.bomb=0; h.minions=[]; h.first={}; h.limitUsed={};
+    h.portal=null; h.bomb=0; h.minions=[]; h.first={}; h.limitUsed={};
     B.hand.push({type:"hero",hero:h});
   });
   const sc=foeScale(kind);
@@ -2493,7 +2494,7 @@ const PASSIVE_INFO={
         +`${bk(h.tag.veilAmt||4,[{n:"추가 보호력",v:h.def}])} 얻습니다.`
         +(h.tag.veilAll?" 다른 아군에게도 부여합니다.":"")}],
  "굴라":[{n:"탐욕의 악마",p:"탐욕의 악마",
-   d:h=>`소환물이 아닌 누군가 죽을 때마다 최대 체력을 1 얻습니다. (전투당 ${h.tag.greedCap||5})`}],
+   d:h=>`소환물이 아닌 누군가 죽을 때마다 최대 체력을 1 얻습니다. (던전당 ${h.tag.greedCap||5})`}],
  "헥토":[{n:"든든한 아군",
    d:h=>`내 턴이 끝날 때 다른 모든 아군에게 보호막을 `
         +`${bk(h.tag.allyShield||2,[{n:"추가 보호력",v:h.def}])} 부여합니다.`
