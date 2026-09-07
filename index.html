@@ -1383,7 +1383,7 @@ HEROES["그슨대"]={title:"그림자 학살자",role:"은신 · 기습",hp:20,m
   passive:{n:"커져가는 악몽",d:"공격 피해를 받을 때마다 어둠 조각. 3개마다 이번 전투 공격력 +1"},
   skills:[
    {n:"그림자 기습",cost:1,el:"공격",tg:"foe",dmg:3,shadow:1,d:"피해 3 · 자리에 그림자를 남기고 최대 2칸 이동 (그림자가 있으면 그리로 사라져 은신)"},
-   {n:"생기 갈취",cost:1,el:"보호",tg:"self",leech:1,d:"다음 기술이 흡수 20% (그림자가 있으면 관통 50%도)"},
+   {n:"생기 갈취",cost:1,el:"보호",tg:"self",leech:1,d:"다음 기술이 흡수 20% · 최소 1 회복 (그림자가 있으면 관통 50%도)"},
    {n:"악몽 태세",cost:2,el:"보호",tg:"self",stance:"nightmare",shield:10,
     d:"보호막 10 · 다음 턴까지 맞을 때마다 모든 적에게 피해 4",
     pick:"속임수 태세",
@@ -4943,6 +4943,14 @@ function shadowGoTo(slot){
   doSkill(sel.target);
 }
 function emptyOkAny(sk){ return !!(sk&&(sk.phantom||sk.minion)) }
+/* 흡수 — 피해를 줬다면 최소 1은 회복한다 */
+function applyLeech(h,dmg){
+  if(!h||!h.leech||!(dmg>0)) return;
+  const heal=Math.max(1,Math.round(dmg*0.2));
+  const got=healUp(h,heal);
+  if(got) fx({side:"mine",slot:h.slot,s:"heal",txt:"+"+got,cls:"heal",gap:60});
+  h.leech=0; h.pierceNext=0;
+}
 function giveArmor(h,nm){
   const A=ARMOR_CARDS[nm];
   pulseFX("mine",h.slot,"#e0c85a",2);
@@ -5155,8 +5163,9 @@ function runEffect(h,i,s,target){
   /* ── 그슨대 ── */
   if(s.shadow){
     const f=foeAt(target);
-    if(f) hurt(f,s.dmg+mod(s,"dmg")+h.atk+(h.hide?(s.dmg+mod(s,"dmg")+h.atk):0),
-      "그림자 기습","slash",0,h.hide?1:0);
+    const dmg0=s.dmg+mod(s,"dmg")+h.atk+(h.hide?(s.dmg+mod(s,"dmg")+h.atk):0);
+    if(f){ hurt(f,dmg0,"그림자 기습","slash",h.pierceNext?50:0,h.hide?1:0);
+      applyLeech(h,dmg0) }
     if(h.hide){ h.hide=0 }
     if(h.shadowAt){
       const to=h.shadowAt, dark=(h.darkAt===to);
@@ -5572,9 +5581,7 @@ function runEffect(h,i,s,target){
         if(tgt.taunt) PR+=itemBt(h,"tauntPierce");
       }
       hurt(tgt,dmg,s.n,s.el==="마법"?"mag":(h.name==="굴라"?"claw":"slash"),PR,CRIT);
-      if(h.leech){ const heal=Math.round(dmg*0.2); healUp(h,heal);
-        if(heal) fx({side:"mine",slot:h.slot,s:"heal",txt:"+"+heal,cls:"heal",gap:60});
-        h.leech=0; h.pierceNext=0 }
+      applyLeech(h,dmg);
       if(h.name==="이테리오"&&s.mark&&tgt.alive){ tgt.mark=(tgt.mark||0)+1;
         fx({side:"foe",slot:tgt.slot,ring:"#6aa8e0",txt:"표식",cls:"mag",gap:60}) }
       if(was&&!tgt.alive){
