@@ -1058,8 +1058,8 @@ function debChips(u){
   return DEB_KEYS.filter(k=>u.deb[k]>0)
     .map(k=>`<span class="chip deb" title="${esc(DEBUFF[k].d)}">${DEBUFF[k].n}${u.deb[k]}</span>`).join("");
 }
-/* 내 턴이 시작할 때 정리 */
-function tickDebStart(u){
+/* 내 턴이 끝날 때 정리 — 적이 걸어준 것은 다음 내 턴까지 남는다 */
+function tickDebEnd(u){
   if(!u.deb) return;
   if(u.deb.burn>0){
     const v=u.deb.burn;
@@ -1071,6 +1071,7 @@ function tickDebStart(u){
   ["atkDn","magDn","defDn","bind"].forEach(k=>{ if(u.deb[k]>0) u.deb[k]-- });
   u.deb.shock=0; u.deb.chill=0; u.deb.stun=0; u.deb.fear=0;
 }
+function tickDebStart(u){ /* 남겨둠 : 턴 시작에는 아무것도 지우지 않는다 */ }
 
 /* ═══════════ 진행 상태 ═══════════ */
 let run=null, view="title", B=null, sel=null, pending=null;
@@ -3247,6 +3248,7 @@ function unitDown(t){
 function endTurn(){
   if(B.over) return;
   if(!allUnits().length){ say("전장에 아군이 없습니다. 먼저 영웅을 소환하세요.","t3"); return }
+  allUnits().forEach(tickDebEnd);
   liveMins().forEach(m=>{ if(m.perma) m.taunt=1 });
   onField().forEach(h=>{
     const es=itemBt(h,"endShield");
@@ -3343,7 +3345,6 @@ function endTurn(){
     if(h.hp<=0) return;
     h.mana=Math.max(0,h.maxMana-(h.curse||0)); h.curse=0;
     if(h.helm){ h.shield+=h.helm; say(`강철 투구 — ${h.name} 보호막 +${h.helm}`); h.helm=0 }
-    tickDebStart(h);
     const es2=itemBt(h,'startTurnShield'); if(es2) h.shield+=es2;
     h.shield=0; h.airUp=0; h.potential=0; h.guarded=0; h.armor=0;
     if(h.taunt) h.taunt--;
