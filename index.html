@@ -171,6 +171,16 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .rw b{font-size:14px;font-family:var(--serif);letter-spacing:.02em}
 .rw p{color:var(--dim);font-size:11.5px;margin:8px 0 0;line-height:1.6;word-break:keep-all}
 .rw .g{font-size:10.5px;color:#b9a2ea;letter-spacing:.06em;margin-bottom:2px}
+.rw .rcp{font-size:10px;color:#8f86a8;margin:7px 0 0;line-height:1.5;
+  border-top:1px solid #372f4d;padding-top:6px;width:100%;word-break:keep-all}
+.rcp:nth-of-type(n+2){border-top:0;padding-top:2px}
+.rcbook{margin-top:26px;background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:14px 16px}
+.rcbook h4{margin:0 0 8px;font-family:var(--serif);font-size:13px;color:var(--brass);letter-spacing:.06em}
+.rcrow{display:grid;grid-template-columns:150px 1fr 76px;gap:8px;font-size:11.5px;
+  padding:4px 0;border-top:1px solid #241f19;align-items:center}
+.rcrow b{color:var(--fg)}
+.rcrow span{color:var(--dim)}
+.rcrow i{color:var(--brass);font-style:normal;text-align:right}
 .rw.no{opacity:.4;cursor:default}
 .rw.no:hover{border-color:#4a3f63;box-shadow:0 6px 18px rgba(0,0,0,.4)}
 /* ── 이펙트 ── */
@@ -918,6 +928,18 @@ const ITEMS=[
    d:"최대 체력 +18, 보호력 +3. 전투 시작 시 추가 보호력의 3배만큼 에너지 보호막을 얻습니다.",
    st:{maxHp:18,def:3},bt:{defAura:3}}
 ];
+function recipeLines(it){
+  const L=[];
+  if(it.rc) L.push("재료 : "+it.rc.join(" + ")+" · 제련석 "+it.cost);
+  const into=ITEMS.filter(x=>x.rc&&x.rc.indexOf(it.n)>=0);
+  if(into.length) L.push("쓰임 : "+into.map(x=>x.n).join(", "));
+  if(!L.length) L.push("제련과는 관계없는 아이템입니다.");
+  return L;
+}
+function recipeHtml(it){
+  return recipeLines(it).map(t=>`<p class="rcp">${rich(t)}</p>`).join("");
+}
+function itemTip(it){ return it.n+" — "+it.d+"\n"+recipeLines(it).join("\n") }
 function findRecipe(a,b){
   const key=[a,b].sort().join("|");
   return ITEMS.find(it=>it.rc&&it.rc.slice().sort().join("|")===key)||null;
@@ -936,7 +958,7 @@ function itemBt(h,key){ return (h.items||[]).reduce((a,i)=>a+((i.bt&&i.bt[key])|
 function itemSlots(h){
   let out='<div class="slots">';
   for(let i=0;i<ITEM_MAX;i++) out+='<span class="sq '+(h.items[i]?"on":"")+'" title="'+
-    (h.items[i]?esc(h.items[i].n+" — "+h.items[i].d):"빈 칸")+'"></span>';
+    (h.items[i]?esc(itemTip(h.items[i])):"빈 칸")+'"></span>';
   return out+'</div>';
 }
 const LV_GRADE=[0,
@@ -1441,7 +1463,7 @@ function drawForge(app){
     const key=hi+":"+ii, on=run.forgePick.indexOf(key)>=0;
     const c=el(`<div class="rw ${on?"on":""}"><div class="rwi">${rewardIcon(it)}</div>
       <div class="g">${esc(h.name)} · ${esc(it.g)}</div>
-      <b>${esc(it.n)}</b><p>${rich(it.d)}</p></div>`);
+      <b>${esc(it.n)}</b><p>${rich(it.d)}</p>${recipeHtml(it)}</div>`);
     c.onclick=()=>{
       const i=run.forgePick.indexOf(key);
       if(i>=0) run.forgePick.splice(i,1); else if(run.forgePick.length<2) run.forgePick.push(key);
@@ -1461,7 +1483,7 @@ function drawForge(app){
   if(made) wrap.appendChild(el(`<div class="rewards" style="margin-top:10px">
     <div class="rw ${ok?"":"no"}"><div class="rwi">${rewardIcon(made)}</div>
       <div class="g">${esc(made.g)} · 결과물</div>
-      <b>${esc(made.n)}</b><p>${rich(made.d)}</p></div></div>`));
+      <b>${esc(made.n)}</b><p>${rich(made.d)}</p>${recipeHtml(made)}</div></div>`));
   const go=el(`<div style="margin-top:18px"><button class="go">제련한다</button></div>`);
   go.querySelector("button").disabled=!ok;
   go.querySelector("button").onclick=()=>{
@@ -1480,6 +1502,22 @@ function drawForge(app){
   const back=el(`<div style="margin-top:12px"><button>그만둔다</button></div>`);
   back.querySelector("button").onclick=()=>{ run.forgePick=[]; run.campDone=0; view="camp"; render() };
   wrap.appendChild(back);
+  app.appendChild(recipeBook());
+}
+function recipeBook(){
+  const box=el(`<div class="rcbook"><h4>조 합 표</h4></div>`);
+  const have=n=>run.heroes.some(h=>h.items.some(i=>i.n===n));
+  ["일반","희귀"].forEach(g=>{
+    box.appendChild(el(`<div class="hint" style="margin-top:10px">${g} 아이템</div>`));
+    ITEMS.filter(i=>i.g===g&&i.rc).forEach(it=>{
+      const ok=it.rc.every(n=>have(n));
+      box.appendChild(el(`<div class="rcrow" style="${ok?"color:var(--fg)":""}">
+        <b>${esc(it.n)}</b>
+        <span>${it.rc.map(n=>`<span style="color:${have(n)?"var(--hp)":"var(--faint)"}">${esc(n)}</span>`).join(" + ")}</span>
+        <i>제련석 ${it.cost}</i></div>`));
+    });
+  });
+  return box;
 }
 
 /* ═══════════ 던전 (여러 차례의 전투) ═══════════ */
@@ -1718,7 +1756,7 @@ function drawShop(app){
     const c=el(`<div class="rw ${off?"no":""}">
       <div class="rwi">${shopIcon(g.k)}</div>
       <div class="g">${g.left<=0?"품절":g.cost+" 금화 · 남은 "+g.left}</div>
-      <b>${esc(g.n)}</b><p>${rich(g.d)}</p></div>`);
+      <b>${esc(g.n)}</b><p>${rich(g.d)}</p>${g.item?recipeHtml(g.item):""}</div>`);
     if(!off) c.onclick=()=>buy(g);
     row.appendChild(c);
   });
@@ -1760,9 +1798,9 @@ function drawRest(app){
   b.onclick=()=>{ run.after=[]; for(let i=0;i<n;i++) run.after.push({grade:grade});
     afterChest() };
   const c=el(`<div class="rw ${run.night?"":"no"}"><div class="rwi">${nodeArt("camp")}</div>
-    <b>노숙한다</b><p>여기서 밤을 보내고 다음 날 아침을 맞습니다. 주둔지가 아니라 오염도가 5 더 오릅니다.</p>
+    <b>노숙한다</b><p>여기서 밤을 보내고 다음 날 아침을 맞습니다. 주둔지가 아니라 오염도가 12 더 오릅니다.</p>
     ${run.night?"":`<p style="color:var(--faint)">해가 진 뒤에만 할 수 있습니다.</p>`}</div>`);
-  if(run.night) c.onclick=()=>{ addTaint(5); nextDay();
+  if(run.night) c.onclick=()=>{ addTaint(12); nextDay();
     if(view!=="over"){ run.here=null; toast("모닥불 곁에서 밤을 보냈습니다."); view="map"; render() } };
   row.appendChild(a); row.appendChild(b); row.appendChild(c);
   wrap.appendChild(row);
@@ -1778,15 +1816,15 @@ const EVENTS=[
         const v=rr([5,7]); if(h) h.hp=Math.min(h.maxHp,h.hp+v);
         return `금화 ${g}을 건넸습니다. ${h?h.name+"의 체력이 "+v+" 회복되었습니다.":""}` }},
      {t:"무시하기",d:"그냥 지나갑니다.",f:()=>"뒤에서 욕지거리가 들려옵니다."},
-     {t:"약탈하기",d:"금화를 빼앗지만 오염도가 오릅니다.",
-      f:()=>{ const g=rr([1,3]), s=rr([2,4]); run.gold+=g; addTaint(s);
+     {t:"약탈하기",d:"금화를 빼앗지만 오염도가 크게 오릅니다.",
+      f:()=>{ const g=rr([2,5]), s=rr([10,15]); run.gold+=g; addTaint(s);
         return `금화 ${g}을 빼앗았습니다. 오염도가 ${s} 올랐습니다.` }}]},
  {n:"떨어진 금화", face:"작은 죄수",
   t:"길 한복판에 금화가 떨어져 있습니다. 너무 눈에 잘 띄는 자리입니다.",
   o:[{t:"금화 줍기",d:"금화를 얻습니다.",
       f:()=>{ const g=rr([3,6]); run.gold+=g; return `금화 ${g}을 주웠습니다.` }},
-     {t:"지나가기",d:"오염도가 낮아집니다.",
-      f:()=>{ const s=rr([10,15]); addTaint(-s); return `욕심을 접었습니다. 오염도가 ${s} 낮아집니다.` }}]},
+     {t:"지나가기",d:"오염도가 크게 낮아집니다.",
+      f:()=>{ const s=rr([25,35]); addTaint(-s); return `욕심을 접었습니다. 오염도가 ${s} 낮아집니다.` }}]},
  {n:"룰렛의 달인", face:"사슬 광인",
   t:"천막 아래에서 한 사내가 낡은 룰렛을 돌리고 있습니다. 운을 시험해 보겠느냐고 묻습니다.",
   o:[{t:"룰렛 돌리기",d:"무엇이 나올지 모릅니다.",
@@ -1795,13 +1833,13 @@ const EVENTS=[
         if(r===0){ const h=rnd(run.heroes), v=rr([3,5]); h.hp=Math.max(1,h.hp-v);
           return `바늘이 붉은 칸에 멈췄습니다. ${h.name}의 체력이 ${v} 줄었습니다.` }
         if(r===1){ const g=rr([4,6]); run.gold+=g; return `금화 ${g}이 쏟아집니다.` }
-        if(r===2){ addTaint(15); return "검은 칸입니다. 오염도가 15 올랐습니다." }
+        if(r===2){ addTaint(30); return "검은 칸입니다. 오염도가 30 올랐습니다." }
         if(r===3){ run.after=[{item:rnd(ITEMS.filter(i=>i.g==="파편"))}];
           return "파편 하나가 굴러 나옵니다." }
         run.after=[{grade:"하급"}]; return "무언가 깨달음이 스칩니다.";
       }},
-     {t:"지나가기",d:"오염도가 낮아집니다.",
-      f:()=>{ const s=rr([10,15]); addTaint(-s); return `발길을 돌렸습니다. 오염도가 ${s} 낮아집니다.` }}]},
+     {t:"지나가기",d:"오염도가 크게 낮아집니다.",
+      f:()=>{ const s=rr([25,35]); addTaint(-s); return `발길을 돌렸습니다. 오염도가 ${s} 낮아집니다.` }}]},
  {n:"술집 난동꾼", face:"사슬 광인",
   t:"부서진 문틈으로 고성이 새어 나옵니다. 덩치 하나가 탁자를 뒤엎고 있습니다.",
   o:[{t:"난동 제압",d:"싸웁니다. 정예보다 조금 셉니다.",
@@ -2137,7 +2175,7 @@ function drawBattle(app){
           ${h.curse?`<span class="chip on">저주${h.curse}</span>`:""}
           ${h.free?`<span class="chip on">무료${h.free}</span>`:""}
           ${h.isMin?`<span class="chip">소환물</span>`:""}
-          ${(h.items||[]).map(it=>`<span class="chip itm2" title="${esc(it.n)} — ${esc(it.d)}">${esc(it.n.length>5?it.n.slice(0,4)+"…":it.n)}</span>`).join("")}
+          ${(h.items||[]).map(it=>`<span class="chip itm2" title="${esc(itemTip(it))}">${esc(it.n.length>5?it.n.slice(0,4)+"…":it.n)}</span>`).join("")}
           ${h.negShield?`<span class="chip on">부정 보호막${h.negShield}</span>`:""}
           ${h.tag&&h.tag.thorn?`<span class="chip on">가시${h.tag.thorn}</span>`:""}
           ${debChips(h)}
@@ -3197,9 +3235,9 @@ function drawItem(app){
       <div class="sub">하나를 가져갈 수 있습니다</div></div>`));
     const row=el(`<div class="rewards"></div>`);
     pending.list.forEach(it=>{
-      const c=el(`<div class="rw"><div class="rwi">${rewardIcon(it)}</div>
+      const c=el(`<div class="rw" title="${esc(itemTip(it))}"><div class="rwi">${rewardIcon(it)}</div>
         <div class="g">${esc(it.g)} 아이템</div>
-        <b>${esc(it.n)}</b><p>${rich(it.d)}</p></div>`);
+        <b>${esc(it.n)}</b><p>${rich(it.d)}</p>${recipeHtml(it)}</div>`);
       c.onclick=()=>{ pending.item=it; pending.stage="hero"; render() };
       row.appendChild(c);
     });
@@ -3216,7 +3254,7 @@ function drawItem(app){
     run.heroes.forEach(h=>{
       const c=el(`<div class="pick" style="width:200px"><div class="art">${figure(h.name)}</div>
         <h3>${esc(h.name)}</h3>
-        <p>${h.items.map(x=>esc(x.n)).join(", ")||"장비 없음"}</p>
+        <p>${h.items.map(x=>`<span title="${esc(itemTip(x))}">${esc(x.n)}</span>`).join(", ")||"장비 없음"}</p>
         ${itemSlots(h)}</div>`);
       c.onclick=()=>{
         pending.hero=h;
@@ -3236,7 +3274,7 @@ function drawItem(app){
     <div class="sub">${esc(h.name)}의 장비 하나를 ${esc(pending.item.n)}${jo(pending.item.n,"eu")}로 바꿉니다</div></div>`));
   const row=el(`<div class="rewards"></div>`);
   h.items.forEach((it,idx)=>{
-    const c=el(`<div class="rw"><div class="rwi">${rewardIcon(it)}</div><div class="g">${esc(it.g)}</div><b>${esc(it.n)}</b><p>${rich(it.d)}</p></div>`);
+    const c=el(`<div class="rw" title="${esc(itemTip(it))}"><div class="rwi">${rewardIcon(it)}</div><div class="g">${esc(it.g)}</div><b>${esc(it.n)}</b><p>${rich(it.d)}</p>${recipeHtml(it)}</div>`);
     c.onclick=()=>{ unequip(h,idx); equip(h,pending.item); SFX.play("summon"); itemDone() };
     row.appendChild(c);
   });
