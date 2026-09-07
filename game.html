@@ -2318,13 +2318,14 @@ function drawBattle(app){
   const tgMode = (sel && sel.step===4) ? sel.hero.sk[sel.skill].tg : null;
   const preSkill = (sel && sel.skill!=null) ? sel.hero.sk[sel.skill] : null;
   const preReach = preSkill ? reachOf(sel.hero,preSkill) : null;
-  const selfPick = tgMode==="ally" || tgMode==="any";
+  const selfPick = tgMode==="ally" || tgMode==="any" || tgMode==="self";
   for(let s=1;s<=SLOTS;s++){
     const h=unitAt(s);
     const d=el(`<div class="slot ${h?"":"empty"}"><span class="no">${s}</span></div>`);
     d.dataset.slot=s;
     if(h){
       if(sel&&sel.hero===h&&sel.step===2) d.classList.add("pick");
+      if(tgMode==="self"&&sel.hero===h) d.classList.add("pick");
       const pm=B.portals&&B.portals.find(p=>p.side==="mine"&&p.slot===s);
       if(pm) d.innerHTML+=`<svg class="portal" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#a06ae0" stroke-width="2.5"/><circle cx="12" cy="12" r="3.5" fill="#a06ae0"/></svg>`;
       d.innerHTML+=`<div class="res">${manaPips(h)}${
@@ -2357,10 +2358,15 @@ function drawBattle(app){
           ${h.tag&&h.tag.thorn?`<span class="chip on">가시${h.tag.thorn}</span>`:""}
           ${debChips(h)}
         </div>`;
-      d.onclick=()=>{ if(tgMode==="ally") doSkill(s); else if(tgMode==="any") doSkill(-s); else pickUnit(s) };
+      d.onclick=()=>{
+        if(tgMode==="ally") doSkill(s);
+        else if(tgMode==="any") doSkill(-s);
+        else if(tgMode==="self"){ if(sel.hero.slot===s) doSkill(null) }
+        else pickUnit(s);
+      };
 
     }else{
-      if(selfPick) d.classList.add("pick");
+      if(selfPick&&tgMode!=="self") d.classList.add("pick");
       d.onclick=()=>{ if(tgMode==="ally") doSkill(s); else if(tgMode==="any") doSkill(-s) };
     }
     my.appendChild(d);
@@ -2427,6 +2433,8 @@ function promptMsg(){
   const s=sel.hero.sk[sel.skill!=null?sel.skill:0];
   if(sel.step===2) return "기술 번호(1~4) · 클릭하면 1회 사용 · 같은 기술을 또 누르면 횟수가 늘어납니다";
   if(sel.step===3) return `${s.n} — 횟수를 누르세요 (1~9)`;
+  if(s.tg==="self") return `${s.n} ×${sel.count} — 내 칸을 누르거나 아래 [시전] 버튼으로 발동`
+    +" · 같은 기술을 또 누르면 횟수 +1";
   return s.tg==="ally"?`${s.n} ×${sel.count} — 이동할 칸을 고르세요`
        : s.tg==="any" ?`${s.n} ×${sel.count} — 아군 칸 또는 적 칸을 클릭하세요`
        : s.tg==="foe" ?`${s.n} ×${sel.count} — 적의 칸을 고르세요`
@@ -2593,6 +2601,14 @@ function skillPanel(h){
   for(let n=2;n<=6;n++){ const b=el(`<button>${n}회</button>`);
     b.onclick=ev=>{ ev.stopPropagation(); if(sel.skill!=null) pickCount(n); };
     cs.appendChild(b) }
+  if(sel.step===4&&sel.skill!=null){
+    const cur=h.sk[sel.skill], pin=pinnedFoe(h,cur);
+    if(cur.tg==="self"||pin){
+      const go=el(`<button class="go" style="margin-left:10px">시전 ×${sel.count}</button>`);
+      go.onclick=ev=>{ ev.stopPropagation(); doSkill(cur.tg==="self"?null:pin.slot) };
+      cs.appendChild(go);
+    }
+  }
   cs.appendChild(el(`<span class="grow"></span>`));
   const esc2=el(`<button>취소 (Esc)</button>`);
   esc2.onclick=()=>{ sel=null; render() };
@@ -2667,6 +2683,7 @@ function pickSkill(i,count){
   if(h.lock[i]){ say(`${s.n}${jo(s.n,"eun")} ${h.lock[i]}턴 동안 잠금 상태입니다.`,"t2"); return }
   /* 이미 고른 기술을 다시 누르면 시전 횟수가 하나씩 늘어난다 */
   if(sel.skill===i&&sel.step===4){
+    if(s.lock){ say(`${s.n}${jo(s.n,"eun")} 잠금 기술이라 한 번만 쓸 수 있습니다.`,"t2"); return }
     const n=(sel.count||1)+1;
     if(s.limit&&(h.limitUsed[i]||0)+n>s.limit){
       say(`${s.n}의 사용한도를 넘습니다.`,"t2"); return }
@@ -2679,9 +2696,9 @@ function pickSkill(i,count){
 }
 function pickCount(n){
   const h=sel.hero, s=h.sk[sel.skill];
+  if(s.lock&&n>1){ say(`${s.n}${jo(s.n,"eun")} 잠금 기술이라 한 번만 쓸 수 있습니다.`,"t2"); n=1 }
   if(!canPay(h,sel.skill,n)){ say(`${s.n} ${n}회를 쓸 자원이 부족합니다.`,"t2"); return }
-  sel.count=n;
-  if(s.tg==="self") doSkill(null); else { sel.step=4; render() }
+  sel.count=n; sel.step=4; render();
 }
 document.addEventListener("keydown",e=>{
   if(view!=="battle") return;
