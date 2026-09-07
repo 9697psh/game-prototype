@@ -174,6 +174,26 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .rw .rcp{font-size:10px;color:#8f86a8;margin:7px 0 0;line-height:1.5;
   border-top:1px solid #372f4d;padding-top:6px;width:100%;word-break:keep-all}
 .rcp:nth-of-type(n+2){border-top:0;padding-top:2px}
+.gearwrap{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:18px}
+.gearhero{background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:12px;width:250px}
+.gearhero .gh{display:flex;gap:10px;align-items:center;text-align:left}
+.gearhero .gh .art{height:44px} .gearhero .gh .art svg{height:44px}
+.gearhero .gh b{font-size:13px}
+.gearhero .gh small{display:block;color:var(--dim);font-size:11px}
+.gslots{display:flex;gap:6px;margin-top:10px}
+.gslot{flex:1;min-width:0;background:var(--raise);border:1px solid var(--rule);border-radius:5px;
+  padding:8px 4px;text-align:center;cursor:pointer;min-height:78px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.gslot:hover{border-color:var(--brass)}
+.gslot.empty{border-style:dashed;color:var(--faint)}
+.gslot.empty span{font-size:10.5px}
+.gslot.drop{border-color:var(--hp)}
+.gslot.on{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass) inset}
+.gslot .gi{width:30px;height:30px} .gslot .gi svg{width:30px;height:30px}
+.gslot b{font-size:10px;line-height:1.25;word-break:keep-all}
+.gslot .gg{font-size:9.5px;color:var(--faint)}
+.bagwrap{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:10px}
+.bagwrap .gslot{width:104px;flex:0 0 104px}
 .rcbook{margin-top:26px;background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:14px 16px}
 .rcbook h4{margin:0 0 8px;font-family:var(--serif);font-size:13px;color:var(--brass);letter-spacing:.06em}
 .rcrow{display:grid;grid-template-columns:150px 1fr 76px;gap:8px;font-size:11.5px;
@@ -1171,7 +1191,7 @@ function rollStart(){
 }
 function newRun(name,pack){
   const f=FIELDS[0], S=f.size, mid=Math.floor(S/2);
-  run={heroes:[makeHero(name)], gold:0, stone:0, cards:[],
+  run={heroes:[makeHero(name)], gold:0, stone:0, cards:[], bag:[],
        field:0, size:S, grid:buildGrid(0),
        pos:{r:S-1,c:mid}, day:1, time:6, act:f.act, actMax:f.act,
        taint:0, night:0, campDone:0, bonusLv:null};
@@ -1269,6 +1289,7 @@ function render0(){
   if(view==="clear")    return drawClear(app);
   if(view==="wavegap")  return drawWaveGap(app);
   if(view==="forge")    return drawForge(app);
+  if(view==="gear")     return drawGear(app);
   if(view==="over")     return drawOver(app);
 }
 
@@ -1353,7 +1374,7 @@ ${NODE[cell.t].label} · ${cell.waves}차 전투\n${cell.style}\n${cell.loot}`;
     b.querySelector("button").onclick=()=>{ view="camp"; render() };
     app.appendChild(b);
   }
-  app.appendChild(el(`<div style="margin-top:20px" class="hint">대원</div>`));
+  app.appendChild(el(`<div style="margin-top:20px" class="hint">대원${(run.bag||[]).length?` · 가방에 아이템 ${run.bag.length}개 (주둔지에서 정리)`:""}</div>`));
   const rs=el(`<div class="roster"></div>`);
   run.heroes.forEach(h=>rs.appendChild(el(`<div class="rost ${h.down?"down":""}">
     <div class="art">${figure(h.name)}</div>
@@ -1413,7 +1434,8 @@ function drawCamp(app){
   const wrap=app.querySelector(".center");
   const downed=run.heroes.filter(h=>h.down).length;
   const hurt=run.heroes.filter(h=>!h.down&&h.hp<h.maxHp).length;
-  const shards=run.heroes.reduce((a,h)=>a+h.items.filter(i=>i.g==="파편"||i.g==="일반").length,0);
+  const shards=run.heroes.reduce((a,h)=>a+h.items.filter(i=>i.g==="파편"||i.g==="일반").length,0)
+    +(run.bag||[]).filter(i=>i.g==="파편"||i.g==="일반").length;
   const acts=[
    campAct("revive","치료소","기절한 대원을 절반의 체력으로 일으킵니다.",downed>0,
      ()=>{ run.heroes.forEach(h=>{ if(h.down){ h.down=0; h.hp=Math.max(1,Math.round(h.maxHp*0.5));
@@ -1447,14 +1469,80 @@ function drawCamp(app){
   sleep.querySelector("button").disabled=!run.night;
   sleep.querySelector("button").onclick=()=>{ nextDay(); if(view!=="over"){ view="map"; render() } };
   wrap.appendChild(sleep);
+  const gear=el(`<div style="margin-top:12px">
+    <button>장비 정리 — 가방 ${(run.bag||[]).length}개</button>
+    <div class="hint" style="margin-top:6px">장비 정리는 하루 한 번 제한에 들어가지 않습니다.</div></div>`);
+  gear.querySelector("button").onclick=()=>{ run.gearPick=null; view="gear"; render() };
+  wrap.appendChild(gear);
   const out=el(`<div style="margin-top:12px"><button>주둔지를 나선다</button></div>`);
   out.querySelector("button").onclick=()=>{ view="map"; render() };
   wrap.appendChild(out);
 }
+function drawGear(app){
+  run.bag=run.bag||[];
+  const sel2=run.gearPick;
+  app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">장 비 정 리</div>
+    <div class="sub">${sel2?"놓을 자리를 고르세요. 이미 찬 칸을 누르면 서로 바뀝니다."
+      :"옮길 아이템을 고르세요. 대원의 장비를 누르면 가방으로 들어갑니다."}</div></div>`));
+  const wrap=app.querySelector(".center");
+  const rs=el(`<div class="gearwrap"></div>`);
+  run.heroes.forEach((h,hi)=>{
+    const box=el(`<div class="gearhero"><div class="gh">
+      <div class="art">${figure(h.name)}</div>
+      <div><b>${esc(h.name)}</b><small>Lv.${h.lv} · ${ic("hp")}${h.hp}/${h.maxHp}</small>
+        <small>${ic("atk")}${h.atk} ${ic("mag")}${h.mag} ${ic("def")}${h.def}</small></div></div>
+      <div class="gslots"></div></div>`);
+    const gs=box.querySelector(".gslots");
+    for(let i=0;i<ITEM_MAX;i++){
+      const it=h.items[i];
+      const cell=el(`<div class="gslot ${it?"":"empty"} ${sel2?"drop":""}"
+        title="${it?esc(itemTip(it)):"빈 칸"}">
+        ${it?`<div class="gi">${rewardIcon(it)}</div><b>${esc(it.n)}</b>`:`<span>빈 칸</span>`}</div>`);
+      cell.onclick=()=>{
+        if(sel2){
+          if(sel2.from==="bag"){
+            const item=run.bag[sel2.i];
+            if(it){ const old=unequip(h,i); run.bag.splice(sel2.i,1,old); equip(h,item) }
+            else { run.bag.splice(sel2.i,1); equip(h,item) }
+          }else{
+            const src=run.heroes[sel2.h], item=src.items[sel2.i];
+            if(src===h&&sel2.i===i){ run.gearPick=null; render(); return }
+            const a=unequip(src,sel2.i);
+            if(it){ const b=unequip(h,i); equip(h,a); equip(src,b) }
+            else equip(h,a);
+          }
+          run.gearPick=null; SFX.play("click"); render(); return;
+        }
+        if(it){ const old=unequip(h,i); toBag(old); SFX.play("click"); render() }
+      };
+      gs.appendChild(cell);
+    }
+    rs.appendChild(box);
+  });
+  wrap.appendChild(rs);
+  wrap.appendChild(el(`<div class="title" style="font-size:16px;margin-top:26px">가 방 (${run.bag.length})</div>`));
+  const bag=el(`<div class="bagwrap"></div>`);
+  if(!run.bag.length) bag.appendChild(el(`<p class="hint">가방이 비어 있습니다.</p>`));
+  run.bag.forEach((it,i)=>{
+    const on=sel2&&sel2.from==="bag"&&sel2.i===i;
+    const c=el(`<div class="gslot ${on?"on":""}" title="${esc(itemTip(it))}">
+      <div class="gi">${rewardIcon(it)}</div><b>${esc(it.n)}</b>
+      <span class="gg">${esc(it.g)}</span></div>`);
+    c.onclick=()=>{ run.gearPick=on?null:{from:"bag",i:i}; render() };
+    bag.appendChild(c);
+  });
+  wrap.appendChild(bag);
+  const back=el(`<div style="margin-top:24px"><button class="go">정리를 마친다</button></div>`);
+  back.querySelector("button").onclick=()=>{ run.gearPick=null; view="camp"; render() };
+  wrap.appendChild(back);
+}
 function drawForge(app){
   run.forgePick=run.forgePick||[];
-  const picked=run.forgePick.map(k=>{ const p=k.split(":").map(Number);
-    return {h:run.heroes[p[0]],i:p[1],it:run.heroes[p[0]].items[p[1]]} });
+  const picked=run.forgePick.map(k=>{
+    const p=k.split(":");
+    if(p[0]==="B") return {bag:1,i:+p[1],it:(run.bag||[])[+p[1]]};
+    return {h:run.heroes[+p[0]],i:+p[1],it:run.heroes[+p[0]].items[+p[1]]};
+  }).filter(x=>x.it);
   const made=picked.length===2?findRecipe(picked[0].it.n,picked[1].it.n):null;
   app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">제 련</div>
     <div class="sub">조합법이 있는 아이템 둘을 골라 하나로 만듭니다 · 제련석 ${run.stone||0}개 보유</div></div>`));
@@ -1475,6 +1563,20 @@ function drawForge(app){
     };
     row.appendChild(c);
   }));
+  (run.bag||[]).forEach((it,bi)=>{
+    if(it.g!=="파편"&&it.g!=="일반") return;
+    any=1;
+    const key="B:"+bi, on=run.forgePick.indexOf(key)>=0;
+    const c=el(`<div class="rw ${on?"on":""}"><div class="rwi">${rewardIcon(it)}</div>
+      <div class="g">가방 · ${esc(it.g)}</div>
+      <b>${esc(it.n)}</b><p>${rich(it.d)}</p>${recipeHtml(it)}</div>`);
+    c.onclick=()=>{
+      const i=run.forgePick.indexOf(key);
+      if(i>=0) run.forgePick.splice(i,1); else if(run.forgePick.length<2) run.forgePick.push(key);
+      render();
+    };
+    row.appendChild(c);
+  });
   if(!any) wrap.appendChild(el(`<p class="hint" style="margin-top:20px">제련할 수 있는 재료가 없습니다.</p>`));
   wrap.appendChild(row);
   /* 결과 안내 */
@@ -1492,9 +1594,11 @@ function drawForge(app){
   go.querySelector("button").disabled=!ok;
   go.querySelector("button").onclick=()=>{
     run.stone-=made.cost;
-    const ps=picked.slice().sort((a,b)=>b.i-a.i);
-    ps.forEach(p=>unequip(p.h,p.i));
-    const owner=picked[0].h;
+    const bags=picked.filter(p=>p.bag).sort((a,b)=>b.i-a.i);
+    const eqs =picked.filter(p=>!p.bag).sort((a,b)=>b.i-a.i);
+    bags.forEach(p=>run.bag.splice(p.i,1));
+    eqs.forEach(p=>unequip(p.h,p.i));
+    const owner=(eqs[0]&&eqs[0].h)||run.heroes[0];
     run.forgePick=[];
     SFX.play("summon");
     toast(`${made.n}${jo(made.n,"eul")} 제련했습니다.`);
@@ -3269,7 +3373,7 @@ function drawItem(app){
   }
   if(st==="hero"){
     app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">${esc(pending.item.n)}</div>
-      <div class="sub">누구에게 채울까요 (한 명당 ${ITEM_MAX}칸)</div></div>`));
+      <div class="sub">누구에게 채울까요 (한 명당 ${ITEM_MAX}칸) · 칸이 없으면 가방에 넣어 두었다가 주둔지에서 정리할 수 있습니다</div></div>`));
     const row=el(`<div class="picks"></div>`);
     run.heroes.forEach(h=>{
       const c=el(`<div class="pick" style="width:200px"><div class="art">${figure(h.name)}</div>
@@ -3284,8 +3388,12 @@ function drawItem(app){
       row.appendChild(c);
     });
     app.querySelector(".center").appendChild(row);
-    const sk=el(`<div style="text-align:center;margin-top:18px"><button>버리기</button></div>`);
-    sk.querySelector("button").onclick=itemDone;
+    const sk=el(`<div style="text-align:center;margin-top:18px">
+      <button class="go">가방에 넣는다 (${(run.bag||[]).length})</button>
+      <button style="margin-left:8px">버린다</button></div>`);
+    sk.querySelectorAll("button")[0].onclick=()=>{ toBag(pending.item);
+      toast(`${pending.item.n}${jo(pending.item.n,"eul")} 가방에 넣었습니다.`); itemDone() };
+    sk.querySelectorAll("button")[1].onclick=itemDone;
     app.appendChild(sk);
     return;
   }
@@ -3295,14 +3403,22 @@ function drawItem(app){
   const row=el(`<div class="rewards"></div>`);
   h.items.forEach((it,idx)=>{
     const c=el(`<div class="rw" title="${esc(itemTip(it))}"><div class="rwi">${rewardIcon(it)}</div><div class="g">${esc(it.g)}</div><b>${esc(it.n)}</b><p>${rich(it.d)}</p>${recipeHtml(it)}</div>`);
-    c.onclick=()=>{ unequip(h,idx); equip(h,pending.item); SFX.play("summon"); itemDone() };
+    c.onclick=()=>{ const old=unequip(h,idx); if(old) toBag(old);
+      equip(h,pending.item); SFX.play("summon");
+      toast(`${old.n}${jo(old.n,"eul")} 가방에 넣고 ${pending.item.n}${jo(pending.item.n,"eul")} 채웠습니다.`);
+      itemDone() };
     row.appendChild(c);
   });
   app.querySelector(".center").appendChild(row);
-  const sk=el(`<div style="text-align:center;margin-top:18px"><button>그대로 둔다</button></div>`);
-  sk.querySelector("button").onclick=itemDone;
+  const sk=el(`<div style="text-align:center;margin-top:18px">
+    <button class="go">바꾸지 않고 가방에 넣는다</button>
+    <button style="margin-left:8px">버린다</button></div>`);
+  sk.querySelectorAll("button")[0].onclick=()=>{ toBag(pending.item);
+    toast(`${pending.item.n}${jo(pending.item.n,"eul")} 가방에 넣었습니다.`); itemDone() };
+  sk.querySelectorAll("button")[1].onclick=itemDone;
   app.appendChild(sk);
 }
+function toBag(it){ (run.bag=run.bag||[]).push(it) }
 function rewardIcon(r){
   const t=(r.n||"")+" "+(r.d||"");
   const has=w=>t.indexOf(w)>=0;
