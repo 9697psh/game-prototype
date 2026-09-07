@@ -600,6 +600,17 @@ button.dtl{padding:3px 10px;font-size:11.5px}
   100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(.3)}}
 /* ── 필드 격자 ── */
 /* ── 자원 머리줄 ── */
+.clock{display:inline-flex;flex-direction:column;align-items:center;gap:1px;
+  padding:3px 8px 2px;border:1px solid var(--rule);border-radius:var(--rd);
+  background:var(--panel);cursor:help;line-height:1;flex:none}
+.clock .clkpx{width:38px;height:38px;image-rendering:pixelated;display:block;
+  filter:drop-shadow(0 0 5px rgba(201,162,39,.22))}
+.clock b{font-size:12.5px;color:var(--fg);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.clock i{font-style:normal;font-size:9.5px;color:var(--brass);letter-spacing:.14em}
+.clock.night{border-color:#3a3459;background:#15121f}
+.clock.night .clkpx{filter:drop-shadow(0 0 6px rgba(156,143,208,.35))}
+.clock.night i{color:#9c8fd0}
+header{align-items:center}
 .fname{font-family:var(--serif);font-size:14px;color:var(--brass);letter-spacing:.05em;white-space:nowrap}
 .res{position:relative;display:inline-flex;align-items:center;gap:4px;overflow:hidden;
   padding:3px 9px;border:1px solid var(--rule);border-radius:11px;background:var(--panel);
@@ -3333,6 +3344,71 @@ const DUN_STYLE=[
 const DUN_LOOT=[
  "금화 냄새가 난다","파편 조각이 굴러다닌다","경험이 될 만한 싸움이다","쓸 만한 것이 있을지도 모른다"
 ];
+
+/* ═══════════ 픽셀 시계 ═══════════ */
+function clockFace(px){
+  const N=24, C=11.5;
+  const g=[]; for(let y=0;y<N;y++) g.push(new Array(N).fill("."));
+  const put=(x,y,ch)=>{ x=Math.round(x); y=Math.round(y);
+    if(x>=0&&x<N&&y>=0&&y<N) g[y][x]=ch };
+  /* 테두리 — 두 겹 원 */
+  for(let a=0;a<360;a+=2){
+    const r=a*Math.PI/180;
+    put(C+Math.cos(r)*10.6, C+Math.sin(r)*10.6, "O");
+    put(C+Math.cos(r)*9.4,  C+Math.sin(r)*9.4,  "F");
+  }
+  /* 눈금 — 12·3·6·9 는 길게, 나머지는 점 */
+  for(let h=0;h<12;h++){
+    const r=(h/12)*Math.PI*2-Math.PI/2;
+    const long=(h%3===0);
+    for(let k=0;k<(long?3:1);k++){
+      const d=8.2-k*0.9;
+      put(C+Math.cos(r)*d, C+Math.sin(r)*d, long?"T":"t");
+    }
+  }
+  /* 바늘 — 브레젠험으로 픽셀을 찍는다 */
+  /* 바늘 — 두 줄로 그어 굵게 */
+  const line=(ang,len,ch,thick)=>{
+    const nx=-Math.sin(ang), ny=Math.cos(ang);
+    for(let d=1;d<=len;d+=0.4){
+      const x=C+Math.cos(ang)*d, y=C+Math.sin(ang)*d;
+      put(x,y,ch);
+      if(thick){ put(x+nx*0.9,y+ny*0.9,ch); put(x-nx*0.9,y-ny*0.9,ch) }
+    }
+  };
+  const t=((run?run.time:6)%24+24)%24;
+  const hAng=((t%12)/12)*Math.PI*2-Math.PI/2;
+  const mAng=((t%1))*Math.PI*2-Math.PI/2;
+  line(mAng,8.0,"M",0);   /* 분침 — 가늘고 길게 */
+  line(hAng,5.0,"H",1);   /* 시침 — 굵고 짧게 */
+  put(C,C,"P"); put(C+1,C,"P"); put(C,C+1,"P"); put(C+1,C+1,"P");
+  put(C-1,C,"P"); put(C,C-1,"P"); put(C+2,C+1,"P"); put(C+1,C+2,"P");
+  const night=run&&run.night;
+  const P={
+    "O":"#0a0809",
+    "F":night?"#5b52a0":"#7a6742",
+    "T":night?"#c9c0f0":"#e8dfc8",
+    "t":night?"#9a92d8":"#bda98a",
+    "H":night?"#e0d8ff":"#f0e6cf",
+    "M":night?"#c9bdf5":"#e8c24a",
+    "P":night?"#e0d8ff":"#f0e6cf"
+  };
+  /* 배경 원 */
+  let bg='<circle cx="12" cy="12" r="10.2" fill="'+(night?"#171430":"#241d14")+'"/>';
+  let out='<svg class="clkpx" viewBox="0 0 24 24" shape-rendering="crispEdges"'
+    +(px?' style="width:'+px+'px;height:'+px+'px"':'')+'>'+bg;
+  for(let y=0;y<N;y++){
+    let x=0;
+    while(x<N){
+      const ch=g[y][x];
+      if(ch==="."||!P[ch]){ x++; continue }
+      let w=1; while(x+w<N&&g[y][x+w]===ch) w++;
+      out+='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="1" fill="'+P[ch]+'"/>';
+      x+=w;
+    }
+  }
+  return out+"</svg>";
+}
 /* 자원 아이콘 — 한 벌로 */
 function resIcon(k){
   const g={
@@ -3501,7 +3577,7 @@ function buildGrid(fi){
   };
   const dun=()=>({waves:1+Math.floor(Math.random()*3),style:rnd(DUN_STYLE),loot:rnd(DUN_LOOT)});
   put("dungeon",nodeCount("dungeon",fi),dun);
-  put("elite",nodeCount("elite",fi),()=>({waves:1+Math.floor(Math.random()*2),style:rnd(DUN_STYLE),loot:rnd(DUN_LOOT)}));
+  put("elite",nodeCount("elite",fi),()=>({waves:1,style:rnd(DUN_STYLE),loot:rnd(DUN_LOOT)}));
   put("shop",nodeCount("shop",fi));
   put("rest",nodeCount("rest",fi));
   put("event",nodeCount("event",fi));
@@ -3535,7 +3611,8 @@ function respawn(){
     const n=4+Math.floor(Math.random()*3)+run.field*2;
     for(let i=0;i<n&&free.length;i++){
       const k=Math.floor(Math.random()*free.length), rc=free.splice(k,1)[0];
-      run.grid[rc[0]][rc[1]]={t:i<2?"elite":"dungeon",waves:1+Math.floor(Math.random()*3),
+      run.grid[rc[0]][rc[1]]={t:i<2?"elite":"dungeon",
+        waves:i<2?1:1+Math.floor(Math.random()*3),
         style:rnd(DUN_STYLE),loot:rnd(DUN_LOOT)};
     }
     if(n) toast("정복하지 않은 전투 칸이 사라지고, 새 전투 칸이 나타났습니다.");
@@ -3729,11 +3806,12 @@ function render0(){
     const dLeft=FIELDS[run.field].days-run.day;
     const tPct=Math.min(100,run.taint);
     const aPct=run.actMax?Math.max(0,run.act)/run.actMax*100:0;
-    hr.innerHTML=`<span class="fname">${esc(FIELDS[run.field].n)}</span>
+    hr.innerHTML=`<span class="clock ${run.night?"night":""}"
+        title="${run.night?"밤 — 빈 칸에서 습격당할 수 있습니다. 18시부터 밤입니다.":"낮 — 18시가 지나면 밤이 됩니다."}">
+        ${clockFace()}<b>${clock()}</b><i>${run.night?"밤":"낮"}</i></span>
+      <span class="fname">${esc(FIELDS[run.field].n)}</span>
       <span class="res ${dLeft<=1?"bad":dLeft<=2?"warn":""}" title="남은 날 ${Math.max(0,dLeft)}일">
         ${resIcon("day")}<b>${run.day}</b><i>/${FIELDS[run.field].days}일</i></span>
-      <span class="res ${run.night?"night":""}" title="${run.night?"밤 — 빈 칸에서 습격당할 수 있습니다":"낮"}">
-        ${resIcon(run.night?"moon":"sun")}<b>${clock()}</b></span>
       <span class="res act" title="한 칸 이동에 1. 0이어도 움직일 수 있지만 시간이 두 배">
         ${resIcon("act")}<b>${Math.max(0,run.act)}</b><i>/${run.actMax}</i>
         <u style="width:${aPct}%"></u></span>
@@ -4569,19 +4647,19 @@ function dungeonCleared(){
 /* ═══════════ 보상 상자 ═══════════ */
 const CHEST={
  battle:[["금화",1,3,1],["하급",0,0,.10],["파편",0,0,.05],["경험치",2,9,.30],["중급",0,0,.02]],
- elite :[["금화",5,7,1],["하급",0,0,.40],["파편",0,0,.15],["경험치",2,9,.50],["중급",0,0,.05]],
+ elite :[["금화",7,11,1],["하급",0,0,.60],["파편",0,0,.22],["경험치",4,12,.65],["중급",0,0,.10]],
  boss  :[["금화",15,20,1],["하급",0,0,1],["파편",0,0,1],["경험치",6,18,.50],["중급",0,0,1],["동료",0,0,1]],
  ambush:[["금화",2,5,1],["하급",0,0,.20],["파편",0,0,.10],["경험치",3,12,.40]]
 };
 const CHEST2={
  battle:[["금화",3,6,1],["하급",0,0,.20],["파편",0,0,.08],["경험치",2,9,.40],["중급",0,0,.05]],
- elite :[["금화",7,10,1],["하급",0,0,.50],["파편",0,0,.20],["경험치",6,18,.50],["중급",0,0,.10]],
+ elite :[["금화",10,16,1],["하급",0,0,.75],["파편",0,0,.30],["경험치",8,20,.65],["중급",0,0,.20]],
  boss  :[["금화",30,50,1],["하급",0,0,3],["일반",0,0,1],["경험치",6,18,.50],["중급",0,0,2],["동료",0,0,1]],
  ambush:[["금화",4,8,1],["하급",0,0,.25],["파편",0,0,.12],["경험치",5,15,.40]]
 };
 const CHEST3={
  battle:[["금화",7,10,1],["하급",0,0,.40],["파편",0,0,.20],["경험치",6,12,.40],["중급",0,0,.10],["상급",0,0,.05]],
- elite :[["금화",12,25,1],["하급",0,0,1],["파편",0,0,.30],["경험치",12,24,.60],["중급",0,0,.25],["상급",0,0,.15]],
+ elite :[["금화",16,30,1],["하급",0,0,1],["파편",0,0,.42],["경험치",14,28,.75],["중급",0,0,.38],["상급",0,0,.22]],
  boss  :[["금화",50,80,1],["하급",0,0,3],["일반",0,0,1],["경험치",12,30,1],["중급",0,0,2],["상급",0,0,1],["동료",0,0,1]],
  ambush:[["금화",8,14,1],["하급",0,0,.35],["파편",0,0,.18],["경험치",7,18,.40]]
 };
@@ -5298,7 +5376,7 @@ function foeSet(kind){
   }
   if(kind==="elite"){
     /* 정예는 대원 수 제한을 덜 받고, 앞자리에 가장 단단한 놈이 선다 */
-    const k=Math.max(3,Math.min(5,n+2));
+    const k=Math.max(2,Math.min(4,n+1));
     const lead=pool.slice().sort((a,b)=>FOE[b].hp-FOE[a].hp)[0];
     out.push([lead,1]);
     for(let i=2;i<=k;i++) out.push([rnd(pool),i]);
@@ -5321,7 +5399,7 @@ function partyPower(){
 function foeScale(kind){
   const f=run.field, l=(run.day-1)+(run.dun?run.dun.wave-1:0), n=Math.min(run.heroes.length,5);
   let m=(1+f*0.85)*(1+l*0.05)*partyPower();
-  if(kind==="elite")  m*=1.5;
+  if(kind==="elite")  m*=1.32;
   if(kind==="boss")   m*=1.45;
   if(kind==="ambush") m*=1.3+nightDepth()*0.08;
   /* 대원이 적을수록 적도 약해진다 */
@@ -5376,11 +5454,11 @@ function startBattle(kind){
   const sc=foeScale(kind);
   foeSet(kind).forEach(([n,s],i)=>{
     const d=FOE[n];
-    const lead=(kind==="elite"&&s===1)?1.35:1;
+    const lead=(kind==="elite"&&s===1)?1.26:1;
     const hp=Math.round(d.hp*sc.m*sc.hpP*lead)+sc.hpAdd;
     B.foes.push({name:n,slot:s,maxHp:hp,hp:hp,
       atk:Math.max(1,Math.round(d.atk*(1+(sc.m-1)*0.5)*sc.atkP*lead))+sc.atkAdd,
-      def:Math.round(d.def*(1+(sc.m-1)*0.55)*sc.defP*(lead>1?1.15:1))+sc.defAdd,
+      def:Math.round(d.def*(1+(sc.m-1)*0.55)*sc.defP*(lead>1?1.08:1))+sc.defAdd,
       rng:d.rng,exp:d.exp+run.field*2+Math.floor(run.day/3),demon:d.demon||0,boss:d.boss||0,
       shield:0,air:0,alive:1,id:i,infect:0,stun:0,weak:0,
       taunt:0,thorn:0,evade:0,negShield:0,hide:0,deb:{}});
