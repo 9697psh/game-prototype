@@ -944,7 +944,7 @@ const HEROES={
   skills:[
    {n:"진선풍도",cost:1,el:"공격",tg:"foe",rng:2,dmg:2,wind:1,d:"피해 2 · 거리 2 · 3회째마다 강화(전체 타격 + 공중)"},
    {n:"산들바람",cost:1,el:"이동",tg:"ally",d:"1칸 이동 · 추진력 +1 · 다음 진선풍도의 거리와 피해량 +1"},
-   {n:"기류 흘리기",cost:3,costType:"mom",el:"보호",tg:"self",evade:1,d:"회피 +1 · 이번 턴 비용 1씩 상승"},
+   {n:"기류 흘리기",cost:3,costType:"mom",rise:1,el:"보호",tg:"self",evade:1,d:"회피 +1 · 이번 턴 비용 1씩 상승"},
    {n:"잠재력 활성",cost:1,el:"집중",tg:"self",lock:2,potential:1,d:"잠금(2) · 이번 턴 진선풍도가 거리 안 모든 적 타격 · 회오리는 전부 공중 · 산들바람 4회 무료"}
   ]},
  "굴라":{title:"탐욕의 악마",role:"방어 · 소환",hp:25,mana:3,hpLv:3,
@@ -1232,7 +1232,7 @@ HEROES["오토"]={title:"숲을 돌보는 기계",role:"보호 · 지원",hp:20,
   skills:[
    {n:"쓰담쓰담",cost:1,el:"마법",tg:"foe",dmg:2,shield:1,d:"피해 2 · 보호막 1"},
    {n:"달래주기",cost:2,el:"이동",tg:"ally",soothe:1,d:"최대 2칸 이동 · 거리 1 아군에게 에너지 보호막 4 · 추진력 2"},
-   {n:"녹슨 성장",cost:4,costType:"mom",el:"집중",tg:"self",grow:1,d:"추진력 4 · 모든 아군에게 이번 전투 동안 마법력·보호력 +1"},
+   {n:"녹슨 성장",cost:4,costType:"mom",el:"집중",tg:"self",grow:1,d:"추진력 4 · 대기 중인 대원까지 모든 아군에게 이번 전투 동안 마법력·보호력 +1"},
    {n:"고대수목의 씨앗",cost:3,el:"마법",tg:"foe",lock:1,seed:1,dmg:30,d:"잠금(1) · 체력이 가장 높은 적에게 피해 30(추가 마법력 2배)"}
   ]};
 HEROES["보아"]={title:"균열의 짐승",role:"공중 · 비늘",hp:20,mana:2,hpLv:2,
@@ -3326,7 +3326,8 @@ function skillPanel(h){
     const lk=h.lock[i]||0;
     const used=s.limit?(h.limitUsed[i]||0):0;
     const ok=!locked&&!lk&&canPay(h,i,1);
-    const cost = s.costType==="mom" ? ic("move")+" "+payCost(h,i) : ic("mana")+" "+payCost(h,i);
+    const cost = s.costType==="mom" ? ic("move")+" "+payCost(h,i)
+               : s.costType==="scale" ? "비늘 "+payCost(h,i) : ic("mana")+" "+payCost(h,i);
     const e=el(`<div class="sk ${sel.skill===i?"on":""} ${ok?"":"off"}">
       <span class="k">${i+1}</span><div class="t">
       <b>${esc(s.pick?s.pick:s.n)}</b>${(sel.skill===i&&sel.step===4&&sel.count>1)?`<span class="xn">×${sel.count}</span>`:""}
@@ -3438,7 +3439,7 @@ function validTarget(h,sk,slot){
 function payCost(h,i){
   const s=h.sk[i];
   if(h===0) return s.cost;
-  if(s.costType==="mom") return s.cost+h.airUp;
+  if(s.costType==="mom") return s.cost+(s.rise?h.airUp:0);
   if(s.costType==="scale") return s.cost;
   if(h.name==="카제"&&i===1&&h.free>0) return 0;
   if(h.tag.freeCut&&i===0&&h.guarded) return 0;
@@ -3447,7 +3448,9 @@ function payCost(h,i){
 function canPay(h,i,n){
   const s=h.sk[i];
   if(s.limit&&(h.limitUsed[i]||0)+n>s.limit) return false;
-  if(s.costType==="mom"){ let need=0,up=h.airUp; for(let k=0;k<n;k++){need+=s.cost+up;up++} return h.mom>=need }
+  if(s.costType==="mom"){
+    if(!s.rise) return h.mom>=s.cost*n;
+    let need=0,up=h.airUp; for(let k=0;k<n;k++){need+=s.cost+up;up++} return h.mom>=need }
   if(s.costType==="scale") return (h.scale||0)>=s.cost*n;
   if(s.ammo) return (h.ammo||0)>=n;
   let need=0,free=h.free,guard=h.guarded;
@@ -3777,7 +3780,8 @@ function doSkill(target){
     if(!canPay(h,i,1)){ say("자원이 부족해 중단합니다.","t2"); break }
     /* 비용 지불 */
     if(s.costType==="scale"){ h.scale-=s.cost }
-    else if(s.costType==="mom"){ h.mom-=s.cost+h.airUp; h.airUp++ }
+    else if(s.costType==="mom"){
+      if(s.rise){ h.mom-=s.cost+h.airUp; h.airUp++ } else h.mom-=s.cost; }
     else if(h.name==="카제"&&i===1&&h.free>0){ h.free-- }
     else if(h.tag.freeCut&&i===0&&h.guarded){ h.guarded=0 }
     else { h.mana-=s.cost; h.manaUsed=(h.manaUsed||0)+s.cost;
@@ -4065,9 +4069,14 @@ function runEffect(h,i,s,target){
     return;
   }
   if(s.grow){
-    allUnits().forEach(a=>{ bumpTmp(a,"mag",1); bumpTmp(a,"def",1) });
+    const got=[];
+    run.heroes.forEach(a=>{ if(a.down) return;
+      bumpTmp(a,"mag",1); bumpTmp(a,"def",1); got.push(a);
+      if(a.slot>0) fx({side:"mine",slot:a.slot,ring:"#7fd39a",txt:"+1/+1",cls:"shd",gap:70}) });
+    liveMins().forEach(m=>{ bumpTmp(m,"mag",1); bumpTmp(m,"def",1); got.push(m);
+      fx({side:"mine",slot:m.slot,ring:"#7fd39a",txt:"+1/+1",cls:"shd",gap:70}) });
     fx({side:"mine",slot:h.slot,art:"mag",s:"summon",txt:"성장",cls:"crit"});
-    say("녹슨 성장 — 모든 아군이 이번 전투 동안 마법력·보호력 +1","t1");
+    say(`녹슨 성장 — 모든 아군(${got.map(a=>a.name).join(", ")})이 이번 전투 동안 마법력·보호력 +1`,"t1");
     return;
   }
   if(s.seed){
