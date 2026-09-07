@@ -1826,8 +1826,7 @@ const FOE={
    hit:"몽둥이질"},
  "사슬 광인":  {hp:22,atk:6,def:6,rng:4,exp:3,
    el:"공격",
-   gim:{thorn:2},
-   ai:{near:5,weak:9,back:1,any:5,def:1,buff:3,curse:1,debs:["burn"]},
+   ai:{thorn:4,near:5,weak:9,back:1,any:5,def:1,buff:3,curse:1,debs:["burn"]},
    hit:"사슬 후려치기"},
  "굶주린 그림자":{hp:18,atk:5,def:3,rng:3,exp:2,demon:1,
    el:"공격",
@@ -1861,8 +1860,8 @@ const FOE={
    hit:"고철 주먹"},
  "서리 군주":  {hp:95,atk:11,def:14,rng:5,exp:18,boss:1,demon:1,
    el:"마법",
-   gim:{neg:3,thorn:2},
-   ai:{ret:0.2,near:6,weak:5,back:4,any:2,def:1,volley:6,buff:2,debs:["chill","fear","atkDn"]},
+   gim:{neg:3},
+   ai:{thorn:3,ret:0.2,near:6,weak:5,back:4,any:2,def:1,volley:6,buff:2,debs:["chill","fear","atkDn"]},
    hit:"서리 창"}
 };
 const FIELD_FOES=[
@@ -3604,7 +3603,7 @@ function startBattle(kind){
   B.foes.forEach((f,i)=>{
     const G=(FOE[f.name]&&FOE[f.name].gim)||{};
     if(G.taunt) f.taunt=99;
-    if(G.thorn) f.thorn=G.thorn+Math.round(run.field*1.5);
+    if(G.thorn){ f.thorn=G.thorn+Math.round(run.field*1.5); f.thornTurn=0 }
     if(G.evade) f.evade=G.evade;
     if(G.neg)   f.negShield=G.neg;
     if(G.hide)  f.hide=1;
@@ -3739,6 +3738,7 @@ function rollIntents(){
       const n2=2, p2=Math.max(1,Math.round(f.atk*1.2*FM/n2));
       add({t:"atk",v:p2,hits:n2,to:weak.slot,pat:FP+"쌍격",el:EL,far:far},Math.max(1,Math.round(A.weak*0.4))); }
     add({t:"def",v:defVal(f)},far?A.def+1:A.def);
+    if(!f.thorn) add({t:"thorn",v:Math.max(2,Math.round(2+run.field*1.5)),turns:3},A.thorn||0);
     add({t:"volley",v:dv(f.atk*0.6),el:EL},far?A.volley+2:A.volley);
     if((f.buffs||0)<3) add({t:"buff",v:Math.max(1,Math.round(f.atk*0.35))},A.buff);
     const mate=B.foes.filter(x=>x.alive&&x!==f&&x.hp<x.maxHp*0.6)[0];
@@ -3769,6 +3769,7 @@ function intentHtml(f){
   if(I.t==="back")  return `<span class="intent">${ic("move")} 후퇴</span>`;
   if(I.t==="push")  return `<span class="intent">${ic("move")} 앞으로</span>`;
   if(I.t==="def")   return `<span class="intent">${ic("def")}<b>${I.v}</b></span>`;
+  if(I.t==="thorn") return `<span class="intent" title="맞을 때마다 되받아칩니다">가시 <b>${I.v}</b></span>`;
   if(I.t==="buff")  return `<span class="intent" title="자기 강화">${ic("atk")}<b>+${I.v}</b> 강화</span>`;
   if(I.t==="heal")  return `<span class="intent" title="동료 치료">${ic("hp")}<b>+${I.v}</b> 치료</span>`;
   if(I.t==="curse") return `<span class="intent" title="다음 턴 마나 -1">${ic("mag")} 저주</span>`;
@@ -3884,7 +3885,7 @@ function drawBattle(app){
           
           ${f.air?`<span class="chip on">공중</span>`:""}
           ${f.taunt?`<span class="chip on">도발</span>`:""}
-          ${f.thorn?`<span class="chip on">가시${f.thorn}</span>`:""}
+          ${f.thorn?`<span class="chip on">가시${f.thorn}${f.thornTurn?` · ${f.thornTurn}턴`:""}</span>`:""}
           ${f.evade?`<span class="chip on">회피${f.evade}</span>`:""}
           ${f.negShield?`<span class="chip on">부정 보호막${f.negShield}</span>`:""}
           ${foeHidden(f)?`<span class="chip on">은신</span>`:""}
@@ -5513,7 +5514,12 @@ function endTurn(){
         fx({side:"foe",slot:f.slot,s:"step",ring:"#9c8d77",gap:130});
         say(`${f.name} 전진 → ${f.slot}번`) }
       else say(`${f.name} 전진 실패.`,"t2");
-    }else if(f.intent.t==="def"){ f.shield+=f.intent.v;
+    }else if(f.intent.t==="thorn"){
+      f.thorn=f.intent.v; f.thornTurn=f.intent.turns;
+      fx({side:"foe",slot:f.slot,ring:"#b3453a",txt:"가시"+f.thorn,cls:"shd"});
+      say(`${f.name}${jo(f.name,"ig")} 사슬을 휘감습니다 — 가시 ${f.thorn} (${f.thornTurn}턴)`,"t3");
+    }
+    else if(f.intent.t==="def"){ f.shield+=f.intent.v;
       fx({side:"foe",slot:f.slot,s:"shield",ring:"#e0c85a",txt:"+"+f.intent.v,cls:"shd"});
       say(`${f.name} 방어 +${f.intent.v}`) }
     else if(f.intent.t==="atk"){
@@ -5609,6 +5615,8 @@ function endTurn(){
     }
   });
   B.foes.forEach(f=>{ f.air=0; f.weakAtk=0;
+    if(f.thornTurn>0&&--f.thornTurn<=0){ f.thorn=0;
+      say(`${f.name}의 사슬이 늘어집니다 — 가시가 풀렸습니다.`,"t2") }
     if(f.deb){ ["atkDn","magDn","defDn"].forEach(k=>{ if(f.deb[k]>0) f.deb[k]-- });
       if(!f.deb.fear){ f.fearSrc=null; f.fearName=null } }
     if(f.alive&&f.burn) hurt(f,f.burn,"화상","mag");
