@@ -90,6 +90,33 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
   border-color:#4a2e2b}
 .slot.foe::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
   background:radial-gradient(90% 50% at 50% 105%,rgba(142,43,43,.28),transparent 70%)}
+/* 격 표시 띠 */
+.slot .tier{display:flex;align-items:center;justify-content:center;gap:3px;
+  font-size:9.5px;font-weight:800;letter-spacing:.1em;margin:-2px 0 2px;
+  text-transform:none;text-shadow:0 1px 0 rgba(0,0,0,.7)}
+.slot .tier svg{width:11px;height:11px}
+/* 일반 */
+.slot.t-norm{border-color:#4a2e2b}
+/* 정예 — 황금 테두리와 모서리 장식 */
+.slot.t-elite{border-color:#c98a3a;box-shadow:0 0 0 1px rgba(201,138,58,.35),0 0 16px -6px #e0a86a}
+.slot.t-elite .tier{color:#e0a86a}
+.slot.t-elite .nm{color:#f0cf9a}
+.slot.t-elite::after{content:"";position:absolute;inset:2px;border-radius:6px;pointer-events:none;
+  border:1px solid rgba(224,168,106,.28)}
+/* 우두머리 — 핏빛 테두리, 맥동, 뿔 장식 */
+.slot.t-boss{border-color:#a83b32;
+  box-shadow:0 0 0 1px rgba(168,59,50,.5),0 0 26px -6px #c9503f;
+  animation:bossAura 2.6s ease-in-out infinite}
+@keyframes bossAura{0%,100%{box-shadow:0 0 0 1px rgba(168,59,50,.5),0 0 22px -8px #c9503f}
+  50%{box-shadow:0 0 0 1px rgba(200,80,66,.75),0 0 34px -4px #c9503f}}
+.slot.t-boss .tier{color:#e0705a}
+.slot.t-boss .nm{color:#f0b7a8;font-size:13.5px}
+.slot.t-boss::after{content:"";position:absolute;inset:2px;border-radius:6px;pointer-events:none;
+  border:1px solid rgba(224,112,90,.3)}
+.slot.t-boss .bar{height:11px}
+/* 밤의 습격 */
+.slot.t-ambush{border-color:#6a5f9c;box-shadow:0 0 0 1px rgba(106,95,156,.35)}
+.slot.t-ambush .tier{color:#9c8fd0}
 .slot.foe .nm{color:#e8c8bd}
 .synbar{margin-top:10px}
 .syn{font-size:11.5px;padding:3px 10px}
@@ -1861,6 +1888,7 @@ function pxFigure(name){
     "R":"#b3453a", "G":"#84a468", "B":"#6aa8e0"
   };
   const isFoe=!!FOE_NAMES[name];
+  const isBoss=isFoe&&/간수장|고철 거인|서리 군주/.test(name);
   if(isFoe){
     /* 적 — 핏기 없는 살갗, 검붉은 윤곽, 붉게 타는 눈, 옷은 더 탁하게 */
     P["S"]=shade(L.skin,0.58); P["s"]=shade(L.skin,0.38);
@@ -1870,6 +1898,7 @@ function pxFigure(name){
     P["M"]="#5a544d"; P["N"]="#7b736a"; P["m"]="#302d2a";
     P["W"]="#8b8175"; P["w"]="#4e4841";
     P["A"]=shade(L.acc||"#8e2b2b",0.9);
+    if(isBoss){ P["E"]="#ff3b26"; P["O"]="#1c0507"; P["A"]=shade(L.acc||"#c9a227",1.05) }
   }
   let out='<svg class="pxs'+(isFoe?" foe":" hero")+'" viewBox="0 0 32 32" shape-rendering="crispEdges">';
   for(let y=0;y<grid.length;y++){
@@ -5357,6 +5386,15 @@ function makeMin(name,slot){
     lock:{},limitUsed:{},tag:{},items:[],first:{},minions:[]};
 }
 
+/* 적의 격 — 우두머리 / 정예 / 일반 */
+function foeTier(f){
+  if(!f) return "norm";
+  if(f.boss) return "boss";
+  if(B&&B.kind==="elite") return "elite";
+  if(B&&B.kind==="ambush") return "ambush";
+  return "norm";
+}
+const TIER_LABEL={boss:"우두머리",elite:"정예",ambush:"밤의 습격",norm:""};
 function defVal(f){
   let v=Math.max(0,f.def-(f.weak||0));
   if(deb(f,"defDn")) v=Math.ceil(v*0.5);
@@ -5480,6 +5518,9 @@ function rollIntents(){
     f.intent=best;
   });
 }
+const tierCrown=()=>'<svg viewBox="0 0 24 24"><path d="M3 8l4 5 5-8 5 8 4-5-2 12H5Z" fill="currentColor"/></svg>';
+const tierStar =()=>'<svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9Z" fill="currentColor"/></svg>';
+const tierMoon =()=>'<svg viewBox="0 0 24 24"><path d="M16 3.4A9 9 0 1 0 20.6 14 7.4 7.4 0 0 1 16 3.4Z" fill="currentColor"/></svg>';
 function intentHtml(f){
   if(!f.alive||!f.intent) return "";
   const I=f.intent;
@@ -5594,8 +5635,12 @@ function drawBattle(app){
       if(tgMode==="foe"||tgMode==="any"){ d.classList.add(canHit?"pick":"far") }
       const pf=B.portals&&B.portals.find(p=>p.side==="foe"&&p.slot===s);
       if(pf) d.innerHTML+=`<svg class="portal" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#a06ae0" stroke-width="2.5"/><circle cx="12" cy="12" r="3.5" fill="#a06ae0"/></svg>`;
-      const fsz=f.boss?"boss":(B.kind==="elite"&&f.slot===1)?"lead":"";
-      d.innerHTML+=`<div class="intentbar">${intentHtml(f)}</div>
+      const tier=foeTier(f);
+      d.classList.add("t-"+tier);
+      const fsz=tier==="boss"?"boss":(tier==="elite"&&f.slot===1)?"lead":"";
+      d.innerHTML+=`${TIER_LABEL[tier]?`<div class="tier">${
+          tier==="boss"?tierCrown():tier==="elite"?tierStar():tierMoon()}${TIER_LABEL[tier]}</div>`:""}
+        <div class="intentbar">${intentHtml(f)}</div>
         <div class="art ${fsz}">${figure(f.name)}</div>
         <div class="nm">${esc(f.name)}</div>
         <div class="bar"><i style="width:${Math.max(0,f.hp/f.maxHp*100)}%"></i>
