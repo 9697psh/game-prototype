@@ -4226,6 +4226,10 @@ function startDrag(card,i){
     move(e);
   });
 }
+/* 배치 여부와 무관한 아군 전원 (기절한 대원 제외) + 전장의 소환물 */
+function allAllies(){
+  return run.heroes.filter(x=>!x.down).concat(liveMins());
+}
 function onSummon(h){
   const t=h.tag;
   /* ── 영웅을 배치할 때마다 (라운드마다 다시) ── */
@@ -4240,7 +4244,7 @@ function onSummon(h){
     fx({side:"mine",slot:h.slot,s:"heal",txt:"+"+t.startHeal,cls:"heal",gap:60});
     say(`한숨 돌리기 — ${h.name} 체력 +${t.startHeal}`,"t2") }
   if(t.startGold){ run.gold+=t.startGold; say(`관객의 응원 — 금화 +${t.startGold}`,"t2") }
-  if(t.gearShield){ allUnits().forEach(a=>{ a.shield+=t.gearShield });
+  if(t.gearShield){ allAllies().forEach(a=>{ a.shield+=t.gearShield });
     say(`튼튼한 방어구 — 모든 아군 보호막 +${t.gearShield}`,"t2") }
   if(t.gearPlus) for(let q=0;q<t.gearPlus;q++) giveArmor(h,rnd(t.armors||["강철 갑옷"]));
   { const ev=itemBt(h,"startEvade"); if(ev){ h.evade+=ev; say(`${h.name} 회피 +${ev} (장비)`,"t2") } }
@@ -4253,7 +4257,7 @@ function onSummon(h){
       fx({side:"foe",slot:f.slot,ring:"#6aa8e0",txt:"표식",cls:"mag",gap:70});
       say(`현자의 눈 — ${f.name}에게 표식`,"t2") } }
   { const ab=itemBt(h,"allyBuff");
-    if(ab) run.heroes.forEach(a=>{ if(a!==h&&!a.down){ bumpTmp(a,"mag",ab); bumpTmp(a,"def",ab) } }) }
+    if(ab) allAllies().forEach(a=>{ if(a!==h){ bumpTmp(a,"mag",ab); bumpTmp(a,"def",ab) } }) }
   if(t.startMom){ h.mom+=t.startMom; say(`${h.name} 추진력 +${t.startMom} (눈보다 빠르게)`,"t2") }
   if(t.startEvade){ h.evade+=t.startEvade; say(`${h.name} 회피 +${t.startEvade} (자취 감추기)`,"t2") }
   const es=itemBt(h,"eshield")+(t.eshield||0);
@@ -4262,7 +4266,9 @@ function onSummon(h){
   const hm=itemBt(h,"hpMag"); if(hm) bumpTmp(h,"mag",Math.floor(h.hp*hm/100));
   const da=itemBt(h,"defAura"); if(da){ h.eshield+=h.def*da;
     say(`수호의 각인 — ${h.name} 에너지 보호막 +${h.def*da}`,"t2") }
-  if(t.startAura){ allUnits().forEach(a=>{ a.eshield=(a.eshield||0)+t.startAura });
+  if(t.startAura){
+    allAllies().forEach(a=>{ a.eshield=(a.eshield||0)+t.startAura;
+      if(a.slot>0) fx({side:"mine",slot:a.slot,ring:"#e07b28",txt:"◆+"+t.startAura,cls:"shd",gap:60}) });
     say(`전장의 방패 — 모든 아군 에너지 보호막 +${t.startAura}`,"t2") }
   const sm=itemBt(h,"startMom"), ss=itemBt(h,"startShield")+(t.startShield||0);
   if(sm){ h.mom+=sm; say(`${h.name} 추진력 +${sm} (장비)`,"t2") }
