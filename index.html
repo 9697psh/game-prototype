@@ -1151,10 +1151,10 @@ function clock(){
   const t=Math.max(0,run.time), h=Math.floor(t)%24, m=(t%1)?"30":"00";
   return (h<10?"0":"")+h+":"+m;
 }
-function spend(hours){
+function spend(hours,act){
   const tired=run.act<=0;
-  run.act=Math.max(0,run.act-hours);
-  run.time+=tired?hours*2:hours;
+  if(act){ run.act=Math.max(0,run.act-act) }
+  run.time+=(tired&&act)?hours*2:hours;
   if(run.time>=18&&!run.night){ run.night=1;
     toast("해가 집니다. 밤길에는 무엇이 튀어나올지 모릅니다.") }
   if(run.time>=30){ toast("길에서 밤을 지새웠습니다."); nextDay() }
@@ -1329,7 +1329,7 @@ function drawMap(app){
 function moveTo2(r,c){
   const cell=run.grid[r][c];
   run.pos={r:r,c:c};
-  spend(1); addTaint(2);
+  spend(1,1); addTaint(2);
   if(run.taint>=100) return;
   if(run.night&&Math.random()<0.4&&cell.t!=="camp"){
     toast("어둠 속에서 무언가 달려듭니다.");
@@ -1341,9 +1341,9 @@ function enterCell(r,c){
   const cell=run.grid[r][c];
   if(cell.done||cell.t==="empty"){ view="map"; render(); return }
   if(cell.t==="camp"){ view="camp"; render(); return }
-  if(cell.t==="shop"){ spend(0.5); makeShop(); run.here={r:r,c:c}; view="shop"; render(); return }
-  if(cell.t==="rest"){ spend(0.5); run.here={r:r,c:c}; view="rest"; render(); return }
-  if(cell.t==="event"){ spend(0.5); run.ev=rnd(EVENTS); run.evMsg=null; run.here={r:r,c:c}; view="relic"; render(); return }
+  if(cell.t==="shop"){ spend(0.5,0); makeShop(); run.here={r:r,c:c}; view="shop"; render(); return }
+  if(cell.t==="rest"){ spend(0.5,0); run.here={r:r,c:c}; view="rest"; render(); return }
+  if(cell.t==="event"){ spend(0.5,0); run.ev=rnd(EVENTS); run.evMsg=null; run.here={r:r,c:c}; view="relic"; render(); return }
   if(cell.t==="dungeon"||cell.t==="elite"||cell.t==="boss"){ startDungeon(cell,r,c); return }
   view="map"; render();
 }
@@ -1436,7 +1436,7 @@ function startDungeon(cell,r,c){
 }
 function nextWave(){
   run.dun.wave++;
-  spend(1);
+  spend(1,0);
   startBattle(run.dun.kind);
 }
 function dungeonCleared(){
@@ -1678,7 +1678,7 @@ function buy(g){
   SFX.play("summon");
   if(g.k==="card"){ addCard(run,g.card,1); toast(`${g.card} 카드를 얻었습니다.`); render(); return }
   if(g.k==="stone"){ run.stone=(run.stone||0)+1; render(); return }
-  if(g.k==="act"){ run.act+=4; run.actMax+=0; toast("활동량을 4 얻었습니다."); render(); return }
+  if(g.k==="act"){ run.act=Math.round(run.act)+4; toast("활동량을 4 얻었습니다."); render(); return }
   if(g.k==="taint"){ addTaint(-20); toast("오염도가 20 낮아졌습니다."); render(); return }
   if(g.k==="shard"||g.k==="normal"||g.k==="named"){
     const it=g.item||rnd(ITEMS.filter(i=>i.g===(g.k==="normal"?"일반":"파편")));
