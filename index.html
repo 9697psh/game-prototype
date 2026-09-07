@@ -1368,7 +1368,7 @@ const COMMON=[
  R("오염 정화","하급","현재 오염도가 15 감소합니다.",h=>addTaint(-15)),
  R("발 마사지","하급","활동량을 3 얻습니다.",h=>{ run.act+=3; if(run.act>0) run.night=0 }),
  R("하급: 회복","하급","체력을 20% 회복합니다.",
-   h=>{ h.hp=Math.min(h.maxHp,h.hp+Math.round(h.maxHp*0.2)) }),
+   h=>{ healUp(h,Math.round(h.maxHp*0.2)) }),
  R("하급: 가시 두르기","하급","가시를 1 얻습니다.",h=>h.tag.thorn=(h.tag.thorn||0)+1),
  R("전장의 바람","하급","영웅 배치 시, 모든 적을 공중에 뜸 상태로 만듭니다.",h=>h.tag.startStorm=1,0.3),
  R("전장의 칼날","하급","영웅 배치 시, 모든 적에게 피해를 5 줍니다.",
@@ -1386,7 +1386,7 @@ const COMMON=[
    h=>h.tag.startEvade=(h.tag.startEvade||0)+3,0.12),
  R("중급: 가시 두르기","중급","가시를 4 얻습니다.",h=>h.tag.thorn=(h.tag.thorn||0)+4),
  R("중급: 회복","중급","체력을 40% 회복합니다.",
-   h=>{ h.hp=Math.min(h.maxHp,h.hp+Math.round(h.maxHp*0.4)) }),
+   h=>{ healUp(h,Math.round(h.maxHp*0.4)) }),
  R("발 마사지","중급","활동량을 6 얻습니다.",h=>{ run.act+=6; if(run.act>0) run.night=0 }),
  R("오염 정화","중급","현재 오염도가 30 감소합니다.",h=>addTaint(-30)),
  R("아이템: 제련석","중급","제련석을 8개 얻습니다.",h=>{ run.stone=(run.stone||0)+8 }),
@@ -1409,7 +1409,7 @@ const COMMON=[
    h=>h.sk.forEach(k=>{ if(k.limit) k.limit++; if(k.alt&&k.alt.limit) k.alt.limit++ })),
  R("상급: 가시 두르기","상급","가시를 10 얻습니다.",h=>h.tag.thorn=(h.tag.thorn||0)+10),
  R("상급: 회복","상급","체력을 80% 회복합니다.",
-   h=>{ h.hp=Math.min(h.maxHp,h.hp+Math.round(h.maxHp*0.8)) }),
+   h=>{ healUp(h,Math.round(h.maxHp*0.8)) }),
  R("발 마사지","상급","활동량을 10 얻습니다.",h=>{ run.act+=10; if(run.act>0) run.night=0 }),
  R("오염 정화","상급","현재 오염도가 50 감소합니다.",h=>addTaint(-50)),
  R("아이템: 제련석","상급","제련석을 20개 얻습니다.",h=>{ run.stone=(run.stone||0)+20 }),
@@ -1695,7 +1695,8 @@ const ITEMS=[
    "내 턴이 끝날 때, 보호막 일정량을 에너지 보호막으로 강화합니다. *(최대 6)*"),
  /* ── 특수 ── */
  IT("죄악의 목걸이","특수",null,0,null,{noHeal:1},"전투 중 회복할 수 없습니다."),
- IT("저주의 목걸이","특수",null,0,null,{noHeal:1},"전투 중 회복할 수 없습니다.\n전투에서 얻는 금화가 50% 늘어납니다.")
+ Object.assign(IT("저주의 목걸이","특수",null,0,null,{noHeal:1},
+   "전투 중 회복할 수 없습니다.\n전투에서 얻는 금화가 50% 늘어납니다.\n벗을 수 없습니다."),{bind:1})
 ];
 function recipeLines(it){
   const L=[];
@@ -1718,12 +1719,43 @@ function equip(h,it){
   h.items.push(it);
   if(it.st) for(const k in it.st){ h[k]+=it.st[k]; if(k==="maxHp") h.hp+=it.st[k] }
 }
-function unequip(h,idx){
+function unequip(h,idx,force){
+  if(!force&&h.items[idx]&&h.items[idx].bind){ return null }
   const it=h.items.splice(idx,1)[0];
   if(it&&it.st) for(const k in it.st){ h[k]-=it.st[k]; if(k==="maxHp") h.hp=Math.min(h.hp,h.maxHp) }
   return it;
 }
 function itemBt(h,key){ return (h.items||[]).reduce((a,i)=>a+((i.bt&&i.bt[key])||0),0) }
+/* 회복 — 전투 중 회복이 막힌 대상은 여기서 걸러진다 */
+function healUp(u,v,quiet){
+  if(!u||v<=0) return 0;
+  if(view==="battle"&&itemBt(u,"noHeal")){
+    if(!quiet&&typeof say==="function"&&B&&!B.over){
+      const it=(u.items||[]).find(x=>x.bt&&x.bt.noHeal);
+      say(`${it?it.n:"저주"} — ${u.name}${jo(u.name,"eun")} 전투 중 회복할 수 없습니다.`,"t3");
+    }
+    return 0;
+  }
+  const got=Math.min(v,u.maxHp-u.hp);
+  u.hp+=got;
+  return got;
+}
+/* 강제 착용 — 칸이 없으면 가방으로 가지 않고 기존 것을 밀어낸다 */
+function forceEquip(h,it){
+  if(!h) return null;
+  h.items=h.items||[];
+  if(h.items.length>=ITEM_MAX){
+    let idx=-1;
+    for(let i=h.items.length-1;i>=0;i--) if(!h.items[i].bind){ idx=i; break }
+    if(idx<0) return null;              /* 전부 저주받은 물건이면 채우지 않는다 */
+    const out=unequip(h,idx);
+    (run.bag=run.bag||[]).push(out);
+    equip(h,it);
+    return out;
+  }
+  equip(h,it);
+  return null;
+}
 function itemSlots(h){
   let out='<div class="slots">';
   for(let i=0;i<ITEM_MAX;i++) out+='<span class="sq '+(h.items[i]?"on":"")+'" title="'+
@@ -1820,17 +1852,17 @@ function addDeb(u,k,n,src){
         fx({side:"mine",slot:u.slot,ring:"#e07b28",txt:"◆+"+(ne*cut),cls:"shd",gap:60}) }
       const nm=itemBt(u,"negMana"); if(nm) u.mana=(u.mana||0)+nm;
       const nh=itemBt(u,"negHeal");
-      if(nh&&!itemBt(u,"noHeal")) u.hp=Math.min(u.maxHp,u.hp+nh);
+      if(nh&&!itemBt(u,"noHeal")) healUp(u,nh);
       const ed=itemBt(u,"emptyDef");
       if(ed&&u.negShield<=0&&!u.emptyDefOn){ u.emptyDefOn=1; bumpTmp(u,"def",ed) } }
-    if(u.tag&&u.tag.negHeal){ u.hp=Math.min(u.maxHp,u.hp+u.tag.negHeal) }
+    if(u.tag&&u.tag.negHeal){ healUp(u,u.tag.negHeal) }
     if(n<=0) return;
   }
   u.deb[k]=(u.deb[k]||0)+n;
   fx({side:u.isFoe?"foe":"mine",slot:u.slot,ring:DEBUFF[k].c,txt:DEBUFF[k].n+u.deb[k],cls:"miss",gap:80});
   say(`${u.name} ${DEBUFF[k].n} ${u.deb[k]}${
     (k==="fear"&&u.fearName)?` (${u.fearName}${jo(u.fearName,"eul")} 겨눌 수 없음)`:""}`,"t3");
-  if(u.tag&&u.tag.negHeal){ u.hp=Math.min(u.maxHp,u.hp+u.tag.negHeal) }
+  if(u.tag&&u.tag.negHeal){ healUp(u,u.tag.negHeal) }
 }
 function debChips(u){
   if(!u.deb) return "";
@@ -2321,7 +2353,7 @@ function drawCamp(app){
      ()=>{ run.heroes.forEach(h=>{ if(h.down){ h.down=0; h.hp=Math.max(1,Math.round(h.maxHp*0.5));
        toast(`${h.name}${jo(h.name,"ig")} 다시 일어섭니다.`) } }) }),
    campAct("heal","휴식소","다친 대원이 최대 체력의 40%를 회복합니다.",hurt>0,
-     ()=>{ run.heroes.forEach(h=>{ if(!h.down) h.hp=Math.min(h.maxHp,h.hp+Math.round(h.maxHp*0.4)) });
+     ()=>{ run.heroes.forEach(h=>{ if(!h.down) healUp(h,Math.round(h.maxHp*0.4)) });
        toast("대원들이 숨을 돌립니다.") }),
    campAct("train","훈련장",
      run.day<=1
@@ -2406,6 +2438,7 @@ function drawGear(app){
         title="${it?esc(itemTip(it)):"빈 칸"}">
         ${it?`<div class="gi">${rewardIcon(it)}</div><b>${esc(it.n)}</b>`:`<span>빈 칸</span>`}</div>`);
       cell.onclick=()=>{
+        if(it&&it.bind){ toast(`${it.n}${jo(it.n,"eun")} 벗을 수 없습니다.`); return }
         if(sel2){
           if(sel2.from==="bag"){
             const item=run.bag[sel2.i];
@@ -2414,6 +2447,8 @@ function drawGear(app){
           }else{
             const src=run.heroes[sel2.h], item=src.items[sel2.i];
             if(src===h&&sel2.i===i){ run.gearPick=null; render(); return }
+            if(item&&item.bind){ toast(`${item.n}${jo(item.n,"eun")} 벗을 수 없습니다.`);
+              run.gearPick=null; render(); return }
             const a=unequip(src,sel2.i);
             if(it){ const b=unequip(h,i); equip(h,a); equip(src,b) }
             else equip(h,a);
@@ -2504,7 +2539,7 @@ function drawForge(app){
     const bags=picked.filter(p=>p.bag).sort((a,b)=>b.i-a.i);
     const eqs =picked.filter(p=>!p.bag).sort((a,b)=>b.i-a.i);
     bags.forEach(p=>run.bag.splice(p.i,1));
-    eqs.forEach(p=>unequip(p.h,p.i));
+    eqs.forEach(p=>unequip(p.h,p.i,1));
     const owner=(eqs[0]&&eqs[0].h)||run.heroes[0];
     run.forgePick=[];
     SFX.play("summon");
@@ -2550,9 +2585,9 @@ function nextWave(){
 function dungeonCleared(){
   const d=run.dun;
   run.heroes.forEach(h=>{ const w=itemBt(h,"winHeal");
-    if(w&&!h.down) h.hp=Math.min(h.maxHp,h.hp+Math.round(h.maxHp*w/100)) });
+    if(w&&!h.down) healUp(h,Math.round(h.maxHp*w/100)) });
   if(run.synSupport){ const v=run.synSupport;
-    run.heroes.forEach(h=>{ if(!h.down) h.hp=Math.min(h.maxHp,h.hp+v) });
+    run.heroes.forEach(h=>{ if(!h.down) healUp(h,v) });
     toast(`지원가 — 모든 대원이 체력을 ${v} 회복했습니다.`); }
   if(d.kind!=="ambush"&&d.r!=null&&run.grid[d.r]&&run.grid[d.r][d.c])
     run.grid[d.r][d.c]={t:"empty"};
@@ -2695,7 +2730,7 @@ const CARD_LIB={
                        fx({side:"mine",slot:a.slot,s:"heal",ring:"#7fd39a",txt:"+1",cls:"heal",gap:60});
                        say(`빵 — ${a.name} 체력 +1`) }},
  "맥주":     {d:"아군 대상의 체력을 5 회복시키고 기절합니다.",
-              use:a=>{ a.hp=Math.min(a.maxHp,a.hp+5); addDeb(a,"stun",1);
+              use:a=>{ healUp(a,5); addDeb(a,"stun",1);
                        fx({side:"mine",slot:a.slot,s:"heal",ring:"#7fd39a",txt:"+5",cls:"heal",gap:60});
                        say(`맥주 — ${a.name} 체력 +5, 기절 1`) }},
  "소형 방패":{d:"아군 영웅에게 보호막을 5 부여합니다.",
@@ -2837,7 +2872,7 @@ function drawShop(app){
       <div class="shelfrow" id="sellrow"></div></div></div>`);
   const srow=sellBox.querySelector("#sellrow");
   if(!own.length) srow.appendChild(el(`<div class="hint">팔 물건이 없습니다.</div>`));
-  own.forEach((x,i)=>{
+  own.filter(x=>!x.it.bind).forEach((x,i)=>{
     const pr=SELL_PRICE[x.it.g]||[1,3];
     const c=el(`<div class="rw"><div class="rwi">${shopIcon(x.it.g==="파편"?"shard":"normal")}</div>
       <div class="g">${pr[0]}~${pr[1]} 금화</div>
@@ -2888,7 +2923,7 @@ function drawRest(app){
   const a=el(`<div class="rw"><div class="rwi">${nodeArt("rest")}</div>
     <b>불을 쬔다</b><p>모든 영웅이 최대 체력의 30%를 회복합니다.</p></div>`);
   a.onclick=()=>{ run.heroes.forEach(h=>{ if(!h.down)
-      h.hp=Math.min(h.maxHp,h.hp+Math.round(h.maxHp*0.3)) });
+      healUp(h,Math.round(h.maxHp*0.3)) });
     SFX.play("heal"); toast("몸이 좀 풀립니다."); leaveNode() };
   const b=el(`<div class="rw"><div class="rwi">${nodeArt("elite")}</div>
     <b>몸을 단련한다</b><p>${esc(grade)} 보상을 ${n}개 고릅니다.</p></div>`);
@@ -2909,7 +2944,7 @@ const EVENTS=[
   t:"어디선가 시큼한 냄새가 납니다. 돌아보니 넝마를 걸친 자가 손을 내밀고 있습니다.",
   o:[{t:"도와주기",d:"금화를 잃고 대원 하나가 회복합니다.",
       f:()=>{ const g=rr([2,4]); run.gold=Math.max(0,run.gold-g);
-        const h=someHero(); const v=rr([5,7]); if(h) h.hp=Math.min(h.maxHp,h.hp+v);
+        const h=someHero(); const v=rr([5,7]); if(h) healUp(h,v);
         return `금화 ${g}을 건넸습니다. ${h?h.name+"의 체력이 "+v+" 회복되었습니다.":""}` }},
      {t:"무시하기",d:"그냥 지나갑니다.",f:()=>"뒤에서 욕지거리가 들려옵니다."},
      {t:"약탈하기",d:"금화를 빼앗지만 오염도가 오릅니다.",
@@ -3078,18 +3113,22 @@ const EVENTS=[
   o:[{t:"희생 선택",d:"대원 하나가 절반을 잃고 나머지가 절반 회복합니다.",
       f:()=>{ const list=run.heroes.filter(h=>!h.down); const v=rnd(list);
         v.hp=Math.max(1,Math.floor(v.hp/2));
-        list.forEach(h=>{ if(h!==v) h.hp=Math.min(h.maxHp,h.hp+Math.round(h.maxHp*0.5)) });
+        list.forEach(h=>{ if(h!==v) healUp(h,Math.round(h.maxHp*0.5)) });
         return `${v.name}이 돌판에 손을 얹었습니다. 나머지 대원이 크게 회복합니다.` }},
      {t:"협동심 다지기",d:"모든 대원이 체력 5를 회복합니다.",
-      f:()=>{ run.heroes.forEach(h=>{ if(!h.down) h.hp=Math.min(h.maxHp,h.hp+5) });
+      f:()=>{ run.heroes.forEach(h=>{ if(!h.down) healUp(h,5) });
         return "서로의 등을 두드렸습니다. 모두 체력 5를 회복합니다." }}]},
 
  {n:"저주받은 성소", face:"굶주린 그림자", when:()=>Math.random()<0.35,
   t:"검은 천으로 덮인 제단이 있습니다. 천 아래에서 쇠붙이가 짤랑거립니다.",
   o:[{t:"성소 방문하기",d:"저주의 목걸이를 걸고, 전투 보상 금화가 50% 늘어납니다.",
       f:()=>{ run.goldMul=(run.goldMul||1)+0.5;
-        const h=someHero(); if(h) h.cursedNeck=1;
-        return `${h?h.name+"의 목에 ":""}차가운 목걸이가 걸립니다. 이제부터 전투에서 얻는 금화가 50% 늘어납니다.` }},
+        const h=someHero();
+        const it=ITEMS.find(x=>x.n==="저주의 목걸이");
+        const out=h?forceEquip(h,it):null;
+        return `${h?h.name+"의 목에 ":""}차가운 목걸이가 걸립니다. 벗을 수 없습니다.`
+          +(out?` (${out.n}${jo(out.n,"eun")} 가방으로 밀려났습니다)`:"")
+          +` 이제부터 전투에서 얻는 금화가 50% 늘어납니다.` }},
      {t:"성소 문 닫기",d:"오염도가 10 오릅니다.",
       f:()=>{ addTaint(10); return "천을 도로 덮었습니다. 등 뒤에서 짤랑거리는 소리가 따라옵니다." }}]},
 
@@ -4165,7 +4204,7 @@ function onSummon(h){
   /* ── 아래는 전투 시작 효과 : 그 전투에서 처음 나설 때 한 번만 ── */
   if(h.summoned) return;
   h.summoned=1;
-  if(t.startHeal){ h.hp=Math.min(h.maxHp,h.hp+t.startHeal);
+  if(t.startHeal){ healUp(h,t.startHeal);
     fx({side:"mine",slot:h.slot,s:"heal",txt:"+"+t.startHeal,cls:"heal",gap:60});
     say(`한숨 돌리기 — ${h.name} 체력 +${t.startHeal}`,"t2") }
   if(t.startGold){ run.gold+=t.startGold; say(`관객의 응원 — 금화 +${t.startGold}`,"t2") }
@@ -4235,7 +4274,7 @@ function singTune(h,t){
     allUnits().forEach(a=>{ a.shield+=v; fx({side:"mine",slot:a.slot,ring:"#e0c85a",txt:"+"+v,cls:"shd",gap:60}) });
     say(`보호의 음율 — 모든 아군 보호막 +${v}`) }
   if(t==="life"){ const a=allUnits().sort((x,y)=>x.hp/x.maxHp-y.hp/y.maxHp)[0];
-    if(a){ a.hp=Math.min(a.maxHp,a.hp+3);
+    if(a){ healUp(a,3);
       fx({side:"mine",slot:a.slot,s:"heal",txt:"+3",cls:"heal",gap:60});
       say(`생명의 음율 — ${a.name} 체력 +3`) } }
   if(t==="edge"){ const v=1+h.mag;
@@ -4818,7 +4857,7 @@ function runEffect(h,i,s,target){
       say(`선두 방어 — ${h.name} 보호막 +${v}, 도발`);
     }else{
       const v=h.tag.rearHeal||5, sh=5+h.def;
-      h.hp=Math.min(h.maxHp,h.hp+v);
+      healUp(h,v);
       passed.forEach(a=>{ a.shield+=sh; fx({side:"mine",slot:a.slot,ring:"#8fa2c9",txt:"+"+sh,cls:"shd",gap:70}) });
       fx({side:"mine",slot:h.slot,s:"heal",txt:"+"+v,cls:"heal"});
       say(`후미 준비 — 체력 +${v}, 지나친 아군 보호막 +${sh}`);
@@ -4848,7 +4887,7 @@ function runEffect(h,i,s,target){
   if(s.nearest){
     const f=foeAt(target)||nearestFoe(h);
     if(!f){ say("적이 없습니다.","t2"); return }
-    if((f.infect||0)>=3){ h.hp=Math.min(h.maxHp,h.hp+4);
+    if((f.infect||0)>=3){ healUp(h,4);
       fx({side:"mine",slot:h.slot,s:"heal",txt:"+4",cls:"heal"}); say(`${h.name} 체력 +4`) }
     hurt(f,s.dmg+mod(s,"dmg")+h.mag,"죄악의 기침","mag");
     infectFoe(f,h.tag.infectPlus||1);
@@ -4880,7 +4919,7 @@ function runEffect(h,i,s,target){
     const v=1+(h.tag.wandPlus||0);
     if(target<0){
       const a=allyAt(-target); if(!a){ say("그 칸에는 아군이 없습니다.","t2"); return }
-      a.hp=Math.min(a.maxHp,a.hp+v);
+      healUp(a,v);
       fx({side:"mine",slot:a.slot,s:"heal",txt:"+"+v,cls:"heal"}); say(`${a.name} 체력 +${v}`);
     }else{
       const f=foeAt(target); if(!f){ say("그 칸에는 적이 없습니다.","t2"); return }
@@ -4988,7 +5027,7 @@ function runEffect(h,i,s,target){
     const g=list.length; if(!g){ say("전장에 삼킬 소환물이 없습니다.","t2"); return }
     const mul=h.tag.fuseX||1;
     list.forEach(m=>{
-      h.hp=Math.min(h.maxHp,h.hp+m.hp);
+      healUp(h,m.hp);
       fx({side:"mine",slot:m.slot,art:"mag",s:"summon",txt:"흡수",cls:"heal",gap:90});
       m.alive=0; m.slot=0;
     });
@@ -5012,7 +5051,7 @@ function runEffect(h,i,s,target){
   }
   if(s.heal){ let v=s.heal+mod(s,"heal");
     if(deb(h,"defDn")) v=Math.ceil(v*0.5);
-    h.hp=Math.min(h.maxHp,h.hp+v);
+    healUp(h,v);
     fx({side:"mine",slot:h.slot,s:"heal",txt:"+"+v,cls:"heal",ring:"#7fd39a"});
     say(`${h.name} 체력 +${v}`) }
   /* 피해 */
@@ -5075,7 +5114,7 @@ function runEffect(h,i,s,target){
       if(h.tag.firstCut&&h.first.cut!==1){ dmg+=h.tag.firstCut+h.atk; h.first.cut=1 }
       if(h.tag.guardThen&&h.guarded) dmg+=h.tag.guardThen;
       dmg+=(h.cutGrow||0);
-      if(h.tag.cutHeal){ h.hp=Math.min(h.maxHp,h.hp+h.tag.cutHeal) }
+      if(h.tag.cutHeal){ healUp(h,h.tag.cutHeal) }
       h.cutSum=(h.cutSum||0)+dmg;
     }
     const times=(h.name==="나이코스"&&i===0&&h.sk[0].twice)?2:1;
@@ -5092,7 +5131,7 @@ function runEffect(h,i,s,target){
       }
       B.lastAttacker=h;
       hurt(tgt,dmg,s.n,s.el==="마법"?"mag":(h.name==="굴라"?"claw":"slash"),PR,CRIT);
-      if(h.leech){ const heal=Math.round(dmg*0.2); h.hp=Math.min(h.maxHp,h.hp+heal);
+      if(h.leech){ const heal=Math.round(dmg*0.2); healUp(h,heal);
         if(heal) fx({side:"mine",slot:h.slot,s:"heal",txt:"+"+heal,cls:"heal",gap:60});
         h.leech=0; h.pierceNext=0 }
       if(h.name==="이테리오"&&s.mark&&tgt.alive){ tgt.mark=(tgt.mark||0)+1;
@@ -5105,7 +5144,7 @@ function runEffect(h,i,s,target){
           const ks=itemBt(h,"killStat");
           if(ks){ bumpTmp(h,"atk",ks); bumpTmp(h,"mag",ks) }
         }
-        if(h.arenaHeal&&!tgt.isPhantom){ h.hp=Math.min(h.maxHp,h.hp+h.arenaHeal);
+        if(h.arenaHeal&&!tgt.isPhantom){ healUp(h,h.arenaHeal);
           fx({side:"mine",slot:h.slot,s:"heal",txt:"+"+h.arenaHeal,cls:"heal",gap:60});
           say(`피의 투기장 — ${h.name} 체력 +${h.arenaHeal}`,"t2") }
         if(h.name==="나이코스"&&i===0){
@@ -5159,7 +5198,7 @@ function hurtAlly(f,t,raw,label){
   let sh=Math.min(t.shield,d); t.shield-=sh; d-=sh;
   if(!t.deathSaveUsed&&itemBt(t,"deathSave")&&d>=t.hp){
     t.deathSaveUsed=1; d=0; raw=0;
-    t.hp=Math.min(t.maxHp,t.hp+Math.round(t.maxHp*itemBt(t,"deathSave")/100));
+    healUp(t,Math.round(t.maxHp*itemBt(t,"deathSave")/100));
     fx({side:"mine",slot:t.slot,ring:"#7fd39a",txt:"버팀",cls:"crit",gap:80});
     say(`불굴의 맹세 — ${t.name}${jo(t.name,"ig")} 쓰러지지 않습니다.`,"t1");
   }
@@ -5307,7 +5346,7 @@ function endTurn(){
     }
     else if(f.intent.t==="heal"){
       const m=B.foes.find(x=>x.id===f.intent.to&&x.alive);
-      if(m){ m.hp=Math.min(m.maxHp,m.hp+f.intent.v);
+      if(m){ healUp(m,f.intent.v);
         fx({side:"foe",slot:m.slot,s:"heal",txt:"+"+f.intent.v,cls:"heal"});
         say(`${f.name} → ${m.name} 체력 +${f.intent.v}`,"t3") }
       else say(`${f.name} 치료할 동료가 없습니다.`,"t2");
@@ -5542,7 +5581,8 @@ function drawItem(app){
   const row=el(`<div class="rewards"></div>`);
   h.items.forEach((it,idx)=>{
     const c=el(`<div class="rw" title="${esc(itemTip(it))}"><div class="rwi">${rewardIcon(it)}</div><div class="g">${esc(it.g)}</div><b>${esc(it.n)}</b><p>${rich(it.d)}</p>${recipeHtml(it)}</div>`);
-    c.onclick=()=>{ const old=unequip(h,idx); if(old) toBag(old);
+    c.onclick=()=>{ if(it.bind){ toast(`${it.n}${jo(it.n,"eun")} 벗을 수 없습니다.`); return }
+      const old=unequip(h,idx); if(old) toBag(old);
       equip(h,pending.item); SFX.play("summon");
       toast(`${old.n}${jo(old.n,"eul")} 가방에 넣고 ${pending.item.n}${jo(pending.item.n,"eul")} 채웠습니다.`);
       itemDone() };
