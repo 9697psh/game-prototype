@@ -3799,9 +3799,15 @@ function nextField(){
   run.pos={r:S-1,c:mid};
   run.day=1; run.time=6; run.actMax=f.act; run.act=f.act;
   run.night=0; run.taint=0; run.campDone=0; run.remapUsed=0;
-  run.heroes.forEach(h=>{ h.hp=h.maxHp; h.down=0 });
+  /* 다음 구역으로 넘어가도 몸은 다 낫지 않는다 — 최대 체력의 40%만 회복 */
+  run.heroes.forEach(h=>{
+    const v=Math.max(1,Math.round(h.maxHp*0.4));
+    if(h.down){ h.down=0; h.hp=v }                    /* 쓰러졌던 대원은 40%로 일어난다 */
+    else h.hp=Math.min(h.maxHp,h.hp+v);
+    h.slot=0;
+  });
   dayBreak(1,`${f.n} · ${f.days}일 안에 우두머리를 넘어야 합니다`);
-  toast(`${f.n}에 들어섭니다. 대원 전원이 회복되었습니다.`);
+  toast(`${f.n}에 들어섭니다. 대원들이 체력의 40%만큼 추스렸습니다.`);
   view="map"; render();
 }
 
