@@ -2477,6 +2477,8 @@ function backToMap(){
 
 /* ═══════════ 보유 카드 ═══════════ */
 const CARD_LIB={
+ "불덩이":{d:"대상 적에게 피해를 6 줍니다.",foe:1,
+   use:(f,h)=>{ hurt(f,6,"불덩이","boom") }},
  "빵":       {d:"아군 대상의 체력을 1 회복시킵니다.", use:a=>{ a.hp=Math.min(a.maxHp,a.hp+1); say(`빵 — ${a.name} 체력 +1`) }},
  "맥주":     {d:"아군 대상의 체력을 5 회복시키고 기절합니다.",
               use:a=>{ a.hp=Math.min(a.maxHp,a.hp+5); a.stun=(a.stun||0)+1;
@@ -2538,15 +2540,19 @@ function giveExp(exp,pool,each){
 const SHOP_STOCK=[
  {n:"빵",              d:"아군 대상의 체력을 1 회복시키는 카드",           p:[1,2],  q:[1,4], k:"card", card:"빵"},
  {n:"소형 방패",        d:"아군 영웅에게 보호막을 5 부여하는 카드",         p:[2,3],  q:[1,3], k:"card", card:"소형 방패"},
+ {n:"불덩이",           d:"대상 적에게 피해를 6 주는 카드",                p:[2,4],  q:[1,3], k:"card", card:"불덩이",
+                        s2p:[3,5], s3p:[4,7], s3q:[2,4]},
  {n:"제련석",           d:"아이템을 제련할 때 씁니다.",                    p:[2,6],  q:[3,8], k:"stone"},
- {n:"튼튼한 부츠",      d:"활동량을 4 얻습니다.",                          p:[4,8],  q:[1,2], k:"act"},
+ {n:"튼튼한 부츠",      d:"활동량을 3 얻습니다.",                          p:[4,8],  q:[1,2], k:"act"},
  {n:"라이티늄 부적",    d:"오염도를 20 낮춥니다.",                         p:[4,8],  q:[1,2], k:"taint"},
- {n:"무작위 파편 아이템",d:"어떤 파편이 나올지는 열어봐야 압니다.",         p:[8,16], q:[1,1], k:"shard"},
+ {n:"무작위 파편 아이템",d:"어떤 파편이 나올지는 열어봐야 압니다.",         p:[8,16], q:[1,1], k:"shard", s3q:[1,3]},
  {n:"무작위 하급 보상", d:"하급 보상 하나를 고릅니다.",                    p:[15,25],q:[1,1], k:"하급", s2q:[1,3], s3q:[1,5]},
  {n:"무작위 중급 보상", d:"중급 보상 하나를 고릅니다.",                    p:[25,40],q:[1,1], k:"중급", s3q:[1,3]},
  {n:"무작위 상급 보상", d:"상급 보상 하나를 고릅니다.",                    p:[80,120],q:[1,1],k:"상급", stage:1},
  {n:"무작위 일반 아이템",d:"어떤 일반 아이템이 나올지는 열어봐야 압니다.",  p:[25,40],q:[1,1], k:"normal", stage:2}
 ];
+/* 파는 값 — 파편 1~3 · 일반 8~12 · 희귀 30~50 */
+const SELL_PRICE={"파편":[1,3],"일반":[8,12],"희귀":[30,50],"특수":[8,12],"전설":[30,50]};
 const rr=a=>a[0]+Math.floor(Math.random()*(a[1]-a[0]+1));
 const SHOP_NPC=["떠돌이 상인","외눈의 노파","기름때 묻은 대장장이","두건을 쓴 행상"];
 function makeShop(){
@@ -2555,14 +2561,17 @@ function makeShop(){
   /* 특정 파편 아이템 : 무엇인지 보이는 대신 조금 비싸다 */
   const named=rnd(ITEMS.filter(i=>i.g==="파편"));
   pool.push({n:named.n,d:named.d,p:[10,20],q:[1,st>=2?3:1],k:"named",item:named});
+  if(st>=2){ const nm2=rnd(ITEMS.filter(i=>i.g==="일반"));
+    pool.push({n:nm2.n,d:nm2.d,p:[35,55],q:[1,1],k:"named2",item:nm2}); }
   const goods=[], n=4+Math.floor(Math.random()*5);
   while(goods.length<n&&pool.length){
     const g=pool.splice(Math.floor(Math.random()*pool.length),1)[0];
     const qr=(st>=2&&g.s3q)?g.s3q:(st>=1&&g.s2q)?g.s2q:g.q;
+    const pr=(st>=2&&g.s3p)?g.s3p:(st>=1&&g.s2p)?g.s2p:g.p;
     goods.push({n:g.n,d:g.d,k:g.k,card:g.card,item:g.item,
-                cost:rr(g.p), left:rr(qr)});
+                cost:rr(pr), left:rr(qr)});
   }
-  run.shop={npc:rnd(SHOP_NPC),goods:goods};
+  run.shop={npc:rnd(SHOP_NPC),goods:goods,sold:[]};
 }
 function shopIcon(k){
   const c={card:"#7fd39a",stone:"#9c8d77",act:"#5fd8cf",taint:"#a06ae0",
@@ -2574,7 +2583,8 @@ function shopIcon(k){
    taint:'<path d="M32 10 C32 10 16 30 16 40 a16 16 0 0 0 32 0 C48 30 32 10 32 10 Z" fill="none" stroke="@" stroke-width="5"/>',
    shard:'<path d="M32 12 L50 24 v18 L32 54 L14 42 V24 Z" fill="none" stroke="@" stroke-width="5"/>',
    normal:'<path d="M32 12 L50 24 v18 L32 54 L14 42 V24 Z" fill="none" stroke="@" stroke-width="5"/><circle cx="32" cy="33" r="6" fill="@"/>',
-   named:'<path d="M32 12 L50 24 v18 L32 54 L14 42 V24 Z" fill="none" stroke="@" stroke-width="5"/><circle cx="32" cy="33" r="6" fill="@"/>'
+   named:'<path d="M32 12 L50 24 v18 L32 54 L14 42 V24 Z" fill="none" stroke="@" stroke-width="5"/><circle cx="32" cy="33" r="6" fill="@"/>',
+   named2:'<path d="M32 12 L50 24 v18 L32 54 L14 42 V24 Z" fill="none" stroke="@" stroke-width="5"/><circle cx="32" cy="33" r="6" fill="@"/><circle cx="32" cy="33" r="11" fill="none" stroke="@" stroke-width="3"/>'
   }[k]||'<path d="M32 10 L40 26 L58 28 L45 40 L48 56 L32 48 L16 56 L19 40 L6 28 L24 26 Z" fill="@"/>';
   return '<svg viewBox="0 0 64 64">'+g.split("@").join(c)+'</svg>';
 }
@@ -2598,9 +2608,40 @@ function drawShop(app){
     if(!off) c.onclick=()=>buy(g);
     row.appendChild(c);
   });
+  /* 팔기 */
+  const own=ownedItems();
+  const sellBox=el(`<div class="npcbox" style="margin-top:16px">
+    <div class="npc"><div class="npcface">${shopIcon("stone")}</div>
+      <b>물건 팔기</b>
+      <p>쓰지 않는 물건은 값을 쳐 드립니다.</p>
+      <p style="color:var(--faint)">파편 1~3 · 일반 8~12 · 희귀 30~50 금화</p></div>
+    <div class="shelf"><div class="hint">가진 물건 ${own.length}개</div>
+      <div class="shelfrow" id="sellrow"></div></div></div>`);
+  const srow=sellBox.querySelector("#sellrow");
+  if(!own.length) srow.appendChild(el(`<div class="hint">팔 물건이 없습니다.</div>`));
+  own.forEach((x,i)=>{
+    const pr=SELL_PRICE[x.it.g]||[1,3];
+    const c=el(`<div class="rw"><div class="rwi">${shopIcon(x.it.g==="파편"?"shard":"normal")}</div>
+      <div class="g">${pr[0]}~${pr[1]} 금화</div>
+      <b>${esc(x.it.n)}</b><p>${rich(x.it.d||"")}</p>
+      <p style="color:var(--faint)">${x.bag?"가방":x.h.name+" 착용"}</p></div>`);
+    c.onclick=()=>sellItem(i);
+    srow.appendChild(c);
+  });
+  app.appendChild(sellBox);
   const out=el(`<div style="text-align:center;margin-top:22px"><button class="go">상점을 떠난다</button></div>`);
   out.querySelector("button").onclick=leaveNode;
   app.appendChild(out);
+}
+function sellItem(i){
+  const own=ownedItems(), x=own[i];
+  if(!x) return;
+  const pr=SELL_PRICE[x.it.g]||[1,3], g=rr(pr);
+  if(x.bag) run.bag.splice(x.i,1); else x.h.items.splice(x.i,1);
+  run.gold+=g;
+  SFX.play("summon");
+  toast(`${x.it.n}을 ${g} 금화에 팔았습니다.`);
+  render();
 }
 function buy(g){
   if(run.gold<g.cost||g.left<=0) return;
@@ -2608,9 +2649,9 @@ function buy(g){
   SFX.play("summon");
   if(g.k==="card"){ addCard(run,g.card,1); toast(`${g.card} 카드를 얻었습니다.`); render(); return }
   if(g.k==="stone"){ run.stone=(run.stone||0)+1; render(); return }
-  if(g.k==="act"){ run.act=Math.round(run.act)+4; toast("활동량을 4 얻었습니다."); render(); return }
+  if(g.k==="act"){ run.act=Math.round(run.act)+3; toast("활동량을 3 얻었습니다."); render(); return }
   if(g.k==="taint"){ addTaint(-20); toast("오염도가 20 낮아졌습니다."); render(); return }
-  if(g.k==="shard"||g.k==="normal"||g.k==="named"){
+  if(g.k==="shard"||g.k==="normal"||g.k==="named"||g.k==="named2"){
     const it=g.item||rnd(ITEMS.filter(i=>i.g===(g.k==="normal"?"일반":"파편")));
     pending={stage:"hero",list:[],item:it,hero:null,back:"shop"};
     view="item"; render(); return;
@@ -3389,7 +3430,9 @@ function drawBattle(app){
        :c.type==="summon"?`<div class="art">${figure(c.name)}</div>
         <div class="ct">${esc(c.name)}</div>
         <div class="cd">${ic("hp")}${SUMMONS[c.name].hp} · 빈 칸으로 끌어다 소환</div>`
-       :`<div class="ct">${esc(c.name)}</div><div class="cd">${rich(c.d)}</div>`}
+       :`<div class="ct">${esc(c.name)}${
+           (c.stock&&CARD_LIB[c.stock]&&CARD_LIB[c.stock].foe)?`<span class="chip on">적</span>`:""}</div>
+         <div class="cd">${rich(c.d)}</div>`}
     </div>`);
     startDrag(card,i);
     hand.appendChild(card);
@@ -3837,13 +3880,15 @@ function startDrag(card,i){
       document.removeEventListener("pointermove",move);
       document.removeEventListener("pointerup",up);
       g.remove(); card.style.opacity="";
-      let hit=null;
-      document.querySelectorAll("#mySide .slot").forEach(s=>{
+      let hit=null, side="mine";
+      document.querySelectorAll("#mySide .slot,#foeSide .slot").forEach(s=>{
         const r=s.getBoundingClientRect();
-        if(ev.clientX>=r.left&&ev.clientX<=r.right&&ev.clientY>=r.top&&ev.clientY<=r.bottom) hit=+s.dataset.slot;
+        if(ev.clientX>=r.left&&ev.clientX<=r.right&&ev.clientY>=r.top&&ev.clientY<=r.bottom){
+          hit=+s.dataset.slot; side=s.closest("#foeSide")?"foe":"mine";
+        }
         s.classList.remove("drop");
       });
-      if(hit) playCard(i,hit);
+      if(hit) playCard(i,hit,side);
     };
     document.addEventListener("pointermove",move);
     document.addEventListener("pointerup",up);
@@ -3934,8 +3979,21 @@ function veilCheck(h){
     if(a!==h&&a.slot>0&&a.hp>0){ a.shield+=v;
       fx({side:"mine",slot:a.slot,ring:"#5fd8cf",txt:"+"+v,cls:"shd"}) } });
 }
-function playCard(i,slot){
+function playCard(i,slot,side){
   const c=B.hand[i]; if(!c) return;
+  const wantFoe=!!(c.stock&&CARD_LIB[c.stock]&&CARD_LIB[c.stock].foe)||!!c.foe;
+  if(wantFoe){
+    if(side!=="foe"){ say(`${c.name}${jo(c.name,"eun")} 적의 칸에 던져야 합니다.`,"t2"); return }
+    const f=foeAt(slot);
+    if(!f){ say("그 칸에는 적이 없습니다.","t2"); return }
+    c.use(f);
+    if(c.stock){ useCard(c.stock);
+      const e=(run.cards||[]).find(x=>x.n===c.stock);
+      if(e){ c.d=CARD_LIB[c.stock].d+` (보유 ${e.c})` } else B.hand.splice(i,1);
+    } else B.hand.splice(i,1);
+    checkEnd(); render(); return;
+  }
+  if(side==="foe"){ say("아군 칸에 놓아야 합니다.","t2"); return }
   if(c.type==="summon"){
     if(unitAt(slot)){ say("그 칸에는 이미 누군가 있습니다.","t2"); return }
     const m=makeMin(c.name,slot);
