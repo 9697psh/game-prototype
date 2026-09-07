@@ -3201,14 +3201,19 @@ function runEffect(h,i,s,target){
 /* ─ 턴 ─ */
 function battleLost(){
   run.heroes.forEach(clearTmp);
-  run.heroes.forEach(h=>{ if(h.hp<=0||h.slot>0){ if(h.hp<=0){ h.hp=0; h.down=1 } } });
-  if(!run.heroes.some(h=>!h.down)) run.heroes.forEach(h=>{ h.down=1; h.hp=0 });
+  run.heroes.forEach(h=>{ if(h.hp<=0){ h.hp=0; h.down=1; h.slot=0 } });
   fx({s:"down",gap:0});
   veil("radial-gradient(circle,rgba(142,43,43,.5),transparent 70%)");
+  run.dun=null; run.pendingEnter=null;
+  const standing=run.heroes.filter(h=>!h.down).length;
+  if(!standing){
+    say("모두 쓰러졌습니다. 일으켜 줄 사람이 남지 않았습니다.","t3");
+    setTimeout(()=>lose("대원이 모두 쓰러졌습니다. 주둔지로 데려갈 사람이 남지 않았습니다."),1300);
+    return;
+  }
   addTaint(30);
   say("물러납니다. 오염도가 30 올랐습니다.","t3");
-  run.dun=null; run.pendingEnter=null;
-  setTimeout(()=>{ toast("쓰러진 대원은 주둔지 치료소에서 일으킬 수 있습니다.");
+  setTimeout(()=>{ toast(`쓰러진 대원은 주둔지 치료소에서 일으킬 수 있습니다. (성한 대원 ${standing}명)`);
     if(view!=="over"){ view="map"; render() } },1200);
 }
 function hurtAlly(f,t,raw,label){
@@ -3243,6 +3248,10 @@ function unitDown(t){
   if(t.name==="트리스탄"&&!B.corpseUsed){
     B.corpseUsed=1; B.hand.push({type:"summon",name:"망자의 육체"});
     say("저주받은 육체 — 망자의 육체 카드를 얻습니다.","t1");
+  }
+  /* 전장에 설 수 있는 아군이 하나도 남지 않으면 그 자리에서 끝난다 */
+  if(!B.over&&!liveMins().length&&!run.heroes.some(h=>h.hp>0)){
+    B.over=1; battleLost(); render();
   }
 }
 function endTurn(){
@@ -3337,6 +3346,7 @@ function endTurn(){
     }
   });
   if(!run.heroes.some(h=>h.hp>0)&&!liveMins().length){ B.over=1; battleLost(); render(); return }
+  if(!run.heroes.some(h=>!h.down)&&!liveMins().length){ B.over=1; battleLost(); render(); return }
   B.turn++;
   if(B.turn>20){ B.over=1; say("20턴이 지나 물러납니다.","t3"); battleLost(); render(); return }
   liveMins().forEach(m=>{ m.mana=m.maxMana; m.shield=0; m.armor=0;
