@@ -53,6 +53,13 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .slot .no{position:absolute;top:-9px;left:7px;background:var(--ink);border:1px solid var(--rule);
   border-radius:3px;font-size:10px;padding:0 6px;color:var(--faint)}
 .slot.pick .no{color:var(--brass);border-color:var(--brass)}
+.res{display:flex;gap:4px;align-items:center;justify-content:center;min-height:13px;flex-wrap:wrap}
+.pips{display:inline-flex;gap:3px;align-items:center}
+.pips i{width:7px;height:7px;border-radius:50%;border:1px solid var(--rule2);display:inline-block}
+.pips i.on{background:var(--mana);border-color:#8fb4ef;box-shadow:0 0 5px rgba(95,143,224,.75)}
+.res .rr{font-size:10px;color:var(--move);display:inline-flex;align-items:center;gap:2px}
+.res .rr.es{color:var(--def)}
+.res .rr.mn2{color:var(--mana)}
 .art{height:56px;display:flex;align-items:flex-end;justify-content:center}
 .art svg{height:56px;width:auto}
 .nm{font-size:12px;font-weight:700;line-height:1.25;word-break:keep-all;text-align:center}
@@ -86,6 +93,7 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .sk.on .k{background:var(--brass)}
 .sk .t{flex:1;min-width:0}
 .sk .t b{font-size:12.5px}
+.sk .xn{margin-left:5px;background:var(--brass);color:#17130f;border-radius:3px;padding:0 6px;font-size:11.5px;font-weight:700}
 .sk .t .val{display:block;font-size:11.5px;color:var(--fg);margin-top:3px;line-height:1.5}
 .sk .t .val .big{color:var(--brass);font-size:13px}
 .sk .t .brk{color:var(--faint);font-size:10px}
@@ -274,6 +282,15 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .choice b{font-size:13.5px}
 .choice span{font-size:11.5px;color:var(--dim)}
 .choice.go2{align-items:center;color:var(--brass);border-color:var(--brass);font-weight:700}
+.evres{display:flex;gap:14px;align-items:center;background:linear-gradient(180deg,#221c2e,#191622);
+  border:1px solid #4a3f63;border-radius:8px;padding:16px 18px;margin-bottom:4px}
+.evres .evi{width:52px;height:52px;flex:none} .evres .evi svg{width:52px;height:52px}
+.evres b{font-size:11px;color:#b9a2ea;letter-spacing:.08em}
+.evres p{margin:4px 0 0;font-size:13.5px;line-height:1.6;word-break:keep-all}
+.wheel{border:1px solid var(--rule);border-radius:7px;padding:8px 12px;background:var(--panel)}
+.wr{display:flex;gap:8px;align-items:center;font-size:11.5px;color:var(--faint);padding:3px 0}
+.wr i{width:12px;font-style:normal;color:var(--brass)}
+.wr.hit{color:var(--brass);font-weight:700}
 @media(max-width:800px){ .npcbox{grid-template-columns:1fr} }
 .trail{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-top:12px}
 .dot{font-size:10.5px;border:1px solid var(--rule2);border-radius:99px;padding:1px 9px;color:var(--faint)}
@@ -1452,9 +1469,9 @@ function drawCamp(app){
    campAct("train","훈련장",
      run.day<=1
        ? "몸을 풀 겨를도 없이 첫날이 밝았습니다. 둘째 날부터 쓸 수 있습니다."
-       : `대원들이 경험치 ${trainExp()}을 나눠 얻습니다. 대원의 레벨이 오를수록 훈련의 성과도 커집니다.`,
+       : `대원 <b>각각</b>이 경험치를 ${trainExp()} 얻습니다. 대원의 레벨이 오를수록 훈련의 성과도 커집니다.`,
      run.day>1,
-     ()=>{ giveExp(trainExp(),run.heroes.filter(h=>!h.down)) }),
+     ()=>{ giveExp(trainExp(),run.heroes.filter(h=>!h.down),true) }),
    campAct("forge","제련소",`재료 두 개를 조합법대로 합칩니다. 제련석이 필요합니다. (보유 ${run.stone||0})`,
      shards>=2&&(run.stone||0)>=5,
      ()=>{ view="forge"; render(); return 1 })
@@ -1795,9 +1812,24 @@ function useCard(name){
 }
 
 /* ═══════════ 경험치 ═══════════ */
-function giveExp(exp,pool){
+function giveExp(exp,pool,each){
   pool=(pool&&pool.length)?pool:run.heroes.filter(h=>!h.down);
   if(!pool.length) pool=run.heroes.slice();
+  if(each){
+    const q0=run.pendingLv||[];
+    pool.forEach(h=>{
+      h.exp+=exp;
+      while(h.lv<30&&h.exp>=needExp(h.lv)){
+        h.exp-=needExp(h.lv); h.lv++;
+        h.maxHp+=h.hpLv; h.hp+=h.hpLv;
+        if(h.name==="트리스탄") h.atk++;
+        q0.push({hero:h,lv:h.lv});
+      }
+    });
+    run.pendingLv=q0;
+    toast(`경험치 — ${pool.map(h=>h.name).join(" · ")} 각각 +${exp}`);
+    return;
+  }
   const w=pool.map(h=>1/Math.max(1,h.lv));
   const sum=w.reduce((a,b)=>a+b,0);
   const raw=w.map(x=>exp*x/sum);
@@ -1950,10 +1982,13 @@ const EVENTS=[
      {t:"지나가기",d:"오염도가 크게 낮아집니다.",
       f:()=>{ const s=rr([25,35]); addTaint(-s); return `욕심을 접었습니다. 오염도가 ${s} 낮아집니다.` }}]},
  {n:"룰렛의 달인", face:"사슬 광인",
+  wheel:["붉은 칸 — 대원 하나가 다친다","금화 칸 — 금화가 쏟아진다","검은 칸 — 오염도가 오른다",
+         "쇳조각 칸 — 파편 아이템","깨달음 칸 — 하급 보상"],
   t:"천막 아래에서 한 사내가 낡은 룰렛을 돌리고 있습니다. 운을 시험해 보겠느냐고 묻습니다.",
   o:[{t:"룰렛 돌리기",d:"무엇이 나올지 모릅니다.",
       f:()=>{
         const r=Math.floor(Math.random()*5);
+        run.evRoll=r;
         if(r===0){ const h=rnd(run.heroes), v=rr([3,5]); h.hp=Math.max(1,h.hp-v);
           return `바늘이 붉은 칸에 멈췄습니다. ${h.name}의 체력이 ${v} 줄었습니다.` }
         if(r===1){ const g=rr([4,6]); run.gold+=g; return `금화 ${g}이 쏟아집니다.` }
@@ -1994,13 +2029,19 @@ function drawRelic(app){
   const box=el(`<div class="npcbox">
     <div class="npc"><div class="npcface">${figure(e.face||"작은 죄수")}</div>
       <b>${esc(e.n)}</b><p>${esc(e.t)}</p>
-      ${run.evMsg?`<p style="color:var(--brass);margin-top:10px">${esc(run.evMsg)}</p>`:""}</div>
+      </div>
     <div class="shelf"><div class="hint">${run.evMsg?"":"선택지"}</div>
       <div class="choices" id="ch"></div></div>
   </div>`);
   app.appendChild(box);
   const row=box.querySelector("#ch");
   if(run.evMsg){
+    row.appendChild(el(`<div class="evres">
+      <div class="evi">${chestIcon("경험치")}</div>
+      <div><b>결과</b><p>${rich(run.evMsg)}</p></div></div>`));
+    if(e.wheel) row.appendChild(el(`<div class="wheel">${
+      e.wheel.map((w,i)=>`<div class="wr ${run.evRoll===i?"hit":""}">
+        <i>${run.evRoll===i?"▶":""}</i><span>${esc(w)}</span></div>`).join("")}</div>`));
     const b=el(`<div class="choice go2">길을 계속 간다</div>`);
     b.onclick=()=>{ if(run.after&&run.after.length){ afterChest() } else leaveNode() };
     row.appendChild(b);
@@ -2286,13 +2327,15 @@ function drawBattle(app){
       if(sel&&sel.hero===h&&sel.step===2) d.classList.add("pick");
       const pm=B.portals&&B.portals.find(p=>p.side==="mine"&&p.slot===s);
       if(pm) d.innerHTML+=`<svg class="portal" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#a06ae0" stroke-width="2.5"/><circle cx="12" cy="12" r="3.5" fill="#a06ae0"/></svg>`;
-      d.innerHTML+=`<div class="art">${figure(h.name)}</div>
+      d.innerHTML+=`<div class="res">${manaPips(h)}${
+          h.mom?`<span class="rr">${ic("move")}${h.mom}</span>`:""}${
+          h.eshield?`<span class="rr es" title="에너지 보호막">◆${h.eshield}</span>`:""}</div>
+        <div class="art">${figure(h.name)}</div>
         <div class="nm">${esc(h.name)}</div>
         <div class="bar"><i style="width:${Math.max(0,h.hp/h.maxHp*100)}%"></i>
           ${h.shield?`<u style="width:${Math.min(60,h.shield/h.maxHp*100)}%"></u>`:""}</div>
-        ${h.maxMana?`<div class="bar mn"><i style="width:${h.mana/h.maxMana*100}%"></i></div>`:""}
         ${progHtml(h)}
-        <div class="mini">${ic("hp")}${h.hp}${h.shield?` <span class="shd">${ic("def")}${h.shield}</span>`:""}${h.eshield?` <span class="shd" title="에너지 보호막">◆${h.eshield}</span>`:""}${h.maxMana?` ${ic("mana")}${h.mana}`:""}</div>
+        <div class="mini">${ic("hp")}${h.hp}/${h.maxHp}${h.shield?` <span class="shd">${ic("def")}${h.shield}</span>`:""}</div>
         <div class="stats">
           ${h.atk?`<span>${ic("atk")}${h.atk}</span>`:""}
           ${h.mag?`<span>${ic("mag")}${h.mag}</span>`:""}
@@ -2382,12 +2425,13 @@ function promptMsg(){
   if(B.over) return "전투 종료";
   if(!sel) return "행동할 영웅의 칸 번호를 누르세요.";
   const s=sel.hero.sk[sel.skill!=null?sel.skill:0];
-  if(sel.step===2) return "기술 번호(1~4) · 클릭하면 1회 사용";
+  if(sel.step===2) return "기술 번호(1~4) · 클릭하면 1회 사용 · 같은 기술을 또 누르면 횟수가 늘어납니다";
   if(sel.step===3) return `${s.n} — 횟수를 누르세요 (1~9)`;
   return s.tg==="ally"?`${s.n} ×${sel.count} — 이동할 칸을 고르세요`
        : s.tg==="any" ?`${s.n} ×${sel.count} — 아군 칸 또는 적 칸을 클릭하세요`
        : s.tg==="foe" ?`${s.n} ×${sel.count} — 적의 칸을 고르세요`
-          +(reachOf(sel.hero,s)!=null?` (사거리 ${reachOf(sel.hero,s)})`:"") : "";
+          +(reachOf(sel.hero,s)!=null?` (사거리 ${reachOf(sel.hero,s)})`:"")
+          +" · 같은 기술을 또 누르면 횟수 +1" : "";
 }
 function breakdown(h,sk,key){
   let total=sk[key]||0;
@@ -2474,6 +2518,13 @@ function passHtml(h){
     </div>`;
   }).join("")+`</div>`;
 }
+function manaPips(h){
+  if(!h.maxMana) return "";
+  if(h.maxMana>8) return `<span class="rr mn2">${ic("mana")}${h.mana}/${h.maxMana}</span>`;
+  let o='<span class="pips" title="마나 '+h.mana+'/'+h.maxMana+'">';
+  for(let i=0;i<h.maxMana;i++) o+='<i class="'+(i<h.mana?"on":"")+'"></i>';
+  return o+'</span>';
+}
 function progressOf(h){
   const out=[];
   if(h.name==="카제")
@@ -2506,7 +2557,7 @@ function skillPanel(h){
       ? "장비 · "+h.items.map(it=>esc(it.n)).join(" / ")
       : "장비 없음"}</span>
     <span class="grow"></span>
-    <span class="hint">기술을 클릭 = 1회 시전 · 숫자키 1~4</span></div>`));
+    <span class="hint">기술 클릭 = 1회 · 같은 기술을 또 누르면 횟수 +1 · 숫자키 1~4</span></div>`));
   const ph=passHtml(h);
   if(ph) p.appendChild(el(ph));
   const rest=progressOf(h).filter(x=>!(PASSIVE_INFO[h.name]||[]).some(q=>q.p===x.n));
@@ -2525,7 +2576,7 @@ function skillPanel(h){
     const cost = s.costType==="mom" ? ic("move")+" "+payCost(h,i) : ic("mana")+" "+payCost(h,i);
     const e=el(`<div class="sk ${sel.skill===i?"on":""} ${ok?"":"off"}">
       <span class="k">${i+1}</span><div class="t">
-      <b>${esc(s.n)}</b>
+      <b>${esc(s.n)}</b>${(sel.skill===i&&sel.step===4&&sel.count>1)?`<span class="xn">×${sel.count}</span>`:""}
       <span style="color:var(--faint);font-size:10.5px">${cost} · ${esc(s.el)}</span>
       ${s.limit?`<span class="chip">사용한도 ${used}/${s.limit}</span>`:""}
       ${locked?`<span class="chip">${UNLOCK[i]}레벨 해제</span>`:""}
@@ -2594,6 +2645,14 @@ function pickSkill(i,count){
   const h=sel.hero, s=h.sk[i];
   if((i===2&&h.lv<UNLOCK[2])||(i===3&&h.lv<UNLOCK[3])){ say("아직 해제되지 않은 기술입니다.","t2"); return }
   if(h.lock[i]){ say(`${s.n}${jo(s.n,"eun")} ${h.lock[i]}턴 동안 잠금 상태입니다.`,"t2"); return }
+  /* 이미 고른 기술을 다시 누르면 시전 횟수가 하나씩 늘어난다 */
+  if(sel.skill===i&&sel.step===4){
+    const n=(sel.count||1)+1;
+    if(s.limit&&(h.limitUsed[i]||0)+n>s.limit){
+      say(`${s.n}의 사용한도를 넘습니다.`,"t2"); return }
+    if(!canPay(h,i,n)){ say(`${s.n}${jo(s.n,"eul")} ${n}회 쓸 자원이 모자랍니다.`,"t2"); return }
+    sel.count=n; SFX.play("click"); render(); return;
+  }
   sel.skill=i;
   if(count!=null){ pickCount(count); return }
   sel.step=3; render();
