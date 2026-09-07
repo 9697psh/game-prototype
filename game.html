@@ -207,6 +207,17 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .ub-v{position:relative;text-align:center;font-size:13px;color:var(--fg);margin-top:8px}
 .ub-d{position:relative;text-align:center;font-size:12px;color:var(--dim);
   line-height:1.6;margin-top:8px;word-break:keep-all}
+.peek{position:fixed;inset:0;z-index:400;background:rgba(10,8,7,.82);
+  display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;overflow:auto;
+  animation:pkIn .16s ease-out}
+@keyframes pkIn{from{opacity:0}to{opacity:1}}
+.peekbox{background:var(--panel);border:1px solid var(--rule2);border-radius:10px;
+  padding:16px 18px;max-width:760px;width:100%;box-shadow:0 18px 50px rgba(0,0,0,.6)}
+.peekhead{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.peekgrid{max-width:100%;margin-top:10px}
+.peekgrid .cell{cursor:default}
+.peekgrid .cell:hover{border-color:var(--rule)}
+.peekgrid .cell.here{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass) inset}
 .hpanel{position:fixed;right:16px;top:64px;width:308px;max-height:calc(100vh - 84px);
   overflow-y:auto;background:var(--panel);border:1px solid var(--rule);border-radius:9px;
   padding:14px;z-index:20;text-align:left}
@@ -1440,8 +1451,55 @@ function nextField(){
 let _lastView=null;
 function render(){
   if(_lastView!==view){ const l=document.getElementById("fx"); if(l) l.innerHTML=""; _lastView=view }
-  render0(); flushFX();
+  document.querySelectorAll(".peek").forEach(x=>x.remove());
+  render0();
+  if(run&&run.mapPeek&&view!=="map"&&view!=="title") drawMapPeek();
+  flushFX();
 }
+function drawMapPeek(){
+  const f=FIELDS[run.field]||{n:"균열"}, S=run.size;
+  const ov=el(`<div class="peek"><div class="peekbox">
+    <div class="peekhead">
+      <div class="title" style="font-size:18px">${esc(f.n)}</div>
+      <span class="chip">${run.day}일차 / ${f.days||"-"}</span>
+      <span class="chip ${run.night?"on":""}">${run.night?"밤":"낮"} ${clock()}</span>
+      <span class="chip">활동량 ${Math.max(0,run.act)}/${run.actMax}</span>
+      <span class="chip ${run.taint>=70?"on":""}">오염도 ${run.taint}/100</span>
+      <span class="grow"></span>
+      <button class="pk-x">닫기 (M)</button>
+    </div>
+    <div class="hint">지금 위치와 남은 시설을 확인만 합니다. 이동은 지도 화면에서 합니다.</div>
+    <div class="gridmap peekgrid" style="grid-template-columns:repeat(${S},1fr)"></div>
+    <div class="legend"></div>
+    <div class="roster" style="margin-top:12px"></div>
+  </div></div>`);
+  const g=ov.querySelector(".peekgrid");
+  for(let r=0;r<S;r++) for(let c=0;c<S;c++){
+    const cell=run.grid[r][c], here=(run.pos.r===r&&run.pos.c===c);
+    const d=el(`<div class="cell ${cell.t==="empty"?"emp":""} ${here?"here":""}">
+      ${nodeArt(cell.t)}${here?`<span class="you">●</span>`:""}
+      ${cell.t!=="empty"?`<span class="cl">${esc(NODE[cell.t].label)}</span>`:""}</div>`);
+    if(cell.t==="dungeon"||cell.t==="elite"||cell.t==="boss")
+      d.title=`${NODE[cell.t].label}${cell.waves?` · ${cell.waves}차 전투`:""}`
+        +`${cell.style?NL1+cell.style:""}${cell.loot?NL1+cell.loot:""}`;
+    g.appendChild(d);
+  }
+  const lg=ov.querySelector(".legend");
+  ["camp","dungeon","elite","shop","rest","event","boss"].forEach(t=>
+    lg.appendChild(el(`<span><i>${nodeArt(t)}</i>${esc(NODE[t].label)}</span>`)));
+  const rs=ov.querySelector(".roster");
+  run.heroes.forEach(h=>rs.appendChild(el(`<div class="rost ${h.down?"down":""}">
+    <div class="art">${figure(h.name)}</div>
+    <div><b>${esc(h.name)}</b>${h.down?`<span class="chip on">기절</span>`:""}
+      <small>Lv.${h.lv} · ${ic("hp")}${Math.max(0,h.hp)}/${h.maxHp}</small></div></div>`)));
+  ov.querySelector(".pk-x").onclick=()=>{ run.mapPeek=0; render() };
+  ov.onclick=e=>{ if(e.target===ov){ run.mapPeek=0; render() } };
+  document.body.appendChild(ov);
+}
+document.addEventListener("keydown",e=>{
+  if(!run||view==="title"||view==="map") return;
+  if(e.key==="m"||e.key==="M"||e.key==="ㅡ"){ run.mapPeek=!run.mapPeek; render() }
+});
 function render0(){
   const app=document.getElementById("app");
   const hr=document.getElementById("hRun");
@@ -1457,6 +1515,11 @@ function render0(){
   const hb=document.getElementById("hBtns"); hb.innerHTML="";
   { const sb=el(`<button title="소리 켜기/끄기">♪ ${SFX.on?"켬":"끔"}</button>`);
     sb.onclick=()=>{ SFX.toggle(); render() }; hb.appendChild(sb); }
+  if(run&&view!=="title"&&view!=="map"&&view!=="over"&&view!=="clear"){
+    const mb=el(`<button title="M 키로도 열 수 있습니다">${run.mapPeek?"지도 닫기":"지도 보기"}</button>`);
+    mb.onclick=()=>{ run.mapPeek=!run.mapPeek; render() };
+    hb.appendChild(mb);
+  }
   if(run){ const b=el(`<button>처음부터</button>`);
     b.onclick=()=>{ run=null; startPicks=null; view="title"; render() }; hb.appendChild(b) }
   app.innerHTML="";
@@ -1531,6 +1594,7 @@ function drawStart(app){
 }
 
 /* ═══════════ 필드 지도 ═══════════ */
+const NL1=String.fromCharCode(10);
 const near=(a,b)=>Math.abs(a.r-b.r)+Math.abs(a.c-b.c)===1;
 function drawMap(app){
   const f=FIELDS[run.field], S=run.size;
