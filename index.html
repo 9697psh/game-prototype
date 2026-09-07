@@ -3429,8 +3429,23 @@ function foeDmg(f,v,el){
 }
 /* 적의 도발 — 도발하는 적보다 뒤(번호가 큰 칸)에 있는 적은 겨눌 수 없다 */
 function foeTauntWall(f){
-  return B.foes.find(x=>x.alive&&x.taunt&&x!==f&&x.slot<f.slot)||null;
+  return B.foes.find(x=>x.alive&&x.taunt&&x!==f&&x.slot<f.slot&&!foeHidden(x))||null;
 }
+/* 숨을 곳이 있을 때만 은신이 성립한다.
+   살아 있는 적이 전부 은신이면 아무도 겨눌 수 없게 되므로 은신은 무효가 된다. */
+function foeHidden(f){
+  if(!f||!f.hide) return false;
+  return B.foes.some(x=>x.alive&&x!==f&&!x.hide);
+}
+/* 겨눌 수 없는 이유를 돌려준다. 없으면 null */
+function foeBlockReason(f){
+  if(!f||!f.alive) return null;
+  if(foeHidden(f)) return `${f.name}${jo(f.name,"eun")} 은신 중이라 겨눌 수 없습니다.`;
+  const w=foeTauntWall(f);
+  if(w) return `${w.name}${jo(w.name,"ig")} 앞을 막아섭니다. 먼저 쓰러뜨려야 합니다.`;
+  return null;
+}
+const openFoes=()=>B.foes.filter(f=>f.alive&&!foeBlockReason(f));
 /* 도발 — 도발한 아군보다 뒤(번호가 작은 칸)에 있는 대상은 겨눌 수 없다 */
 function tauntWall(a){
   return allUnits().find(x=>x.taunt&&x!==a&&x.slot>a.slot)||null;
@@ -3646,7 +3661,7 @@ function drawBattle(app){
           ${f.thorn?`<span class="chip on">가시${f.thorn}</span>`:""}
           ${f.evade?`<span class="chip on">회피${f.evade}</span>`:""}
           ${f.negShield?`<span class="chip on">부정 보호막${f.negShield}</span>`:""}
-          ${f.hide?`<span class="chip on">은신</span>`:""}
+          ${foeHidden(f)?`<span class="chip on">은신</span>`:""}
           ${f.infect?`<span class="chip on">감염${f.infect}</span>`:""}
           ${f.stun?`<span class="chip on">기절</span>`:""}
           ${f.burn?`<span class="chip on">화상${f.burn}</span>`:""}
@@ -3989,10 +4004,12 @@ function inReach(h,sk,slot){
   return r==null || dist(h.slot,slot)<=r;
 }
 function farthestFoe(h){
-  return B.foes.filter(f=>f.alive).sort((a,b)=>dist(h.slot,b.slot)-dist(h.slot,a.slot))[0];
+  const p=openFoes(), q=p.length?p:B.foes.filter(f=>f.alive);
+  return q.sort((a,b)=>dist(h.slot,b.slot)-dist(h.slot,a.slot))[0];
 }
 function nearestFoe(h){
-  return B.foes.filter(f=>f.alive).sort((a,b)=>dist(h.slot,a.slot)-dist(h.slot,b.slot))[0];
+  const p=openFoes(), q=p.length?p:B.foes.filter(f=>f.alive);
+  return q.sort((a,b)=>dist(h.slot,a.slot)-dist(h.slot,b.slot))[0];
 }
 function pinnedFoe(h,sk){
   if(!sk) return null;
@@ -4003,8 +4020,7 @@ function pinnedFoe(h,sk){
 function validTarget(h,sk,slot){
   if(!inReach(h,sk,slot)) return false;
   { const f2=foeAt(slot);
-    if(f2&&f2.hide&&B.foes.filter(x=>x.alive).length>1) return false;
-    if(f2){ const w=foeTauntWall(f2); if(w&&w!==f2) return false } }
+    if(f2&&foeBlockReason(f2)) return false; }
   if(deb(h,"fear")){ const f2=foeAt(slot); if(f2&&uid(f2)===h.fearSrc) return false }
   const p=pinnedFoe(h,sk);
   if(p) return p.slot===slot;
@@ -4379,11 +4395,8 @@ function doSkill(target){
   const h=sel.hero,i=sel.skill,n=sel.count,s0=h.sk[i];
   if(s0.tg==="foe"){
     if(!foeAt(target)){ say("그 칸에는 적이 없습니다.","t2"); return }
-    { const f2=foeAt(target);
-      if(f2.hide&&B.foes.filter(x=>x.alive).length>1){
-        say(`${f2.name}${jo(f2.name,"eun")} 은신 중이라 겨눌 수 없습니다.`,"t2"); return }
-      const w=foeTauntWall(f2);
-      if(w){ say(`${w.name}${jo(w.name,"ig")} 앞을 막아섭니다. 먼저 쓰러뜨려야 합니다.`,"t2"); return } }
+    { const why=foeBlockReason(foeAt(target));
+      if(why){ say(why,"t2"); return } }
     if(!inReach(h,s0,target)){
       const r=reachOf(h,s0);
       fx({side:"foe",slot:target,s:"miss",txt:"사거리 "+r,cls:"miss"});
@@ -4412,8 +4425,8 @@ function doSkill(target){
     /* 전환(방패 막기 ↔ 방패 밀치기)처럼 도중에 대상 종류가 바뀌면 겨눌 적을 다시 고른다 */
     if(s.tg==="foe"&&(target==null||!foeAt(target)||!inReach(h,s,target))){
       const re=pinnedFoe(h,s)
-        || B.foes.filter(f=>f.alive&&inReach(h,s,f.slot))
-                 .sort((a,b)=>dist(h.slot,a.slot)-dist(h.slot,b.slot))[0];
+        || openFoes().filter(f=>inReach(h,s,f.slot))
+                     .sort((a,b)=>dist(h.slot,a.slot)-dist(h.slot,b.slot))[0];
       if(!re){ say(`${s.n} — 사거리 안에 적이 없어 중단합니다.`,"t2"); break }
       if(re.slot!==target){ target=re.slot;
         say(`${s.n}${jo(s.n,"eun")} ${re.name}(${re.slot}번)에게 나갑니다.`,"t2") }
@@ -4474,8 +4487,8 @@ function doSkill(target){
     if(s.tg==="foe"&&!foeAt(target)&&k<n-1){
       const _s=h.sk[i];
       const alt=pinnedFoe(h,_s)
-        || B.foes.filter(f=>f.alive&&inReach(h,_s,f.slot))
-                 .sort((a,b)=>dist(h.slot,a.slot)-dist(h.slot,b.slot))[0];
+        || openFoes().filter(f=>inReach(h,_s,f.slot))
+                     .sort((a,b)=>dist(h.slot,a.slot)-dist(h.slot,b.slot))[0];
       if(!alt) break;
       target=alt.slot; say(`대상이 쓰러져 ${alt.name}(${alt.slot}번)으로 옮깁니다.`,"t2");
     }
