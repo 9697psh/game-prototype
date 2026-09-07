@@ -1426,6 +1426,12 @@ function enterCell(r,c){
 function campAct(key,label,desc,ok,fx){
   return {k:key,n:label,d:desc,ok:ok,fx:fx};
 }
+function trainExp(){
+  const pool=run.heroes.filter(h=>!h.down);
+  if(!pool.length) return 4;
+  const lv=pool.reduce((a,h)=>a+h.lv,0)/pool.length;
+  return Math.max(4,Math.round(4+(lv-1)*1.2));
+}
 function drawCamp(app){
   app.appendChild(el(`<div class="center">
     <div class="title" style="font-size:22px">주 둔 지</div>
@@ -1443,8 +1449,12 @@ function drawCamp(app){
    campAct("heal","휴식소","다친 대원이 최대 체력의 40%를 회복합니다.",hurt>0,
      ()=>{ run.heroes.forEach(h=>{ if(!h.down) h.hp=Math.min(h.maxHp,h.hp+Math.round(h.maxHp*0.4)) });
        toast("대원들이 숨을 돌립니다.") }),
-   campAct("train","훈련장","대원 전원이 경험치를 20 얻습니다.",true,
-     ()=>{ giveExp(20,run.heroes.filter(h=>!h.down)) }),
+   campAct("train","훈련장",
+     run.day<=1
+       ? "몸을 풀 겨를도 없이 첫날이 밝았습니다. 둘째 날부터 쓸 수 있습니다."
+       : `대원들이 경험치 ${trainExp()}을 나눠 얻습니다. 대원의 레벨이 오를수록 훈련의 성과도 커집니다.`,
+     run.day>1,
+     ()=>{ giveExp(trainExp(),run.heroes.filter(h=>!h.down)) }),
    campAct("forge","제련소",`재료 두 개를 조합법대로 합칩니다. 제련석이 필요합니다. (보유 ${run.stone||0})`,
      shards>=2&&(run.stone||0)>=5,
      ()=>{ view="forge"; render(); return 1 })
