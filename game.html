@@ -1119,7 +1119,7 @@ const SKILL_FULL={
   "에너지 융합봉":"수축 공격과 팽창 공격 중 선택하여 시전합니다.",
   "영광의 족쇄":"잠금 (1). 추가 공격력과 마법력을 보호력으로 전환합니다.\n가장 가까운 적을 기절시키고 피해를 8(추가 ¤ ) 줍니다.\n\n_독서 중첩_을 1 얻습니다.\n\n_축복 상태_라면 모든 적을 기절시킵니다.",
   "영광의 휘장":"아군 영웅에게 피해를 4주고 회피를 1 부여합니다.",
-  "영혼 분리":"선택한 자리에 체력이 가장 낮은 적의 환영을 소환합니다.\n환영은 적과 같은 체력을 지니고, 아무 행동도 하지 않습니다.\n처치되면 원래 적에게 피해 4(추가 ∴ +대상 최대 체력의 10%)를 줍니다.\n\n환영으로 얻을 수 있는 영혼은 1개입니다.\n\n영혼 40개당 최대 체력 비례 피해량이 2.5% 증가합니다.\n\n환영은 전장에 최대 하나만 활성화할 수 있습니다.\n환영은 원래 적이 죽을 시 같이 죽습니다.",
+  "영혼 분리":"잠금(3). 선택한 자리에 체력이 가장 낮은 적의 환영을 소환합니다.\n환영은 적과 같은 체력을 지니고, 아무 행동도 하지 않습니다.\n처치되면 원래 적에게 피해 4(추가 ∴ +대상 최대 체력의 10%)를 줍니다.\n\n환영으로 얻을 수 있는 영혼은 1개입니다.\n\n영혼 40개당 최대 체력 비례 피해량이 2.5% 증가합니다.\n\n환영이 내 전장에 소환되면 도발을 얻습니다.\n환영은 전장에 최대 하나만 활성화할 수 있습니다.\n환영은 원래 적이 죽을 시 같이 죽습니다.",
   "영혼 수확":"대상이 죽을 때마다 영구히 영혼을 얻습니다.\n일반 적(1개), 정예 적(5개), 우두머리 적(10개)\n아군 소환물(1개), 아군 영웅(5개)\n\n얻은 영혼의 개수에 따라 추가 능력치를 얻습니다.\n영혼 40개당 마법력 1을 얻습니다. 얻은 마법력*( )*",
   "왕실 지혜 도서관":"도미니코는 기술을 사용할때마다 _독서_ 중첩을 얻습니다.\n_독서_ 중첩이 10이 되면 중첩을 모두 소모하고 _축복 상태_가 되어 다음 기술을 1회 강화합니다. 얻은 독서 중첩 *( )*",
   "융합":"아군 전장에 있는 모든 소환물을 처치합니다.\n처치한 소환물들의 체력만큼 굴라가 체력을 얻습니다. \n처치한 소환물 하나 당 굴라가 공격력, 마법력, 보호력을 3 얻습니다.",
@@ -1228,12 +1228,12 @@ const ARMOR_CARDS={
    use:(a,h)=>{ a.hp=Math.max(1,a.hp-4); a.evade++;
      say(`영광의 휘장 — ${a.name} 체력 -4, 회피 +1`) }}
 };
-HEROES["쿠렘타이"]={title:"영혼 수확자",role:"마법 · 성장",hp:20,mana:3,hpLv:1,
+HEROES["쿠렘타이"]={title:"죽음",role:"마법 · 성장",hp:20,mana:3,hpLv:1,
   focus:"죽음을 셈하며 자란다. 영혼이 쌓일수록 기술이 넓어진다",
   passive:{n:"영혼 수확",d:"무언가 죽을 때마다 영혼을 모은다. 영혼 40개마다 마법력 +1 (영구)"},
   skills:[
    {n:"착취",cost:1,el:"마법",tg:"foe",dmg:2,drain:1,d:"피해 2 · 영혼이 쌓이면 앞뒤로 번지고 관통·연발까지"},
-   {n:"영혼 분리",cost:2,el:"마법",tg:"any",phantom:1,d:"체력이 가장 낮은 적의 환영을 아군·적의 빈 칸에 소환"},
+   {n:"영혼 분리",cost:2,el:"마법",tg:"any",lock:3,phantom:1,d:"잠금(3) · 체력이 가장 낮은 적의 환영을 빈 칸에 소환 · 내 전장이면 도발"},
    {n:"환상통",cost:0,el:"마법",tg:"self",lock:1,phantomPain:1,d:"잠금(1) · 추가 마법력만큼 모든 적에게 피해"},
    {n:"사형 선고",cost:3,el:"마법",tg:"any",limit:1,verdict:1,startLock:2,
     d:"우두머리가 아닌 대상을 처치하고 절반의 체력으로 되살림"}
@@ -2357,7 +2357,7 @@ function tutPanel(){
   if(st.auto&&st.auto()){ TUT.step++; setTimeout(render,60); return }
   const box=el(`<div class="tutbox">
     <div class="tt">${esc(st.t)}<span class="tn">${TUT.step+1} / ${TUT_STEPS.length}</span></div>
-    <div class="td">${rich(st.d).split("\n").join("<br>")}</div>
+    <div class="td">${icoify(st.d).split("\n").join("<br>")}</div>
     <div class="tb"></div></div>`);
   const bar=box.querySelector(".tb");
   if(st.auto) bar.appendChild(el(`<span class="hint">위 내용을 직접 해보세요.</span>`));
@@ -4814,6 +4814,7 @@ function runEffect(h,i,s,target){
       if(unitAt(slot)){ say("그 칸에는 이미 누군가 있습니다.","t2"); return }
       const m=makeMin("환영",slot);
       m.maxHp=src.hp; m.hp=src.hp; m.owner=h.name; m.phantomOf=src.id; m.backlash=back;
+      m.taunt=1; m.perma=1;                 /* 내 전장의 환영은 도발한다 */
       B.mins.push(m);
     }else{
       if(foeAt(slot)){ say("그 칸에는 이미 적이 있습니다.","t2"); return }
@@ -4822,7 +4823,8 @@ function runEffect(h,i,s,target){
         isPhantom:1,phantomOf:src.id,backlash:back});
     }
     fx({side:mine?"mine":"foe",slot:slot,art:"mag",s:"summon",txt:"환영",cls:"mag"});
-    say(`${src.name}의 환영이 ${mine?"아군":"적"} ${slot}번 칸에 나타납니다.`,"t1");
+    say(`${src.name}의 환영이 ${mine?"아군":"적"} ${slot}번 칸에 나타납니다.${
+      mine?" 도발합니다.":""}`,"t1");
     return;
   }
   if(s.phantomPain){
