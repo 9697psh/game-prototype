@@ -98,6 +98,7 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .sk .t{flex:1;min-width:0}
 .sk .t b{font-size:12.5px}
 .opts{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.opt .ogo{margin-top:6px;align-self:flex-start}
 .opt{background:#221d16;border:1px solid var(--rule2);border-radius:5px;padding:8px 10px;cursor:pointer}
 .opt:hover{border-color:var(--brass);background:var(--raise)}
 .opt.on{border-color:var(--brass)}
@@ -3163,7 +3164,7 @@ function skillPanel(h){
       ? "장비 · "+h.items.map(it=>esc(it.n)).join(" / ")
       : "장비 없음"}</span>
     <span class="grow"></span>
-    <span class="hint">기술 클릭 = 1회 · 같은 기술을 또 누르면 횟수 +1 · 숫자키 1~4</span>
+    <span class="hint">기술 클릭 = 1회 · 같은 기술(선택 기술은 같은 선택지)을 또 누르면 횟수 +1 · 숫자키 1~4</span>
     <button class="dtl">${SKDETAIL?"간단히 보기":"자세히 보기"}</button></div>`));
   p.querySelector(".dtl").onclick=ev=>{ ev.stopPropagation(); SKDETAIL=!SKDETAIL; render() };
   const ph=passHtml(h);
@@ -3196,23 +3197,36 @@ function skillPanel(h){
       ${SKDETAIL&&s.alt?`<div class="fullx"><span>전환 · ${esc(s.alt.n)}</span>${rich(SKILL_FULL[s.alt.n]||s.alt.d||"")}</div>`:""}
       </div></div>`);
     if(ok&&s.opts){
+      /* 머리 부분은 선택지 목록을 여닫기만 한다 — 고른 선택지와 횟수는 그대로 둔다 */
       e.onclick=ev=>{ ev.stopPropagation();
-        sel.skill=i; sel.step=2; sel.optOpen=(sel.optOpen===i)?null:i; render() };
+        if(sel.optOpen===i){ sel.optOpen=null; render(); return }
+        if(sel.skill!==i){ sel.skill=i; sel.step=2; sel.count=1 }
+        sel.optOpen=i; render();
+      };
       if(sel.optOpen===i){
         const list=el(`<div class="opts"></div>`);
+        const armed=(sel.skill===i&&sel.step===4);
         s.opts.forEach((o,oi)=>{
           const cur=(o.n===s.n);
+          const on=cur&&armed;
           const oc=el(`<div class="opt ${cur?"on":""}">
-            <b>${esc(o.n)}</b>
+            <b>${esc(o.n)}</b>${(on&&sel.count>1)?`<span class="xn">×${sel.count}</span>`:""}
             <span>${o.costType==="mom"?ic("move"):o.costType==="scale"?"비늘 ":ic("mana")}${o.cost} · ${esc(o.el)}</span>
+            ${on?`<span class="chip pk">한 번 더 누르면 ×${(sel.count||1)+1}</span>`:""}
             <small>${rich(o.d||"")}</small>
             ${SKDETAIL&&SKILL_FULL[o.n]?`<div class="fullx"><span>기획 원문</span>${rich(SKILL_FULL[o.n])}</div>`:""}
+            ${on&&o.tg==="self"?`<button class="go ogo">시전 ×${sel.count}</button>`
+              :on?`<span class="hint">${o.tg==="foe"?"적의 칸":o.tg==="ally"?"아군 칸":"칸"}을 골라 발동하세요</span>`:""}
           </div>`);
+          const gb=oc.querySelector(".ogo");
+          if(gb) gb.onclick=ev3=>{ ev3.stopPropagation(); doSkill(null) };
           oc.onclick=ev2=>{
             ev2.stopPropagation();
+            /* 같은 선택지를 또 누르면 시전 횟수가 늘어난다 */
+            if(cur&&armed){ pickSkill(i,null); return }
             const keep=s.opts;
             h.sk[i]=Object.assign({},o,{opts:keep,pick:s.pick});
-            sel.optOpen=null;
+            sel.skill=i; sel.count=1; sel.step=2;
             pickSkill(i,1);
           };
           list.appendChild(oc);
@@ -3840,6 +3854,8 @@ function runEffect(h,i,s,target){
   }
   if(s.stance){
     h.stance=s.stance; h.stanceTurn=2;
+    if(s.shield){ const v=s.shield+mod(s,"shield")+h.def;
+      h.shield+=v; fx({side:"mine",slot:h.slot,s:"shield",ring:"#e0c85a",txt:"+"+v,cls:"shd",gap:70}) }
     fx({side:"mine",slot:h.slot,ring:"#a06ae0",txt:s.stance==="nightmare"?"악몽":"공포",cls:"shd"});
     say(`${h.name} ${s.n} — 다음 턴까지 맞을 때마다 되갚습니다.`);
     return;
