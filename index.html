@@ -5197,8 +5197,12 @@ function tutPanel(){
     <div class="tb"></div></div>`);
   const bar=box.querySelector(".tb");
   if(st.auto) bar.appendChild(el(`<span class="hint">위 내용을 직접 해보세요.</span>`));
-  const nx=el(`<button class="go">${st.last?"이대로 계속한다":"다음"}</button>`);
-  nx.onclick=tutNext;
+  /* 직접 해봐야 넘어가는 칸에서는 [다음]을 막는다.
+     안 막으면 전투 화면을 보면서 지도 설명을 읽게 된다(설명과 화면이 어긋남).
+     막혀도 [튜토리얼 그만두기]로 언제든 빠져나갈 수 있다. */
+  const nx=el(`<button class="go"${st.auto?" disabled":""}>${
+    st.auto?"직접 해보세요":st.last?"이대로 계속한다":"다음"}</button>`);
+  if(!st.auto) nx.onclick=tutNext;
   bar.appendChild(el(`<span class="grow"></span>`));
   if(!st.last){ const q=el(`<button>튜토리얼 그만두기</button>`);
     q.onclick=()=>{ TUT.on=0; render() }; bar.appendChild(q) }
