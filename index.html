@@ -3170,6 +3170,12 @@ const HERO_REWARDS={
     h=>h.tag.winCap=(h.tag.winCap||2)+1),
   R("전장의 지배자","중급","전장의 승자로 최대 체력도 1씩 얻습니다. (최대 10)",
     h=>h.tag.winHp=1),
+  R("낡은 투구끈","하급","방어구 카드를 쓸 때마다 체력을 1 회복합니다.",
+    h=>h.tag.armorHeal=(h.tag.armorHeal||0)+1),
+  R("항상 대비하기","하급","내 턴이 시작될 때 손에 방어구 카드가 있으면 보호막을 3 얻습니다.",
+    h=>h.tag.readyShield=(h.tag.readyShield||0)+3),
+  R("핏빛 칼날","상급","베기를 세 번 쓴 다음 베기가 치명타로 적중합니다.",
+    h=>h.tag.bloodBlade=1,0.5),
   R("한숨 돌리기","하급","전투 시작 후, 나이코스가 체력을 1 회복합니다.",
     h=>h.tag.startHeal=(h.tag.startHeal||0)+1),
   R("관객의 응원","하급","전투 시작 후, 금화를 1 얻습니다.",
@@ -3258,7 +3264,33 @@ const HERO_REWARDS={
   R("순환되는 심판","상급","정의의 기운이 1번 더 시전됨",h=>h.tag.justiceTwice=1),
   R("폭발적인 방어력","상급","보호력 +8",h=>h.def+=8),
   R("검과 방패","상급","방패 밀치기의 추가 공격력이 3배",h=>h.tag.pushAtkX=3),
-  R("저주받은 성벽","상급","굳건한 성벽이 저주받은 성벽을 대신 가져옴 (부서질 때 주변 적에게 보호약화 2)",h=>h.tag.cursedWall=1)
+  R("저주받은 성벽","상급","굳건한 성벽이 저주받은 성벽을 대신 가져옴 (부서질 때 주변 적에게 보호약화 2)",h=>h.tag.cursedWall=1),
+  R("후미 준비 보호 강화","하급","후미 준비가 아군에게 주는 보호막이 영구히 3 늘어납니다.",
+    h=>h.tag.rearShield=(h.tag.rearShield||5)+3),
+  R("굳건한 성벽 강화","하급","성벽 카드의 최대 체력이 10 늘어납니다.",
+    h=>h.tag.wallHp=(h.tag.wallHp||0)+10),
+  R("방어 후 막기","중급","선두 방어를 쓴 뒤 다음 방패 막기의 비용이 0이 됩니다.",
+    h=>h.tag.vanFree=1),
+  R("준비 후 밀치기","중급","후미 준비를 쓴 뒤 다음 방패 밀치기의 비용이 0이 됩니다.",
+    h=>h.tag.rearFree=1),
+  R("선한 영향력","중급","후미 준비가 지나간 아군에게 이번 전투 동안 보호력도 2 줍니다.",
+    h=>h.tag.rearDef=(h.tag.rearDef||0)+2),
+  R("육중한 밀치기","상급","방패 밀치기의 대상이 뒤로 1칸 밀립니다. 밀려날 수 없으면 기절시킵니다.",
+    h=>h.tag.pushBack=1,0.5),
+  R("든든함 폭발","상급","든든한 아군이 보호막 대신 에너지 보호막을 줍니다.",
+    h=>h.tag.allyEsh=1),
+  R("수호 활동","상급","후미 준비를 쓴 뒤에도 잠기지 않습니다.",
+    h=>h.tag.noRearLock=1),
+  R("공방전","상급","방패 막기와 방패 밀치기가 갈라져, 쓸 때마다 골라 쓸 수 있습니다.",
+    h=>{
+      const a=h.sk[0]; if(!a||h.tag.splitShield) return;
+      const b=a.alt||(a.opts&&a.opts[1]); if(!b) return;
+      const one=Object.assign({},a), two=Object.assign({},b);
+      delete one.alt; delete one.opts; delete two.alt; delete two.opts;
+      const opts=[one,two];
+      h.sk[0]=Object.assign({},one,{opts:opts,pick:"방패술"});
+      h.tag.splitShield=1;
+    },0.5)
  ],
  "트리스탄":[
   R("페일노트 강화","하급","페일노트의 피해량 영구히 +2",(h,rn)=>addMod(h,"페일노트","dmg",2,rn)),
@@ -3297,7 +3329,9 @@ function addMod(h,skName,key,v,label){
     const e=t.mods.find(m=>m.k===key&&m.n===label);
     if(e) e.v+=v; else t.mods.push({k:key,v:v,n:label});
   };
-  h.sk.forEach(k=>{ put(k); put(k.alt) });
+  /* 선택지로 갈라진 기술(공방전 등)은 opts 안에 들어 있다 */
+  h.sk.forEach(k=>{ put(k); put(k.alt);
+    (k.opts||[]).forEach(o=>{ put(o); put(o.alt) }) });
 }
 function mod(sk,key){ return (sk.mods||[]).filter(m=>m.k===key).reduce((a,m)=>a+m.v,0) }
 function modParts(sk,key){ return (sk.mods||[]).filter(m=>m.k===key) }
@@ -4979,7 +5013,7 @@ function drawCodex(app){
 
   const sk=el(`<div class="rewards"></div>`);
   d.skills.forEach((x,i)=>{
-    const lockLv=[1,1,7,15][i];
+    const lockLv=UNLOCK[i];      /* 표를 두 벌 두면 언젠가 어긋난다 */
     sk.appendChild(el(`<div class="rw ro">
       <div class="g">${x.costType==="mom"?"추진력":x.costType==="scale"?"비늘":"마나"} ${x.cost} · ${esc(x.el)}${
         lockLv>1?` · ${lockLv}레벨`:""}</div>
@@ -6475,6 +6509,7 @@ function startBattle(kind,pinned){
     h.shield=0; h.keepShield=0; h.slot=0; h.armor=0; h.deb={};
     h.hide=0; h.shadowAt=0; h.darkAt=0; h.stance=0; h.stanceTurn=0;
     h.leech=0; h.pierceNext=0; h.aimAt=null; h.headshotUsed=0; h.mobile=0;
+    h.freeBlock=0; h.freePush=0; h.cutUses=0;
     h.windBuff=0; h.potential=0; h.lock={}; h.airUp=0; h.manaUsed=0;
     h.portal=null; h.bomb=0; h.minions=[];
     h.mana=h.maxMana;
@@ -6582,8 +6617,12 @@ const lifeLeft=()=>liveMins().length>0
 const allUnits=()=>onField().concat(liveMins());
 function makeMin(name,slot){
   const d=SUMMONS[name];
+  /* 굳건한 성벽 강화 — 주인이 가진 만큼 성벽이 튼튼해진다 */
+  let hp=d.hp;
+  if(d.owner){ const ow=run&&run.heroes.find(x=>x.name===d.owner);
+    if(ow&&ow.tag&&ow.tag.wallHp) hp+=ow.tag.wallHp }
   return {name:name,slot:slot,isMin:1,alive:1,lv:99,
-    maxHp:d.hp,hp:d.hp,maxMana:d.mana,mana:d.mana,
+    maxHp:hp,hp:hp,maxMana:d.mana,mana:d.mana,
     sk:(d.sk||[]).map(x=>Object.assign({},x)),
     taunt:d.taunt?1:0, perma:d.taunt?1:0, noMove:d.noMove?1:0,
     owner:d.owner, revive:d.revive?1:0, curseOnDeath:d.curseOnDeath||0,
@@ -7610,9 +7649,14 @@ function canPay(h,i,n){
   if(s.costType==="scale") return (h.scale||0)>=s.cost*n;
   if(s.ammo) return (h.ammo||0)>=n;
   let need=0,free=h.free,guard=h.guarded;
+  /* 헥토 — 선두 방어 뒤의 방패 막기, 후미 준비 뒤의 방패 밀치기는 한 번 공짜 */
+  let fb=(h.freeBlock&&s.n==="방패 막기")?1:0;
+  let fp=(h.freePush&&s.n==="방패 밀치기")?1:0;
   for(let k=0;k<n;k++){
     if(h.name==="카제"&&i===1&&free>0){ free--; continue }
     if(h.tag.freeCut&&i===0&&guard){ guard=0; continue }
+    if(fb){ fb=0; continue }
+    if(fp){ fp=0; continue }
     need+=s.cost;
   }
   return h.mana>=need;
@@ -7909,6 +7953,15 @@ function playCard(i,slot,side){
     const h=unitAt(slot);
     if(!h){ say("카드를 쓸 아군이 없는 칸입니다.","t2"); return }
     c.use(h);
+    /* 낡은 투구끈 — 방어구 카드를 쓸 때마다 그 카드를 만든 대원이 회복한다 */
+    if(ARMOR_CARDS[c.name]){
+      const own=c.by&&run.heroes.find(x=>x.name===c.by);
+      if(own&&own.tag.armorHeal&&own.hp>0){
+        const got=healUp(own,own.tag.armorHeal);
+        if(got){ fx({side:"mine",slot:own.slot,s:"heal",txt:"+"+got,cls:"heal",gap:60});
+          say(`낡은 투구끈 — ${own.name} 체력 +${got}`,"t2") }
+      }
+    }
     if(!c.stock||!CARD_LIB[c.stock]) SFX.play("shield");
     if(c.stock){ useCard(c.stock);
       const e=(run.cards||[]).find(x=>x.n===c.stock);
@@ -8079,6 +8132,10 @@ function doSkill(target){
       if(s.rise){ h.mom-=s.cost+h.airUp; h.airUp++ } else h.mom-=s.cost; }
     else if(h.name==="카제"&&i===1&&h.free>0){ h.free-- }
     else if(h.tag.freeCut&&i===0&&h.guarded){ h.guarded=0 }
+    else if(h.freeBlock&&s.n==="방패 막기"){ h.freeBlock=0;
+      say("방어 후 막기 — 이번 방패 막기는 공짜입니다.","t2") }
+    else if(h.freePush&&s.n==="방패 밀치기"){ h.freePush=0;
+      say("준비 후 밀치기 — 이번 방패 밀치기는 공짜입니다.","t2") }
     else { h.mana-=s.cost; h.manaUsed=(h.manaUsed||0)+s.cost;
       if(s.cost){
         const mm=itemBt(h,"manaMom"); if(mm) h.mom+=s.cost*mm;
@@ -8093,7 +8150,8 @@ function doSkill(target){
       if(h.name==="이테리오"&&s.cost) bumpTurn(h,"mag",s.cost); }
     if(s.ammo){ h.ammo=Math.max(0,(h.ammo||0)-1) }
     if(s.limit) h.limitUsed[i]=(h.limitUsed[i]||0)+1;
-    if(s.lock) h.lock[i]=s.lock+1;
+    /* 수호 활동 — 후미 준비는 더 이상 잠기지 않는다 */
+    if(s.lock&&!(h.tag.noRearLock&&s.rearguard)) h.lock[i]=s.lock+1;
     if(deb(h,"chill")){ const v=h.deb.chill;
       h.hp-=v; fx({side:"mine",slot:h.slot,hit:1,txt:"-"+v,cls:"dmg",gap:70});
       say(`${h.name} 냉각 피해 ${v}`,"t3") }
@@ -8528,10 +8586,16 @@ function runEffect(h,i,s,target){
       h.shield+=v; h.taunt=2;
       fx({side:"mine",slot:h.slot,s:"shield"});
       say(`선두 방어 — ${h.name} 보호막 +${v}, 도발`);
+      if(h.tag.vanFree){ h.freeBlock=1; say("방어 후 막기 — 다음 방패 막기가 공짜입니다.","t2") }
     }else{
-      const v=h.tag.rearHeal||5, sh=5+h.def;
+      const v=h.tag.rearHeal||5, sh=(h.tag.rearShield||5)+h.def;
       healUp(h,v);
-      passed.forEach(a=>{ a.shield+=sh });
+      passed.forEach(a=>{ a.shield+=sh;
+        /* 선한 영향력 — 지나친 아군에게 이번 전투 동안 보호력도 */
+        if(h.tag.rearDef) bumpTmp(a,"def",h.tag.rearDef) });
+      if(h.tag.rearDef&&passed.length)
+        say(`선한 영향력 — 지나친 아군의 보호력 +${h.tag.rearDef} (이번 전투)`,"t2");
+      if(h.tag.rearFree){ h.freePush=1; say("준비 후 밀치기 — 다음 방패 밀치기가 공짜입니다.","t2") }
       fx({side:"mine",slot:h.slot,s:"heal",txt:"+"+v,cls:"heal"});
       say(`후미 준비 — 체력 +${v}, 지나친 아군 보호막 +${sh}`);
     }
@@ -8807,16 +8871,37 @@ function runEffect(h,i,s,target){
       }
     }
     if(!dmg){ say(`${tgt.name}${jo(tgt.name,"eun")} 조준 밖이라 상처 하나 없습니다.`,"t2"); return }
+    /* 육중한 밀치기 — 맞은 적을 한 칸 뒤로. 밀려날 데가 없으면 기절 */
+    const heave=t=>{
+      if(!h.tag.pushBack||!t||!t.alive) return;
+      if(t.slot<SLOTS&&!foeAt(t.slot+1)){
+        t.slot++;
+        fx({side:"foe",slot:t.slot,s:"step",ring:"#9c8d77",txt:"밀림",cls:"miss",gap:80});
+        say(`육중한 밀치기 — ${t.name}${jo(t.name,"ig")} ${t.slot}번으로 밀려납니다.`,"t2");
+      }else{
+        addDeb(t,"stun",1,h);
+        fx({side:"foe",slot:t.slot,ring:"#a06ae0",txt:"기절",cls:"miss",gap:80});
+        say(`육중한 밀치기 — 밀려날 데가 없어 ${t.name}${jo(t.name,"ig")} 기절합니다.`,"t2");
+      }
+    };
     if(s.n==="방패 밀치기"&&h.tag.pushAll){
-      B.foes.filter(f=>f.alive).forEach(f=>hurt(f,dmg,s.n,"slash"));
+      const hit=B.foes.filter(f=>f.alive);
+      hit.forEach(f=>hurt(f,dmg,s.n,"slash"));
+      hit.slice().sort((a,b)=>b.slot-a.slot).forEach(heave);
       return;
     }
     if(h.name==="나이코스"&&i===0){
+      /* 핏빛 칼날 — 세 번 벤 다음 한 번이 치명타로 들어간다 */
+      h.cutUses=(h.cutUses||0)+1;
+      const blood=!!(h.tag.bloodBlade&&h.cutUses%4===0);
+      if(blood){ CRIT=1; say("핏빛 칼날 — 날이 붉게 달아오릅니다. 치명타!","t1") }
       if(h.tag.nearHit&&dist(h.slot,tgt.slot)===1) dmg+=h.tag.nearHit;
       if(h.tag.firstCut&&h.first.cut!==1){ dmg+=h.tag.firstCut+h.atk; h.first.cut=1 }
       if(h.tag.guardThen&&h.guarded) dmg+=h.tag.guardThen;
       dmg+=(h.cutGrow||0);
       if(h.tag.cutHeal){ healUp(h,h.tag.cutHeal) }
+      /* 치명타는 자리마다 손으로 곱한다. 여기서도 마지막에 곱해 준다 */
+      if(blood) dmg*=2;
       h.cutSum=(h.cutSum||0)+dmg;
     }
     const times=(h.name==="나이코스"&&i===0&&h.sk[0].twice)?2:1;
@@ -8832,6 +8917,7 @@ function runEffect(h,i,s,target){
         if(tgt.taunt) PR+=itemBt(h,"tauntPierce");
       }
       hurt(tgt,dmg,s.n,s.el==="마법"?"mag":(h.name==="굴라"?"claw":"slash"),PR,CRIT);
+      if(s.n==="방패 밀치기") heave(tgt);
       applyLeech(h,dmg);
       if(h.name==="이테리오"&&s.mark&&tgt.alive){ tgt.mark=(tgt.mark||0)+1;
         fx({side:"foe",slot:tgt.slot,ring:"#6aa8e0",txt:"표식",cls:"mag",gap:60}) }
@@ -9044,11 +9130,14 @@ function endPhase(){
       list.forEach(f=>hurt(f,eb,"불타는 호각","slash")) }
     if(h.name==="헥토"){
       const v=(h.tag.allyShield||2)+h.def;
+      const esh=!!h.tag.allyEsh;        /* 든든함 폭발 — 보호막 대신 에너지 보호막 */
       let first=1;
-      allUnits().forEach(a=>{ if(a!==h){ endShield(a,v); bump();
-        fx({side:"mine",slot:a.slot,s:first?"shield":null,gap:150});
-        first=0 } });
-      say(`든든한 아군 — 다른 아군 보호막 +${v}`,"t2");
+      allUnits().forEach(a=>{ if(a===h) return;
+        if(esh) a.eshield=(a.eshield||0)+v; else endShield(a,v);
+        bump();
+        fx({side:"mine",slot:a.slot,s:first?(esh?"pulse":"shield"):null,gap:150});
+        first=0 });
+      say(`든든한 아군 — 다른 아군 ${esh?"에너지 보호막":"보호막"} +${v}`,"t2");
     }
   });
   (B.portals||[]).forEach(p=>{
@@ -9200,6 +9289,11 @@ function foePhase(){
     if(h.tag.armorTurn&&h.slot>0) giveArmor(h,rnd(h.tag.armors||["강철 갑옷"]));
     h.airUp=0; h.potential=0; h.guarded=0; h.armor=0;
     const es2=itemBt(h,'startTurnShield'); if(es2) h.shield+=es2;
+    /* 항상 대비하기 — 손에 방어구 카드를 쥐고 턴을 맞으면 보호막 */
+    if(h.tag.readyShield&&(B.hand||[]).some(c=>c.type==="item"&&ARMOR_CARDS[c.name])){
+      h.shield+=h.tag.readyShield;
+      say(`항상 대비하기 — ${h.name} 보호막 +${h.tag.readyShield}`,"t2");
+    }
     if(h.helm){ h.shield+=h.helm; say(`강철 투구 — ${h.name} 보호막 +${h.helm}`); h.helm=0 }
     if(h.taunt) h.taunt--;
     Object.keys(h.lock).forEach(k=>{ if(--h.lock[k]<=0) delete h.lock[k] });
@@ -9230,7 +9324,8 @@ function foePhase(){
   run.heroes.forEach(h=>{
     if(h.name==="헥토"&&h.tag.allyTwice&&h.slot>0){
       const v=(h.tag.allyShield||2)+h.def;
-      onField().forEach(a=>{ if(a!==h) a.shield+=v });
+      onField().forEach(a=>{ if(a===h) return;
+        if(h.tag.allyEsh) a.eshield=(a.eshield||0)+v; else a.shield+=v });
     } });
   rollIntents(); keepSel();
   say(`— ${B.turn}턴 시작 —`,"t1");
