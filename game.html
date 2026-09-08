@@ -1007,6 +1007,11 @@ header{align-items:center}
 .legend i{width:16px;height:16px;display:inline-block}
 .legend i svg{width:16px;height:16px}
 /* 타이틀의 이어하기 상자 */
+.savedot{margin-left:10px;font-size:10.5px;letter-spacing:.1em;color:var(--faint);
+  border:1px solid var(--rule2);border-radius:99px;padding:1px 8px;opacity:0}
+.savedot.on{animation:svd 2.2s ease-out}
+@keyframes svd{0%{opacity:0}10%{opacity:1;color:var(--brass);border-color:var(--brass)}
+  55%{opacity:1}100%{opacity:0}}
 .contsave{margin:34px auto 0;width:min(460px,92vw);padding:14px 18px;
   background:var(--panel);border:1px solid var(--brass);border-radius:7px;
   box-shadow:0 6px 20px rgba(0,0,0,.45)}
@@ -1018,6 +1023,21 @@ header{align-items:center}
 .csh b{color:var(--fg);font-weight:700}
 .csh.down{opacity:.5;text-decoration:line-through}
 .csbtn{display:flex;gap:8px;justify-content:center;margin-top:13px}
+/* 도움말 */
+.helpov{position:fixed;inset:0;z-index:800;background:rgba(8,6,5,.72);
+  display:flex;align-items:center;justify-content:center;padding:20px}
+.helpbox{width:min(620px,94vw);max-height:86vh;overflow:auto;padding:18px 22px;
+  background:var(--panel);border:1px solid var(--brass);border-radius:8px;
+  box-shadow:0 12px 40px rgba(0,0,0,.6)}
+.helphead{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.helptbl{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}
+.helptbl th{text-align:left;font-weight:600;color:var(--dim);padding:4px 8px 4px 0;white-space:nowrap}
+.helptbl td{padding:4px 8px 4px 0;color:var(--faint)}
+.helptbl td:first-of-type{width:74px}
+kbd{display:inline-block;min-width:20px;text-align:center;padding:1px 7px;font-size:11.5px;
+  color:var(--fg);background:var(--raise);border:1px solid var(--rule2);
+  border-bottom-width:2px;border-radius:4px;font-family:inherit}
+.helpul{margin:6px 0 0;padding-left:18px;font-size:12.5px;color:var(--dim);line-height:1.9}
 .toast{background:var(--raise);border:1px solid var(--rule2);border-left:3px solid var(--brass);
   border-radius:4px;padding:9px 14px;margin:0 0 12px;font-size:13px}
 .rost.down{opacity:.5}
@@ -4631,6 +4651,8 @@ function render0(){
   const hb=document.getElementById("hBtns"); hb.innerHTML="";
   { const sb=el(`<button title="소리 켜기/끄기">♪ ${SFX.on?"켬":"끔"}</button>`);
     sb.onclick=()=>{ SFX.toggle(); render() }; hb.appendChild(sb); }
+  { const qb=el(`<button title="단축키와 요령 (? 키)">도움말</button>`);
+    qb.onclick=()=>{ HELP_ON=!HELP_ON; drawHelp() }; hb.appendChild(qb); }
   if(run&&view!=="title"&&view!=="map"&&view!=="over"&&view!=="clear"){
     const mb=el(`<button title="M 키로도 열 수 있습니다">${run.mapPeek?"지도 닫기":"지도 보기"}</button>`);
     mb.onclick=()=>{ run.mapPeek=!run.mapPeek; render() };
@@ -4776,6 +4798,14 @@ function decRef(s,heroes){
   };
   return walk(JSON.parse(s));
 }
+/* 방금 저장했다는 것을 잠깐 보여 준다 — 자동 저장은 믿을 수 있어야 쓸모가 있다 */
+function saveBlip(){
+  const hr=document.getElementById("hRun"); if(!hr) return;
+  let b=hr.querySelector(".savedot");
+  if(!b){ b=el(`<span class="savedot" title="이 브라우저에 저절로 저장됩니다">저장됨</span>`);
+    hr.appendChild(b) }
+  b.classList.remove("on"); void b.offsetWidth; b.classList.add("on");
+}
 function saveGame(){
   if(!SAVE_ON||!run||run.sandbox) return;
   /* 끝난 판은 적어 두지 않는다 — 적어 두면 죽은 판을 '이어하기'로 되살리게 된다.
@@ -4797,6 +4827,7 @@ function saveGame(){
       v:1, at:Date.now(), view:view, heroes:heroes, run:runS,
       pending:encRef(pending,hs), B:bat, snap:BSNAP?JSON.stringify(BSNAP):null
     }));
+    saveBlip();
   }catch(e){ /* 저장 실패는 놀이를 막지 않는다 */ }
 }
 function savePeek(){
@@ -5887,7 +5918,9 @@ function drawShop(app){
     const off=g.left<=0||run.gold<g.cost;
     const c=el(`<div class="rw${gcls(g.k)} ${off?"no":""}">
       <div class="rwi">${shopIcon(g.k)}</div>
-      <div class="g">${g.left<=0?"품절":g.cost+" 금화 · 남은 "+g.left}</div>
+      <div class="g">${g.left<=0?"품절"
+        :g.cost+" 금화 · 남은 "+g.left
+          +(run.gold<g.cost?` · <span style="color:var(--danger)">${g.cost-run.gold} 모자람</span>`:"")}</div>
       <b>${esc(g.n)}</b><p>${rich(g.d)}</p>${g.item?recipeHtml(g.item):""}</div>`);
     if(!off) c.onclick=()=>buy(g);
     row.appendChild(c);
@@ -7729,6 +7762,48 @@ function pickCount(n){
   },true);
   window.addEventListener("scroll",hide,true);
 })();
+/* 단축키를 어디에도 적어 두지 않았다. ? 나 머리줄 [도움말] 로 연다 */
+let HELP_ON=0;
+const HELP_ROWS=[
+ ["전투 · 칸 고르기","1~5","아군 칸 번호를 눌러 그 대원을 고릅니다"],
+ ["전투 · 기술","1~4","기술 창이 열려 있을 때는 기술 번호가 됩니다"],
+ ["전투 · 횟수","1~9","횟수를 고르는 자리에서는 시전 횟수입니다"],
+ ["전투 · 대상","1~5","적 칸 또는 아군 칸 번호"],
+ ["전투 · 턴 종료","Enter","같은 일을 아래 [턴 종료] 버튼도 합니다"],
+ ["전투 · 손패로","Esc","기술 창을 닫고 손패로 돌아갑니다"],
+ ["가방","B","가진 아이템과 카드를 봅니다"],
+ ["지도 미리보기","M","전투 중에도 지도를 잠깐 볼 수 있습니다"],
+ ["설명 고치기","T","게임 안 문구를 직접 고칩니다"],
+ ["도움말","?","이 창입니다"]
+];
+const HELP_TIPS=[
+ "기술을 한 번 더 누르면 시전 횟수가 늘어납니다.",
+ "적 칸을 누르면(겨누는 중이 아닐 때) 그 적을 자세히 볼 수 있습니다.",
+ "지도에서 금빛 테두리가 그려진 칸이 지금 갈 수 있는 칸입니다.",
+ "판은 저절로 저장됩니다. 타이틀의 [이어하기]로 이어서 할 수 있습니다.",
+ "전투 아래 [연출 ▶▶ 빠르게]를 누르면 연출이 짧아집니다. 규칙은 그대로입니다.",
+ "밑줄이나 색이 들어간 낱말에 마우스를 올리면 뜻이 나옵니다."
+];
+function drawHelp(){
+  document.querySelectorAll(".helpov").forEach(x=>x.remove());
+  if(!HELP_ON) return;
+  const ov=el(`<div class="helpov"><div class="helpbox">
+    <div class="helphead"><div class="title" style="font-size:19px">도 움 말</div>
+      <span class="grow"></span><button class="hx">닫기 (Esc)</button></div>
+    <div class="hint">단축키</div>
+    <table class="helptbl">${HELP_ROWS.map(r=>
+      `<tr><th>${esc(r[0])}</th><td><kbd>${esc(r[1])}</kbd></td><td>${esc(r[2])}</td></tr>`).join("")}</table>
+    <div class="hint" style="margin-top:14px">알아 두면 좋은 것</div>
+    <ul class="helpul">${HELP_TIPS.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>
+  </div></div>`);
+  ov.querySelector(".hx").onclick=()=>{ HELP_ON=0; drawHelp() };
+  ov.onclick=e=>{ if(e.target===ov){ HELP_ON=0; drawHelp() } };
+  document.body.appendChild(ov);
+}
+document.addEventListener("keydown",e=>{
+  if(e.key==="?"||(e.key==="/"&&e.shiftKey)){ HELP_ON=!HELP_ON; drawHelp(); return }
+  if(e.key==="Escape"&&HELP_ON){ HELP_ON=0; drawHelp(); return }
+});
 document.addEventListener("keydown",e=>{
   if(!run||view==="title"||view==="over"||view==="clear") return;
   if(e.key==="t"||e.key==="T"){
