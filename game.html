@@ -225,6 +225,25 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .sk[data-el="지속"]::before{background:var(--dim)}
 .sk:hover{border-color:var(--brass);transform:translateY(-2px)}
 .sk.on{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass) inset}
+/* 지금 강화되어 있는 기술 — 테두리가 살아 움직인다 */
+.sk.hot{border-color:#5fd8cf;
+  box-shadow:0 0 0 1px rgba(95,216,207,.5) inset,0 0 18px -5px rgba(95,216,207,.85);
+  animation:skHot 2.2s ease-in-out infinite}
+@keyframes skHot{0%,100%{box-shadow:0 0 0 1px rgba(95,216,207,.42) inset,0 0 14px -6px rgba(95,216,207,.7)}
+  50%{box-shadow:0 0 0 1px rgba(140,240,232,.85) inset,0 0 26px -3px rgba(95,216,207,1)}}
+.sk.hot::after{content:"";position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(115deg,transparent 38%,rgba(150,245,238,.16) 50%,transparent 62%);
+  background-size:250% 100%;animation:skSheen 2.6s linear infinite}
+@keyframes skSheen{from{background-position:180% 0}to{background-position:-80% 0}}
+.sk.hot.on{border-color:#8ff0e8}
+.sk.hot > .k{background:#5fd8cf;color:#0d1614}
+.chip.hotc{color:#0d1614;background:#5fd8cf;border-color:#5fd8cf;font-weight:800;
+  text-shadow:none;letter-spacing:.02em}
+/* 적의 자기 강화 */
+.chip.up{color:#f0a08a;border-color:rgba(224,112,90,.6);background:rgba(224,112,90,.14);font-weight:700}
+.intent.up{color:#f0a08a;border-color:rgba(224,112,90,.5)}
+.pop.buf{color:#ffb59c;text-shadow:0 0 10px rgba(224,112,90,.95),0 1px 0 rgba(0,0,0,.8);font-weight:800}
+@media (prefers-reduced-motion: reduce){.sk.hot,.sk.hot::after{animation:none}}
 .sk.off{opacity:.4;cursor:default}
 .sk.off:hover{border-color:var(--rule)}
 .sk .k{font-size:11px;color:#17130f;background:var(--rule2);border-radius:3px;padding:1px 6px;
@@ -1250,6 +1269,12 @@ const SFX=(()=>{
    arrow  :()=>seq([{noise:1,f:1800,f2:5200,d:0.14,q:4,v:0.16},
                     {noise:1,f:900,f2:200,d:0.12,q:0.8,v:0.2,at:0.14},
                     {w:"square",f:200,f2:70,d:0.1,v:0.12,at:0.14}]),
+   /* 적이 스스로를 벼린다 — 쇠를 갈아 올리는 상승음 */
+   buffup:()=>seq([{noise:1,f:900,f2:3200,d:0.30,q:2.4,v:0.16},
+                   {w:"sawtooth",f:180,f2:420,d:0.28,v:0.13},
+                   {w:"sawtooth",f:240,f2:560,d:0.26,v:0.09,at:0.04},
+                   {w:"square",f:660,f2:990,d:0.16,v:0.06,at:0.14},
+                   {w:"sine",f:82,f2:120,d:0.34,v:0.18}]),
    /* 우두머리 — 낮은 뿔피리 세 겹 위에 징이 한 번 크게 울린다 */
    bosshorn:()=>seq([{w:"sine",f:41,f2:38,d:2.0,v:0.34,atk:0.14},
                      {w:"sawtooth",f:58,f2:55,d:1.5,v:0.20,atk:0.16},
@@ -6133,7 +6158,8 @@ function intentHtml(f){
   if(I.t==="push")  return `<span class="intent">${ic("move")} 앞으로</span>`;
   if(I.t==="def")   return `<span class="intent">${ic("def")}<b>${I.v}</b></span>`;
   if(I.t==="thorn") return `<span class="intent" title="맞을 때마다 되받아칩니다">가시 <b>${I.v}</b></span>`;
-  if(I.t==="buff")  return `<span class="intent" title="자기 강화">${ic("atk")}<b>+${I.v}</b> 강화</span>`;
+  if(I.t==="buff")  return `<span class="intent up" title="스스로를 벼려 공격력을 ${I.v} 올립니다${
+      f.atkUp?` · 이미 +${f.atkUp} 올라 있습니다`:""}">${ic("atk")}<b>+${I.v}</b> 강화</span>`;
   if(I.t==="heal")  return `<span class="intent" title="동료 치료">${ic("hp")}<b>+${I.v}</b> 치료</span>`;
   if(I.t==="curse") return `<span class="intent" title="다음 턴 마나 -1">${ic("mag")} 저주</span>`;
   if(I.t==="deb")   return `<span class="intent" title="${esc(DEBUFF[I.k].d)}" style="color:${DEBUFF[I.k].c}">${esc(DEBUFF[I.k].n)} ${I.v} → ${I.to}번</span>`;
@@ -6272,6 +6298,7 @@ function drawBattle(app){
           ${f.shield?`<u style="width:${Math.min(60,f.shield/f.maxHp*100)}%"></u>`:""}</div>
         <div class="mini">${ic("hp")}${f.hp}/${f.maxHp}${f.shield?` <span class="shd">${ic("def")}${f.shield}</span>`:""}
           
+          ${f.atkUp?`<span class="chip up" title="스스로를 벼려 공격력이 ${f.atkUp} 올랐습니다">${ic("atk")}+${f.atkUp}</span>`:""}
           ${f.weakAtk?`<span class="chip wk" title="이번 적 차례에 내놓는 피해가 ${f.weakAtk} 줄어듭니다">${ic("atk")}−${f.weakAtk}</span>`:""}
           ${f.weak?`<span class="chip wk" title="보호력이 ${f.weak} 줄어듭니다">${ic("def")}−${f.weak}</span>`:""}
           ${f.air?`<span class="chip on">공중</span>`:""}
@@ -6552,6 +6579,39 @@ function progHtml(h){
     <div class="pl"><span>${esc(p.n)}</span><span>${p.c}/${p.m}</span></div>
     <div class="pb"><i style="width:${Math.min(100,p.m?p.c/p.m*100:0)}%"></i></div></div>`).join("");
 }
+/* 지금 이 기술이 평소보다 세게 나가는가 — 그 이유를 짧게 돌려준다 */
+function skillHot(h,i,s){
+  const out=[];
+  if(!s||!B||B.over) return out;
+  /* 카제 — 세 번째 진선풍도는 회오리가 된다 */
+  if(h.name==="카제"&&s.n==="진선풍도"){
+    const every=(h.potential&&h.tag.potentialEvery)||h.tag.windEvery||3;
+    if(h.tag.alwaysStrong||(((h.windUses||0)+1)%every===0)) out.push("회오리");
+    if(h.windBuff) out.push("바람 +"+h.windBuff);
+    if(h.potential) out.push("잠재력");
+  }
+  if(h.name==="카제"&&s.el==="이동"&&h.free>0) out.push("무료 "+h.free);
+  /* 도미니코 — 축복은 다음 기술을 바꾼다 */
+  if(h.blessed) out.push("축복");
+  /* 이테리오 — 표식이 박힌 적에게 공격 계열은 치명타 */
+  if(h.name==="이테리오"&&s.tg==="foe"&&s.el!=="마법"
+     &&B.foes.some(f=>f.alive&&(f.mark||0)>0)) out.push("표식 치명타");
+  /* 그슨대 */
+  if(h.hide&&s.tg==="foe") out.push("은신");
+  if(h.shadowAt&&(s.shadow||s.leech)) out.push("그림자");
+  /* 공통으로 얹히는 것 */
+  if(h.leech&&s.tg==="foe") out.push("흡수");
+  if(h.pierceNext&&s.tg==="foe") out.push("관통");
+  /* 트리스탄 — 매 턴 첫 단총 사격 */
+  if(s.ammo&&h.tag.headshot&&!h.headshotUsed) out.push("헤드샷");
+  /* 나이코스 — 그 전투 첫 막기 */
+  if(h.tag.firstGuard&&s.shield&&h.first&&h.first.guard!==1)
+    out.push("첫 막기 +"+h.tag.firstGuard);
+  /* 처세술 — 막기 뒤의 베기는 공짜 */
+  if(h.tag.freeCut&&i===0&&h.guarded) out.push("무료");
+  if(h.tag.guardThen&&h.guarded&&s.tg==="foe") out.push("연격 +"+h.tag.guardThen);
+  return out;
+}
 function skillPanel(h){
   const p=el(`<div class="skwrap"></div>`);
   p.appendChild(el(`<div class="skhead">
@@ -6582,9 +6642,11 @@ function skillPanel(h){
     const ok=!locked&&!lk&&canPay(h,i,1);
     const cost = s.costType==="mom" ? ic("move")+" "+payCost(h,i)
                : s.costType==="scale" ? "비늘 "+payCost(h,i) : ic("mana")+" "+payCost(h,i);
-    const e=el(`<div class="sk ${sel.skill===i?"on":""} ${ok?"":"off"}" data-el="${esc(s.el||"")}">
+    const hot=ok?skillHot(h,i,s):[];
+    const e=el(`<div class="sk ${sel.skill===i?"on":""} ${ok?"":"off"} ${hot.length?"hot":""}" data-el="${esc(s.el||"")}">
       <span class="k">${i+1}</span><div class="t">
       <b>${esc(s.pick?s.pick:s.n)}</b>${(sel.skill===i&&sel.step===4&&sel.count>1)?`<span class="xn">×${sel.count}</span>`:""}
+      ${hot.map(x=>`<span class="chip hotc">${esc(x)}</span>`).join("")}
       ${s.opts?`<span class="chip pk">선택 · ${esc(s.n)}</span>`:""}
       <span style="color:var(--faint);font-size:10.5px">${cost} · ${esc(s.el)}</span>
       ${s.limit?`<span class="chip">사용한도 ${used}/${s.limit}</span>`:""}
@@ -8199,8 +8261,13 @@ function foePhase(){
     }
     else if(f.intent.t==="buff"){
       f.atk+=f.intent.v; f.buffs=(f.buffs||0)+1;
-      fx({side:"foe",slot:f.slot,ring:"#e0705a",txt:"공격+"+f.intent.v,cls:"dmg"});
-      say(`${f.name} 스스로를 벼립니다 — 공격력 +${f.intent.v}`,"t3");
+      f.atkUp=(f.atkUp||0)+f.intent.v;          /* 화면에 남겨 둘 누적치 */
+      pulseFX("foe",f.slot,"#e0705a",3);
+      edgeGlow("rgba(224,112,90,.26)");
+      fx({side:"foe",slot:f.slot,s:"buffup",ring:"#e0705a",glow:1,
+          txt:"공격력 +"+f.intent.v,cls:"buf",gap:200});
+      fx({side:"foe",slot:f.slot,txt:"누적 +"+f.atkUp,cls:"buf",gap:150});
+      say(`${f.name}${jo(f.name,"ig")} 스스로를 벼립니다 — 공격력 +${f.intent.v} (누적 +${f.atkUp})`,"t3");
     }
     else if(f.intent.t==="heal"){
       const m=B.foes.find(x=>x.id===f.intent.to&&x.alive);
