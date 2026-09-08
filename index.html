@@ -967,6 +967,13 @@ header{align-items:center}
   font-size:8.5px;background:var(--ink);border:1px solid var(--rule);border-radius:3px;
   padding:0 4px;color:var(--dim);white-space:nowrap;opacity:0;transition:opacity .12s}
 .cell:hover .cl{opacity:1;z-index:5}
+/* 손패에서 고른 카드 */
+.card.picked{border-color:var(--brass);box-shadow:0 0 0 2px var(--brass),0 6px 18px rgba(0,0,0,.5);
+  transform:translateY(-4px)}
+.pickbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;
+  padding:8px 13px;border:1px solid var(--brass);border-radius:5px;
+  background:rgba(201,162,39,.08);font-size:13px}
+.pickbar b{color:var(--brass);font-family:var(--serif);font-size:14.5px}
 /* 적 살펴보기 */
 .peekfoe{margin:10px auto 0;max-width:760px;padding:10px 14px;
   border:1px solid var(--blood);border-radius:6px;
@@ -6536,7 +6543,7 @@ function startBattle(kind,pinned){
     BSNAP=null;
     try{ BSNAP={kind:kind,run:JSON.stringify(run)} }catch(e){ BSNAP=null }
   }
-  B={kind,turn:1,over:0,log:[],hand:[],units:[],foes:[],drag:null};
+  B={kind,turn:1,over:0,log:[],hand:[],units:[],foes:[],drag:null,pick:null};
   /* 전투(옛 던전) 하나는 여러 라운드로 이루어진다.
      "전투 시작" 효과는 첫 라운드에 딱 한 번만 걸리고, 그 결과는 라운드를 넘어 남는다. */
   const fresh=!run.dun||run.dun.wave<=1;
@@ -7096,6 +7103,11 @@ function drawBattle(app){
     const body=h?null:bodyAt(s);
     const d=el(`<div class="slot ${h?"":(body?"body":"empty")}"><span class="no">${s}</span></div>`);
     d.dataset.slot=s;
+    if(B.pick!=null&&B.hand[B.pick]){
+      d.classList.add("drop");
+      d.onclick=()=>{ const k=B.pick; B.pick=null; playCard(k,s,"mine") };
+      my.appendChild(d); continue;
+    }
     if(body){
       d.innerHTML+=`<div class="art">${figure(body.name,"stun")}</div>
         <div class="nm">${esc(body.name)}</div>
@@ -7172,6 +7184,12 @@ function drawBattle(app){
     const d=el(`<div class="slot ${f?"":"empty"}"><span class="no">${s}</span>${
       preSkill&&f?`<span class="reach">거리 ${dist(sel.hero.slot,s)}</span>`:""}</div>`);
     d.dataset.slot=s;
+    if(B.pick!=null&&B.hand[B.pick]){
+      if(f) d.classList.add("foe");
+      d.classList.add("drop");
+      d.onclick=()=>{ const k=B.pick; B.pick=null; playCard(k,s,"foe") };
+      fs.appendChild(d); continue;
+    }
     if(f){
       d.classList.add("foe");
       const canHit = tgMode!=="foe"&&tgMode!=="any" ? false
@@ -7281,13 +7299,14 @@ function drawBattle(app){
   }
   const hand=el(`<div class="hand" id="hand"></div>`);
   B.hand.forEach((c,i)=>{
-    const card=el(`<div class="card ${c.type==="hero"||c.type==="summon"?"hero":""}" data-i="${i}">
+    const card=el(`<div class="card ${c.type==="hero"||c.type==="summon"?"hero":""} ${
+      B.pick===i?"picked":""}" data-i="${i}">
       ${c.type==="hero"?`<div class="art">${figure(c.hero.name)}</div>
         <div class="ct">${esc(c.hero.name)}</div>
-        <div class="cd">빈 칸으로 끌어다 소환</div>`
+        <div class="cd">빈 칸에 끌어다 놓거나, 눌러서 고른 뒤 칸을 누르세요</div>`
        :c.type==="summon"?`<div class="art">${figure(c.name)}</div>
         <div class="ct">${esc(c.name)}</div>
-        <div class="cd">${ic("hp")}${SUMMONS[c.name].hp} · 빈 칸으로 끌어다 소환</div>`
+        <div class="cd">${ic("hp")}${SUMMONS[c.name].hp} · 눌러 고른 뒤 빈 칸을 누르세요</div>`
        :`<div class="cimg">${cardIcon(c.name)}</div>
          <div class="ct">${esc(c.name)}${
            (c.stock&&CARD_LIB[c.stock]&&CARD_LIB[c.stock].foe)?`<span class="chip on">적</span>`:""}</div>
@@ -7298,6 +7317,15 @@ function drawBattle(app){
   });
   app.appendChild(hand);
 
+  if(B.pick!=null&&B.hand[B.pick]){
+    const c=B.hand[B.pick];
+    app.appendChild(el(`<div class="pickbar">
+      <b>${esc(c.name||(c.hero&&c.hero.name)||"카드")}</b>
+      <span class="hint">놓을 칸을 누르세요 · 카드를 다시 누르면 취소</span>
+      <span class="grow"></span>
+      <button class="mini pkx">취소</button></div>`));
+    app.querySelector(".pkx").onclick=()=>{ B.pick=null; render() };
+  }
   const pr=el(`<div class="prompt">
     <span class="step ${!sel?"on":""}">1 · 내 칸</span>
     <span class="step ${sel&&sel.step===2?"on":""}">2 · 기술</span>
@@ -7829,7 +7857,7 @@ document.addEventListener("keydown",e=>{
 });
 document.addEventListener("keydown",e=>{
   if(view!=="battle") return;
-  if(e.key==="Escape"){ sel=null; render(); return }
+  if(e.key==="Escape"){ if(B) B.pick=null; sel=null; render(); return }
   if(e.key==="Enter"){ endTurn(); return }
   const n=parseInt(e.key,10); if(isNaN(n)||n<1||n>9) return;
   e.preventDefault();
@@ -7845,9 +7873,11 @@ function startDrag(card,i){
   card.addEventListener("pointerdown",e=>{
     if(B.over) return;
     e.preventDefault();
+    const x0=e.clientX, y0=e.clientY; let moved=0;
     const c=B.hand[i]; const g=el(`<div class="ghost">${card.outerHTML}</div>`);
     document.body.appendChild(g); card.style.opacity=".35";
     const move=ev=>{
+      if(Math.abs(ev.clientX-x0)>5||Math.abs(ev.clientY-y0)>5) moved=1;
       g.style.left=ev.clientX+"px"; g.style.top=ev.clientY+"px";
       document.querySelectorAll("#mySide .slot").forEach(s=>{
         const r=s.getBoundingClientRect();
@@ -7866,6 +7896,11 @@ function startDrag(card,i){
         }
         s.classList.remove("drop");
       });
+      /* 끌지 않고 그냥 눌렀으면 '이 카드를 골랐다'로 친다.
+         고른 뒤 칸을 누르면 거기에 놓인다 — 드래그가 어려운 환경을 위해. */
+      if(!moved&&!hit){
+        B.pick=(B.pick===i)?null:i; sel=null; render(); return;
+      }
       if(hit) playCard(i,hit,side);
     };
     document.addEventListener("pointermove",move);
