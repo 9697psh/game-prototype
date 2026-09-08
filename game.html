@@ -3312,6 +3312,15 @@ const HERO_REWARDS={
       h.tag.splitShield=1;
     },0.5)
  ],
+ "이테리오":[
+  R("무한 팽창 융합봉","상급","수축 공격의 거리 제한이 사라집니다.",
+    h=>{ const set=o=>{ if(o&&o.n==="수축 공격") o.rng=0 };
+         set(h.sk[0]); (h.sk[0].opts||[]).forEach(set); h.tag.noConRange=1 },0.5),
+  R("압축 공격","상급","팽창 공격이 모든 적 대신 거리 2 안의 적만 때리고, 흡수 20%를 얻습니다.",
+    h=>h.tag.pressAtk=1,0.5),
+  R("치명적인 보호","상급","아군이 치명타 피해를 줄 때마다 이테리오가 보호막을 2 얻습니다.",
+    h=>h.tag.critShield=(h.tag.critShield||0)+2)
+ ],
  "트리스탄":[
   R("페일노트 강화","하급","페일노트의 피해량 영구히 +2",(h,rn)=>addMod(h,"페일노트","dmg",2,rn)),
   R("질긴 가죽","하급","피부 강화의 갑피 +1",h=>h.tag.armorPlus=(h.tag.armorPlus||0)+1),
@@ -8066,7 +8075,14 @@ function hurt(f,amt,tag,art,pierce,crit){
     fx({side:"foe",slot:f.slot,s:"miss",txt:"회피",cls:"miss",gap:60});
     say(`${f.name}${jo(f.name,"ig")} ${tag}${jo(tag,"eul")} 피했습니다.`,"t2"); return }
   f.hp-=d;
-  if(crit) FXQ.push({crit:1,side:"foe",slot:f.slot});
+  if(crit){
+    FXQ.push({crit:1,side:"foe",slot:f.slot});
+    /* 치명적인 보호 — 아군 누구의 치명타든 이테리오가 받아 챙긴다 */
+    const it=onField().find(x=>x.name==="이테리오"&&x.tag&&x.tag.critShield);
+    if(it){ it.shield+=it.tag.critShield;
+      fx({side:"mine",slot:it.slot,s:"shield",gap:60});
+      say(`치명적인 보호 — ${it.name} 보호막 +${it.tag.critShield}`,"t2") }
+  }
   fx({side:"foe",slot:f.slot,hit:1,art:art||"slash",txt:"-"+amt,
       cls:crit?"critbig":(art==="mag"?"mag":(amt>=15?"crit":"dmg")),
       gap:crit?170:undefined, recoil:1, pose:(d>0?"hurt":(s>0?"guard":null)),
@@ -8434,12 +8450,21 @@ function runEffect(h,i,s,target){
   /* ── 이테리오 ── */
   if(s.allHit){
     const base=s.dmg+mod(s,"dmg")+h.atk;
-    B.foes.filter(f=>f.alive).forEach(f=>{
+    /* 압축 공격 — 멀리까지 닿는 대신 가까이만 때리고 흡수를 얻는다 */
+    const press=!!h.tag.pressAtk;
+    let list=B.foes.filter(f=>f.alive);
+    if(press){
+      list=list.filter(f=>dist(h.slot,f.slot)<=2);
+      h.leech=Math.max(h.leech||0,20);
+      if(!list.length) say("압축 공격 — 거리 2 안에 적이 없습니다.","t2");
+    }
+    list.forEach(f=>{
       /* 정밀 표식 — 공격 계열이므로 표식이 있으면 치명타 */
       let d=base, crit=0;
       if(h.name==="이테리오"&&s.el!=="마법"&&(f.mark||0)>0){ d*=2; f.mark--; crit=1 }
       B.lastAttacker=h;
-      hurt(f,d,"팽창 공격","slash",0,crit);
+      hurt(f,d,press?"압축 공격":"팽창 공격","slash",0,crit);
+      if(press) applyLeech(h,d);
     });
     return;
   }
