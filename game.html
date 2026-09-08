@@ -1005,6 +1005,29 @@ header{align-items:center}
 .evres .evi{width:52px;height:52px;flex:none} .evres .evi svg{width:52px;height:52px}
 .evres b{font-size:11px;color:#b9a2ea;letter-spacing:.08em}
 .evres p{margin:4px 0 0;font-size:13.5px;line-height:1.6;word-break:keep-all}
+/* 룰렛 — 판은 가만히 있고 바늘이 돈다. 판을 돌리면 글자가 누워 안 읽힌다. */
+.rlt{position:relative;width:212px;margin:6px auto 12px;filter:drop-shadow(0 6px 16px rgba(0,0,0,.5))}
+.rltdisc{display:block;width:212px;height:212px;overflow:visible}
+.rltdisc .rim{fill:#17130f;stroke:var(--brass);stroke-width:3}
+.rltdisc .sl{stroke:#17130f;stroke-width:2.5;opacity:.86;transition:opacity .25s}
+.rltdisc .sx{fill:#17130f;font-size:12.5px;font-weight:800;text-anchor:middle;
+  dominant-baseline:middle;letter-spacing:.04em;paint-order:stroke;
+  stroke:rgba(255,255,255,.4);stroke-width:.7;transition:opacity .25s}
+.rltdisc .hub{fill:#241d15;stroke:var(--brass);stroke-width:2.5}
+.rltdisc .hub2{fill:none;stroke:rgba(201,162,39,.5);stroke-width:1.5}
+.rltdisc .turn{transform-origin:0 0}
+.rltdisc .ndl{fill:#f2e6c8;stroke:#2a2118;stroke-width:2;stroke-linejoin:round;
+  filter:drop-shadow(0 0 6px rgba(255,246,224,.55))}
+.rltdisc .ndlp{fill:#c9503f;stroke:#2a2118;stroke-width:1.5}
+.rlt.landed .sl{opacity:.28}
+.rlt.landed .sx{opacity:.35}
+.rlt.landed .sl.win{opacity:1;stroke:#fff6e0;stroke-width:3.5;
+  filter:drop-shadow(0 0 10px rgba(255,246,224,.9))}
+.rlt.landed .sx.win{opacity:1}
+.rlt.landed .ndl{animation:rltNdl .55s ease-out}
+@keyframes rltNdl{0%,100%{filter:drop-shadow(0 0 6px rgba(255,246,224,.55))}
+  30%{filter:drop-shadow(0 0 16px rgba(255,246,224,1)) brightness(1.5)}}
+@media (prefers-reduced-motion: reduce){ .rltdisc .turn{transition:none!important} }
 .wheel{border:1px solid var(--rule);border-radius:7px;padding:8px 12px;background:var(--panel)}
 .wr{display:flex;gap:8px;align-items:center;font-size:11.5px;color:var(--faint);padding:3px 0}
 .wr i{width:12px;font-style:normal;color:var(--brass)}
@@ -5846,8 +5869,11 @@ const EVENTS=[
       f:()=>{ const sc=rr([10,15]); addTaint(-sc); return `욕심을 접었습니다. 오염도가 ${sc} 낮아집니다.` }}]},
 
  {n:"룰렛의 달인", face:"사슬 광인",
-  wheel:["붉은 칸 — 대원 하나가 다친다","금화 칸 — 금화가 쏟아진다","검은 칸 — 오염도가 오른다",
-         "쇳조각 칸 — 파편 아이템","깨달음 칸 — 하급 보상"],
+  wheel:[{t:"붉은 칸 — 대원 하나가 다친다", s:"부상", c:"#c9503f"},
+         {t:"금화 칸 — 금화가 쏟아진다",     s:"금화", c:"#c9a227"},
+         {t:"검은 칸 — 오염도가 오른다",     s:"오염", c:"#7a5aa8"},
+         {t:"쇳조각 칸 — 파편 아이템",       s:"파편", c:"#4f86b8"},
+         {t:"깨달음 칸 — 하급 보상",         s:"보상", c:"#5f9e6a"}],
   t:"천막 아래에서 한 사내가 낡은 룰렛을 돌리고 있습니다. 운을 시험해 보겠느냐고 묻습니다.",
   o:[{t:"룰렛 돌리기",d:"다섯 칸 중 하나가 나옵니다.",
       f:()=>{
@@ -6056,31 +6082,78 @@ function pickEvent(){
   const ok=EVENTS.filter(e=>!e.when||e.when());
   return rnd(ok.length?ok:EVENTS.filter(e=>!e.when));
 }
+/* 룰렛 칸 — 예전에는 글자 줄이었다. {t:설명, s:짧은 이름, c:색} 을 쓰되
+   옛 형태(문자열)도 그대로 받아 준다. */
+const wheelSlot=w=>(typeof w==="string")
+  ? {t:w, s:(w.split("—")[0]||w).replace(/칸\s*$/,"").trim(), c:"#9c8d77"}
+  : w;
+function wheelArc(i,n,r0,r1){
+  const step=360/n;
+  const a0=(i*step-90)*Math.PI/180, a1=((i+1)*step-90)*Math.PI/180;
+  const X=(r,a)=>(r*Math.cos(a)).toFixed(2), Y=(r,a)=>(r*Math.sin(a)).toFixed(2);
+  const big=step>180?1:0;
+  return `M${X(r1,a0)} ${Y(r1,a0)} A${r1} ${r1} 0 ${big} 1 ${X(r1,a1)} ${Y(r1,a1)}`
+       + ` L${X(r0,a1)} ${Y(r0,a1)} A${r0} ${r0} 0 ${big} 0 ${X(r0,a0)} ${Y(r0,a0)} Z`;
+}
+/* 바늘이 i번 칸을 가리키는 각도 (12시에서 시계 방향).
+   판을 돌리면 글자가 같이 누워 읽히지 않으므로 바늘 쪽을 돌린다. */
+function wheelTurn(i,n,laps){ return (laps||0)*360 + (i*(360/n) + 180/n) }
+function rouletteHTML(e,hit){
+  const W=e.wheel.map(wheelSlot), n=W.length, step=360/n;
+  let sl="", tx="";
+  W.forEach((w,i)=>{
+    sl+=`<path class="sl${hit===i?" win":""}" d="${wheelArc(i,n,32,96)}" fill="${w.c}"/>`;
+    const a=(i*step+step/2-90)*Math.PI/180, r=66;
+    /* 글자는 눕히지 않는다 — 판이 돌 때는 같이 돌지만 멈추면 똑바로 읽힌다 */
+    tx+=`<text class="sx${hit===i?" win":""}" x="${(r*Math.cos(a)).toFixed(1)}" y="${(r*Math.sin(a)).toFixed(1)}"`
+      + `>${esc(w.s)}</text>`;
+  });
+  /* 이미 결과가 나온 뒤라면 바늘을 당첨 칸에 세워 둔 채로 그린다 */
+  const seat=(hit!=null)?` style="transform:rotate(${wheelTurn(hit,n,0)}deg)"`:"";
+  return `<div class="rltbox"><div class="rlt${hit!=null?" landed":""}">
+    <svg class="rltdisc" viewBox="-104 -104 208 208">
+      <circle class="rim" r="100"/>
+      ${sl}${tx}
+      <g class="turn"${seat}>
+        <path class="ndl" d="M0 -92 L7 -22 L0 -12 L-7 -22 Z"/>
+        <circle class="ndlp" cy="-92" r="4"/>
+      </g>
+      <circle class="hub" r="22"/><circle class="hub2" r="15"/>
+    </svg>
+  </div>
+  <div class="wheel">${W.map((w,i)=>`<div class="wr ${hit===i?"hit":""}">
+    <i style="color:${w.c}">${hit===i?"▶":"●"}</i><span>${esc(w.t)}</span></div>`).join("")}</div></div>`;
+}
 function spinRoulette(e,msg){
   run.evSpin=1; render();
   const n=e.wheel.length, target=run.evRoll;
-  const laps=3, steps=n*laps+target;
-  let i=0;
-  const tick=()=>{
-    const rows=document.querySelectorAll(".wheel .wr");
-    if(!rows.length){ run.evSpin=0; run.evMsg=msg; render(); return }
-    rows.forEach((r,k)=>{
-      const on=(k===i%n);
-      r.classList.toggle("hit",on);
-      const q=r.querySelector("i"); if(q) q.textContent=on?"▶":"";
-    });
-    SFX.play("tick");
-    i++;
-    if(i<=steps){
-      const t=i/steps;
-      setTimeout(tick, 55+Math.pow(t,3)*300);
-    }else{
-      SFX.play("win");
-      setTimeout(()=>{ run.evSpin=0; run.evMsg=msg; render() },420);
-    }
-  };
-  setTimeout(tick,120);
+  const g=document.querySelector(".rltdisc .turn");   /* 도는 바늘 */
+  if(!g){ run.evSpin=0; run.evMsg=msg; render(); return }
+  const SPIN=3000, laps=5;
+  const end=wheelTurn(target,n,laps);
+  /* 갓 붙인 요소라 브라우저가 아직 처음 상태를 굳히지 않았다.
+     한 번 재어 굳혀 두고 나서 각도를 주어야 전환이 걸린다.
+     (requestAnimationFrame 은 창이 뒤에 있을 때 아예 돌지 않는다) */
+  void g.getBoundingClientRect();
+  g.style.transition=`transform ${SPIN}ms cubic-bezier(.12,.62,.12,1)`;
+  g.style.transform=`rotate(${end}deg)`;
+  /* 바늘이 칸을 넘을 때마다 딸깍 — 끝으로 갈수록 뜸해진다 */
+  const ease=t=>1-Math.pow(1-t,3.4);          /* 위 cubic-bezier 를 대충 흉내낸다 */
+  const total=n*laps+target;
+  for(let k=1;k<=total;k++){
+    let lo=0, hi=1;
+    for(let q=0;q<24;q++){ const m=(lo+hi)/2; if(ease(m)*total<k) lo=m; else hi=m }
+    setTimeout(()=>SFX.play("tick"), Math.round(lo*SPIN));
+  }
+  setTimeout(()=>{
+    const d=document.querySelector(".rlt"); if(d) d.classList.add("landed");
+    SFX.play("unlock");
+    pulseAll();
+  }, SPIN+30);
+  setTimeout(()=>{ run.evSpin=0; run.evMsg=msg; render() }, SPIN+900);
 }
+/* 룰렛이 멈추는 순간 화면을 한 번 물들인다 */
+function pulseAll(){ veil("radial-gradient(circle,rgba(201,162,39,.30),transparent 68%)") }
 function drawRelic(app){
   const e=run.ev;
   const box=el(`<div class="npcbox">
@@ -6093,8 +6166,7 @@ function drawRelic(app){
   app.appendChild(box);
   const row=box.querySelector("#ch");
   if(run.evSpin){
-    row.appendChild(el(`<div class="wheel big">${
-      e.wheel.map(w=>`<div class="wr"><i></i><span>${esc(w)}</span></div>`).join("")}</div>`));
+    row.appendChild(el(rouletteHTML(e,null)));
     row.appendChild(el(`<div class="hint" style="text-align:center;margin-top:8px">바늘이 돌아갑니다…</div>`));
     return;
   }
@@ -6102,14 +6174,13 @@ function drawRelic(app){
     row.appendChild(el(`<div class="evres">
       <div class="evi">${chestIcon("경험치")}</div>
       <div><b>결과</b><p>${rich(run.evMsg)}</p></div></div>`));
-    if(e.wheel) row.appendChild(el(`<div class="wheel">${
-      e.wheel.map((w,i)=>`<div class="wr ${run.evRoll===i?"hit":""}">
-        <i>${run.evRoll===i?"▶":""}</i><span>${esc(w)}</span></div>`).join("")}</div>`));
+    if(e.wheel) row.appendChild(el(rouletteHTML(e,run.evRoll)));
     const b=el(`<div class="choice go2">길을 계속 간다</div>`);
     b.onclick=()=>{ if(run.after&&run.after.length){ afterChest() } else leaveNode() };
     row.appendChild(b);
     return;
   }
+  if(e.wheel) row.appendChild(el(rouletteHTML(e,null)));
   e.o.forEach(o=>{
     const usable=!o.when||o.when();
     const c=el(`<div class="choice ${usable?"":"no"}"><b>${esc(o.t)}</b><span>${rich(o.d)}</span>${
