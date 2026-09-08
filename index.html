@@ -2681,8 +2681,7 @@ const ARMOR_CARDS={
  "강철 갑옷":{d:"아군 영웅에게 보호막을 12 부여합니다.",
    use:(a,h)=>{ a.shield+=12; say(`강철 갑옷 — ${a.name} 보호막 +12`) }},
  "강철 각반":{d:"모든 아군 영웅에게 보호막을 5 부여합니다.",
-   use:(a,h)=>{ onField().forEach(x=>{ x.shield+=5;
-     fx({side:"mine",slot:x.slot,ring:"#e0c85a",txt:"+5",cls:"shd",gap:70}) });
+   use:(a,h)=>{ onField().forEach(x=>{ x.shield+=5 });
      say("강철 각반 — 모든 아군 보호막 +5") }},
  "강철 군화":{d:"아군 영웅에게 보호막 8, 추진력 2, 공격력 2를 부여합니다.",
    use:(a,h)=>{ a.shield+=8; a.mom+=2; bumpTmp(a,"atk",2);
@@ -3747,8 +3746,7 @@ function addDeb(u,k,n,src){
     say(`부정 보호막이 ${DEBUFF[k].n} ${cut}${jo(String(cut),"eul")} 걷어냅니다.${
       n>0?` (${DEBUFF[k].n} ${n} 남음)`:""}`,"t2");
     { const ne=itemBt(u,"negEsh");
-      if(ne){ u.eshield=(u.eshield||0)+ne*cut;
-        fx({side:"mine",slot:u.slot,ring:"#e07b28",txt:"◆+"+(ne*cut),cls:"shd",gap:60}) }
+      if(ne){ u.eshield=(u.eshield||0)+ne*cut }
       const nm=itemBt(u,"negMana"); if(nm) u.mana=(u.mana||0)+nm;
       const nh=itemBt(u,"negHeal");
       if(nh&&!itemBt(u,"noHeal")) healUp(u,nh);
@@ -5316,7 +5314,7 @@ const CARD_LIB={
                        say(`맥주 — ${a.name} 체력 +5, 보호약화 2`) }},
  "소형 방패":{d:"아군 영웅에게 보호막을 5 부여합니다.",
               use:a=>{ a.shield+=5;
-                       fx({side:"mine",slot:a.slot,s:"shield",ring:"#e0c85a",txt:"+5",cls:"shd",gap:60});
+                       fx({side:"mine",slot:a.slot,s:"shield",gap:60});
                        say(`소형 방패 — ${a.name} 보호막 +5`) }}
 };
 function addCard(r,name,n){
@@ -7208,8 +7206,7 @@ function onSummon(h){
   const da=itemBt(h,"defAura"); if(da){ h.eshield+=h.def*da;
     say(`수호의 각인 — ${h.name} 에너지 보호막 +${h.def*da}`,"t2") }
   if(t.startAura){
-    allAllies().forEach(a=>{ a.eshield=(a.eshield||0)+t.startAura;
-      if(a.slot>0) fx({side:"mine",slot:a.slot,ring:"#e07b28",txt:"◆+"+t.startAura,cls:"shd",gap:60}) });
+    allAllies().forEach(a=>{ a.eshield=(a.eshield||0)+t.startAura });
     say(`전장의 방패 — 모든 아군 에너지 보호막 +${t.startAura}`,"t2") }
   const sm=itemBt(h,"startMom"), ss=itemBt(h,"startShield")+(t.startShield||0);
   if(sm){ h.mom+=sm; say(`${h.name} 추진력 +${sm} (장비)`,"t2") }
@@ -7250,7 +7247,7 @@ function gainScale(h,n){
 }
 function singTune(h,t){
   if(t==="guard"){ const v=1+h.def;
-    allUnits().forEach(a=>{ a.shield+=v; fx({side:"mine",slot:a.slot,ring:"#e0c85a",txt:"+"+v,cls:"shd",gap:60}) });
+    allUnits().forEach(a=>{ a.shield+=v });
     say(`보호의 음율 — 모든 아군 보호막 +${v}`) }
   if(t==="life"){ const a=allUnits().sort((x,y)=>x.hp/x.maxHp-y.hp/y.maxHp)[0];
     if(a){ healUp(a,3);
@@ -7286,11 +7283,10 @@ function veilCheck(h){
   h.shield+=v;
   pulseFX("mine",h.slot,"#5fd8cf",3);
   edgeGlow("rgba(95,216,207,.34)");
-  fx({side:"mine",slot:h.slot,s:"shield",ring:"#5fd8cf",txt:"+"+v,cls:"shd",gap:160});
+  fx({side:"mine",slot:h.slot,s:"shield",gap:160});
   say(`회오리 장막 — ${h.name} 보호막 +${v}`,"t1");
   if(h.tag.veilAll) run.heroes.forEach(a=>{
-    if(a!==h&&a.slot>0&&a.hp>0){ a.shield+=v;
-      fx({side:"mine",slot:a.slot,ring:"#5fd8cf",txt:"+"+v,cls:"shd"}) } });
+    if(a!==h&&a.slot>0&&a.hp>0){ a.shield+=v } });
 }
 function playCard(i,slot,side){
   if(B.busy) return;
@@ -7519,8 +7515,7 @@ function doSkill(target){
     if(h.mobile&&!s.jumpback){
       const back=h.slot-1;
       if(back>=1&&!occAt(back)) moveTo(h,back);
-      else { const v=1+h.mag; h.eshield=(h.eshield||0)+v;
-        fx({side:"mine",slot:h.slot,ring:"#e07b28",txt:"◆+"+v,cls:"shd",gap:60}) }
+      else { const v=1+h.mag; h.eshield=(h.eshield||0)+v }
     }
     if(s.alt){
       const back=Object.assign({},s); const nx=Object.assign({},s.alt);
@@ -7847,7 +7842,7 @@ function runEffect(h,i,s,target){
     pulseFX("mine",h.slot,s.stance==="nightmare"?"#a06ae0":"#c58fd0",3);
     veil("radial-gradient(circle,rgba(122,74,176,.24),transparent 70%)");
     if(s.shield){ const v=s.shield+mod(s,"shield")+h.def;
-      h.shield+=v; fx({side:"mine",slot:h.slot,s:"shield",ring:"#e0c85a",txt:"+"+v,cls:"shd",gap:70}) }
+      h.shield+=v; fx({side:"mine",slot:h.slot,s:"shield",gap:70}) }
     fx({side:"mine",slot:h.slot,ring:"#a06ae0",txt:s.stance==="nightmare"?"악몽":"공포",cls:"shd"});
     say(`${h.name} ${s.n} — 다음 턴까지 맞을 때마다 되갚습니다.`);
     return;
@@ -7865,8 +7860,7 @@ function runEffect(h,i,s,target){
     const to=Math.max(1,Math.min(SLOTS,target||h.slot));
     if(to!==h.slot&&Math.abs(to-h.slot)<=2) moveTo(h,to);
     h.mom+=2;
-    allUnits().forEach(a=>{ if(Math.abs(a.slot-h.slot)<=1){ a.eshield=(a.eshield||0)+4;
-      fx({side:"mine",slot:a.slot,ring:"#e07b28",txt:"◆+4",cls:"shd",gap:70}) } });
+    allUnits().forEach(a=>{ if(Math.abs(a.slot-h.slot)<=1){ a.eshield=(a.eshield||0)+4 } });
     say(`${h.name} 주변 아군에게 에너지 보호막 +4 · 추진력 +2`);
     return;
   }
@@ -7939,12 +7933,12 @@ function runEffect(h,i,s,target){
     if(s.vanguard){
       const v=((h.tag.vanShield||5)+h.def)*passed.length;
       h.shield+=v; h.taunt=2;
-      fx({side:"mine",slot:h.slot,s:"shield",ring:"#8fa2c9",txt:"+"+v,cls:"shd"});
+      fx({side:"mine",slot:h.slot,s:"shield"});
       say(`선두 방어 — ${h.name} 보호막 +${v}, 도발`);
     }else{
       const v=h.tag.rearHeal||5, sh=5+h.def;
       healUp(h,v);
-      passed.forEach(a=>{ a.shield+=sh; fx({side:"mine",slot:a.slot,ring:"#8fa2c9",txt:"+"+sh,cls:"shd",gap:70}) });
+      passed.forEach(a=>{ a.shield+=sh });
       fx({side:"mine",slot:h.slot,s:"heal",txt:"+"+v,cls:"heal"});
       say(`후미 준비 — 체력 +${v}, 지나친 아군 보호막 +${sh}`);
     }
@@ -8054,8 +8048,7 @@ function runEffect(h,i,s,target){
     const rounds=h.tag.penanceTwice?2:1;
     for(let r=0;r<rounds;r++){
       let v=1+h.def;
-      for(let q=1;q<=SLOTS;q++){ const a=allyAt(q); if(a){ a.shield+=v;
-        fx({side:"mine",slot:q,ring:"#c9a227",txt:"+"+v,cls:"shd",gap:70}); v++ } }
+      for(let q=1;q<=SLOTS;q++){ const a=allyAt(q); if(a){ a.shield+=v; v++ } }
       for(let q=1;q<=SLOTS;q++){ const f=foeAt(q); if(f){ hurt(f,v,"참회의 기류","mag"); v++ } }
       for(let q=SLOTS;q>=1;q--){ const f=foeAt(q); if(f){ hurt(f,v,"참회의 기류","mag"); v++ } }
     }
@@ -8094,7 +8087,7 @@ function runEffect(h,i,s,target){
       v+=h.tag.firstGuard+h.def; h.first.guard=1 }
     if(deb(h,"defDn")) v=Math.ceil(v*0.5); if(i===1&&h.first.guard!==1&&h.tag.firstGuard){v+=h.tag.firstGuard;h.first.guard=1}
     h.shield+=v;
-    fx({side:"mine",slot:h.slot,s:"shield",ring:"#e0c85a",glow:1,txt:"+"+v,cls:"shd"});
+    fx({side:"mine",slot:h.slot,s:"shield",glow:1});
     say(`${h.name} 보호막 +${v}`) }
   if(s.taunt){ h.taunt=s.taunt }
   if(s.evade){ h.evade+=s.evade;
@@ -8121,7 +8114,7 @@ function runEffect(h,i,s,target){
       } else giveArmor(h,rnd(h.tag.armors));
     }
     if(h.tag.armorShield){ const v=h.tag.armorShield;
-      h.shield+=v; fx({side:"mine",slot:h.slot,ring:"#e0c85a",txt:"+"+v,cls:"shd",gap:60});
+      h.shield+=v;
       say(`갑옷 장착 — 보호막 +${v}`) }
   }
   if(s.thrust){
@@ -8253,8 +8246,7 @@ function runEffect(h,i,s,target){
         bark(h,"kill");
         if(!tgt.isPhantom){
           const ke=itemBt(h,"killEsh");
-          if(ke){ h.eshield=(h.eshield||0)+ke;
-            fx({side:"mine",slot:h.slot,ring:"#e07b28",txt:"◆+"+ke,cls:"shd",gap:60}) }
+          if(ke) h.eshield=(h.eshield||0)+ke;
           const ks=itemBt(h,"killStat");
           if(ks){ bumpTmp(h,"atk",ks); bumpTmp(h,"mag",ks) }
         }
@@ -8265,7 +8257,6 @@ function runEffect(h,i,s,target){
           if(h.tag.killGrow){ h.cutGrow=(h.cutGrow||0)+h.tag.killGrow;
             say(`늘어가는 실력 — 이번 전투 베기 피해 +${h.cutGrow}`,"t1") }
           if(h.tag.killShield){ h.shield+=h.tag.killShield;
-            fx({side:"mine",slot:h.slot,ring:"#e0c85a",txt:"+"+h.tag.killShield,cls:"shd",gap:60});
             say(`아드레날린 분비 — 보호막 +${h.tag.killShield}`) }
         }
         if(s.markKill){ h.sk[1].limit++;
@@ -8421,28 +8412,28 @@ function endPhase(){
     const es=itemBt(h,"endShield");
     if(es){ const add=es+(itemBt(h,"endShieldDef")?h.def:0);
       endShield(h,add); bump();
-      fx({side:"mine",slot:h.slot,s:"shield",ring:"#e0c85a",glow:1,txt:"보호막 +"+add,cls:"shd",gap:190});
+      fx({side:"mine",slot:h.slot,s:"shield",glow:1,gap:190});
       say(`턴 종료 — ${h.name} 보호막 +${add}`,"t2") }
     const ms=itemBt(h,"manaShield");
     if(ms&&h.manaUsed){ const v=h.manaUsed*ms; endShield(h,v); h.manaUsed=0; bump();
-      fx({side:"mine",slot:h.slot,s:"shield",ring:"#8fa2c9",txt:"보호막 +"+v,cls:"shd",gap:170});
+      fx({side:"mine",slot:h.slot,s:"shield",gap:170});
       say(`마나 방벽 — ${h.name} 보호막 +${v}`,"t2") }
     const qs=itemBt(h,"momShield");
     if(qs&&h.mom>0){ const use=Math.min(6,h.mom); h.mom-=use; const v=use*qs; endShield(h,v); bump();
-      fx({side:"mine",slot:h.slot,s:"shield",ring:"#5fd8cf",txt:"보호막 +"+v,cls:"shd",gap:170});
+      fx({side:"mine",slot:h.slot,s:"shield",gap:170});
       say(`추진력 방벽 — ${h.name} 보호막 +${v}`,"t2") }
     if(h.name==="오토"){ const conv=Math.min(5,h.shield);
       if(conv){ h.shield-=conv; h.eshield=(h.eshield||0)+conv; bump();
-        fx({side:"mine",slot:h.slot,s:"pulse",ring:"#e07b28",txt:"◆"+conv,cls:"shd",gap:170});
+        fx({side:"mine",slot:h.slot,s:"pulse",gap:170});
         say(`돌봄 — ${h.name} 보호막 ${conv}을 에너지 보호막으로 바꿉니다.`) } }
     if(h.name==="보아"){ const sc=h.scaleTurn||0, v=1+h.def+sc;
       endShield(h,v); h.scaleTurn=0; bump();
-      fx({side:"mine",slot:h.slot,s:"shield",ring:"#9ad06a",glow:1,txt:"보호막 +"+v,cls:"shd",gap:190});
+      fx({side:"mine",slot:h.slot,s:"shield",glow:1,gap:190});
       say(`적응성 비늘 — ${h.name} 보호막 +${v} (기본 1 + 보호력 ${h.def}${sc?` + 이번 턴 비늘 ${sc}`:""})`) }
     if(h.tag.dashMul&&h.mom>0){
       const use=Math.min(h.tag.dashMax||3,h.mom); h.mom-=use;
       const v=use*h.tag.dashMul; h.eshield=(h.eshield||0)+v; bump();
-      fx({side:"mine",slot:h.slot,s:"pulse",ring:"#e07b28",txt:"◆+"+v,cls:"shd",gap:170});
+      fx({side:"mine",slot:h.slot,s:"pulse",gap:170});
       say(`달리기 — ${h.name} 에너지 보호막 +${v}`) }
     const eb=itemBt(h,"endBurnRange");
     if(eb){ const list=B.foes.filter(f=>f.alive&&dist(h.slot,f.slot)<=2);
@@ -8452,7 +8443,7 @@ function endPhase(){
       const v=(h.tag.allyShield||2)+h.def;
       let first=1;
       allUnits().forEach(a=>{ if(a!==h){ endShield(a,v); bump();
-        fx({side:"mine",slot:a.slot,s:first?"shield":null,ring:"#8fa2c9",txt:"보호막 +"+v,cls:"shd",gap:150});
+        fx({side:"mine",slot:a.slot,s:first?"shield":null,gap:150});
         first=0 } });
       say(`든든한 아군 — 다른 아군 보호막 +${v}`,"t2");
     }
@@ -8491,7 +8482,7 @@ function foePhase(){
       say(`${f.name}${jo(f.name,"ig")} 사슬을 휘감습니다 — 가시 ${f.thorn} (${f.thornTurn}턴)`,"t3");
     }
     else if(f.intent.t==="def"){ f.shield+=f.intent.v;
-      fx({side:"foe",slot:f.slot,s:"shield",ring:"#e0c85a",txt:"+"+f.intent.v,cls:"shd"});
+      fx({side:"foe",slot:f.slot,s:"shield"});
       say(`${f.name} 방어 +${f.intent.v}`) }
     else if(f.intent.t==="atk"){
       let t=unitAt(f.intent.to)||allUnits().filter(canAim)[0]||allUnits()[0];
@@ -8630,8 +8621,7 @@ function foePhase(){
   (B.portals||[]).forEach(p=>{
     if(p.side!=="mine") return;
     const a=unitAt(p.slot);
-    if(a){ a.shield+=p.shield;
-      fx({side:"mine",slot:p.slot,ring:"#a06ae0",txt:"+"+p.shield,cls:"shd",gap:70}) }
+    if(a) a.shield+=p.shield;
   });
   /* 회오리 장막의 누적은 전투 내내 이어진다 — 턴마다 지우지 않는다 */
   run.heroes.forEach(h=>{
