@@ -461,6 +461,48 @@ button.dtl{padding:3px 10px;font-size:11.5px}
   line-height:1;letter-spacing:.02em;text-shadow:0 0 30px rgba(201,162,39,.4)}
 .dnum span{font-size:26px;margin-left:9px;color:var(--fg)}
 .dsub{font-size:13.5px;color:var(--dim);letter-spacing:.06em}
+/* ── 밤의 습격 ── */
+.ambflash{position:fixed;inset:0;z-index:320;pointer-events:none;
+  background:radial-gradient(circle at 50% 46%,rgba(200,60,50,.55),rgba(60,8,14,.86) 62%,#000 100%);
+  animation:ambFl .9s ease-out forwards}
+@keyframes ambFl{0%{opacity:0}9%{opacity:1}34%{opacity:.35}48%{opacity:.85}100%{opacity:0}}
+.ambcard{position:fixed;inset:0;z-index:330;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:10px;pointer-events:none;
+  animation:ambIn .34s cubic-bezier(.16,1.1,.3,1) forwards}
+@keyframes ambIn{0%{opacity:0;transform:scale(1.7)}62%{opacity:1;transform:scale(.965)}100%{opacity:1;transform:scale(1)}}
+.ambcard.out{animation:ambOut .6s ease-in forwards}
+@keyframes ambOut{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(1.14)}}
+.ambword{font-family:var(--serif);font-size:clamp(44px,10vw,92px);font-weight:700;
+  color:#ffe2d4;line-height:1;letter-spacing:.06em;
+  text-shadow:0 0 4px #ff5a3c,0 0 22px rgba(200,50,40,.9),0 0 54px rgba(140,20,20,.8),0 5px 0 rgba(0,0,0,.6);
+  animation:ambPulse 1.5s ease-out forwards}
+@keyframes ambPulse{0%,100%{filter:brightness(1)}12%{filter:brightness(1.9)}26%{filter:brightness(1)}
+  38%{filter:brightness(1.6)}}
+.ambsub{font-size:14.5px;color:#ffd9cd;letter-spacing:.15em;opacity:1;
+  padding:5px 16px;border-top:1px solid rgba(255,90,60,.45);
+  text-shadow:0 0 10px rgba(0,0,0,.95),0 1px 0 rgba(0,0,0,.9);
+  animation:ambSub .7s ease-out .22s both}
+@keyframes ambSub{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+.ambclaw{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:min(84vw,660px);height:auto;opacity:.92;pointer-events:none}
+.ambclaw path{stroke:#ff4a34;stroke-width:3;fill:none;stroke-linecap:round;
+  filter:drop-shadow(0 0 6px rgba(255,74,52,.9));
+  stroke-dasharray:260;stroke-dashoffset:260;animation:ambSlash .5s ease-out forwards}
+.ambclaw path:nth-child(2){animation-delay:.06s}
+.ambclaw path:nth-child(3){animation-delay:.12s}
+.ambclaw path:nth-child(4){animation-delay:.20s;stroke-width:2}
+.ambclaw path:nth-child(5){animation-delay:.26s;stroke-width:2}
+@keyframes ambSlash{to{stroke-dashoffset:0}}
+body.shakeall{animation:allShake .62s cubic-bezier(.36,.07,.19,.97)}
+@keyframes allShake{10%{transform:translate(-5px,3px)}20%{transform:translate(6px,-4px)}
+  32%{transform:translate(-7px,-2px)}44%{transform:translate(5px,4px)}
+  58%{transform:translate(-4px,-3px)}72%{transform:translate(3px,2px)}
+  86%{transform:translate(-2px,1px)}100%{transform:none}}
+@media (prefers-reduced-motion: reduce){
+  .ambcard,.ambword,.ambsub,.ambclaw path,body.shakeall{animation:none}
+  .ambsub{opacity:1}
+  .ambclaw path{stroke-dashoffset:0}
+  .ambflash{animation:ambFl .9s linear forwards}}
 .txttabs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:14px}
 .txttabs button{font-size:12px;padding:5px 11px}
 .txttabs button i{font-style:normal;color:var(--faint);font-size:10.5px;margin-left:3px}
@@ -3828,6 +3870,26 @@ function dayBreak(day,label){
   setTimeout(()=>{ bo.classList.add("out") },1500);
   setTimeout(()=>bo.remove(),2200);
 }
+/* 밤의 습격 — 화면 한가운데를 찢고 들어온다 */
+function ambushCard(sub){
+  document.querySelectorAll(".ambcard,.ambflash").forEach(x=>x.remove());
+  const fl=el(`<div class="ambflash"></div>`);
+  document.body.appendChild(fl);
+  setTimeout(()=>fl.remove(),900);
+  const card=el(`<div class="ambcard">
+    <svg class="ambclaw" viewBox="0 0 400 200" aria-hidden="true">
+      <path d="M18 22 L206 176" /><path d="M74 10 L262 164" /><path d="M130 4 L318 158" />
+      <path d="M382 26 L198 182" /><path d="M330 8 L146 164" />
+    </svg>
+    <div class="ambword">습 격 됨 !</div>
+    <div class="ambsub">${esc(sub||"어둠 속에서 무언가 달려듭니다.")}</div>
+  </div>`);
+  document.body.appendChild(card);
+  document.body.classList.add("shakeall");
+  setTimeout(()=>document.body.classList.remove("shakeall"),620);
+  setTimeout(()=>card.classList.add("out"),1450);
+  setTimeout(()=>card.remove(),2050);
+}
 function lose(msg){ run.lost=msg; view="over"; render() }
 let TOAST="";
 function toast(t){ TOAST=t }
@@ -4460,12 +4522,13 @@ function moveTo2(r,c){
   if(run.taint>=100) return;
   if(cell.t!=="camp"&&Math.random()<ambushChance(cell)){
     SFX.play("danger");
-    veil("radial-gradient(circle,rgba(120,40,60,.42),transparent 72%)");
-    toast(cell.t==="empty"
+    const line=(cell.t==="empty")
       ? "인기척 하나 없는 자리입니다. 어둠 속에서 무언가 달려듭니다."
-      : "발을 들이기도 전에 무언가 달려듭니다.");
+      : "발을 들이기도 전에 무언가 달려듭니다.";
     if(cell.t!=="empty") run.pendingEnter={r:r,c:c};   /* 이기면 원래 볼일을 본다 */
-    startDungeon({t:"ambush",waves:1},null,null); return;
+    startDungeon({t:"ambush",waves:1},null,null);
+    ambushCard(line);                                  /* 전장이 깔린 위에 얹는다 */
+    return;
   }
   enterCell(r,c);
 }
