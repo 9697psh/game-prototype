@@ -4911,14 +4911,20 @@ function takeChest(){
     else later.push({grade:x.t,noRun:isBoss?1:0});
   });
   run.chest=null;
-  run.after=later;
+  run.after=(run.after||[]).concat(later);   /* 남아 있던 뒷일을 지우지 않는다 */
   if(exp) giveExp(exp,run.heroes.filter(h=>!h.down&&h.joined!==0));
   if(isBoss&&run.pendingLv) run.pendingLv.forEach(x=>x.noRun=1);
   afterChest();
 }
 function afterChest(){
   const q=run.after||[];
-  if(!q.length){ run.after=null; backToMap(); return }
+  if(!q.length){
+    run.after=null;
+    /* 상점에서 시작된 줄이었다면 상점으로 돌려보낸다 */
+    const b=run.afterBack; run.afterBack=null;
+    if(b==="shop"){ view="shop"; render(); return }
+    backToMap(); return;
+  }
   const nx=q.shift();
   if(nx.item){ pending={stage:"hero",list:[],item:nx.item,hero:null,back:"chain"}; view="item"; render(); return }
   if(nx.recruit){
@@ -4932,6 +4938,8 @@ function afterChest(){
   pending={hero:null,grade:nx.grade,free:1,back:"chain",noRun:nx.noRun||0}; view="reward"; render();
 }
 function backToMap(){
+  /* 아직 처리하지 못한 뒷일이 남아 있으면 그것부터 */
+  if((run.after||[]).length){ afterChest(); return }
   if(run.pendingLv&&run.pendingLv.length){
     const q=run.pendingLv; run.pendingLv=null;
     pending={queue:q,idx:0}; view="reward"; render(); return;
@@ -5153,7 +5161,7 @@ function drawRest(app){
     SFX.play("heal"); toast("몸이 좀 풀립니다."); leaveNode() };
   const b=el(`<div class="rw"><div class="rwi">${nodeArt("elite")}</div>
     <b>몸을 단련한다</b><p>${esc(grade)} 보상을 ${n}개 고릅니다.</p></div>`);
-  b.onclick=()=>{ run.after=[]; for(let i=0;i<n;i++) run.after.push({grade:grade});
+  b.onclick=()=>{ run.after=run.after||[]; for(let i=0;i<n;i++) run.after.push({grade:grade});
     afterChest() };
   const c=el(`<div class="rw ${run.night?"":"no"}"><div class="rwi">${nodeArt("camp")}</div>
     <b>노숙한다</b><p>여기서 밤을 보내고 다음 날 아침을 맞습니다. 주둔지가 아니라 오염도가 10 더 오릅니다.</p>
@@ -8223,7 +8231,12 @@ function drawReward(app){
     app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">${esc(pending.grade)} 보상</div>
       <div class="sub">${esc(pending.hero.name)}에게 줄 것을 고르세요</div></div>`));
     offerCards(app,pending.hero,pending.grade,
-      ()=>{ if(back==="shop"){ view="shop"; render() } else afterChest() });
+      ()=>{
+        /* 보상이 아이템·동료 같은 뒷일을 남겼으면 그것부터 처리하고 돌아온다 */
+        if(back==="shop"&&(run.after||[]).length){ run.afterBack="shop"; afterChest(); return }
+        if(back==="shop"){ view="shop"; render(); return }
+        afterChest();
+      });
     app.appendChild(heroPanel(pending.hero));
     return;
   }
@@ -8244,6 +8257,7 @@ function drawReward(app){
 
 function itemDone(){
   const back=pending.back;
+  if(back==="shop"&&(run.after||[]).length){ run.afterBack="shop"; afterChest(); return }
   if(back==="shop"){ view="shop"; render(); return }
   afterChest();
 }
