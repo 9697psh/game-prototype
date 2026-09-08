@@ -1650,7 +1650,7 @@ function veil(color){
 
 /* ═══════════ 캐릭터 그림 ═══════════ */
 const LOOK={
- "나이코스":{skin:"#d9b48c",cloth:"#c9a227",dark:"#7a6318",build:"wide",arm:"sword"},
+ "나이코스":{skin:"#d9b48c",cloth:"#b8902f",dark:"#5c4718",acc:"#c9a227",build:"wide",arm:"sword"},
  "카제":    {skin:"#d9b48c",cloth:"#4fbfb6",dark:"#2b6b66",build:"slim",arm:"blade"},
  "굴라":    {skin:"#a34f4f",cloth:"#7a2f2f",dark:"#4a1b1b",build:"huge",arm:"claw",horn:1},
  "헥토":    {skin:"#d9b48c",cloth:"#8fa2c9",dark:"#4a5a7a",build:"wide",arm:"shield"},
@@ -1700,6 +1700,48 @@ const PXW=32;
    L 옷밝음 C 옷 c 옷그늘 d 옷더그늘
    M 쇠 N 쇠밝음 m 쇠그늘  A 강조(금·보석)
    H 머리 h 머리그늘  E 눈  W 날 w 날그늘  R 붉음 G 풀빛 B 푸름 */
+/* ═══ 캐릭터 전용 도트 ═══
+   여기에 이름이 있으면 몸통+머리+무기를 조립하지 않고 이 격자를 그대로 쓴다. */
+const PX_CUSTOM={
+ /* 나이코스 — 볏을 세운 투구, 청동 판갑, 검붉은 치마, 늘어뜨린 장검 */
+ "나이코스":[
+ "................................",
+ "...............OO...............",
+ "..............ORRO..............",
+ "..............ORRO..............",
+ ".............ORRRRO.............",
+ "............OCCCCCCO............",
+ "...........OLCCCCCCcO...........",
+ "...........OLCCCCCCcO...........",
+ "...........OLCEOOECcO...........",
+ "...........OLCCCCCCcO...........",
+ "............OLCCCCcO............",
+ ".............OCCCCO.............",
+ "..............OssO..............",
+ "........OLCCCCCCCCCCCLO.........",
+ "........OLcCCCCCCCCCcLO.........",
+ ".......OCOOCCCCCCCCCCOOCO.......",
+ ".......OcOOCCAAAAAACCOOCO.......",
+ ".......OCOOCcCCCCCCcCOOcO.......",
+ ".......OcOOCCAAAAAACCOOCO.......",
+ ".......OCOOCcCCCCCCcCOOCO.......",
+ ".......OSOOAAAAAAAAAAOOSO.......",
+ ".......OSOORRRRRRRRRROOSO.......",
+ "..........ORdRRRRRRdROOAAAO.....",
+ "...........ORRRR.RRRRO.OWWO.....",
+ "...........ORRR...RRRO.OWWO.....",
+ "...........OCCO...OCCO.OWWO.....",
+ "...........OCcO...OcCO.OWWO.....",
+ "...........OCCO...OCCO.OWWO.....",
+ "...........OCcO...OcCO.OwwO.....",
+ "..........OLCCO...OCCLOOWWO.....",
+ "..........OOOOO...OOOOO.OO......",
+ "................................"
+ ]
+};
+/* 외부에서 그린 그림을 쓰고 싶으면 여기에 data URI 를 넣는다.
+   넣는 순간 그 캐릭터는 도트 엔진 대신 이 그림으로 그려진다. */
+const PNG_SPRITE={};
 const PX_BODY={
 /* 판금 — 마르고 키 큰 전사 */
 armor:[
@@ -2136,12 +2178,19 @@ const FOE_NAMES={"작은 죄수":1,"사슬 광인":1,"굶주린 그림자":1,"�
  "균열 벌레":1,"얼음 정령":1,"간수장":1,"고철 거인":1,"서리 군주":1,"악마 하수인":1};
 function pxFigure(name){
   if(PXCACHE[name]) return PXCACHE[name];
+  if(PNG_SPRITE[name]){
+    const isFoe0=!!FOE_NAMES[name];
+    return PXCACHE[name]='<img class="pxs '+(isFoe0?"foe":"hero")+'" src="'
+      +PNG_SPRITE[name]+'" alt="" draggable="false">';
+  }
   const L=LOOK[name]||LOOK["작은 죄수"];
   const K=PX_KIT[name]||{b:(L.build==="huge"?"hulk":L.build==="small"?"runt":L.build==="wide"?"armor":"cloak"),
                          h:L.horn?"horn":"none", a:PX_ARM[L.arm]?L.arm:"none"};
-  const grid=(PX_BODY[K.b]||PX_BODY.cloak).map(r=>r.split(""));
+  const custom=PX_CUSTOM[name];
+  const grid=(custom||PX_BODY[K.b]||PX_BODY.cloak).map(r=>r.split(""));
   const put=list=>(list||[]).forEach(([y,x,c])=>{ if(grid[y]&&x>=0&&x<PXW) grid[y][x]=c });
-  put(PX_HEAD[K.h]); put(PX_ARM[K.a]);
+  /* 전용 격자는 이미 다 그려져 있으므로 투구·무기를 덧대지 않는다 */
+  if(!custom){ put(PX_HEAD[K.h]); put(PX_ARM[K.a]) }
   const P={
     ".":null, "O":"#0a0809",
     "S":shade(L.skin,0.8), "s":shade(L.skin,0.56),
