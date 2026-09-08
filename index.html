@@ -249,6 +249,8 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
   border-radius:3px;padding:0 5px;background:var(--raise)}
 
 .skwrap{margin-top:12px;background:var(--panel);border:1px solid var(--brass);border-radius:6px;padding:10px}
+/* 턴 종료 효과가 흐르는 동안 — 창은 그대로 두되 손대지 못한다는 것을 보여 준다 */
+.skwrap.waiting{opacity:.5;filter:saturate(.7);pointer-events:none;border-color:var(--rule2)}
 .skhead{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
 .skhead b{font-family:var(--serif);font-size:14px;color:var(--brass)}
 .skills{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
@@ -6774,7 +6776,11 @@ function drawBattle(app){
     const rb=el(`<button class="mini" title="이 전투를 시작 시점으로 되감습니다. 적 구성·능력치·행동 패턴은 그대로입니다.">전투 초기화</button>`);
     rb.onclick=resetBattle; tr.appendChild(rb);
     app.appendChild(tr); }
-  if(sel&&sel.hero&&sel.step>=2&&sel.step<5) app.appendChild(skillPanel(sel.hero));
+  if(sel&&sel.hero&&sel.step>=2&&sel.step<5){
+    const sp=skillPanel(sel.hero);
+    if(B.busy) sp.classList.add("waiting");   /* 연출이 흐르는 동안은 잠시 잠근다 */
+    app.appendChild(sp);
+  }
   const hand=el(`<div class="hand" id="hand"></div>`);
   B.hand.forEach((c,i)=>{
     const card=el(`<div class="card ${c.type==="hero"||c.type==="summon"?"hero":""}" data-i="${i}">
@@ -7196,11 +7202,20 @@ function canPay(h,i,n){
 }
 
 /* ─ 입력 ─ */
+/* 고른 대원은 그대로 두고 기술 고르기 단계로만 되돌린다.
+   기술을 쓴 뒤에도, 턴이 넘어가도 기술 창이 닫히지 않게 하는 것.
+   쓰러졌거나 전장을 떠났거나 전투가 끝났으면 닫는다. */
+function keepSel(){
+  const h=sel&&sel.hero;
+  sel=(h&&B&&!B.over&&h.slot>0&&h.hp>0)
+      ? {hero:h,slot:h.slot,step:2,skill:null,count:1} : null;
+}
 function pickUnit(s){
   if(B.over) return; const h=unitAt(s); if(!h) return;
   sel={hero:h,slot:s,step:2,skill:null,count:1}; render();
 }
 function pickSkill(i,count){
+  if(B.busy) return;          /* 턴 종료 효과가 흐르는 동안에는 손대지 못한다 */
   const h=sel.hero, s=h.sk[i];
   if((i===2&&h.lv<UNLOCK[2])||(i===3&&h.lv<UNLOCK[3])){ say("아직 해제되지 않은 기술입니다.","t2"); return }
   if(h.lock[i]){ say(`${s.n}${jo(s.n,"eun")} ${h.lock[i]}턴 동안 잠금 상태입니다.`,"t2"); return }
@@ -7218,6 +7233,7 @@ function pickSkill(i,count){
   sel.step=3; render();
 }
 function pickCount(n){
+  if(B.busy) return;
   const h=sel.hero, s=h.sk[sel.skill];
   if(s.lock&&n>1){ say(`${s.n}${jo(s.n,"eun")} 잠금 기술이라 한 번만 쓸 수 있습니다.`,"t2"); n=1 }
   if(!canPay(h,sel.skill,n)){ say(`${s.n} ${n}회를 쓸 자원이 부족합니다.`,"t2"); return }
@@ -7700,10 +7716,7 @@ function doSkill(target){
     }
   }
   checkEnd();
-  /* 기술을 쓰고 나서도 그 대원의 기술 창을 닫지 않는다.
-     다른 아군을 고르거나 [손패 보기]를 누를 때까지 열려 있다.
-     쓰러졌거나 전투가 끝났으면 닫는다. */
-  sel=(!B.over&&h.slot>0&&h.hp>0) ? {hero:h,slot:h.slot,step:2,skill:null,count:1} : null;
+  keepSel();          /* 기술을 쓰고 나서도 그 대원의 기술 창은 열어 둔다 */
   render();
 }
 /* ═══ 이동 기술의 목적지 판정 ═══
@@ -8541,7 +8554,7 @@ function unitDown(t){
 function endTurn(){
   if(B.over||B.busy) return;
   if(run&&run.sandbox){
-    B.turn++; sandboxTick(); sel=null;
+    B.turn++; sandboxTick(); keepSel();
     say(`— ${B.turn}턴 · 연습장 —`,"t2");
     render(); return;
   }
@@ -8549,7 +8562,7 @@ function endTurn(){
   /* 마당 ① 턴 종료 효과 → 눈과 귀로 확인 → 마당 ② 적 행동 → 마당 ③ 다음 턴 */
   const n=endPhase();
   if(n>0){
-    B.busy=1; sel=null;
+    B.busy=1; keepSel();
     const wait=Math.min(2200, Math.max(520, fxDuration()+320));
     render();
     setTimeout(()=>{ B.busy=0; if(B&&!B.over) foePhase(); }, wait);
@@ -8792,7 +8805,7 @@ function foePhase(){
       const v=(h.tag.allyShield||2)+h.def;
       onField().forEach(a=>{ if(a!==h) a.shield+=v });
     } });
-  rollIntents(); sel=null;
+  rollIntents(); keepSel();
   say(`— ${B.turn}턴 시작 —`,"t1");
   /* 적의 행동 연출이 다 흐른 뒤에 알린다 — 그래야 '내 차례'가 명확하다 */
   const banner=Math.min(2400,Math.max(240,fxDuration()+200));
