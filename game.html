@@ -48,7 +48,7 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 /* ── 전장 ── */
 /* 칸 폭은 창에 맞춰 줄어든다 — 예전엔 104px 로 못 박혀 있어
    1200px 이 안 되는 창에서는 전장이 가로로 잘리고 스크롤이 생겼다 */
-:root{--slotw:clamp(76px,8.4vw,104px)}
+:root{--slotw:clamp(70px,8.4vw,104px)}
 .field{display:flex;justify-content:center;align-items:stretch;gap:10px;
   overflow-x:auto;padding-bottom:4px}
 .side{display:flex;gap:6px;flex:0 0 auto}
@@ -967,6 +967,16 @@ header{align-items:center}
   font-size:8.5px;background:var(--ink);border:1px solid var(--rule);border-radius:3px;
   padding:0 4px;color:var(--dim);white-space:nowrap;opacity:0;transition:opacity .12s}
 .cell:hover .cl{opacity:1;z-index:5}
+/* 적 살펴보기 */
+.peekfoe{margin:10px auto 0;max-width:760px;padding:10px 14px;
+  border:1px solid var(--blood);border-radius:6px;
+  background:linear-gradient(180deg,rgba(42,26,25,.9),var(--panel) 60%)}
+.pfhead{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.pfhead b{font-family:var(--serif);font-size:15px;color:#e0a89a}
+.pft{font-size:10.5px;letter-spacing:.14em;color:var(--faint);
+  border:1px solid var(--rule2);border-radius:99px;padding:1px 8px}
+.pfrow{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:7px}
+.pfrow .pl{font-size:10.5px;letter-spacing:.12em;color:var(--faint);min-width:44px}
 /* 지도 목표 줄 */
 .goalbar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:10px 0 12px;
   padding:8px 13px;border:1px solid var(--rule);border-left:3px solid var(--brass);
@@ -1909,14 +1919,24 @@ function hpAnim(){
     setTimeout(()=>{ bar.classList.remove("hurt","healed") },660);
   });
 }
+/* 연출 속도 — 1 보통 / 0.5 빠르게. 되풀이해 놀 때 기다리는 시간을 줄인다 */
+const SPD_KEY="kyunyeol.speed.v1";
+let SPD=1;
+try{ SPD=(localStorage.getItem(SPD_KEY)==="fast")?0.5:1 }catch(e){}
+function setSpeed(fast){
+  SPD=fast?0.5:1;
+  try{ localStorage.setItem(SPD_KEY,fast?"fast":"slow") }catch(e){}
+  render();
+}
+const gapOf=o=>Math.round((o.gap==null?110:o.gap)*SPD);
 /* 지금 줄 서 있는 연출이 다 흐르는 데 걸리는 시간 */
-function fxDuration(){ return FXQ.reduce((a,o)=>a+(o.gap==null?110:o.gap),0) }
+function fxDuration(){ return FXQ.reduce((a,o)=>a+gapOf(o),0) }
 function flushFX(){
   let t=0;
   while(FXQ.length){
     const o=FXQ.shift();
     setTimeout(()=>playFX(o),t);
-    t+=(o.gap==null?110:o.gap);
+    t+=gapOf(o);
   }
 }
 /* 자세 — 잠깐 다른 그림으로 갈아 끼웠다가 원래 자세로 되돌린다.
@@ -1935,7 +1955,7 @@ function setPose(side,slot,pose,ms){
   img.src=now.u; img.style.setProperty("--ph",now.ph);
   img._pt=setTimeout(()=>{ img._pt=0;
     if(back&&img.isConnected){ img.src=back.u; img.style.setProperty("--ph",back.ph) }
-  }, ms||POSE_MS[pose]||520);
+  }, Math.round((ms||POSE_MS[pose]||520)*SPD));
 }
 /* 앞으로 파고들었다(공격) 뒤로 물러났다(피격) 제자리로 — 즉각 반응.
    transform 이 아니라 translate 속성을 쓴다. 적 스프라이트에 걸린
@@ -6643,6 +6663,46 @@ function foePurge(f){
   f.weak=0; f.weakAtk=0; f.air=0; f.stun=0;
   return n;
 }
+/* 적 하나를 뜯어본다 — 칸에 다 못 적는 것을 여기서 보여 준다 */
+function foePeekHtml(f){
+  const tier={boss:"우두머리",elite:"정예",norm:"일반"}[foeTier(f)]||"일반";
+  const D=FOE[f.name]||{};
+  const bits=[];
+  if(f.taunt)     bits.push(`도발`);
+  if(f.thorn)     bits.push(`가시 ${f.thorn}${f.thornTurn?` (${f.thornTurn}턴)`:""}`);
+  if(f.evade)     bits.push(`회피 ${f.evade}`);
+  if(f.negShield) bits.push(`부정 보호막 ${f.negShield}`);
+  if(foeHidden(f))bits.push(`은신`);
+  if(f.shield)    bits.push(`보호막 ${f.shield}`);
+  const ails=[];
+  if(f.infect) ails.push(`감염 ${f.infect}`);
+  if(f.burn)   ails.push(`화상 ${f.burn}`);
+  if(f.mark)   ails.push(`표식 ${f.mark}`);
+  if(f.weak)   ails.push(`약화 ${f.weak}`);
+  if(f.air)    ails.push(`공중`);
+  if(f.deb) DEB_KEYS.forEach(k=>{ if(f.deb[k]>0) ails.push(`${(DEBUFF[k]||{}).n||k} ${f.deb[k]}`) });
+  const why=foeBlockReason(f);
+  return `<div class="peekfoe">
+    <div class="pfhead">
+      <span class="pft">${esc(tier)}</span>
+      <b>${esc(f.name)}</b>
+      <span class="hint">${ic("hp")}${Math.max(0,f.hp)}/${f.maxHp} ·
+        ${ic("atk")}${f.atk} · ${ic("def")}${defVal(f)} · 사거리 ${f.rng} · ${esc(D.el||"공격")}</span>
+      <span class="grow"></span>
+      <button class="mini pfx">닫기</button>
+    </div>
+    <div class="pfrow">
+      <span class="pl">이번 턴</span>${intentHtml(f)}
+      ${why?`<span class="chip on">${esc(why)}</span>`:""}
+    </div>
+    ${bits.length?`<div class="pfrow"><span class="pl">지닌 것</span>${
+      bits.map(b=>`<span class="chip on">${esc(b)}</span>`).join("")}</div>`:""}
+    ${ails.length?`<div class="pfrow"><span class="pl">걸린 것</span>${
+      ails.map(b=>`<span class="chip">${esc(b)}</span>`).join("")}</div>`:""}
+    <div class="pfrow"><span class="hint">${esc(D.hit||"공격")}${jo(D.hit||"공격","eu")}로 때립니다 ·
+      거리는 아군 칸에서 ${f.slot}번까지입니다 · 적 칸을 다시 누르면 닫힙니다</span></div>
+  </div>`;
+}
 function intentKey(o){
   if(!o) return "";
   if(o.t==="atk") return "atk:"+(o.pat||"")+(o.hits||1);
@@ -6926,6 +6986,13 @@ function drawBattle(app){
   const field=el(`<div class="field"><div class="side mine" id="mySide"></div>
     <div class="mid"></div><div class="side" id="foeSide"></div></div>`);
   app.appendChild(field);
+  if(B.peek!=null){
+    const pf=B.foes.find(x=>x.id===B.peek&&x.alive);
+    if(pf){ const pn=el(foePeekHtml(pf));
+      pn.querySelector(".pfx").onclick=()=>{ B.peek=null; render() };
+      app.appendChild(pn);
+    } else B.peek=null;
+  }
   const my=field.querySelector("#mySide"), fs=field.querySelector("#foeSide");
 
   const tgMode = (sel && sel.step===4) ? sel.hero.sk[sel.skill].tg : null;
@@ -7056,7 +7123,11 @@ function drawBattle(app){
           ${f.burn?`<span class="chip on">화상${f.burn}</span>`:""}
           ${f.mark?`<span class="chip on">표식${f.mark}</span>`:""}
           ${debChips(f)}</div>`;
-      d.onclick=()=>{ if(sel&&sel.step===4&&canHit) doSkill(s) };
+      d.onclick=()=>{
+        if(sel&&sel.step===4&&canHit){ doSkill(s); return }
+        /* 겨누는 중이 아니면 그 적을 살펴본다 */
+        B.peek=(B.peek===f.id)?null:f.id; render();
+      };
     }else if(tgMode==="any"&&emptyOkAny(sel.hero.sk[sel.skill])){
       d.classList.add("pick");
       d.onclick=()=>doSkill(s);
@@ -7115,6 +7186,9 @@ function drawBattle(app){
     tr.appendChild(hb);
     const rb=el(`<button class="mini" title="이 전투를 시작 시점으로 되감습니다. 적 구성·능력치·행동 패턴은 그대로입니다.">전투 초기화</button>`);
     rb.onclick=resetBattle; tr.appendChild(rb);
+    const sp=el(`<button class="mini ${SPD<1?"on":""}" title="연출을 빠르게 넘깁니다. 규칙은 그대로입니다.">${
+      SPD<1?"연출 ▶▶ 빠르게":"연출 ▶ 보통"}</button>`);
+    sp.onclick=()=>setSpeed(SPD>=1); tr.appendChild(sp);
     app.appendChild(tr); }
   if(sel&&sel.hero&&sel.step>=2&&sel.step<5){
     const sp=skillPanel(sel.hero);
