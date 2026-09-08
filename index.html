@@ -4548,7 +4548,9 @@ document.addEventListener("keydown",e=>{
 function render0(){
   const app=document.getElementById("app");
   const hr=document.getElementById("hRun");
-  if(run&&view!=="title"){
+  /* 마지막 구역을 넘기면 run.field 가 FIELDS 밖으로 나간다.
+     그때도 머리줄을 그리려 들면 FIELDS[3] 이 없어 화면이 통째로 죽는다. */
+  if(run&&view!=="title"&&FIELDS[run.field]){
     /* 오늘까지 세어 남은 날 — 지도 목표 줄과 같은 셈이어야 한다 */
     const dLeft=Math.max(0,FIELDS[run.field].days-run.day+1);
     const tPct=Math.min(100,run.taint);
@@ -4717,7 +4719,10 @@ function decRef(s,heroes){
   return walk(JSON.parse(s));
 }
 function saveGame(){
-  if(!SAVE_ON||!run||view==="title"||run.sandbox) return;
+  if(!SAVE_ON||!run||run.sandbox) return;
+  /* 끝난 판은 적어 두지 않는다 — 적어 두면 죽은 판을 '이어하기'로 되살리게 된다.
+     lose()/clear 에서 지워도 곧바로 render() 가 다시 적어 버려서 여기서 막는다. */
+  if(view==="title"||view==="over"||view==="clear"||run.lost) return;
   try{
     const hs=run.heroes;
     const heroes=JSON.stringify(hs,(k,v)=>typeof v==="function"?undefined:v);
