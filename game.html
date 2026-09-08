@@ -971,6 +971,25 @@ header{align-items:center}
   border-radius:5px;background:var(--panel);font-size:13px}
 .goalbar .gl{font-size:11px;letter-spacing:.14em;color:var(--faint)}
 .goalbar b{color:var(--brass);font-family:var(--serif);font-size:14.5px}
+/* 대원 상태 한 줄 */
+.party{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;
+  margin:14px auto 4px;padding:8px 14px;max-width:760px;
+  border:1px solid var(--rule);border-radius:6px;background:var(--panel)}
+.party .pl{font-size:11px;letter-spacing:.14em;color:var(--faint)}
+.party .ph{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--dim);
+  padding:2px 9px;border:1px solid var(--rule2);border-radius:99px}
+.party .ph b{color:var(--fg);font-weight:700}
+.party .ph i{display:block;width:46px;height:6px;border-radius:3px;background:#0c0a09;
+  border:1px solid rgba(0,0,0,.6);overflow:hidden}
+.party .ph i u{display:block;height:100%;background:var(--hp);text-decoration:none;
+  transition:width .3s}
+.party .ph em{font-style:normal;font-size:11px;color:var(--faint);
+  font-variant-numeric:tabular-nums}
+.party .ph.mid i u{background:var(--caution)}
+.party .ph.low i u{background:var(--danger)}
+.party .ph.low{border-color:rgba(201,80,63,.55)}
+.party .ph.down{opacity:.5;border-style:dashed}
+.party .ph.down b{text-decoration:line-through}
 .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:11px;color:var(--dim)}
 .legend span{display:inline-flex;align-items:center;gap:5px}
 .legend i{width:16px;height:16px;display:inline-block}
@@ -5867,15 +5886,36 @@ function buy(g){
 }
 
 /* ═══════════ 휴식소 ═══════════ */
+/* 대원 상태 한 줄 — 회복이냐 보상이냐를 고르려면 누가 다쳤는지 보여야 한다 */
+function partyStrip(note){
+  const hurt=run.heroes.filter(h=>!h.down&&h.hp<h.maxHp).length;
+  const down=run.heroes.filter(h=>h.down).length;
+  return `<div class="party">
+    <span class="pl">대원</span>
+    ${run.heroes.map(h=>{
+      const p=Math.max(0,Math.round(h.hp/h.maxHp*100));
+      const cls=h.down?"down":p<=33?"low":p<=66?"mid":"";
+      return `<span class="ph ${cls}" title="${esc(h.name)} Lv.${h.lv} · 체력 ${Math.max(0,h.hp)}/${h.maxHp}">
+        <b>${esc(h.name)}</b>
+        <i><u style="width:${h.down?0:p}%"></u></i>
+        <em>${h.down?"기절":Math.max(0,h.hp)+"/"+h.maxHp}</em></span>`;
+    }).join("")}
+    ${note?`<span class="hint">${note}</span>`
+      :`<span class="hint">${down?`기절 ${down}명 · `:""}${hurt?`다친 대원 ${hurt}명`:"모두 멀쩡합니다"}</span>`}
+  </div>`;
+}
 function drawRest(app){
   app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">휴 식 소</div>
     <div class="sub">불씨가 아직 남아 있습니다. 잠깐 몸을 누일 수 있겠군요.</div></div>`));
   const wrap=app.querySelector(".center");
+  wrap.appendChild(el(partyStrip(run.heroes.some(h=>h.down)
+    ? "기절한 대원은 주둔지 치료소에서만 일어납니다" : null)));
   const n=[1,1,2][Math.min(run.field,2)];
   const grade=run.field===0?"하급":"중급";
   const row=el(`<div class="rewards"></div>`);
   const a=el(`<div class="rw"><div class="rwi">${nodeArt("rest")}</div>
-    <b>불을 쬔다</b><p>모든 영웅이 최대 체력의 30%를 회복합니다.</p></div>`);
+    <b>불을 쬔다</b><p>쓰러지지 않은 모든 대원이 최대 체력의 30%를 회복합니다.</p>
+    <p style="color:var(--faint)">기절한 대원은 일어나지 않습니다.</p></div>`);
   a.onclick=()=>{ run.heroes.forEach(h=>{ if(!h.down)
       healUp(h,Math.round(h.maxHp*0.3)) });
     SFX.play("heal"); toast("몸이 좀 풀립니다."); leaveNode() };
@@ -6249,12 +6289,17 @@ function drawRelic(app){
 function leaveNode(){ run.here=null; backToMap() }
 
 /* ═══════════ 영입 · 종료 화면 ═══════════ */
+const PARTY_MAX=5;                      /* 기획 노트 — 덱에는 최대 5명 */
 function drawRecruit(app){
-  const pool=(run.heroOffer||[]).filter(n=>!run.heroes.some(h=>h.name===n));
+  const full=run.heroes.length>=PARTY_MAX;
+  const pool=full?[]:(run.heroOffer||[]).filter(n=>!run.heroes.some(h=>h.name===n));
   app.appendChild(el(`<div class="center">
     <div class="title" style="font-size:22px">새로운 동료</div>
-    <div class="sub">싸움 소리를 듣고 찾아온 자들입니다. 한 명을 맞이하세요.</div></div>`));
+    <div class="sub">${full
+      ? `대원이 이미 ${PARTY_MAX}명입니다. 더 받을 자리가 없습니다.`
+      : `싸움 소리를 듣고 찾아온 자들입니다. 한 명을 맞이하세요. (지금 ${run.heroes.length}/${PARTY_MAX}명)`}</div></div>`));
   const wrap=app.querySelector(".center");
+  wrap.appendChild(el(partyStrip(null)));
   const row=el(`<div class="picks"></div>`);
   pool.forEach(n=>{
     const d=HEROES[n];
