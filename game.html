@@ -749,6 +749,25 @@ body.shakeall{animation:allShake .62s cubic-bezier(.36,.07,.19,.97)}
 .rw.ro:hover{border-color:#4a3f63;box-shadow:0 6px 18px rgba(0,0,0,.4)}
 /* ── 이펙트 ── */
 #fx{position:fixed;inset:0;pointer-events:none;z-index:900;overflow:hidden}
+/* 내 턴 알림 — 적의 행동이 다 끝난 뒤 전장 위를 작게 스쳐 지나간다 */
+.turnban{position:fixed;z-index:940;pointer-events:none;
+  display:flex;align-items:baseline;gap:9px;white-space:nowrap;
+  padding:5px 17px;border-radius:999px;
+  background:linear-gradient(180deg,rgba(48,40,29,.95),rgba(24,20,16,.95));
+  border:1px solid rgba(201,162,39,.55);
+  box-shadow:0 0 0 1px rgba(0,0,0,.55),0 7px 20px rgba(0,0,0,.5),
+             0 0 24px rgba(201,162,39,.2);
+  animation:turnban 1.25s cubic-bezier(.2,.8,.3,1) forwards}
+.turnban b{font-size:15px;font-weight:800;letter-spacing:.14em;color:var(--brass);
+  text-shadow:0 0 10px rgba(201,162,39,.55)}
+.turnban span{font-size:11px;color:var(--dim);letter-spacing:.04em}
+@keyframes turnban{
+  0%  {opacity:0;transform:translate(-50%,-42%) scale(.9)}
+  12% {opacity:1;transform:translate(-50%,-50%) scale(1.05)}
+  22% {opacity:1;transform:translate(-50%,-50%) scale(1)}
+  70% {opacity:1;transform:translate(-50%,-50%) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-62%) scale(1)}}
+@media (prefers-reduced-motion: reduce){ .turnban{animation-duration:.8s} }
 .pop{position:absolute;transform:translate(-50%,-50%);font-family:var(--serif);font-weight:700;
   font-size:21px;text-shadow:0 2px 4px #000,0 0 10px #000;animation:pop .95s ease-out forwards}
 .pop.dmg{color:var(--atk)} .pop.mag{color:var(--mag)} .pop.heal{color:var(--hp)}
@@ -1753,6 +1772,18 @@ function nudge(side,slot,dir){
     sp.style.transition="translate .3s cubic-bezier(.3,.55,.3,1)";
     sp.style.translate="0px";
   }, dir>0?150:130);
+}
+/* 내 턴이 돌아왔다 */
+function turnBanner(){
+  document.querySelectorAll(".turnban").forEach(x=>x.remove());
+  const nd=el(`<div class="turnban"><b>내 턴</b><span>${B.turn}턴</span></div>`);
+  document.body.appendChild(nd);
+  const f=document.querySelector(".field");
+  const r=f?f.getBoundingClientRect():{left:0,width:innerWidth,top:0,height:innerHeight};
+  nd.style.left=(r.left+r.width/2)+"px";
+  nd.style.top =(r.top-2)+"px";        /* 전장 바로 위 — 대원을 가리지 않게 */
+  SFX.play("turn");
+  setTimeout(()=>nd.remove(),1300);
 }
 function veil(color){
   const v=el('<div class="veil" style="background:'+color+'"></div>');
@@ -3665,10 +3696,12 @@ const FOE={
    gim:{neg:2},
    ai:{ret:0.25,near:4,weak:2,back:3,any:2,def:2,volley:4,debs:["chill","magDn"]},
    hit:"서릿발"},
+ /* 간수장의 가시는 상시가 아니라 패턴이다 — 미리 보이고 3턴 뒤 풀린다.
+    쉬지 않고 되받아치면 때릴 방법이 없어 너무 어려웠다. */
  "간수장":    {hp:46,atk:8,def:10,rng:4,exp:8,boss:1,
    el:"공격",
-   gim:{taunt:1,thorn:2},
-   ai:{near:10,weak:6,back:2,any:2,def:1,buff:3,volley:2,debs:["bind","stun"]},
+   gim:{taunt:1},
+   ai:{near:10,weak:6,back:2,any:2,def:1,buff:3,volley:2,thorn:6,debs:["bind","stun"]},
    hit:"철퇴 내려찍기"},
  "고철 거인":  {hp:70,atk:10,def:14,rng:3,exp:12,boss:1,
    el:"공격",
@@ -5896,8 +5929,13 @@ function partyPower(){
   return 1+(lv-1)*0.11+st*0.012+Math.max(0,hp-22)*0.006;
 }
 function foeScale(kind){
+  /* 필드가 바뀌는 순간 적이 한꺼번에 세지지 않게 한다.
+     예전에는 필드마다 +85% 라 2스테이지 첫날에 벽을 만났다.
+     필드 몫을 +50% 로 낮추고, 그만큼을 하루하루(l)로 옮겨
+     한 필드 안에서 천천히 오르게 했다.
+       필드1 끝 1.42 → 필드2 첫날 1.50  (예전 1.30 → 1.85) */
   const f=run.field, l=(run.day-1)+(run.dun?run.dun.wave-1:0), n=Math.min(run.heroes.length,5);
-  let m=(1+f*0.85)*(1+l*0.05)*partyPower();
+  let m=(1+f*0.5)*(1+l*0.07)*partyPower();
   if(kind==="elite")  m*=1.32;
   if(kind==="boss")   m*=1.45;
   if(kind==="ambush") m*=1.3+nightDepth()*0.08;
@@ -6028,6 +6066,14 @@ const bodyAt=s=>run.heroes.find(h=>h.down&&h.downSlot===s);
 /* 칸이 비었는지 볼 때는 쓰러진 몸도 자리로 친다 */
 const occAt=s=>unitAt(s)||bodyAt(s);
 const liveMins=()=>(B.mins||[]).filter(m=>m.alive);
+/* 내려놓을 자리가 하나라도 남았는가 (쓰러진 몸이 막고 있으면 아니다) */
+const freeSlot=()=>{ for(let s=1;s<=SLOTS;s++) if(!occAt(s)) return true; return false };
+/* 아직 전투를 이어 줄 것이 남았는가.
+   전장의 소환물뿐 아니라 손에 든 소환 카드도 목숨으로 친다 —
+   트리스탄의 '망자의 육체'는 영웅이 아니지만, 내려놓으면 전투가 이어진다.
+   놓을 칸이 없으면 내려놓을 수 없으니 목숨으로 치지 않는다(수렁 방지). */
+const lifeLeft=()=>liveMins().length>0
+  || (freeSlot() && (B.hand||[]).some(c=>c.type==="summon"));
 const allUnits=()=>onField().concat(liveMins());
 function makeMin(name,slot){
   const d=SUMMONS[name];
@@ -8315,7 +8361,10 @@ function unitDown(t){
     if(t.curseOnDeath) B.foes.filter(x=>x.alive&&dist(t.slot,x.slot)<=1)
       .forEach(x=>{ x.weak=(x.weak||0)+t.curseOnDeath;
         fx({side:"foe",slot:x.slot,ring:"#8f5fd0",txt:"약화",cls:"miss",gap:80}) });
-    t.alive=0; t.slot=0; onDeath("min",t); return;
+    t.alive=0; t.slot=0; onDeath("min",t);
+    /* 소환물이 마지막 목숨이었을 수도 있다 — 영웅이 아니어도 여기서 판정한다 */
+    if(!B.over&&!lifeLeft()&&!run.heroes.some(h=>h.hp>0)){ B.over=1; battleLost(); render() }
+    return;
   }
   bark(t,"down",1);
   /* 쓰러진 대원은 전장에서 사라지지 않는다.
@@ -8328,8 +8377,11 @@ function unitDown(t){
     say("저주받은 육체 — 망자의 육체 카드를 얻습니다.","t1");
   }
   /* 전장에 설 수 있는 아군이 하나도 남지 않으면 그 자리에서 끝난다 */
-  if(!B.over&&!liveMins().length&&!run.heroes.some(h=>h.hp>0)){
+  if(!B.over&&!lifeLeft()&&!run.heroes.some(h=>h.hp>0)){
     B.over=1; battleLost(); render();
+  }
+  else if(!B.over&&!liveMins().length&&!run.heroes.some(h=>h.hp>0)){
+    say("전장에 설 대원이 없습니다 — 손에 든 소환 카드를 내려놓아야 버팁니다.","t3");
   }
 }
 function endTurn(){
@@ -8534,8 +8586,8 @@ function foePhase(){
      그러니 다 막아낸 보호막이 다음 턴까지 따라오는 일은 없다. */
   run.heroes.forEach(h=>{ if(h.hp>0){ h.shield=0; h.keepShield=0 } });
   liveMins().forEach(m=>{ m.shield=0; m.keepShield=0 });
-  if(!run.heroes.some(h=>h.hp>0)&&!liveMins().length){ B.over=1; battleLost(); render(); return }
-  if(!run.heroes.some(h=>!h.down)&&!liveMins().length){ B.over=1; battleLost(); render(); return }
+  if(!run.heroes.some(h=>h.hp>0)&&!lifeLeft()){ B.over=1; battleLost(); render(); return }
+  if(!run.heroes.some(h=>!h.down)&&!lifeLeft()){ B.over=1; battleLost(); render(); return }
   B.turn++;
   if(B.turn>20){ B.over=1; say("20턴이 지나 물러납니다.","t3"); battleLost(); render(); return }
   liveMins().forEach(m=>{ m.mana=m.maxMana;
@@ -8589,7 +8641,12 @@ function foePhase(){
     } });
   rollIntents(); sel=null;
   say(`— ${B.turn}턴 시작 —`,"t1");
+  /* 적의 행동 연출이 다 흐른 뒤에 알린다 — 그래야 '내 차례'가 명확하다 */
+  const banner=Math.min(2400,Math.max(240,fxDuration()+200));
   checkEnd(); render();
+  if(!B.over) setTimeout(()=>{
+    if(B&&!B.over&&!B.busy&&view==="battle") turnBanner();
+  },banner);
 }
 function checkEnd(){
   if(run&&run.sandbox) return;
