@@ -96,6 +96,13 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .slot .art::after{content:"";position:absolute;left:50%;bottom:0;transform:translateX(-50%);
   width:52px;height:7px;border-radius:50%;background:rgba(0,0,0,.45);filter:blur(2px);z-index:-1}
 .art svg{height:56px;width:auto}
+.art img.pxs{height:56px;width:auto;image-rendering:pixelated;display:block;
+  filter:drop-shadow(0 2px 0 rgba(0,0,0,.55)) drop-shadow(0 0 7px rgba(201,162,39,.22))}
+.slot.foe .art img.pxs{filter:saturate(.62) contrast(1.14) brightness(.92)
+  drop-shadow(0 0 7px rgba(142,43,43,.4))}
+.rost .art img.pxs,.card .art img.pxs{height:100%}
+.pick .art img.pxs{height:90px}
+.cxh .art img.pxs,.cxtop .art img.pxs{height:100%}
 .nm{font-size:12.5px;font-weight:700;line-height:1.25;word-break:keep-all;text-align:center;
   text-shadow:0 1px 0 rgba(0,0,0,.6)}
 .bar{height:9px;background:#0c0a09;border:1px solid rgba(0,0,0,.6);border-radius:4px;
@@ -1741,7 +1748,9 @@ const PX_CUSTOM={
 };
 /* 외부에서 그린 그림을 쓰고 싶으면 여기에 data URI 를 넣는다.
    넣는 순간 그 캐릭터는 도트 엔진 대신 이 그림으로 그려진다. */
-const PNG_SPRITE={};
+const PNG_SPRITE={
+ "나이코스":"data:image/png;base64,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"
+};
 const PX_BODY={
 /* 판금 — 마르고 키 큰 전사 */
 armor:[
