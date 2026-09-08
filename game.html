@@ -960,6 +960,18 @@ header{align-items:center}
 .legend span{display:inline-flex;align-items:center;gap:5px}
 .legend i{width:16px;height:16px;display:inline-block}
 .legend i svg{width:16px;height:16px}
+/* 타이틀의 이어하기 상자 */
+.contsave{margin:34px auto 0;width:min(460px,92vw);padding:14px 18px;
+  background:var(--panel);border:1px solid var(--brass);border-radius:7px;
+  box-shadow:0 6px 20px rgba(0,0,0,.45)}
+.cshead{font-family:var(--serif);font-size:17px;color:var(--brass);letter-spacing:.06em}
+.cssub{font-size:12.5px;color:var(--dim);margin-top:5px}
+.cssub .hint{margin-left:7px;font-size:11.5px;color:var(--faint)}
+.csros{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px}
+.csh{font-size:11.5px;padding:2px 9px;border:1px solid var(--rule2);border-radius:99px;color:var(--dim)}
+.csh b{color:var(--fg);font-weight:700}
+.csh.down{opacity:.5;text-decoration:line-through}
+.csbtn{display:flex;gap:8px;justify-content:center;margin-top:13px}
 .toast{background:var(--raise);border:1px solid var(--rule2);border-left:3px solid var(--brass);
   border-radius:4px;padding:9px 14px;margin:0 0 12px;font-size:13px}
 .rost.down{opacity:.5}
@@ -4381,13 +4393,13 @@ function bossFallCard(name){
   setTimeout(()=>card.classList.add("out"),2650);
   setTimeout(()=>card.remove(),3400);
 }
-function lose(msg){ run.lost=msg; view="over"; render() }
+function lose(msg){ clearSave(); run.lost=msg; view="over"; render() }
 let TOAST="";
 function toast(t){ TOAST=t }
 
 function nextField(){
   run.field++;
-  if(run.field>=FIELDS.length){ view="clear"; render(); return }
+  if(run.field>=FIELDS.length){ clearSave(); view="clear"; render(); return }
   const f=FIELDS[run.field], S=f.size, mid=Math.floor(S/2);
   run.size=S; run.grid=buildGrid(run.field);
   run.pos={r:S-1,c:mid};
@@ -4415,6 +4427,13 @@ function render(){
   tutPanel();
   if(run&&run.mapPeek&&view!=="map"&&view!=="title") drawMapPeek();
   flushFX();
+  saveSoon();
+}
+/* 화면이 여러 번 그려져도 저장은 한 번만 — 그리기가 멎은 뒤에 적는다 */
+let SAVE_T=0;
+function saveSoon(){
+  if(SAVE_T) clearTimeout(SAVE_T);
+  SAVE_T=setTimeout(()=>{ SAVE_T=0; saveGame() },300);
 }
 function drawMapPeek(){
   const f=FIELDS[run.field]||{n:"균열"}, S=run.size;
@@ -4534,8 +4553,26 @@ function drawTitle(app){
   app.appendChild(el(`<div class="center" style="margin-top:70px">
     <div class="title" style="font-size:44px">균 열</div>
     <div class="sub" style="margin-top:14px">갈라진 세상을 닫으러 간다</div></div>`));
-  const b=el(`<div style="margin-top:40px"><button class="go" style="font-size:16px;padding:12px 34px">게임 시작</button></div>`);
-  b.querySelector("button").onclick=()=>{ TUT.on=0; rollStart(); pendingHero=null; view="heropick"; render() };
+  const sv=savePeek();
+  if(sv){
+    const box=el(`<div class="contsave">
+      <div class="cshead">이어하기</div>
+      <div class="cssub">${esc(FIELDS[sv.field]?FIELDS[sv.field].n:"균열")} · ${sv.day}일차${
+        sv.inBattle?" · 전투 도중":""} <span class="hint">${saveStamp(sv.at)}</span></div>
+      <div class="csros">${sv.heroes.map(h=>
+        `<span class="csh ${h.down?"down":""}">${esc(h.n)} <b>Lv${h.lv}</b>${h.down?" · 기절":""}</span>`).join("")}</div>
+      <div class="csbtn"><button class="go">이어서 하기</button><button class="mini">지우기</button></div>
+    </div>`);
+    const [go,del]=box.querySelectorAll("button");
+    go.onclick=()=>{ if(!loadGame()){ toast("저장한 판을 열지 못했습니다."); clearSave(); view="title"; render() } };
+    del.onclick=()=>{ if(confirm("저장한 판을 지웁니다. 되돌릴 수 없습니다.")){ clearSave(); render() } };
+    app.querySelector(".center").appendChild(box);
+  }
+  const b=el(`<div style="margin-top:${sv?22:40}px"><button class="go" style="font-size:16px;padding:12px 34px">${
+    sv?"새로 시작":"게임 시작"}</button></div>`);
+  b.querySelector("button").onclick=()=>{
+    if(sv&&!confirm("새로 시작하면 저장해 둔 판이 지워집니다. 계속할까요?")) return;
+    clearSave(); TUT.on=0; rollStart(); pendingHero=null; view="heropick"; render() };
   app.querySelector(".center").appendChild(b);
   const t=el(`<div style="margin-top:14px"><button style="padding:9px 24px">튜토리얼 — 처음이라면</button></div>`);
   t.querySelector("button").onclick=startTutorial;
@@ -4551,6 +4588,129 @@ function drawTitle(app){
     <b>오염도</b>가 100이 되면 그 자리에서 끝납니다.</div>`));
 }
 
+
+
+/* ═══════════ 저장 ═══════════
+   한 판(run)과 전투 도중(B)까지 통째로 이 브라우저에 적어 둔다.
+   까다로운 곳은 두 가지다.
+     ① 영웅 객체는 여기저기서 같은 것을 가리킨다(손패·pending·적의 공포 대상…).
+        그대로 JSON 으로 만들면 사본이 여러 벌 생겨 서로 딴 사람이 된다.
+        그래서 영웅은 한 번만 적고, 나머지 자리에는 {__h:번호} 표를 남긴다.
+     ② 손패의 카드는 use 함수를 들고 있다. 함수는 적을 수 없으므로
+        무엇으로 만든 카드인지만 적어 두고(handPack), 불러올 때 다시 만든다. */
+const SAVE_KEY="kyunyeol.save.v1";
+let SAVE_ON=true;                    /* 되감기·연습장에서는 잠시 끈다 */
+
+function handPack(){
+  return (B.hand||[]).map(c=>{
+    if(c.type==="hero")   return {t:"hero",n:c.hero.name};
+    if(c.type==="summon") return {t:"summon",n:c.name};
+    if(c.stock)           return {t:"stock",n:c.stock,d:c.d};
+    return {t:"armor",n:c.name,d:c.d,by:c.by||null};   /* giveArmor 로 들어온 방어구 */
+  });
+}
+function handUnpack(list){
+  const out=[];
+  (list||[]).forEach(c=>{
+    if(c.t==="hero"){
+      const h=run.heroes.find(x=>x.name===c.n);
+      if(h) out.push({type:"hero",hero:h});
+    }
+    else if(c.t==="summon") out.push({type:"summon",name:c.n});
+    else if(c.t==="stock"){
+      const L=CARD_LIB[c.n];
+      if(L) out.push({type:"item",name:c.n,d:c.d||L.d,stock:c.n,use:L.use});
+    }
+    else if(c.t==="armor"){
+      const A=ARMOR_CARDS[c.n], by=c.by&&run.heroes.find(x=>x.name===c.by);
+      out.push({type:"item",name:c.n,d:c.d||(A?A.d:"아군에게 보호막 10"),by:c.by||null,
+        use:a=>{ if(A) A.use(a,by||a); else { a.shield+=10; say(`${c.n} — ${a.name} 보호막 +10`) } }});
+    }
+  });
+  return out;
+}
+/* 영웅을 가리키는 자리를 {__h:번호} 로 바꿔 적는다 */
+function encRef(o,heroes){
+  const idx=new Map(); heroes.forEach((h,i)=>idx.set(h,i));
+  return JSON.stringify(o,(k,v)=>{
+    if(typeof v==="function") return undefined;
+    if(v&&typeof v==="object"&&idx.has(v)) return {__h:idx.get(v)};
+    return v;
+  });
+}
+function decRef(s,heroes){
+  if(s==null) return null;
+  const walk=v=>{
+    if(!v||typeof v!=="object") return v;
+    if(Array.isArray(v)) return v.map(walk);
+    if(typeof v.__h==="number") return heroes[v.__h]||null;
+    for(const k in v) v[k]=walk(v[k]);
+    return v;
+  };
+  return walk(JSON.parse(s));
+}
+function saveGame(){
+  if(!SAVE_ON||!run||view==="title"||run.sandbox) return;
+  try{
+    const hs=run.heroes;
+    const heroes=JSON.stringify(hs,(k,v)=>typeof v==="function"?undefined:v);
+    run.heroes=null;
+    const runS=encRef(run,hs);
+    run.heroes=hs;
+    let bat=null;
+    if(B&&view==="battle"&&!B.over){
+      bat=encRef({kind:B.kind,turn:B.turn,log:B.log.slice(-60),
+                  foes:B.foes,mins:B.mins||[],portals:B.portals||[],
+                  corpseUsed:B.corpseUsed||0,hand:handPack()},hs);
+    }
+    localStorage.setItem(SAVE_KEY,JSON.stringify({
+      v:1, at:Date.now(), view:view, heroes:heroes, run:runS,
+      pending:encRef(pending,hs), B:bat, snap:BSNAP?JSON.stringify(BSNAP):null
+    }));
+  }catch(e){ /* 저장 실패는 놀이를 막지 않는다 */ }
+}
+function savePeek(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY); if(!raw) return null;
+    const s=JSON.parse(raw); if(!s||s.v!==1) return null;
+    const hs=JSON.parse(s.heroes||"[]");
+    const r=JSON.parse(s.run||"{}");
+    return {at:s.at, field:r.field||0, day:r.day||1, view:s.view,
+            inBattle:!!s.B, heroes:hs.map(h=>({n:h.name,lv:h.lv,down:h.down}))};
+  }catch(e){ return null }
+}
+function loadGame(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY); if(!raw) return false;
+    const s=JSON.parse(raw); if(!s||s.v!==1) return false;
+    const heroes=JSON.parse(s.heroes);
+    run=decRef(s.run,heroes) || {};
+    run.heroes=heroes;
+    pending=decRef(s.pending,heroes);
+    sel=null; B=null; HPMEM={}; SHMEM={};
+    BSNAP=s.snap?JSON.parse(s.snap):null;
+    view=s.view||"map";
+    if(s.B){
+      const b=decRef(s.B,heroes);
+      B={kind:b.kind,turn:b.turn,over:0,busy:0,log:b.log||[],hand:[],units:[],
+         foes:b.foes||[],mins:b.mins||[],portals:b.portals||[],
+         corpseUsed:b.corpseUsed||0,drag:null};
+      B.hand=handUnpack(b.hand);
+      /* 공포를 건 사람 같은 이름표는 다시 이어 준다 */
+      B.foes.forEach(f=>{ if(f.fearName&&!f.fearSrc)
+        f.fearSrc=run.heroes.find(h=>h.name===f.fearName)||null });
+      view="battle";
+      say("저장해 둔 자리에서 이어갑니다.","t2");
+    } else if(view==="battle") view="map";
+    render();
+    return true;
+  }catch(e){ return false }
+}
+function clearSave(){ try{ localStorage.removeItem(SAVE_KEY) }catch(e){} }
+function saveStamp(t){
+  const d=new Date(t), z=n=>(n<10?"0":"")+n;
+  return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`;
+}
 
 /* ═══════════ 설명 편집기 ═══════════
    고친 글은 이 브라우저에 저장되고 곧바로 게임에 반영됩니다.
@@ -6188,6 +6348,8 @@ function startBattle(kind,pinned){
 }
 /* 이 전투를 시작 시점으로 되감는다 — 적도 배치도 패턴도 그대로 */
 function resetBattle(){
+  /* 되감는 동안 중간 상태가 저장되지 않게 한다 */
+  SAVE_ON=false; setTimeout(()=>{ SAVE_ON=true; saveGame() },60);
   if(!BSNAP||!BSNAP.foes){ startBattle(B.kind); return }
   try{
     const kind=BSNAP.kind;
@@ -7761,7 +7923,7 @@ function applyLeech(h,dmg){
 function giveArmor(h,nm){
   const A=ARMOR_CARDS[nm];
   pulseFX("mine",h.slot,"#e0c85a",2);
-  B.hand.push({type:"item",name:nm,d:A?A.d:"아군에게 보호막 10",
+  B.hand.push({type:"item",name:nm,d:A?A.d:"아군에게 보호막 10",by:h.name,
     use:a=>{ if(A) A.use(a,h); else { a.shield+=10; say(`${nm} — ${a.name} 보호막 +10`) } }});
   fx({side:"mine",slot:h.slot,s:"summon",ring:"#c9a227",glow:1,txt:nm,cls:"shd",gap:70});
   say(`${nm} 카드를 손에 넣었습니다.`,"t1");
