@@ -3333,8 +3333,9 @@ const HERO_REWARDS={
  ],
  "이테리오":[
   R("무한 팽창 융합봉","상급","수축 공격의 거리 제한이 사라집니다.",
+    /* 기술의 rng 를 직접 0 으로 만든다. reachOf 가 rng||null 이라 거리 제한이 사라진다 */
     h=>{ const set=o=>{ if(o&&o.n==="수축 공격") o.rng=0 };
-         set(h.sk[0]); (h.sk[0].opts||[]).forEach(set); h.tag.noConRange=1 },0.5),
+         set(h.sk[0]); (h.sk[0].opts||[]).forEach(set) },0.5),
   R("압축 공격","상급","팽창 공격이 모든 적 대신 거리 2 안의 적만 때리고, 흡수 20%를 얻습니다.",
     h=>h.tag.pressAtk=1,0.5),
   R("치명적인 보호","상급","아군이 치명타 피해를 줄 때마다 이테리오가 보호막을 2 얻습니다.",
@@ -6594,7 +6595,7 @@ function startBattle(kind,pinned){
     h.shield=0; h.keepShield=0; h.slot=0; h.armor=0; h.deb={};
     h.hide=0; h.shadowAt=0; h.darkAt=0; h.stance=0; h.stanceTurn=0;
     h.leech=0; h.pierceNext=0; h.aimAt=null; h.headshotUsed=0; h.mobile=0;
-    h.freeBlock=0; h.freePush=0; h.cutUses=0;
+    h.freeBlock=0; h.freePush=0; h.cutUses=0; h.shotUses=0;
     h.windBuff=0; h.potential=0; h.lock={}; h.airUp=0; h.manaUsed=0;
     h.portal=null; h.bomb=0; h.minions=[];
     h.mana=h.maxMana;
@@ -7758,11 +7759,14 @@ function canPay(h,i,n){
   /* 헥토 — 선두 방어 뒤의 방패 막기, 후미 준비 뒤의 방패 밀치기는 한 번 공짜 */
   let fb=(h.freeBlock&&s.n==="방패 막기")?1:0;
   let fp=(h.freePush&&s.n==="방패 밀치기")?1:0;
+  /* 트리스탄 두 번째 화살 — 페일노트 두 번에 한 번은 공짜 */
+  let sh=(h.tag.freeShot&&i===0&&h.name==="트리스탄")?(h.shotUses||0):-1;
   for(let k=0;k<n;k++){
     if(h.name==="카제"&&i===1&&free>0){ free--; continue }
     if(h.tag.freeCut&&i===0&&guard){ guard=0; continue }
     if(fb){ fb=0; continue }
     if(fp){ fp=0; continue }
+    if(sh>=0){ sh++; if(sh%2===0) continue }
     need+=s.cost;
   }
   return h.mana>=need;
@@ -8288,6 +8292,12 @@ function doSkill(target){
     }
     { const pn=pinnedFoe(h,s); if(pn) target=pn.slot; else if(s.farshot||s.nearest) break }
     if(!canPay(h,i,1)){ say("자원이 부족해 중단합니다.","t2"); break }
+    /* 두 번째 화살 — 페일노트를 쓴 횟수를 세어 두 번에 한 번은 받지 않는다 */
+    let freeArrow=0;
+    if(h.tag.freeShot&&i===0&&h.name==="트리스탄"){
+      h.shotUses=(h.shotUses||0)+1;
+      if(h.shotUses%2===0) freeArrow=1;
+    }
     /* 비용 지불 */
     if(s.costType==="scale"){ h.scale-=s.cost }
     else if(s.costType==="mom"){
@@ -8298,6 +8308,7 @@ function doSkill(target){
       say("방어 후 막기 — 이번 방패 막기는 공짜입니다.","t2") }
     else if(h.freePush&&s.n==="방패 밀치기"){ h.freePush=0;
       say("준비 후 밀치기 — 이번 방패 밀치기는 공짜입니다.","t2") }
+    else if(freeArrow){ say("두 번째 화살 — 이번 페일노트는 공짜입니다.","t2") }
     else { h.mana-=s.cost; h.manaUsed=(h.manaUsed||0)+s.cost;
       if(s.cost){
         const mm=itemBt(h,"manaMom"); if(mm) h.mom+=s.cost*mm;
@@ -9286,6 +9297,12 @@ function endPhase(){
       if(conv){ h.shield-=conv; h.eshield=(h.eshield||0)+conv; bump();
         fx({side:"mine",slot:h.slot,s:"pulse",gap:170});
         say(`돌봄 — ${h.name} 보호막 ${conv}을 에너지 보호막으로 바꿉니다.`) } }
+    /* 오토의 여분손 — 표에는 있었는데 아무 데서도 읽지 않아 아무 일도 안 하던 효과 */
+    { const st=itemBt(h,"shieldToEsh");
+      if(st){ const conv=Math.min(st,h.shield);
+        if(conv){ h.shield-=conv; h.eshield=(h.eshield||0)+conv; bump();
+          fx({side:"mine",slot:h.slot,s:"pulse",gap:170});
+          say(`오토의 여분손 — ${h.name} 보호막 ${conv}을 에너지 보호막으로 바꿉니다.`,"t2") } } }
     if(h.name==="보아"){ const sc=h.scaleTurn||0, v=1+h.def+sc;
       endShield(h,v); h.scaleTurn=0; bump();
       fx({side:"mine",slot:h.slot,s:"shield",glow:1,gap:190});
