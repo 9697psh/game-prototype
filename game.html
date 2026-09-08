@@ -13,6 +13,7 @@
   --fg:#e7dcc8; --dim:#9c8d77; --faint:#6d6252;
   --brass:#c9a227; --blood:#8e2b2b;
   --atk:#e0705a; --mag:#6aa8e0; --def:#e0c85a; --hp:#7fd39a; --move:#5fd8cf; --mana:#5f8fe0;
+  --mana2:#7fd8ff;                       /* 최대치를 넘어선 추가 마나 */
   --warn:#e0a86a;
   /* 자원 — 종류마다 다른 색 */
   --r-day:#c9a227; --r-time:#8fa2c9; --r-night:#6a5f9c;
@@ -71,11 +72,25 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .pips{display:inline-flex;gap:3px;align-items:center}
 .pips i{width:7px;height:7px;border-radius:50%;border:1px solid var(--rule2);display:inline-block}
 .pips i.on{background:var(--mana);border-color:#8fb4ef;box-shadow:0 0 5px rgba(95,143,224,.75)}
+/* 추가 마나 — 같은 파랑이되 더 밝고, 모서리를 세워 한눈에 갈린다 */
+.pips i.ex{background:var(--mana2);border-color:#d2f2ff;border-radius:1px;
+  transform:rotate(45deg);box-shadow:0 0 7px rgba(127,216,255,.95),0 0 14px rgba(127,216,255,.5);
+  animation:exPip 1.9s ease-in-out infinite}
+@keyframes exPip{0%,100%{filter:brightness(1)}50%{filter:brightness(1.45)}}
+.exm{font-style:normal;color:var(--mana2);font-weight:700;margin-left:3px;
+  text-shadow:0 0 6px rgba(127,216,255,.7)}
+@media (prefers-reduced-motion: reduce){.pips i.ex{animation:none}}
 .res .rr{font-size:10px;color:var(--move);display:inline-flex;align-items:center;gap:2px}
 .res .rr.es{color:var(--def)}
 .res .rr.mn2{color:var(--mana)}
 .res .rr.am{color:#e0a86a} .res .rr.sc{color:#9ad06a} .res .rr.dk{color:#a06ae0}
 .res .rr.tn{color:#e08ac0} .res .rr.so{color:#8fb4ef}
+/* 약화 — 적이 내놓는 값이 깎였다 */
+.chip.wk{color:#b58fe0;border-color:rgba(143,95,208,.55);background:rgba(143,95,208,.12);font-weight:700}
+.intent.cut{color:#b58fe0;border-color:rgba(143,95,208,.5)}
+.intent.cut s{margin-left:4px;opacity:.55;font-size:.86em;text-decoration-thickness:1px}
+.intent .tgt{white-space:nowrap}
+.pop.wkn{color:#c9a8ef;text-shadow:0 0 9px rgba(143,95,208,.9),0 1px 0 rgba(0,0,0,.8);font-weight:800}
 .art{height:62px;display:flex;align-items:flex-end;justify-content:center;position:relative}
 .art svg{filter:drop-shadow(0 2px 0 rgba(0,0,0,.55))}
 .slot .art::after{content:"";position:absolute;left:50%;bottom:0;transform:translateX(-50%);
@@ -6126,10 +6141,18 @@ function intentHtml(f){
       I.k==="ward"?"미리 부정 보호막을 둘러 다음 상태 이상을 막습니다"
       :I.k==="roar"?"몸에 걸린 상태 이상을 모두 걷어내고, 걷어낸 만큼 공격력을 얻습니다"
       :"몸에 걸린 상태 이상을 모두 걷어냅니다"}">✦ ${esc(purgeName(f,I.k))}</span>`;
-  if(I.t==="volley")return `<span class="intent" title="아군 전체">${ic("atk")}<b>${I.v}</b> 전체</span>`;
-  if(I.t==="atk")   return `<span class="intent" title="${esc((I.pat||"")+" · "+(I.el||"공격"))}">${
-    ic(I.el==="마법"?"mag":"atk")}<b>${I.v}</b>${
-    I.hits>1?`<span class="hits">×${I.hits}</span>`:""} → ${I.to}번</span>`;
+  if(I.t==="volley"){
+    const e=foeDmg(f,I.v,I.el);
+    return `<span class="intent${e<I.v?" cut":""}" title="아군 전체${e<I.v?` · 약화로 ${I.v} → ${e}`:""}">${
+      ic("atk")}<b>${e}</b>${e<I.v?`<s>${I.v}</s>`:""} 전체</span>`;
+  }
+  if(I.t==="atk"){
+    const e=foeDmg(f,I.v,I.el);
+    return `<span class="intent${e<I.v?" cut":""}" title="${
+      esc((I.pat||"")+" · "+(I.el||"공격"))}${e<I.v?` · 약화로 ${I.v} → ${e}`:""}">${
+      ic(I.el==="마법"?"mag":"atk")}<b>${e}</b>${e<I.v?`<s>${I.v}</s>`:""}${
+      I.hits>1?`<span class="hits">×${I.hits}</span>`:""} <span class="tgt">→ ${I.to}번</span></span>`;
+  }
   return `<span class="intent">대기</span>`;
 }
 
@@ -6249,6 +6272,8 @@ function drawBattle(app){
           ${f.shield?`<u style="width:${Math.min(60,f.shield/f.maxHp*100)}%"></u>`:""}</div>
         <div class="mini">${ic("hp")}${f.hp}/${f.maxHp}${f.shield?` <span class="shd">${ic("def")}${f.shield}</span>`:""}
           
+          ${f.weakAtk?`<span class="chip wk" title="이번 적 차례에 내놓는 피해가 ${f.weakAtk} 줄어듭니다">${ic("atk")}−${f.weakAtk}</span>`:""}
+          ${f.weak?`<span class="chip wk" title="보호력이 ${f.weak} 줄어듭니다">${ic("def")}−${f.weak}</span>`:""}
           ${f.air?`<span class="chip on">공중</span>`:""}
           ${f.taunt?`<span class="chip on">도발</span>`:""}
           ${f.thorn?`<span class="chip on">가시${f.thorn}${f.thornTurn?` · ${f.thornTurn}턴`:""}</span>`:""}
@@ -6486,9 +6511,14 @@ function heroRes(h){
 }
 function manaPips(h){
   if(!h.maxMana) return "";
-  if(h.maxMana>8) return `<span class="rr mn2">${ic("mana")}${h.mana}/${h.maxMana}</span>`;
-  let o='<span class="pips" title="마나 '+h.mana+'/'+h.maxMana+'">';
+  /* 최대치를 넘어선 몫 — 사파이어 수정 같은 '첫 턴 추가 마나' */
+  const ex=Math.max(0,(h.mana||0)-h.maxMana);
+  if(h.maxMana>8) return `<span class="rr mn2" title="마나 ${h.mana}/${h.maxMana}${
+      ex?` · 추가 마나 ${ex}`:""}">${ic("mana")}${Math.min(h.mana,h.maxMana)}/${h.maxMana}${
+      ex?`<em class="exm">+${ex}</em>`:""}</span>`;
+  let o='<span class="pips" title="마나 '+h.mana+'/'+h.maxMana+(ex?' · 추가 마나 '+ex:'')+'">';
   for(let i=0;i<h.maxMana;i++) o+='<i class="'+(i<h.mana?"on":"")+'"></i>';
+  for(let i=0;i<ex;i++) o+='<i class="on ex"></i>';
   return o+'</span>';
 }
 function progressOf(h){
@@ -6526,7 +6556,7 @@ function skillPanel(h){
   const p=el(`<div class="skwrap"></div>`);
   p.appendChild(el(`<div class="skhead">
     <b>${esc(h.name)}</b>
-    <span class="hint">${ic("hp")}${h.hp}/${h.maxHp}${h.eshield?` · <span class="esh">◆${h.eshield}</span>`:""}${h.shield?` · <span class="shd">${ic("def")}${h.shield}</span>`:""} · ${ic("mana")}${h.mana}/${h.maxMana}${h.mom?` · ${ic("move")}${h.mom}`:""}</span>
+    <span class="hint">${ic("hp")}${h.hp}/${h.maxHp}${h.eshield?` · <span class="esh">◆${h.eshield}</span>`:""}${h.shield?` · <span class="shd">${ic("def")}${h.shield}</span>`:""} · ${ic("mana")}${Math.min(h.mana,h.maxMana)}/${h.maxMana}${h.mana>h.maxMana?`<em class="exm">+${h.mana-h.maxMana}</em>`:""}${h.mom?` · ${ic("move")}${h.mom}`:""}</span>
     <span class="grow"></span>
     <span class="hint">${(h.items||[]).length
       ? "장비 · "+h.items.map(it=>esc(it.n)).join(" / ")
@@ -6811,6 +6841,12 @@ function allAllies(){
 }
 function onSummon(h){
   const t=h.tag;
+  { const ex=(h.mana||0)-(h.maxMana||0);
+    if(ex>0){
+      fx({side:"mine",slot:h.slot,s:"pick",ring:"#7fd8ff",glow:1,
+          txt:"추가 마나 +"+ex,cls:"mag",gap:150});
+      say(`${h.name} — 첫 턴 추가 마나 +${ex} (마나 ${h.mana})`,"t2");
+    } }
   /* ── 영웅을 배치할 때마다 (라운드마다 다시) ── */
   if(t.startStorm){ say("폭풍 — 전장의 모든 적이 떠오릅니다.","t1");
     B.foes.filter(f=>f.alive).forEach(f=>airborne(h,f)) }
@@ -7652,10 +7688,23 @@ function runEffect(h,i,s,target){
   }
   if(s.weaken){
     const f=foeAt(target); if(!f){ say("그 칸에는 적이 없습니다.","t2"); return }
-    f.weakAtk=(f.weakAtk||0)+3;
-    if(h.blessed){ h.blessed=0; f.weak=(f.weak||0)+3; say("축복 — 보호력도 약화","t1") }
-    fx({side:"foe",slot:f.slot,ring:"#8f5fd0",txt:"약화",cls:"miss"});
-    say(`${f.name} 다음 턴 공격력 -3`); return;
+    const v=3+mod(s,"weaken");
+    const was=(f.intent&&f.intent.t==="atk")?foeDmg(f,f.intent.v,f.intent.el):null;
+    f.weakAtk=(f.weakAtk||0)+v;
+    const now=(f.intent&&f.intent.t==="atk")?foeDmg(f,f.intent.v,f.intent.el):null;
+    { const a=ctrOf("mine",h.slot), b=ctrOf("foe",f.slot);
+      if(a&&b) beamFX(a,b,"#8f5fd0",4) }
+    pulseFX("foe",f.slot,"#8f5fd0",2);
+    fx({side:"foe",slot:f.slot,s:"deb",ring:"#8f5fd0",glow:1,
+        txt:"공격력 −"+v,cls:"wkn",gap:170});
+    if(was!=null&&now!=null&&now<was)
+      fx({side:"foe",slot:f.slot,txt:was+" → "+now,cls:"wkn",gap:150});
+    if(h.blessed){ h.blessed=0; f.weak=(f.weak||0)+v;
+      fx({side:"foe",slot:f.slot,ring:"#c9a227",txt:"보호력 −"+v,cls:"wkn",gap:150});
+      say("축복 — 보호력도 약화","t1") }
+    say(`의지 약화 — ${f.name}의 공격력 ${v} 감소 (누적 −${f.weakAtk})`
+      +(was!=null&&now!=null?` · 다음 공격 ${was} → ${now}`:""),"t1");
+    return;
   }
   if(s.shackle){
     { const near0=B.foes.filter(x=>x.alive).sort((a,b)=>dist(h.slot,a.slot)-dist(h.slot,b.slot))[0];
