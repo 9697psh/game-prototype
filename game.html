@@ -1315,7 +1315,7 @@ const KW_TAB=[
  {n:"속박",c:"debuff",d:"중첩된 속박 턴만큼 이동불가 상태가 됨"},
  {n:"기절",c:"debuff",d:"누적된 기절 중첩만큼 다음 사용 기술이 아무 효과도 발동하지 않음. 턴이 끝나면 초기화"},
  {n:"화상",c:"debuff",d:"턴이 끝날 때 중첩된 화상만큼 피해. 턴 종료시 중첩 1 감소"},
- {n:"공포",c:"debuff",d:"기술의 대상을 지정할 수 없음"},
+ {n:"공포",c:"debuff",d:"공포를 부여한 대상을 기술의 대상으로 지정할 수 없음"},
  {n:"공중에 뜸",c:"debuff",d:"다른 기술과 상호작용"},
  {n:"감전",c:"debuff",d:"이동시 중첩된 감전만큼 피해받음. 턴 종료시 초기화"},
  {n:"공격약화",c:"debuff",d:"중첩된 턴만큼 공격 피해량이 50% 감소. 턴 종료시 중첩 1 감소"},
@@ -4857,9 +4857,8 @@ function loadGame(){
          foes:b.foes||[],mins:b.mins||[],portals:b.portals||[],
          corpseUsed:b.corpseUsed||0,drag:null};
       B.hand=handUnpack(b.hand);
-      /* 공포를 건 사람 같은 이름표는 다시 이어 준다 */
-      B.foes.forEach(f=>{ if(f.fearName&&!f.fearSrc)
-        f.fearSrc=run.heroes.find(h=>h.name===f.fearName)||null });
+      /* fearSrc 는 uid() 로 만든 문자열이라 그대로 실려 온다.
+         객체로 되살리면 uid(x)===f.fearSrc 비교가 깨지므로 손대지 않는다. */
       view="battle";
       say("저장해 둔 자리에서 이어갑니다.","t2");
     } else if(view==="battle") view="map";
