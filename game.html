@@ -6591,8 +6591,13 @@ function skillHot(h,i,s){
     if(h.potential) out.push("잠재력");
   }
   if(h.name==="카제"&&s.el==="이동"&&h.free>0) out.push("무료 "+h.free);
-  /* 도미니코 — 축복은 다음 기술을 바꾼다 */
-  if(h.blessed) out.push("축복");
+  /* 도미니코 — 축복은 아래 세 기술을 실제로 바꾼다. 그 기술만 짚어 준다 */
+  if(h.blessed){
+    if(s.wand)    out.push("축복 · 회피 +1");
+    else if(s.weaken)  out.push("축복 · 보호력도 약화");
+    else if(s.shackle) out.push("축복 · 모든 적 기절");
+    /* 참회의 기류처럼 축복이 실제로 바꾸지 않는 기술은 켜지 않는다 */
+  }
   /* 이테리오 — 표식이 박힌 적에게 공격 계열은 치명타 */
   if(h.name==="이테리오"&&s.tg==="foe"&&s.el!=="마법"
      &&B.foes.some(f=>f.alive&&(f.mark||0)>0)) out.push("표식 치명타");
