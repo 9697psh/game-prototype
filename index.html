@@ -493,6 +493,45 @@ button.dtl{padding:3px 10px;font-size:11.5px}
 .ambclaw path:nth-child(4){animation-delay:.20s;stroke-width:2}
 .ambclaw path:nth-child(5){animation-delay:.26s;stroke-width:2}
 @keyframes ambSlash{to{stroke-dashoffset:0}}
+/* ── 우두머리 예고 ── */
+.bossveil{position:fixed;inset:0;z-index:320;pointer-events:none;
+  background:radial-gradient(circle at 50% 44%,rgba(90,10,14,.30),rgba(10,4,6,.94) 68%,#000 100%);
+  animation:bsVeil 2.9s ease-out forwards}
+@keyframes bsVeil{0%{opacity:0}18%{opacity:1}72%{opacity:1}100%{opacity:0}}
+.bosscard{position:fixed;inset:0;z-index:330;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:4px;pointer-events:none;
+  animation:bsIn .95s cubic-bezier(.14,.86,.2,1) forwards}
+@keyframes bsIn{0%{opacity:0;transform:scale(2.6)}70%{opacity:1;transform:scale(1.02)}100%{opacity:1;transform:scale(1)}}
+.bosscard.out{animation:bsOut .7s ease-in forwards}
+@keyframes bsOut{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(1.1)}}
+.bosscrown{width:clamp(58px,9vw,86px);height:auto;margin-bottom:6px;
+  animation:bsCrown 1.5s ease-out .3s both}
+.bosscrown path{fill:none;stroke:#e0a02a;stroke-width:3;stroke-linejoin:round;
+  filter:drop-shadow(0 0 9px rgba(224,160,42,.9))}
+.bosscrown path.ln{stroke-width:4}
+@keyframes bsCrown{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:none}}
+.bossring{position:absolute;width:22px;height:22px;border-radius:50%;
+  border:3px solid rgba(200,60,45,.85);pointer-events:none;
+  animation:bsRing 1.5s cubic-bezier(.1,.7,.2,1) .55s both}
+@keyframes bsRing{from{opacity:.95;transform:scale(1)}to{opacity:0;transform:scale(46)}}
+.bossword{font-family:var(--serif);font-size:clamp(38px,8.4vw,80px);font-weight:700;
+  color:#ffd9c4;line-height:1.05;letter-spacing:.18em;
+  text-shadow:0 0 5px #c9503f,0 0 26px rgba(190,50,40,.95),0 0 62px rgba(120,14,14,.9),0 6px 0 rgba(0,0,0,.66);
+  animation:bsWord 2.2s ease-out forwards}
+@keyframes bsWord{0%{filter:brightness(1)}44%{filter:brightness(1)}
+  56%{filter:brightness(2.1)}66%{filter:brightness(1)}78%{filter:brightness(1.6)}100%{filter:brightness(1)}}
+.bossname{font-family:var(--serif);font-size:clamp(19px,3.4vw,28px);font-weight:700;
+  color:#e0a02a;letter-spacing:.28em;margin-top:4px;
+  text-shadow:0 0 14px rgba(224,160,42,.7),0 2px 0 rgba(0,0,0,.8);
+  animation:bsName .9s ease-out .78s both}
+@keyframes bsName{from{opacity:0;letter-spacing:.7em}to{opacity:1;letter-spacing:.28em}}
+.bosssub{font-size:13.5px;color:#c9a89c;letter-spacing:.2em;margin-top:8px;
+  padding-top:7px;border-top:1px solid rgba(200,60,45,.4);
+  text-shadow:0 0 10px rgba(0,0,0,.95);
+  animation:bsName .9s ease-out 1.1s both}
+@media (prefers-reduced-motion: reduce){
+  .bosscard,.bossword,.bossname,.bosssub,.bosscrown,.bossring{animation:none}
+  .bossring{display:none}}
 body.shakeall{animation:allShake .62s cubic-bezier(.36,.07,.19,.97)}
 @keyframes allShake{10%{transform:translate(-5px,3px)}20%{transform:translate(6px,-4px)}
   32%{transform:translate(-7px,-2px)}44%{transform:translate(5px,4px)}
@@ -1196,6 +1235,21 @@ const SFX=(()=>{
    arrow  :()=>seq([{noise:1,f:1800,f2:5200,d:0.14,q:4,v:0.16},
                     {noise:1,f:900,f2:200,d:0.12,q:0.8,v:0.2,at:0.14},
                     {w:"square",f:200,f2:70,d:0.1,v:0.12,at:0.14}]),
+   /* 우두머리 — 낮은 뿔피리 세 겹 위에 징이 한 번 크게 울린다 */
+   bosshorn:()=>seq([{w:"sine",f:41,f2:38,d:2.0,v:0.34,atk:0.14},
+                     {w:"sawtooth",f:58,f2:55,d:1.5,v:0.20,atk:0.16},
+                     {w:"sawtooth",f:87,f2:82,d:1.4,v:0.13,atk:0.18,at:0.03},
+                     {w:"sawtooth",f:116,f2:110,d:1.2,v:0.09,atk:0.20,at:0.06},
+                     {noise:1,ftype:"lowpass",f:180,f2:70,d:1.6,q:0.4,v:0.16,decay:0.9,atk:0.25},
+                     /* 징 */
+                     {noise:1,f:1600,f2:420,d:0.20,q:1.6,v:0.22,at:0.62},
+                     {w:"sine",f:110,f2:96,d:1.5,v:0.26,at:0.62},
+                     {w:"triangle",f:165,f2:147,d:1.3,v:0.14,at:0.63},
+                     {w:"triangle",f:220,f2:196,d:1.1,v:0.09,at:0.64},
+                     {w:"sine",f:330,f2:294,d:0.9,v:0.05,at:0.66},
+                     /* 조여드는 긴장 */
+                     {noise:1,f:400,f2:2600,d:0.75,q:3.2,v:0.13,at:1.05},
+                     {w:"sawtooth",f:73,f2:49,d:0.9,v:0.22,at:1.30}]),
    /* 보호막이 깨진다 — 쇠판이 쪼개지고 조각이 흩어진다 */
    shbreak:()=>seq([{noise:1,f:2300,f2:620,d:0.13,q:2.2,v:0.24},
                     {w:"sawtooth",f:300,f2:82,d:0.18,v:0.18},
@@ -3890,6 +3944,29 @@ function ambushCard(sub){
   setTimeout(()=>card.classList.add("out"),1450);
   setTimeout(()=>card.remove(),2050);
 }
+/* 우두머리 앞에 섰다 — 느리고 무겁게 */
+function bossCard(name){
+  document.querySelectorAll(".bosscard,.bossveil").forEach(x=>x.remove());
+  SFX.play("bosshorn");
+  const vl=el(`<div class="bossveil"></div>`);
+  document.body.appendChild(vl);
+  setTimeout(()=>vl.remove(),2900);
+  const card=el(`<div class="bosscard">
+    <svg class="bosscrown" viewBox="0 0 64 40" aria-hidden="true">
+      <path d="M4 34 L2 8 L16 20 L32 2 L48 20 L62 8 L60 34 Z"/>
+      <path d="M4 34 H60" class="ln"/>
+    </svg>
+    <div class="bossring"></div>
+    <div class="bossword">우 두 머 리</div>
+    <div class="bossname">${esc(name||"")}</div>
+    <div class="bosssub">물러설 곳은 없습니다</div>
+  </div>`);
+  document.body.appendChild(card);
+  setTimeout(()=>{ document.body.classList.add("shakeall");
+    setTimeout(()=>document.body.classList.remove("shakeall"),620) },620);
+  setTimeout(()=>card.classList.add("out"),2200);
+  setTimeout(()=>card.remove(),2900);
+}
 function lose(msg){ run.lost=msg; view="over"; render() }
 let TOAST="";
 function toast(t){ TOAST=t }
@@ -4545,7 +4622,11 @@ function enterCell(r,c){
     else { run.ev=pickEvent(); run.evMsg=null; view="relic" }
     render(); return;
   }
-  if(cell.t==="dungeon"||cell.t==="elite"||cell.t==="boss"){ startDungeon(cell,r,c); return }
+  if(cell.t==="dungeon"||cell.t==="elite"||cell.t==="boss"){
+    startDungeon(cell,r,c);
+    if(cell.t==="boss") bossCard(BOSSES[run.field]||"");   /* 전장이 깔린 위에 얹는다 */
+    return;
+  }
   view="map"; render();
 }
 
