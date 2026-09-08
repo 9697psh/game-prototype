@@ -375,6 +375,8 @@ button.dtl{padding:3px 10px;font-size:11.5px}
 .pick .art{height:96px;display:flex;align-items:center;justify-content:center;
   background:radial-gradient(circle at 50% 60%,rgba(201,162,39,.1),transparent 68%);border-radius:var(--rd)}
 .pick .art svg{width:92px;height:92px;filter:drop-shadow(0 3px 0 rgba(0,0,0,.5))}
+.pick.downp{opacity:.6;border-style:dashed}
+.pick.downp .art{filter:saturate(.35) brightness(.7)}
 .pick{transition:transform .13s,border-color .13s}
 .pick:hover{transform:translateY(-3px)}
 .pick.on{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass) inset,0 8px 22px rgba(0,0,0,.45)}
@@ -3146,6 +3148,8 @@ const HERO_REWARDS={
     h=>h.tag.winGold=(h.tag.winGold||0)+1),
   R("전장의 승자 강화","하급","전장의 승자로 얻을 수 있는 공격력의 한도가 1 늘어납니다.",
     h=>h.tag.winCap=(h.tag.winCap||2)+1),
+  R("전장의 지배자","중급","전장의 승자로 최대 체력도 1씩 얻습니다. (최대 10)",
+    h=>h.tag.winHp=1),
   R("한숨 돌리기","하급","전투 시작 후, 나이코스가 체력을 1 회복합니다.",
     h=>h.tag.startHeal=(h.tag.startHeal||0)+1),
   R("관객의 응원","하급","전투 시작 후, 금화를 1 얻습니다.",
@@ -6327,9 +6331,15 @@ function drawPickHero(app){
   app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">${esc(pending.title)}</div>
     <div class="sub">대원을 고르세요</div></div>`));
   const row=el(`<div class="picks"></div>`);
-  run.heroes.forEach(h=>{
-    const c=el(`<div class="pick" style="width:200px"><div class="art">${figure(h.name)}</div>
-      <h3>${esc(h.name)}</h3><p>Lv.${h.lv} · ${ic("hp")}${h.hp}/${h.maxHp}</p></div>`);
+  /* 기절한 대원도 고를 수는 있다(영구 강화라 나중에 일어나면 쓴다).
+     다만 지금 싸울 수 없다는 것은 보여 줘야 한다. */
+  run.heroes.slice().sort((a,b)=>(a.down?1:0)-(b.down?1:0)).forEach(h=>{
+    const c=el(`<div class="pick ${h.down?"downp":""}" style="width:200px">
+      <div class="art">${figure(h.name,poseNow(h))}</div>
+      <h3>${esc(h.name)}${h.down?` <span class="chip on">기절</span>`:""}</h3>
+      <p>Lv.${h.lv} · ${ic("hp")}${Math.max(0,h.hp)}/${h.maxHp}
+        ${ic("atk")}${h.atk} ${ic("mag")}${h.mag} ${ic("def")}${h.def}</p>
+      ${h.down?`<p style="color:var(--faint);font-size:11px">지금은 전장에 나갈 수 없습니다</p>`:""}</div>`);
     c.onclick=()=>pending.cb(h);
     row.appendChild(c);
   });
@@ -7202,7 +7212,10 @@ function bk(base,parts){
 }
 const PASSIVE_INFO={
  "나이코스":[{n:"전장의 승자",p:"전장의 승자",
-   d:h=>`전투에서 이길 때마다 공격력을 영구히 1 얻습니다. (최대 ${h.tag.winCap||2}) 넘친 몫은 금화 1로 바뀝니다.`}],
+   d:h=>`전투에서 이길 때마다 공격력을 영구히 1 얻습니다. (최대 ${h.tag.winCap||2}) 넘친 몫은 금화 1로 바뀝니다.`
+        +(h.tag.winHp?` 최대 체력도 1씩 얻습니다. (${h.winHp||0}/10)`:``)
+        +(h.tag.rageTurn?` 패배해도 잃지 않고 오히려 그만큼 더 얻습니다.`
+                        :` 패배하면 그렇게 얻은 공격력을 모두 잃습니다.`)}],
  "카제":[
   {n:"바람처럼 사라져라",
    d:h=>`내 턴에 적이 공중에 뜬 뒤, 피해를 ${bk(4,[{n:"추가 공격력",v:h.atk},{n:"강화",v:h.tag.airBonus||0}])} 줍니다.`
@@ -8789,6 +8802,16 @@ function battleLost(){
   fx({s:"down",gap:0});
   veil("radial-gradient(circle,rgba(142,43,43,.5),transparent 70%)");
   run.dun=null; run.pendingEnter=null;
+  /* 전장의 승자 — 패배하면 그렇게 얻은 공격력을 모두 잃는다.
+     '분노 전환'을 가졌으면 잃는 대신 그만큼 더 얻는다. */
+  run.heroes.forEach(h=>{
+    if(h.name!=="나이코스"||!h.wins) return;
+    const n=h.wins; h.wins=0;
+    if(h.tag.rageTurn){ h.atk+=n;
+      say(`분노 전환 — 잃을 뻔한 공격력이 오히려 ${n} 더 붙습니다.`,"t1") }
+    else { h.atk=Math.max(0,h.atk-n);
+      say(`전장의 승자 — 패배로 얻었던 공격력 ${n}을 잃습니다.`,"t3") }
+  });
   const standing=run.heroes.filter(h=>!h.down).length;
   if(!standing){
     say("모두 쓰러졌습니다. 일으켜 줄 사람이 남지 않았습니다.","t3");
@@ -9166,6 +9189,11 @@ function checkEnd(){
       if(h.tag.winGold) run.gold+=h.tag.winGold;
       if(h.wins<cap){ h.wins++; h.atk++ }
       else { run.gold+=1; say("전장의 승자 — 넘친 몫이 금화 1로 바뀝니다.","t2") }
+      /* 전장의 지배자 — 이길 때마다 최대 체력도 1씩, 열까지 */
+      if(h.tag.winHp&&(h.winHp||0)<10){
+        h.winHp=(h.winHp||0)+1; h.maxHp++; h.hp++;
+        say(`전장의 지배자 — 최대 체력 +1 (${h.winHp}/10)`,"t2");
+      }
     });
     giveExp(exp,run.heroes.filter(h=>h.slot>0&&h.hp>0));
     /* 우두머리는 격파 연출이 다 끝난 뒤에 보상으로 넘어간다 */
