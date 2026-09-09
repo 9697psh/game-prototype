@@ -133,7 +133,7 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .art svg{height:56px;width:auto}
 .art img.pxs{height:calc(56px * var(--ph,1));width:auto;image-rendering:pixelated;display:block;
   filter:drop-shadow(0 2px 0 rgba(0,0,0,.55)) drop-shadow(0 0 7px rgba(201,162,39,.22))}
-/* 쓰러진 대원 — 그 자리에 기절한 채로 남는다. 아무것도 주고받지 못한다 */
+/* 쓰러진 대원 — 그 자리에 그대로 남는다. 아무것도 주고받지 못한다 */
 .slot.body{opacity:.72;border-style:dashed;border-color:rgba(74,62,49,.6);
   background:linear-gradient(180deg,rgba(30,24,21,.7),rgba(18,15,13,.7) 46%)}
 .slot.body .art img.pxs{filter:saturate(.45) brightness(.78) drop-shadow(0 2px 0 rgba(0,0,0,.6))}
@@ -1583,6 +1583,7 @@ const KW_TAB=[
  {n:"냉각",c:"debuff",d:"기술 사용시 중첩된 냉각만큼 피해. 턴 종료시 초기화"},
  {n:"속박",c:"debuff",d:"중첩된 속박 턴만큼 이동불가 상태가 됨"},
  {n:"기절",c:"debuff",d:"누적된 기절 중첩만큼 다음 사용 기술이 아무 효과도 발동하지 않음. 턴이 끝나면 초기화"},
+ {n:"쓰러짐",c:"debuff",d:"전투에서 체력이 다해 전투불능이 된 상태. 그 자리에 남아 칸을 막고, 회복·강화·약화를 주고받지 못한다. 주둔지 치료소에서만 일어난다"},
  {n:"화상",c:"debuff",d:"턴이 끝날 때 중첩된 화상만큼 피해. 턴 종료시 중첩 1 감소"},
  {n:"공포",c:"debuff",d:"공포를 부여한 대상을 기술의 대상으로 지정할 수 없음"},
  {n:"공중에 뜸",c:"debuff",d:"다른 기술과 상호작용"},
@@ -2855,6 +2856,8 @@ const FOE_NAMES={"작은 죄수":1,"사슬 광인":1,"굶주린 그림자":1,"�
 /* 지금 그 대원이 취하고 있는 자세. 없으면 기본 */
 function poseNow(u){
   if(!u) return null;
+  /* 그림 열쇠말은 둘 다 stun 을 쓴다 (art/…/기절.png).
+     쓰러짐과 기절은 규칙상 다른 것이지만 그려지는 모습은 같다. */
   if(u.down) return "stun";
   if(u.deb&&u.deb.stun) return "stun";
   return null;
@@ -5280,7 +5283,7 @@ function drawMapPeek(){
   const rs=ov.querySelector(".roster");
   run.heroes.forEach(h=>rs.appendChild(el(`<div class="rost ${h.down?"down":""}">
     <div class="art">${figure(h.name)}</div>
-    <div><b>${esc(h.name)}</b>${h.down?`<span class="chip on">기절</span>`:""}
+    <div><b>${esc(h.name)}</b>${h.down?`<span class="chip on">쓰러짐</span>`:""}
       <small>Lv.${h.lv} · ${ic("hp")}${Math.max(0,h.hp)}/${h.maxHp}</small></div></div>`)));
   ov.querySelector(".pk-x").onclick=()=>{ run.mapPeek=0; render() };
   ov.onclick=e=>{ if(e.target===ov){ run.mapPeek=0; render() } };
@@ -5376,7 +5379,7 @@ function drawTitle(app){
       <div class="cssub">${esc(FIELDS[sv.field]?FIELDS[sv.field].n:"균열")} · ${sv.day}일차${
         sv.inBattle?" · 전투 도중":""} <span class="hint">${saveStamp(sv.at)}</span></div>
       <div class="csros">${sv.heroes.map(h=>
-        `<span class="csh ${h.down?"down":""}">${esc(h.n)} <b>Lv${h.lv}</b>${h.down?" · 기절":""}</span>`).join("")}</div>
+        `<span class="csh ${h.down?"down":""}">${esc(h.n)} <b>Lv${h.lv}</b>${h.down?" · 쓰러짐":""}</span>`).join("")}</div>
       <div class="csbtn"><button class="go">이어서 하기</button><button class="mini">지우기</button></div>
     </div>`);
     const [go,del]=box.querySelectorAll("button");
@@ -5902,7 +5905,7 @@ const TUT_STEPS=[
 
  {t:"주둔지로 돌아옵니다",
   d:"아래 가운데가 <b>주둔지</b>입니다. 하루에 <b>한 가지</b>만 할 수 있습니다.\n"
-   +"치료소(기절한 대원 일으키기) · 쉼터(회복) · 훈련장(경험치) · 제련소(장신구 합성)\n"
+   +"치료소(쓰러진 대원 일으키기) · 쉼터(회복) · 훈련장(경험치) · 제련소(장신구 합성)\n"
    +"밤에는 <b>숙면</b>으로 하루를 넘기며 오염도를 55 씻어냅니다. 이것이 오염도를 줄이는 가장 큰 수단입니다.",
   hi:".gridmap"},
 
@@ -6102,7 +6105,7 @@ ${NODE[cell.t].label} · ${cell.waves}라운드\n${cell.style}\n${cell.loot}`;
   run.heroes.forEach((h,i)=>{
     const card=el(`<div class="rost pick2 ${h.down?"down":""} ${run.showHero===i?"on":""}">
       <div class="art">${figure(h.name)}</div>
-      <div><b>${esc(h.name)}</b>${h.down?`<span class="chip on">기절</span>`:""}
+      <div><b>${esc(h.name)}</b>${h.down?`<span class="chip on">쓰러짐</span>`:""}
         <small>Lv.${h.lv} · 경험치 ${h.exp}/${needExp(h.lv)}</small>
         <small>${ic("hp")}${h.hp}/${h.maxHp} ${ic("atk")}${h.atk} ${ic("mag")}${h.mag} ${ic("def")}${h.def}</small>
         ${itemSlots(h)}
@@ -6294,7 +6297,7 @@ function drawCamp(app){
   const shards=run.heroes.reduce((a,h)=>a+h.items.filter(i=>i.g==="파편"||i.g==="일반").length,0)
     +(run.bag||[]).filter(i=>i.g==="파편"||i.g==="일반").length;
   const acts=[
-   campAct("revive","치료소","기절한 대원을 절반의 체력으로 일으킵니다.",downed>0,
+   campAct("revive","치료소","쓰러진 대원을 절반의 체력으로 일으킵니다.",downed>0,
      ()=>{ run.heroes.forEach(h=>{ if(h.down){ h.down=0; h.hp=Math.max(1,Math.round(h.maxHp*0.5));
        toast(`${h.name}${jo(h.name,"ig")} 다시 일어섭니다.`) } }) }),
    campAct("heal","쉼터","다친 대원이 최대 체력의 40%를 회복합니다.",hurt>0,
@@ -6978,10 +6981,10 @@ function partyStrip(note){
       return `<span class="ph ${cls}" title="${esc(h.name)} Lv.${h.lv} · 체력 ${Math.max(0,h.hp)}/${h.maxHp}">
         <b>${esc(h.name)}</b>
         <i><u style="width:${h.down?0:p}%"></u></i>
-        <em>${h.down?"기절":Math.max(0,h.hp)+"/"+h.maxHp}</em></span>`;
+        <em>${h.down?"쓰러짐":Math.max(0,h.hp)+"/"+h.maxHp}</em></span>`;
     }).join("")}
     ${note?`<span class="hint">${note}</span>`
-      :`<span class="hint">${down?`기절 ${down}명 · `:""}${hurt?`다친 대원 ${hurt}명`:"모두 멀쩡합니다"}</span>`}
+      :`<span class="hint">${down?`쓰러짐 ${down}명 · `:""}${hurt?`다친 대원 ${hurt}명`:"모두 멀쩡합니다"}</span>`}
   </div>`;
 }
 function drawRest(app){
@@ -6989,13 +6992,13 @@ function drawRest(app){
     <div class="sub">불씨가 아직 남아 있습니다. 잠깐 몸을 누일 수 있겠군요.</div></div>`));
   const wrap=app.querySelector(".center");
   wrap.appendChild(el(partyStrip(run.heroes.some(h=>h.down)
-    ? "기절한 대원은 주둔지 치료소에서만 일어납니다" : null)));
+    ? "쓰러진 대원은 주둔지 치료소에서만 일어납니다" : null)));
   const n=[1,1,2][Math.min(run.field,2)];
   const grade=run.field===0?"하급":"중급";
   const row=el(`<div class="rewards"></div>`);
   const a=el(`<div class="rw"><div class="rwi">${nodeArt("rest")}</div>
     <b>불을 쬔다</b><p>쓰러지지 않은 모든 대원이 최대 체력의 ${Math.round(30*(1+Math.max(0,...run.heroes.map(h=>(h.tag&&h.tag.restPlus)||0))/100))}%를 회복합니다.</p>
-    <p style="color:var(--faint)">기절한 대원은 일어나지 않습니다.</p></div>`);
+    <p style="color:var(--faint)">쓰러진 대원은 일어나지 않습니다.</p></div>`);
   const restUp=Math.max(0,...run.heroes.map(h=>(h.tag&&h.tag.restPlus)||0));
   a.onclick=()=>{ run.heroes.forEach(h=>{ if(!h.down)
       healUp(h,Math.round(h.maxHp*0.3*(1+restUp/100))) });
@@ -7130,7 +7133,7 @@ const EVENTS=[
         const h=someHero(); if(h) h.hp=h.maxHp;
         return `금화 ${g}을 바쳤습니다. ${h?h.name+"의 몸이 온전해집니다.":""}` }},
      {t:"우상 부수기",d:"금화 12. 다음 전투를 모두 기절한 채로 시작합니다.",
-      f:()=>{ run.gold+=12; run.curseDown=1;
+      f:()=>{ run.gold+=12; run.curseStun=1;
         return "신상이 부서지며 금화 12가 쏟아집니다. 등 뒤가 서늘합니다." }}]},
 
  {n:"떠돌이 감정사", face:"사슬 광인", when:()=>hasGrade("파편"),
@@ -7433,12 +7436,12 @@ function drawPickHero(app){
   app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">${esc(pending.title)}</div>
     <div class="sub">대원을 고르세요</div></div>`));
   const row=el(`<div class="picks"></div>`);
-  /* 기절한 대원도 고를 수는 있다(영구 강화라 나중에 일어나면 쓴다).
+  /* 쓰러진 대원도 고를 수는 있다(영구 강화라 나중에 일어나면 쓴다).
      다만 지금 싸울 수 없다는 것은 보여 줘야 한다. */
   run.heroes.slice().sort((a,b)=>(a.down?1:0)-(b.down?1:0)).forEach(h=>{
     const c=el(`<div class="pick ${h.down?"downp":""}" style="width:200px">
       <div class="art">${figure(h.name,poseNow(h))}</div>
-      <h3>${esc(h.name)}${h.down?` <span class="chip on">기절</span>`:""}</h3>
+      <h3>${esc(h.name)}${h.down?` <span class="chip on">쓰러짐</span>`:""}</h3>
       <p>Lv.${h.lv} · ${ic("hp")}${Math.max(0,h.hp)}/${h.maxHp}
         ${ic("atk")}${h.atk} ${ic("mag")}${h.mag} ${ic("def")}${h.def}</p>
       ${h.down?`<p style="color:var(--faint);font-size:11px">지금은 전장에 나갈 수 없습니다</p>`:""}</div>`);
@@ -7543,12 +7546,13 @@ function startBattle(kind,pinned){
   /* 전투(옛 던전) 하나는 여러 라운드로 이루어진다.
      "전투 시작" 효과는 첫 라운드에 딱 한 번만 걸리고, 그 결과는 라운드를 넘어 남는다. */
   const fresh=!run.dun||run.dun.wave<=1;
-  if(fresh&&run.curseDown){ run.curseDown=0;
-    run.heroes.forEach(h=>{ h.hp=0; h.down=1; h.slot=0 });
-    toast("부서진 우상의 저주 — 대원들이 쓰러진 채로 눈을 뜹니다."); }
+  /* 부서진 우상의 저주는 '기절' 이다 — 쓰러뜨리는 것이 아니다.
+     실제로 거는 것은 아래 대원 정리가 끝난 뒤다 (여기서 걸면 h.deb={} 에 지워진다) */
+  const curse=!!(fresh&&run.curseStun);
+  if(curse) run.curseStun=0;
   if(fresh) run.heroes.forEach(clearTmp);
   run.heroes.forEach(h=>{
-    /* 기절한 대원은 그대로 기절해 있는다 — 주둔지 치료소에서만 일어난다 */
+    /* 쓰러진 대원은 그대로 쓰러져 있는다 — 주둔지 치료소에서만 일어난다 */
     if(h.hp<=0){ h.hp=0; h.down=1 }
     /* 이 전투에서 쓰러진 몸은 라운드가 넘어가도 그 칸에 남는다.
        새 전투(첫 라운드)면 몸을 치우고 시작한다 */
@@ -7581,6 +7585,11 @@ function startBattle(kind,pinned){
   });
   if(fresh){ run.heroes.forEach(h=>{ h.wanderBonus=0; h.gloryGuard=0; h.arenaHeal=0 });
     applySynergy(); }
+  if(curse){
+    run.heroes.forEach(h=>{ if(!h.down){ h.deb=h.deb||{}; h.deb.stun=(h.deb.stun||0)+1 } });
+    toast("부서진 우상의 저주 — 대원들이 얼얼한 채로 눈을 뜹니다.");
+    say("부서진 우상의 저주 — 모든 대원이 기절한 채로 시작합니다.","t3");
+  }
   const down=run.heroes.filter(h=>h.down);
   if(down.length&&!B.hand.some(x=>x.type==="hero"))
     { B.over=1; say("나설 수 있는 대원이 없습니다.","t3"); battleLost(); render(); return }
@@ -7639,7 +7648,7 @@ function startBattle(kind,pinned){
   say(`${FIELDS[run.field].n} — ${kind==="boss"?"우두머리":kind==="elite"?"정예":"교전"} `
      +`${run.dun&&run.dun.waves>1?`${run.dun.wave}/${run.dun.waves}라운드`:"시작"}`,"t1");
   say("손패의 대원 카드를 원하는 칸으로 끌어다 놓으세요.","t2");
-  if(down.length) say(`기절한 대원은 나서지 못합니다 — ${down.map(h=>h.name).join(", ")}`,"t3");
+  if(down.length) say(`쓰러진 대원은 나서지 못합니다 — ${down.map(h=>h.name).join(", ")}`,"t3");
   /* 습격·우두머리는 저마다 큰 연출이 따로 있다. 그 밖의 전투만 작게 알린다 */
   if(kind!=="ambush"&&kind!=="boss")
     setTimeout(()=>stepBanner(kind==="elite"?"정 예 전":"교 전",
@@ -7670,7 +7679,7 @@ const foeAt=s=>B.foes.find(f=>f.alive&&f.slot===s);
 const allyAt=s=>run.heroes.find(h=>h.slot===s&&h.hp>0);
 const minAt=s=>(B.mins||[]).find(m=>m.alive&&m.slot===s);
 const unitAt=s=>allyAt(s)||minAt(s);
-/* 기절해 쓰러진 대원. 그 칸을 차지할 뿐, 주고받는 것은 아무것도 없다.
+/* 쓰러진 대원. 그 칸을 차지할 뿐, 주고받는 것은 아무것도 없다.
    자리는 slot 이 아니라 downSlot 에 들고 있다 — 전장에 선 대원을 세는 모든
    계산(탐욕·감염·턴 시작 효과·경험치)에서 몸이 끼지 않게 하기 위해서다. */
 const bodyAt=s=>run.heroes.find(h=>h.down&&h.downSlot===s);
@@ -8139,7 +8148,7 @@ function drawBattle(app){
     if(body){
       d.innerHTML+=`<div class="art">${figure(body.name,"stun")}</div>
         <div class="nm">${esc(body.name)}</div>
-        <div class="mini"><span class="chip on">기절</span></div>
+        <div class="mini"><span class="chip on">쓰러짐</span></div>
         <div class="mini">${ic("hp")}0/${body.maxHp}</div>`;
       my.appendChild(d); continue;
     }
@@ -9030,7 +9039,7 @@ function startDrag(card,i){
     move(e);
   });
 }
-/* 배치 여부와 무관한 아군 전원 (기절한 대원 제외) + 전장의 소환물 */
+/* 배치 여부와 무관한 아군 전원 (쓰러진 대원 제외) + 전장의 소환물 */
 function allAllies(){
   return run.heroes.filter(x=>!x.down).concat(liveMins());
 }
@@ -9687,7 +9696,7 @@ function movePickRange(sk){ return (sk&&(sk.jumpback||sk.soothe))?2:SLOTS }
 function moveBlock(h,sk,to){
   if(!isMoveSkill(sk)||to==null) return "";
   { const b=bodyAt(to);
-    if(b) return `${b.name}${jo(b.name,"ig")} 기절한 채 ${to}번 칸을 막고 있습니다.` }
+    if(b) return `${b.name}${jo(b.name,"ig")} 쓰러진 채 ${to}번 칸을 막고 있습니다.` }
   if(to===h.slot&&!moveStayOk(h,sk))
     return `${sk.n}${jo(sk.n,"eun")} 지금 서 있는 칸으로는 갈 수 없습니다. 다른 칸을 고르세요.`;
   const r=movePickRange(sk);
@@ -9699,7 +9708,7 @@ function shadowGoTo(slot){
   if(!sel||sel.step!==5) return;
   const h=sel.hero;
   { const b=bodyAt(slot);
-    if(b){ say(`${b.name}${jo(b.name,"ig")} 기절한 채 ${slot}번 칸을 막고 있습니다.`,"t2"); return } }
+    if(b){ say(`${b.name}${jo(b.name,"ig")} 쓰러진 채 ${slot}번 칸을 막고 있습니다.`,"t2"); return } }
   if(slot===h.slot){ say("그림자를 남기려면 자리를 떠야 합니다. 다른 칸을 고르세요.","t2"); return }
   if(Math.abs(slot-h.slot)>2){ say("최대 2칸까지만 움직일 수 있습니다.","t2"); return }
   sel.moveTo=slot; sel.step=4; SFX.play("click");
@@ -9725,7 +9734,7 @@ function giveArmor(h,nm){
 function moveTo(h,to){
   if(deb(h,"bind")){ say(`${h.name}${jo(h.name,"eun")} 속박되어 움직일 수 없습니다.`,"t3"); return }
   { const b=bodyAt(to);
-    if(b){ say(`${b.name}${jo(b.name,"ig")} 기절한 채 ${to}번 칸을 막고 있습니다.`,"t2"); return } }
+    if(b){ say(`${b.name}${jo(b.name,"ig")} 쓰러진 채 ${to}번 칸을 막고 있습니다.`,"t2"); return } }
   const from=h.slot, occ=unitAt(to);
   if(occ&&occ!==h&&occ.noMove){ say(`${occ.name}${jo(occ.name,"eun")} 움직일 수 없습니다.`,"t2"); return }
   h.slot=to;
@@ -10557,9 +10566,11 @@ function unitDown(t){
   }
   bark(t,"down",1);
   /* 쓰러진 대원은 전장에서 사라지지 않는다.
-     전투가 끝날 때까지 그 자리에 기절한 채로 남아 칸만 차지한다.
-     회복도 버프도 저주도 닿지 않고, 적도 겨누지 않는다. */
-  say(`${t.name} 쓰러짐 — 그 자리에 기절한 채로 남습니다.`,"t3");
+     전투가 끝날 때까지 그 자리에 남아 칸만 차지한다.
+     회복도 버프도 저주도 닿지 않고, 적도 겨누지 않는다.
+     ※ '기절'(deb.stun)과는 다른 것이다. 기절은 다음 기술이 불발되는 디버프고,
+        쓰러짐은 체력이 다해 전투불능이 된 상태다. */
+  say(`${t.name} 쓰러짐 — 그 자리에 그대로 남습니다.`,"t3");
   t.hp=0; t.down=1; t.downSlot=t.slot; t.slot=0; onDeath("ally");
   if(t.name==="트리스탄"&&!B.corpseUsed){
     B.corpseUsed=1; B.hand.push({type:"summon",name:"망자의 육체"});
@@ -10921,7 +10932,7 @@ function drawWaveGap(app){
   const rs=el(`<div class="roster" style="justify-content:center;margin-top:18px"></div>`);
   run.heroes.forEach(h=>rs.appendChild(el(`<div class="rost ${h.down?"down":""}">
     <div class="art">${figure(h.name)}</div>
-    <div><b>${esc(h.name)}</b>${h.down?`<span class="chip on">기절</span>`:""}
+    <div><b>${esc(h.name)}</b>${h.down?`<span class="chip on">쓰러짐</span>`:""}
       <small>${ic("hp")}${Math.max(0,h.hp)}/${h.maxHp}</small></div></div>`)));
   wrap.appendChild(rs);
   const b=el(`<div style="margin-top:24px"><button class="go">${d.wave+1}라운드로 →</button></div>`);
