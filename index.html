@@ -1619,7 +1619,7 @@ const KW_TAB=[
  {n:"연계",c:"plain",d:"이전에 해당 속성 기술을 사용했다면 발동"},
  {n:"이동",c:"plain",d:"위치를 변경\n해당 자리에 이미 대상이 존재한다면, 서로 위치를 변경\n(직접 이동하지 않은 경우, 이동으로 인한 효과를 받을 수 없음)"},
  {n:"잠금",c:"skill",d:"해당 기술을 일정 턴 동안 사용할 수 없음"},
- {n:"사용한도",c:"skill",d:"사용 한도의 횟수만큼 사용 시 그 전투에서 기술이 사용 불가 상태가 됨"},
+ {n:"사용한도",c:"skill",d:"사용 한도의 횟수만큼 사용 시 그 라운드에서 기술이 사용 불가 상태가 됨"},
  {n:"보호막",c:"buff",d:"한 턴간 누적된 보호막만큼 피해를 막음. 턴이 끝나면 사라짐"},
  {n:"에너지 보호막",c:"buff",d:"한 턴간 누적된 보호막만큼 피해를 막음. 턴이 끝나도 사라지지 않음"},
  {n:"부정 보호막",c:"buff",d:"부정적인 효과를 1회 제거. 이미 적용된 효과 먼저 제거"},
@@ -3645,8 +3645,8 @@ const COMMON=[
  R("간이 신발","하급","간이 신발 카드를 5장 얻습니다.",h=>{ addCard(run,"간이 신발",5) }),
  R("하급: 마나 흡입","하급","매 라운드 시작 시, 추가 마나를 1 얻습니다.",
    h=>h.tag.roundMana=Math.max(h.tag.roundMana||0,1)),
- R("하급: 잔불","하급","전투 시작 시, 무작위 적 하나에게 화상을 4 부여합니다.",
-   h=>h.tag.roundBurn=Math.max(h.tag.roundBurn||0,4)),
+ R("하급: 잔불","하급","대원 배치 시, 무작위 적 하나에게 화상을 4 부여합니다.",
+   h=>h.tag.placeBurn=Math.max(h.tag.placeBurn||0,4)),
  R("곰팡이 빵","하급","빵 카드를 4장 얻습니다. 오염도가 4 증가합니다.",
    h=>{ addCard(run,"빵",4); addTaint(4) }),
  R("잔걸음","하급","전투 시작 시, 추진력을 5 얻습니다.",
@@ -3687,8 +3687,8 @@ const COMMON=[
    h=>{ h.tag.dashMax=Math.max(h.tag.dashMax||0,5); h.tag.dashMul=Math.max(h.tag.dashMul||0,2) }),
  R("중급: 마나 흡입","중급","매 라운드 시작 시, 추가 마나를 2 얻습니다.",
    h=>h.tag.roundMana=Math.max(h.tag.roundMana||0,2)),
- R("중급: 잔불","중급","전투 시작 시, 무작위 적 하나에게 화상을 8 부여합니다.",
-   h=>h.tag.roundBurn=Math.max(h.tag.roundBurn||0,8)),
+ R("중급: 잔불","중급","대원 배치 시, 무작위 적 하나에게 화상을 8 부여합니다.",
+   h=>h.tag.placeBurn=Math.max(h.tag.placeBurn||0,8)),
  R("중급: 꼭두각시 인형","중급","소환물 카드를 낸 후에, 그 소환물의 최대 체력이 40% 증가합니다.",
    h=>h.tag.minHp=Math.max(h.tag.minHp||0,40)),
  R("중급: 카드 마술","중급","카드를 낸 후에, 보호막을 4 얻습니다.",
@@ -4235,6 +4235,7 @@ const REW_COND={
  "중급|방어 후 막기":{once:1,need:["선두 방어"]},
  "중급|선한 영향력":{need:["후미 준비"]},
  "중급|성벽 쌓기":{need:["굳건한 성벽"]},
+ "중급|승리의 연격":{need:["승리의 일격"]},
  "중급|제자리바람":{once:1},
  "중급|준비 후 밀치기":{once:1,need:["후미 준비"]},
  "중급|중무장":{once:1,need:["갑옷 장착"]},
@@ -5430,7 +5431,7 @@ function newRun(name,pack){
   run={heroes:[makeHero(name)], gold:0, stone:0, cards:[], bag:[],
        field:0, size:S, grid:buildGrid(0),
        pos:{r:S-1,c:mid}, day:1, time:6, act:f.act, actMax:f.act,
-       taint:0, night:0, campDone:0, remapUsed:0, bonusLv:null};
+       taint:0, night:0, campDone:0, remapUsed:0, bonusLv:null, playMs:0};
   if(pack) pack.fx(run);
   const q=run.bonusLv; run.bonusLv=null;
   view="map";
@@ -5610,6 +5611,29 @@ function render(){
   try{ BGM.sync() }catch(e){}
   saveSoon();
 }
+/* ── 이 판을 붙잡고 있은 시간 ─────────────────────────────────────────
+   창을 덮어 두거나 자리를 비운 동안은 세지 않는다. 한 번에 5초까지만
+   더하므로, 탭이 잠들었다 깨어나도 그 사이가 통째로 얹히지 않는다. */
+let _ptAt=0;
+function playTick(){
+  const now=Date.now();
+  if(run&&_ptAt&&document.visibilityState!=="hidden")
+    run.playMs=(run.playMs||0)+Math.min(5000,now-_ptAt);
+  _ptAt=now;
+}
+function playTime(ms){
+  const s=Math.max(0,Math.floor((ms||0)/1000));
+  const h=Math.floor(s/3600), m=Math.floor(s%3600/60), q=s%60;
+  const p2=n=>String(n).padStart(2,"0");
+  return h?`${h}:${p2(m)}:${p2(q)}`:`${m}:${p2(q)}`;
+}
+setInterval(()=>{
+  playTick();
+  const e=document.getElementById("ptv");
+  if(e&&run) e.textContent=playTime(run.playMs);
+},1000);
+document.addEventListener("visibilitychange",()=>{ _ptAt=Date.now() });
+
 /* 화면이 여러 번 그려져도 저장은 한 번만 — 그리기가 멎은 뒤에 적는다 */
 let SAVE_T=0;
 function saveSoon(){
@@ -5682,6 +5706,7 @@ function render0(){
       <span class="res taint ${run.taint>=70?"bad":run.taint>=45?"warn":""}" title="오염도 — 100이 되면 그 자리에서 끝납니다. 전투에 이기면 20 내려갑니다.">
         ${resIcon("taint")}<b>${run.taint}</b><i>/100</i>
         <u style="width:${tPct}%"></u></span>
+      <span class="res" title="이 판을 붙잡고 있은 시간. 창을 덮어 둔 동안은 세지 않습니다."><b id="ptv">${playTime(run.playMs)}</b></span>
       <span class="res gold" title="금화 — 상점에서 물건을 사고 팔 때 씁니다.">${resIcon("gold")}<b>${run.gold}</b></span>
       ${run.stone?`<span class="res stone" title="제련석 — 주둔지 제련소에서 장신구 두 개를 합칠 때 씁니다.">${resIcon("stone")}<b>${run.stone}</b></span>`:""}`;
   } else hr.innerHTML="";
@@ -7996,6 +8021,7 @@ function startBattle(kind,pinned){
     h.hide=0; h.shadowAt=0; h.darkAt=0; h.stance=0; h.stanceTurn=0;
     h.leech=0; h.pierceNext=0; h.aimAt=null; h.headshotUsed=0; h.mobile=0;
     h.freeBlock=0; h.freePush=0; h.cutUses=0; h.shotUses=0; h.guardStack=0;
+    h.limitUsed={};                 /* 사용한도는 라운드마다 다시 찬다 */
     /* 처음은 날카롭게 · 활시위 당기기는 라운드마다 다시 선다
        (처음은 완벽하게는 전투당 한 번) */
     h.first=h.first||{}; h.first.cut=0; h.first.shot=0;
@@ -8012,13 +8038,13 @@ function startBattle(kind,pinned){
       h.ammo=5; h.scale=0; h.scaleTurn=0; h.dark=0;
       h.tunes=[]; h.encore=0; h.venom=0; h.verdictUsed=0;
       h.eshield=0; h.lastStandUsed=0;
-      h.windUses=0; h.first={}; h.limitUsed={};
+      h.windUses=0; h.first={};
       h.critAtkUsed=0; h.critMagUsed=0; h.soloOn=0;
       h.cutGrow=0; h.cutSum=0; h.endCount=0; h.deathSaveUsed=0; h.emptyDefOn=0;
       h.shotBonus=0;
       const hpl=itemBt(h,'hpPerLv'); if(hpl){ h.hp+=hpl*h.lv }
       h.mana=h.maxMana+itemBt(h,"firstMana")+(h.tag.firstMana||0);
-      if(h.name==="쿠렘타이") h.lock[3]=(h.sk[3].startLock||2)+1;
+      if(h.name==="쿠렘타이") h.lock[3]=(h.sk[3].startLock||2);
     }
     if(!h.down) B.hand.push({type:"hero",hero:h});
   });
@@ -8063,11 +8089,6 @@ function startBattle(kind,pinned){
     if(h.down||h.hp<=0) return;
     if(h.tag.roundMana){ h.mana+=h.tag.roundMana;
       say(`마나 흡입 — ${h.name} 추가 마나 +${h.tag.roundMana}`,"t2") }
-    if(h.tag.roundBurn){
-      const live=B.foes.filter(f=>f.alive);
-      if(live.length){ const f=rnd(live); f.burn=(f.burn||0)+h.tag.roundBurn;
-        say(`잔불 — ${f.name} 화상 ${f.burn}`,"t2") }
-    }
     if(h.tag.roundPoison){
       const v=h.tag.roundPoison;
       B.foes.filter(f=>f.alive).forEach(f=>{
@@ -9146,6 +9167,8 @@ function skillHot(h,i,s){
   if(h.tag.freeCut&&i===0&&h.guarded) out.push("무료");
   if(i===0&&h.name==="트리스탄"&&(h.shotFree||0)>0) out.push("무료");
   if(h.tag.guardThen&&h.guardStack&&s.tg==="foe") out.push("연격 +"+h.tag.guardThen*h.guardStack);
+  /* 찌르기 — 이번 턴에 벤 만큼 쌓인다. 얼마가 나갈지 미리 보여 준다 */
+  if(s.thrust) out.push((h.cutSum||0)?`지금 피해 ${(h.cutSum||0)*3}`:"베고 나서");
   return out;
 }
 function skillPanel(h){
@@ -9531,6 +9554,11 @@ function onSummon(h){
     B.foes.filter(f=>f.alive).forEach(f=>airborne(h,f)) }
   if(t.startBlade){ say("전장의 칼날 — 첫 일격이 전장을 훑습니다.","t1");
     B.foes.filter(f=>f.alive).forEach(f=>hurt(f,t.startBlade,"전장의 칼날","slash")) }
+  if(t.placeBurn){
+    const live=B.foes.filter(f=>f.alive);
+    if(live.length){ const f=rnd(live); f.burn=(f.burn||0)+t.placeBurn;
+      fx({side:"foe",slot:f.slot,ring:"#e0705a",txt:"화상"+f.burn,cls:"dmg",gap:60});
+      say(`잔불 — ${f.name} 화상 ${f.burn}`,"t2") } }
   if(t.genMark){
     B.foes.forEach(f=>{ f.gmark=0 });
     const gm=nearestFoe(h);
@@ -10123,7 +10151,8 @@ function doSkill(target){
     if(s.ammo){ h.ammo=Math.max(0,(h.ammo||0)-1) }
     if(s.limit) h.limitUsed[i]=(h.limitUsed[i]||0)+1;
     /* 수호 활동 — 후미 준비는 더 이상 잠기지 않는다 */
-    if(s.lock&&!(h.tag.noRearLock&&s.rearguard)) h.lock[i]=s.lock+1;
+    /* 잠금 3이면 3부터 세어 내려간다. 예전에는 4부터 시작해 한 턴 더 잠겼다 */
+    if(s.lock&&!(h.tag.noRearLock&&s.rearguard)) h.lock[i]=s.lock;
     if(deb(h,"chill")){ const v=h.deb.chill;
       h.hp-=v; fx({side:"mine",slot:h.slot,hit:1,txt:"-"+v,cls:"dmg",gap:70});
       say(`${h.name} 냉각 피해 ${v}`,"t3") }
