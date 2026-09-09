@@ -3457,6 +3457,11 @@ HEROES["보아"]={title:"균열의 짐승",role:"공중 · 비늘",hp:20,mana:2,
 const START_PICKS=["나이코스","카제","굴라"];
 const HERO_POOL=["나이코스","카제","굴라","헥토","트리스탄","인비디아","도미니코",
  "쿠렘타이","이테리오","그슨대","오토"];
+/* 지금 판에 올릴 수 있는 대원.
+   나머지는 전용 보상이 아직 임시라 빼 두었다 — 여기에 이름을 도로 넣으면 된다.
+   영웅 도감은 이 목록을 보지 않는다. 거기서는 열넷을 다 구경할 수 있다. */
+const PLAYABLE=["나이코스","트리스탄"];
+function playableHeroes(){ return HERO_POOL.filter(n=>PLAYABLE.indexOf(n)>=0) }
 
 function synHtml(){
   const A=synActive().filter(x=>x.on||x.next);
@@ -5356,7 +5361,7 @@ let startPicks=null, startPacks=null, pendingHero=null;
 let REW_ALL=0;      /* 고른 보상 — 전투 보상만 볼지, 모두 볼지 */
 let SKDETAIL=false;
 function rollStart(){
-  const pool=HERO_POOL.slice(); startPicks=[];
+  const pool=playableHeroes(); startPicks=[];
   while(startPicks.length<3&&pool.length)
     startPicks.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
   const pk=PACKS.slice(); startPacks=[];
@@ -7011,10 +7016,12 @@ function afterChest(){
   if(nx.item){ pending={stage:"hero",list:[],item:nx.item,hero:null,back:"chain"}; view="item"; render(); return }
   if(nx.recruit){
     const owned=run.heroes.map(x=>x.name);
-    const pool=HERO_POOL.filter(n=>!owned.includes(n));
+    const pool=playableHeroes().filter(n=>!owned.includes(n));
     run.heroOffer=[];
     while(run.heroOffer.length<3&&pool.length)
       run.heroOffer.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+    /* 합류할 사람이 아무도 없으면 빈 화면을 띄우지 않고 그냥 넘어간다 */
+    if(!run.heroOffer.length){ afterChest(); return }
     view="recruit"; render(); return;
   }
   pending={hero:null,grade:nx.grade,free:1,back:"chain",noRun:nx.noRun||0}; view="reward"; render();
