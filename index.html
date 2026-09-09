@@ -1943,18 +1943,33 @@ document.addEventListener("pointerdown",e=>{
    곡을 더 넣을 때는 BGM_SRC 에 파일 이름을, sceneBgm() 에 어느 화면인지를
    적으면 된다. 그 둘 말고는 손댈 곳이 없다. */
 const BGM_SRC={
-  main  :"bgm/main.mp3",     /* 타이틀 · 지도(낮) · 주둔지 */
-  night :"bgm/night.mp3",    /* 지도(밤) */
-  battle:"bgm/battle.mp3",   /* 전투 · 정예 */
-  boss1 :"bgm/boss1.mp3",    /* 우두머리 */
-  shop  :"bgm/shop.mp3",     /* 상점 */
-  forge :"bgm/forge.mp3",    /* 제련소 */
-  reward:"bgm/reward.mp3"    /* 보상 · 레벨업 (한 번만 울리는 짧은 곡) */
+  main   :"bgm/main.mp3",     /* 타이틀 · 지도(낮) · 주둔지 */
+  night  :"bgm/night.mp3",    /* 지도(밤) */
+  battle :"bgm/battle.mp3",   /* 전투 — BATTLE THEME */
+  battle2:"bgm/battle2.mp3",  /* 전투 — A Solemn Lurching Gait */
+  battle3:"bgm/battle3.mp3",  /* 전투 — Steps in the Deep */
+  battle4:"bgm/battle4.mp3",  /* 전투 — Through Ancient Thickets */
+  ambush :"bgm/ambush.mp3",   /* 밤의 습격 — Iron Links in the Dark */
+  boss1  :"bgm/boss1.mp3",    /* 우두머리 */
+  shop   :"bgm/shop.mp3",     /* 상점 */
+  forge  :"bgm/forge.mp3",    /* 제련소 */
+  reward :"bgm/reward.mp3"    /* 보상 · 레벨업 (한 번만 울리는 짧은 곡) */
 };
+/* 전투마다 이 가운데 하나를 고른다. 곡을 더 받으면 여기에 이름만 더하면 된다 */
+const BATTLE_BGM=["battle","battle2","battle3","battle4"];
+/* 곡은 라운드가 아니라 전투에 딸린다 — 라운드가 넘어가도 그대로 이어진다.
+   방금 쓴 곡은 다음 전투에서 피해 같은 곡이 잇달아 나오지 않게 한다. */
+function pickBattleBgm(){
+  const pool=BATTLE_BGM.filter(k=>k!==(run&&run.lastBattleBgm));
+  return rnd(pool.length?pool:BATTLE_BGM);
+}
 /* 지금 화면에 맞는 곡. 없으면 null — 그러면 소리를 끈다 */
 function sceneBgm(){
-  if(view==="battle"||view==="wavegap")
-    return (B&&B.kind==="boss")?"boss1":"battle";
+  if(view==="battle"||view==="wavegap"){
+    if(B&&B.kind==="boss") return "boss1";
+    if(B&&B.kind==="ambush") return "ambush";
+    return (run&&run.dun&&run.dun.bgm)||"battle";
+  }
   if(view==="shop") return "shop";
   if(view==="forge") return "forge";
   if(view==="title"||view==="over"||view==="clear") return "main";
@@ -6168,7 +6183,7 @@ function startSandbox(name){
        remapUsed:0, bonusLv:null, sandbox:1, souls:200};
   const h=run.heroes[0];
   h.lv=20; h.maxHp=300; h.hp=300; h.maxMana=9;
-  run.dun={cell:{},r:null,c:null,wave:1,waves:1,kind:"battle"};
+  run.dun={cell:{},r:null,c:null,wave:1,waves:1,kind:"battle",bgm:pickBattleBgm()};
   startBattle("battle");
   /* 허수아비 셋 */
   B.foes=[];
@@ -6903,6 +6918,9 @@ function startDungeon(cell,r,c){
   run.heroes.forEach(h=>{ h.greed=0 });   /* 탐욕의 악마는 전투 단위 */
   run.dun={cell:cell,r:r,c:c,wave:0,waves:cell.waves||1,
            kind:cell.t==="boss"?"boss":cell.t==="elite"?"elite":cell.t==="ambush"?"ambush":"battle"};
+  /* 이 전투에서 내내 쓸 곡을 여기서 한 번 고른다 */
+  run.dun.bgm=pickBattleBgm();
+  run.lastBattleBgm=run.dun.bgm;
   nextWave();
 }
 function nextWave(){
