@@ -3509,7 +3509,7 @@ const COMMON=[
         toast(n?`탐험가 — 지도에 미지의 구역 ${n}곳이 나타납니다.`:"지도에 빈 자리가 없습니다.") },0.5),
  R("망토 두르기","하급","위장 망토 카드를 2장 얻습니다.",h=>{ addCard(run,"위장 망토",2) }),
  R("늑대의 시간","하급","밤에 전투할 때, 모든 추가 능력치를 2 얻습니다.",
-   h=>h.tag.nightStat=(h.tag.nightStat||0)+2),
+   h=>h.tag.nightStat=(h.tag.nightStat||0)+2,0.3),
  R("파편 상자","하급","다음 2번의 전투 보상 상자에서 파편 장신구을 확정적으로 얻을 수 있습니다.",
    h=>{ run.shardBox=(run.shardBox||0)+2 },0.6),
  R("오염 구역 정화","하급","전투가 끝난 후, 오염도가 추가로 5 감소합니다. 금화를 8 얻습니다.",
@@ -4875,9 +4875,9 @@ let run=null, view="title", B=null, sel=null, pending=null;
 
 /* ═══════════ 필드 · 시간 · 오염도 ═══════════ */
 const FIELDS=[
- {n:"최초의 숲", size:7,  days:7, act:10},
- {n:"정령샘",    size:9,  days:8, act:15},
- {n:"핏빛 감옥", size:11, days:9, act:20}
+ {n:"최초의 숲", size:7, days:7, act:10},
+ {n:"정령샘",    size:8, days:8, act:15},
+ {n:"핏빛 감옥", size:9, days:9, act:20}
 ];
 const NODE={
  camp   :{label:"주둔지",     c:"#c9a227"},
@@ -5168,8 +5168,10 @@ function buildGrid(fi){
   put("forge",1);                 /* 제련소는 어느 구역에나 한 곳 */
   return g;
 }
-/* 구역이 넓어질수록 칸도 함께 늘어난다 (7x7 / 9x9 / 11x11) */
-const NODE_N={dungeon:[10,16,22], elite:[3,5,7], shop:[2,3,4], rest:[2,3,6], event:[5,9,13]};
+/* 구역이 넓어질수록 칸도 함께 늘어난다 (7x7 / 8x8 / 9x9)
+   빈 칸이 절반쯤은 남아야 한다 — 길을 고르는 맛도, 밤의 습격도 빈 칸에서 난다.
+   지금 밀도(주둔지·우두머리·제련소까지 세어) 51% · 50% · 46% */
+const NODE_N={dungeon:[10,12,14], elite:[3,4,5], shop:[2,3,3], rest:[2,3,4], event:[5,7,8]};
 function nodeCount(t,fi){
   const a=NODE_N[t]; if(!a) return 0;
   return a[Math.min(fi==null?(run?run.field:0):fi, a.length-1)];
