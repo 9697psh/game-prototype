@@ -3508,8 +3508,8 @@ const COMMON=[
    h=>{ const n=sprinkleCell("event",2,{boon:20});
         toast(n?`탐험가 — 지도에 미지의 구역 ${n}곳이 나타납니다.`:"지도에 빈 자리가 없습니다.") },0.5),
  R("망토 두르기","하급","위장 망토 카드를 2장 얻습니다.",h=>{ addCard(run,"위장 망토",2) }),
- R("늑대의 시간","하급","밤에 전투할 때, 모든 추가 능력치를 3 얻습니다.",
-   h=>h.tag.nightStat=(h.tag.nightStat||0)+3),
+ R("늑대의 시간","하급","밤에 전투할 때, 모든 추가 능력치를 2 얻습니다.",
+   h=>h.tag.nightStat=(h.tag.nightStat||0)+2),
  R("파편 상자","하급","다음 2번의 전투 보상 상자에서 파편 장신구을 확정적으로 얻을 수 있습니다.",
    h=>{ run.shardBox=(run.shardBox||0)+2 },0.6),
  R("오염 구역 정화","하급","전투가 끝난 후, 오염도가 추가로 5 감소합니다. 금화를 8 얻습니다.",
@@ -4076,6 +4076,7 @@ const REW_COND={
  "중급|더 많은 갑옷":{need:["갑옷 장착"]},
  "중급|든든함 추가":{once:1},
  "중급|마법 부여 보호구":{once:1,need:["갑옷 장착"]},
+ "중급|명장 화살줄":{need:["명중"]},
  "중급|방어 후 막기":{once:1,need:["선두 방어"]},
  "중급|선한 영향력":{need:["후미 준비"]},
  "중급|성벽 쌓기":{need:["굳건한 성벽"]},
@@ -11270,34 +11271,40 @@ function checkEnd(){
         say(`망자의 육체 — ${t.name}${jo(t.name,"ig")} 되살아납니다.`,"t1") }
     });
     B.mins=[];
-    run.heroes.forEach(clearTmp);
-    run.heroes.forEach(h=>{
-      if(h.name!=="나이코스") return;
-      const cap=h.tag.winCap||2;
-      if(h.tag.winGold) run.gold+=h.tag.winGold;
-      if(h.wins<cap){ h.wins++; h.atk++ }
-      else {
-        run.gold+=1; say("전장의 승자 — 넘친 몫이 금화 1로 바뀝니다.","t2");
-        /* 공격력을 더 얻을 수 없을 때 대신 받는 것들 */
-        if(h.tag.winHp&&(h.winHp||0)<10){
-          h.winHp=(h.winHp||0)+1; h.maxHp++; h.hp++;
-          say(`전장의 지배자 — 최대 체력 +1 (${h.winHp}/10)`,"t2");
-        }
-        if(h.tag.winExp){
-          h.exp+=h.tag.winExp;
-          say(`전투 경험 — ${h.name} 경험치 +${h.tag.winExp}`,"t2");
-        }
-      }
-    });
+    /* 전투 단위 몫(clearTmp)과 전장의 승자는 여기서 손대지 않는다.
+       여기는 '라운드' 가 끝난 자리다. 전투가 정말 끝났는지는 afterWave 가 안다. */
     giveExp(exp,run.heroes.filter(h=>h.slot>0&&h.hp>0));
     /* 우두머리는 격파 연출이 다 끝난 뒤에 보상으로 넘어간다 */
     setTimeout(afterWave, B.kind==="boss"?3300:800);
   }
 }
+/* 전투 하나가 정말 끝났을 때 — 라운드가 아니라 전투 단위로 셈하는 것들 */
+function battleWon(){
+  run.heroes.forEach(clearTmp);
+  run.heroes.forEach(h=>{
+    if(h.name!=="나이코스") return;
+    const cap=h.tag.winCap||2;
+    if(h.tag.winGold) run.gold+=h.tag.winGold;
+    if(h.wins<cap){ h.wins++; h.atk++ }
+    else {
+      run.gold+=1; say("전장의 승자 — 넘친 몫이 금화 1로 바뀝니다.","t2");
+      /* 공격력을 더 얻을 수 없을 때 대신 받는 것들 */
+      if(h.tag.winHp&&(h.winHp||0)<10){
+        h.winHp=(h.winHp||0)+1; h.maxHp++; h.hp++;
+        say(`전장의 지배자 — 최대 체력 +1 (${h.winHp}/10)`,"t2");
+      }
+      if(h.tag.winExp){
+        h.exp+=h.tag.winExp;
+        say(`전투 경험 — ${h.name} 경험치 +${h.tag.winExp}`,"t2");
+      }
+    }
+  });
+}
 function afterWave(){
   const d=run.dun;
-  if(!d){ backToMap(); return }
+  if(!d){ battleWon(); backToMap(); return }
   if(d.wave<d.waves){ view="wavegap"; render(); return }
+  battleWon();
   dungeonCleared();
 }
 function drawWaveGap(app){
