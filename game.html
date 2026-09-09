@@ -465,8 +465,14 @@ button.dtl{padding:3px 10px;font-size:11.5px}
   50%{text-shadow:0 0 22px rgba(201,162,39,.75)}}
 .evq{font-style:normal;font-weight:700;color:#f0e2c0;text-shadow:0 0 12px rgba(201,162,39,.45)}
 .evopts{margin-top:18px;width:100%;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
-.evopts .choice{flex:1 1 210px;max-width:250px;margin:0}
-.evopts .evres{flex:1 1 100%}
+.evopts .choice{flex:1 1 210px;max-width:250px;margin:0;
+  text-align:center;align-items:center;padding:14px 16px}
+.evopts .choice b{font-size:13.5px}
+.evopts .choice span{word-break:keep-all}
+.evopts .evres{flex:1 1 100%;justify-content:center;text-align:center}
+.evopts .evres>div{text-align:center}
+.evopts .evres b{display:block;margin-bottom:3px}
+.evopts .evres p{margin:0}
 .evopts .go2{flex:1 1 100%;text-align:center}
 .rewards{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:22px}
 .rw{--gc:var(--brass);position:relative;width:198px;min-height:244px;
@@ -496,6 +502,35 @@ button.dtl{padding:3px 10px;font-size:11.5px}
     0 0 0 2px color-mix(in srgb,var(--gc) 40%,transparent),0 0 20px -8px var(--gc)}
   50%{box-shadow:0 6px 18px rgba(0,0,0,.5),
     0 0 0 2px color-mix(in srgb,var(--gc) 70%,transparent),0 0 34px -4px var(--gc)}}
+/* 전용 보상 — 그 대원만 받을 수 있는 것. 한눈에 갈리도록 요란하게 */
+.rw.own{border-color:var(--gc);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--gc) 9%,var(--raise)),var(--panel) 58%)}
+/* 안쪽으로 한 겹 더 두른 테두리 */
+.rw.own::after{content:"";position:absolute;inset:5px;border-radius:calc(var(--rd2) - 2px);
+  border:1px solid color-mix(in srgb,var(--gc) 55%,transparent);
+  background:radial-gradient(120% 60% at 50% -10%,var(--gc),transparent 62%);
+  opacity:.5;pointer-events:none}
+/* 네 귀퉁이 표 */
+.rw.own .ownmark{position:absolute;left:0;right:0;top:0;height:0;z-index:2;pointer-events:none;
+  font-size:0}
+.rw.own .ownmark::before,.rw.own .ownmark::after{content:"";position:absolute;top:9px;
+  width:13px;height:13px;border:2px solid var(--gc);opacity:.9}
+.rw.own .ownmark::before{left:9px;border-right:0;border-bottom:0}
+.rw.own .ownmark::after{right:9px;border-left:0;border-bottom:0}
+.rw.own .rwft::before,.rw.own .rwft::after{content:"";position:absolute;bottom:9px;
+  width:13px;height:13px;border:2px solid var(--gc);opacity:.9;pointer-events:none}
+.rw.own .rwft::before{left:9px;border-right:0;border-top:0}
+.rw.own .rwft::after{right:9px;border-left:0;border-top:0}
+.rw.own{animation:ownGlow 2.6s ease-in-out infinite}
+@keyframes ownGlow{
+  0%,100%{box-shadow:0 6px 18px rgba(0,0,0,.5),0 0 0 1px color-mix(in srgb,var(--gc) 40%,transparent),
+          0 0 16px -6px var(--gc)}
+  50%    {box-shadow:0 6px 18px rgba(0,0,0,.5),0 0 0 2px color-mix(in srgb,var(--gc) 85%,transparent),
+          0 0 30px -4px var(--gc)}}
+.rw.own .rwi{box-shadow:0 0 26px -6px var(--gc)}
+.rw.own b{color:color-mix(in srgb,var(--gc) 45%,var(--fg))}
+.rw.own .rwd{border-color:color-mix(in srgb,var(--gc) 32%,var(--rule))}
+.rw.own .rwft .ow.mine{background:var(--gc);color:#17130f;border-color:var(--gc);font-weight:700}
 /* 그림 → 이름 → 설명 → [전용/공용] */
 .rw .ricon{width:64px;height:64px;image-rendering:pixelated;display:block}
 /* 보상을 고르는 칸 — 세로로 길게, 설명은 상자 안에 */
@@ -1153,14 +1188,59 @@ header{align-items:center}
 .party .ph.p-low{border-color:rgba(201,80,63,.55)}
 .party .ph.p-down{opacity:.5;border-style:dashed}
 .party .ph.p-down b{text-decoration:line-through}
-/* 상점의 카드 품목 — 커서를 올리면 어떤 카드인지 보여 준다 */
+/* ── 상점 ── 가운데 주인 · 오른쪽 판매하기 · 아래 품목 판 ── */
+.shophead{display:grid;grid-template-columns:1fr auto 1fr;gap:18px;align-items:center;margin-top:14px}
+.shopnpc{grid-column:2;width:300px;text-align:center;
+  background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:16px}
+.shopnpc b{font-family:var(--serif);font-size:15px;color:var(--brass)}
+.shopnpc p{font-size:12px;color:var(--dim);line-height:1.6;margin:8px 0 0;word-break:keep-all}
+.shopnpc .gold{color:var(--brass);font-size:14px;font-weight:700;
+  display:flex;align-items:center;gap:5px;justify-content:center}
+.shopnpc .gold .ri{width:16px;height:16px;color:var(--r-gold)}
+.sellwrap{grid-column:3;justify-self:end}
+.shopsub{text-align:center;margin-top:16px;font-size:13px;color:var(--dim)}
+.shopgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(172px,1fr));
+  gap:12px;margin-top:18px;max-width:736px;margin-inline:auto}
+.good{--gc:var(--brass);position:relative;overflow:visible;cursor:pointer;
+  background:linear-gradient(180deg,var(--raise),var(--panel) 55%);
+  border:1px solid var(--rule2);border-radius:var(--rd2);padding:13px 12px 12px;
+  display:flex;flex-direction:column;align-items:center;text-align:center;
+  box-shadow:0 5px 15px rgba(0,0,0,.42);transition:transform .13s,border-color .13s,box-shadow .13s}
+.good::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--gc);
+  border-radius:var(--rd2) var(--rd2) 0 0}
+.good:hover{border-color:var(--gc);transform:translateY(-3px);
+  box-shadow:0 11px 24px rgba(0,0,0,.55),0 0 20px -8px var(--gc)}
+.good.g1{--gc:var(--g-low)} .good.g2{--gc:var(--g-mid)} .good.g3{--gc:var(--g-high)}
+.good.g4{--gc:#6aa8e0} .good.g5{--gc:#7fd39a} .good.g6{--gc:var(--g-rare)}
+.good.no{opacity:.42;cursor:default;filter:grayscale(.5)}
+.good.no:hover{transform:none;border-color:var(--rule2);box-shadow:0 5px 15px rgba(0,0,0,.42)}
+.good .gi{width:64px;height:64px;margin:4px auto 9px;display:flex;
+  align-items:center;justify-content:center;border-radius:50%;
+  background:radial-gradient(circle,color-mix(in srgb,var(--gc) 24%,transparent),transparent 70%)}
+.good .gi svg{width:50px;height:50px}
+.good .gi img{width:52px;height:52px;image-rendering:pixelated;display:block}
+.good .gn{font-family:var(--serif);font-size:13.5px;color:var(--fg);line-height:1.4;word-break:keep-all}
+.good .gp{margin-top:7px;font-size:13px;font-weight:700;color:var(--brass);
+  display:flex;align-items:center;gap:4px;justify-content:center;flex-wrap:wrap}
+.good .gp .ri{width:15px;height:15px;color:var(--r-gold)}
+.good .gp .short{font-style:normal;font-size:10.5px;font-weight:600;color:var(--danger)}
+.good .gq{margin-top:4px;font-size:10.5px;color:var(--faint);letter-spacing:.05em}
+.good .gd{margin-top:9px;width:100%;padding:8px 9px;border-radius:5px;
+  background:rgba(0,0,0,.32);border:1px solid var(--rule);flex:1 1 auto;
+  display:flex;flex-direction:column;justify-content:center}
+.good .gd p{margin:0;font-size:11.5px;line-height:1.65;color:var(--fg);opacity:.9}
+.good .gd .rcp{border-top:0;padding-top:5px;margin-top:5px}
+.good.sellon{border-color:var(--danger);box-shadow:0 0 0 1px var(--danger) inset}
+.good .sellq{color:var(--danger);font-size:10.5px;margin-top:5px}
+/* 상점의 카드 품목 — 커서를 올리면 어떤 카드인지 보여 준다.
+   .rw 는 overflow:hidden 이라 칸 밖으로 나가는 쪽지가 잘렸다. .good 은 그렇지 않다. */
 .rw{position:relative}
 .cardtip{position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%) scale(.96);
   width:170px;padding:10px;border-radius:6px;z-index:60;
   background:linear-gradient(180deg,var(--raise),var(--panel));
   border:1px solid var(--brass);box-shadow:0 10px 26px rgba(0,0,0,.6);
   opacity:0;pointer-events:none;transition:opacity .13s,transform .13s}
-.rw:hover .cardtip{opacity:1;transform:translateX(-50%) scale(1)}
+.rw:hover .cardtip,.good:hover .cardtip{opacity:1;transform:translateX(-50%) scale(1)}
 .cardtip .ct-i{width:54px;height:54px;margin:0 auto 6px}
 .cardtip .ct-i svg,.cardtip .ct-i img{width:100%;height:100%;display:block}
 .cardtip b{display:block;text-align:center;color:var(--fg);font-size:12.5px;margin-bottom:4px}
@@ -6753,7 +6833,7 @@ const SELL_PRICE={"파편":[1,3],"일반":[8,12],"희귀":[30,50],"특수":[8,12
 const rr=a=>a[0]+Math.floor(Math.random()*(a[1]-a[0]+1));
 const SHOP_NPC=["떠돌이 상인","외눈의 노파","기름때 묻은 대장장이","두건을 쓴 행상"];
 function makeShop(){
-  run.sellPick=null;
+  run.sellPick=null; run.sellOpen=0;
   const st=run.field;
   let pool=SHOP_STOCK.filter(g=>(g.stage||0)<=st&&(g.upto==null||st<=g.upto)).slice();
   /* 무기 상점 — 장신구과 제련에 관한 것만 판다 */
@@ -6768,8 +6848,9 @@ function makeShop(){
     const g=pool.splice(Math.floor(Math.random()*pool.length),1)[0];
     const qr=(st>=2&&g.s3q)?g.s3q:(st>=1&&g.s2q)?g.s2q:g.q;
     const pr=(st>=2&&g.s3p)?g.s3p:(st>=1&&g.s2p)?g.s2p:g.p;
+    const q0=rr(qr);
     goods.push({n:g.n,d:g.d,k:g.k,card:g.card,item:g.item,
-                cost:rr(pr), left:rr(qr)});
+                cost:rr(pr), left:q0, qty:q0});
   }
   run.shop={npc:rnd(SHOP_NPC),goods:goods,sold:[]};
 }
@@ -6790,51 +6871,63 @@ function shopIcon(k){
 }
 function drawShop(app){
   const sh=run.shop;
-  const box=el(`<div class="npcbox">
-    <div class="npc"><div class="npcface">${figure("도미니코")}</div>
+  const own=ownedItems();
+  /* 머리 — 가운데에 주인, 오른쪽에 판매하기 */
+  const head=el(`<div class="shophead">
+    <div class="shopnpc"><div class="npcface">${figure("도미니코")}</div>
       <b>${esc(sh.npc)}</b>
       <p>"필요한 게 있으면 골라 보시오. 값은 그때그때 다르니."</p>
-      <p style="color:var(--brass)">가진 금화 ${run.gold}</p></div>
-    <div class="shelf"><div class="hint">진열대</div><div class="shelfrow" id="shelf"></div></div>
+      <p class="gold">${resIcon("gold")} ${run.gold}</p></div>
+    <div class="sellwrap">
+      <button class="go sellbtn">${run.sellOpen?"진열대로 돌아가기":"판매하기"}</button>
+      <div class="hint" style="margin-top:7px;text-align:center">가진 물건 ${own.length}개</div>
+    </div>
   </div>`);
-  app.appendChild(box);
-  const row=box.querySelector("#shelf");
-  sh.goods.forEach(g=>{
-    const off=g.left<=0||run.gold<g.cost;
-    const c=el(`<div class="rw${gcls(g.k)} ${off?"no":""}">
-      <div class="rwi">${shopIcon(g.k)}</div>
-      <div class="g">${g.left<=0?"품절"
-        :g.cost+" 금화 · 남은 "+g.left
-          +(run.gold<g.cost?` · <span style="color:var(--danger)">${g.cost-run.gold} 모자람</span>`:"")}</div>
-      <b>${esc(g.n)}</b>${g.card?"":`<p>${rich(g.d)}</p>`}${g.item?recipeHtml(g.item):""}${
-        g.card&&CARD_LIB[g.card]?`<div class="cardtip"><div class="ct-i">${cardArt(g.card)}</div>
-          <b>${esc(g.card)}</b><p>${rich(CARD_LIB[g.card].d)}</p></div>`:""}</div>`);
-    if(!off) c.onclick=()=>buy(g);
-    row.appendChild(c);
-  });
-  /* 팔기 */
-  const own=ownedItems();
-  const sellBox=el(`<div class="npcbox" style="margin-top:16px">
-    <div class="npc"><div class="npcface">${shopIcon("stone")}</div>
-      <b>물건 팔기</b>
-      <p>쓰지 않는 물건은 값을 쳐 드립니다.</p>
-      <p style="color:var(--faint)">파편 1~3 · 일반 8~12 · 희귀 30~50 금화</p></div>
-    <div class="shelf"><div class="hint">가진 물건 ${own.length}개</div>
-      <div class="shelfrow" id="sellrow"></div></div></div>`);
-  const srow=sellBox.querySelector("#sellrow");
-  if(!own.length) srow.appendChild(el(`<div class="hint">팔 물건이 없습니다.</div>`));
-  sellList().forEach((x,i)=>{
-    const pr=SELL_PRICE[x.it.g]||[1,3];
-    const on=(run.sellPick===i);
-    const c=el(`<div class="rw ${on?"sellon":""}"><div class="rwi">${shopIcon(x.it.g==="파편"?"shard":"normal")}</div>
-      <div class="g">${pr[0]}~${pr[1]} 금화</div>
-      <b>${esc(x.it.n)}</b><p>${rich(x.it.d||"")}</p>
-      <p style="color:var(--faint)">${x.bag?"가방":x.h.name+" 착용"}</p>
-      ${on?`<p class="sellq">한 번 더 누르면 팝니다 · 되돌릴 수 없습니다</p>`:""}</div>`);
-    c.onclick=()=>sellItem(i);
-    srow.appendChild(c);
-  });
-  app.appendChild(sellBox);
+  head.querySelector(".sellbtn").onclick=()=>{
+    run.sellOpen=!run.sellOpen; run.sellPick=null; render() };
+  app.appendChild(head);
+
+  if(run.sellOpen){
+    app.appendChild(el(`<div class="shopsub">팔 물건을 고르세요 ·
+      <span style="color:var(--faint)">파편 1~3 · 일반 8~12 · 희귀 30~50 금화</span></div>`));
+    const grid=el(`<div class="shopgrid"></div>`);
+    const list=sellList();
+    if(!list.length) grid.appendChild(el(`<div class="hint">팔 물건이 없습니다.</div>`));
+    list.forEach((x,i)=>{
+      const pr=SELL_PRICE[x.it.g]||[1,3];
+      const on=(run.sellPick===i);
+      const c=el(`<div class="good${gcls(x.it.g)} ${on?"sellon":""}">
+        <div class="gi">${rewardIcon(x.it)}</div>
+        <div class="gn">${esc(x.it.n)}</div>
+        <div class="gp">${resIcon("gold")} ${pr[0]}~${pr[1]}</div>
+        <div class="gq">${esc(x.bag?"가방":x.h.name+" 착용")}</div>
+        <div class="gd"><p>${rich(x.it.d||"")}</p>
+          ${on?`<p class="sellq">한 번 더 누르면 팝니다 · 되돌릴 수 없습니다</p>`:""}</div>
+      </div>`);
+      c.onclick=()=>sellItem(i);
+      grid.appendChild(c);
+    });
+    app.appendChild(grid);
+  } else {
+    const grid=el(`<div class="shopgrid"></div>`);
+    sh.goods.forEach(g=>{
+      const off=g.left<=0||run.gold<g.cost;
+      const L=g.card&&CARD_LIB[g.card];
+      const c=el(`<div class="good${gcls(g.k)} ${off?"no":""}">
+        <div class="gi">${g.card?cardArt(g.card):shopIcon(g.k)}</div>
+        <div class="gn">${esc(g.n)}</div>
+        <div class="gp">${resIcon("gold")} ${g.cost}${
+          run.gold<g.cost&&g.left>0?`<em class="short">${g.cost-run.gold} 모자람</em>`:""}</div>
+        <div class="gq">${g.left<=0?"품절":`수량 ${g.left}/${g.qty||g.left}`}</div>
+        ${g.card?"":`<div class="gd"><p>${rich(g.d)}</p>${g.item?recipeHtml(g.item):""}</div>`}
+        ${L?`<div class="cardtip"><div class="ct-i">${cardArt(g.card)}</div>
+          <b>${esc(g.card)}</b><p>${rich(L.d)}</p></div>`:""}
+      </div>`);
+      if(!off) c.onclick=()=>buy(g);
+      grid.appendChild(c);
+    });
+    app.appendChild(grid);
+  }
   const out=el(`<div style="text-align:center;margin-top:22px"><button class="go">상점을 떠난다</button></div>`);
   out.querySelector("button").onclick=leaveNode;
   app.appendChild(out);
@@ -7304,7 +7397,7 @@ function drawRelic(app){
     row.appendChild(c);
   });
 }
-function leaveNode(){ run.here=null; run.sellPick=null; backToMap() }
+function leaveNode(){ run.here=null; run.sellPick=null; run.sellOpen=0; backToMap() }
 
 /* ═══════════ 영입 · 종료 화면 ═══════════ */
 const PARTY_MAX=5;                      /* 기획 노트 — 덱에는 최대 5명 */
@@ -11277,11 +11370,13 @@ function offerCards(app,hero,grade,done){
   }
   const row=el(`<div class="rewards"></div>`);
   picks.forEach(r=>{
-    const c=el(`<div class="rw rwpick${gcls(r.g)}"><div class="rwi">${rewardIcon(r)}</div>
+    const mine=own.includes(r);
+    const c=el(`<div class="rw rwpick${gcls(r.g)}${mine?" own":""}">${
+      mine?`<span class="ownmark">전용</span>`:""}<div class="rwi">${rewardIcon(r)}</div>
       <b>${esc(r.n)}</b>
       <div class="rwd"><p>${rich(r.d)}</p></div>${rewCondHtml(r)}
       <div class="rwft"><span class="gd">${esc(r.g)}</span>
-        <span class="ow${own.includes(r)?" mine":""}">${own.includes(r)?"전용":"공용"}</span></div>
+        <span class="ow${mine?" mine":""}">${mine?"전용":"공용"}</span></div>
     </div>`);
     c.onclick=()=>{
       if(c.classList.contains("taken")) return;
