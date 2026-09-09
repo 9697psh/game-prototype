@@ -1562,6 +1562,11 @@ kbd{display:inline-block;min-width:20px;text-align:center;padding:1px 7px;font-s
   52%{transform:translate(-6px,2px)}72%{transform:translate(4px,-1px)}
   88%{transform:translate(-2px,0)}}
 .flashd{animation:fld .3s} @keyframes fld{0%,100%{filter:none}30%{filter:brightness(2.4) saturate(.4)}}
+/* 보호막이 다 막아 냈을 때 — 붉게가 아니라 쇠빛으로 짧게 */
+.flashb{animation:flb .26s}
+@keyframes flb{0%,100%{filter:none}
+  35%{filter:brightness(1.5) saturate(.45) drop-shadow(0 0 6px rgba(143,162,201,.9))}}
+.shake.soft{animation-duration:.18s}
 .flashg{animation:flg .5s} @keyframes flg{0%,100%{box-shadow:none}
   40%{box-shadow:0 0 0 2px var(--brass) inset,0 0 22px rgba(201,162,39,.5)}}
 .kw.kwq{border-bottom:1px dotted currentColor;cursor:help}
@@ -2134,7 +2139,12 @@ function playFX(o){
   if(o.streak){ const q=ctrOf(o.streak.side,o.streak.slot); if(q) streakFX(q,p) }
   if(o.quake) quakeFX(p);
   if(o.leap){ p.e.classList.remove("leap"); void p.e.offsetWidth; p.e.classList.add("leap") }
-  if(o.hit){ p.e.classList.remove("shake","flashd"); void p.e.offsetWidth; p.e.classList.add("shake","flashd"); }
+  if(o.hit){
+    /* 막아 낸 한 방은 쇠빛으로 짧게, 실제로 닳았을 때만 붉게 */
+    p.e.classList.remove("shake","flashd","flashb","soft"); void p.e.offsetWidth;
+    if(o.block) p.e.classList.add("shake","soft","flashb");
+    else        p.e.classList.add("shake","flashd");
+  }
   if(o.pose) setPose(o.side,o.slot,o.pose,o.poseMs);
   if(o.lunge)  nudge(o.side,o.slot, 1);
   if(o.recoil) nudge(o.side,o.slot,-1);
@@ -9944,8 +9954,10 @@ function hurt(f,amt,tag,art,pierce,crit){
       fx({side:"mine",slot:it.slot,s:"shield",gap:60});
       say(`치명적인 보호 — ${it.name} 보호막 +${it.tag.critShield}`,"t2") }
   }
-  fx({side:"foe",slot:f.slot,hit:1,art:art||"slash",txt:"-"+amt,
-      cls:crit?"critbig":(art==="mag"?"mag":(amt>=15?"crit":"dmg")),
+  const fBlock=(d<=0&&s>0&&!crit);
+  fx({side:"foe",slot:f.slot,hit:1,block:fBlock?1:0,
+      art:fBlock?null:(art||"slash"),txt:(fBlock?"막음 ":"-")+amt,
+      cls:crit?"critbig":(fBlock?"shd":(art==="mag"?"mag":(amt>=15?"crit":"dmg"))),
       gap:crit?170:undefined, recoil:1, pose:(d>0?"hurt":(s>0?"guard":null)),
       s:crit?null:(pr>=50?"pierce":art==="wind"?"gust":art==="mag"?"mag":
                    art==="boom"?"boom":art==="claw"?"slash2":amt>=12?"blunt":"slash")});
@@ -11060,8 +11072,12 @@ function hurtAlly(f,t,raw,label){
     t.eshield=(t.eshield||0)+v*4; bumpTmp(t,"atk",v);
     say(`애곤의 발톱 — ${t.name}${jo(t.name,"ig")} 이를 악뭅니다.`,"t1");
   }
-  /* 체력이 닳았으면 피격, 보호막이 대신 다 받아 냈으면 막기 */
-  fx({side:"mine",slot:t.slot,hit:1,art:"claw",s:"hit",txt:"-"+raw,cls:"dmg",gap:170,
+  /* 체력이 닳았으면 피격, 보호막이 대신 다 받아 냈으면 막기.
+     다 막아 냈으면 붉게 번쩍이지 않는다 — 맞은 줄 알고 놀란다 */
+  const blocked=(d<=0&&sh>0);
+  fx({side:"mine",slot:t.slot,hit:1,block:blocked?1:0,
+      art:blocked?null:"claw", s:blocked?"shield":"hit",
+      txt:(blocked?"막음 ":"-")+raw, cls:blocked?"shd":"dmg", gap:170,
       recoil:1, pose:(d>0?"hurt":(sh>0?"guard":null))});
   say(`${f.name} → ${t.name} ${label} 피해 ${raw}${sh?` (보호막 ${sh})`:""} · ${Math.max(0,t.hp)}/${t.maxHp}`);
   { const th=((t.tag&&t.tag.thorn)||0)+(t.thornTmp||0);
