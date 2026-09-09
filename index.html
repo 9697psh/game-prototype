@@ -1965,13 +1965,20 @@ const BGM=(()=>{
   const VOL=0.42, FADE=700;      /* 효과음이 묻히지 않을 만큼만 */
   let on=true, cur=null, want=null, unlocked=false;
   let a=null, b=null, live=null;   /* 두 개를 번갈아 쓴다 */
-  let sting=null;
+  let sting=null, hidden=false;
   function make(){
     const e=new Audio(); e.loop=true; e.preload="none"; e.volume=0;
     e.addEventListener("error",()=>{},false);
     return e;
   }
   function els(){ if(!a){ a=make(); b=make(); live=a } return true }
+  /* 지금 울리고 있는 것 전부 — 확실히 세울 때 쓴다 */
+  function all(){ return [a,b,sting].filter(Boolean) }
+  function halt(el){
+    if(!el) return;
+    if(el._ft){ clearInterval(el._ft); el._ft=0 }
+    try{ el.pause(); el.removeAttribute("src"); el.load() }catch(e){}
+  }
   function fade(el,to,ms,then){
     if(!el) return;
     if(el._ft) clearInterval(el._ft);
@@ -1987,9 +1994,17 @@ const BGM=(()=>{
     const nxt=(live===a)?b:a, old=live;
     nxt.src=BGM_SRC[key]; nxt.volume=0;
     const p=nxt.play();
-    if(p&&p.catch) p.catch(()=>{ unlocked=false });
+    /* src 를 바꾸면 앞서 부른 play() 가 AbortError 로 거절된다.
+       화면을 빠르게 넘길 때 늘 나는 일이므로 잠그면 안 된다.
+       정말로 브라우저가 막은 것(NotAllowedError)일 때만 잠근다. */
+    if(p&&p.catch) p.catch(err=>{
+      if(!err||err.name==="NotAllowedError") unlocked=false;
+    });
     fade(nxt,VOL*(sting?0.35:1),FADE);
-    if(old&&!old.paused) fade(old,0,FADE,()=>{ try{ old.pause(); old.src="" }catch(e){} });
+    /* 새로 트는 것 말고는 무조건 세운다.
+       paused 를 보고 넘기면, 아직 받아오는 중인 곡이 살아남아 뒤늦게 울린다.
+       뒤늦게 도착한 콜백이 새로 튼 곡을 끄지 않도록 한 번 더 본다. */
+    if(old&&old!==nxt) fade(old,0,FADE,()=>{ if(old!==live) halt(old) });
     live=nxt; cur=key;
   }
   return {
@@ -2019,8 +2034,17 @@ const BGM=(()=>{
       sting.addEventListener("error",back);
       const p=sting.play(); if(p&&p.catch) p.catch(back);
     },
-    stop(){ if(live){ fade(live,0,300,()=>{try{live.pause()}catch(e){}}) } cur=null;
-            try{ if(sting) sting.pause() }catch(e){} sting=null },
+    stop(){ if(live) fade(live,0,300,()=>halt(live)); cur=null;
+            halt(sting); sting=null },
+    /* 창을 닫거나 다른 데로 옮겨 갈 때 — 어루만지지 않고 그 자리에서 끊는다 */
+    kill(){ all().forEach(halt); sting=null; cur=null },
+    /* 화면을 덮거나 다른 탭으로 가면 멎고, 돌아오면 다시 이어 튼다 */
+    hide(){ if(hidden) return; hidden=true;
+            all().forEach(el=>{ try{ el.pause() }catch(e){} }) },
+    show(){ if(!hidden) return; hidden=false;
+            if(!on||!unlocked) return;
+            const k=cur; cur=null; want=k;
+            this.sync(); },
     set on(v){ on=!!v; if(!on) this.stop(); else { cur=null; this.sync() } },
     get on(){ return on },
     get now(){ return cur }
@@ -2030,6 +2054,14 @@ const BGM=(()=>{
 /* 브라우저는 손을 대기 전에는 소리를 못 내게 막는다. 첫 손짓에 푼다 */
 ["pointerdown","keydown","touchstart"].forEach(k=>
   document.addEventListener(k,()=>BGM.unlock(),{capture:true,once:false}));
+/* 창을 덮거나 다른 탭으로 옮기면 노래를 멈춘다.
+   게임 창을 뒤로 보내 놓고 잊어버려도 소리가 따라다니지 않게. */
+document.addEventListener("visibilitychange",()=>{
+  try{ document.hidden?BGM.hide():BGM.show() }catch(e){}
+});
+/* 창을 닫거나 다른 곳으로 옮겨 갈 때 확실히 끊는다 */
+["pagehide","beforeunload"].forEach(k=>
+  window.addEventListener(k,()=>{ try{ BGM.kill() }catch(e){} }));
 
 /* ═══════ 이펙트 ═══════ */
 const FXQ=[];
