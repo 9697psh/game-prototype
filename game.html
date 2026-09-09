@@ -78,6 +78,18 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .hitpv.heal{background:#7fd39a;color:#0e2416}
 .hitpv.crit{border-color:#ffd45e;box-shadow:0 0 10px rgba(255,214,110,.85)}
 .hitpv em{font-style:normal;font-weight:600;font-size:9.5px;opacity:.85;margin-left:3px}
+/* 다음 적 차례에 받을 피해 */
+.incm{position:absolute;top:-11px;left:50%;transform:translateX(-50%);z-index:5;
+  font-size:11.5px;font-weight:800;padding:1px 8px;border-radius:11px;line-height:1.55;
+  pointer-events:none;white-space:nowrap;font-variant-numeric:tabular-nums;
+  background:#8e2b2b;color:#ffe9e4;border:1px solid rgba(0,0,0,.55);
+  box-shadow:0 1px 5px rgba(0,0,0,.55)}
+.incm::before{content:"\2620";margin-right:3px;opacity:.85;font-weight:400}
+.incm em{font-style:normal;font-weight:600;font-size:9.5px;opacity:.9;margin-left:3px}
+.incm.safe{background:#3b4a3c;color:#cfe6d2}
+.incm.lethal{background:#c9503f;box-shadow:0 0 11px rgba(201,80,63,.85);
+  animation:incA 1.1s ease-in-out infinite}
+@keyframes incA{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.08)}}
 .slot.pick .reach{color:var(--brass)}
 .slot .no{position:absolute;top:-9px;left:7px;background:var(--ink);border:1px solid var(--rule);
   border-radius:3px;font-size:10px;padding:0 6px;color:var(--faint)}
@@ -1032,6 +1044,9 @@ header{align-items:center}
 .party .ph.p-low{border-color:rgba(201,80,63,.55)}
 .party .ph.p-down{opacity:.5;border-style:dashed}
 .party .ph.p-down b{text-decoration:line-through}
+.rwcond{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;margin-top:7px}
+.cxr1 .rwcond,.tr1 .rwcond{justify-content:flex-start;margin-top:5px}
+.chip.cond{background:rgba(201,162,39,.12);border-color:rgba(201,162,39,.5);color:var(--brass)}
 .hp-hb{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .hp-hb button{font-size:10.5px;padding:2px 9px;letter-spacing:.04em}
 .routebar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:0 0 12px;
@@ -1050,6 +1065,11 @@ header{align-items:center}
 .cell.rdest{box-shadow:0 0 0 2px rgba(140,200,255,1) inset,
   inset 0 0 0 999px rgba(106,168,224,.24),0 0 16px rgba(106,168,224,.6)}
 .cell.rdest .rn{background:#d8ecff}
+/* 보상으로 지도에 놓인 구역은 눈에 띄어야 한다 */
+.cell.boon{box-shadow:0 0 0 1px rgba(127,211,154,.8) inset,0 0 14px rgba(127,211,154,.4)}
+.cell.boon .cbg{opacity:.4}
+@keyframes boonA{0%,100%{filter:none}50%{filter:brightness(1.35)}}
+.cell.boon .cico{animation:boonA 1.8s ease-in-out infinite}
 .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:11px;color:var(--dim)}
 .legend span{display:inline-flex;align-items:center;gap:5px}
 .legend i{width:16px;height:16px;display:inline-block}
@@ -3144,7 +3164,7 @@ function wanderCheck(){
 const R=(n,g,d,fx,w)=>({n:n,g:g,d:d,fx:fx,w:w});
 const COMMON=[
  /* ── 하급 ── */
- R("아이템: 파편","하급","무작위 파편 아이템을 얻습니다.",
+ R("아이템: 파편","하급","무작위 <b>파편 아이템</b>을 얻습니다.",
    h=>{ (run.after=run.after||[]).push({item:rnd(ITEMS.filter(i=>i.g==="파편"))}) }),
  R("하급: 체력 강화","하급","최대 체력을 3 얻습니다.",h=>{ h.maxHp+=3; h.hp+=3 }),
  R("하급: 부정 보호막 강화","하급","전투 시작 시, 부정 보호막을 1 얻습니다.",
@@ -3153,8 +3173,8 @@ const COMMON=[
    h=>h.tag.eshield=(h.tag.eshield||0)+5,0.3),
  R("아이템: 제련석","하급","제련석을 3개 얻습니다.",h=>{ run.stone=(run.stone||0)+3 }),
  R("오염 정화","하급","현재 오염도가 15 감소합니다.",h=>addTaint(-15)),
- R("발 마사지","하급","활동량을 3 얻습니다. 금화를 3개 얻습니다.",
-   h=>{ run.act+=3; run.gold+=3; if(run.act>0) run.night=0 }),
+ R("하급: 발 마사지","하급","활동량을 3 얻습니다. 금화를 5개 얻습니다.",
+   h=>{ run.act+=3; run.gold+=5; if(run.act>0) run.night=0 }),
  R("하급: 회복","하급","체력을 20% 회복합니다.",
    h=>{ healUp(h,Math.round(h.maxHp*0.2)) }),
  R("하급: 가시 두르기","하급","가시를 1 얻습니다.",h=>h.tag.thorn=(h.tag.thorn||0)+1),
@@ -3167,18 +3187,78 @@ const COMMON=[
    h=>h.tag.startEvade=(h.tag.startEvade||0)+1,0.12),
  R("행상인 수레 방문","하급","빵, 소형 방패, 맥주 카드를 1장씩 얻습니다.",
    h=>{ addCard(run,"빵",1); addCard(run,"소형 방패",1); addCard(run,"맥주",1) }),
- R("하급: 달리기","하급","내 턴이 끝날 때, 추진력을 최대 3만큼 소모하고 그만큼 에너지 보호막을 얻습니다.",
-   h=>{ h.tag.dashMax=Math.max(h.tag.dashMax||0,3); h.tag.dashMul=Math.max(h.tag.dashMul||0,1) }),
+ R("하급: 가죽 장화끈","하급","이동할 때마다 보호막을 1 얻습니다.",
+   h=>h.tag.moveShield=Math.max(h.tag.moveShield||0,1)),
+ R("간이 신발","하급","간이 신발 카드를 5장 얻습니다.",h=>{ addCard(run,"간이 신발",5) }),
+ R("하급: 마나 흡입","하급","매 라운드 시작 시, 추가 마나를 1 얻습니다.",
+   h=>h.tag.roundMana=Math.max(h.tag.roundMana||0,1)),
+ R("하급: 잔불","하급","전투 시작 시, 무작위 적 하나에게 화상을 4 부여합니다.",
+   h=>h.tag.roundBurn=Math.max(h.tag.roundBurn||0,4)),
+ R("곰팡이 빵","하급","빵 카드를 4장 얻습니다. 오염도가 4 증가합니다.",
+   h=>{ addCard(run,"빵",4); addTaint(4) }),
+ R("잔걸음","하급","전투 시작 시, 추진력을 5 얻습니다.",
+   h=>h.tag.startMom=(h.tag.startMom||0)+5),
+ R("하급: 꼭두각시 인형","하급","소환물 카드를 낸 후에, 그 소환물의 최대 체력이 20% 증가합니다.",
+   h=>h.tag.minHp=Math.max(h.tag.minHp||0,20)),
+ R("하급: 편안한 휴식","하급","휴식소 회복량이 20% 증가합니다.",
+   h=>h.tag.restPlus=(h.tag.restPlus||0)+20),
+ R("하급: 카드 마술","하급","카드를 낸 후에, 보호막을 2 얻습니다.",
+   h=>h.tag.cardShield=Math.max(h.tag.cardShield||0,2)),
+ R("하급: 독이 담긴 병","하급","매 라운드 시작 시, 모든 적에게 공격약화, 마법약화, 보호약화 1을 부여합니다.",
+   h=>h.tag.roundPoison=Math.max(h.tag.roundPoison||0,1)),
+ R("탐험가","하급","지도 위 무작위 위치에 미지의 구역 2곳을 추가합니다. 해당 위치에 도착하면 오염도가 20 감소합니다.",
+   h=>{ const n=sprinkleCell("event",2,{boon:20});
+        toast(n?`탐험가 — 지도에 미지의 구역 ${n}곳이 나타납니다.`:"지도에 빈 자리가 없습니다.") },0.5),
+ R("망토 두르기","하급","위장 망토 카드를 2장 얻습니다.",h=>{ addCard(run,"위장 망토",2) }),
+ R("늑대의 시간","하급","밤에 전투할 때, 모든 추가 능력치를 3 얻습니다.",
+   h=>h.tag.nightStat=(h.tag.nightStat||0)+3),
+ R("파편 상자","하급","다음 2번의 전투 보상 상자에서 파편 아이템을 확정적으로 얻을 수 있습니다.",
+   h=>{ run.shardBox=(run.shardBox||0)+2 },0.6),
+ R("오염 구역 정화","하급","전투가 끝난 후, 오염도가 추가로 5 감소합니다. 금화를 8 얻습니다.",
+   h=>{ h.tag.clearTaint=(h.tag.clearTaint||0)+5; h.tag.clearGold=(h.tag.clearGold||0)+8 }),
+ R("반가운 상인","하급","상점에 방문하면 금화를 4 얻습니다.",
+   h=>h.tag.shopGold=(h.tag.shopGold||0)+4),
+ R("반가운 휴식","하급","휴식소에 도착하면 체력을 4 회복합니다.",
+   h=>h.tag.restHeal=(h.tag.restHeal||0)+4),
+ R("주둔지 복귀","하급","귀환서 카드를 2장 얻습니다.",h=>{ addCard(run,"귀환서",2) }),
+ R("오염된 피부","하급","오염도가 50 이상일 때, 전투에서 모든 추가 능력치를 1 얻습니다.",
+   h=>h.tag.taintStat=(h.tag.taintStat||0)+1),
+ R("탐욕의 시선","하급","악마 하수인 카드를 1장 얻습니다.",h=>{ addCard(run,"악마 하수인",1) }),
+ R("무기 상인과 조우","하급","지도 위 무작위 위치에 무기 상점 1곳을 추가합니다. 해당 상점은 아이템 관련 품목만 판매합니다. 금화를 5 얻습니다.",
+   h=>{ const n=sprinkleCell("shop",1,{weapon:1}); run.gold+=5;
+        toast(n?"무기 상인과 조우 — 지도에 무기 상점이 나타납니다.":"지도에 빈 자리가 없습니다.") },0.5),
+ R("하급: 달리기","하급","내 턴이 끝날 때, 추진력을 최대 3만큼 소모하고 그 2배만큼 에너지 보호막을 얻습니다.",
+   h=>{ h.tag.dashMax=Math.max(h.tag.dashMax||0,3); h.tag.dashMul=Math.max(h.tag.dashMul||0,2) }),
  /* ── 중급 ── */
  R("중급: 달리기","중급","내 턴이 끝날 때, 추진력을 최대 5만큼 소모하고 그 2배만큼 에너지 보호막을 얻습니다.",
    h=>{ h.tag.dashMax=Math.max(h.tag.dashMax||0,5); h.tag.dashMul=Math.max(h.tag.dashMul||0,2) }),
+ R("중급: 마나 흡입","중급","매 라운드 시작 시, 추가 마나를 2 얻습니다.",
+   h=>h.tag.roundMana=Math.max(h.tag.roundMana||0,2)),
+ R("중급: 잔불","중급","전투 시작 시, 무작위 적 하나에게 화상을 8 부여합니다.",
+   h=>h.tag.roundBurn=Math.max(h.tag.roundBurn||0,8)),
+ R("중급: 꼭두각시 인형","중급","소환물 카드를 낸 후에, 그 소환물의 최대 체력이 40% 증가합니다.",
+   h=>h.tag.minHp=Math.max(h.tag.minHp||0,40)),
+ R("중급: 카드 마술","중급","카드를 낸 후에, 보호막을 4 얻습니다.",
+   h=>h.tag.cardShield=Math.max(h.tag.cardShield||0,4)),
+ R("중급: 독이 담긴 병","중급","매 라운드 시작 시, 모든 적에게 공격약화, 마법약화, 보호약화 2를 부여합니다.",
+   h=>h.tag.roundPoison=Math.max(h.tag.roundPoison||0,2)),
+ R("중급: 가죽 장화끈","중급","이동할 때마다 보호막을 2 얻습니다.",
+   h=>h.tag.moveShield=Math.max(h.tag.moveShield||0,2)),
+ R("가벼운 발걸음","중급","지도에서 움직여서 얻는 오염도가 영구히 1 감소합니다.",
+   h=>h.tag.stepCut=(h.tag.stepCut||0)+1),
+ R("치명적인 마법","중급","전투 시작 시, 첫 마법 피해가 치명타로 적중합니다.",
+   h=>h.tag.critMag=1),
+ R("치명적인 공격","중급","전투 시작 시, 첫 공격 피해가 치명타로 적중합니다.",
+   h=>h.tag.critAtk=1),
+ R("굳은살","중급","최대 체력을 10, 보호력을 영구히 1 얻습니다.",
+   h=>{ h.maxHp+=10; h.hp+=10; h.def+=1 }),
  R("중급: 회피 기동","중급","전투 시작 시, 회피를 3 얻습니다.",
    h=>h.tag.startEvade=(h.tag.startEvade||0)+3,0.12),
  R("중급: 가시 두르기","중급","가시를 4 얻습니다.",h=>h.tag.thorn=(h.tag.thorn||0)+4),
  R("중급: 회복","중급","체력을 40% 회복합니다.",
    h=>{ healUp(h,Math.round(h.maxHp*0.4)) }),
- R("발 마사지","중급","활동량을 6 얻습니다. 금화를 6개 얻습니다.",
-   h=>{ run.act+=6; run.gold+=6; if(run.act>0) run.night=0 }),
+ R("중급: 발 마사지","중급","활동량을 6 얻습니다. 금화를 12개 얻습니다.",
+   h=>{ run.act+=6; run.gold+=12; if(run.act>0) run.night=0 }),
  R("오염 정화","중급","현재 오염도가 30 감소합니다.",h=>addTaint(-30)),
  R("아이템: 제련석","중급","제련석을 8개 얻습니다.",h=>{ run.stone=(run.stone||0)+8 }),
  R("중급: 에너지 강화","중급","전투 시작 시, 에너지 보호막을 12 얻습니다.",
@@ -3189,11 +3269,15 @@ const COMMON=[
  R("중급: 체력 강화","중급","최대 체력을 5 얻습니다.",h=>{ h.maxHp+=5; h.hp+=5 }),
  R("중급: 마법력 강화","중급","영구히 마법력을 1 얻습니다.",h=>h.mag+=1),
  R("중급: 공격력 강화","중급","영구히 공격력을 1 얻습니다.",h=>h.atk+=1),
- R("아이템: 일반","중급","무작위 일반 아이템을 얻습니다.",
+ R("아이템: 일반","중급","무작위 <b>일반 아이템</b>을 얻습니다.",
    h=>{ (run.after=run.after||[]).push({item:rnd(ITEMS.filter(i=>i.g==="일반"))}) }),
  /* ── 상급 ── */
  R("상급: 달리기","상급","내 턴이 끝날 때, 추진력을 모두 소모하고 그 3배만큼 에너지 보호막을 얻습니다.",
    h=>{ h.tag.dashMax=99; h.tag.dashMul=Math.max(h.tag.dashMul||0,3) }),
+ R("첨탑관리자의 회중시계","상급","턴이 끝날 때 발동하는 효과가 2번 발동합니다.",
+   h=>h.tag.endTwice=1,0.4),
+ R("상급: 가죽 장화끈","상급","이동할 때마다 보호막을 3 얻습니다.",
+   h=>h.tag.moveShield=Math.max(h.tag.moveShield||0,3)),
  R("상급: 회피 기동","상급","전투 시작 시, 회피를 5 얻습니다.",
    h=>h.tag.startEvade=(h.tag.startEvade||0)+5,0.12),
  R("마나석 발견","상급","최대 마나가 1 증가합니다.",h=>{ h.maxMana+=1; h.mana=h.maxMana }),
@@ -3202,8 +3286,8 @@ const COMMON=[
  R("상급: 가시 두르기","상급","가시를 10 얻습니다.",h=>h.tag.thorn=(h.tag.thorn||0)+10),
  R("상급: 회복","상급","체력을 80% 회복합니다.",
    h=>{ healUp(h,Math.round(h.maxHp*0.8)) }),
- R("발 마사지","상급","활동량을 10 얻습니다. 금화를 12개 얻습니다.",
-   h=>{ run.act+=10; run.gold+=12; if(run.act>0) run.night=0 }),
+ R("상급: 발 마사지","상급","활동량을 10 얻습니다. 금화를 20개 얻습니다.",
+   h=>{ run.act+=10; run.gold+=20; if(run.act>0) run.night=0 }),
  R("오염 정화","상급","현재 오염도가 50 감소합니다.",h=>addTaint(-50)),
  R("아이템: 제련석","상급","제련석을 20개 얻습니다.",h=>{ run.stone=(run.stone||0)+20 }),
  R("상급: 에너지 강화","상급","전투 시작 시, 에너지 보호막을 30 얻습니다.",
@@ -3219,30 +3303,34 @@ const COMMON=[
 /* 판 전체 자원(오염도·활동량)에만 작용하는 보상.
    시작 꾸러미의 첫 레벨업이나 우두머리 보상처럼 곧 판이 새로 깔리는 자리에서는
    아무 값어치가 없으므로 후보에서 뺀다. */
-COMMON.forEach(r=>{ if(r.n==="오염 정화"||r.n==="발 마사지") r.rr=1 });
+COMMON.forEach(r=>{ if(r.n==="오염 정화"||/발 마사지$/.test(r.n)) r.rr=1 });
 const HERO_REWARDS={
  "나이코스":[
   /* ── 하급 ── */
   R("베기 강화","하급","베기의 피해량이 영구히 1 증가합니다.",(h,rn)=>addMod(h,"베기","dmg",1,rn)),
   R("막기 강화","하급","막기의 보호량이 영구히 1 증가합니다.",(h,rn)=>addMod(h,"막기","shield",1,rn)),
-  R("갑옷 장착 강화","하급","갑옷 장착을 사용할 시 추가로 보호막을 1 얻습니다.",
-    h=>h.tag.armorShield=(h.tag.armorShield||0)+1),
+  R("갑옷 장착 강화","하급","갑옷 장착을 사용할시 추가로 보호막을 3 얻습니다.",
+    h=>h.tag.armorShield=(h.tag.armorShield||0)+3),
   R("승리의 일격 강화","하급","승리의 일격의 피해량이 영구히 1 증가합니다.",(h,rn)=>addMod(h,"승리의 일격","dmg",1,rn)),
-  R("튼튼한 방어구 강화","하급","튼튼한 방어구가 전투 시작 시 모든 영웅에게 보호막을 추가로 1 부여합니다.",
+  R("튼튼한 방어구 강화","하급","[튼튼한 방어구]가 전투 시작시 모든 영웅에게 보호막을 추가로 1 부여합니다.",
     h=>h.tag.gearShield=(h.tag.gearShield||0)+1),
-  R("근거리 타격","하급","거리 1인 적에게 베기를 사용할 시 2의 추가 공격 피해를 줍니다.",
+  R("근거리 타격","하급","거리 1인 적에게 [베기]를 사용할 시 2의 추가 공격 피해를 줍니다.",
     h=>h.tag.nearHit=(h.tag.nearHit||0)+2),
   R("돈은 벌어야지","하급","전장의 승자로 공격력을 얻을 때마다 금화를 추가로 1 얻습니다.",
     h=>h.tag.winGold=(h.tag.winGold||0)+1),
-  R("전장의 승자 강화","하급","전장의 승자로 얻을 수 있는 공격력의 한도가 1 늘어납니다.",
-    h=>h.tag.winCap=(h.tag.winCap||2)+1),
-  R("전장의 지배자","중급","전장의 승자로 최대 체력도 1씩 얻습니다. (최대 10)",
+  R("전투 경험","하급","전장의 승자로 공격력을 얻을 수 없을 때, 경험치 3도 추가로 얻을 수 있습니다. 최대 제한은 없습니다.",
+    h=>h.tag.winExp=(h.tag.winExp||0)+3),
+  R("검투 대비","중급","내 손에 있는 방어구 1장당 보호력을 1 얻습니다.",
+    h=>h.tag.handDef=(h.tag.handDef||0)+1),
+  R("승리의 연격","중급","승리의 일격으로 적을 처치하면 그 턴에만 추가 마나를 1 얻습니다.",
+    h=>h.tag.execMana=(h.tag.execMana||0)+1),
+  R("전장의 지배자","중급","전장의 승자로 공격력을 얻을 수 없을 때,  최대 체력 1도 얻을 수 있습니다. (최대 10)",
     h=>h.tag.winHp=1),
-  R("낡은 투구끈","하급","방어구 카드를 쓸 때마다 체력을 1 회복합니다.",
+  R("낡은 투구끈","하급","방어구 카드를 사용할 때마다 체력을 1 회복합니다.",
     h=>h.tag.armorHeal=(h.tag.armorHeal||0)+1),
-  R("항상 대비하기","하급","내 턴이 시작될 때 손에 방어구 카드가 있으면 보호막을 3 얻습니다.",
+  R("항상 대비하기","하급","내 턴 시작 시 손에 방어구 카드가 있다면, 보호막을 3 얻습니다.",
     h=>h.tag.readyShield=(h.tag.readyShield||0)+3),
-  R("핏빛 칼날","상급","베기를 세 번 쓴 다음 베기가 치명타로 적중합니다.",
+  R("핏빛 칼날","상급","베기를 3번 사용한 후에, 다음 베기가 강화되어 치명타로 적중합니다.",
     h=>h.tag.bloodBlade=1,0.5),
   R("한숨 돌리기","하급","전투 시작 후, 나이코스가 체력을 1 회복합니다.",
     h=>h.tag.startHeal=(h.tag.startHeal||0)+1),
@@ -3251,105 +3339,109 @@ const HERO_REWARDS={
   /* ── 중급 ── */
   R("늘어가는 실력","중급","베기로 적을 처치한 후에, 그 전투에서만 베기의 피해량이 2 증가합니다.",
     h=>h.tag.killGrow=(h.tag.killGrow||0)+2),
-  R("아드레날린 분비","중급","베기로 적을 처치한 후에, 보호막을 3 얻습니다.",
-    h=>h.tag.killShield=(h.tag.killShield||0)+3),
+  R("아드레날린 분비","중급","베기로 적을 처치한 후에, 보호막을 6 얻습니다.",
+    h=>h.tag.killShield=(h.tag.killShield||0)+6),
   R("준비 태세","중급","막기를 사용한 후, 다음 베기의 피해량이 2 증가합니다.",
     h=>h.tag.guardThen=(h.tag.guardThen||0)+2),
-  R("처음은 날카롭게","중급","전투 시작 후, 다음 베기의 피해량이 3(추가 †) 증가합니다.",
+  R("처음은 날카롭게","중급","전투 시작 후, 다음 베기의 피해량이 3(추가 † ) 증가합니다.",
     h=>h.tag.firstCut=(h.tag.firstCut||0)+3),
-  R("처음은 완벽하게","중급","전투 시작 후, 다음 막기의 보호량이 5(추가 ¤) 증가합니다.",
+  R("처음은 완벽하게","중급","전투 시작 후, 다음 막기의 보호량이 5(추가 ¤ ) 증가합니다.",
     h=>h.tag.firstGuard=(h.tag.firstGuard||0)+5),
-  R("강철 투구","중급","방어구 카드 목록에 강철 투구를 추가합니다. 최대 체력이 8 증가합니다.",
+  R("강철 투구","중급","방어구 카드 목록에 강철 투구를 추가합니다. 영웅의 최대 체력이 8 증가합니다.",
     h=>{ if(h.tag.armors.indexOf("강철 투구")<0) h.tag.armors.push("강철 투구");
          h.maxHp+=8; h.hp+=8 },0.5),
-  R("마법 부여 보호구","중급","방어구 카드 목록에 마법 부여 보호구를 추가합니다. 최대 체력이 8 증가합니다.",
+  R("마법 부여 보호구","중급","방어구 카드 목록에 마법 부여 보호구를 추가합니다. 영웅의 최대 체력이 8 증가합니다.",
     h=>{ if(h.tag.armors.indexOf("마법 부여 보호구")<0) h.tag.armors.push("마법 부여 보호구");
          h.maxHp+=8; h.hp+=8 },0.5),
-  R("더 많은 갑옷","중급","갑옷 장착의 마나가 1 증가하고, 한 번 더 시전됩니다.",
+  R("더 많은 갑옷","중급","갑옷 장착의 마나가 1 증가하고, 한번 더 시전됩니다.",
     h=>{ h.sk[2].cost++; h.tag.armorTwice=1 }),
-  R("갑옷 고르기","중급","갑옷 장착이 세 개의 방어구 카드 중 하나를 고를 수 있게 됩니다.",
+  R("갑옷 고르기","중급","갑옷 장착이 세 개의 방어구 카드 중 하나를 선택할 수 있게 됩니다.",
     h=>h.tag.armorPick=1),
   R("쉴 때도 단단하게","중급","튼튼한 방어구가 무작위 방어구 카드를 하나 더 가져옵니다.",
     h=>h.tag.gearPlus=(h.tag.gearPlus||0)+1),
-  R("중무장","중급","[추가 기술] 중무장 (마나 4) — 모든 방어구 카드를 얻습니다. (전투당 1회)",
+  R("중무장","중급","[전투 기술]\n1-6. 중무장 (마나 : 4)\n모든 방어구 카드를 얻습니다. (전투당 1회)",
     h=>{ if(h.sk.length<6) h.sk.push({n:"중무장",cost:4,el:"보호",tg:"self",limit:1,allArmor:1,
       d:"사용한도(1) · 모든 방어구 카드를 얻습니다"}) },0.5),
-  R("찌르기","중급","[추가 기술] 찌르기 (마나 2) — 잠금(3). 이번 턴에 사용한 베기 피해량의 3배만큼 피해를 줍니다.",
+  R("찌르기","중급","[전투 기술]\n1-7. 찌르기 (마나 : 2)\n잠금 (3). 이번 턴에 사용한 베기의 피해량의 3배만큼 피해를 줍니다.",
     h=>{ if(h.sk.length<6) h.sk.push({n:"찌르기",cost:2,el:"공격",tg:"foe",lock:3,thrust:1,
       d:"잠금(3) · 이번 턴 베기 피해 합계의 3배"}) },0.5),
   /* ── 상급 ── */
   R("두 번 베기","상급","베기가 두 번 사용되는 대신, 사용한도(2)를 얻습니다.",
     h=>{ h.sk[0].twice=1; h.sk[0].limit=2 },0.5),
   R("처세술","상급","막기를 사용한 후, 다음 베기의 비용이 0이 됩니다.",h=>h.tag.freeCut=1,0.5),
-  R("돌격 베기","상급","베기를 사용한 후 거리 1을 이동하고 추진력을 1 얻습니다. 추진력이 6 이상이면 모두 소모되어 다음 베기가 두 번 사용됩니다.",
+  R("돌격 베기","상급","베기를 사용한 후 거리 1을 이동하고, 추진력을 1 얻을 수 있습니다. 추진력이 6 이상이면 모두 소모되어 다음 베기가 두 번 사용됩니다.",
     h=>h.tag.chargeCut=1,0.5),
-  R("아드레날린 흡수","상급","베기를 사용할 때마다 체력을 1 회복합니다.",
+  R("아드레날린 흡수","상급","베기를 사용할때마다 체력을 1 회복합니다.",
     h=>h.tag.cutHeal=(h.tag.cutHeal||0)+1),
-  R("잔혹한 일격","상급","승리의 일격으로 얻는 베기의 추가 피해량이 2 증가합니다.",
+  R("잔혹한 일격","상급","승리의 일격으로 얻을 수 있는 베기의 추가 피해량이 2 증가합니다.",
     h=>h.tag.execPlus=(h.tag.execPlus||0)+2),
-  R("영광의 휘장","상급","방어구 카드 목록에 영광의 휘장을 추가합니다. 최대 체력이 16 증가합니다.",
+  R("영광의 휘장","상급","방어구 카드 목록에 영광의 휘장을 추가합니다.\n영웅의 최대 체력이 16 증가합니다.",
     h=>{ if(h.tag.armors.indexOf("영광의 휘장")<0) h.tag.armors.push("영광의 휘장");
          h.maxHp+=16; h.hp+=16 },0.5),
-  R("중무장(지속)","상급","내 턴이 시작될 때, 무작위 방어구 카드를 가져옵니다.",
+  R("중무장","상급","내 턴가 시작될 때, 무작위 방어구 카드를 가져옵니다.",
     h=>h.tag.armorTurn=1,0.5),
-  R("분노 전환","상급","전장의 승자가 패배 시 공격력을 잃는 대신, 잃은 만큼 영구히 추가로 얻습니다.",
+  R("전장의 승자 강화","상급","전장의 승자로 얻을 수 있는 공격력 한도가 1 증가합니다.",
+    h=>h.tag.winCap=(h.tag.winCap||2)+1),
+  R("최후의 검투사","상급","전투에 나이코스 혼자 배치되어 있다면, 모든 능력치를 8 얻습니다.",
+    h=>h.tag.soloStat=Math.max(h.tag.soloStat||0,8),0.5),
+  R("분노 전환","상급","전장의 승자가 패배할 시 얻은 공격력을 모두 잃는 대신, 나이코스가 영구적으로 공격력을 그만큼 추가로 얻습니다.",
     h=>h.tag.rageTurn=1,0.5)
  ],
  "카제":[
-  R("바람처럼 사라져라 강화","하급","바람처럼 사라져라의 피해량이 영구히 4 증가",h=>h.tag.airBonus=(h.tag.airBonus||0)+4),
-  R("회오리 장막 강화","하급","회오리 장막의 보호막량이 영구히 4 증가",h=>h.tag.veilAmt=(h.tag.veilAmt||6)+4),
-  R("진선풍도 강화","하급","진선풍도의 피해량이 영구히 1 증가",(h,rn)=>addMod(h,"진선풍도","dmg",1,rn)),
-  R("산들바람 강화","하급","산들바람의 진선풍도 피해 증가량이 영구히 1 증가",h=>h.tag.gustPlus=(h.tag.gustPlus||0)+1),
-  R("기류 흘리기 강화","하급","기류 흘리기가 보호막도 2 부여",h=>h.tag.flowShield=(h.tag.flowShield||0)+2),
-  R("잠재력 활성 강화","하급","잠재력 활성의 무료 산들바람 횟수 +1",h=>h.tag.freePlus=(h.tag.freePlus||0)+1),
-  R("눈보다 빠르게","하급","전투 시작 후 추진력을 2 얻음",h=>h.tag.startMom=(h.tag.startMom||0)+2),
-  R("날카로운 칼끝","하급","전투 시작 후 첫 진선풍도의 피해 +4",h=>h.tag.firstWind=(h.tag.firstWind||0)+4),
-  R("자취 감추기","중급","전투 시작 후 회피를 1 얻음",h=>h.tag.startEvade=(h.tag.startEvade||0)+1),
-  R("폭풍","중급","영웅 배치 시 모든 적을 공중에 뜨게 함",h=>h.tag.startStorm=1),
-  R("더 빠른 회오리","중급","회오리 장막 발동에 필요한 횟수 영구히 -1",h=>h.tag.veilNeed=(h.tag.veilNeed||8)-1),
-  R("제자리바람","중급","산들바람을 이동하지 않고도 쓸 수 있음",h=>h.tag.gustStay=1),
-  R("건들바람","중급","산들바람으로 이동하는 거리 영구히 +1",h=>h.tag.gustRange=(h.tag.gustRange||1)+1),
-  R("싹쓸바람","상급","산들바람으로 얻는 추진력 +1",h=>h.tag.momPlus=(h.tag.momPlus||0)+1),
-  R("잠재력 각성","상급","잠재력 활성 비용 +1. 그 턴에는 진선풍도가 2회마다 강화",h=>{h.sk[3].cost++;h.tag.potentialEvery=2}),
-  R("폭풍칼날","상급","진선풍도의 거리 제한이 사라짐",h=>h.tag.noRange=1),
-  R("화염칼날","상급","바람처럼 사라져라가 화상 2도 부여",h=>h.tag.burn=(h.tag.burn||0)+2),
-  R("폭풍의 눈","상급","회오리 장막이 다른 아군에게도 보호막을 부여",h=>h.tag.veilAll=1)
+  R("바람처럼 사라져라 강화","하급","바람처럼 사라져라의 피해량이 영구히 4 증가합니다.",h=>h.tag.airBonus=(h.tag.airBonus||0)+4),
+  R("회오리 장막 강화","하급","회오리 장막의 보호막량이 영구히 4 증가합니다.",h=>h.tag.veilAmt=(h.tag.veilAmt||6)+4),
+  R("진선풍도 강화","하급","진선풍도의 피해량이 영구히 1 증가합니다.",(h,rn)=>addMod(h,"진선풍도","dmg",1,rn)),
+  R("산들바람 강화","하급","산들바람의 진선풍도 피해 증가량이 영구히 1 증가합니다.",h=>h.tag.gustPlus=(h.tag.gustPlus||0)+1),
+  R("기류 흘리기 강화","하급","기류 흘리기가 에너지 보호막도 1 부여합니다.",h=>h.tag.flowShield=(h.tag.flowShield||0)+1),
+  R("잠재력 활성 강화","하급","잠재력 활성이 산들바람의 비용을 0으로 만드는 횟수가 영구히 1 증가합니다.",h=>h.tag.freePlus=(h.tag.freePlus||0)+1),
+  R("눈보다 빠르게","하급","전투 시작 후, 카제가 추진력을 2 얻습니다.",h=>h.tag.startMom=(h.tag.startMom||0)+2),
+  R("날카로운 칼끝","하급","전투 시작 후, 첫 번째 진선풍도의 피해량이 4 증가합니다.",h=>h.tag.firstWind=(h.tag.firstWind||0)+4),
+  R("자취 감추기","중급","전투 시작 후, 카제가 회피를 1 얻습니다.",h=>h.tag.startEvade=(h.tag.startEvade||0)+1),
+  R("폭풍","중급","전투 시작 후, 모든 적을 공중에 뜸 상태로 만듭니다.",h=>h.tag.startStorm=1),
+  R("더 빠른 회오리","중급","회오리 장막이 발동하는데 필요한 횟수가 영구히 1 감소합니다.",h=>h.tag.veilNeed=(h.tag.veilNeed||8)-1),
+  R("제자리바람","중급","산들바람이 이동하지 않고 시전할 수 있습니다.",h=>h.tag.gustStay=1),
+  R("건들바람","중급","산들바람으로 이동할 수 있는 거리가 영구히 1 증가합니다.",h=>h.tag.gustRange=(h.tag.gustRange||1)+1),
+  R("싹쓸바람","상급","산들바람으로 얻을 수 있는 추진력이 1 증가합니다.",h=>h.tag.momPlus=(h.tag.momPlus||0)+1),
+  R("잠재력 각성","상급","잠재력 활성의 비용이 1 증가합니다. 잠재력 활성이 '이번 턴에 진선풍도가 두 번째 사용 시마다 강화됩니다.'도 얻습니다.",h=>{h.sk[3].cost++;h.tag.potentialEvery=2}),
+  R("폭풍칼날","상급","진선풍도의 거리 제한이 사라집니다.",h=>h.tag.noRange=1),
+  R("화염칼날","상급","바람처럼 사라져라가 화상 2도 부여합니다.",h=>h.tag.burn=(h.tag.burn||0)+2),
+  R("폭풍의 눈","상급","회오리 장막이 다른 아군들에게도 보호막을 부여합니다.",h=>h.tag.veilAll=1)
  ],
 
  "헥토":[
-  R("든든한 아군 강화","하급","든든한 아군의 보호막량 영구히 +2",h=>h.tag.allyShield=(h.tag.allyShield||2)+2),
-  R("방패 막기 강화","하급","방패 막기의 보호막량 영구히 +1",(h,rn)=>addMod(h,"방패 막기","shield",1,rn)),
-  R("방패 밀치기 강화","하급","방패 밀치기의 피해량 영구히 +1",(h,rn)=>addMod(h,"방패 밀치기","dmg",1,rn)),
-  R("선두 방어 강화","하급","선두 방어의 아군당 보호막 영구히 +3",h=>h.tag.vanShield=(h.tag.vanShield||5)+3),
-  R("후미 준비 회복 강화","하급","후미 준비의 회복량 영구히 +2",h=>h.tag.rearHeal=(h.tag.rearHeal||5)+2),
-  R("재빠른 수호자","하급","선두 방어·후미 준비 후 추진력 +3",h=>h.tag.guardMom=(h.tag.guardMom||0)+3),
-  R("공성전 방패","중급","방패 밀치기가 모든 적을 대상으로 함",h=>h.tag.pushAll=1),
-  R("가시 방패","중급","도발 상태일 때 가시 4",h=>h.tag.thorn=(h.tag.thorn||0)+4),
-  R("든든함 추가","중급","든든한 아군이 내 턴 시작에도 발동",h=>h.tag.allyTwice=1),
-  R("방어 태세","중급","전투 시작 후 보호막 8",h=>h.tag.startShield=(h.tag.startShield||0)+8),
-  R("성벽 쌓기","중급","굳건한 성벽의 사용한도 +1",h=>h.sk[3].limit++),
-  R("정의의 심판","상급","정의의 기운이 모든 적을 대상으로 함",h=>h.tag.justiceAll=1),
-  R("순환되는 심판","상급","정의의 기운이 1번 더 시전됨",h=>h.tag.justiceTwice=1),
-  R("폭발적인 방어력","상급","보호력 +8",h=>h.def+=8),
-  R("검과 방패","상급","방패 밀치기의 추가 공격력이 3배",h=>h.tag.pushAtkX=3),
-  R("저주받은 성벽","상급","굳건한 성벽이 저주받은 성벽을 대신 가져옴 (부서질 때 주변 적에게 보호약화 2)",h=>h.tag.cursedWall=1),
-  R("후미 준비 보호 강화","하급","후미 준비가 아군에게 주는 보호막이 영구히 3 늘어납니다.",
+  R("든든한 아군 강화","하급","든든한 아군의 보호막량이 영구히 2 증가합니다.",h=>h.tag.allyShield=(h.tag.allyShield||2)+2),
+  R("방패 막기 강화","하급","방패 막기의 보호막량이 영구히 1 증가합니다.",(h,rn)=>addMod(h,"방패 막기","shield",1,rn)),
+  R("방패 밀치기 강화","하급","방패 밀치기의 피해량이 영구히 1 증가합니다.",(h,rn)=>addMod(h,"방패 밀치기","dmg",1,rn)),
+  R("선두 방어 강화","하급","선두 방어로 얻을 수 있는 아군 하나 당 보호막량이 영구히 3 증가합니다.",h=>h.tag.vanShield=(h.tag.vanShield||5)+3),
+  R("후미 준비 회복 강화","하급","후미 준비의 체력 회복량이 영구히 2 증가합니다.",h=>h.tag.rearHeal=(h.tag.rearHeal||5)+2),
+  R("재빠른 수호자","하급","선두 방어와 후미 준비를 사용한 후, 추진력을 3 얻습니다.",h=>h.tag.guardMom=(h.tag.guardMom||0)+3),
+  R("공성전 방패","중급","방패 밀치기가 모든 적을 대상으로 합니다.",h=>h.tag.pushAll=1),
+  R("가시 방패","중급","헥토가 도발 상태일때 가시를 4 얻습니다.",h=>h.tag.thorn=(h.tag.thorn||0)+4),
+  R("든든함 추가","중급","든든한 아군이 내 턴이 시작할 때도 발동합니다.",h=>h.tag.allyTwice=1),
+  R("방어 태세","중급","전투 시작 후, 헥토가 보호막을 8 얻습니다.",h=>h.tag.startShield=(h.tag.startShield||0)+8),
+  R("성벽 쌓기","중급","굳건한 성벽의 사용한도가 1 증가합니다.",h=>h.sk[3].limit++),
+  R("정의의 심판","상급","정의의 기운이 모든 적을 대상으로 합니다.",h=>h.tag.justiceAll=1),
+  R("순환되는 심판","상급","정의의 기운이 1번 더 시전됩니다.",h=>h.tag.justiceTwice=1),
+  R("폭발적인 방어력","상급","헥토가 보호력 8을 얻습니다.",h=>h.def+=8),
+  R("검과 방패","상급","방패 밀치기 피해의 추가 공격력이 3배로 적용됩니다.",h=>h.tag.pushAtkX=3),
+  R("저주받은 성벽","상급","굳건한 성벽이 대신 저주받은 성벽을 가져옵니다.",h=>h.tag.cursedWall=1),
+  R("후미 준비 보호 강화","하급","후미 준비가 아군들에게 부여하는 보호막량이 영구히 3 증가합니다.",
     h=>h.tag.rearShield=(h.tag.rearShield||5)+3),
-  R("굳건한 성벽 강화","하급","성벽 카드의 최대 체력이 10 늘어납니다.",
+  R("굳건한 성벽 강화","하급","성벽 카드의 최대 체력이 10 증가합니다.",
     h=>h.tag.wallHp=(h.tag.wallHp||0)+10),
-  R("방어 후 막기","중급","선두 방어를 쓴 뒤 다음 방패 막기의 비용이 0이 됩니다.",
+  R("방어 후 막기","중급","선두 방어를 사용한 후, 다음 방패 막기의 비용이 0이 됩니다.",
     h=>h.tag.vanFree=1),
-  R("준비 후 밀치기","중급","후미 준비를 쓴 뒤 다음 방패 밀치기의 비용이 0이 됩니다.",
+  R("준비 후 밀치기","중급","후미 준비를 사용한 후, 다음 방패 밀치기의 비용이 0이 됩니다.",
     h=>h.tag.rearFree=1),
-  R("선한 영향력","중급","후미 준비가 지나간 아군에게 이번 전투 동안 보호력도 2 줍니다.",
+  R("선한 영향력","중급","후미 준비가 지나간 아군들에게 이번 전투 동안 보호력도 2 부여합니다.",
     h=>h.tag.rearDef=(h.tag.rearDef||0)+2),
-  R("육중한 밀치기","상급","방패 밀치기의 대상이 뒤로 1칸 밀립니다. 밀려날 수 없으면 기절시킵니다.",
+  R("육중한 밀치기","상급","방패 밀치기의 대상이 뒤로 1칸 이동합니다. 이동할 수 없는 상태라면, 기절시킵니다.",
     h=>h.tag.pushBack=1,0.5),
-  R("든든함 폭발","상급","든든한 아군이 보호막 대신 에너지 보호막을 줍니다.",
+  R("든든함 폭발","상급","든든한 아군이 보호막 대신 에너지 보호막을 부여합니다.",
     h=>h.tag.allyEsh=1),
-  R("수호 활동","상급","후미 준비를 쓴 뒤에도 잠기지 않습니다.",
+  R("수호 활동","상급","후미 준비를 사용한 후, 더 이상 잠금되지 않습니다.",
     h=>h.tag.noRearLock=1),
-  R("공방전","상급","방패 막기와 방패 밀치기가 갈라져, 쓸 때마다 골라 쓸 수 있습니다.",
+  R("공방전","상급","방패 막기와 방패 밀치기가 서로 다른 기술로 분리됩니다.",
     h=>{
       const a=h.sk[0]; if(!a||h.tag.splitShield) return;
       const b=a.alt||(a.opts&&a.opts[1]); if(!b) return;
@@ -3365,9 +3457,9 @@ const HERO_REWARDS={
     /* 기술의 rng 를 직접 0 으로 만든다. reachOf 가 rng||null 이라 거리 제한이 사라진다 */
     h=>{ const set=o=>{ if(o&&o.n==="수축 공격") o.rng=0 };
          set(h.sk[0]); (h.sk[0].opts||[]).forEach(set) },0.5),
-  R("압축 공격","상급","팽창 공격이 모든 적 대신 거리 2 안의 적만 때리고, 흡수 20%를 얻습니다.",
+  R("압축 공격","상급","팽창 공격의 대상이 모든 적에서 거리 2 내의 적으로 변경되는 대신, 흡수 +20%를 얻습니다.",
     h=>h.tag.pressAtk=1,0.5),
-  R("치명적인 보호","상급","아군이 치명타 피해를 줄 때마다 이테리오가 보호막을 2 얻습니다.",
+  R("치명적인 보호","상급","아군 영웅이 치명타 피해를 줄 때마다 이테리오가 보호막을 2 얻습니다.",
     h=>h.tag.critShield=(h.tag.critShield||0)+2)
  ],
  "트리스탄":[
@@ -3418,126 +3510,248 @@ function skillNamesOf(h){
   return out;
 }
 const REW_KIND={
- "가시 방패":"영웅 강화",
- "갑옷 고르기":"기술 강화",
- "갑옷 장착 강화":"기술 강화",
- "강철 투구":"기술 강화",
- "건들바람":"기술 강화",
- "검과 방패":"기술 강화",
- "공방전":"기술 강화",
- "공성전 방패":"기술 강화",
- "관객의 응원":"영웅 강화",
- "굳건한 성벽 강화":"기술 강화",
- "근거리 타격":"기술 강화",
- "기류 흘리기 강화":"기술 강화",
- "날카로운 칼끝":"기술 강화",
- "낡은 투구끈":"기술 강화",
- "눈보다 빠르게":"영웅 강화",
- "늘어가는 실력":"기술 강화",
- "더 많은 갑옷":"기술 강화",
- "더 빠른 회오리":"기술 강화",
- "돈은 벌어야지":"기술 강화",
- "돌격 베기":"기술 강화",
- "두 번 베기":"기술 강화",
- "든든한 아군 강화":"기술 강화",
- "든든함 추가":"기술 강화",
- "든든함 폭발":"기술 강화",
- "마나석 발견":"영웅 강화",
- "마법 부여 보호구":"기술 강화",
- "막기 강화":"기술 강화",
- "무한 팽창 융합봉":"기술 강화",
- "바람처럼 사라져라 강화":"기술 강화",
- "방어 태세":"영웅 강화",
- "방어 후 막기":"기술 강화",
- "방패 막기 강화":"기술 강화",
- "방패 밀치기 강화":"기술 강화",
- "베기 강화":"기술 강화",
- "분노 전환":"기술 강화",
- "산들바람 강화":"기술 강화",
- "상급: 가시 두르기":"영웅 강화",
- "상급: 공격력 강화":"영웅 강화",
- "상급: 달리기":"영웅 강화",
- "상급: 마법력 강화":"영웅 강화",
- "상급: 보호력 강화":"기술 강화",
- "상급: 부정 보호막 강화":"기술 강화",
- "상급: 에너지 강화":"영웅 강화",
- "상급: 회복":"영웅 강화",
- "상급: 회피 기동":"영웅 강화",
- "선두 방어 강화":"기술 강화",
- "선한 영향력":"기술 강화",
- "성벽 쌓기":"기술 강화",
- "수호 활동":"기술 강화",
- "순환되는 심판":"기술 강화",
- "쉴 때도 단단하게":"기술 강화",
- "승리의 일격 강화":"기술 강화",
- "싹쓸바람":"기술 강화",
- "아드레날린 분비":"기술 강화",
- "아드레날린 흡수":"기술 강화",
- "아이템: 일반":"아이템",
- "아이템: 제련석":"재화",
- "아이템: 파편":"아이템",
- "아이템: 희귀":"아이템",
- "압축 공격":"기술 강화",
- "영광의 휘장":"기술 강화",
- "오염 정화":"주둔지 강화",
- "육중한 밀치기":"기술 강화",
- "자취 감추기":"영웅 강화",
- "잔혹한 일격":"기술 강화",
- "잠재력 각성":"기술 강화",
- "잠재력 활성 강화":"기술 강화",
- "재빠른 수호자":"기술 강화",
- "저주받은 성벽":"기술 강화",
- "전장의 바람":"기술 강화",
- "전장의 방패":"기술 강화",
- "전장의 승자 강화":"기술 강화",
- "전장의 지배자":"기술 강화",
- "전장의 칼날":"기술 강화",
- "정의의 심판":"기술 강화",
- "제자리바람":"기술 강화",
- "준비 태세":"기술 강화",
- "준비 후 밀치기":"기술 강화",
- "중급: 가시 두르기":"영웅 강화",
- "중급: 공격력 강화":"기술 강화",
- "중급: 달리기":"영웅 강화",
- "중급: 마법력 강화":"영웅 강화",
- "중급: 보호력 강화":"기술 강화",
- "중급: 부정 보호막 강화":"영웅 강화",
- "중급: 에너지 강화":"영웅 강화",
- "중급: 체력 강화":"영웅 강화",
- "중급: 회복":"영웅 강화",
- "중급: 회피 기동":"영웅 강화",
- "중무장":"영웅 강화",
- "진선풍도 강화":"기술 강화",
- "찌르기":"추가 기술",
- "처세술":"기술 강화",
- "처음은 날카롭게":"기술 강화",
- "처음은 완벽하게":"기술 강화",
- "치명적인 보호":"기술 강화",
- "튼튼한 방어구 강화":"기술 강화",
- "폭발적인 방어력":"영웅 강화",
- "폭풍":"영웅 강화",
- "폭풍의 눈":"기술 강화",
- "폭풍칼날":"기술 강화",
- "핏빛 칼날":"기술 강화",
- "하급: 가시 두르기":"영웅 강화",
- "하급: 달리기":"영웅 강화",
- "하급: 부정 보호막 강화":"영웅 강화",
- "하급: 에너지 강화":"영웅 강화",
- "하급: 체력 강화":"영웅 강화",
- "하급: 회복":"영웅 강화",
- "하급: 회피 기동":"영웅 강화",
- "한계 해방":"영웅 강화",
- "한숨 돌리기":"영웅 강화",
- "항상 대비하기":"기술 강화",
- "행상인 수레 방문":"카드",
- "화염칼날":"기술 강화",
- "회오리 장막 강화":"기술 강화",
- "후미 준비 보호 강화":"기술 강화",
- "후미 준비 회복 강화":"기술 강화"};
+ "상급|검과 방패":"기술 강화",
+ "상급|공방전":"기술 강화",
+ "상급|돌격 베기":"기술 강화",
+ "상급|두 번 베기":"기술 강화",
+ "상급|든든함 폭발":"기술 강화",
+ "상급|마나석 발견":"영웅 강화",
+ "상급|무한 팽창 융합봉":"기술 강화",
+ "상급|분노 전환":"기술 강화",
+ "상급|상급: 가시 두르기":"영웅 강화",
+ "상급|상급: 가죽 장화끈":"영웅 강화",
+ "상급|상급: 공격력 강화":"영웅 강화",
+ "상급|상급: 달리기":"영웅 강화",
+ "상급|상급: 마법력 강화":"영웅 강화",
+ "상급|상급: 발 마사지":"주둔지 강화",
+ "상급|상급: 보호력 강화":"기술 강화",
+ "상급|상급: 부정 보호막 강화":"기술 강화",
+ "상급|상급: 에너지 강화":"영웅 강화",
+ "상급|상급: 회복":"영웅 강화",
+ "상급|상급: 회피 기동":"영웅 강화",
+ "상급|수호 활동":"기술 강화",
+ "상급|순환되는 심판":"기술 강화",
+ "상급|싹쓸바람":"기술 강화",
+ "상급|아드레날린 흡수":"기술 강화",
+ "상급|아이템: 제련석":"재화",
+ "상급|아이템: 희귀":"아이템",
+ "상급|압축 공격":"기술 강화",
+ "상급|영광의 휘장":"기술 강화",
+ "상급|오염 정화":"주둔지 강화",
+ "상급|육중한 밀치기":"기술 강화",
+ "상급|잔혹한 일격":"기술 강화",
+ "상급|잠재력 각성":"기술 강화",
+ "상급|저주받은 성벽":"기술 강화",
+ "상급|전장의 승자 강화":"기술 강화",
+ "상급|정의의 심판":"기술 강화",
+ "상급|중무장":"영웅 강화",
+ "상급|처세술":"기술 강화",
+ "상급|첨탑관리자의 회중시계":"영웅 강화",
+ "상급|최후의 검투사":"영웅 강화",
+ "상급|치명적인 보호":"기술 강화",
+ "상급|폭발적인 방어력":"영웅 강화",
+ "상급|폭풍의 눈":"기술 강화",
+ "상급|폭풍칼날":"기술 강화",
+ "상급|핏빛 칼날":"기술 강화",
+ "상급|한계 해방":"영웅 강화",
+ "상급|화염칼날":"기술 강화",
+ "중급|가벼운 발걸음":"주둔지 강화",
+ "중급|가시 방패":"영웅 강화",
+ "중급|갑옷 고르기":"기술 강화",
+ "중급|강철 투구":"기술 강화",
+ "중급|건들바람":"기술 강화",
+ "중급|검투 대비":"기술 강화",
+ "중급|공성전 방패":"기술 강화",
+ "중급|굳은살":"기술 강화",
+ "중급|늘어가는 실력":"기술 강화",
+ "중급|더 많은 갑옷":"기술 강화",
+ "중급|더 빠른 회오리":"기술 강화",
+ "중급|든든함 추가":"기술 강화",
+ "중급|마법 부여 보호구":"기술 강화",
+ "중급|방어 태세":"영웅 강화",
+ "중급|방어 후 막기":"기술 강화",
+ "중급|선한 영향력":"기술 강화",
+ "중급|성벽 쌓기":"기술 강화",
+ "중급|쉴 때도 단단하게":"기술 강화",
+ "중급|승리의 연격":"기술 강화",
+ "중급|아드레날린 분비":"기술 강화",
+ "중급|아이템: 일반":"아이템",
+ "중급|아이템: 제련석":"재화",
+ "중급|오염 정화":"주둔지 강화",
+ "중급|자취 감추기":"영웅 강화",
+ "중급|전장의 지배자":"기술 강화",
+ "중급|제자리바람":"기술 강화",
+ "중급|준비 태세":"기술 강화",
+ "중급|준비 후 밀치기":"기술 강화",
+ "중급|중급: 가시 두르기":"영웅 강화",
+ "중급|중급: 가죽 장화끈":"영웅 강화",
+ "중급|중급: 공격력 강화":"기술 강화",
+ "중급|중급: 꼭두각시 인형":"영웅 강화",
+ "중급|중급: 달리기":"영웅 강화",
+ "중급|중급: 독이 담긴 병":"기술 강화",
+ "중급|중급: 마나 흡입":"영웅 강화",
+ "중급|중급: 마법력 강화":"영웅 강화",
+ "중급|중급: 발 마사지":"주둔지 강화",
+ "중급|중급: 보호력 강화":"기술 강화",
+ "중급|중급: 부정 보호막 강화":"영웅 강화",
+ "중급|중급: 에너지 강화":"영웅 강화",
+ "중급|중급: 잔불":"영웅 강화",
+ "중급|중급: 체력 강화":"영웅 강화",
+ "중급|중급: 카드 마술":"기술 강화",
+ "중급|중급: 회복":"영웅 강화",
+ "중급|중급: 회피 기동":"영웅 강화",
+ "중급|중무장":"추가 기술",
+ "중급|찌르기":"추가 기술",
+ "중급|처음은 날카롭게":"기술 강화",
+ "중급|처음은 완벽하게":"기술 강화",
+ "중급|치명적인 공격":"영웅 강화",
+ "중급|치명적인 마법":"영웅 강화",
+ "중급|폭풍":"영웅 강화",
+ "하급|간이 신발":"카드",
+ "하급|갑옷 장착 강화":"기술 강화",
+ "하급|곰팡이 빵":"카드",
+ "하급|관객의 응원":"영웅 강화",
+ "하급|굳건한 성벽 강화":"기술 강화",
+ "하급|근거리 타격":"기술 강화",
+ "하급|기류 흘리기 강화":"기술 강화",
+ "하급|날카로운 칼끝":"기술 강화",
+ "하급|낡은 투구끈":"기술 강화",
+ "하급|눈보다 빠르게":"영웅 강화",
+ "하급|늑대의 시간":"영웅 강화",
+ "하급|돈은 벌어야지":"기술 강화",
+ "하급|든든한 아군 강화":"기술 강화",
+ "하급|막기 강화":"기술 강화",
+ "하급|망토 두르기":"카드",
+ "하급|무기 상인과 조우":"기술 강화",
+ "하급|바람처럼 사라져라 강화":"기술 강화",
+ "하급|반가운 상인":"주둔지 강화",
+ "하급|반가운 휴식":"주둔지 강화",
+ "하급|방패 막기 강화":"기술 강화",
+ "하급|방패 밀치기 강화":"기술 강화",
+ "하급|베기 강화":"기술 강화",
+ "하급|산들바람 강화":"기술 강화",
+ "하급|선두 방어 강화":"기술 강화",
+ "하급|승리의 일격 강화":"기술 강화",
+ "하급|아이템: 제련석":"재화",
+ "하급|아이템: 파편":"아이템",
+ "하급|오염 구역 정화":"주둔지 강화",
+ "하급|오염 정화":"주둔지 강화",
+ "하급|오염된 피부":"기술 강화",
+ "하급|잔걸음":"영웅 강화",
+ "하급|잠재력 활성 강화":"기술 강화",
+ "하급|재빠른 수호자":"기술 강화",
+ "하급|전장의 바람":"기술 강화",
+ "하급|전장의 방패":"기술 강화",
+ "하급|전장의 칼날":"기술 강화",
+ "하급|전투 경험":"기술 강화",
+ "하급|주둔지 복귀":"기술 강화",
+ "하급|진선풍도 강화":"기술 강화",
+ "하급|탐욕의 시선":"카드",
+ "하급|탐험가":"주둔지 강화",
+ "하급|튼튼한 방어구 강화":"기술 강화",
+ "하급|파편 상자":"주둔지 강화",
+ "하급|하급: 가시 두르기":"영웅 강화",
+ "하급|하급: 가죽 장화끈":"기술 강화",
+ "하급|하급: 꼭두각시 인형":"영웅 강화",
+ "하급|하급: 달리기":"영웅 강화",
+ "하급|하급: 독이 담긴 병":"기술 강화",
+ "하급|하급: 마나 흡입":"영웅 강화",
+ "하급|하급: 발 마사지":"주둔지 강화",
+ "하급|하급: 부정 보호막 강화":"영웅 강화",
+ "하급|하급: 에너지 강화":"영웅 강화",
+ "하급|하급: 잔불":"영웅 강화",
+ "하급|하급: 체력 강화":"영웅 강화",
+ "하급|하급: 카드 마술":"기술 강화",
+ "하급|하급: 편안한 휴식":"기술 강화",
+ "하급|하급: 회복":"영웅 강화",
+ "하급|하급: 회피 기동":"영웅 강화",
+ "하급|한숨 돌리기":"영웅 강화",
+ "하급|항상 대비하기":"기술 강화",
+ "하급|행상인 수레 방문":"카드",
+ "하급|회오리 장막 강화":"기술 강화",
+ "하급|후미 준비 보호 강화":"기술 강화",
+ "하급|후미 준비 회복 강화":"기술 강화"};
+/* 보상 등장 조건 — 기획 노트 설명문의 * 줄을 그대로 옮긴 것 */
+const REW_COND={
+ "상급|검과 방패":{once:1},
+ "상급|공방전":{once:1},
+ "상급|돌격 베기":{once:1},
+ "상급|두 번 베기":{once:1},
+ "상급|무한 팽창 융합봉":{once:1},
+ "상급|수호 활동":{need:["선두 방어"]},
+ "상급|영광의 휘장":{once:1,need:["갑옷 장착"]},
+ "상급|육중한 밀치기":{once:1},
+ "상급|잠재력 각성":{once:1,need:["잠재력 활성"]},
+ "상급|처세술":{once:1},
+ "상급|폭풍의 눈":{once:1},
+ "상급|폭풍칼날":{once:1},
+ "상급|핏빛 칼날":{once:1},
+ "중급|갑옷 고르기":{need:["갑옷 장착"]},
+ "중급|강철 투구":{once:1,need:["갑옷 장착"]},
+ "중급|검투 대비":{need:["갑옷 장착"]},
+ "중급|공성전 방패":{once:1},
+ "중급|더 많은 갑옷":{need:["갑옷 장착"]},
+ "중급|든든함 추가":{once:1},
+ "중급|마법 부여 보호구":{once:1,need:["갑옷 장착"]},
+ "중급|방어 후 막기":{once:1,need:["선두 방어"]},
+ "중급|선한 영향력":{need:["후미 준비"]},
+ "중급|성벽 쌓기":{need:["굳건한 성벽"]},
+ "중급|제자리바람":{once:1},
+ "중급|준비 후 밀치기":{once:1,need:["후미 준비"]},
+ "중급|중무장":{once:1,need:["갑옷 장착"]},
+ "중급|찌르기":{once:1},
+ "하급|갑옷 장착 강화":{need:["갑옷 장착"]},
+ "하급|굳건한 성벽 강화":{need:["굳건한 성벽"]},
+ "하급|기류 흘리기 강화":{once:1,need:["기류 흘리기"]},
+ "하급|낡은 투구끈":{need:["갑옷 장착"]},
+ "하급|선두 방어 강화":{need:["선두 방어"]},
+ "하급|승리의 일격 강화":{need:["승리의 일격"]},
+ "하급|잠재력 활성 강화":{need:["잠재력 활성"]},
+ "하급|재빠른 수호자":{need:["선두 방어"]},
+ "하급|항상 대비하기":{need:["갑옷 장착"]},
+ "하급|후미 준비 보호 강화":{need:["후미 준비"]},
+ "하급|후미 준비 회복 강화":{need:["후미 준비"]}};
+const rwKey=r=>(r&&r.g||"")+"|"+(r&&r.n||"");
+function rewCond(r){ return REW_COND[rwKey(r)]||null }
+/* 이 영웅이 그 기술을 지금 가지고 있는가.
+   아직 레벨이 모자라 잠긴 칸은 '없는 것' 으로 본다.
+   (승리의 일격을 배우기 전에 '승리의 일격 강화' 가 나오면 안 된다) */
+function hasSkill(h,name){
+  if(!h||!h.sk) return false;
+  const hit=s=>!!s&&(s.n===name||(s.alt&&s.alt.n===name)
+    ||(s.opts||[]).some(o=>o&&(o.n===name||(o.alt&&o.alt.n===name))));
+  return h.sk.some((s,i)=>{
+    if(i===2&&h.lv<UNLOCK[2]) return false;
+    if(i===3&&h.lv<UNLOCK[3]) return false;
+    return hit(s);
+  });
+}
+function tookRw(h,r){
+  if(!h||!h.tag) return false;
+  if(h.tag.tk) return h.tag.tk.indexOf(rwKey(r))>=0;
+  return (h.tag.taken||[]).indexOf(r.n)>=0;   /* tk 가 없는 옛 저장 */
+}
+/* 지금 이 영웅에게 이 보상을 내밀 수 있는가 */
+function rewardOk(h,r){
+  const c=rewCond(r);
+  if(!c) return true;
+  if(c.once&&tookRw(h,r)) return false;
+  if(c.need&&c.need.some(nm=>!hasSkill(h,nm))) return false;
+  return true;
+}
+/* 보상 칸에 조건을 적어 준다 */
+function rewCondHtml(r){
+  const c=rewCond(r);
+  if(!c) return "";
+  const L=[];
+  if(c.once) L.push(`<span class="chip cond">한 번만</span>`);
+  (c.need||[]).forEach(nm=>L.push(`<span class="chip cond">${esc(nm)} 필요</span>`));
+  return `<div class="rwcond">${L.join("")}</div>`;
+}
 /* 노트에 갈래가 적혀 있으면 그것을 따르고, 없을 때만 글로 짐작한다 */
 function rewardKind(r,h){
   const n=(r&&r.n)||"", d=(r&&r.d)||"";
-  if(REW_KIND[n]) return REW_KIND[n];
+  const kk=REW_KIND[rwKey(r)]; if(kk) return kk;
   if(d.indexOf("[추가 기술]")>=0) return "추가 기술";
   if(/^아이템[:：]/.test(n)||/아이템을 얻습니다|제련석을 \d+개 얻습니다/.test(d)) return "아이템";
   if(/카드를(?: [^ ]{1,5})? 얻습니다/.test(d)) return "카드";
@@ -5280,7 +5494,7 @@ function drawCodex(app){
         wrap.appendChild(el(`<div class="cxg">${g} ${list.length}종</div>`));
         const row=el(`<div class="cxrw"></div>`);
         list.forEach(r=>row.appendChild(el(
-          `<div class="cxr1${gcls(g)}"><b>${esc(r.n)}</b><span>${rich(r.d)}</span></div>`)));
+          `<div class="cxr1${gcls(g)}"><b>${esc(r.n)}</b><span>${rich(r.d)}</span>${rewCondHtml(r)}</div>`)));
         wrap.appendChild(row);
       });
     } }
@@ -5490,12 +5704,18 @@ function drawStart(app){
 /* ═══════════ 필드 지도 ═══════════ */
 const NL1=String.fromCharCode(10);
 const MOVE_TAINT=5;                 /* 한 칸 옮길 때 오르는 오염도 */
+/* 가벼운 발걸음 — 대원이 가진 만큼 줄어든다 (최소 1) */
+function moveTaint(){
+  let cut=0;
+  (run&&run.heroes||[]).forEach(h=>{ cut=Math.max(cut,(h.tag&&h.tag.stepCut)||0) });
+  return Math.max(1,MOVE_TAINT-cut);
+}
 const near=(a,b)=>Math.abs(a.r-b.r)+Math.abs(a.c-b.c)===1;
 function drawMap(app){
   const f=FIELDS[run.field], S=run.size;
   app.appendChild(el(`<div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
     <div class="title" style="font-size:20px">${esc(f.n)}</div>
-    <div class="hint">${run.night?`밤입니다. 빈 칸을 지날 때 습격당할 확률 ${Math.round(Math.min(85,45+nightDepth()*5))}% · 상점·휴식소·미지의 구역·전장 칸은 습격당하지 않습니다`:run.act<=0?"활동량이 바닥났습니다. 이제 한 칸에 2시간이 걸립니다.":`인접한 칸을 눌러 이동합니다. 먼 칸을 누르면 갈 길을 먼저 보여 줍니다. 한 칸에 활동량 1 · 1시간 · 오염도 ${MOVE_TAINT}.`}</div></div>`));
+    <div class="hint">${run.night?`밤입니다. 빈 칸을 지날 때 습격당할 확률 ${Math.round(Math.min(85,45+nightDepth()*5))}% · 상점·휴식소·미지의 구역·전장 칸은 습격당하지 않습니다`:run.act<=0?"활동량이 바닥났습니다. 이제 한 칸에 2시간이 걸립니다.":`인접한 칸을 눌러 이동합니다. 먼 칸을 누르면 갈 길을 먼저 보여 줍니다. 한 칸에 활동량 1 · 1시간 · 오염도 ${moveTaint()}.`}</div></div>`));
   /* 무엇을 해야 하는지 한 줄로 — 우두머리 방향과 남은 날 */
   { let br=null;
     for(let r=0;r<S;r++) for(let c=0;c<S;c++) if(run.grid[r][c].t==="boss") br={r:r,c:c};
@@ -5520,7 +5740,7 @@ function drawMap(app){
       <b>${dst.t==="empty"?"빈 칸":esc(NODE[dst.t].label)}까지 ${rt.steps}칸</b>
       <span class="chip">활동량 ${rt.steps}</span>
       <span class="chip">${hrs}시간</span>
-      <span class="chip ${run.taint+rt.steps*MOVE_TAINT>=80?"on":""}">오염도 ${rt.steps*MOVE_TAINT}</span>
+      <span class="chip ${run.taint+rt.steps*moveTaint()>=80?"on":""}">오염도 ${rt.steps*moveTaint()}</span>
       <span class="chip ${rt.pass?"on":""}">${rt.pass?`구역 ${rt.pass}곳을 지나칩니다`:"다른 구역은 피해 갑니다"}</span>
       ${run.night?`<span class="chip on">밤 — 빈 칸마다 습격 ${Math.round(ambushChance({t:"empty"})*100)}%</span>`:""}
       <span class="grow"></span>
@@ -5540,7 +5760,7 @@ function drawMap(app){
     const rn=rstep[r+"-"+c]||0;
     const risky=run.night&&cell.t==="empty"&&adj;
     const kind=cell.t;
-    const d=el(`<div class="cell k-${kind} ${kind==="empty"?"emp":""} ${here?"here":""} ${adj?"adj":""} ${cell.done?"done":""} ${risky?"risk":""} ${rn?"onroute":""} ${rn&&rn===(run.route?run.route.steps:0)?"rdest":""}">
+    const d=el(`<div class="cell k-${kind} ${kind==="empty"?"emp":""} ${here?"here":""} ${adj?"adj":""} ${cell.done?"done":""} ${risky?"risk":""} ${(cell.boon||cell.weapon)?"boon":""} ${rn?"onroute":""} ${rn&&rn===(run.route?run.route.steps:0)?"rdest":""}">
       <span class="cbg"></span>
       ${rn?`<span class="rn">${rn}</span>`:""}
       ${kind!=="empty"?`<span class="cico">${nodeArt(kind)}</span>`:""}
@@ -5631,6 +5851,22 @@ function routeTo(tr,tc){
   return {to:{r:tr,c:tc}, path:path, steps:path.length,
           pass:path.slice(0,-1).filter(x=>run.grid[x.r][x.c].t!=="empty"&&!run.grid[x.r][x.c].done).length};
 }
+/* 지도의 빈 칸에 새 구역을 놓는다 — 탐험가 · 무기 상인과 조우 */
+function sprinkleCell(t,n,extra){
+  const spots=[];
+  for(let r=0;r<run.size;r++) for(let c=0;c<run.size;c++){
+    if(run.grid[r][c].t!=="empty") continue;
+    if(run.pos.r===r&&run.pos.c===c) continue;
+    spots.push({r:r,c:c});
+  }
+  let put=0;
+  for(let q=0;q<n&&spots.length;q++){
+    const p=spots.splice(Math.floor(Math.random()*spots.length),1)[0];
+    run.grid[p.r][p.c]=Object.assign({t:t},extra||{});
+    put++;
+  }
+  return put;
+}
 function pickRoute(r,c){
   if(run.route&&run.route.to.r===r&&run.route.to.c===c){ run.route=null; render(); return }
   const rt=routeTo(r,c);
@@ -5649,7 +5885,7 @@ function walkRoute(){
     const cell=run.grid[p.r][p.c], last=!path.length, tired=run.act<=0;
     SFX.play("tock"); costPop(p.r,p.c,tired);
     run.pos={r:p.r,c:p.c};
-    spend(1,1); addTaint(MOVE_TAINT);
+    spend(1,1); addTaint(moveTaint());
     if(run.taint>=100||run.lost) return;
     if(run.day!==day0){ toast("길에서 날이 밝아 발길을 멈춥니다."); view="map"; render(); return }
     if(Math.random()<ambushChance(cell)){
@@ -5681,7 +5917,7 @@ function moveTo2(r,c){
   costPop(r,c,tired);
   run.route=null;
   run.pos={r:r,c:c};
-  spend(1,1); addTaint(MOVE_TAINT);
+  spend(1,1); addTaint(moveTaint());
   if(run.taint>=100) return;
   if(Math.random()<ambushChance(cell)){
     SFX.play("danger");
@@ -5700,9 +5936,22 @@ function enterCell(r,c){
     spend(0.5,0);
     run.here={r:r,c:c};
     run.grid[r][c]={t:"empty"};      /* 한 번 들르면 사라진다 */
-    if(cell.t==="shop"){ makeShop(); view="shop" }
-    else if(cell.t==="rest"){ view="rest" }
-    else { run.ev=pickEvent(); run.evMsg=null; view="relic" }
+    const best=k=>Math.max(0,...run.heroes.map(h=>(h.tag&&h.tag[k])||0));
+    if(cell.t==="shop"){
+      run.shopKind=cell.weapon?"weapon":null;
+      makeShop(); view="shop";
+      const g=best("shopGold");
+      if(g){ run.gold+=g; toast(`반가운 상인 — 금화 +${g}`) }
+    }
+    else if(cell.t==="rest"){ view="rest";
+      const v=best("restHeal");
+      if(v){ run.heroes.forEach(h=>{ if(!h.down) healUp(h,v) });
+        toast(`반가운 휴식 — 대원들이 체력을 ${v} 회복했습니다.`) }
+    }
+    else { run.ev=pickEvent(); run.evMsg=null; view="relic";
+      if(cell.boon){ addTaint(-cell.boon);
+        toast(`탐험가 — 길이 트이며 오염도가 ${cell.boon} 낮아집니다.`) }
+    }
     render(); return;
   }
   if(cell.t==="dungeon"||cell.t==="elite"||cell.t==="boss"){
@@ -5978,6 +6227,19 @@ function dungeonCleared(){
   if(d.kind!=="ambush"&&d.r!=null&&run.grid[d.r]&&run.grid[d.r][d.c])
     run.grid[d.r][d.c]={t:"empty"};
   addTaint(d.kind==="ambush"?-10:-20);
+  { /* 오염 구역 정화 */
+    const c=Math.max(0,...run.heroes.map(h=>(h.tag&&h.tag.clearTaint)||0));
+    const g=Math.max(0,...run.heroes.map(h=>(h.tag&&h.tag.clearGold)||0));
+    if(c) addTaint(-c);
+    if(g) run.gold+=g;
+    if(c||g) toast(`오염 구역 정화 — 오염도 ${c} 감소 · 금화 +${g}`);
+  }
+  /* 파편 상자 — 다음 몇 번의 보상 상자에 파편을 확정으로 얹는다 */
+  if(run.shardBox>0){
+    run.shardBox--;
+    (run.after=run.after||[]).push({item:rnd(ITEMS.filter(i=>i.g==="파편"))});
+    toast(`파편 상자 — 파편 하나가 딸려 나옵니다. (남은 ${run.shardBox}번)`);
+  }
   if(d.kind==="boss") run.bossDone=1;
   openChest(d.kind);
 }
@@ -6119,6 +6381,21 @@ function backToMap(){
 }
 
 /* ═══════════ 보유 카드 ═══════════ */
+/* 전투를 접고 빠져나온다 — 이긴 것도 진 것도 아니어서 보상도 벌도 없다 */
+function fleeBattle(toCamp,msg){
+  if(B) B.over=1;
+  B=null; BSNAP=null; sel=null;
+  run.dun=null; run.pendingEnter=null; run.here=null; run.route=null;
+  if(toCamp){
+    let c=null;
+    for(let r=0;r<run.size;r++) for(let q=0;q<run.size;q++)
+      if(run.grid[r][q].t==="camp") c={r:r,c:q};
+    if(c) run.pos=c;
+    view=c?"camp":"map";
+  } else view="map";
+  toast(msg);
+  render();
+}
 const CARD_LIB={
  "불덩이":{d:"대상 적에게 피해를 6 줍니다.",foe:1,
    use:(f,h)=>{ hurt(f,6,"불덩이","boom") }},
@@ -6133,7 +6410,23 @@ const CARD_LIB={
  "소형 방패":{d:"아군 영웅에게 보호막을 5 부여합니다.",
               use:a=>{ a.shield+=5;
                        fx({side:"mine",slot:a.slot,s:"shield",gap:60});
-                       say(`소형 방패 — ${a.name} 보호막 +5`) }}
+                       say(`소형 방패 — ${a.name} 보호막 +5`) }},
+ "귀환서":   {d:"해당 전투에서 벗어나 주둔지로 즉시 복귀합니다.",
+              use:a=>{ fx({side:"mine",slot:a.slot,s:"summon",ring:"#c9a227",txt:"귀환",cls:"shd",gap:60});
+                       say("귀환서 — 종이가 타오르며 전장이 접힙니다.","t1");
+                       setTimeout(()=>fleeBattle(1,"주둔지로 돌아왔습니다."),120) }},
+ "위장 망토":{d:"밤의 습격 전투에서 도망칩니다.",
+              use:a=>{ if(!B||B.kind!=="ambush"){
+                         say("위장 망토는 밤의 습격에서만 쓸 수 있습니다.","t2"); return "keep" }
+                       fx({side:"mine",slot:a.slot,s:"wind",ring:"#7a5aa8",txt:"은신",cls:"shd",gap:60});
+                       say("위장 망토 — 어둠에 몸을 숨기고 빠져나옵니다.","t1");
+                       setTimeout(()=>fleeBattle(0,"습격에서 도망쳤습니다."),120) }},
+ "악마 하수인":{d:"빈 칸에 악마 하수인을 소환합니다.",summon:1},
+ "간이 신발":{d:"거리 1을 이동합니다.",
+              use:a=>{ const to=(a.slot<SLOTS)?a.slot+1:a.slot-1;
+                       if(to<1||to>SLOTS){ say("움직일 데가 없습니다.","t2"); return "keep" }
+                       moveTo(a,to);
+                       say(`간이 신발 — ${a.name} 거리 1을 움직입니다.`) }}
 };
 function addCard(r,name,n){
   const e=(r.cards=r.cards||[]).find(x=>x.n===name);
@@ -6199,7 +6492,11 @@ const SHOP_STOCK=[
  {n:"무작위 하급 보상", d:"하급 보상 하나를 고릅니다.",                    p:[15,25],q:[1,1], k:"하급", s2q:[1,3], s3q:[1,5]},
  {n:"무작위 중급 보상", d:"중급 보상 하나를 고릅니다.",                    p:[25,40],q:[1,1], k:"중급", s3q:[1,3]},
  {n:"무작위 상급 보상", d:"상급 보상 하나를 고릅니다.",                    p:[80,120],q:[1,1],k:"상급", stage:1},
- {n:"무작위 일반 아이템",d:"어떤 일반 아이템이 나올지는 열어봐야 압니다.",  p:[25,40],q:[1,1], k:"normal", stage:2}
+ {n:"무작위 일반 아이템",d:"어떤 일반 아이템이 나올지는 열어봐야 압니다.",  p:[25,40],q:[1,1], k:"normal", stage:2},
+ {n:"위장 망토",        d:"밤의 습격 전투에서 도망치는 카드",               p:[3,5],  q:[1,1], k:"card", card:"위장 망토",
+                        s2q:[1,3], upto:1},
+ {n:"귀환서",           d:"전투에서 벗어나 주둔지로 즉시 복귀하는 카드",    p:[8,12], q:[1,1], k:"card", card:"귀환서",
+                        s2p:[8,10], s3p:[8,8], s3q:[1,2]}
 ];
 /* 파는 값 — 파편 1~3 · 일반 8~12 · 희귀 30~50 */
 const SELL_PRICE={"파편":[1,3],"일반":[8,12],"희귀":[30,50],"특수":[8,12],"전설":[30,50]};
@@ -6208,7 +6505,9 @@ const SHOP_NPC=["떠돌이 상인","외눈의 노파","기름때 묻은 대장�
 function makeShop(){
   run.sellPick=null;
   const st=run.field;
-  const pool=SHOP_STOCK.filter(g=>(g.stage||0)<=st).slice();
+  let pool=SHOP_STOCK.filter(g=>(g.stage||0)<=st&&(g.upto==null||st<=g.upto)).slice();
+  /* 무기 상점 — 아이템과 제련에 관한 것만 판다 */
+  if(run.shopKind==="weapon") pool=pool.filter(g=>["shard","normal","stone"].indexOf(g.k)>=0);
   /* 특정 파편 아이템 : 무엇인지 보이는 대신 조금 비싸다 */
   const named=rnd(ITEMS.filter(i=>i.g==="파편"));
   pool.push({n:named.n,d:named.d,p:[10,20],q:[1,st>=2?3:1],k:"named",item:named});
@@ -6350,10 +6649,11 @@ function drawRest(app){
   const grade=run.field===0?"하급":"중급";
   const row=el(`<div class="rewards"></div>`);
   const a=el(`<div class="rw"><div class="rwi">${nodeArt("rest")}</div>
-    <b>불을 쬔다</b><p>쓰러지지 않은 모든 대원이 최대 체력의 30%를 회복합니다.</p>
+    <b>불을 쬔다</b><p>쓰러지지 않은 모든 대원이 최대 체력의 ${Math.round(30*(1+Math.max(0,...run.heroes.map(h=>(h.tag&&h.tag.restPlus)||0))/100))}%를 회복합니다.</p>
     <p style="color:var(--faint)">기절한 대원은 일어나지 않습니다.</p></div>`);
+  const restUp=Math.max(0,...run.heroes.map(h=>(h.tag&&h.tag.restPlus)||0));
   a.onclick=()=>{ run.heroes.forEach(h=>{ if(!h.down)
-      healUp(h,Math.round(h.maxHp*0.3)) });
+      healUp(h,Math.round(h.maxHp*0.3*(1+restUp/100))) });
     SFX.play("heal"); toast("몸이 좀 풀립니다."); leaveNode() };
   const b=el(`<div class="rw"><div class="rwi">${nodeArt("elite")}</div>
     <b>몸을 단련한다</b><p>${esc(grade)} 보상을 ${n}개 고릅니다.</p></div>`);
@@ -6896,6 +7196,7 @@ function startBattle(kind,pinned){
       h.tunes=[]; h.encore=0; h.venom=0; h.verdictUsed=0;
       h.eshield=0; h.lastStandUsed=0;
       h.windUses=0; h.first={}; h.limitUsed={};
+      h.critAtkUsed=0; h.critMagUsed=0; h.soloOn=0;
       h.cutGrow=0; h.cutSum=0; h.endCount=0; h.deathSaveUsed=0; h.emptyDefOn=0;
       const hpl=itemBt(h,'hpPerLv'); if(hpl){ h.hp+=hpl*h.lv }
       h.mana=h.maxMana+itemBt(h,"firstMana")+(h.tag.firstMana||0);
@@ -6934,10 +7235,28 @@ function startBattle(kind,pinned){
     if(G.hide)  f.hide=1;
   });
   }
+  /* ── 라운드마다 다시 걸리는 것 ── ('전투 시작 시' 와 달리 라운드마다) ── */
+  run.heroes.forEach(h=>{
+    if(h.down||h.hp<=0) return;
+    if(h.tag.roundMana){ h.mana+=h.tag.roundMana;
+      say(`마나 흡입 — ${h.name} 추가 마나 +${h.tag.roundMana}`,"t2") }
+    if(h.tag.roundBurn){
+      const live=B.foes.filter(f=>f.alive);
+      if(live.length){ const f=rnd(live); f.burn=(f.burn||0)+h.tag.roundBurn;
+        say(`잔불 — ${f.name} 화상 ${f.burn}`,"t2") }
+    }
+    if(h.tag.roundPoison){
+      const v=h.tag.roundPoison;
+      B.foes.filter(f=>f.alive).forEach(f=>{
+        addDeb(f,"atkDn",v,h); addDeb(f,"magDn",v,h); addDeb(f,"defDn",v,h) });
+      say(`독이 담긴 병 — 모든 적에게 공격약화 · 마법약화 · 보호약화 ${v}`,"t2");
+    }
+  });
   B.portals=[]; B.mins=[]; B.corpseUsed=0;
   (run.cards||[]).forEach(cd=>{
     const L=CARD_LIB[cd.n];
     if(!L) return;
+    if(L.summon){ B.hand.push({type:"summon",name:cd.n,stock:cd.n}); return }
     B.hand.push({type:"item",name:cd.n,d:L.d+` (보유 ${cd.c})`,stock:cd.n,use:L.use});
   });
   setTimeout(()=>{ const f=B&&B.foes&&B.foes.filter(x=>x.alive);
@@ -6988,12 +7307,20 @@ const freeSlot=()=>{ for(let s=1;s<=SLOTS;s++) if(!occAt(s)) return true; return
 const lifeLeft=()=>liveMins().length>0
   || (freeSlot() && (B.hand||[]).some(c=>c.type==="summon"));
 const allUnits=()=>onField().concat(liveMins());
+/* 꼭두각시 인형 — 대원들이 가진 것 중 가장 큰 비율만큼 소환물이 튼튼해진다 */
+function minHpBonus(){
+  let v=0;
+  (run.heroes||[]).forEach(h=>{ v=Math.max(v,(h.tag&&h.tag.minHp)||0) });
+  return v;
+}
 function makeMin(name,slot){
   const d=SUMMONS[name];
   /* 굳건한 성벽 강화 — 주인이 가진 만큼 성벽이 튼튼해진다 */
   let hp=d.hp;
   if(d.owner){ const ow=run&&run.heroes.find(x=>x.name===d.owner);
     if(ow&&ow.tag&&ow.tag.wallHp) hp+=ow.tag.wallHp }
+  /* 꼭두각시 인형 — 소환물의 최대 체력이 비율만큼 늘어난다 */
+  { const b=minHpBonus(); if(b) hp=Math.round(hp*(1+b/100)) }
   return {name:name,slot:slot,isMin:1,alive:1,lv:99,
     maxHp:hp,hp:hp,maxMana:d.mana,mana:d.mana,
     sk:(d.sk||[]).map(x=>Object.assign({},x)),
@@ -7414,6 +7741,7 @@ function drawBattle(app){
   const moveStep = !!(sel && sel.step===5);
   /* 이동 기술이면 갈 수 없는 칸은 켜지 않는다 */
   const canGo = n => !(sel && tgMode==="ally" && moveBlock(sel.hero,preSkill,n));
+  const INC = incoming();
   const shOwner = allUnits().find(x=>x.shadowAt);
   const shMark = dk=>`<svg class="shmark" viewBox="0 0 24 24">`
       +`<ellipse cx="12" cy="18" rx="8" ry="3.5" fill="${dk?"#7a4ab0":"#4a3a5e"}" opacity=".85"/>`
@@ -7446,6 +7774,7 @@ function drawBattle(app){
       if(tgMode==="ally"&&canGo(s)) d.classList.add("pick");
       /* 자기에게 거는 기술은 시전자 머리 위에 값을 띄운다 */
       if(tgMode&&sel.hero===h) d.innerHTML+=selfHitTag(h,preSkill,sel.count);
+      d.innerHTML+=incHtml(h,INC[s]);
       const pm=B.portals&&B.portals.find(p=>p.side==="mine"&&p.slot===s);
       if(pm) d.innerHTML+=`<svg class="portal" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#a06ae0" stroke-width="2.5"/><circle cx="12" cy="12" r="3.5" fill="#a06ae0"/></svg>`;
       const esW=h.eshield?Math.max(6,Math.min(45,h.eshield/h.maxHp*100)):0;
@@ -7803,7 +8132,8 @@ function bk(base,parts){
 const PASSIVE_INFO={
  "나이코스":[{n:"전장의 승자",p:"전장의 승자",
    d:h=>`전투에서 이길 때마다 공격력을 영구히 1 얻습니다. (최대 ${h.tag.winCap||2}) 넘친 몫은 금화 1로 바뀝니다.`
-        +(h.tag.winHp?` 최대 체력도 1씩 얻습니다. (${h.winHp||0}/10)`:``)
+        +(h.tag.winHp?` 더 얻을 수 없을 때는 최대 체력을 1씩 얻습니다. (${h.winHp||0}/10)`:``)
+        +(h.tag.winExp?` 더 얻을 수 없을 때는 경험치를 ${h.tag.winExp} 얻습니다.`:``)
         +(h.tag.rageTurn?` 패배해도 잃지 않고 오히려 그만큼 더 얻습니다.`
                         :` 패배하면 그렇게 얻은 공격력을 모두 잃습니다.`)}],
  "카제":[
@@ -8320,6 +8650,22 @@ function startDrag(card,i){
 function allAllies(){
   return run.heroes.filter(x=>!x.down).concat(liveMins());
 }
+/* 최후의 검투사 — 혼자 서 있는 동안만 힘이 오른다. 상황이 바뀌면 도로 걷힌다 */
+function soloCheck(h){
+  if(!h||!h.tag||!h.tag.soloStat||!B) return;
+  const alone=h.slot>0&&h.hp>0&&onField().length===1&&liveMins().length===0;
+  if(alone&&!h.soloOn){
+    h.soloOn=h.tag.soloStat;
+    bumpTmp(h,"atk",h.soloOn); bumpTmp(h,"mag",h.soloOn); bumpTmp(h,"def",h.soloOn);
+    fx({side:"mine",slot:h.slot,pose:"bless",poseMs:1200,glow:1,
+        ring:"#c9a227",txt:"최후의 검투사",cls:"crit",gap:200});
+    say(`최후의 검투사 — ${h.name} 홀로 남아 모든 능력치가 ${h.soloOn} 오릅니다.`,"t1");
+  } else if(!alone&&h.soloOn){
+    const v=h.soloOn; h.soloOn=0;
+    bumpTmp(h,"atk",-v); bumpTmp(h,"mag",-v); bumpTmp(h,"def",-v);
+    say(`최후의 검투사 — 혼자가 아니게 되어 힘이 가라앉습니다.`,"t2");
+  }
+}
 function onSummon(h){
   const t=h.tag;
   { const ex=(h.mana||0)-(h.maxMana||0);
@@ -8333,6 +8679,7 @@ function onSummon(h){
     B.foes.filter(f=>f.alive).forEach(f=>airborne(h,f)) }
   if(t.startBlade){ say("전장의 칼날 — 첫 일격이 전장을 훑습니다.","t1");
     B.foes.filter(f=>f.alive).forEach(f=>hurt(f,t.startBlade,"전장의 칼날","slash")) }
+  run.heroes.forEach(soloCheck);
   /* ── 아래는 전투 시작 효과 : 그 전투에서 처음 나설 때 한 번만 ── */
   if(h.summoned) return;
   h.summoned=1;
@@ -8340,6 +8687,12 @@ function onSummon(h){
     fx({side:"mine",slot:h.slot,s:"heal",txt:"+"+t.startHeal,cls:"heal",gap:60});
     say(`한숨 돌리기 — ${h.name} 체력 +${t.startHeal}`,"t2") }
   if(t.startGold){ run.gold+=t.startGold; say(`관객의 응원 — 금화 +${t.startGold}`,"t2") }
+  if(t.nightStat&&run.night){ const v=t.nightStat;
+    bumpTmp(h,"atk",v); bumpTmp(h,"mag",v); bumpTmp(h,"def",v);
+    say(`늑대의 시간 — ${h.name} 모든 추가 능력치 +${v}`,"t2") }
+  if(t.taintStat&&run.taint>=50){ const v=t.taintStat;
+    bumpTmp(h,"atk",v); bumpTmp(h,"mag",v); bumpTmp(h,"def",v);
+    say(`오염된 피부 — ${h.name} 모든 추가 능력치 +${v}`,"t2") }
   if(t.gearShield){ allAllies().forEach(a=>{ a.shield+=t.gearShield });
     say(`튼튼한 방어구 — 모든 아군 보호막 +${t.gearShield}`,"t2") }
   if(t.gearPlus) for(let q=0;q<t.gearPlus;q++) giveArmor(h,rnd(t.armors||["강철 갑옷"]));
@@ -8354,7 +8707,8 @@ function onSummon(h){
       say(`현자의 눈 — ${f.name}에게 표식`,"t2") } }
   { const ab=itemBt(h,"allyBuff");
     if(ab) allAllies().forEach(a=>{ if(a!==h){ bumpTmp(a,"mag",ab); bumpTmp(a,"def",ab) } }) }
-  if(t.startMom){ h.mom+=t.startMom; say(`${h.name} 추진력 +${t.startMom} (눈보다 빠르게)`,"t2") }
+  /* 잔걸음 · 눈보다 빠르게 — 같은 표시를 쓴다 */
+  if(t.startMom){ h.mom+=t.startMom; say(`${h.name} 추진력 +${t.startMom}`,"t2") }
   if(t.startEvade){ h.evade+=t.startEvade; say(`${h.name} 회피 +${t.startEvade} (자취 감추기)`,"t2") }
   const es=itemBt(h,"eshield")+(t.eshield||0);
   if(es){ h.eshield+=es; say(`${h.name} 에너지 보호막 +${es}`,"t2") }
@@ -8465,7 +8819,10 @@ function playCard(i,slot,side){
   if(c.type==="summon"){
     if(occAt(slot)){ say("그 칸에는 이미 누군가 있습니다.","t2"); return }
     const m=makeMin(c.name,slot);
-    B.mins.push(m); B.hand.splice(i,1);
+    B.mins.push(m);
+    if(c.stock){ useCard(c.stock);
+      if(!(run.cards||[]).find(x=>x.n===c.stock)) B.hand.splice(i,1);
+    } else B.hand.splice(i,1);
     fx({side:"mine",slot:slot,s:"summon",ring:"#a06ae0",glow:1,txt:"소환",cls:"shd",gap:60});
     say(`${c.name}${jo(c.name,"ig")} ${slot}번 칸에 소환됩니다.`,"t1");
     rollIntents(); render(); return;
@@ -8482,7 +8839,8 @@ function playCard(i,slot,side){
   }else{
     const h=unitAt(slot);
     if(!h){ say("카드를 쓸 아군이 없는 칸입니다.","t2"); return }
-    c.use(h);
+    /* use 가 "keep" 을 돌려주면 쓰지 못한 것이다 — 카드를 도로 넣어 둔다 */
+    if(c.use(h)==="keep"){ render(); return }
     /* 낡은 투구끈 — 방어구 카드를 쓸 때마다 그 카드를 만든 대원이 회복한다 */
     if(ARMOR_CARDS[c.name]){
       const own=c.by&&run.heroes.find(x=>x.name===c.by);
@@ -8492,6 +8850,10 @@ function playCard(i,slot,side){
           say(`낡은 투구끈 — ${own.name} 체력 +${got}`,"t2") }
       }
     }
+    /* 카드 마술 — 카드를 낸 대원이 보호막을 얻는다 */
+    if(h.tag&&h.tag.cardShield){ h.shield+=h.tag.cardShield;
+      fx({side:"mine",slot:h.slot,s:"shield",gap:60});
+      say(`카드 마술 — ${h.name} 보호막 +${h.tag.cardShield}`,"t2") }
     if(!c.stock||!CARD_LIB[c.stock]) SFX.play("shield");
     if(c.stock){ useCard(c.stock);
       const e=(run.cards||[]).find(x=>x.n===c.stock);
@@ -8610,6 +8972,58 @@ function predictSelf(h,s){
   if(s.vanguard) out.shield=(h.tag.vanShield||5)+h.def;
   if(s.rearguard){ out.heal=h.tag.rearHeal||5; out.shield=5+h.def }
   return (out.shield||out.heal||out.armor)?out:null;
+}
+/* ── 다음 적 차례에 누가 얼마나 맞는가 ─────────────────────────────────────
+   foePhase 의 공격 갈래를 그대로 따라간다. 아무것도 바꾸지 않는다.
+   칸 번호로 모으는 이유 : 아군과 소환물이 한 칸에 하나씩만 서기 때문. */
+function incoming(){
+  const map={};
+  if(!B||B.over||!B.foes||!B.foes.length) return map;
+  const list=allUnits();
+  const get=u=>map[u.slot]||(map[u.slot]={raw:0,hp:0,ev:0,
+      _e:u.eshield||0,_s:u.shield||0,_v:u.evade||0});
+  const hitOn=(u,v)=>{
+    if(!u||u.hp<=0) return;
+    const m=get(u);
+    let raw=v;
+    if(u.armor>0&&raw>u.armor) raw=u.armor;   /* 갑피는 한 방을 잘라낸다 */
+    if(m._v>0){ m._v--; m.ev++; return }      /* 회피는 한 방을 통째로 흘린다 */
+    m.raw+=raw;
+    let d=raw;
+    const eh=Math.min(m._e,d); m._e-=eh; d-=eh;
+    const sh=Math.min(m._s,d); m._s-=sh; d-=sh;
+    m.hp+=d;
+  };
+  B.foes.forEach(f=>{
+    if(!f.alive||!f.intent) return;
+    const stunned=(f.stun||0)>0||deb(f,"stun")>0;
+    const purging=f.boss&&f.intent.t==="purge"&&f.intent.k!=="ward";
+    if(stunned&&!purging) return;
+    if(f.intent.t==="atk"){
+      let t=unitAt(f.intent.to)||list.filter(canAim)[0]||list[0];
+      const wall=t&&tauntWall(t);
+      if(wall) t=wall;
+      if(!t) return;
+      if(!f.intent.far&&dist(t.slot,f.slot)>f.rng) return;   /* 거리 밖이면 헛손질 */
+      const one=foeDmg(f,f.intent.v,f.intent.el);
+      const hits=Math.max(1,f.intent.hits||1);
+      for(let q=0;q<hits;q++) hitOn(t,one);
+    }
+    else if(f.intent.t==="volley"){
+      const v=foeDmg(f,f.intent.v,f.intent.el);
+      list.forEach(a=>hitOn(a,v));
+    }
+  });
+  return map;
+}
+/* 그 칸에 서 있는 아군 머리 위에 붙일 쪽지 */
+function incHtml(u,m){
+  if(!m) return "";
+  if(!m.raw) return m.ev?`<span class="incm safe">회피</span>`:"";
+  const lethal=m.hp>0&&m.hp>=u.hp;
+  const note=m.hp>0?(m.hp<m.raw?`체력 ${m.hp}`:""):"막힘";
+  return `<span class="incm${lethal?" lethal":""}${m.hp?"":" safe"}">${m.raw}`
+    +(note?`<em>${note}</em>`:"")+`</span>`;
 }
 /* 머리 위 쪽지 */
 function hitTag(kind,txt,crit,note){
@@ -8928,7 +9342,7 @@ function moveTo(h,to){
     fx({side:"mine",slot:from,s:"step",ring:"#5fd8cf",gap:60});
   } else say(`${h.name} ${from}번 → ${to}번`);
   fx({side:"mine",slot:to,s:"step",ring:"#5fd8cf",glow:1,gap:90});
-  { const ms=itemBt(h,"moveShield"); if(ms) h.shield+=ms;
+  { const ms=itemBt(h,"moveShield")+((h.tag&&h.tag.moveShield)||0); if(ms) h.shield+=ms;
     const mb=itemBt(h,"moveBlast");
     if(mb) B.foes.filter(f=>f.alive).forEach(f=>hurt(f,mb,"질풍 각반","wind"));
     (h.items||[]).forEach(it=>{ const k=it.bt&&it.bt.moveStat;
@@ -9432,7 +9846,8 @@ function runEffect(h,i,s,target){
     say(`${h.name} 보호막 +${v}`) }
   if(s.taunt){ h.taunt=s.taunt }
   if(s.evade){ h.evade+=s.evade;
-    if(h.tag.flowShield){ h.shield+=h.tag.flowShield; say(`${h.name} 보호막 +${h.tag.flowShield}`) }
+    if(h.tag.flowShield){ h.eshield=(h.eshield||0)+h.tag.flowShield;
+      say(`기류 흘리기 — ${h.name} 에너지 보호막 +${h.tag.flowShield}`) }
     fx({side:"mine",slot:h.slot,s:"wind",ring:"#5fd8cf",txt:"회피",cls:"shd"});
     say(`${h.name} 회피 +${s.evade}`) }
   if(s.potential){ h.potential=1; h.free+=4+(h.tag.freePlus||0);
@@ -9542,6 +9957,11 @@ function runEffect(h,i,s,target){
     if(h.name==="이테리오"&&s.el!=="마법"&&(tgt.mark||0)>0){
       dmg*=2; tgt.mark--; CRIT=1; say(`정밀 표식 — 치명타!`,"t1");
     }
+    /* 치명적인 공격 · 치명적인 마법 — 그 전투의 첫 한 방 */
+    { const mag=(s.el==="마법");
+      const key=mag?"critMag":"critAtk", done=mag?"critMagUsed":"critAtkUsed";
+      if(h.tag[key]&&!h[done]){ h[done]=1; dmg*=2; CRIT=1;
+        say(`${mag?"치명적인 마법":"치명적인 공격"} — 첫 일격이 치명타로 꽂힙니다!`,"t1") } }
     /* 그슨대 급습 */
     if(h.name==="그슨대"&&h.hide&&s.el==="공격"){ dmg*=2; h.hide=0; CRIT=1; say("급습 — 치명타!","t1") }
     /* 데린저 조준 · 헤드샷 */
@@ -9625,13 +10045,14 @@ function runEffect(h,i,s,target){
         if(s.markKill){ h.sk[1].limit++;
           pillarFX("foe",tgt.slot,"rgba(224,200,90,.9)");
           say("명중 — 피부 강화의 사용한도가 늘어납니다.","t1") }
+        if(s.exec&&h.tag.execMana){ h.mana+=h.tag.execMana;
+          say(`승리의 연격 — ${h.name} 이번 턴 추가 마나 +${h.tag.execMana}`,"t2") }
         if(s.exec){ const v=1+(h.tag.execPlus||0);
           pillarFX("foe",tgt.slot,"rgba(201,162,39,.9)");
           addMod(h,"베기","dmg",v,"승리의 일격");
           fx({side:"mine",slot:h.slot,pose:"bless",poseMs:1400,glow:1,
               ring:"#c9a227",txt:"베기 +"+v,cls:"shd",gap:220});
           say(`승리의 일격 — 베기가 영구히 ${v} 강해집니다.`,"t1") }
-        if(h.tag.killShield&&i===0){ h.shield+=h.tag.killShield }
         break;
       }
     }
@@ -9772,6 +10193,9 @@ function endPhase(){
   allUnits().forEach(tickDebEnd);
   liveMins().forEach(m=>{ if(m.perma) m.taunt=1 });
   onField().forEach(h=>{
+   /* 첨탑관리자의 회중시계 — 이 대원의 턴 종료 효과만 한 번 더 돈다 */
+   const rounds=1+((h.tag&&h.tag.endTwice)?1:0);
+   for(let _e=0;_e<rounds;_e++){
     { const en=itemBt(h,"endNeg"); if(en){ h.negShield=(h.negShield||0)+en; bump();
         fx({side:"mine",slot:h.slot,s:"guard",ring:"#7fd39a",txt:"부정 보호막 "+h.negShield,cls:"shd",gap:150}) }
       const mn=itemBt(h,"momNeg");
@@ -9829,6 +10253,7 @@ function endPhase(){
         first=0 });
       say(`든든한 아군 — 다른 아군 ${esh?"에너지 보호막":"보호막"} +${v}`,"t2");
     }
+   }
   });
   (B.portals||[]).forEach(p=>{
     if(p.side!=="foe") return;
@@ -9977,6 +10402,11 @@ function foePhase(){
     { const mt=itemBt(h,"manaTick");
       if(mt&&B.turn%mt===0){ h.mana++; say(`마나석 — ${h.name} 이번 턴 마나 +1`,"t2") } }
     if(h.tag.armorTurn&&h.slot>0) giveArmor(h,rnd(h.tag.armors||["강철 갑옷"]));
+    /* 검투 대비 — 손에 쥔 방어구 장수만큼 이번 턴 보호력 */
+    if(h.tag.handDef&&h.slot>0){
+      const n2=(B.hand||[]).filter(c=>c.type==="item"&&ARMOR_CARDS[c.name]).length;
+      if(n2){ bumpTurn(h,"def",n2*h.tag.handDef);
+        say(`검투 대비 — ${h.name} 이번 턴 보호력 +${n2*h.tag.handDef}`,"t2") } }
     h.airUp=0; h.potential=0; h.guarded=0; h.armor=0;
     const es2=itemBt(h,'startTurnShield'); if(es2) h.shield+=es2;
     /* 항상 대비하기 — 손에 방어구 카드를 쥐고 턴을 맞으면 보호막 */
@@ -9994,6 +10424,7 @@ function foePhase(){
       B.foes.filter(f=>f.alive).forEach(f=>hurt(f,v,"응축 폭발","boom"));
     }
   });
+  run.heroes.forEach(soloCheck);
   B.foes.forEach(f=>{ f.air=0; f.weakAtk=0;
     if(f.thornTurn>0&&--f.thornTurn<=0){ f.thorn=0;
       say(`${f.name}의 사슬이 늘어집니다 — 가시가 풀렸습니다.`,"t2") }
@@ -10047,11 +10478,17 @@ function checkEnd(){
       const cap=h.tag.winCap||2;
       if(h.tag.winGold) run.gold+=h.tag.winGold;
       if(h.wins<cap){ h.wins++; h.atk++ }
-      else { run.gold+=1; say("전장의 승자 — 넘친 몫이 금화 1로 바뀝니다.","t2") }
-      /* 전장의 지배자 — 이길 때마다 최대 체력도 1씩, 열까지 */
-      if(h.tag.winHp&&(h.winHp||0)<10){
-        h.winHp=(h.winHp||0)+1; h.maxHp++; h.hp++;
-        say(`전장의 지배자 — 최대 체력 +1 (${h.winHp}/10)`,"t2");
+      else {
+        run.gold+=1; say("전장의 승자 — 넘친 몫이 금화 1로 바뀝니다.","t2");
+        /* 공격력을 더 얻을 수 없을 때 대신 받는 것들 */
+        if(h.tag.winHp&&(h.winHp||0)<10){
+          h.winHp=(h.winHp||0)+1; h.maxHp++; h.hp++;
+          say(`전장의 지배자 — 최대 체력 +1 (${h.winHp}/10)`,"t2");
+        }
+        if(h.tag.winExp){
+          h.exp+=h.tag.winExp;
+          say(`전투 경험 — ${h.name} 경험치 +${h.tag.winExp}`,"t2");
+        }
       }
     });
     giveExp(exp,run.heroes.filter(h=>h.slot>0&&h.hp>0));
@@ -10250,7 +10687,7 @@ function costPop(r,c,tired){
   const b=cell.getBoundingClientRect();
   const rows=[["act","-1",tired?"활동량":"활동량"],
               ["time",tired?"-2시간":"-1시간",""],
-              ["taint","+"+MOVE_TAINT,"오염도"]];
+              ["taint","+"+moveTaint(),"오염도"]];
   rows.forEach(([k,v],i)=>{
     const nd=spawn('<div class="costpop c-'+k+'">'+esc(v)+'</div>');
     if(!nd) return;
@@ -10423,7 +10860,7 @@ function heroPanel(h){
       `<div class="tr1"><b>${esc(x.n)}</b>
         <span class="g2">${x.r?esc(x.r.g):""}${x.mine?" · 전용":""}${
           REW_ALL?" · "+esc(x.k):""}</span>
-        ${x.r?`<small>${rich(x.r.d)}</small>`:""}</div>`).join("")}</div>`));
+        ${x.r?`<small>${rich(x.r.d)}</small>`:""}${x.r?rewCondHtml(x.r):""}</div>`).join("")}</div>`));
   if(h.items&&h.items.length){
     box.appendChild(el(`<div class="hp-h">장비</div>`));
     box.appendChild(el(`<div class="hp-tk">${h.items.map(t=>
@@ -10474,8 +10911,8 @@ function noRunRes(){
   return !!(cur&&cur.noRun);
 }
 function offerCards(app,hero,grade,done){
-  const own=(HERO_REWARDS[hero.name]||[]).filter(r=>r.g===grade&&!(hero.tag.taken||[]).includes(r.n));
-  let com=COMMON.filter(r=>r.g===grade);
+  const own=(HERO_REWARDS[hero.name]||[]).filter(r=>r.g===grade&&rewardOk(hero,r));
+  let com=COMMON.filter(r=>r.g===grade&&rewardOk(hero,r));
   if(noRunRes()){
     const cut=com.filter(r=>!r.rr);
     /* 걸러내고도 고를 게 남아 있을 때만 걸러 준다 */
@@ -10487,12 +10924,14 @@ function offerCards(app,hero,grade,done){
   picks.forEach(r=>{
     const c=el(`<div class="rw${gcls(r.g)}"><div class="rwi">${rewardIcon(r)}</div>
       <div class="g">${esc(r.g)} · ${own.includes(r)?"전용":"공용"}</div>
-      <b>${esc(r.n)}</b><p>${rich(r.d)}</p></div>`);
+      <b>${esc(r.n)}</b><p>${rich(r.d)}</p>${rewCondHtml(r)}</div>`);
     c.onclick=()=>{
       if(c.classList.contains("taken")) return;
       pickBurst(c,r.g);
       row.querySelectorAll(".rw").forEach(x=>{ if(x!==c) x.classList.add("faded") });
-      r.fx(hero,r.n); hero.tag.taken=(hero.tag.taken||[]).concat(r.n);
+      r.fx(hero,r.n);
+      hero.tag.taken=(hero.tag.taken||[]).concat(r.n);
+      hero.tag.tk=(hero.tag.tk||[]).concat(rwKey(r));
       const pts={"하급":1,"중급":3,"상급":5}[r.g]||0;
       if(pts&&run.heroes.some(x=>x.name==="데린저")){
         run.treasure=(run.treasure||0)+pts;
