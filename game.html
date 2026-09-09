@@ -1938,6 +1938,99 @@ document.addEventListener("pointerdown",e=>{
   if(b && !b.classList.contains("off")) SFX.play("click");
 },true);
 
+/* ═══════════ 배경음악 ═══════════
+   파일은 bgm/ 폴더에 따로 둔다. 한 파일 게임에 14MB 를 심을 수는 없다.
+   곡을 더 넣을 때는 BGM_SRC 에 파일 이름을, sceneBgm() 에 어느 화면인지를
+   적으면 된다. 그 둘 말고는 손댈 곳이 없다. */
+const BGM_SRC={
+  main  :"bgm/main.mp3",     /* 타이틀 · 지도(낮) · 주둔지 */
+  night :"bgm/night.mp3",    /* 지도(밤) */
+  battle:"bgm/battle.mp3",   /* 전투 · 정예 */
+  boss1 :"bgm/boss1.mp3",    /* 우두머리 */
+  shop  :"bgm/shop.mp3",     /* 상점 */
+  forge :"bgm/forge.mp3",    /* 제련소 */
+  reward:"bgm/reward.mp3"    /* 보상 · 레벨업 (한 번만 울리는 짧은 곡) */
+};
+/* 지금 화면에 맞는 곡. 없으면 null — 그러면 소리를 끈다 */
+function sceneBgm(){
+  if(view==="battle"||view==="wavegap")
+    return (B&&B.kind==="boss")?"boss1":"battle";
+  if(view==="shop") return "shop";
+  if(view==="forge") return "forge";
+  if(view==="title"||view==="over"||view==="clear") return "main";
+  if(!run) return "main";
+  return run.night?"night":"main";
+}
+const BGM=(()=>{
+  const VOL=0.42, FADE=700;      /* 효과음이 묻히지 않을 만큼만 */
+  let on=true, cur=null, want=null, unlocked=false;
+  let a=null, b=null, live=null;   /* 두 개를 번갈아 쓴다 */
+  let sting=null;
+  function make(){
+    const e=new Audio(); e.loop=true; e.preload="none"; e.volume=0;
+    e.addEventListener("error",()=>{},false);
+    return e;
+  }
+  function els(){ if(!a){ a=make(); b=make(); live=a } return true }
+  function fade(el,to,ms,then){
+    if(!el) return;
+    if(el._ft) clearInterval(el._ft);
+    const from=el.volume, t0=performance.now();
+    el._ft=setInterval(()=>{
+      const k=Math.min(1,(performance.now()-t0)/ms);
+      try{ el.volume=Math.max(0,Math.min(1,from+(to-from)*k)) }catch(e){}
+      if(k>=1){ clearInterval(el._ft); el._ft=0; if(then) then() }
+    },40);
+  }
+  function swap(key){
+    els();
+    const nxt=(live===a)?b:a, old=live;
+    nxt.src=BGM_SRC[key]; nxt.volume=0;
+    const p=nxt.play();
+    if(p&&p.catch) p.catch(()=>{ unlocked=false });
+    fade(nxt,VOL*(sting?0.35:1),FADE);
+    if(old&&!old.paused) fade(old,0,FADE,()=>{ try{ old.pause(); old.src="" }catch(e){} });
+    live=nxt; cur=key;
+  }
+  return {
+    /* 화면이 바뀔 때마다 부른다. 같은 곡이면 아무 일도 하지 않는다 */
+    sync(){
+      const key=on?sceneBgm():null;
+      want=key;
+      if(!unlocked) return;
+      if(key===cur) return;
+      if(!key){ if(live){ fade(live,0,FADE,()=>{try{live.pause()}catch(e){}}) } cur=null; return }
+      swap(key);
+    },
+    /* 손을 댄 첫 순간 — 브라우저가 그제야 소리를 내 준다 */
+    unlock(){
+      if(unlocked||!on) return;
+      unlocked=true;
+      cur=null; this.sync();
+    },
+    /* 보상·레벨업처럼 한 번만 울리는 곡. 그동안 배경음은 낮춘다 */
+    once(key){
+      if(!on||!unlocked||!BGM_SRC[key]) return;
+      try{ if(sting){ sting.pause() } }catch(e){}
+      sting=new Audio(BGM_SRC[key]); sting.volume=VOL*1.25;
+      if(live) fade(live,VOL*0.35,300);
+      const back=()=>{ sting=null; if(live) fade(live,VOL,700) };
+      sting.addEventListener("ended",back);
+      sting.addEventListener("error",back);
+      const p=sting.play(); if(p&&p.catch) p.catch(back);
+    },
+    stop(){ if(live){ fade(live,0,300,()=>{try{live.pause()}catch(e){}}) } cur=null;
+            try{ if(sting) sting.pause() }catch(e){} sting=null },
+    set on(v){ on=!!v; if(!on) this.stop(); else { cur=null; this.sync() } },
+    get on(){ return on },
+    get now(){ return cur }
+  };
+})();
+
+/* 브라우저는 손을 대기 전에는 소리를 못 내게 막는다. 첫 손짓에 푼다 */
+["pointerdown","keydown","touchstart"].forEach(k=>
+  document.addEventListener(k,()=>BGM.unlock(),{capture:true,once:false}));
+
 /* ═══════ 이펙트 ═══════ */
 const FXQ=[];
 const fx=o=>{ FXQ.push(o) };
@@ -5452,6 +5545,7 @@ function render(){
   tutPanel();
   if(run&&run.mapPeek&&view!=="map"&&view!=="title") drawMapPeek();
   flushFX();
+  try{ BGM.sync() }catch(e){}
   saveSoon();
 }
 /* 화면이 여러 번 그려져도 저장은 한 번만 — 그리기가 멎은 뒤에 적는다 */
@@ -5531,7 +5625,7 @@ function render0(){
   } else hr.innerHTML="";
   const hb=document.getElementById("hBtns"); hb.innerHTML="";
   { const sb=el(`<button title="소리 켜기/끄기">♪ ${SFX.on?"켬":"끔"}</button>`);
-    sb.onclick=()=>{ SFX.toggle(); render() }; hb.appendChild(sb); }
+    sb.onclick=()=>{ BGM.on=SFX.toggle(); render() }; hb.appendChild(sb); }
   { const qb=el(`<button title="단축키와 요령 (? 키)">도움말</button>`);
     qb.onclick=()=>{ HELP_ON=!HELP_ON; drawHelp() }; hb.appendChild(qb); }
   if(run&&view!=="title"&&view!=="map"&&view!=="over"&&view!=="clear"){
@@ -11361,6 +11455,7 @@ function drawReward(app){
   }
   const cur=pending.queue[pending.idx];
   SFX.play("level");
+  try{ BGM.once("reward") }catch(e){}
   app.classList.add("withpanel");
   app.appendChild(el(`<div class="center">${expBar(cur.hero)}
     <div class="title" style="font-size:20px">레벨 업</div>
