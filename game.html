@@ -50,7 +50,7 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
    1200px 이 안 되는 창에서는 전장이 가로로 잘리고 스크롤이 생겼다 */
 :root{--slotw:clamp(70px,8.4vw,104px)}
 .field{display:flex;justify-content:center;align-items:stretch;gap:10px;
-  overflow-x:auto;padding:52px 0 4px}
+  overflow-x:auto;padding:38px 0 4px}
 .side{display:flex;gap:6px;flex:0 0 auto}
 /* 아군·적군 모두 왼쪽에서부터 1~5 */
 .mid{width:2px;background:var(--rule);align-self:stretch;min-height:230px;flex:0 0 auto}
@@ -77,15 +77,21 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .hitpv.shd{background:#e0c85a;color:#241d06}
 .hitpv.heal{background:#7fd39a;color:#0e2416}
 .hitpv.crit{border-color:#ffd45e;box-shadow:0 0 10px rgba(255,214,110,.85)}
-/* 이 한 방으로 쓰러뜨릴 수 있는 적 — 피해 칸과 따로, 머리 위에 크게 */
-.killmk{position:absolute;top:-40px;left:50%;transform:translateX(-50%);z-index:7;
-  width:36px;height:36px;border-radius:50%;pointer-events:none;
+/* 이 한 방으로 쓰러뜨릴 수 있는 적 — 적 그림 위에 겹쳐 놓는다.
+   안쪽을 비치게 두어 어떤 적인지는 그대로 보이게 한다. */
+.killmk{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:7;
+  width:38px;height:38px;border-radius:50%;pointer-events:none;
   display:flex;align-items:center;justify-content:center;
-  background:radial-gradient(circle at 50% 35%,#3a0e0a,#140606 72%);
+  background:radial-gradient(circle at 50% 40%,rgba(60,12,8,.72),rgba(18,6,5,.34) 74%);
   border:2px solid #ff6a55;animation:killA 1.05s ease-in-out infinite}
-.killmk img{width:28px;height:28px;display:block;image-rendering:auto;
-  filter:drop-shadow(0 0 4px rgba(255,120,100,.95)) brightness(1.12)}
-.killmk .txt{font-style:normal;font-size:20px;line-height:1;color:#ffd9d2}
+.killmk img{width:30px;height:30px;display:block;image-rendering:auto;
+  filter:drop-shadow(0 0 5px rgba(0,0,0,.95)) drop-shadow(0 0 4px rgba(255,120,100,.9))
+         brightness(1.15)}
+.killmk .txt{font-style:normal;font-size:22px;line-height:1;color:#ffd9d2;
+  text-shadow:0 0 5px rgba(0,0,0,.95)}
+/* 곧 쓰러질 적은 그림째 붉게 물든다 */
+.slot.foe.willdie .art img,.slot.foe.willdie .art svg{
+  filter:drop-shadow(0 0 7px rgba(255,80,60,.85)) saturate(1.25)}
 @keyframes killA{
   0%,100%{border-color:#ff6a55;
     box-shadow:0 0 0 1px rgba(0,0,0,.65),0 0 12px 1px rgba(255,80,60,.7),
@@ -8509,6 +8515,8 @@ function drawBattle(app){
       const canHit = tgMode!=="foe"&&tgMode!=="any" ? false
                    : validTarget(sel.hero,sel.hero.sk[sel.skill],s);
       if(tgMode==="foe"||tgMode==="any"){ d.classList.add(canHit?"pick":"far") }
+      const dying=canHit&&willKill(sel.hero,preSkill,f,sel.count);
+      if(dying) d.classList.add("willdie");
       if(canHit) d.innerHTML+=foeHitTag(sel.hero,preSkill,f,sel.count);
       const pf=B.portals&&B.portals.find(p=>p.side==="foe"&&p.slot===s);
       if(pf) d.innerHTML+=`<svg class="portal" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#a06ae0" stroke-width="2.5"/><circle cx="12" cy="12" r="3.5" fill="#a06ae0"/></svg>`;
@@ -8518,7 +8526,8 @@ function drawBattle(app){
       d.innerHTML+=`${TIER_LABEL[tier]?`<div class="tier">${
           tier==="boss"?tierCrown():tier==="elite"?tierStar():tierMoon()}${TIER_LABEL[tier]}</div>`:""}
         <div class="intentbar">${intentHtml(f)}</div>
-        <div class="art ${fsz}">${figure(f.name)}</div>
+        <div class="art ${fsz}">${figure(f.name)}${
+          dying?killMark(sel.hero,preSkill,f,sel.count):""}</div>
         <div class="nm">${esc(f.name)}</div>
         <div class="bar" data-hpk="${hpKey(f)}" data-hpv="${Math.max(0,f.hp/f.maxHp*100)}" data-hpn="${f.hp}"
           data-shv="${(f.shield||0)+(f.eshield||0)}">
@@ -9724,6 +9733,19 @@ function hitTag(kind,txt,crit,note){
   return `<span class="hitpv ${kind}${crit?" crit":""}">${txt}${
     note?`<em>${note}</em>`:""}</span>`;
 }
+/* 이 한 방으로 쓰러뜨릴 수 있는가 — 해골을 적 그림 위에 얹을지 정한다 */
+function willKill(h,s,f,count){
+  const p=predictDmg(h,s,f);
+  if(!p||p.evade||s.verdict) return false;
+  return (p.hp*((count||1)*p.times))>=f.hp;
+}
+/* 해골은 피해 값과 따로 논다. 적 그림 한가운데에 겹쳐 놓기 위해
+   칸이 아니라 .art 안으로 들어간다. */
+function killMark(h,s,f,count){
+  if(!willKill(h,s,f,count)) return "";
+  return `<span class="killmk" title="이 한 방으로 쓰러뜨릴 수 있습니다">${
+    iconImg("combat_kill")||`<i class="txt">☠</i>`}</span>`;
+}
 function foeHitTag(h,s,f,count){
   const p=predictDmg(h,s,f);
   if(!p) return "";
@@ -9731,13 +9753,7 @@ function foeHitTag(h,s,f,count){
   if(s.verdict) return hitTag("dmg","즉사",1,"절반으로 되살아남");
   const n=(count||1)*p.times;
   const note=[n>1?"×"+n:"", p.eat?"막"+p.eat:"", p.tail||""].filter(Boolean).join(" ");
-  /* 이 한 방으로 쓰러뜨릴 수 있으면 해골을 머리 위에 따로 띄운다.
-     피해 값은 값대로 두고, 해골이 신호를 맡는다. */
-  const kill=(p.hp*n)>=f.hp;
-  const mark=kill
-    ? `<span class="killmk" title="이 한 방으로 쓰러뜨릴 수 있습니다">${
-        iconImg("combat_kill")||`<i class="txt">☠</i>`}</span>` : "";
-  return mark+`<span class="hitpv dmg${p.crit?" crit":""}">`+"−"+p.v
+  return `<span class="hitpv dmg${p.crit?" crit":""}">`+"−"+p.v
     +(note?`<em>${note}</em>`:"")+`</span>`;
 }
 function selfHitTag(h,s,count){
