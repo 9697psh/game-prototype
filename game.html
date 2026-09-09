@@ -50,7 +50,7 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
    1200px 이 안 되는 창에서는 전장이 가로로 잘리고 스크롤이 생겼다 */
 :root{--slotw:clamp(70px,8.4vw,104px)}
 .field{display:flex;justify-content:center;align-items:stretch;gap:10px;
-  overflow-x:auto;padding-bottom:4px}
+  overflow-x:auto;padding:14px 0 4px}
 .side{display:flex;gap:6px;flex:0 0 auto}
 /* 아군·적군 모두 왼쪽에서부터 1~5 */
 .mid{width:2px;background:var(--rule);align-self:stretch;min-height:230px;flex:0 0 auto}
@@ -67,6 +67,17 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .slot.far .no{color:var(--faint)}
 .reach{position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:9.5px;
   color:var(--faint);pointer-events:none}
+/* 겨누기 전에 보여 주는 값 */
+.hitpv{position:absolute;top:-11px;right:5px;z-index:5;font-size:11.5px;font-weight:800;
+  padding:1px 7px;border-radius:11px;line-height:1.55;pointer-events:none;
+  border:1px solid rgba(0,0,0,.55);box-shadow:0 1px 5px rgba(0,0,0,.55);
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.hitpv+.hitpv{top:11px}
+.hitpv.dmg{background:#c9503f;color:#fff2ee}
+.hitpv.shd{background:#e0c85a;color:#241d06}
+.hitpv.heal{background:#7fd39a;color:#0e2416}
+.hitpv.crit{border-color:#ffd45e;box-shadow:0 0 10px rgba(255,214,110,.85)}
+.hitpv em{font-style:normal;font-weight:600;font-size:9.5px;opacity:.85;margin-left:3px}
 .slot.pick .reach{color:var(--brass)}
 .slot .no{position:absolute;top:-9px;left:7px;background:var(--ink);border:1px solid var(--rule);
   border-radius:3px;font-size:10px;padding:0 6px;color:var(--faint)}
@@ -1016,11 +1027,29 @@ header{align-items:center}
   transition:width .3s}
 .party .ph em{font-style:normal;font-size:11px;color:var(--faint);
   font-variant-numeric:tabular-nums}
-.party .ph.mid i u{background:var(--caution)}
-.party .ph.low i u{background:var(--danger)}
-.party .ph.low{border-color:rgba(201,80,63,.55)}
-.party .ph.down{opacity:.5;border-style:dashed}
-.party .ph.down b{text-decoration:line-through}
+.party .ph.p-mid i u{background:var(--caution)}
+.party .ph.p-low i u{background:var(--danger)}
+.party .ph.p-low{border-color:rgba(201,80,63,.55)}
+.party .ph.p-down{opacity:.5;border-style:dashed}
+.party .ph.p-down b{text-decoration:line-through}
+.hp-hb{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.hp-hb button{font-size:10.5px;padding:2px 9px;letter-spacing:.04em}
+.routebar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:0 0 12px;
+  padding:8px 13px;border:1px solid var(--rule);border-left:3px solid #6aa8e0;
+  border-radius:5px;background:var(--panel);font-size:13px}
+.routebar .gl{font-size:11px;letter-spacing:.14em;color:var(--faint)}
+.routebar b{color:#9cc6ee;font-family:var(--serif);font-size:14.5px}
+.cell{cursor:pointer}
+.cell .rn{position:absolute;left:2px;bottom:0;font-size:9.5px;font-weight:800;
+  color:#0d1420;background:#8fbdea;border-radius:0 4px 0 4px;padding:0 3px;
+  line-height:1.35;pointer-events:none;z-index:3}
+.cell.onroute:not(.adj):not(.here){filter:none}
+.cell.onroute{box-shadow:0 0 0 2px rgba(106,168,224,.75) inset,
+  inset 0 0 0 999px rgba(106,168,224,.13),0 0 9px rgba(106,168,224,.25)}
+.cell.onroute .cbg{opacity:.34}
+.cell.rdest{box-shadow:0 0 0 2px rgba(140,200,255,1) inset,
+  inset 0 0 0 999px rgba(106,168,224,.24),0 0 16px rgba(106,168,224,.6)}
+.cell.rdest .rn{background:#d8ecff}
 .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:11px;color:var(--dim)}
 .legend span{display:inline-flex;align-items:center;gap:5px}
 .legend i{width:16px;height:16px;display:inline-block}
@@ -3371,6 +3400,162 @@ const HERO_REWARDS={
   R("포식자","상급","융합으로 얻는 능력치 2배",h=>h.tag.fuseX=2)
  ]
 };
+/* 보상의 갈래 — 노트 '보상의 종류' 여덟 가지를 글에서 읽어 낸다.
+   전투에 계속 남는 것(기술 강화 · 영웅 강화 · 추가 기술)과
+   그 자리에서 쓰고 마는 것(재화 · 아이템 · 카드 · 주둔지)을 가르는 게 목적이다. */
+const REW_KEEP=["기술 강화","영웅 강화","추가 기술"];
+function skillNamesOf(h){
+  const out=[];
+  const put=s=>{ if(!s||!s.n) return; if(out.indexOf(s.n)<0) out.push(s.n);
+    if(s.alt) put(s.alt); (s.opts||[]).forEach(put) };
+  if(h){
+    (h.sk||[]).forEach(put);
+    const d=HEROES[h.name];
+    if(d){ (d.skills||[]).forEach(put);
+      if(d.passive&&d.passive.n&&out.indexOf(d.passive.n)<0) out.push(d.passive.n) }
+    (PASSIVE_INFO[h.name]||[]).forEach(p=>{ if(out.indexOf(p.n)<0) out.push(p.n) });
+  }
+  return out;
+}
+const REW_KIND={
+ "가시 방패":"영웅 강화",
+ "갑옷 고르기":"기술 강화",
+ "갑옷 장착 강화":"기술 강화",
+ "강철 투구":"기술 강화",
+ "건들바람":"기술 강화",
+ "검과 방패":"기술 강화",
+ "공방전":"기술 강화",
+ "공성전 방패":"기술 강화",
+ "관객의 응원":"영웅 강화",
+ "굳건한 성벽 강화":"기술 강화",
+ "근거리 타격":"기술 강화",
+ "기류 흘리기 강화":"기술 강화",
+ "날카로운 칼끝":"기술 강화",
+ "낡은 투구끈":"기술 강화",
+ "눈보다 빠르게":"영웅 강화",
+ "늘어가는 실력":"기술 강화",
+ "더 많은 갑옷":"기술 강화",
+ "더 빠른 회오리":"기술 강화",
+ "돈은 벌어야지":"기술 강화",
+ "돌격 베기":"기술 강화",
+ "두 번 베기":"기술 강화",
+ "든든한 아군 강화":"기술 강화",
+ "든든함 추가":"기술 강화",
+ "든든함 폭발":"기술 강화",
+ "마나석 발견":"영웅 강화",
+ "마법 부여 보호구":"기술 강화",
+ "막기 강화":"기술 강화",
+ "무한 팽창 융합봉":"기술 강화",
+ "바람처럼 사라져라 강화":"기술 강화",
+ "방어 태세":"영웅 강화",
+ "방어 후 막기":"기술 강화",
+ "방패 막기 강화":"기술 강화",
+ "방패 밀치기 강화":"기술 강화",
+ "베기 강화":"기술 강화",
+ "분노 전환":"기술 강화",
+ "산들바람 강화":"기술 강화",
+ "상급: 가시 두르기":"영웅 강화",
+ "상급: 공격력 강화":"영웅 강화",
+ "상급: 달리기":"영웅 강화",
+ "상급: 마법력 강화":"영웅 강화",
+ "상급: 보호력 강화":"기술 강화",
+ "상급: 부정 보호막 강화":"기술 강화",
+ "상급: 에너지 강화":"영웅 강화",
+ "상급: 회복":"영웅 강화",
+ "상급: 회피 기동":"영웅 강화",
+ "선두 방어 강화":"기술 강화",
+ "선한 영향력":"기술 강화",
+ "성벽 쌓기":"기술 강화",
+ "수호 활동":"기술 강화",
+ "순환되는 심판":"기술 강화",
+ "쉴 때도 단단하게":"기술 강화",
+ "승리의 일격 강화":"기술 강화",
+ "싹쓸바람":"기술 강화",
+ "아드레날린 분비":"기술 강화",
+ "아드레날린 흡수":"기술 강화",
+ "아이템: 일반":"아이템",
+ "아이템: 제련석":"재화",
+ "아이템: 파편":"아이템",
+ "아이템: 희귀":"아이템",
+ "압축 공격":"기술 강화",
+ "영광의 휘장":"기술 강화",
+ "오염 정화":"주둔지 강화",
+ "육중한 밀치기":"기술 강화",
+ "자취 감추기":"영웅 강화",
+ "잔혹한 일격":"기술 강화",
+ "잠재력 각성":"기술 강화",
+ "잠재력 활성 강화":"기술 강화",
+ "재빠른 수호자":"기술 강화",
+ "저주받은 성벽":"기술 강화",
+ "전장의 바람":"기술 강화",
+ "전장의 방패":"기술 강화",
+ "전장의 승자 강화":"기술 강화",
+ "전장의 지배자":"기술 강화",
+ "전장의 칼날":"기술 강화",
+ "정의의 심판":"기술 강화",
+ "제자리바람":"기술 강화",
+ "준비 태세":"기술 강화",
+ "준비 후 밀치기":"기술 강화",
+ "중급: 가시 두르기":"영웅 강화",
+ "중급: 공격력 강화":"기술 강화",
+ "중급: 달리기":"영웅 강화",
+ "중급: 마법력 강화":"영웅 강화",
+ "중급: 보호력 강화":"기술 강화",
+ "중급: 부정 보호막 강화":"영웅 강화",
+ "중급: 에너지 강화":"영웅 강화",
+ "중급: 체력 강화":"영웅 강화",
+ "중급: 회복":"영웅 강화",
+ "중급: 회피 기동":"영웅 강화",
+ "중무장":"영웅 강화",
+ "진선풍도 강화":"기술 강화",
+ "찌르기":"추가 기술",
+ "처세술":"기술 강화",
+ "처음은 날카롭게":"기술 강화",
+ "처음은 완벽하게":"기술 강화",
+ "치명적인 보호":"기술 강화",
+ "튼튼한 방어구 강화":"기술 강화",
+ "폭발적인 방어력":"영웅 강화",
+ "폭풍":"영웅 강화",
+ "폭풍의 눈":"기술 강화",
+ "폭풍칼날":"기술 강화",
+ "핏빛 칼날":"기술 강화",
+ "하급: 가시 두르기":"영웅 강화",
+ "하급: 달리기":"영웅 강화",
+ "하급: 부정 보호막 강화":"영웅 강화",
+ "하급: 에너지 강화":"영웅 강화",
+ "하급: 체력 강화":"영웅 강화",
+ "하급: 회복":"영웅 강화",
+ "하급: 회피 기동":"영웅 강화",
+ "한계 해방":"영웅 강화",
+ "한숨 돌리기":"영웅 강화",
+ "항상 대비하기":"기술 강화",
+ "행상인 수레 방문":"카드",
+ "화염칼날":"기술 강화",
+ "회오리 장막 강화":"기술 강화",
+ "후미 준비 보호 강화":"기술 강화",
+ "후미 준비 회복 강화":"기술 강화"};
+/* 노트에 갈래가 적혀 있으면 그것을 따르고, 없을 때만 글로 짐작한다 */
+function rewardKind(r,h){
+  const n=(r&&r.n)||"", d=(r&&r.d)||"";
+  if(REW_KIND[n]) return REW_KIND[n];
+  if(d.indexOf("[추가 기술]")>=0) return "추가 기술";
+  if(/^아이템[:：]/.test(n)||/아이템을 얻습니다|제련석을 \d+개 얻습니다/.test(d)) return "아이템";
+  if(/카드를(?: [^ ]{1,5})? 얻습니다/.test(d)) return "카드";
+  if(/주둔지/.test(d)) return "주둔지 강화";
+  if(/^활동량|^현재 오염도|^금화/.test(d)) return "재화";
+  if(/[:：] ?회복$/.test(n)||/^체력을 \d+% 회복합니다/.test(d)) return "재화";
+  if(skillNamesOf(h).some(s=>n.indexOf(s)>=0||d.indexOf(s)>=0)) return "기술 강화";
+  if(/사용한도 기술/.test(d)) return "기술 강화";
+  return "영웅 강화";
+}
+/* 고른 보상을 갈래와 함께 돌려준다 (이름만 저장해 두므로 표에서 되찾는다) */
+function takenList(h){
+  const own=HERO_REWARDS[h.name]||[], all=own.concat(COMMON);
+  return (h.tag.taken||[]).map(t=>{
+    const r=all.find(x=>x.n===t);
+    return {n:t, r:r, mine:own.some(x=>x.n===t), k:rewardKind(r||{n:t,d:""},h)};
+  });
+}
 function addMod(h,skName,key,v,label){
   const put=t=>{
     if(!t||t.n!==skName) return;
@@ -4409,6 +4594,7 @@ function packArt(i){
 }
 
 let startPicks=null, startPacks=null, pendingHero=null;
+let REW_ALL=0;      /* 고른 보상 — 전투 보상만 볼지, 모두 볼지 */
 let SKDETAIL=false;
 function rollStart(){
   const pool=HERO_POOL.slice(); startPicks=[];
@@ -4453,7 +4639,7 @@ function nextDay(){
   if(run.day>FIELDS[run.field].days){
     lose(`${FIELDS[run.field].days}일이 지나도록 우두머리를 넘지 못했습니다.`); return;
   }
-  run.time=6; run.act=run.actMax; run.night=0; run.campDone=0;
+  run.time=6; run.act=run.actMax; run.night=0; run.campDone=0; run.route=null;
   addTaint(10);
   respawn();
   const left=FIELDS[run.field].days-run.day;
@@ -5303,12 +5489,13 @@ function drawStart(app){
 
 /* ═══════════ 필드 지도 ═══════════ */
 const NL1=String.fromCharCode(10);
+const MOVE_TAINT=5;                 /* 한 칸 옮길 때 오르는 오염도 */
 const near=(a,b)=>Math.abs(a.r-b.r)+Math.abs(a.c-b.c)===1;
 function drawMap(app){
   const f=FIELDS[run.field], S=run.size;
   app.appendChild(el(`<div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
     <div class="title" style="font-size:20px">${esc(f.n)}</div>
-    <div class="hint">${run.night?`밤입니다. 빈 칸을 지날 때 습격당할 확률 ${Math.round(Math.min(85,45+nightDepth()*5))}% · 상점·휴식소·미지의 구역·전장 칸은 습격당하지 않습니다`:run.act<=0?"활동량이 바닥났습니다. 이제 한 칸에 2시간이 걸립니다.":"인접한 칸을 눌러 이동합니다. 한 칸에 활동량 1 · 1시간 · 오염도 6."}</div></div>`));
+    <div class="hint">${run.night?`밤입니다. 빈 칸을 지날 때 습격당할 확률 ${Math.round(Math.min(85,45+nightDepth()*5))}% · 상점·휴식소·미지의 구역·전장 칸은 습격당하지 않습니다`:run.act<=0?"활동량이 바닥났습니다. 이제 한 칸에 2시간이 걸립니다.":`인접한 칸을 눌러 이동합니다. 먼 칸을 누르면 갈 길을 먼저 보여 줍니다. 한 칸에 활동량 1 · 1시간 · 오염도 ${MOVE_TAINT}.`}</div></div>`));
   /* 무엇을 해야 하는지 한 줄로 — 우두머리 방향과 남은 날 */
   { let br=null;
     for(let r=0;r<S;r++) for(let c=0;c<S;c++) if(run.grid[r][c].t==="boss") br={r:r,c:c};
@@ -5322,16 +5509,40 @@ function drawMap(app){
       <span class="chip ${dLeft<=2?"on":""}">남은 날 ${dLeft}일</span>
       <span class="chip ${run.taint>=70?"on":""}">오염도 ${run.taint}/100</span>
       <span class="grow"></span>
-      <span class="hint">칸을 눌러 이동 · 금빛 테두리가 갈 수 있는 칸입니다</span>
+      <span class="hint">가까운 칸은 바로 이동 · 먼 칸을 누르면 갈 길을 먼저 보여 줍니다</span>
     </div>`)); }
+  /* 고른 길 — 가기 전에 값을 먼저 알려 준다 */
+  if(run.route){
+    const rt=run.route, dst=run.grid[rt.to.r][rt.to.c];
+    const hrs=run.act<=0?rt.steps*2:rt.steps;
+    const bar=el(`<div class="routebar">
+      <span class="gl">갈 길</span>
+      <b>${dst.t==="empty"?"빈 칸":esc(NODE[dst.t].label)}까지 ${rt.steps}칸</b>
+      <span class="chip">활동량 ${rt.steps}</span>
+      <span class="chip">${hrs}시간</span>
+      <span class="chip ${run.taint+rt.steps*MOVE_TAINT>=80?"on":""}">오염도 ${rt.steps*MOVE_TAINT}</span>
+      <span class="chip ${rt.pass?"on":""}">${rt.pass?`구역 ${rt.pass}곳을 지나칩니다`:"다른 구역은 피해 갑니다"}</span>
+      ${run.night?`<span class="chip on">밤 — 빈 칸마다 습격 ${Math.round(ambushChance({t:"empty"})*100)}%</span>`:""}
+      <span class="grow"></span>
+      <button class="go rgo">이 길로 간다</button>
+      <button class="rno">취소</button>
+    </div>`);
+    bar.querySelector(".rgo").onclick=walkRoute;
+    bar.querySelector(".rno").onclick=()=>{ run.route=null; render() };
+    app.appendChild(bar);
+  }
   const g=el(`<div class="gridmap" style="grid-template-columns:repeat(${S},1fr)"></div>`);
+  const rstep={};
+  if(run.route) run.route.path.forEach((p,i)=>{ rstep[p.r+"-"+p.c]=i+1 });
   for(let r=0;r<S;r++) for(let c=0;c<S;c++){
     const cell=run.grid[r][c], here=(run.pos.r===r&&run.pos.c===c);
     const adj=near(run.pos,{r:r,c:c});
+    const rn=rstep[r+"-"+c]||0;
     const risky=run.night&&cell.t==="empty"&&adj;
     const kind=cell.t;
-    const d=el(`<div class="cell k-${kind} ${kind==="empty"?"emp":""} ${here?"here":""} ${adj?"adj":""} ${cell.done?"done":""} ${risky?"risk":""}">
+    const d=el(`<div class="cell k-${kind} ${kind==="empty"?"emp":""} ${here?"here":""} ${adj?"adj":""} ${cell.done?"done":""} ${risky?"risk":""} ${rn?"onroute":""} ${rn&&rn===(run.route?run.route.steps:0)?"rdest":""}">
       <span class="cbg"></span>
+      ${rn?`<span class="rn">${rn}</span>`:""}
       ${kind!=="empty"?`<span class="cico">${nodeArt(kind)}</span>`:""}
       ${kind==="dungeon"||kind==="elite"?`<span class="cw">${cell.waves||1}</span>`:""}
       ${here?`<span class="you">${figure(run.heroes[0]?run.heroes[0].name:"나이코스")}</span>`:""}
@@ -5342,8 +5553,9 @@ function drawMap(app){
     if(cell.t==="dungeon"||cell.t==="elite")
       d.title=`적 강화 +${Math.round((foeScale(cell.t).m-1)*100)}%
 ${NODE[cell.t].label} · ${cell.waves}라운드\n${cell.style}\n${cell.loot}`;
-    if(adj) d.onclick=()=>moveTo2(r,c);
+    if(adj) d.onclick=()=>{ run.route=null; moveTo2(r,c) };
     else if(here&&cell.t==="camp") d.onclick=()=>{ view="camp"; render() };
+    else if(!here) d.onclick=()=>pickRoute(r,c);
     g.appendChild(d);
   }
   app.appendChild(g);
@@ -5367,7 +5579,7 @@ ${NODE[cell.t].label} · ${cell.waves}라운드\n${cell.style}\n${cell.loot}`;
         <small>${ic("hp")}${h.hp}/${h.maxHp} ${ic("atk")}${h.atk} ${ic("mag")}${h.mag} ${ic("def")}${h.def}</small>
         ${itemSlots(h)}
         <small class="more">${(h.tag.taken||[]).length
-          ? `고른 특성 ${(h.tag.taken||[]).length}개 — 눌러서 보기`
+          ? `고른 보상 ${(h.tag.taken||[]).length}개 — 눌러서 보기`
           : "눌러서 상세 보기"}</small>
       </div></div>`);
     card.onclick=()=>{ run.showHero=(run.showHero===i)?null:i; render() };
@@ -5382,6 +5594,79 @@ ${NODE[cell.t].label} · ${cell.waves}라운드\n${cell.style}\n${cell.loot}`;
     app.appendChild(pane);
   }
 }
+/* 먼 칸까지 가는 가장 짧은 길.
+   걸음 수가 먼저고, 걸음 수가 같다면 아직 볼일이 남은 구역을 밟지 않는 길을 고른다.
+   (지나가다 상점이나 전장에 끌려 들어가지 않게 하려는 것) */
+function routeTo(tr,tc){
+  const S=run.size;
+  if(tr<0||tc<0||tr>=S||tc>=S) return null;
+  if(tr===run.pos.r&&tc===run.pos.c) return null;
+  /* 그 칸을 밟는 게 성가신가 — 목적지는 밟는 게 목적이므로 세지 않는다 */
+  const detour=(r,c)=>{
+    if(r===tr&&c===tc) return 0;
+    const t=run.grid[r][c];
+    return (t.t!=="empty"&&!t.done)?1:0;
+  };
+  const INF=1e9, cost=[], prev=[];
+  for(let r=0;r<S;r++){ cost.push(new Array(S).fill(INF)); prev.push(new Array(S).fill(null)) }
+  cost[run.pos.r][run.pos.c]=0;
+  const q=[{r:run.pos.r,c:run.pos.c}];
+  const DIR=[[1,0],[-1,0],[0,1],[0,-1]];
+  while(q.length){
+    q.sort((a,b)=>cost[a.r][a.c]-cost[b.r][b.c]);
+    const cur=q.shift();
+    for(let i=0;i<4;i++){
+      const r=cur.r+DIR[i][0], c=cur.c+DIR[i][1];
+      if(r<0||c<0||r>=S||c>=S) continue;
+      const nc=cost[cur.r][cur.c]+1000+detour(r,c);
+      if(nc<cost[r][c]){ cost[r][c]=nc; prev[r][c]={r:cur.r,c:cur.c}; q.push({r:r,c:c}) }
+    }
+  }
+  if(cost[tr][tc]>=INF) return null;
+  const path=[]; let p={r:tr,c:tc}, guard=0;
+  while(!(p.r===run.pos.r&&p.c===run.pos.c)){
+    path.unshift(p); p=prev[p.r][p.c];
+    if(!p||++guard>400) return null;
+  }
+  return {to:{r:tr,c:tc}, path:path, steps:path.length,
+          pass:path.slice(0,-1).filter(x=>run.grid[x.r][x.c].t!=="empty"&&!run.grid[x.r][x.c].done).length};
+}
+function pickRoute(r,c){
+  if(run.route&&run.route.to.r===r&&run.route.to.c===c){ run.route=null; render(); return }
+  const rt=routeTo(r,c);
+  if(!rt){ toast("그 칸으로 가는 길이 없습니다."); return }
+  run.route=rt; SFX.play("tock"); render();
+}
+/* 고른 길을 한 칸씩 걸어간다. 습격·날이 바뀜·피할 수 없던 구역에서는 멈춘다. */
+function walkRoute(){
+  const rt=run.route; if(!rt) return;
+  run.route=null;
+  const path=rt.path.slice(), day0=run.day;
+  view="map"; render();
+  const step=()=>{
+    if(!run||run.lost||view!=="map"||run.day!==day0) return;
+    const p=path.shift(); if(!p) return;
+    const cell=run.grid[p.r][p.c], last=!path.length, tired=run.act<=0;
+    SFX.play("tock"); costPop(p.r,p.c,tired);
+    run.pos={r:p.r,c:p.c};
+    spend(1,1); addTaint(MOVE_TAINT);
+    if(run.taint>=100||run.lost) return;
+    if(run.day!==day0){ toast("길에서 날이 밝아 발길을 멈춥니다."); view="map"; render(); return }
+    if(Math.random()<ambushChance(cell)){
+      SFX.play("danger");
+      startDungeon({t:"ambush",waves:1},null,null);
+      ambushCard("인기척 하나 없는 자리입니다. 어둠 속에서 무언가 달려듭니다.");
+      return;
+    }
+    if(last||(cell.t!=="empty"&&!cell.done)){
+      if(!last) toast("가는 길에 있는 구역을 지나칠 수 없었습니다.");
+      enterCell(p.r,p.c); return;
+    }
+    view="map"; render();
+    setTimeout(step, Math.round(300*SPD));
+  };
+  step();
+}
 function nightDepth(){ return run.night?Math.max(0,run.time-18):0 }
 /* 밤의 습격은 아무것도 없는 빈 칸에서만 일어난다.
    상점·휴식소·미지의 구역·전장에 도달했을 때는 볼일을 방해하지 않는다. */
@@ -5394,8 +5679,9 @@ function moveTo2(r,c){
   const tired=run.act<=0;
   SFX.play("tock");                 /* 한 칸 = 한 시간. 초침이 넘어간다 */
   costPop(r,c,tired);
+  run.route=null;
   run.pos={r:r,c:c};
-  spend(1,1); addTaint(6);
+  spend(1,1); addTaint(MOVE_TAINT);
   if(run.taint>=100) return;
   if(Math.random()<ambushChance(cell)){
     SFX.play("danger");
@@ -6043,7 +6329,8 @@ function partyStrip(note){
     <span class="pl">대원</span>
     ${run.heroes.map(h=>{
       const p=Math.max(0,Math.round(h.hp/h.maxHp*100));
-      const cls=h.down?"down":p<=33?"low":p<=66?"mid":"";
+      /* 이름은 대원 줄 전용이어야 한다 — 예전 "mid"는 전장 칸막이 규칙과 겹쳤다 */
+      const cls=h.down?"p-down":p<=33?"p-low":p<=66?"p-mid":"";
       return `<span class="ph ${cls}" title="${esc(h.name)} Lv.${h.lv} · 체력 ${Math.max(0,h.hp)}/${h.maxHp}">
         <b>${esc(h.name)}</b>
         <i><u style="width:${h.down?0:p}%"></u></i>
@@ -7157,6 +7444,8 @@ function drawBattle(app){
       if(sel&&sel.hero===h&&sel.step===2) d.classList.add("pick");
       if(tgMode==="self"&&sel.hero===h) d.classList.add("pick");
       if(tgMode==="ally"&&canGo(s)) d.classList.add("pick");
+      /* 자기에게 거는 기술은 시전자 머리 위에 값을 띄운다 */
+      if(tgMode&&sel.hero===h) d.innerHTML+=selfHitTag(h,preSkill,sel.count);
       const pm=B.portals&&B.portals.find(p=>p.side==="mine"&&p.slot===s);
       if(pm) d.innerHTML+=`<svg class="portal" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#a06ae0" stroke-width="2.5"/><circle cx="12" cy="12" r="3.5" fill="#a06ae0"/></svg>`;
       const esW=h.eshield?Math.max(6,Math.min(45,h.eshield/h.maxHp*100)):0;
@@ -7229,6 +7518,7 @@ function drawBattle(app){
       const canHit = tgMode!=="foe"&&tgMode!=="any" ? false
                    : validTarget(sel.hero,sel.hero.sk[sel.skill],s);
       if(tgMode==="foe"||tgMode==="any"){ d.classList.add(canHit?"pick":"far") }
+      if(canHit) d.innerHTML+=foeHitTag(sel.hero,preSkill,f,sel.count);
       const pf=B.portals&&B.portals.find(p=>p.side==="foe"&&p.slot===s);
       if(pf) d.innerHTML+=`<svg class="portal" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#a06ae0" stroke-width="2.5"/><circle cx="12" cy="12" r="3.5" fill="#a06ae0"/></svg>`;
       const tier=foeTier(f);
@@ -7391,17 +7681,97 @@ function promptMsg(){
           +(reachOf(sel.hero,s)!=null?` (사거리 ${reachOf(sel.hero,s)})`:"")
           +" · 같은 기술을 또 누르면 횟수 +1" : "";
 }
+/* 보상으로 얻은 증가분 중 '그 순간의 상태'에 걸린 것들.
+   딜 계산을 하려면 이것들이 기술 칸에 보여야 한다. */
+function extraParts(h,sk,key){
+  const out=[];
+  if(!h||!sk) return out;
+  const t=h.tag||{}, fst=h.first||{};
+  if(key==="dmg"){
+    if(h.name==="카제"&&sk.n==="진선풍도"&&h.windBuff)
+      out.push({n:"산들바람",v:h.windBuff});
+    if(h.name==="나이코스"&&sk.n==="베기"){
+      if(h.cutGrow) out.push({n:"늘어가는 실력",v:h.cutGrow});
+      if(t.firstCut&&fst.cut!==1) out.push({n:"처음은 날카롭게",v:t.firstCut+h.atk});
+      if(t.guardThen&&h.guarded) out.push({n:"준비 태세",v:t.guardThen});
+    }
+  }
+  if(key==="shield"){
+    if(h.name==="나이코스"&&sk.n==="막기"&&t.firstGuard&&fst.guard!==1)
+      out.push({n:"처음은 완벽하게",v:t.firstGuard+h.def});
+  }
+  return out;
+}
+/* 보호약화는 보호막과 회복을 절반으로 깎는다. 마지막에 걸린다. */
+function weakCut(h,key,total){
+  if(key!=="shield"&&key!=="heal") return 0;
+  if(!deb(h,"defDn")) return 0;
+  return total-Math.ceil(total*0.5);
+}
 function breakdown(h,sk,key){
   let total=sk[key]||0;
   const parts=[];
   modParts(sk,key).forEach(m=>{ total+=m.v; parts.push({n:m.n,v:m.v}) });
   if(key==="dmg"){
-    if(sk.n==="진선풍도"&&h.windBuff){ total+=h.windBuff; parts.push({n:"산들바람",v:h.windBuff}) }
     const st=(sk.el==="마법")?{v:h.mag,n:"추가 마법력"}:{v:h.atk,n:"추가 공격력"};
     if(st.v){ total+=st.v; parts.push(st) }
   }
   if(key==="shield"&&h.def){ total+=h.def; parts.push({n:"추가 보호력",v:h.def}) }
+  extraParts(h,sk,key).forEach(p=>{ total+=p.v; parts.push(p) });
+  const cut=weakCut(h,key,total);
+  if(cut){ total-=cut; parts.push({n:"보호약화",v:-cut}) }
   return {total:total,parts:parts};
+}
+/* ── 기획 노트 문장에 지금 값 넣기 ───────────────────────────────────────
+   노트는 "피해를 3(추가 † ) 줍니다" 처럼 적혀 있다.
+   † 공격력 · ¤ 보호력 · ∴ 마법력. 그 자리를 지금 나갈 값으로 바꾸고,
+   무엇이 얼마나 얹혔는지 괄호로 풀어 준다. */
+const NUM_SYM={"\u2020":["atk","추가 공격력"],"\u00a4":["def","추가 보호력"],
+               "\u2234":["mag","추가 마법력"]};
+const NUM_A="\u0001", NUM_B="\u0002", NUM_C="\u0003";
+function liveVal(h,sk,key,base,syms){
+  const parts=[]; let total=base;
+  const own=!!(sk&&sk[key]===base);   /* 이 숫자가 그 기술의 본값인가 */
+  if(own) modParts(sk,key).forEach(m=>{ total+=m.v; parts.push({n:m.n,v:m.v}) });
+  const seen={};
+  String(syms||"").split("").forEach(ch=>{
+    const st=NUM_SYM[ch];
+    if(!st||seen[ch]) return;
+    seen[ch]=1;
+    if(h[st[0]]){ total+=h[st[0]]; parts.push({n:st[1],v:h[st[0]]}) }
+  });
+  if(own) extraParts(h,sk,key).forEach(p=>{ total+=p.v; parts.push(p) });
+  /* 보호약화는 기술 자신의 보호막·회복에만 걸린다 (코드가 그렇게 되어 있다) */
+  const cut=own?weakCut(h,key,total):0;
+  if(cut){ total-=cut; parts.push({n:"보호약화",v:-cut}) }
+  return {total:total,parts:parts,own:own};
+}
+function keyBefore(pre){
+  if(/에너지 보호막[을이]?\s*$/.test(pre)) return "eshield";
+  if(/보호막[을이]?\s*$/.test(pre)) return "shield";
+  if(/보호(량|력)[을이]?\s*$/.test(pre)) return "shield";
+  if(/체력[을이]?\s*$/.test(pre)) return "heal";
+  return "dmg";
+}
+/* 노트 문장 + 어떤 값을 이미 문장 안에서 보여 줬는지 */
+function richLive(h,sk,txt){
+  const done={};
+  const marked=String(txt||"").replace(
+    /(\d+)\(추가 ([\u2020\u00a4\u2234][\u2020\u00a4\u2234\u2261 ]*)([^)]*)\)/g,
+    function(m,n,syms,rest,off,whole){
+      const pre=whole.slice(Math.max(0,off-18),off);
+      const key=keyBefore(pre);
+      const r=liveVal(h,sk,key,+n,syms);
+      if(r.own) done[key]=1;
+      const bits=r.parts.map(p=>p.n+" "+(p.v>0?"+":"")+p.v);
+      /* 기호로 못 적는 덧말은 그대로 남긴다 — 우리가 셈할 수 없는 몫이다 */
+      const ex=String(rest||"").replace(/^[\s+]+/,"").trim();
+      if(ex) bits.push(ex);
+      return NUM_A+r.total+NUM_B+bits.join(" / ")+NUM_C;
+    });
+  const html=rich(marked).replace(/\u0001([^\u0002]*)\u0002([^\u0003]*)\u0003/g,
+    (m,tot,brk)=>`<b class="big">${tot}</b>`+(brk?`<span class="brk">(${brk})</span>`:""));
+  return {html:html, done:done};
 }
 function numHtml(h,sk,key){
   const b=breakdown(h,sk,key);
@@ -7409,13 +7779,13 @@ function numHtml(h,sk,key){
     ? `<span class="brk">(${b.parts.map(p=>icoify(esc(p.n))+" "+p.v).join(" / ")})</span>` : "";
   return `<b class="big">${b.total}</b>${tail}`;
 }
-function valueLines(h,sk){
-  const L=[];
+function valueLines(h,sk,done){
+  const L=[]; const had=done||{};
   const rr=reachOf(h,sk);
   if(rr!=null&&sk.tg==="foe") L.push(`사거리 <b class="big">${rr}</b> 안의 적만 고를 수 있습니다.`);
-  if(sk.dmg!=null&&!sk.justice) L.push(`피해를 ${numHtml(h,sk,"dmg")}${sk.pierce?" 관통으로":""} 줍니다.`);
-  if(sk.shield) L.push(`보호막을 ${numHtml(h,sk,"shield")} 얻습니다.`);
-  if(sk.heal)   L.push(`체력을 ${numHtml(h,sk,"heal")} 회복합니다.`);
+  if(sk.dmg!=null&&!sk.justice&&!had.dmg) L.push(`피해를 ${numHtml(h,sk,"dmg")}${sk.pierce?" 관통으로":""} 줍니다.`);
+  if(sk.shield&&!had.shield) L.push(`보호막을 ${numHtml(h,sk,"shield")} 얻습니다.`);
+  if(sk.heal&&!had.heal)   L.push(`체력을 ${numHtml(h,sk,"heal")} 회복합니다.`);
   if(sk.justice) L.push(`지금 보호막 <b class="big">${h.shield}</b>만큼 피해를 줍니다.`);
   if(sk.armorUp) L.push(`갑피를 <b class="big">${1+(h.tag.armorPlus||0)}</b> 얻습니다.`);
   if(sk.farshot) L.push(`가장 멀리 있는 적만 겨눌 수 있습니다.`);
@@ -7628,6 +7998,7 @@ function skillPanel(h){
     const cost = s.costType==="mom" ? ic("move")+" "+payCost(h,i)
                : s.costType==="scale" ? "비늘 "+payCost(h,i) : ic("mana")+" "+payCost(h,i);
     const hot=ok?skillHot(h,i,s):[];
+    const lv=richLive(h,s,SKILL_FULL[s.n]||SKILL_TEXT[s.n]||s.d||"");
     const e=el(`<div class="sk ${sel.skill===i?"on":""} ${ok?"":"off"} ${hot.length?"hot":""}" data-el="${esc(s.el||"")}">
       <span class="k">${i+1}</span><div class="t">
       <b>${esc(s.pick?s.pick:s.n)}</b>${(sel.skill===i&&sel.step===4&&sel.count>1)?`<span class="xn">×${sel.count}</span>`:""}
@@ -7637,8 +8008,8 @@ function skillPanel(h){
       ${s.limit?`<span class="chip">사용한도 ${used}/${s.limit}</span>`:""}
       ${locked?`<span class="chip">${UNLOCK[i]}레벨 해제</span>`:""}
       ${lk?`<span class="chip on">잠금 ${lk}</span>`:""}
-      ${valueLines(h,s).map(x=>`<span class="val">${x}</span>`).join("")}
-      <small>${rich(SKILL_FULL[s.n]||SKILL_TEXT[s.n]||s.d||"")}</small>
+      ${valueLines(h,s,lv.done).map(x=>`<span class="val">${x}</span>`).join("")}
+      <small>${lv.html}</small>
       ${SKDETAIL&&SKILL_TEXT[s.n]?`<div class="fullx"><span>한 줄 요약</span>${rich(SKILL_TEXT[s.n])}</div>`:""}
       ${SKDETAIL&&s.alt?`<div class="fullx"><span>전환 · ${esc(s.alt.n)}</span>${rich(SKILL_FULL[s.alt.n]||s.alt.d||"")}</div>`:""}
       </div></div>`);
@@ -7659,7 +8030,7 @@ function skillPanel(h){
             <b>${esc(o.n)}</b>${(on&&sel.count>1)?`<span class="xn">×${sel.count}</span>`:""}
             <span>${o.costType==="mom"?ic("move"):o.costType==="scale"?"비늘 ":ic("mana")}${o.cost} · ${esc(o.el)}</span>
             ${on?`<span class="chip pk">한 번 더 누르면 ×${(sel.count||1)+1}</span>`:""}
-            <small>${rich(o.d||"")}</small>
+            <small>${richLive(h,o,SKILL_FULL[o.n]||o.d||"").html}</small>
             ${SKDETAIL&&SKILL_FULL[o.n]?`<div class="fullx"><span>기획 원문</span>${rich(SKILL_FULL[o.n])}</div>`:""}
             ${on&&o.tg==="self"?`<button class="go ogo">시전 ×${sel.count}</button>`
               :on?`<span class="hint">${o.tg==="foe"?"적의 칸":o.tg==="ally"?"아군 칸":"칸"}을 골라 발동하세요</span>`:""}
@@ -8133,6 +8504,137 @@ function playCard(i,slot,side){
 /* ─ 전투 처리 ─ */
 /* 관통 — 값이 true 면 100%, 숫자면 그 비율(%)만큼 체력에 곧바로 들어간다 */
 function pierceRate(p){ return p===true?100:Math.max(0,Math.min(100,+p||0)) }
+/* ── 겨누기 전에 값을 알려 주기 ────────────────────────────────────────────
+   doSkill 의 피해 갈래를 그대로 따라간다. 어떤 상태도 건드리지 않는다.
+   따라가지 못하는 기술(무작위·합계 따위)은 null 을 돌려주고 아무것도 안 띄운다. */
+/* 값을 따라갈 수 없는 기술 — 아무것도 띄우지 않는다 */
+const PRED_OFF=["aim","armorUp","darkShadow","encore","frontal","fuse","grow","headshot",
+  "jumpback","leech","minion","penance","phantom","quakeUp","soothe","spread","stance",
+  "tune","venom","wall","warp","weaken","wrap"];
+function predictDmg(h,s,tgt){
+  if(!h||!s||!tgt||!B||!B.foes) return null;
+  for(let q=0;q<PRED_OFF.length;q++) if(s[PRED_OFF[q]]) return null;
+  /* 이테리오 — 마나를 내는 순간 마법력이 그만큼 오른다 */
+  const magB=(h.name==="이테리오"&&s.cost&&s.costType!=="mom"&&s.costType!=="scale")?s.cost:0;
+  const MAG=(h.mag||0)+magB, ATK=h.atk||0;
+  const bs=k=>(s[k]||0)+mod(s,k);
+  const alive=B.foes.filter(x=>x.alive);
+  const far=alive.length?alive.reduce((a,b)=>dist(h.slot,a.slot)>=dist(h.slot,b.slot)?a:b):null;
+  const near0=alive.length?alive.reduce((a,b)=>dist(h.slot,a.slot)<=dist(h.slot,b.slot)?a:b):null;
+  const topHp=alive.length?alive.slice().sort((a,b)=>b.hp-a.hp)[0]:null;
+  let dmg=null, crit=0, times=1, tail="";
+
+  if(s.justice)          dmg=h.shield||0;
+  else if(s.thrust)      dmg=(h.cutSum||0)*3;
+  else if(s.dump)        dmg=h.ammo||0;
+  else if(s.scaleBoom)   dmg=h.scale||0;
+  else if(s.phantomPain) dmg=MAG;
+  else if(s.verdict){ if(tgt.boss) return null; dmg=tgt.hp+(tgt.shield||0); tail="즉사" }
+  else if(s.burst)       dmg=3+MAG+((tgt.infect||0)*(h.tag.burstX||2));
+  else if(s.seed){ if(!topHp||tgt!==topHp) return null; dmg=bs("dmg")+MAG*2 }
+  else if(s.farshot){ if(!far||tgt!==far) return null; dmg=bs("dmg")+ATK }
+  else if(s.nearest)     dmg=bs("dmg")+MAG;
+  else if(s.magnet)      dmg=bs("dmg")+MAG;
+  else if(s.scaleGain)   dmg=bs("dmg")+MAG;
+  else if(s.drain){ dmg=bs("dmg")+MAG; if((run.souls||0)>=200) times=2 }
+  else if(s.wand)        dmg=1+(1+(h.tag.wandPlus||0))+h.def;
+  else if(s.shadow){ dmg=bs("dmg")+ATK; if(h.hide){ dmg*=2; crit=1 } }
+  else if(s.shackle){
+    if(!h.blessed&&near0&&tgt!==near0) return null;
+    dmg=8+(h.def+ATK+MAG)+(h.tag.shacklePlus||0);
+  }
+  else if(s.allHit){
+    if(h.tag.pressAtk&&dist(h.slot,tgt.slot)>2) return null;
+    dmg=bs("dmg")+ATK;
+    if(h.name==="이테리오"&&s.el!=="마법"&&(tgt.mark||0)>0){ dmg*=2; crit=1 }
+  }
+  else if(s.dmg==null) return null;
+  else if(h.name==="카제"&&s.n==="진선풍도"){
+    const every=(h.potential&&h.tag.potentialEvery)||h.tag.windEvery||3;
+    const strong=!!(h.tag.alwaysStrong||(((h.windUses||0)+1)%every===0));
+    const bonus=h.windBuff||0;
+    const reach=h.tag.noRange?99:(strong?3:s.rng)+bonus;
+    if(dist(h.slot,tgt.slot)>reach) return null;
+    dmg=bs("dmg")+bonus+ATK;
+    if(h.tag.firstWind&&(h.first||{}).wind!==1) dmg+=h.tag.firstWind;
+    /* 회오리에 뜬 적은 '바람처럼 사라져라'가 뒤이어 때린다 */
+    if(strong){
+      const lifted=h.potential?alive.filter(f=>dist(h.slot,f.slot)<=reach)
+        :(far&&dist(h.slot,far.slot)<=reach?[far]:[]);
+      if(lifted.indexOf(tgt)>=0) tail="공중 "+(4+ATK+(h.tag.airBonus||0));
+    }
+  }
+  else {
+    if(s.rng&&dist(h.slot,tgt.slot)>s.rng) return null;
+    dmg=bs("dmg")+(s.el==="마법"?MAG:ATK*(s.n==="방패 밀치기"?(h.tag.pushAtkX||1):1));
+    if(s.el==="마법"&&deb(h,"magDn")) dmg=Math.ceil(dmg*0.5);
+    else if(s.el!=="마법"&&deb(h,"atkDn")) dmg=Math.ceil(dmg*0.5);
+    if(h.name==="이테리오"&&s.el!=="마법"&&(tgt.mark||0)>0){ dmg*=2; crit=1 }
+    if(h.name==="그슨대"&&h.hide&&s.el==="공격"){ dmg*=2; crit=1 }
+    if(h.name==="데린저"){
+      if(h.aimAt!=null){ if(tgt.id===h.aimAt){ dmg*=2; crit=1 } else dmg=0 }
+      if(s.ammo&&h.tag.headshot&&!h.headshotUsed){
+        const add=8+ATK;
+        dmg=(h.aimAt!=null&&tgt.id===h.aimAt)?Math.round((dmg/2+add)*3):dmg+add;
+      }
+    }
+    if(h.name==="나이코스"&&s.n==="베기"){
+      if(h.tag.nearHit&&dist(h.slot,tgt.slot)===1) dmg+=h.tag.nearHit;
+      if(h.tag.firstCut&&(h.first||{}).cut!==1) dmg+=h.tag.firstCut+ATK;
+      if(h.tag.guardThen&&h.guarded) dmg+=h.tag.guardThen;
+      dmg+=(h.cutGrow||0);
+      if(h.tag.bloodBlade&&((h.cutUses||0)+1)%4===0){ dmg*=2; crit=1 }
+      if(s.twice) times=2;
+    }
+  }
+  if(dmg==null) return null;
+  dmg=Math.max(0,Math.round(dmg));
+  /* 보호막을 얼마나 뚫고 체력까지 닿는지 */
+  let PR=0;
+  if(s.pierce===true||h.pierceNext) PR=Math.max(PR,50);
+  else if(s.pierce) PR=Math.max(PR,+s.pierce);
+  if(s.el!=="마법"){ PR+=itemBt(h,"pierce"); if(tgt.taunt) PR+=itemBt(h,"tauntPierce") }
+  PR=pierceRate(PR);
+  const thru=Math.round(dmg*PR/100);
+  const eat=Math.min(tgt.shield||0, dmg-thru);
+  return {v:dmg, crit:crit, times:times, eat:eat, tail:tail,
+          evade:(tgt.evade||0)>0};
+}
+/* 나에게(또는 아군에게) 돌아오는 몫 */
+function predictSelf(h,s){
+  if(!h||!s) return null;
+  const out={};
+  if(s.shield) out.shield=breakdown(h,s,"shield").total;
+  if(s.heal)   out.heal=breakdown(h,s,"heal").total;
+  if(s.armorUp) out.armor=1+(h.tag.armorPlus||0);
+  if(s.vanguard) out.shield=(h.tag.vanShield||5)+h.def;
+  if(s.rearguard){ out.heal=h.tag.rearHeal||5; out.shield=5+h.def }
+  return (out.shield||out.heal||out.armor)?out:null;
+}
+/* 머리 위 쪽지 */
+function hitTag(kind,txt,crit,note){
+  return `<span class="hitpv ${kind}${crit?" crit":""}">${txt}${
+    note?`<em>${note}</em>`:""}</span>`;
+}
+function foeHitTag(h,s,f,count){
+  const p=predictDmg(h,s,f);
+  if(!p) return "";
+  if(p.evade) return hitTag("dmg","회피",0,"");
+  if(s.verdict) return hitTag("dmg","즉사",1,"절반으로 되살아남");
+  const n=(count||1)*p.times;
+  const note=[n>1?"×"+n:"", p.eat?"막"+p.eat:"", p.tail||""].filter(Boolean).join(" ");
+  return hitTag("dmg","−"+p.v,p.crit,note);
+}
+function selfHitTag(h,s,count){
+  const p=predictSelf(h,s);
+  if(!p) return "";
+  const n=count||1;
+  const L=[];
+  if(p.shield) L.push(hitTag("shd","+"+p.shield,0,n>1?"×"+n:""));
+  if(p.heal)   L.push(hitTag("heal","+"+p.heal,0,n>1?"×"+n:""));
+  if(p.armor&&!L.length) L.push(hitTag("shd","갑피"+p.armor,0,""));
+  return L.slice(0,2).join("");
+}
 function hurt(f,amt,tag,art,pierce,crit){
   let d=amt,s=0;
   const pr=pierceRate(pierce);
@@ -8924,7 +9426,7 @@ function runEffect(h,i,s,target){
   if(s.shield){ let v=s.shield+mod(s,"shield")+h.def;
     if(h.name==="나이코스"&&i===1&&h.tag.firstGuard&&h.first.guard!==1){
       v+=h.tag.firstGuard+h.def; h.first.guard=1 }
-    if(deb(h,"defDn")) v=Math.ceil(v*0.5); if(i===1&&h.first.guard!==1&&h.tag.firstGuard){v+=h.tag.firstGuard;h.first.guard=1}
+    if(deb(h,"defDn")) v=Math.ceil(v*0.5);
     h.shield+=v;
     fx({side:"mine",slot:h.slot,s:"shield",glow:1});
     say(`${h.name} 보호막 +${v}`) }
@@ -9748,7 +10250,7 @@ function costPop(r,c,tired){
   const b=cell.getBoundingClientRect();
   const rows=[["act","-1",tired?"활동량":"활동량"],
               ["time",tired?"-2시간":"-1시간",""],
-              ["taint","+6","오염도"]];
+              ["taint","+"+MOVE_TAINT,"오염도"]];
   rows.forEach(([k,v],i)=>{
     const nd=spawn('<div class="costpop c-'+k+'">'+esc(v)+'</div>');
     if(!nd) return;
@@ -9844,6 +10346,7 @@ function rewardIcon0(r){
 }
 function unlockBanner(h,i){
   const sk=h.sk[i];
+  const ubl=richLive(h,sk,SKILL_FULL[sk.n]||SKILL_TEXT[sk.n]||sk.d||"");
   SFX.play("unlock");
   setTimeout(()=>{
     const box=document.querySelector(".unlock");
@@ -9860,8 +10363,8 @@ function unlockBanner(h,i){
     <div class="ub-i">${rewardIcon({n:sk.n,d:sk.d||""})}</div>
     <div class="ub-n">${esc(sk.n)}</div>
     <div class="ub-c">${sk.costType==="mom"?ic("move"):sk.costType==="scale"?"비늘 ":ic("mana")}${sk.cost} · ${esc(sk.el)}${sk.limit?` · 사용한도 ${sk.limit}`:""}</div>
-    <div class="ub-v">${valueLinesStatic(h,sk).join(" · ")}</div>
-    <div class="ub-d">${rich(SKILL_FULL[sk.n]||SKILL_TEXT[sk.n]||sk.d||"")}</div>
+    <div class="ub-v">${valueLinesStatic(h,sk,ubl.done).join(" · ")}</div>
+    <div class="ub-d">${ubl.html}</div>
     ${sk.alt?`<div class="ub-d" style="color:var(--faint)">전환 : ${esc(sk.alt.n)} — ${rich(SKILL_FULL[sk.alt.n]||SKILL_TEXT[sk.alt.n]||sk.alt.d||"")}</div>`:""}
   </div>`);
 }
@@ -9895,26 +10398,32 @@ function heroPanel(h){
       <b>${i+1}. ${esc(sk.n)}</b>
       <span class="c">${cost} · ${esc(sk.el)}${sk.limit?` · 한도 ${sk.limit}`:""}</span>
       ${locked?`<small style="color:var(--faint)">${UNLOCK[i]}레벨에 해제됩니다.</small>`
-        :`<small>${rich(SKILL_TEXT[sk.n]||sk.d||"")}</small>
-          ${valueLinesStatic(h,sk).map(x=>`<small class="v">${x}</small>`).join("")}
-          ${SKILL_FULL[sk.n]?`<div class="fullx"><span>기획 원문</span>${rich(SKILL_FULL[sk.n])}</div>`:""}`}
+        :`<small>${richLive(h,sk,SKILL_TEXT[sk.n]||sk.d||"").html}</small>
+          ${valueLinesStatic(h,sk,richLive(h,sk,SKILL_TEXT[sk.n]||sk.d||"").done)
+              .map(x=>`<small class="v">${x}</small>`).join("")}
+          ${SKILL_FULL[sk.n]?`<div class="fullx"><span>기획 원문</span>${richLive(h,sk,SKILL_FULL[sk.n]).html}</div>`:""}`}
       ${sk.alt?`<small style="color:var(--faint)">전환 : ${esc(sk.alt.n)}</small>`:""}
     </div>`));
   });
-  const taken=(h.tag.taken||[]);
-  box.appendChild(el(`<div class="hp-h">고른 특성 ${taken.length}개</div>`));
-  if(!taken.length) box.appendChild(el(`<p class="hint" style="font-size:11px">아직 고른 특성이 없습니다.</p>`));
-  else {
-    const own=(HERO_REWARDS[h.name]||[]);
-    const all=own.concat(COMMON);
-    box.appendChild(el(`<div class="hp-tr">${taken.map(t=>{
-      const r=all.find(x=>x.n===t);
-      const mine=own.some(x=>x.n===t);
-      return `<div class="tr1"><b>${esc(t)}</b>
-        <span class="g2">${r?esc(r.g):""}${mine?" · 전용":""}</span>
-        ${r?`<small>${rich(r.d)}</small>`:""}</div>`;
-    }).join("")}</div>`));
-  }
+  const list=takenList(h);
+  const keep=list.filter(x=>REW_KEEP.indexOf(x.k)>=0);
+  const show=REW_ALL?list:keep;
+  const hd=el(`<div class="hp-h hp-hb">
+    <span>전투 보상 ${keep.length}개</span>
+    ${list.length>keep.length||REW_ALL
+      ? `<button class="rwall">${REW_ALL?"전투 보상만 보기":`모두 보기 ${list.length}개`}</button>` : ""}
+  </div>`);
+  const rb=hd.querySelector(".rwall");
+  if(rb) rb.onclick=ev=>{ ev.stopPropagation(); REW_ALL=REW_ALL?0:1; render() };
+  box.appendChild(hd);
+  if(!show.length) box.appendChild(el(`<p class="hint" style="font-size:11px">${
+    list.length?"전투에 쓰이는 보상은 아직 없습니다. [모두 보기]로 나머지를 봅니다."
+               :"아직 고른 보상이 없습니다."}</p>`));
+  else box.appendChild(el(`<div class="hp-tr">${show.map(x=>
+      `<div class="tr1"><b>${esc(x.n)}</b>
+        <span class="g2">${x.r?esc(x.r.g):""}${x.mine?" · 전용":""}${
+          REW_ALL?" · "+esc(x.k):""}</span>
+        ${x.r?`<small>${rich(x.r.d)}</small>`:""}</div>`).join("")}</div>`));
   if(h.items&&h.items.length){
     box.appendChild(el(`<div class="hp-h">장비</div>`));
     box.appendChild(el(`<div class="hp-tk">${h.items.map(t=>
@@ -9923,11 +10432,11 @@ function heroPanel(h){
   return box;
 }
 /* 전투 밖에서도 쓸 수 있는 수치 요약 */
-function valueLinesStatic(h,sk){
-  const L=[];
-  if(sk.dmg!=null&&!sk.justice) L.push(`피해 ${numHtml(h,sk,"dmg")}`);
-  if(sk.shield) L.push(`보호막 ${numHtml(h,sk,"shield")}`);
-  if(sk.heal) L.push(`회복 ${numHtml(h,sk,"heal")}`);
+function valueLinesStatic(h,sk,done){
+  const L=[]; const had=done||{};
+  if(sk.dmg!=null&&!sk.justice&&!had.dmg) L.push(`피해 ${numHtml(h,sk,"dmg")}`);
+  if(sk.shield&&!had.shield) L.push(`보호막 ${numHtml(h,sk,"shield")}`);
+  if(sk.heal&&!had.heal) L.push(`회복 ${numHtml(h,sk,"heal")}`);
   return L;
 }
 /* 보상 카드를 고를 때 — 등급이 높을수록 요란하게 */
