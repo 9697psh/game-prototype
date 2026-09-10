@@ -6163,40 +6163,57 @@ const FIELD_FOES=[
  ["균열 벌레","얼음 정령","부서진 파수병","얼음 정령"]
 ];
 const BOSSES=["간수장","고철 거인","서리 군주"];
-/* ═══════════ 조우 ═══════════
+/* ═══════════ 조합 ═══════════
    전투 하나는 적을 뽑아 세우는 것이 아니라 **손으로 짠 한 판**이다.
-   n  이름 (기록에 뜬다)      w  뽑힐 무게
-   foes  앞자리부터 차례로. 6번(가장 가까운 칸)이 첫 번째다
-   min   대원이 이만큼은 되어야 나온다 (없으면 1)
+
+     n     이름 (전투 기록에 뜬다)
+     w     뽑힐 무게. 클수록 자주 (1 드물게 · 2 보통 · 4 자주)
+     foes  앞자리부터 차례로. 6번(가장 가까운 칸)이 첫 번째다
+     min   대원이 이만큼은 되어야 나온다 (없으면 1)
+     r     나올 수 있는 라운드. 안 적으면 아무 라운드나
+           전투 한 칸은 1~3라운드이고 **라운드마다 새로 뽑는다.**
+           그래서 버거운 것을 뒤 라운드로 미룰 수 있다.
+
    ※ 새 적을 만들면 여기에도 한 줄 넣어야 실제로 나온다. */
 const ENCOUNTER=[
  /* ── 1구역 · 핏빛 감옥 ── 배우는 곳. 한 판에 배울 것 하나씩 ── */
  [
-  {n:"떠도는 죄수 둘",  w:4, foes:["작은 죄수","작은 죄수"]},
-  {n:"사슬에 묶인 것",  w:3, foes:["작은 죄수","사슬 광인"]},
-  {n:"어둠 속에서",     w:3, foes:["작은 죄수","굶주린 그림자"]},
-  {n:"불티",           w:3, foes:["작은 죄수","떠도는 불씨"]},
-  {n:"멀고 가까운 것",  w:2, foes:["작은 죄수","떠도는 불씨","사슬 광인"], min:2},
-  {n:"굶주린 셋",       w:2, foes:["작은 죄수","작은 죄수","굶주린 그림자"], min:2},
+  {n:"떠도는 죄수 둘",  w:4, r:[1,2],   foes:["작은 죄수","작은 죄수"]},
+  {n:"사슬에 묶인 것",  w:3,            foes:["작은 죄수","사슬 광인"]},
+  {n:"어둠 속에서",     w:3,            foes:["작은 죄수","굶주린 그림자"]},
+  {n:"불티",           w:3,            foes:["작은 죄수","떠도는 불씨"]},
+  {n:"멀고 가까운 것",  w:2, r:[2,3],   foes:["작은 죄수","떠도는 불씨","사슬 광인"], min:2},
+  {n:"굶주린 셋",       w:2, r:[2,3],   foes:["작은 죄수","작은 죄수","굶주린 그림자"], min:2},
  ],
  /* ── 2구역 ── 벽과 뒷심. '무엇을 먼저 치우느냐' 를 배운다 ── */
  [
-  {n:"벽과 사슬",       w:4, foes:["부서진 파수병","사슬 광인"]},
-  {n:"벽 뒤의 침",      w:4, foes:["부서진 파수병","균열 벌레"]},
-  {n:"그림자와 사슬",   w:3, foes:["사슬 광인","굶주린 그림자"]},
-  {n:"두 겹의 벽",      w:2, foes:["부서진 파수병","부서진 파수병","균열 벌레"], min:3},
-  {n:"야행성 짐승 무리", w:3, foes:["늑대치기","무시무시한 늑대","무시무시한 늑대"], min:2},
-  {n:"숲의 잔재",       w:2, foes:["사슬 광인","균열 벌레","굶주린 그림자"], min:3},
+  {n:"벽과 사슬",       w:4,            foes:["부서진 파수병","사슬 광인"]},
+  {n:"벽 뒤의 침",      w:4,            foes:["부서진 파수병","균열 벌레"]},
+  {n:"그림자와 사슬",   w:3, r:[1,2],   foes:["사슬 광인","굶주린 그림자"]},
+  {n:"두 겹의 벽",      w:2, r:[3],     foes:["부서진 파수병","부서진 파수병","균열 벌레"], min:3},
+  {n:"숲의 잔재",       w:2, r:[2,3],   foes:["사슬 광인","균열 벌레","굶주린 그림자"], min:3},
  ],
  /* ── 3구역 ── 버티는 적. 오래 끌면 진다 ── */
  [
-  {n:"서리와 벽",       w:4, foes:["부서진 파수병","얼음 정령"]},
-  {n:"두 정령",         w:3, foes:["얼음 정령","얼음 정령"], min:2},
-  {n:"서리 속의 침",    w:4, foes:["얼음 정령","균열 벌레"]},
-  {n:"옛 사슬",         w:3, foes:["부서진 파수병","사슬 처형자"]},
-  {n:"굶주린 무리",     w:2, foes:["늑대치기","무시무시한 늑대","굶주린 그림자"], min:3},
-  {n:"얼어붙은 벽",     w:2, foes:["부서진 파수병","얼음 정령","균열 벌레"], min:3},
+  {n:"서리와 벽",       w:4,            foes:["부서진 파수병","얼음 정령"]},
+  {n:"두 정령",         w:3, r:[2,3],   foes:["얼음 정령","얼음 정령"], min:2},
+  {n:"서리 속의 침",    w:4,            foes:["얼음 정령","균열 벌레"]},
+  {n:"옛 사슬",         w:3,            foes:["부서진 파수병","사슬 처형자"]},
+  {n:"굶주린 무리",     w:2, r:[3],     foes:["늑대치기","무시무시한 늑대","굶주린 그림자"], min:3},
+  {n:"얼어붙은 벽",     w:2, r:[3],     foes:["부서진 파수병","얼음 정령","균열 벌레"], min:3},
  ]
+];
+/* ── 이벤트에서만 서는 조합 ──
+   지도의 전투 칸에서는 절대 안 나온다. 미지의 구역에서 골랐을 때만 선다.
+   게임은 이미 run.brawl 로 세우고 있었지만 어디에도 적혀 있지 않아
+   노트에서 찾을 수가 없었다. 여기 적어 두면 노트에도 실린다. */
+const EVENT_ENC=[
+ {n:"야행성 짐승 무리", ev:"야행성 짐승 무리", pick:"코털 건드리기",
+  foes:["무시무시한 늑대","늑대치기"], more:"무시무시한 늑대",
+  d:"밤에만 고를 수 있다. 대원이 많을수록 늑대가 는다 (최대 둘까지)."},
+ {n:"술집 난동꾼",     ev:"술집 난동꾼",     pick:"싸운다",
+  foes:["술집 난동꾼"], more:"(구역 풀에서)",
+  d:"덩치 하나에 구역 풀의 잡졸이 붙는다 (대원 수 − 1, 최대 둘)."},
 ];
 /* 정예 — 같은 조우표에서 고르되 앞자리에 단단한 놈을 하나 더 세운다 */
 const ELITE_LEAD=["부서진 파수병","부서진 파수병","얼음 정령"];
@@ -9802,8 +9819,12 @@ const UNLOCK=[1,1,7,15];   // 3번 기술 7레벨, 궁극기 15레벨 (기획노
 const foeNo=s=>s+SLOTS;                 /* 적 칸 → 보이는 번호 */
 const unitNo=u=>!u?"?":((B&&B.foes&&B.foes.indexOf(u)>=0)?u.slot+SLOTS:u.slot);
 const dist=(a,e)=>(SLOTS-a)+e;   /* = foeNo(e) − a · 아군 5번과 적 6번이 거리 1 */
-function pickEncounter(f,n){
-  const list=(ENCOUNTER[f]||[]).filter(e=>(e.min||1)<=n);
+function pickEncounter(f,n,round){
+  const rd=Math.max(1,Math.min(3,round||1));
+  const ok=e=>(e.min||1)<=n && (!e.r||e.r.indexOf(rd)>=0);
+  let list=(ENCOUNTER[f]||[]).filter(ok);
+  /* 그 라운드에 맞는 것이 없으면 라운드 조건을 풀어 준다 — 빈 판은 없어야 한다 */
+  if(!list.length) list=(ENCOUNTER[f]||[]).filter(e=>(e.min||1)<=n);
   if(!list.length) return null;
   const pool=[];
   list.forEach(e=>{ for(let q=0;q<(e.w||1);q++) pool.push(e) });
@@ -9820,8 +9841,9 @@ function foeSet(kind){
     for(let i=0;i<extra;i++) out.push([rnd(pool),2+i]);
     return out;
   }
-  /* 손으로 짠 조우에서 고른다. 대원이 적으면 큰 판은 빠진다 */
-  const enc=pickEncounter(f,n);
+  /* 손으로 짠 조합에서 고른다. 대원이 적으면 큰 판은 빠지고,
+     라운드마다 나올 수 있는 것이 다르다 */
+  const enc=pickEncounter(f,n,(run.dun&&run.dun.wave)||1);
   if(enc){
     B_ENC=enc.n;
     const names=enc.foes.slice(0,SLOTS);
@@ -9830,14 +9852,14 @@ function foeSet(kind){
     names.forEach((nm,i)=>out.push([nm,i+1]));
     return out;
   }
-  /* 조우표에 맞는 것이 없으면 예전처럼 뽑는다 (그물) */
+  /* 조합표에 맞는 것이 없으면 예전처럼 뽑는다 (그물) */
   B_ENC=null;
   const base=2+Math.floor(Math.random()*2);
   const k=Math.max(1,Math.min(base,n+1));
   for(let i=1;i<=k;i++) out.push([rnd(pool),i]);
   return out;
 }
-let B_ENC=null;   /* 방금 고른 조우 이름 — 전투 기록에 적는다 */
+let B_ENC=null;   /* 방금 고른 조합 이름 — 전투 기록에 적는다 */
 /* 대원이 강해진 만큼 적도 따라온다 */
 function partyPower(){
   if(!run||!run.heroes.length) return 1;
@@ -9885,7 +9907,7 @@ function startBattle(kind,pinned){
     try{ BSNAP={kind:kind,run:JSON.stringify(run)} }catch(e){ BSNAP=null }
   }
   B={kind,turn:1,over:0,log:[],hand:[],units:[],foes:[],drag:null,pick:null};
-  B_ENC=null;                       /* 지난 판의 조우 이름이 남지 않게 */
+  B_ENC=null;                       /* 지난 판의 조합 이름이 남지 않게 */
   /* 전투(옛 던전) 하나는 여러 라운드로 이루어진다.
      "전투 시작" 효과는 첫 라운드에 딱 한 번만 걸리고, 그 결과는 라운드를 넘어 남는다. */
   const fresh=!run.dun||run.dun.wave<=1;
@@ -9973,9 +9995,9 @@ function startBattle(kind,pinned){
     }
     f.ai=m; f.role=r.t; f.roleD=r.d;
   });
-  /* 어떤 판인지 기록에 남긴다 — 조우 이름과, 역할을 맡은 적들 */
+  /* 어떤 판인지 기록에 남긴다 — 조합 이름과, 역할을 맡은 적들 */
   if(B_ENC){
-    say(`조우 — ${B_ENC}`,"t1");
+    say(`조합 — ${B_ENC}`,"t1");
     const rs=B.foes.filter(f=>f.role);
     if(rs.length) say(rs.map(f=>`${f.name}(${f.role})`).join(" · "),"t3");
     B_ENC=null;
