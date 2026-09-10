@@ -273,6 +273,17 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .bar > u{position:absolute;top:0;right:0;height:100%;background:var(--def);opacity:.9;z-index:3;
   border-left:1px solid var(--panel);transition:width .18s,right .18s}
 .bar > u.es{background:#e07b28;opacity:.95;box-shadow:0 0 6px rgba(224,123,40,.6)}
+/* 보호막도 체력처럼 천천히 줄어든다 */
+.bar > u.sh,.bar > u.es{
+  transition:width .44s cubic-bezier(.24,.74,.28,1),right .44s cubic-bezier(.24,.74,.28,1)}
+.bar > u.sh[data-w="0"],.bar > u.es[data-w="0"]{border-left:none}
+/* 보호막 잔상 — 깎여 나간 몫이 한 박자 늦게 따라 내려간다 (체력의 em.gh 와 같은 몫) */
+.bar > u.shgh{z-index:2;background:linear-gradient(180deg,#ffffff,#bcd4f0);
+  border-left:none;opacity:0;box-shadow:0 0 8px rgba(190,215,255,.85);
+  transition:width .74s cubic-bezier(.22,.72,.24,1) .18s,opacity .34s .52s}
+.bar > u.shgh.on{opacity:.9}
+@media (prefers-reduced-motion: reduce){
+  .bar > u.sh,.bar > u.es,.bar > u.shgh{transition:none}}
 .synbar{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:8px}
 .syn{font-size:11px;padding:3px 9px;border-radius:11px;border:1px solid var(--line);
   color:var(--faint);cursor:help}
@@ -2726,7 +2737,7 @@ function punchIn(side,slot){
 /* ═══════════ 체력바 연출 ═══════════
    체력이 달라졌으면 바가 깜박이면서 천천히 줄거나 찬다.
    잔상(em.gh)이 한 박자 늦게 따라와 얻어맞은 몫을 보여 준다. */
-let HKSEQ=0, HPMEM={}, SHMEM={};
+let HKSEQ=0, HPMEM={}, SHMEM={}, SHWMEM={};
 function hpKey(u){ if(!u) return ""; if(!u._hk) u._hk="U"+(++HKSEQ); return u._hk }
 function hpAnim(){
   document.querySelectorAll(".bar[data-hpk]").forEach(bar=>{
@@ -2745,6 +2756,36 @@ function hpAnim(){
         const n=el('<span class="shpop">'+ic("def")+"+"+Math.round(sh-psh)+"</span>");
         art.appendChild(n); setTimeout(()=>n.remove(),860);
       } }
+    /* 보호막도 체력처럼 줄어드는 모습을 보여 준다.
+       칸은 render 마다 새로 만들어지므로, 이전 너비를 기억해 두었다가
+       거기서 출발시켜야 전환이 걸린다. (체력바의 prev→now 와 같은 수법) */
+    { const es=bar.querySelector("u.es"), sh=bar.querySelector("u.sh"),
+            sg=bar.querySelector("u.shgh");
+      if(es&&sh){
+        const ew=parseFloat(bar.dataset.esw)||0, sw=parseFloat(bar.dataset.shw)||0;
+        const pm=SHWMEM[k]||{e:ew,s:sw};
+        SHWMEM[k]={e:ew,s:sw};
+        const put=(nd,w,r)=>{ if(nd){ nd.style.width=w+"%"; nd.style.right=(r||0)+"%" } };
+        const now=(nd,on)=>{ if(nd) nd.style.transition=on?"":"none" };
+        if((ew+sw) < (pm.e+pm.s)-0.01){
+          now(es,0); now(sh,0); now(sg,0);
+          put(es,pm.e,0); put(sh,pm.s,pm.e); put(sg,pm.e+pm.s,0);
+          if(sg) sg.classList.add("on");
+          void bar.offsetWidth;
+          /* rAF 가 안 돌 수도 있다 — 시간 걸이를 함께 걸고 먼저 오는 쪽이 마무리한다 */
+          let settled=0;
+          const settle=()=>{ if(settled) return; settled=1;
+            now(es,1); now(sh,1); now(sg,1);
+            put(es,ew,0); put(sh,sw,ew); put(sg,ew+sw,0);
+            if(sg) setTimeout(()=>sg.classList.remove("on"),900);
+          };
+          requestAnimationFrame(()=>requestAnimationFrame(settle));
+          setTimeout(settle,60);
+        }else{
+          put(es,ew,0); put(sh,sw,ew);
+          now(sg,0); put(sg,ew+sw,0); if(sg) sg.classList.remove("on");
+        }
+      } }
     if(!fill||!gh) return;
     /* 실제 체력이 그대로면 아무 일도 없었던 것이다 (최대 체력만 바뀐 경우) */
     const same=(prevN!=null&&!isNaN(nowN))?(prevN===nowN):(prev!=null&&Math.abs(prev-now)<0.05);
@@ -2761,12 +2802,15 @@ function hpAnim(){
     bar.classList.remove("hurt","healed");
     void bar.offsetWidth;                       /* 애니메이션을 다시 물린다 */
     bar.classList.add(hurt?"hurt":"healed");
-    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    let settled=0;
+    const settle=()=>{ if(settled) return; settled=1;
       fill.style.transition="width .46s cubic-bezier(.24,.74,.28,1)";
       fill.style.width=now+"%";
       gh.style.transition="";                   /* CSS 쪽 느린 전환으로 되돌린다 */
       gh.style.width=now+"%";
-    }));
+    };
+    requestAnimationFrame(()=>requestAnimationFrame(settle));
+    setTimeout(settle,60);                      /* rAF 가 안 돌아도 값은 맞춘다 */
     setTimeout(()=>{ bar.classList.remove("hurt","healed") },660);
   });
 }
@@ -6707,7 +6751,11 @@ function startSandbox(name){
   /* 허수아비 셋 */
   B.foes=[];
   ["작은 죄수","사슬 광인","부서진 파수병"].forEach((n,i)=>{
-    B.foes.push({name:n,slot:i+1,maxHp:9999,hp:9999,atk:0,def:0,rng:0,exp:0,
+    /* 체력만 닳지 않게 부풀리고, 공격력·사거리는 제 값을 준다.
+       0으로 두면 때리기만 해 보고 맞아 볼 수는 없었다. */
+    const D=FOE[n]||{};
+    B.foes.push({name:n,slot:i+1,maxHp:9999,hp:9999,
+      atk:D.atk||3,def:D.def||0,rng:D.rng||3,exp:0,
       demon:0,boss:0,shield:0,air:0,alive:1,id:i,infect:0,stun:0,weak:0,
       taunt:0,thorn:0,evade:0,negShield:0,hide:0,deb:{}});
   });
@@ -6715,7 +6763,7 @@ function startSandbox(name){
   h.slot=5; B.hand=B.hand.filter(x=>x.type!=="hero");
   onSummon(h); wanderCheck();
   h.mana=h.maxMana;
-  say("연습장 — 허수아비는 반격하지 않습니다. 마나와 잠금은 턴마다 풀립니다.","t1");
+  say("연습장 — 턴을 넘기면 허수아비도 움직입니다. 체력·마나·잠금은 턴마다 되돌아옵니다.","t1");
   rollIntents(); sel=null; view="battle"; render();
 }
 function sandboxTick(){
@@ -9102,7 +9150,6 @@ function rollIntents(){
   if(open.length) allies=open;
   B.foes.forEach(f=>{
     if(!f.alive) return;
-    if(run&&run.sandbox){ f.intent={t:"wait"}; return }
     if(f.isPhantom){ f.intent={t:"wait"}; return }
     if(!allies.length){ f.intent={t:"wait"}; return }
     if(f.forceDef){ f.forceDef=0; f.intent={t:"def",v:defVal(f)}; return }
@@ -9437,10 +9484,11 @@ function drawBattle(app){
         <div class="art">${figure(h.name,poseNow(h))}</div>
         <div class="nm">${esc(h.name)}</div>
         <div class="bar" data-hpk="${hpKey(h)}" data-hpv="${Math.max(0,h.hp/h.maxHp*100)}" data-hpn="${h.hp}"
-          data-shv="${(h.shield||0)+(h.eshield||0)}">
+          data-shv="${(h.shield||0)+(h.eshield||0)}" data-esw="${esW}" data-shw="${shW}">
           <em class="gh"></em><i style="width:${Math.max(0,h.hp/h.maxHp*100)}%"></i>
-          ${h.eshield?`<u class="es" style="width:${esW}%" title="에너지 보호막 ${h.eshield}"></u>`:""}
-          ${h.shield?`<u style="right:${esW}%;width:${shW}%" title="보호막 ${h.shield}"></u>`:""}</div>
+          <u class="shgh"></u>
+          <u class="es" data-w="${esW}"${h.eshield?` title="에너지 보호막 ${h.eshield}"`:""}></u>
+          <u class="sh" data-w="${shW}" data-r="${esW}"${h.shield?` title="보호막 ${h.shield}"`:""}></u></div>
         ${progHtml(h)}
         <div class="mini">${ic("hp")}${h.hp}/${h.maxHp}${
           h.eshield?` <span class="esh" title="에너지 보호막">◆${h.eshield}</span>`:""}${
@@ -9503,6 +9551,8 @@ function drawBattle(app){
       if(canHit) d.innerHTML+=foeHitTag(sel.hero,preSkill,f,sel.count);
       const pf=B.portals&&B.portals.find(p=>p.side==="foe"&&p.slot===s);
       if(pf) d.innerHTML+=`<svg class="portal" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#a06ae0" stroke-width="2.5"/><circle cx="12" cy="12" r="3.5" fill="#a06ae0"/></svg>`;
+      const fesW=f.eshield?Math.max(6,Math.min(45,f.eshield/f.maxHp*100)):0;
+      const fshW=f.shield?Math.max(6,Math.min(60,f.shield/f.maxHp*100)):0;
       const tier=foeTier(f);
       d.classList.add("t-"+tier);
       const fsz=tier==="boss"?"boss":(tier==="elite"&&f.slot===1)?"lead":"";
@@ -9513,9 +9563,11 @@ function drawBattle(app){
           dying?killMark(sel.hero,preSkill,f,sel.count):""}</div>
         <div class="nm">${esc(f.name)}</div>
         <div class="bar" data-hpk="${hpKey(f)}" data-hpv="${Math.max(0,f.hp/f.maxHp*100)}" data-hpn="${f.hp}"
-          data-shv="${(f.shield||0)+(f.eshield||0)}">
+          data-shv="${(f.shield||0)+(f.eshield||0)}" data-esw="${fesW}" data-shw="${fshW}">
           <em class="gh"></em><i style="width:${Math.max(0,f.hp/f.maxHp*100)}%"></i>
-          ${f.shield?`<u style="width:${Math.min(60,f.shield/f.maxHp*100)}%"></u>`:""}</div>
+          <u class="shgh"></u>
+          <u class="es" data-w="${fesW}"${f.eshield?` title="에너지 보호막 ${f.eshield}"`:""}></u>
+          <u class="sh" data-w="${fshW}" data-r="${fesW}"${f.shield?` title="보호막 ${f.shield}"`:""}></u></div>
         <div class="mini">${ic("hp")}${f.hp}/${f.maxHp}${f.shield?` <span class="shd">${ic("def")}${f.shield}</span>`:""}
           
           ${f.atkUp?`<span class="chip up" title="스스로를 벼려 공격력이 ${f.atkUp} 올랐습니다">${ic("atk")}+${f.atkUp}</span>`:""}
@@ -9549,7 +9601,7 @@ function drawBattle(app){
   if(run.sandbox){
     const h0=run.heroes[0];
     const sb=el(`<div class="sandbar">
-      <b>연습장</b><span>허수아비는 반격하지 않습니다 · 턴 종료마다 되돌아옵니다</span>
+      <b>연습장</b><span>턴을 넘기면 허수아비도 공격합니다 · 턴 종료마다 판이 되돌아옵니다</span>
       <span class="grow"></span><button>도감으로</button></div>`);
     sb.querySelector("button").onclick=()=>{ B=null; run=null; view="codex"; render() };
     app.appendChild(sb);
@@ -12022,11 +12074,8 @@ function unitDown(t){
 }
 function endTurn(){
   if(B.over||B.busy) return;
-  if(run&&run.sandbox){
-    B.turn++; sandboxTick(); keepSel();
-    say(`— ${B.turn}턴 · 연습장 —`,"t2");
-    render(); return;
-  }
+  /* 연습장도 여느 전투와 같은 길을 탄다 — 적이 움직이는 것을 봐야
+     보호막·회피·갑피를 시험할 수 있다. 판을 되돌리는 것은 startMyTurn 이 맡는다. */
   if(!allUnits().length){ say("전장에 아군이 없습니다. 먼저 대원을 소환하세요.","t3"); return }
   /* 마당 ① 턴 종료 효과 → 눈과 귀로 확인 → 마당 ② 적 행동 → 마당 ③ 다음 턴 */
   const n=endPhase();
@@ -12238,9 +12287,20 @@ function foePhase(){
         allUnits().slice().forEach(a=>{ if(a.hp>0) hurtAlly(f,a,v,"일제 사격") }); }
     }
   });
-  /* ── 적의 행동이 모두 끝났다. 남은 보호막은 여기서 걷힌다 ──
-     턴 종료 효과 → 적 공격(보호막이 막아냄) → 보호막 소멸 → 내 턴 시작.
-     그러니 다 막아낸 보호막이 다음 턴까지 따라오는 일은 없다. */
+  /* ── 적의 행동을 다 셈했다. 이제 연출이 흐르게 두고, 다 흐른 뒤에 내 턴을 연다 ──
+     한꺼번에 셈하고 곧바로 내 턴을 열면, 화면에는 보호막이 먼저 사라지고
+     막아 낸 숫자가 뒤늦게 날아왔다. 보호막이 깎이는 모습을 끝까지 보여 주고 걷는다. */
+  { const wait=Math.min(2600,Math.max(300,fxDuration()+240));
+    B.busy=1; keepSel(); render();
+    setTimeout(()=>{ if(!B) return; B.busy=0; if(!B.over) startMyTurn(); else render() },wait);
+    return; }
+}
+/* 마당 ③ — 내 턴. 남은 보호막은 바로 여기, 턴이 열리기 직전에 걷힌다. */
+function startMyTurn(){
+  if(!B||B.over) return;
+  /* 연습장은 매 턴 판을 처음으로 되돌린다 — 맞은 것은 보되 자국은 남기지 않는다.
+     보호막을 걷기 전에 불러야 한다 (되돌린 뒤 걷어야 순서가 맞다). */
+  if(run&&run.sandbox) sandboxTick();
   run.heroes.forEach(h=>{ if(h.hp>0){ h.shield=0; h.keepShield=0 } });
   liveMins().forEach(m=>{ m.shield=0; m.keepShield=0 });
   if(!run.heroes.some(h=>h.hp>0)&&!lifeLeft()){ B.over=1; battleLost(); render(); return }
@@ -12313,8 +12373,8 @@ function foePhase(){
         if(h.tag.allyEsh) a.eshield=(a.eshield||0)+v; else a.shield+=v });
     } });
   rollIntents(); keepSel();
-  say(`— ${B.turn}턴 시작 —`,"t1");
-  /* 적의 행동 연출이 다 흐른 뒤에 알린다 — 그래야 '내 차례'가 명확하다 */
+  say(run&&run.sandbox?`— ${B.turn}턴 · 연습장 —`:`— ${B.turn}턴 시작 —`,"t1");
+  /* 적 연출은 이미 다 흘렀다. 보호막이 걷히는 모습만 보고 알린다 */
   const banner=Math.min(2400,Math.max(240,fxDuration()+200));
   checkEnd(); render();
   if(!B.over) setTimeout(()=>{
