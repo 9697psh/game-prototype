@@ -1020,6 +1020,15 @@ body.shakeall{animation:allShake .62s cubic-bezier(.36,.07,.19,.97)}
 .tr1 b{font-size:11.5px}
 .tr1 .g2{font-size:9.5px;color:#b9a2ea;margin-left:5px}
 .tr1 small{display:block;font-size:10.5px;color:var(--dim);line-height:1.45;margin-top:2px;word-break:keep-all}
+/* 왼쪽에 그림을 한 칸 두고 글은 그 옆으로 */
+.tr1.withi{display:grid;grid-template-columns:34px minmax(0,1fr);
+  grid-template-areas:"i n" "i g" "i d";gap:0 9px;align-items:start}
+.tr1.withi .ti{grid-area:i;width:34px;height:34px;display:flex;
+  align-items:center;justify-content:center;align-self:center}
+.tr1.withi .ti img,.tr1.withi .ti svg{width:30px;height:30px;image-rendering:pixelated}
+.tr1.withi b{grid-area:n}
+.tr1.withi .g2{grid-area:g;margin-left:0}
+.tr1.withi small,.tr1.withi .rwcond{grid-area:d}
 .rost.pick2{cursor:pointer;transition:border-color .12s}
 .rost.pick2:hover{border-color:var(--brass)}
 .rost.on{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass) inset}
@@ -1624,6 +1633,30 @@ kbd{display:inline-block;min-width:20px;text-align:center;padding:1px 7px;font-s
 .flashg{animation:flg .5s} @keyframes flg{0%,100%{box-shadow:none}
   40%{box-shadow:0 0 0 2px var(--brass) inset,0 0 22px rgba(201,162,39,.5)}}
 .kw.kwq{border-bottom:1px dotted currentColor;cursor:help}
+/* 소리 크기 판 */
+.volbox{position:fixed;z-index:1200;background:var(--panel);border:1px solid var(--rule2);
+  border-radius:9px;padding:11px 13px;box-shadow:0 8px 24px rgba(0,0,0,.65);min-width:212px}
+.volbox .vrow{display:flex;align-items:center;gap:9px;margin-bottom:8px;font-size:11.5px;
+  color:var(--dim)}
+.volbox .vrow span{flex:0 0 44px}
+.volbox .vrow input{flex:1;accent-color:var(--brass);height:16px}
+.volbox .vrow b{flex:0 0 30px;text-align:right;color:var(--fg);
+  font-variant-numeric:tabular-nums}
+.volbox .vmute{width:100%;padding:6px;font-size:11.5px}
+.kw.kwc{color:#7fd39a;border-bottom:1px dotted currentColor;cursor:help;white-space:nowrap}
+#kwtip .cardpv{display:flex;gap:9px;align-items:flex-start;margin-top:6px}
+#kwtip .cardpv .ci{width:44px;height:44px;flex:0 0 44px;display:flex;
+  align-items:center;justify-content:center}
+#kwtip .cardpv .ci img,#kwtip .cardpv .ci svg{width:44px;height:44px;image-rendering:pixelated}
+#kwtip .cardpv small{display:block;color:var(--dim);line-height:1.6}
+/* ── 줄바꿈 ──
+   낱말 가운데서 자르지 않고(keep-all), 마지막 줄에 낱말 하나만 남지 않게
+   고르게 나눈다(pretty). 아이콘과 그 옆 숫자는 절대 떨어뜨리지 않는다. */
+.sk .t small,.hp-sk small,.tr1 small,.rw p,.evdesc .evp,.pass .pd,
+.hcard .one,.hdetail .dsk small,.opt small,.rw .rwd p,.hint,.sub{
+  word-break:keep-all;overflow-wrap:break-word;text-wrap:pretty}
+.nb{white-space:nowrap}
+.ikw{white-space:nowrap}
 .kw.ikw{display:inline-flex;align-items:center;border-bottom:1px dotted var(--faint);padding-bottom:1px}
 #kwtip{white-space:pre-line}
 #kwtip{position:fixed;z-index:1200;max-width:280px;padding:8px 11px;border-radius:7px;
@@ -1720,13 +1753,35 @@ function kwRegex(){
   KW_RE=new RegExp(parts.join("|"),"g");
   return KW_RE;
 }
+/* 글 속에 나오는 카드 이름을 [이름] 으로 감싸고, 올려놓으면 그 카드가 보이게 한다.
+   이미 [ ] 로 싸여 있거나 뒤에 '카드' 가 붙은 것만 잡는다 —
+   '성벽' 처럼 여느 낱말로도 쓰이는 이름을 잘못 집지 않으려는 것. */
+let CARD_RE=null;
+function cardRegex(){
+  if(CARD_RE) return CARD_RE;
+  const names=Object.keys(CARD_LIB).sort((a,b)=>b.length-a.length)
+    .map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"));
+  if(!names.length) return (CARD_RE=/$^/g);
+  const any="(?:"+names.join("|")+")";
+  CARD_RE=new RegExp("\\[\\s*"+any+"\\s*\\]|"+any+"(?=\\s*카드)|\\[방어구 카드\\]|방어구 카드","g");
+  return CARD_RE;
+}
+function cardify(html){
+  return String(html).replace(cardRegex(),m=>{
+    const nm=m.replace(/^\[\s*|\s*\]$/g,"").trim();
+    if(nm==="방어구 카드")
+      return '<b class="kw kwc" data-cards="armor">[방어구 카드]</b>';
+    if(!CARD_LIB[nm]) return m;
+    return '<b class="kw kwc" data-card="'+esc(nm)+'">['+esc(nm)+']</b>';
+  });
+}
 /* 한 번만 훑어서 강조·아이콘·키워드를 모두 처리한다 */
 function icoify(html){
-  return String(html).replace(kwRegex(),m=>{
+  return cardify(String(html)).replace(kwRegex(),m=>{
     if(m.charAt(0)==="_"&&m.length>2) return '<u>'+m.slice(1,-1)+'</u>';
     if(m.charAt(0)==="*"&&m.length>2) return '<i>'+m.slice(1,-1)+'</i>';
     const st={"공격력":"atk","마법력":"mag","보호력":"def"}[m];
-    if(st) return '<span class="kw kwq ikw" data-kw="'+m+'">'+ic(st)+'</span>';
+    if(st) return '<span class="kw kwq ikw" data-kw="'+m+'">'+ic(st)+'</span>';   /* .ikw 는 줄바꿈 금지 */
     const c=KW_COLOR[KW[m]]||KW_COLOR.plain;
     const d=KW_DESC[m];
     return '<b class="kw'+(d?' kwq':'')+'" style="color:'+c+'"'
@@ -1745,7 +1800,7 @@ const el=s=>{const t=document.createElement("template");t.innerHTML=s.trim();ret
 
 /* ═══════ 소리 ═══════ */
 const SFX=(()=>{
-  let ac=null, on=true;
+  let ac=null, on=true, vol=1;
   function ctx(){
     if(!ac){ try{ ac=new (window.AudioContext||window.webkitAudioContext)() }catch(e){ on=false; return null } }
     if(ac.state==="suspended") ac.resume();
@@ -1753,7 +1808,7 @@ const SFX=(()=>{
   }
   function tone(o){
     const a=ctx(); if(!a) return;
-    const t=a.currentTime+(o.at||0), dur=o.d||0.2, v=(o.v==null?0.16:o.v);
+    const t=a.currentTime+(o.at||0), dur=o.d||0.2, v=(o.v==null?0.16:o.v)*vol;
     const g=a.createGain(); g.connect(a.destination);
     g.gain.setValueAtTime(0.0001,t);
     g.gain.exponentialRampToValueAtTime(v,t+(o.atk||0.008));
@@ -1786,7 +1841,7 @@ const SFX=(()=>{
     const d=(typeof SND!=="undefined")&&SND[k]; if(!d) return false;
     const shoot=b=>{
       const s=a.createBufferSource(); s.buffer=b;
-      const g=a.createGain(); g.gain.value=(d.v==null?1:d.v);
+      const g=a.createGain(); g.gain.value=(d.v==null?1:d.v)*vol;
       s.connect(g); g.connect(a.destination); s.start();
     };
     if(SBUF[k]==="기다림") return true;
@@ -1987,10 +2042,12 @@ const SFX=(()=>{
                     {w:"sawtooth",f:110,f2:52,d:0.6,v:0.2,at:0.5},
                     {noise:1,ftype:"lowpass",f:900,f2:140,d:0.55,q:0.7,v:0.24,at:0.62,decay:1.4}])
   };
-  return { play(k){ if(!on||!k) return;
+  return { play(k){ if(!on||!k||vol<=0) return;
              try{ if(K[k]) K[k](); else sample(k) }catch(e){} },
            toggle(){ on=!on; if(on) ctx(); return on },
-           get on(){ return on } };
+           get on(){ return on },
+           get vol(){ return vol },
+           set vol(v){ vol=Math.max(0,Math.min(1,+v||0)); if(vol>0) ctx() } };
 })();
 document.addEventListener("pointerdown",e=>{
   const b=e.target.closest && e.target.closest("button,.pick,.rw,.card,.sk");
@@ -2036,7 +2093,7 @@ function sceneBgm(){
   return run.night?"night":"main";
 }
 const BGM=(()=>{
-  const VOL=0.42, FADE=700;      /* 효과음이 묻히지 않을 만큼만 */
+  let VOL=0.42; const FADE=700;   /* 효과음이 묻히지 않을 만큼만 */
   let on=true, cur=null, want=null, unlocked=false;
   let a=null, b=null, live=null;   /* 두 개를 번갈아 쓴다 */
   let sting=null, hidden=false;
@@ -2121,10 +2178,32 @@ const BGM=(()=>{
             this.sync(); },
     set on(v){ on=!!v; if(!on) this.stop(); else { cur=null; this.sync() } },
     get on(){ return on },
-    get now(){ return cur }
+    get now(){ return cur },
+    get vol(){ return VOL },
+    set vol(v){
+      VOL=Math.max(0,Math.min(1,+v||0));
+      if(live&&!hidden){ if(live._ft){ clearInterval(live._ft); live._ft=0 }
+        try{ live.volume=sting?VOL*0.35:VOL }catch(e){} }
+    }
   };
 })();
 
+/* 맞춰 둔 소리 크기는 이 브라우저에 남긴다 */
+const VOL_KEY="kyunyeol.vol.v1";
+function volLoad(){
+  try{
+    const v=JSON.parse(localStorage.getItem(VOL_KEY)||"null");
+    if(!v) return;
+    if(v.sfx!=null) SFX.vol=v.sfx;
+    if(v.bgm!=null) BGM.vol=v.bgm;
+    if(v.off) { if(SFX.on) SFX.toggle(); BGM.on=false }
+  }catch(e){}
+}
+function volSave(){
+  try{ localStorage.setItem(VOL_KEY,
+    JSON.stringify({sfx:SFX.vol,bgm:BGM.vol,off:!SFX.on})) }catch(e){}
+}
+volLoad();
 /* 브라우저는 손을 대기 전에는 소리를 못 내게 막는다. 첫 손짓에 푼다 */
 ["pointerdown","keydown","touchstart"].forEach(k=>
   document.addEventListener(k,()=>BGM.unlock(),{capture:true,once:false}));
@@ -3332,7 +3411,7 @@ HEROES["도미니코"]={title:"왕실의 사서",role:"지원 · 축복",hp:20,m
 const SKILL_FULL={
  "가시 꼬리":"피해를 1(추가 ∴ ) 줍니다. 대상과 떨어진 거리만큼 _비늘 조각_을 얻습니다. ",
  "감싸주기":"잠금 (1). 아군에게 부정 보호막을 1 부여합니다.",
- "갑옷 장착":"무작위 방어구 카드를 가져옵니다.",
+ "갑옷 장착":"무작위 [방어구 카드]를 가져옵니다.",
  "강철 각반":"모든 아군 대원에게 보호막을 5 부여합니다.",
  "강철 갑옷":"아군 대원에게 보호막을 12 부여합니다.",
  "강철 군화":"아군 대원에게 보호막을 8, 추진력을 2, 공격력을 2 부여합니다.",
@@ -5483,7 +5562,8 @@ function newRun(name,pack){
   run={heroes:[makeHero(name)], gold:0, stone:0, cards:[], bag:[],
        field:0, size:S, grid:buildGrid(0),
        pos:{r:S-1,c:mid}, day:1, time:6, act:f.act, actMax:f.act,
-       taint:0, night:0, campDone:0, remapUsed:0, bonusLv:null, playMs:0};
+       taint:0, night:0, campDone:0, remapUsed:0, bonusLv:null, playMs:0,
+       pack:pack?pack.n:null, packDesc:pack?pack.d:null, packIcon:pack?pack.i:null};
   if(pack) pack.fx(run);
   const q=run.bonusLv; run.bonusLv=null;
   view="map";
@@ -5763,8 +5843,8 @@ function render0(){
       ${run.stone?`<span class="res stone" title="제련석 — 주둔지 제련소에서 장신구 두 개를 합칠 때 씁니다.">${resIcon("stone")}<b>${run.stone}</b></span>`:""}`;
   } else hr.innerHTML="";
   const hb=document.getElementById("hBtns"); hb.innerHTML="";
-  { const sb=el(`<button title="소리 켜기/끄기">♪ ${SFX.on?"켬":"끔"}</button>`);
-    sb.onclick=()=>{ BGM.on=SFX.toggle(); render() }; hb.appendChild(sb); }
+  { const sb=el(`<button title="소리 크기">♪ ${SFX.on?"켬":"끔"}</button>`);
+    sb.onclick=ev=>{ ev.stopPropagation(); volPanel(sb) }; hb.appendChild(sb); }
   { const qb=el(`<button title="단축키와 요령 (? 키)">도움말</button>`);
     qb.onclick=()=>{ HELP_ON=!HELP_ON; drawHelp() }; hb.appendChild(qb); }
   if(run&&view!=="title"&&view!=="map"&&view!=="over"&&view!=="clear"){
@@ -6117,7 +6197,7 @@ function txtFixApply(){
 function txtApply(){
   const E=txtEntries();
   E.forEach(e=>{ if(TXT[e.key]!=null) e.set(TXT[e.key]) });
-  KW_RE=null;   /* 키워드가 바뀌었을 수 있으니 다시 만든다 */
+  KW_RE=null; CARD_RE=null;   /* 키워드·카드가 바뀌었을 수 있으니 다시 만든다 */
 }
 let TXT_CAT=null, TXT_Q="";
 function drawText(app){
@@ -6424,14 +6504,20 @@ function heroDetail(n){
     그 대원의 능력치와 기술을 여기에 펼쳐 보여 줍니다.</div>`);
   const d=HEROES[n];
   const box=el(`<div class="hdetail"></div>`);
-  box.appendChild(el(`<div class="dart">${figure(n)}</div>
+  /* el() 은 첫 요소만 돌려준다 — 형제로 늘어놓으면 뒤엣것이 통째로 사라진다.
+     반드시 하나로 싸서 넘긴다. */
+  box.appendChild(el(`<div class="dtop">
+    <div class="dart">${figure(n)}</div>
     <div class="dnm">${esc(n)}</div>
     <div class="dtt">${esc(d.title)} · ${esc(d.role)}</div>
     <div class="dst">
-      <span>${ic("hp")} ${d.hp}</span>
-      <span>${ic("mana")} ${d.mana}</span>
-      <span>레벨마다 체력 +${d.hpLv}</span>
-    </div>`));
+      <span class="nb">${ic("hp")} ${d.hp}</span>
+      <span class="nb">${ic("mana")} ${d.mana}</span>
+      <span class="nb">레벨마다 ${ic("hp")} +${d.hpLv}</span>
+      <span class="nb">최대 30레벨</span>
+      <span class="nb">첫 레벨업 경험치 ${needExp(1)}</span>
+      <span class="nb">레벨마다 경험치 +2</span>
+    </div></div>`));
   box.appendChild(el(`<div class="dh">지속</div>`));
   box.appendChild(el(`<div class="dsk"><b>${esc(d.passive.n)}</b>
     <small>${rich(SKILL_FULL[d.passive.n]||d.passive.d||"")}</small></div>`));
@@ -9485,8 +9571,29 @@ function pickCount(n){
   let tip=null;
   const box=()=>tip||(tip=document.getElementById("kwtip"));
   function show(el2){
-    const k=el2.dataset.kw, d=KW_DESC[k]; if(!d) return;
     const b=box(); if(!b) return;
+    if(el2.dataset.card||el2.dataset.cards){
+      const nm=el2.dataset.card;
+      if(nm){
+        const L=CARD_LIB[nm]||{d:""};
+        b.innerHTML='<b style="color:#7fd39a">'+esc(nm)+'</b>'
+          +'<div class="cardpv"><span class="ci">'+cardArt(nm)+'</span>'
+          +'<small>'+rich(L.d||"")+'</small></div>';
+      }else{
+        const list=Object.keys(ARMOR_CARDS);
+        b.innerHTML='<b style="color:#7fd39a">방어구 카드</b>'
+          +'<div class="cardpv"><span class="ci">'+cardArt(list[0])+'</span>'
+          +'<small>'+esc(list.join(" · "))+'<br>이 가운데 하나를 가져옵니다.</small></div>';
+      }
+      b.style.display="block";
+      const r0=el2.getBoundingClientRect(), w0=b.offsetWidth, h0=b.offsetHeight;
+      let x0=r0.left+r0.width/2-w0/2, y0=r0.top-h0-9;
+      if(y0<6) y0=r0.bottom+9;
+      b.style.left=Math.max(6,Math.min(innerWidth-w0-6,x0))+"px";
+      b.style.top=Math.max(6,Math.min(innerHeight-h0-6,y0))+"px";
+      return;
+    }
+    const k=el2.dataset.kw, d=KW_DESC[k]; if(!d) return;
     const c=KW_COLOR[KW[k]]||KW_COLOR.plain;
     b.innerHTML='<b style="color:'+c+'">'+esc(k)+'</b>'+esc(d);
     b.style.display="block";
@@ -9498,18 +9605,52 @@ function pickCount(n){
   }
   function hide(){ const b=box(); if(b) b.style.display="none" }
   document.addEventListener("mouseover",e=>{
-    const t=e.target.closest&&e.target.closest(".kw[data-kw]");
+    const t=e.target.closest&&e.target.closest(".kw[data-kw],.kw[data-card],.kw[data-cards]");
     if(t) show(t);
   });
   document.addEventListener("mouseout",e=>{
-    if(e.target.closest&&e.target.closest(".kw[data-kw]")) hide();
+    if(e.target.closest&&e.target.closest(".kw[data-kw],.kw[data-card],.kw[data-cards]")) hide();
   });
   document.addEventListener("click",e=>{
-    const t=e.target.closest&&e.target.closest(".kw[data-kw]");
+    const t=e.target.closest&&e.target.closest(".kw[data-kw],.kw[data-card],.kw[data-cards]");
     if(t) show(t); else hide();
   },true);
   window.addEventListener("scroll",hide,true);
 })();
+/* 소리 크기 판 — ♪ 를 누르면 단추 아래에 붙어 열린다 */
+function volPanel(anchor){
+  const old=document.getElementById("volbox");
+  if(old){ old.remove(); return }
+  const pct=v=>Math.round(v*100);
+  const b=el(`<div id="volbox" class="volbox">
+    <div class="vrow"><span>효과음</span><input type="range" min="0" max="100" value="${pct(SFX.vol)}"><b>${pct(SFX.vol)}</b></div>
+    <div class="vrow"><span>배경음</span><input type="range" min="0" max="100" value="${pct(BGM.vol)}"><b>${pct(BGM.vol)}</b></div>
+    <button class="vmute">${SFX.on?"소리 끄기":"소리 켜기"}</button>
+  </div>`);
+  const rows=b.querySelectorAll(".vrow");
+  const bind=(row,get,set)=>{
+    const r=row.querySelector("input"), n=row.querySelector("b");
+    r.oninput=()=>{ set(r.value/100); n.textContent=r.value; volSave() };
+  };
+  bind(rows[0],()=>SFX.vol,v=>{ SFX.vol=v; SFX.play("click") });
+  bind(rows[1],()=>BGM.vol,v=>{ BGM.vol=v });
+  b.querySelector(".vmute").onclick=ev=>{
+    ev.stopPropagation();
+    BGM.on=SFX.toggle(); volSave(); b.remove(); render();
+  };
+  document.body.appendChild(b);
+  const r=anchor.getBoundingClientRect();
+  /* 창을 아직 못 잰 때(innerWidth 0)에도 엉뚱한 데로 가지 않게 */
+  const W=innerWidth||document.documentElement.clientWidth||9999;
+  b.style.top=(r.bottom+6)+"px";
+  b.style.left=Math.max(6,Math.min(W-b.offsetWidth-6,
+    r.left+r.width/2-b.offsetWidth/2))+"px";
+  setTimeout(()=>{
+    const away=e=>{ if(!b.contains(e.target)){ b.remove();
+      document.removeEventListener("pointerdown",away,true) } };
+    document.addEventListener("pointerdown",away,true);
+  },0);
+}
 /* 단축키를 어디에도 적어 두지 않았다. ? 나 머리줄 [도움말] 로 연다 */
 let HELP_ON=0;
 const HELP_ROWS=[
@@ -11951,8 +12092,9 @@ function heroPanel(h){
   const inf=PASSIVE_INFO[h.name]||[];
   if(inf.length){
     box.appendChild(el(`<div class="hp-h">지속</div>`));
+    /* 노트 원문이 있으면 그것을 쓴다. 없을 때만 셈해서 보여 주던 글로 떨어진다 */
     inf.forEach(p=>box.appendChild(el(`<div class="hp-sk">
-      <b>${esc(p.n)}</b><small>${icoify(p.d(h))}</small></div>`)));
+      <b>${esc(p.n)}</b><small>${SKILL_FULL[p.n]?rich(SKILL_FULL[p.n]):icoify(p.d(h))}</small></div>`)));
   }
   box.appendChild(el(`<div class="hp-h">기술</div>`));
   h.sk.forEach((sk,i)=>{
@@ -11967,6 +12109,13 @@ function heroPanel(h){
       ${sk.alt?`<small style="color:var(--faint)">전환 : ${esc(sk.alt.n)}</small>`:""}
     </div>`));
   });
+  if(run&&run.pack){
+    box.appendChild(el(`<div class="hp-h">시작 꾸러미</div>`));
+    box.appendChild(el(`<div class="hp-tr"><div class="tr1 withi">
+      <span class="ti">${packArt(run.packIcon,run.pack)}</span>
+      <b>${esc(run.pack)}</b>
+      ${run.packDesc?`<small>${rich(run.packDesc)}</small>`:""}</div></div>`));
+  }
   const list=takenList(h);
   const keep=list.filter(x=>REW_KEEP.indexOf(x.k)>=0);
   const show=REW_ALL?list:keep;
@@ -11982,7 +12131,9 @@ function heroPanel(h){
     list.length?"전투에 쓰이는 보상은 아직 없습니다. [모두 보기]로 나머지를 봅니다."
                :"아직 고른 보상이 없습니다."}</p>`));
   else box.appendChild(el(`<div class="hp-tr">${show.map(x=>
-      `<div class="tr1"><b>${esc(x.n)}</b>
+      `<div class="tr1 withi">
+        <span class="ti">${x.r?rewardIcon(x.r):""}</span>
+        <b>${esc(x.n)}</b>
         <span class="g2">${x.r?esc(x.r.g):""}${x.mine?" · 전용":""}${
           REW_ALL?" · "+esc(x.k):""}</span>
         ${x.r?`<small>${rich(x.r.d)}</small>`:""}${x.r?rewCondHtml(x.r):""}</div>`).join("")}</div>`));
