@@ -126,6 +126,9 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .slot.inrng{box-shadow:0 0 0 1px rgba(224,112,90,.55) inset;background:rgba(224,112,90,.07)}
 .slot.inrng .no{color:#e0705a}
 .peekfoe .rngline{color:var(--faint)}
+/* 이 판에서 맡은 역할 — 함께 선 적이 누구냐에 따라 달라진다 */
+.peekfoe .rolel{color:#5fd8cf;border:1px solid rgba(95,216,207,.45);
+  border-radius:3px;padding:0 7px;cursor:help}
 /* 사람을 쫓는 적의 과녁 — 칸이 아니라 이름이 적힌다 */
 .intent .tgt.chase{color:#e0a86a}
 .slot .no{position:absolute;top:-9px;left:7px;background:var(--ink);border:1px solid var(--rule);
@@ -6145,12 +6148,127 @@ const FOE={
    ai:{volley:6,near:6,weak:5,back:4,thorn:2,buff:2,any:2,def:1,ret:0.2,debs:["chill","fear","atkDn"]},
    hit:"서리 창"}
 };
+/* 변종은 밑동 적을 베껴 만든다 — 아래 VARIANT 를 읽어 FOE 에 풀어 넣는다.
+   (VARIANT 는 FOE 보다 뒤에 있으므로 실제로 푸는 것은 그 뒤에서 한다) */
 const FIELD_FOES=[
  ["작은 죄수","작은 죄수","사슬 광인","굶주린 그림자","떠도는 불씨"],
  ["사슬 광인","부서진 파수병","균열 벌레","굶주린 그림자"],
  ["균열 벌레","얼음 정령","부서진 파수병","얼음 정령"]
 ];
 const BOSSES=["간수장","고철 거인","서리 군주"];
+/* ═══════════ 조우 ═══════════
+   전투 하나는 적을 뽑아 세우는 것이 아니라 **손으로 짠 한 판**이다.
+   n  이름 (기록에 뜬다)      w  뽑힐 무게
+   foes  앞자리부터 차례로. 6번(가장 가까운 칸)이 첫 번째다
+   min   대원이 이만큼은 되어야 나온다 (없으면 1)
+   ※ 새 적을 만들면 여기에도 한 줄 넣어야 실제로 나온다. */
+const ENCOUNTER=[
+ /* ── 1구역 · 최초의 숲 ── 배우는 곳. 한 판에 배울 것 하나씩 ── */
+ [
+  {n:"떠도는 죄수 둘",  w:4, foes:["작은 죄수","작은 죄수"]},
+  {n:"사슬에 묶인 것",  w:3, foes:["작은 죄수","사슬 광인"]},
+  {n:"어둠 속에서",     w:3, foes:["작은 죄수","굶주린 그림자"]},
+  {n:"불티",           w:3, foes:["작은 죄수","떠도는 불씨"]},
+  {n:"멀고 가까운 것",  w:2, foes:["작은 죄수","떠도는 불씨","사슬 광인"], min:2},
+  {n:"굶주린 셋",       w:2, foes:["작은 죄수","작은 죄수","굶주린 그림자"], min:2},
+ ],
+ /* ── 2구역 ── 벽과 뒷심. '무엇을 먼저 치우느냐' 를 배운다 ── */
+ [
+  {n:"벽과 사슬",       w:4, foes:["부서진 파수병","사슬 광인"]},
+  {n:"벽 뒤의 침",      w:4, foes:["부서진 파수병","균열 벌레"]},
+  {n:"그림자와 사슬",   w:3, foes:["사슬 광인","굶주린 그림자"]},
+  {n:"두 겹의 벽",      w:2, foes:["부서진 파수병","부서진 파수병","균열 벌레"], min:3},
+  {n:"야행성 짐승 무리", w:3, foes:["늑대치기","무시무시한 늑대","무시무시한 늑대"], min:2},
+  {n:"숲의 잔재",       w:2, foes:["사슬 광인","균열 벌레","굶주린 그림자"], min:3},
+ ],
+ /* ── 3구역 ── 버티는 적. 오래 끌면 진다 ── */
+ [
+  {n:"서리와 벽",       w:4, foes:["부서진 파수병","얼음 정령"]},
+  {n:"두 정령",         w:3, foes:["얼음 정령","얼음 정령"], min:2},
+  {n:"서리 속의 침",    w:4, foes:["얼음 정령","균열 벌레"]},
+  {n:"옛 사슬",         w:3, foes:["부서진 파수병","사슬 처형자"]},
+  {n:"굶주린 무리",     w:2, foes:["늑대치기","무시무시한 늑대","굶주린 그림자"], min:3},
+  {n:"얼어붙은 벽",     w:2, foes:["부서진 파수병","얼음 정령","균열 벌레"], min:3},
+ ]
+];
+/* 정예 — 같은 조우표에서 고르되 앞자리에 단단한 놈을 하나 더 세운다 */
+const ELITE_LEAD=["부서진 파수병","부서진 파수병","얼음 정령"];
+
+/* ── 역할 ──
+   같은 적이라도 누구와 함께 섰느냐에 따라 하는 짓이 달라야 한다.
+   앞을 막아 주는 놈이 있으면 뒤에서 벼리고, 혼자면 달려든다.
+   when(g,f) 의 g 는 함께 선 적들(자기 포함), f 는 자기다. 맨 처음 맞는 것 하나만 걸린다. */
+const wallAt=g=>g.some(x=>((FOE[x.name]||{}).gim||{}).taunt||(FOE[x.name]||{}).def>=10);
+const ROLE={
+ "사슬 광인":[
+  {t:"뒷심", when:(g,f)=>g.length>1&&wallAt(g.filter(x=>x!==f)),
+   d:"앞을 막아 주는 놈이 있어 뒤에서 벼린다", ai:{buff:4,combo:3,near:-2}},
+  {t:"홀로", when:g=>g.length<=1,
+   d:"막아 줄 놈이 없어 곧장 달려든다", ai:{combo:5,weak:3,buff:-5,def:-1}},
+ ],
+ "무시무시한 늑대":[
+  {t:"무리", when:(g,f)=>g.some(x=>x!==f&&x.name==="늑대치기"),
+   d:"목자가 뒤를 봐 주니 앞뒤 안 가리고 문다", ai:{back:4,twin:3,def:-1}},
+  {t:"홀로", when:(g,f)=>!g.some(x=>x!==f&&x.name==="늑대치기"),
+   d:"목자가 없으니 몸을 사린다", ai:{near:3,back:-3,def:2}},
+ ],
+ "굶주린 그림자":[
+  {t:"숨을 곳", when:g=>g.length>1,
+   d:"가릴 것이 있어 뒷줄만 노린다", ai:{back:4,twin:2}},
+  {t:"드러남", when:g=>g.length<=1,
+   d:"숨을 곳이 없어 덤빈다", ai:{near:6,back:-6,twin:2}},
+ ],
+ "떠도는 불씨":[
+  {t:"뒷불", when:(g,f)=>g.some(x=>x!==f&&((FOE[x.name]||{}).def||0)>=6),
+   d:"앞이 든든하니 마음껏 뿌린다", ai:{volley:4}},
+ ],
+ "균열 벌레":[
+  {t:"벽 뒤", when:(g,f)=>g.some(x=>x!==f&&(((FOE[x.name]||{}).gim||{}).taunt)),
+   d:"벽 뒤에서 느긋하게 뱉는다", ai:{volley:3,back:3,ret:0.1}},
+ ],
+ "부서진 파수병":[
+  {t:"지킴이", when:(g,f)=>g.some(x=>x!==f&&((FOE[x.name]||{}).def||0)<=6),
+   d:"뒤에 무른 놈이 있으니 몸으로 막고 고친다", ai:{def:4,heal:4,near:-2}},
+  {t:"홀로", when:g=>g.length<=1,
+   d:"지킬 것이 없으니 직접 때린다", ai:{near:6,def:-3,heal:-5}},
+ ],
+ "얼음 정령":[
+  {t:"쌍둥이", when:(g,f)=>g.filter(x=>x.name==="얼음 정령").length>1,
+   d:"둘이 겹쳐 뿌린다 — 하나는 넓게, 하나는 굳힌다", ai:{volley:4,def:2}},
+ ],
+};
+/* 이 적이 이 판에서 맡은 역할 — 없으면 null */
+function roleOf(f,group){
+  /* 변종은 밑동의 역할을 물려받는다 — 사슬 처형자도 벽 뒤에서는 벼린다 */
+  const of=(FOE[f.name]||{}).of;
+  const L=ROLE[f.name]||(of?ROLE[of]:null); if(!L) return null;
+  for(const r of L) if(r.when(group,f)) return r;
+  return null;
+}
+
+/* ── 변종 ──
+   1구역 적이 3구역에 다시 나올 때. 수치만 올리면 똑같은 짓을 더 아프게 할 뿐이라,
+   이름을 갈고 **행동을 하나 더** 준다. 조우표에 변종 이름을 그대로 적어 쓴다. */
+const VARIANT={
+ "사슬 처형자":{of:"사슬 광인", hpX:1.7, atkX:1.35,
+   ai:{combo:12,buff:8,volley:5,weak:4,near:2,thorn:2,def:1},
+   d:"사슬을 여럿 휘감아 한꺼번에 후려친다"},
+};
+/* 변종을 FOE 에 풀어 넣는다 — 밑동을 베끼고 적은 것만 덮어쓴다 */
+Object.keys(VARIANT).forEach(nm=>{
+  const V=VARIANT[nm], base=FOE[V.of];
+  if(!base){ return }
+  FOE[nm]=Object.assign({},base,{
+    hp:Math.round(base.hp*(V.hpX||1)),
+    atk:Math.round(base.atk*(V.atkX||1)),
+    def:Math.round(base.def*(V.defX||1)),
+    exp:Math.round(base.exp*(V.expX||1.5)),
+    ai:V.ai||base.ai, hit:V.hit||base.hit, of:V.of});
+  if(V.gim) FOE[nm].gim=V.gim;
+  /* 그림·대사는 밑동 것을 그대로 빌린다 */
+  if(typeof LOOK!=="undefined"&&LOOK[V.of]&&!LOOK[nm]) LOOK[nm]=LOOK[V.of];
+});
+
 /* ═══════════ 상태 이상 ═══════════ */
 const DEBUFF={
  burn :{n:"화상",  d:"턴이 끝날 때 중첩만큼 피해. 턴마다 1 감소",       c:"#e0705a"},
@@ -9677,6 +9795,13 @@ const UNLOCK=[1,1,7,15];   // 3번 기술 7레벨, 궁극기 15레벨 (기획노
 const foeNo=s=>s+SLOTS;                 /* 적 칸 → 보이는 번호 */
 const unitNo=u=>!u?"?":((B&&B.foes&&B.foes.indexOf(u)>=0)?u.slot+SLOTS:u.slot);
 const dist=(a,e)=>(SLOTS-a)+e;   /* = foeNo(e) − a · 아군 5번과 적 6번이 거리 1 */
+function pickEncounter(f,n){
+  const list=(ENCOUNTER[f]||[]).filter(e=>(e.min||1)<=n);
+  if(!list.length) return null;
+  const pool=[];
+  list.forEach(e=>{ for(let q=0;q<(e.w||1);q++) pool.push(e) });
+  return rnd(pool);
+}
 function foeSet(kind){
   /* 이 전투에만 세울 적이 정해져 있으면 그것부터 (미지의 구역 난동꾼 등) */
   if(run.dun&&run.dun.forceFoes) return run.dun.forceFoes.map(x=>x.slice());
@@ -9688,19 +9813,24 @@ function foeSet(kind){
     for(let i=0;i<extra;i++) out.push([rnd(pool),2+i]);
     return out;
   }
-  if(kind==="elite"){
-    /* 정예는 대원 수 제한을 덜 받고, 앞자리에 가장 단단한 놈이 선다 */
-    const k=Math.max(2,Math.min(4,n+1));
-    const lead=pool.slice().sort((a,b)=>FOE[b].hp-FOE[a].hp)[0];
-    out.push([lead,1]);
-    for(let i=2;i<=k;i++) out.push([rnd(pool),i]);
+  /* 손으로 짠 조우에서 고른다. 대원이 적으면 큰 판은 빠진다 */
+  const enc=pickEncounter(f,n);
+  if(enc){
+    B_ENC=enc.n;
+    const names=enc.foes.slice(0,SLOTS);
+    /* 정예면 앞자리에 단단한 놈을 하나 더 세운다 */
+    if(kind==="elite"&&names.length<SLOTS) names.unshift(ELITE_LEAD[f]||names[0]);
+    names.forEach((nm,i)=>out.push([nm,i+1]));
     return out;
   }
+  /* 조우표에 맞는 것이 없으면 예전처럼 뽑는다 (그물) */
+  B_ENC=null;
   const base=2+Math.floor(Math.random()*2);
   const k=Math.max(1,Math.min(base,n+1));
   for(let i=1;i<=k;i++) out.push([rnd(pool),i]);
   return out;
 }
+let B_ENC=null;   /* 방금 고른 조우 이름 — 전투 기록에 적는다 */
 /* 대원이 강해진 만큼 적도 따라온다 */
 function partyPower(){
   if(!run||!run.heroes.length) return 1;
@@ -9748,6 +9878,7 @@ function startBattle(kind,pinned){
     try{ BSNAP={kind:kind,run:JSON.stringify(run)} }catch(e){ BSNAP=null }
   }
   B={kind,turn:1,over:0,log:[],hand:[],units:[],foes:[],drag:null,pick:null};
+  B_ENC=null;                       /* 지난 판의 조우 이름이 남지 않게 */
   /* 전투(옛 던전) 하나는 여러 라운드로 이루어진다.
      "전투 시작" 효과는 첫 라운드에 딱 한 번만 걸리고, 그 결과는 라운드를 넘어 남는다. */
   const fresh=!run.dun||run.dun.wave<=1;
@@ -9820,6 +9951,28 @@ function startBattle(kind,pinned){
       shield:0,air:0,alive:1,id:i,infect:0,stun:0,weak:0,
       taunt:0,thorn:0,evade:0,negShield:0,hide:0,deb:{}});
   });
+  /* ── 역할 ── 누구와 함께 섰느냐에 따라 하는 짓이 달라진다.
+     여기서 한 번만 정하고, 그 판이 끝날 때까지 그대로 간다.
+     f.ai 에 적어 두면 rollIntents 가 FOE 의 것 대신 이것을 본다. */
+  B.foes.forEach(f=>{
+    const base=(FOE[f.name]&&FOE[f.name].ai)||{};
+    const r=roleOf(f,B.foes);
+    if(!r){ f.ai=null; f.role=null; return }
+    const m=Object.assign({},base);
+    for(const k in r.ai){
+      if(k==="debs") continue;
+      m[k]=(k==="ret") ? Math.max(0,(m[k]||0)+r.ai[k])
+                       : Math.max(0,(m[k]||0)+r.ai[k]);
+    }
+    f.ai=m; f.role=r.t; f.roleD=r.d;
+  });
+  /* 어떤 판인지 기록에 남긴다 — 조우 이름과, 역할을 맡은 적들 */
+  if(B_ENC){
+    say(`조우 — ${B_ENC}`,"t1");
+    const rs=B.foes.filter(f=>f.role);
+    if(rs.length) say(rs.map(f=>`${f.name}(${f.role})`).join(" · "),"t3");
+    B_ENC=null;
+  }
   /* 적마다 기믹 — 앞자리일수록 도발, 뒷자리는 은신·회피 */
   B.foes.forEach((f,i)=>{
     const G=(FOE[f.name]&&FOE[f.name].gim)||{};
@@ -10033,6 +10186,7 @@ function foePeekHtml(f){
       <b>${esc(f.name)}</b>
       <span class="hint">${ic("hp")}${Math.max(0,f.hp)}/${f.maxHp} ·
         ${ic("atk")}${f.atk} · ${ic("def")}${defVal(f)} · 사거리 ${f.rng} · ${esc(D.el||"공격")}</span>
+      ${f.role?`<span class="hint rolel" title="${esc(f.roleD||"")}">${esc(f.role)}</span>`:""}
       <span class="hint rngline">${(()=>{
         /* 이 적이 지금 닿는 칸 — 빈 칸까지 포함해 보여 준다.
            닿는 칸이 없으면 그 사실이 곧 정보다 (앞을 비우면 손이 묶인다) */
@@ -10091,7 +10245,7 @@ function rollIntents(){
       /* 다가갈 수 없어도 손 놓고 있지는 않는다 — 무리해서 노린다 */
     }else{
       /* 원거리형은 붙으면 물러선다 */
-      const RET=((FOE[f.name]&&FOE[f.name].ai)||{}).ret||0;
+      const RET=(f.ai||(FOE[f.name]&&FOE[f.name].ai)||{}).ret||0;
       if(RET&&dist(inR[0].slot,f.slot)<=1&&f.slot<SLOTS&&!foeAt(f.slot+1)&&Math.random()<RET){
         f.intent={t:"back"}; return;
       }
@@ -10105,7 +10259,7 @@ function rollIntents(){
     /* 사거리 밖이면 무리하게 뻗느라 위력이 준다 */
     const FM=far?0.7:1, FP=far?"무리한 ":"";
     const dv=x=>Math.max(1,Math.round(x*FM));
-    const D=(FOE[f.name]&&FOE[f.name].ai)||{};
+    const D=f.ai||(FOE[f.name]&&FOE[f.name].ai)||{};
     const EL=(FOE[f.name]&&FOE[f.name].el)||"공격";
     /* 안 적은 것은 안 한다. 예전에는 heal·curse 가 기본값이라 누구나 했다 —
        그 탓에 늑대가 서로를 돌보고 잡졸이 저주를 걸었다. */
