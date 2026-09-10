@@ -459,6 +459,56 @@ button.dtl{padding:3px 10px;font-size:11.5px}
 .rost .art svg{width:44px;height:44px;filter:drop-shadow(0 2px 0 rgba(0,0,0,.5))}
 .rost b{font-size:12.5px}
 .rost small{display:block;color:var(--dim);font-size:11px}
+/* ── 대원 고르기 ── 왼쪽에 고를 것, 오른쪽에 자세히 ── */
+.startwrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,380px);
+  gap:20px;align-items:start;max-width:1120px;margin:16px auto 0}
+.startleft{min-width:0}
+.starthd{font-family:var(--serif);font-size:15px;color:var(--brass);
+  letter-spacing:.08em;margin:0 0 10px}
+.starthd+.starthd{margin-top:0}
+.heropick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.hcard{border:1px solid var(--rule);border-radius:10px;background:var(--panel);
+  padding:12px 12px 14px;cursor:pointer;text-align:center;
+  transition:border-color .12s,transform .12s,box-shadow .12s}
+.hcard:hover{border-color:var(--rule2);transform:translateY(-2px)}
+.hcard.on{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass),0 0 18px -6px var(--brass)}
+.hcard .art{height:96px;display:flex;align-items:flex-end;justify-content:center}
+.hcard .art img.pxs,.hcard .art svg{height:96px;width:auto}
+.hcard .role{margin-top:8px;font-size:10.5px;letter-spacing:.08em;color:var(--brass);
+  text-transform:none}
+.hcard h3{margin:4px 0 0;font-family:var(--serif);font-size:15px;color:var(--fg);
+  word-break:keep-all;line-height:1.4}
+.hcard .one{margin:7px 0 0;font-size:11.5px;color:var(--dim);line-height:1.6;
+  word-break:keep-all;min-height:2.4em}
+.hcard .st{margin-top:9px;font-size:11px;color:var(--faint);
+  display:flex;gap:10px;justify-content:center}
+.startpacks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:6px}
+.startpacks .rw{margin:0}
+/* 오른쪽 — 고르기 전에는 안내만 */
+.hdetail{border:1px solid var(--rule);border-radius:10px;background:var(--panel);
+  padding:16px;position:sticky;top:14px;min-height:340px}
+.hdetail.empty{display:flex;align-items:center;justify-content:center;text-align:center;
+  color:var(--faint);font-size:12.5px;line-height:1.9;word-break:keep-all}
+.hdetail .dart{height:150px;display:flex;align-items:flex-end;justify-content:center;
+  background:radial-gradient(circle at 50% 70%,rgba(201,162,39,.12),transparent 68%)}
+.hdetail .dart img.pxs,.hdetail .dart svg{height:150px;width:auto}
+.hdetail .dnm{margin-top:10px;text-align:center;font-family:var(--serif);font-size:18px;
+  color:var(--brass)}
+.hdetail .dtt{text-align:center;font-size:11.5px;color:var(--dim);margin-top:3px}
+.hdetail .dst{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px;
+  padding:9px 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);
+  font-size:12px;color:var(--dim)}
+.hdetail .dh{margin:13px 0 7px;font-size:10.5px;letter-spacing:.14em;color:var(--faint)}
+.hdetail .dsk{border:1px solid var(--rule);border-radius:7px;padding:8px 10px;margin-bottom:7px}
+.hdetail .dsk.lk{opacity:.5}
+.hdetail .dsk b{font-size:12.5px}
+.hdetail .dsk .c{float:right;font-size:10.5px;color:var(--faint)}
+.hdetail .dsk small{display:block;margin-top:4px;font-size:11.5px;color:var(--dim);
+  line-height:1.65;word-break:keep-all}
+@media(max-width:900px){
+  .startwrap{grid-template-columns:minmax(0,1fr)}
+  .hdetail{position:static;min-height:0}
+}
 /* ── 미지의 구역 ── 그림 → 제목 → 상황 문구 → 선택지 ── */
 .evbox{max-width:820px;margin:18px auto 0;display:flex;flex-direction:column;align-items:center}
 .evart{width:clamp(200px,34vw,320px);height:clamp(200px,34vw,320px);
@@ -3392,38 +3442,9 @@ const SKILL_FULL={
  "회오리 장막":"카제가 8회 이동하거나 피해를 주면, 그 턴에 보호막을 6(추가 ¤ ) 얻습니다.",
  "후미 준비":"잠금 (1). 가장 뒤로 이동하고 체력을 5 회복합니다.\n지나간 아군들에게 보호막을 5(추가 ¤ ) 부여합니다.\n선두 방어로 전환합니다."
 };
-const SKILL_TEXT={
- "베기":"나이코스의 기본 공격. 거리 제한이 없다.",
- "막기":"보호막을 얻는다. 보호막은 내 턴이 시작할 때 사라진다.",
- "갑옷 장착":"무작위 방어구 카드를 손에 넣는다. 손패의 카드는 아군 칸에 끌어다 놓아 쓴다.",
- "승리의 일격":"잠금(1). 이 기술로 적을 처치할 때마다 베기의 피해량이 영구히 1 증가한다.",
- "진선풍도":"거리 2. 세 번째 사용마다 강화되어 거리 3의 회오리를 날리고, 지나간 적들을 친 뒤 가장 먼 적을 공중에 띄운다.",
- "산들바람":"고른 칸 쪽으로 이동하고 추진력을 얻는다. 다음 진선풍도의 거리와 피해가 늘어난다. 갈 칸에 아군이 있으면 자리를 바꾼다.",
- "기류 흘리기":"추진력으로 시전한다. 회피를 1 얻고, 이번 턴에 이 기술의 비용이 1씩 오른다.",
- "잠재력 활성":"잠금(2). 이번 턴 진선풍도가 거리 안의 모든 적을 친다. 강화된 회오리는 맞은 적을 전부 공중에 띄운다. 다음 4번의 산들바람이 무료가 된다.",
- "씹어먹기":"피해를 주고 그만큼 배를 채운다.",
- "균열 차원문":"고른 칸에 차원문을 연다. 적 칸이면 내 턴이 끝날 때 피해를, 아군 칸이면 내 턴이 시작할 때 보호막을 준다. 차원문이 있는 칸에 다시 쓰면 악마 하수인 카드를 가져온다. 하수인은 빈 칸에 소환해 직접 싸우게 할 수 있다.",
- "응축 폭발":"잠금(3). 2턴 동안 도발과 큰 보호막을 얻고, 2턴 뒤 모든 적에게 굴라의 현재 체력 20%만큼 피해를 준다.",
- "융합":"아군 전장에 소환된 굴라의 소환물을 모두 삼킨다. 삼킨 체력만큼 회복하고, 하나당 공격력·마법력·보호력을 3 얻는다. (이번 전투 동안)",
- "방패 막기":"보호막을 얻고 방패 밀치기로 전환된다.",
- "방패 밀치기":"피해를 주고 방패 막기로 전환된다.",
- "정의의 기운":"잠금(1). 헥토가 지금 들고 있는 보호막만큼 그대로 피해로 돌려준다.",
- "선두 방어":"가장 앞(5번 칸)으로 이동하고 도발을 얻는다. 지나친 아군 하나당 보호막을 얻는다. 후미 준비로 전환된다.",
- "후미 준비":"잠금(1). 가장 뒤(1번 칸)로 이동하고 체력을 회복한다. 지나친 아군에게 보호막을 준다. 선두 방어로 전환된다.",
- "굳건한 성벽":"사용한도(2). 성벽 카드를 손에 넣는다. 카드를 빈 칸에 끌어다 놓으면 체력 30의 성벽이 소환된다. 성벽은 항상 도발 상태이고 움직일 수 없다.",
- "페일노트":"가장 멀리 있는 적을 쏜다. 거리 제한은 없지만, 겨눌 수 있는 것은 맨 뒤의 적뿐이다.",
- "피부 강화":"사용한도(2). 다음 적 턴 동안 갑피를 얻는다. 갑피가 있으면 한 번에 받는 피해가 그 수치를 넘지 못한다.",
- "꿰뚫는 화살":"잠금(1). 보호막을 무시하고 그대로 체력을 깎는다.",
- "명중":"사용한도(1). 이 피해로 적을 처치하면 피부 강화의 사용한도가 1 늘어난다.",
- "죄악의 기침":"가장 가까운 적을 치고 감염시킨다. 겨눌 수 있는 것은 맨 앞의 적뿐이다. 감염이 3 이상 쌓인 적에게 쓰면 체력을 4 회복한다.",
- "확산":"감염된 적들에게 보호약화를 1 주고, 고른 적과 그 주변을 감염시킨다.",
- "숙주 폭발":"잠금(2). 모든 적에게 3(+마법력 + 감염 중첩의 2배) 피해를 주고 감염을 모두 없앤다.",
- "전두엽 감염":"잠금(1). 감염이 3 이상인 적의 감염을 1 늘리고, 그 적들은 다음 턴에 방어만 한다.",
- "라이티늄 지팡이":"칸을 고른다. 아군이면 체력을 회복시키고 적이면 피해를 준다. 독서 중첩 +1. 축복 상태면 회피를 1 얻는다.",
- "의지 약화":"다음 턴 동안 고른 적의 공격력을 3 줄인다. 독서 중첩 +4. 축복 상태면 보호력도 함께 줄인다.",
- "영광의 족쇄":"잠금(1). 공격력·마법력을 보호력으로 바꾸고 가장 가까운 적을 기절시키며 친다. 축복 상태면 모든 적을 기절시킨다.",
- "참회의 기류":"잠금(1). 기류가 아군을 지나며 보호막을 주고, 적들을 지나 돌아온다. 지날 때마다 양이 1씩 늘어난다."
-};
+/* 기술 한 줄 요약은 없앴다 — 기획 노트 문장(SKILL_FULL) 하나로만 간다.
+   요약을 따로 두면 노트와 어긋나고, 고칠 곳만 둘로 늘어난다. */
+
 const SUMMONS={
  "악마 하수인":{hp:10,mana:1,owner:"굴라",
    d:"굴라가 균열 차원문을 재사용해 불러낸 하수인.",
@@ -5449,7 +5470,6 @@ function packArt(i,name){
 
 let startPicks=null, startPacks=null, pendingHero=null;
 let REW_ALL=0;      /* 고른 보상 — 전투 보상만 볼지, 모두 볼지 */
-let SKDETAIL=false;
 function rollStart(){
   const pool=playableHeroes(); startPicks=[];
   while(startPicks.length<3&&pool.length)
@@ -5977,9 +5997,7 @@ function txtSave(){ try{ localStorage.setItem(TXT_KEY,JSON.stringify(TXT)) }catc
 function txtEntries(){
   const out=[];
   const add=(cat,key,label,get,set,area)=>out.push({cat,key,label,get,set,area:!!area});
-  Object.keys(SKILL_TEXT).forEach(n=>add("기술 요약","skill:"+n,n,
-    ()=>SKILL_TEXT[n], v=>SKILL_TEXT[n]=v, true));
-  Object.keys(SKILL_FULL).forEach(n=>add("기술 원문","full:"+n,n,
+  Object.keys(SKILL_FULL).forEach(n=>add("기술","full:"+n,n,
     ()=>SKILL_FULL[n], v=>SKILL_FULL[n]=v, true));
   KW_TAB.forEach(k=>add("키워드","kw:"+k.n,k.n,
     ()=>KW_DESC[k.n], v=>{ KW_DESC[k.n]=v; k.d=v }, true));
@@ -5988,7 +6006,7 @@ function txtEntries(){
   COMMON.forEach((r,i)=>add("공용 보상","common:"+r.g+":"+r.n,"["+r.g+"] "+r.n,
     ()=>r.d, v=>r.d=v, true));
   Object.keys(HERO_REWARDS).forEach(hn=>HERO_REWARDS[hn].forEach(r=>
-    add("전용 보상 · "+hn,"hr:"+hn+":"+r.n,"["+r.g+"] "+r.n, ()=>r.d, v=>r.d=v, true)));
+    add("전용 보상","hr:"+hn+":"+r.n,hn+" ▸ ["+r.g+"] "+r.n, ()=>r.d, v=>r.d=v, true)));
   EVENTS.forEach(e=>{
     add("미지의 구역","ev:"+e.n+":t",e.n+" — 상황 문구",()=>e.t,v=>e.t=v,true);
     add("미지의 구역","ev:"+e.n+":say",e.n+" — 결과 화면 대사 (모든 선택지 공통)",
@@ -6004,33 +6022,35 @@ function txtEntries(){
   /* 대사 — 한 줄이 대사 하나 */
   const BCAT=[["in","전장에 설 때"],["atk","기술을 쓸 때"],["hurt","맞을 때"],
               ["kill","처치할 때"],["down","쓰러질 때"]];
-  const barkOwner=n=>{
-    const foe=!!FOE_NAMES[n];
-    return "대사 · "+(foe?"적":"대원")+" · "+n;
-  };
-  Object.keys(BARK).forEach(n=>{
+  /* 대원과 적을 모두 훑는다 — 대사가 아직 없는 캐릭터도 빈 칸으로 뜬다.
+     새 적을 만들 때마다 손으로 자리를 파지 않아도 된다. */
+  const barkWho=[]
+    .concat(Object.keys(HEROES).map(n=>[n,"대원"]))
+    .concat(Object.keys(FOE).map(n=>[n,"적"]))
+    .concat(Object.keys(BARK).filter(n=>!HEROES[n]&&!FOE[n]).map(n=>[n,"그 밖"]));
+  const barkSeen={};
+  barkWho.forEach(([n,who])=>{
+    if(barkSeen[n]) return; barkSeen[n]=1;
     BCAT.forEach(([k,label])=>{
-      add(barkOwner(n),"bark:"+n+":"+k,n+" ▸ "+label,
-        ()=>(BARK[n][k]||[]).join("\n"),
-        v=>{ BARK[n][k]=String(v).split("\n").map(x=>x.trim()).filter(Boolean) },true);
+      add("대사","bark:"+n+":"+k,who+" · "+n+" ▸ "+label,
+        ()=>((BARK[n]||{})[k]||[]).join("\n"),
+        v=>{ BARK[n]=BARK[n]||{};
+             BARK[n][k]=String(v).split("\n").map(x=>x.trim()).filter(Boolean) },true);
     });
   });
-  BCAT.forEach(([k,label])=>add("대사 · 공통","barkany:"+k,"이름 없는 대상 ▸ "+label,
+  BCAT.forEach(([k,label])=>add("대사","barkany:"+k,"공통 · 이름 없는 대상 ▸ "+label,
     ()=>(BARK_ANY[k]||[]).join("\n"),
     v=>{ BARK_ANY[k]=String(v).split("\n").map(x=>x.trim()).filter(Boolean) },true));
   Object.keys(HEROES).forEach(hn=>{
     const H=HEROES[hn];
     add("대원 소개","hero:"+hn+":focus",hn+" — 한 줄 소개",()=>H.focus,v=>H.focus=v,true);
     add("대원 소개","hero:"+hn+":pass",hn+" — 지속 능력",()=>H.passive.d,v=>H.passive.d=v,true);
-    H.skills.forEach((sk,i)=>add("대원 기술 요약","hsk:"+hn+":"+i,hn+" ▸ "+sk.n,
-      ()=>sk.d,v=>sk.d=v,true));
+
   });
   return out;
 }
 /* TXTFIX:BEGIN — 보내 주신 '설명 고치기' 파일. txtEntries 의 열쇠를 쓴다 */
 const TXT_FIX={
- "skill:베기":"나이코스의 기본 공격. ",
- "skill:막기":"보호막을 얻는다. ",
  "ev:거렁뱅이의 부탁:o0:d":"금화를 줍니다. 무작위 아군 대원이 회복합니다.",
  "ev:거렁뱅이의 부탁:o2:d":"금화를 빼앗습니다. 죄책감이 가슴을 찌릅니다...",
  "ev:룰렛의 달인:t":"천막 아래에서 광대가 낡은 룰렛을 돌리고 있습니다. 운을 시험해 보겠느냐고 묻습니다.",
@@ -6212,8 +6232,7 @@ function drawCodex(app){
       <div class="g">${x.costType==="mom"?"추진력":x.costType==="scale"?"비늘":"마나"} ${x.cost} · ${esc(x.el)}${
         lockLv>1?` · ${lockLv}레벨`:""}</div>
       <div class="rwi">${rewardIcon({n:x.n,d:x.d||""})}</div>
-      <b>${esc(x.pick||x.n)}</b><p>${rich(SKILL_FULL[x.n]||SKILL_TEXT[x.n]||x.d||"")}</p>
-      ${SKILL_FULL[x.n]?`<div class="fullx"><span>기획 원문</span>${rich(SKILL_FULL[x.n])}</div>`:""}</div>`));
+      <b>${esc(x.pick||x.n)}</b><p>${rich(SKILL_FULL[x.n]||x.d||"")}</p></div>`));
   });
   wrap.appendChild(sk);
 
@@ -6399,41 +6418,79 @@ function tutPanel(){
 }
 
 /* 대원 선택 + 시작 꾸러미 선택 */
+/* 고른 대원을 자세히 — 그림 · 능력치 · 지속 · 기술 */
+function heroDetail(n){
+  if(!n) return el(`<div class="hdetail empty">왼쪽에서 대원을 고르면<br>
+    그 대원의 능력치와 기술을 여기에 펼쳐 보여 줍니다.</div>`);
+  const d=HEROES[n];
+  const box=el(`<div class="hdetail"></div>`);
+  box.appendChild(el(`<div class="dart">${figure(n)}</div>
+    <div class="dnm">${esc(n)}</div>
+    <div class="dtt">${esc(d.title)} · ${esc(d.role)}</div>
+    <div class="dst">
+      <span>${ic("hp")} ${d.hp}</span>
+      <span>${ic("mana")} ${d.mana}</span>
+      <span>레벨마다 체력 +${d.hpLv}</span>
+    </div>`));
+  box.appendChild(el(`<div class="dh">지속</div>`));
+  box.appendChild(el(`<div class="dsk"><b>${esc(d.passive.n)}</b>
+    <small>${rich(SKILL_FULL[d.passive.n]||d.passive.d||"")}</small></div>`));
+  box.appendChild(el(`<div class="dh">기술</div>`));
+  d.skills.forEach((sk,i)=>{
+    const lk=(i===2&&UNLOCK[2]>1)||(i===3&&UNLOCK[3]>1);
+    const cost=sk.costType==="mom"?ic("move")+sk.cost
+      :sk.costType==="scale"?"비늘"+sk.cost:ic("mana")+sk.cost;
+    box.appendChild(el(`<div class="dsk ${lk?"lk":""}">
+      <span class="c">${cost} · ${esc(sk.el)}${lk?` · ${UNLOCK[i]}레벨`:""}</span>
+      <b>${i+1}. ${esc(sk.n)}</b>
+      <small>${rich(SKILL_FULL[sk.n]||sk.d||"")}</small></div>`));
+  });
+  return box;
+}
 function drawStart(app){
   app.appendChild(el(`<div class="center">
     <div class="title" style="font-size:22px">함께 떠날 대원</div>
-    <div class="sub">무작위 셋 중 하나를 고르세요</div></div>`));
-  const wrap=app.querySelector(".center");
-  const row=el(`<div class="picks"></div>`);
+    <div class="sub">대원 하나를 고르고, 함께 챙길 꾸러미를 고르세요</div></div>`));
+  const wrap=el(`<div class="startwrap"></div>`);
+  const left=el(`<div class="startleft"></div>`);
+
+  left.appendChild(el(`<div class="starthd">대 원</div>`));
+  const row=el(`<div class="heropick"></div>`);
   startPicks.forEach(n=>{
     const d=HEROES[n];
-    const c=el(`<div class="pick ${pendingHero===n?"on":""}">
+    const c=el(`<div class="hcard ${pendingHero===n?"on":""}">
       <div class="art">${figure(n)}</div>
       <div class="role">${esc(d.role)}</div>
-      <h3>${esc(n)} · ${esc(d.title)}</h3>
-      <p>${rich(d.focus)}</p>
-      <p style="color:var(--brass);font-size:11.5px;margin-top:6px">지속 · ${esc(d.passive.n)}</p>
-      <p style="font-size:11px">${rich(d.passive.d)}</p>
-      <p style="color:var(--faint);margin-top:6px">${ic("hp")} ${d.hp} · ${ic("mana")} ${d.mana}</p></div>`);
+      <h3>${esc(n)}</h3>
+      <p class="one">${rich(d.focus)}</p>
+      <div class="st"><span>${ic("hp")} ${d.hp}</span><span>${ic("mana")} ${d.mana}</span></div>
+    </div>`);
     c.onclick=()=>{ pendingHero=n; render() };
     row.appendChild(c);
   });
-  wrap.appendChild(row);
-  wrap.appendChild(el(`<div class="title" style="font-size:18px;margin-top:30px">시작 꾸러미</div>`));
-  const row2=el(`<div class="rewards"></div>`);
+  left.appendChild(row);
+
+  left.appendChild(el(`<div class="starthd" style="margin-top:22px">시 작 꾸 러 미${
+    pendingHero?"":` <span style="color:var(--faint);letter-spacing:0;font-size:11px">— 대원을 먼저 고르세요</span>`}</div>`));
+  const row2=el(`<div class="startpacks"></div>`);
   startPacks.forEach(p=>{
-    const c=el(`<div class="rw"><div class="rwi">${packArt(p.i,p.n)}</div>
+    const c=el(`<div class="rw ${pendingHero?"":"no"}"><div class="rwi">${packArt(p.i,p.n)}</div>
       <b>${esc(p.n)}</b><p>${rich(p.d)}</p></div>`);
     c.onclick=()=>{
-      if(!pendingHero){ toast("먼저 대원을 고르세요."); render(); return }
+      if(!pendingHero){ toast("먼저 대원을 고르세요."); return }
       newRun(pendingHero,p);
     };
     row2.appendChild(c);
   });
-  wrap.appendChild(row2);
-  const rr=el(`<div style="margin-top:22px"><button>다시 뽑기</button></div>`);
+  left.appendChild(row2);
+
+  const rr=el(`<div style="margin-top:20px"><button>다시 뽑기</button></div>`);
   rr.querySelector("button").onclick=()=>{ rollStart(); pendingHero=null; render() };
-  wrap.appendChild(rr);
+  left.appendChild(rr);
+
+  wrap.appendChild(left);
+  wrap.appendChild(heroDetail(pendingHero));
+  app.appendChild(wrap);
 }
 
 /* ═══════════ 필드 지도 ═══════════ */
@@ -8523,6 +8580,12 @@ const BARK={
   kill:["편히 쉬세요.","이걸로 끝났으면 좋겠네요."],
   down:["다들… 무사히… 돌아가세요…"]},
  /* ── 적 ── */
+ "술집 난동꾼":{
+  in:["한 잔 더 하고 시작하자!","누가 내 술을 엎었어?","여긴 내 자리야."],
+  atk:["받아라!","의자 맛 좀 봐라!","어이쿠, 손이 미끄러졌네."],
+  hurt:["아야! 술 깨겠네.","그렇게 나온다 이거지."],
+  kill:["다음!","거기 누워 있어라."],
+  down:["술이... 아깝다...","계산은... 누가..."]},
  "작은 죄수":{
   in:["살려줘…","여긴 왜 온 거야.","나가고 싶어."],
   atk:["저리 가!","때리지 마!"],
@@ -9025,21 +9088,6 @@ function numHtml(h,sk,key){
     ? `<span class="brk">(${b.parts.map(p=>icoify(esc(p.n))+" "+p.v).join(" / ")})</span>` : "";
   return `<b class="big">${b.total}</b>${tail}`;
 }
-function valueLines(h,sk,done){
-  const L=[]; const had=done||{};
-  const rr=reachOf(h,sk);
-  if(rr!=null&&sk.tg==="foe") L.push(`사거리 <b class="big">${rr}</b> 안의 적만 고를 수 있습니다.`);
-  if(sk.dmg!=null&&!sk.justice&&!had.dmg) L.push(`피해를 ${numHtml(h,sk,"dmg")}${sk.pierce?" 관통으로":""} 줍니다.`);
-  if(sk.shield&&!had.shield) L.push(`보호막을 ${numHtml(h,sk,"shield")} 얻습니다.`);
-  if(sk.heal&&!had.heal)   L.push(`체력을 ${numHtml(h,sk,"heal")} 회복합니다.`);
-  if(sk.justice) L.push(`지금 보호막 <b class="big">${h.shield}</b>만큼 피해를 줍니다.`);
-  if(sk.armorUp) L.push(`갑피를 <b class="big">${1+(h.tag.armorPlus||0)}</b> 얻습니다.`);
-  if(sk.farshot) L.push(`가장 멀리 있는 적만 겨눌 수 있습니다.`);
-  if(sk.nearest) L.push(`가장 가까이 있는 적만 겨눌 수 있습니다.`);
-  if(sk.vanguard) L.push(`지나친 아군 하나당 보호막 <b class="big">${(h.tag.vanShield||5)+h.def}</b>`);
-  if(sk.rearguard) L.push(`체력 <b class="big">${h.tag.rearHeal||5}</b> · 지나친 아군 보호막 <b class="big">${5+h.def}</b>`);
-  return L;
-}
 function bk(base,parts){
   const list=parts.filter(p=>p.v);
   const total=base+list.reduce((a,p)=>a+p.v,0);
@@ -9118,7 +9166,6 @@ function passHtml(h){
     return `<div class="pass">
       <div class="pn">${esc(p.n)}</div>
       <div class="pd">${icoify(p.d(h))}</div>
-      ${SKDETAIL&&SKILL_FULL[p.n]?`<div class="fullx"><span>기획 원문</span>${rich(SKILL_FULL[p.n])}</div>`:""}
       ${g?`<div class="prog ${g.done?"done":""}">
         <div class="pl"><span>진행</span><span>${g.c}/${g.m}</span></div>
         <div class="pb"><i style="width:${Math.min(100,g.m?g.c/g.m*100:0)}%"></i></div></div>`:""}
@@ -9234,8 +9281,7 @@ function skillPanel(h){
       : "장비 없음"}</span>
     <span class="grow"></span>
     <span class="hint">기술 클릭 = 1회 · 같은 기술(선택 기술은 같은 선택지)을 또 누르면 횟수 +1 · 숫자키 1~4</span>
-    <button class="dtl">${SKDETAIL?"요약 숨기기":"한 줄 요약 보기"}</button></div>`));
-  p.querySelector(".dtl").onclick=ev=>{ ev.stopPropagation(); SKDETAIL=!SKDETAIL; render() };
+    </div>`));
   const ph=passHtml(h);
   if(ph) p.appendChild(el(ph));
   const rest=progressOf(h).filter(x=>!(PASSIVE_INFO[h.name]||[]).some(q=>q.p===x.n));
@@ -9254,7 +9300,7 @@ function skillPanel(h){
     const cost = s.costType==="mom" ? ic("move")+" "+payCost(h,i)
                : s.costType==="scale" ? "비늘 "+payCost(h,i) : ic("mana")+" "+payCost(h,i);
     const hot=ok?skillHot(h,i,s):[];
-    const lv=richLive(h,s,SKILL_FULL[s.n]||SKILL_TEXT[s.n]||s.d||"");
+    const lv=richLive(h,s,SKILL_FULL[s.n]||s.d||"");
     const e=el(`<div class="sk ${sel.skill===i?"on":""} ${ok?"":"off"} ${hot.length?"hot":""}" data-el="${esc(s.el||"")}">
       <span class="k">${i+1}</span><div class="t">
       <b>${esc(s.pick?s.pick:s.n)}</b>${(sel.skill===i&&sel.step===4&&sel.count>1)?`<span class="xn">×${sel.count}</span>`:""}
@@ -9264,10 +9310,8 @@ function skillPanel(h){
       ${s.limit?`<span class="chip">사용한도 ${used}/${s.limit}</span>`:""}
       ${locked?`<span class="chip">${UNLOCK[i]}레벨 해제</span>`:""}
       ${lk?`<span class="chip on">잠금 ${lk}</span>`:""}
-      ${valueLines(h,s,lv.done).map(x=>`<span class="val">${x}</span>`).join("")}
       <small>${lv.html}</small>
-      ${SKDETAIL&&SKILL_TEXT[s.n]?`<div class="fullx"><span>한 줄 요약</span>${rich(SKILL_TEXT[s.n])}</div>`:""}
-      ${SKDETAIL&&s.alt?`<div class="fullx"><span>전환 · ${esc(s.alt.n)}</span>${rich(SKILL_FULL[s.alt.n]||s.alt.d||"")}</div>`:""}
+      ${s.alt?`<div class="fullx"><span>전환 · ${esc(s.alt.n)}</span>${rich(SKILL_FULL[s.alt.n]||s.alt.d||"")}</div>`:""}
       </div></div>`);
     if(ok&&s.opts){
       /* 머리 부분은 선택지 목록을 여닫기만 한다 — 고른 선택지와 횟수는 그대로 둔다 */
@@ -9287,7 +9331,6 @@ function skillPanel(h){
             <span>${o.costType==="mom"?ic("move"):o.costType==="scale"?"비늘 ":ic("mana")}${o.cost} · ${esc(o.el)}</span>
             ${on?`<span class="chip pk">한 번 더 누르면 ×${(sel.count||1)+1}</span>`:""}
             <small>${richLive(h,o,SKILL_FULL[o.n]||o.d||"").html}</small>
-            ${SKDETAIL&&SKILL_FULL[o.n]?`<div class="fullx"><span>기획 원문</span>${rich(SKILL_FULL[o.n])}</div>`:""}
             ${on&&o.tg==="self"?`<button class="go ogo">시전 ×${sel.count}</button>`
               :on?`<span class="hint">${o.tg==="foe"?"적의 칸":o.tg==="ally"?"아군 칸":"칸"}을 골라 발동하세요</span>`:""}
           </div>`);
@@ -11869,7 +11912,7 @@ function cardArt(name){
 }
 function unlockBanner(h,i){
   const sk=h.sk[i];
-  const ubl=richLive(h,sk,SKILL_FULL[sk.n]||SKILL_TEXT[sk.n]||sk.d||"");
+  const ubl=richLive(h,sk,SKILL_FULL[sk.n]||sk.d||"");
   SFX.play("unlock");
   setTimeout(()=>{
     const box=document.querySelector(".unlock");
@@ -11886,9 +11929,8 @@ function unlockBanner(h,i){
     <div class="ub-i">${rewardIcon({n:sk.n,d:sk.d||""})}</div>
     <div class="ub-n">${esc(sk.n)}</div>
     <div class="ub-c">${sk.costType==="mom"?ic("move"):sk.costType==="scale"?"비늘 ":ic("mana")}${sk.cost} · ${esc(sk.el)}${sk.limit?` · 사용한도 ${sk.limit}`:""}</div>
-    <div class="ub-v">${valueLinesStatic(h,sk,ubl.done).join(" · ")}</div>
     <div class="ub-d">${ubl.html}</div>
-    ${sk.alt?`<div class="ub-d" style="color:var(--faint)">전환 : ${esc(sk.alt.n)} — ${rich(SKILL_FULL[sk.alt.n]||SKILL_TEXT[sk.alt.n]||sk.alt.d||"")}</div>`:""}
+    ${sk.alt?`<div class="ub-d" style="color:var(--faint)">전환 : ${esc(sk.alt.n)} — ${rich(SKILL_FULL[sk.alt.n]||sk.alt.d||"")}</div>`:""}
   </div>`);
 }
 function heroPanel(h){
@@ -11921,10 +11963,7 @@ function heroPanel(h){
       <b>${i+1}. ${esc(sk.n)}</b>
       <span class="c">${cost} · ${esc(sk.el)}${sk.limit?` · 한도 ${sk.limit}`:""}</span>
       ${locked?`<small style="color:var(--faint)">${UNLOCK[i]}레벨에 해제됩니다.</small>`
-        :`<small>${richLive(h,sk,SKILL_TEXT[sk.n]||sk.d||"").html}</small>
-          ${valueLinesStatic(h,sk,richLive(h,sk,SKILL_TEXT[sk.n]||sk.d||"").done)
-              .map(x=>`<small class="v">${x}</small>`).join("")}
-          ${SKILL_FULL[sk.n]?`<div class="fullx"><span>기획 원문</span>${richLive(h,sk,SKILL_FULL[sk.n]).html}</div>`:""}`}
+        :`<small>${richLive(h,sk,SKILL_FULL[sk.n]||sk.d||"").html}</small>`}
       ${sk.alt?`<small style="color:var(--faint)">전환 : ${esc(sk.alt.n)}</small>`:""}
     </div>`));
   });
@@ -11955,13 +11994,6 @@ function heroPanel(h){
   return box;
 }
 /* 전투 밖에서도 쓸 수 있는 수치 요약 */
-function valueLinesStatic(h,sk,done){
-  const L=[]; const had=done||{};
-  if(sk.dmg!=null&&!sk.justice&&!had.dmg) L.push(`피해 ${numHtml(h,sk,"dmg")}`);
-  if(sk.shield&&!had.shield) L.push(`보호막 ${numHtml(h,sk,"shield")}`);
-  if(sk.heal&&!had.heal) L.push(`회복 ${numHtml(h,sk,"heal")}`);
-  return L;
-}
 /* 지금 이 대원이 다음 레벨까지 얼마나 왔는지 */
 function expBar(h){
   if(!h) return "";
