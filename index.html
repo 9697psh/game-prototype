@@ -4029,7 +4029,7 @@ const SND={
  "제련 완성":{v:0.23,f:"제련 완성.wav"},
  "카제 진선풍도":{v:0.2,f:"카제 진선풍도.wav"},
  "카제 회오리":{v:0.14,f:"카제 회오리.wav"},
- "쿠렘타이 사형 선고":{v:0.18,f:"쿠렘타이 사형 선고.wav"},
+ "쿠렘타이 사형 선고":{v:0.35,f:"쿠렘타이 사형 선고.wav"},
  "쿠렘타이 영혼 분리":{v:0.17,f:"쿠렘타이 영혼 분리.wav"},
  "쿠렘타이 착취":{v:0.26,f:"쿠렘타이 착취.wav"},
  "쿠렘타이 환상통":{v:0.21,f:"쿠렘타이 환상통.wav"},
@@ -12974,6 +12974,7 @@ function runEffect(h,i,s,target){
     if(h.verdictUsed){ say("이번 전투에는 이미 썼습니다.","t2"); return }
     if(target<0){
       const a=allyAt(-target); if(!a){ say("그 칸에는 아군이 없습니다.","t2"); return }
+      SFX.duck(900,0.3);
       h.verdictUsed=1; a.hp=Math.max(1,Math.round(a.maxHp*0.5)); bumpTmp(a,"mag",2);
       pillarFX("mine",a.slot,"rgba(201,162,39,.9)");
       fx({side:"mine",slot:a.slot,art:"mag",s:"summon",txt:"선고",cls:"crit",gap:260});
@@ -12982,6 +12983,10 @@ function runEffect(h,i,s,target){
     }
     const f=foeAt(target); if(!f){ say("그 칸에는 적이 없습니다.","t2"); return }
     if(f.boss){ say("우두머리에게는 통하지 않습니다.","t2"); return }
+    /* 궁극기 녹음은 80~200Hz 에 몰린 소리다. 그런데 pillar(사인 60→180) 와
+       dark(톱니 180→70 · 사인 70→38) 가 **똑같은 대역**에 겹쳐 앉는다.
+       제일 나쁜 가림이라, 그동안 합성음을 물러서게 한다. 녹음은 안 눌린다. */
+    SFX.duck(900,0.3);
     h.verdictUsed=1;
     pillarFX("foe",f.slot,"rgba(160,106,224,.9)");
     veil("radial-gradient(circle,rgba(160,106,224,.3),transparent 70%)");
