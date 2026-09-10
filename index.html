@@ -2295,7 +2295,7 @@ const KW_TAB=[
  {n:"소환물",c:"plain",d:"기술이나 카드에 의해 소환된 대상"},
  {n:"연계",c:"plain",d:"이전에 해당 속성 기술을 사용했다면 발동"},
  {n:"이동",c:"plain",d:"위치를 변경\n해당 자리에 이미 대상이 존재한다면, 서로 위치를 변경\n(직접 이동하지 않은 경우, 이동으로 인한 효과를 받을 수 없음)"},
- {n:"잠금",c:"skill",d:"해당 기술을 일정 턴 동안 사용할 수 없음"},
+ {n:"잠금",c:"skill",d:"해당 기술을 일정 턴 동안 사용할 수 없음. 쓴 턴은 세지 않고 다음 턴부터 줄어듭니다 — 잠금(1)이면 다음 턴 하나를 통째로 쉽니다"},
  {n:"사용한도",c:"skill",d:"사용 한도의 횟수만큼 사용 시 그 라운드에서 기술이 사용 불가 상태가 됨"},
  {n:"보호막",c:"buff",d:"한 턴간 누적된 보호막만큼 피해를 막음. 턴이 끝나면 사라짐"},
  {n:"에너지 보호막",c:"buff",d:"한 턴간 누적된 보호막만큼 피해를 막음. 턴이 끝나도 사라지지 않음"},
@@ -2394,6 +2394,12 @@ const el=s=>{const t=document.createElement("template");t.innerHTML=s.trim();ret
 /* ═══════ 소리 ═══════ */
 const SFX=(()=>{
   let ac=null, on=true, vol=1;
+  /* 잠깐 눌러 두기 — 이 시각까지 **합성음만** 이만큼 줄인다.
+     녹음(sample)은 제 크기를 지킨다. 기술마다 제 소리를 가진 대원이
+     늘면서, 공용 타격음이 그 위에 겹쳐 시끄러워지는 일이 생겼다.
+     기술 쪽에서 SFX.duck(밀리초, 비율) 한 줄이면 그 동안만 물러선다. */
+  let duckTo=0, duckMul=1;
+  const duckNow=()=>(performance.now()<duckTo?duckMul:1);
   function ctx(){
     if(!ac){ try{ ac=new (window.AudioContext||window.webkitAudioContext)() }catch(e){ on=false; return null } }
     if(ac.state==="suspended") ac.resume();
@@ -2401,7 +2407,9 @@ const SFX=(()=>{
   }
   function tone(o){
     const a=ctx(); if(!a) return;
-    const t=a.currentTime+(o.at||0), dur=o.d||0.2, v=(o.v==null?0.16:o.v)*vol;
+    const t=a.currentTime+(o.at||0), dur=o.d||0.2,
+          v=(o.v==null?0.16:o.v)*vol*duckNow();
+    if(v<=0) return;   /* 완전히 눌렀으면 아예 걸지 않는다 */
     const g=a.createGain(); g.connect(a.destination);
     g.gain.setValueAtTime(0.0001,t);
     g.gain.exponentialRampToValueAtTime(v,t+(o.atk||0.008));
@@ -2677,6 +2685,12 @@ const SFX=(()=>{
      녹음이 없는 열쇠말만 합성음으로 내려간다. */
   return { play(k){ if(!on||!k||vol<=0) return;
              try{ if(!sample(k)&&K[k]) K[k]() }catch(e){} },
+           /* 이제부터 ms 동안 합성음을 mul 배로 줄인다 (녹음은 그대로).
+              겹쳐 부르면 더 센 쪽·더 긴 쪽이 이긴다 */
+           duck(ms,mul){ const m=(mul==null?0.45:mul);
+             const till=performance.now()+(ms||500);
+             if(performance.now()>=duckTo){ duckTo=till; duckMul=m }
+             else { duckTo=Math.max(duckTo,till); duckMul=Math.min(duckMul,m) } },
            toggle(){ on=!on; if(on) ctx(); return on },
            get on(){ return on },
            get vol(){ return vol },
@@ -8009,7 +8023,7 @@ function sandSkills(h){
 }
 function sandboxTick(){
   const h=run.heroes[0];
-  h.hp=h.maxHp; h.mana=h.maxMana; h.lock={}; h.limitUsed={};
+  h.hp=h.maxHp; h.mana=h.maxMana; h.lock={}; h.lockNew={}; h.limitUsed={};
   h.verdictUsed=0; h.free=0; h.deb={};
   run.souls=200;
   B.foes.forEach(f=>{ f.alive=1; f.hp=f.maxHp; f.shield=0; f.stun=0;
@@ -10328,7 +10342,7 @@ function startBattle(kind,pinned){
        (처음은 완벽하게는 전투당 한 번) */
     h.first=h.first||{}; h.first.cut=0; h.first.shot=0;
     h.shotFree=0; h.thornTmp=0;
-    h.windBuff=0; h.potential=0; h.lock={}; h.airUp=0; h.manaUsed=0;
+    h.windBuff=0; h.potential=0; h.lock={}; h.lockNew={}; h.airUp=0; h.manaUsed=0;
     h.portal=null; h.bomb=0; h.minions=[];
     h.mana=h.maxMana;
     if(fresh){
@@ -10642,6 +10656,13 @@ function intentKey(o){
   if(o.t==="purge") return "purge:"+o.k;
   return o.t;
 }
+/* ── 적 패턴 규칙 ①② ────────────────────────────────────────────────
+   USED 는 **같은 턴 안에서** 여럿이 같은 수를 고르는 것만 막는다.
+   턴을 넘어가는 기억이 없어 한 놈이 같은 수를 내리 할 수 있었다.
+     AI_STREAK  같은 수를 몇 번까지 잇달아 하는가. 넘으면 그 수를 아예 뺀다
+     AI_REPEAT  직전 수를 다시 고를 확률을 몇 배로 줄이는가 (막지는 않는다)
+   ★ AI_STREAK 를 0 으로 두면 옛 모습 그대로다 — 견주려고 남긴 손잡이다. */
+let AI_STREAK=2, AI_REPEAT=0.55;
 function rollIntents(){
   const USED={};
   /* 은신 — 전장에 혼자 남으면 숨을 곳이 없다 */
@@ -10734,15 +10755,27 @@ function rollIntents(){
       const v={burn:2,bind:2,stun:1,fear:1,shock:3,chill:3,atkDn:2,magDn:2}[k]||1;
       add({t:"deb",k:k,to:to,v:v,el:EL},far?1:2);
     });
-    /* 이미 같은 행동을 고른 적이 있으면 다른 것을 우선한다 */
+    /* 이미 같은 행동을 고른 적이 있으면 다른 것을 우선한다 (같은 턴 안) */
     let best=null;
+    /* 규칙 ① 연속 상한 — 잇달아 AI_STREAK 번을 채웠으면 그 수를 통째로 뺀다.
+       빼고 나서 남는 것이 없으면 어쩔 수 없다 (할 줄 아는 것이 그것뿐인 적) */
+    let P=pool;
+    if(AI_STREAK>0&&f.lastKey&&(f.streak||0)>=AI_STREAK){
+      const cut=pool.filter(c=>intentKey(c)!==f.lastKey);
+      if(cut.length) P=cut;
+    }
     for(let t=0;t<4;t++){
-      const c=rnd(pool), k=intentKey(c);
+      const c=rnd(P), k=intentKey(c);
       const n=USED[k]||0;
-      if(!n||Math.random()<1/(1+n*1.6)){ best=c; break }
+      /* 규칙 ② 직전 수 기억 — 막지는 않되 덜 나오게. 연달아 보이면 읽기를 그만둔다 */
+      const dull=(AI_STREAK>0&&k===f.lastKey)?AI_REPEAT:1;
+      if((!n||Math.random()<1/(1+n*1.6))&&Math.random()<dull){ best=c; break }
       if(!best) best=c;
     }
     USED[intentKey(best)]=(USED[intentKey(best)]||0)+1;
+    { const bk=intentKey(best);
+      f.streak=(bk===f.lastKey)?((f.streak||1)+1):1;
+      f.lastKey=bk; }
     f.intent=best;
   });
 }
@@ -12695,7 +12728,12 @@ function doSkill(target){
     if(s.limit) h.limitUsed[i]=(h.limitUsed[i]||0)+1;
     /* 수호 활동 — 후미 준비는 더 이상 잠기지 않는다 */
     /* 잠금 3이면 3부터 세어 내려간다. 예전에는 4부터 시작해 한 턴 더 잠겼다 */
-    if(s.lock&&!(h.tag.noRearLock&&s.rearguard)) h.lock[i]=s.lock;
+    if(s.lock&&!(h.tag.noRearLock&&s.rearguard)){
+      h.lock[i]=s.lock;
+      /* ★ 건 그 턴은 세지 않는다. 안 그러면 잠금1 이 아무 턴도 못 쉬고 풀린다 —
+         숫자만 1 이고 실제로는 0턴이라 헷갈렸다. 아래 턴 끝 셈이 이걸 본다 */
+      (h.lockNew=h.lockNew||{})[i]=1;
+    }
     if(deb(h,"chill")){ const v=h.deb.chill;
       h.hp-=v; fx({side:"mine",slot:h.slot,hit:1,txt:"-"+v,cls:"dmg",gap:70});
       say(`${h.name} 냉각 피해 ${v}`,"t3") }
@@ -12854,6 +12892,11 @@ function runEffect(h,i,s,target){
   /* ── 쿠렘타이 ── */
   if(s.drain){
     const t0=foeAt(target); if(!t0){ say("그 칸에는 적이 없습니다.","t2"); return }
+    /* 착취는 쿠렘타이 제 녹음이 주인공이다. 그런데 겨눈 적마다·연타마다
+       공용 타격음(mag·pierce)이 붙고 광선까지 pierce 를 불러서,
+       영혼이 쌓이면 600ms 동안 아홉 번까지 운다. 그동안만 물러서게 한다.
+       ※ 녹음은 눌리지 않는다 — 줄어드는 것은 합성음뿐이다. */
+    SFX.duck(800,0.35);
     const so=run.souls||0;
     const list=[t0];
     if(so>=20){ const b=foeAt(target+1); if(b) list.push(b) }
@@ -14073,7 +14116,12 @@ function startMyTurn(){
     }
     if(h.helm){ h.shield+=h.helm; say(`강철 투구 — ${h.name} 보호막 +${h.helm}`); h.helm=0 }
     if(h.taunt) h.taunt--;
-    Object.keys(h.lock).forEach(k=>{ if(--h.lock[k]<=0) delete h.lock[k] });
+    Object.keys(h.lock).forEach(k=>{
+      /* 이번 턴에 갓 걸린 것은 이번 턴 끝에 안 센다 — 표를 지우고 넘어간다.
+         다음 턴 끝부터 여느 것처럼 줄어든다 */
+      if(h.lockNew&&h.lockNew[k]){ delete h.lockNew[k]; return }
+      if(--h.lock[k]<=0) delete h.lock[k];
+    });
     if(h.bomb&&--h.bomb===0){
       const v=Math.floor(h.hp*0.2);
       say("응축 폭발 — 압축된 힘이 터집니다.","t1");
