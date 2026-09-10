@@ -1614,6 +1614,8 @@ header{align-items:center}
   18% {opacity:1}
   100%{transform:translate(var(--dx),var(--dy)) rotate(var(--rot));opacity:1}
 }
+/* 화살비 — 화면 밖에서 오므로 같은 그림을 더 오래, 조금 크게 날린다 */
+.arrowfly.rain{animation-duration:.30s;z-index:8}
 /* 새 UI 그림은 32px 원본이다. 늘일 때는 정수 배율 + 또렷하게,
    줄일 때는 계단이 생기니 매끄럽게 그린다. */
 img.ri{width:14px;height:14px;vertical-align:-2px;image-rendering:auto}
@@ -2753,6 +2755,8 @@ const ART={
 function playFX(o){
   if(o.crit){ critFX(o.side,o.slot); return }
   if(o.s) SFX.play(o.s);
+  /* 화살비는 칸 하나에 매인 연출이 아니다 — slot 을 보기 전에 처리한다 */
+  if(o.rain){ arrowRainFX(o.side,o.rain); return }
   const p=ctrOf(o.side,o.slot); if(!p) return;
   if(o.sweep){ const q=ctrOf(o.sweep.side,o.sweep.slot); if(q) sweepFX(q,p) }
   if(o.streak){ const q=ctrOf(o.streak.side,o.streak.slot); if(q) streakFX(q,p) }
@@ -3242,6 +3246,53 @@ function arrowFX(side,slot,from){
     nd.style.transform="scale(1.3) rotate("+(-11+Math.random()*22)+"deg)";
     setTimeout(()=>nd.remove(),420);
   },wait);
+}
+/* 화살비 — 왼쪽 위 하늘에서 화살이 쏟아진다.
+   적 하나에 두 발씩, 자리와 때를 조금씩 어긋내 '비' 로 보이게 한다.
+   화살은 화면 밖에서 들어와야 하므로 넉넉히 멀리서 띄운다. */
+const RAIN_DEG=52;            /* 내려꽂히는 각도 — 좌측 대각선 위에서 */
+const RAIN_LEN=560;           /* 날아오는 거리. 화면 밖에서 오도록 */
+function arrowRainFX(side,slots){
+  const fly=(typeof ICON_PNG!=="undefined")&&ICON_PNG.fx_tristan_fly;
+  const hit=(typeof ICON_PNG!=="undefined")&&ICON_PNG.fx_tristan_arrow;
+  if(!fly&&!hit) return;
+  /* 활 소리는 트리스탄의 녹음을 쓴다. 없으면 옛 합성음으로 */
+  const sfx=(typeof SND!=="undefined"&&SND["트리스탄 페일노트"])?"트리스탄 페일노트":"arrow";
+  const rad=RAIN_DEG*Math.PI/180;
+  const vx=Math.cos(rad)*RAIN_LEN, vy=Math.sin(rad)*RAIN_LEN;
+  const ev=[];
+  (slots||[]).forEach((slot,si)=>{
+    const p=bodyPoint(side,slot)||ctrOf(side,slot); if(!p) return;
+    for(let k=0;k<2;k++) ev.push({
+      x:p.x+(Math.random()*26-13), y:p.y+(Math.random()*18-9),
+      t:si*80+k*150+Math.random()*70});
+  });
+  if(!ev.length) return;
+  ev.sort((a,b)=>a.t-b.t);
+  /* 소리는 여섯 번까지만 — 적이 다섯이면 화살이 열 발이라 시끄럽다 */
+  const step=Math.max(1,Math.ceil(ev.length/6));
+  ev.forEach((e,i)=>setTimeout(()=>{
+    if(i%step===0) SFX.play(sfx);
+    if(fly){
+      const nd=spawn('<div class="arrowfly rain"></div>');
+      if(nd){
+        at(nd,{x:e.x-vx, y:e.y-vy});
+        nd.style.backgroundImage="url("+fly+")";
+        nd.style.setProperty("--dx",vx+"px");
+        nd.style.setProperty("--dy",vy+"px");
+        nd.style.setProperty("--rot",RAIN_DEG+"deg");
+        setTimeout(()=>nd.remove(),340);
+      }
+    }
+    if(hit) setTimeout(()=>{
+      const h2=spawn('<div class="arrowfx"></div>'); if(!h2) return;
+      at(h2,{x:e.x,y:e.y});
+      h2.style.backgroundImage="url("+hit+")";
+      /* 꽂힌 화살도 내려온 방향으로 눕힌다 */
+      h2.style.transform="scale(1.15) rotate("+(RAIN_DEG-8+Math.random()*16)+"deg)";
+      setTimeout(()=>h2.remove(),420);
+    }, fly?290:0);
+  },e.t));
 }
 /* 화면을 가로지르는 참격 — 큰 공격용 */
 function bigSlash(side,slot,color,n){
@@ -10888,7 +10939,7 @@ function skillHot(h,i,s){
   if(i===0&&h.name==="트리스탄"&&(h.shotFree||0)>0) out.push("무료");
   if(h.tag.guardThen&&h.guardStack&&s.tg==="foe") out.push("연격 +"+h.tag.guardThen*h.guardStack);
   /* 찌르기 — 이번 턴에 벤 만큼 쌓인다. 얼마가 나갈지 미리 보여 준다 */
-  if(s.thrust) out.push((h.cutSum||0)?`지금 피해 ${(h.cutSum||0)*3}`:"베고 나서");
+  if(s.thrust) out.push(`현재 피해량 ${(h.cutSum||0)*3}`);
   return out;
 }
 function skillPanel(h){
@@ -11975,7 +12026,9 @@ function doSkill(target){
     /* 진선풍도만 예외 — 세 번째마다 회오리로 갈린다. 검 소리 대신 회오리를 문다 */
     if(own&&h.name==="카제"&&s.n==="진선풍도"&&windStrong(h,h.windUses+1))
       own=(typeof SND!=="undefined"&&SND["카제 회오리"])?"카제 회오리":own;
-    if(h.slot>0&&s.tg!=="self"&&s.tg!=="ally"&&hitsFoe(s,target))
+    /* 모두를 때리는 기술(화살비·팽창 공격)은 겨눌 곳이 없어 tg 가 self 다.
+       그래도 적을 치는 것이므로 공격 자세를 잡아야 한다. */
+    if(h.slot>0&&(s.allHit||(s.tg!=="self"&&s.tg!=="ally"&&hitsFoe(s,target))))
       fx({side:"mine",slot:h.slot,pose:"atk",s:own||ATK_SFX[h.name],lunge:1,gap:0});
     /* 자기나 아군에게 거는 기술은 자세를 잡지 않는다.
        그래도 소리는 나야 한다 — 쿠렘타이의 환상통·영혼 분리가 그렇다 */
@@ -12223,12 +12276,17 @@ function runEffect(h,i,s,target){
       h.leech=Math.max(h.leech||0,20);
       if(!list.length) say("압축 공격 — 거리 2 안에 적이 없습니다.","t2");
     }
+    /* 화살비 — 하늘에서 화살이 쏟아진다. 다 떨어진 뒤에 피해를 셈해 보인다.
+       끝의 1(ownFx)로 옛 참격 그림을 끈다 — 화살만 남는다. */
+    const rain=(s.n==="화살비"&&list.length)?1:0;
+    if(rain){ fx({side:"foe",rain:list.map(f=>f.slot),gap:560});
+      say("하늘에서 화살이 쏟아집니다.","t1") }
     list.forEach(f=>{
       /* 정밀 표식 — 공격 계열이므로 표식이 있으면 치명타 */
       let d=base, crit=0;
       if(h.name==="이테리오"&&s.el!=="마법"&&(f.mark||0)>0){ d*=2; f.mark--; crit=1 }
       B.lastAttacker=h;
-      hurt(f,d,press?"압축 공격":s.n,"slash",0,crit);
+      hurt(f,d,press?"압축 공격":s.n,"slash",0,crit,rain);
       if(press) applyLeech(h,d);
     });
     return;
