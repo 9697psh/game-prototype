@@ -1100,6 +1100,45 @@ body.shakeall{animation:allShake .62s cubic-bezier(.36,.07,.19,.97)}
 .peekgrid .cell{cursor:default}
 .peekgrid .cell:hover{border-color:var(--rule)}
 .peekgrid .cell.here{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass) inset}
+/* 받을 것들의 줄 — 오른쪽에 세운다. 대원 판(.hpanel)과 같은 자리를 쓰므로
+   이 판이 있을 때는 대원 판을 그 아래로 내린다 (.hpanel 의 top 을 바꾼다) */
+.rwq{position:fixed;right:16px;top:64px;width:238px;z-index:21;text-align:left;
+  background:var(--panel);border:1px solid var(--rule);border-radius:9px;padding:12px 13px}
+.rwq-h{font-size:10px;letter-spacing:.14em;color:var(--faint)}
+.rwq-now{font-family:var(--serif);font-size:16px;color:var(--brass);margin-top:2px;
+  line-height:1.3;word-break:keep-all}
+.rwq-sub{font-size:10.5px;color:var(--dim);margin-top:3px}
+.rwq-l{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:3px;
+  max-height:min(46vh,340px);overflow-y:auto}
+.rwq-l li{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:8px;align-items:center;
+  padding:5px 7px;border-radius:5px;border:1px solid transparent}
+.rwq-l li .i{width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+.rwq-l li .i svg{width:20px;height:20px}
+.rwq-l li b{font-size:11.5px;color:var(--dim);font-weight:600;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rwq-l li em{font-style:normal;font-size:9.5px;color:var(--faint);letter-spacing:.06em}
+.rwq-l li.on{border-color:var(--brass);background:#221c14}
+.rwq-l li.on b{color:var(--brass)}
+.rwq-l li.on em{color:var(--brass)}
+.rwq-l li.got{opacity:.42}
+.rwq-l li.got b{text-decoration:line-through}
+/* 목록이 있으면 대원 판이 그 아래에서 시작한다 (둘 다 오른쪽에 뜰 때) */
+body:has(.rwq) .hpanel{top:auto;bottom:16px;max-height:min(52vh,calc(100vh - 100px))}
+/* 오른쪽에 세울 자리가 있으면 본문이 그만큼 비켜 준다 — 보상 칸과 겹치지 않는다.
+   대원 판은 1180px 아래에서 본문 밑으로 내려가므로 여기서 다시 위로 붙인다. */
+@media(min-width:900px){
+  body:has(.rwq) #app{padding-right:232px}
+}
+@media(min-width:900px) and (max-width:1180px){
+  .rwq{width:200px;right:12px}
+  body:has(.rwq) #app{padding-right:224px}
+}
+/* 더 좁으면 오른쪽에 설 자리가 없다. 본문 아래로 내린다 */
+@media(max-width:899px){
+  .rwq{position:static;width:auto;max-width:640px;margin:18px auto 0}
+  body:has(.rwq) .hpanel{bottom:auto}
+  body:has(.rwq) #app{padding-right:0}
+}
 .hpanel{position:fixed;right:16px;top:64px;width:308px;max-height:calc(100vh - 84px);
   overflow-y:auto;background:var(--panel);border:1px solid var(--rule);border-radius:9px;
   padding:14px;z-index:20;text-align:left}
@@ -8538,22 +8577,53 @@ function takeChest(){
     else if(x.t==="동료") later.push({recruit:1});
     else later.push({grade:x.t,noRun:isBoss?1:0});
   });
+  /* 오른쪽 목록에는 상자에 들어 있던 것을 다 보여 준다.
+     금화·경험치는 여기서 바로 들어갔으므로 '받음' 으로 적어 둔다.
+     골라야 하는 것만 뒤에 줄을 선다 — 그 차례가 run.afterAt 이다. */
+  run.afterList=ch.list.map(x=>({t:x.t, v:x.v,
+    done:(x.t==="금화"||x.t==="경험치")?1:0}));
+  run.afterUsed=0;
   run.chest=null;
   run.after=(run.after||[]).concat(later);   /* 남아 있던 뒷일을 지우지 않는다 */
   if(exp) giveExp(exp,run.heroes.filter(h=>!h.down&&h.joined!==0));
   if(isBoss&&run.pendingLv) run.pendingLv.forEach(x=>x.noRun=1);
   afterChest();
 }
+/* 이 뒷일이 목록에서 뭐라고 불리는가 */
+function afterName(x){
+  if(!x) return "보상";
+  if(x.recruit) return "동료";
+  if(x.item) return x.item.g||"장신구";
+  return x.grade||"보상";
+}
 function afterChest(){
   const q=run.after||[];
+  /* 이 줄이 무엇으로 이루어졌는지 적어 둔다 — 화면 오른쪽에 차례를 보여 준다.
+     상자에서 온 줄이면 takeChest 가 이미 금화·경험치까지 얹어 두었다. */
+  if(q.length){
+    if(!run.afterList){ run.afterList=q.map(x=>({t:afterName(x)})); run.afterUsed=0 }
+    else{
+      /* 받는 도중에 뒷일이 더 붙는 수가 있다 — '장신구: 희귀' 처럼 보상이
+         또 보상을 부르는 것들이다. 늘어난 만큼 줄 끝에 이어 붙인다.
+         안 그러면 자리 셈이 어긋나 마지막에 '—' 가 뜬다. */
+      const todo=run.afterList.filter(x=>!x.done).length;
+      const more=q.length-(todo-(run.afterUsed||0));
+      if(more>0) q.slice(q.length-more).forEach(x=>run.afterList.push({t:afterName(x)}));
+    }
+  }
   if(!q.length){
-    run.after=null;
+    run.after=null; run.afterList=null; run.afterAt=-1; run.afterUsed=0;
     /* 상점에서 시작된 줄이었다면 상점으로 돌려보낸다 */
     const b=run.afterBack; run.afterBack=null;
     if(b==="shop"){ view="shop"; render(); return }
     backToMap(); return;
   }
   const nx=q.shift();
+  /* 지금 몇 번째인가 — 받은 횟수로 곧게 센다. 남은 수로 거꾸로 세면
+     줄이 길어질 때 어긋난다 */
+  run.afterUsed=(run.afterUsed||0)+1;
+  { const todo=run.afterList.filter(x=>!x.done), ord=run.afterUsed-1;
+    run.afterAt=(ord<todo.length)?run.afterList.indexOf(todo[ord]):-1 }
   if(nx.item){ pending={stage:"hero",list:[],item:nx.item,hero:null,back:"chain"}; view="item"; render(); return }
   if(nx.recruit){
     const owned=run.heroes.map(x=>x.name);
@@ -9357,6 +9427,7 @@ function leaveNode(){ run.here=null; run.sellPick=null; run.sellOpen=0;
 /* ═══════════ 영입 · 종료 화면 ═══════════ */
 const PARTY_MAX=5;                      /* 기획 노트 — 덱에는 최대 5명 */
 function drawRecruit(app){
+  { const q=afterListPanel(); if(q) app.appendChild(q) }
   const full=run.heroes.length>=PARTY_MAX;
   const pool=full?[]:(run.heroOffer||[]).filter(n=>!run.heroes.some(h=>h.name===n));
   app.appendChild(el(`<div class="center">
@@ -13227,6 +13298,31 @@ function drawWaveGap(app){
   wrap.appendChild(b);
 }
 
+/* 받을 것들을 오른쪽에 차례로 늘어놓는다 — 지금 무엇을 받는 중인지 위에 적는다.
+   하나뿐이면 굳이 그리지 않는다 (줄이라 부를 것이 없다) */
+function afterListPanel(){
+  const L=run.afterList;
+  if(!L||L.length<2) return null;
+  const at=(run.afterAt==null)?-1:run.afterAt;
+  const cur=L[at];
+  const nm=x=>(x.t==="금화"||x.t==="경험치")
+    ? `${x.t} ${x.v!=null?x.v:""}`.trim()
+    : (x.t==="동료"?"새로운 동료"
+      :(x.t==="파편"||x.t==="일반"||x.t==="희귀")?`${x.t} 장신구`
+      :`${x.t} 보상`);
+  const left=L.filter((x,i)=>!x.done&&i>at).length;
+  return el(`<aside class="rwq">
+    <div class="rwq-h">받는 중</div>
+    <div class="rwq-now">${cur?esc(nm(cur)):"—"}</div>
+    <div class="rwq-sub">${L.length}개 중 ${at+1}번째${left?` · ${left}개 남음`:" · 마지막"}</div>
+    <ol class="rwq-l">${L.map((x,i)=>`
+      <li class="${i===at?"on":(x.done||i<at)?"got":""}">
+        <span class="i">${chestIcon(x.t)}</span>
+        <b>${esc(nm(x))}</b>
+        <em>${i===at?"지금":(x.done||i<at)?"받음":""}</em>
+      </li>`).join("")}</ol>
+  </aside>`);
+}
 /* ─ 경험치 · 보상 ─ */
 
 function drawReward(app){
@@ -13256,6 +13352,7 @@ function drawReward(app){
         if(back==="shop"){ view="shop"; render(); return }
         afterChest();
       });
+    { const q=afterListPanel(); if(q) app.appendChild(q) }
     app.appendChild(heroPanel(pending.hero));
     return;
   }
@@ -13320,6 +13417,7 @@ function flyToBag(){
   SFX.play("click");
 }
 function drawItem(app){
+  { const q=afterListPanel(); if(q) app.appendChild(q) }
   const st=pending.stage;
   if(st==="pick"){
     app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">전리품</div>
