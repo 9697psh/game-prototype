@@ -2072,6 +2072,14 @@ kbd{display:inline-block;min-width:20px;text-align:center;padding:1px 7px;font-s
   font-variant-numeric:tabular-nums}
 .volbox .vmute{width:100%;padding:6px;font-size:11.5px}
 .kw.kwc{color:#7fd39a;border-bottom:1px dotted currentColor;cursor:help;white-space:nowrap}
+/* 카드 쪽지 — 도감 카드를 그대로 담는다. 여러 장이면 줄을 바꿔 늘어놓는다.
+   #kwtip 은 pre-line 이라 카드 속 줄바꿈이 그대로 새겨진다 — 안에서 되돌린다 */
+#kwtip.wide{max-width:340px}
+#kwtip .ccard{white-space:normal;width:150px}
+#kwtip .cardmini{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:7px;white-space:normal}
+#kwtip .cardmini span{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--dim)}
+#kwtip .cardmini i{width:26px;height:26px;display:flex;align-items:center;justify-content:center}
+#kwtip .cardmini i img,#kwtip .cardmini i svg{width:26px;height:26px;image-rendering:pixelated}
 #kwtip .cardpv{display:flex;gap:9px;align-items:flex-start;margin-top:6px}
 #kwtip .cardpv .ci{width:44px;height:44px;flex:0 0 44px;display:flex;
   align-items:center;justify-content:center}
@@ -7299,9 +7307,14 @@ function drawText(app){
   const bar=el(`<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:16px"></div>`);
   const q=el(`<input placeholder="이름으로 찾기" style="min-width:200px">`);
   q.value=TXT_Q;
-  q.addEventListener("input",()=>{ TXT_Q=q.value; render();
-    setTimeout(()=>{ const n=document.querySelector(".txtq"); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length) } },0) });
   q.className="txtq";
+  /* 한글은 여러 낱자를 모아 한 글자가 된다. 그 중간에 화면을 다시 그리면
+     모으던 것이 끊겨 'ㄴㅏㄴㄷㅗㅇ' 처럼 흩어진다.
+     그래서 (1) 목록만 갈아 끼우고 (2) 모으는 중에는 그것도 미룬다. */
+  let composing=0;
+  q.addEventListener("compositionstart",()=>{ composing=1 });
+  q.addEventListener("compositionend",()=>{ composing=0; TXT_Q=q.value; paint() });
+  q.addEventListener("input",()=>{ if(composing) return; TXT_Q=q.value; paint() });
   bar.appendChild(q);
   const ex=el(`<button>내보내기</button>`);
   ex.onclick=()=>{
@@ -7329,35 +7342,48 @@ function drawText(app){
   cats.forEach(c=>{
     const n=E.filter(x=>x.cat===c).length;
     const b=el(`<button class="${c===TXT_CAT?"go":""}">${esc(c)} <i>${n}</i></button>`);
-    b.onclick=()=>{ TXT_CAT=c; render() };
+    b.onclick=()=>{ TXT_CAT=c;
+      tabs.querySelectorAll("button").forEach(x=>x.classList.remove("go"));
+      b.classList.add("go"); paint() };
     tabs.appendChild(b);
   });
   wrap.appendChild(tabs);
 
-  const term=TXT_Q.trim();
-  const list=E.filter(x=>term? (x.label+" "+(x.get()||"")).includes(term) : x.cat===TXT_CAT);
-  wrap.appendChild(el(`<div class="hint" style="margin-top:10px">${
-    term?`"${esc(term)}" 로 찾은 ${list.length}개`:`${esc(TXT_CAT)} — ${list.length}개`}</div>`));
+  const cnt=el(`<div class="hint" style="margin-top:10px"></div>`);
   const box=el(`<div class="txtlist"></div>`);
-  list.slice(0,120).forEach(e=>{
-    const on=TXT[e.key]!=null;
-    const row=el(`<div class="txtrow ${on?"on":""}">
-      <div class="tl"><b>${esc(e.label)}</b>${on?`<span class="chip on">고침</span>`:""}
-        <span class="grow"></span></div></div>`);
-    const ta=el(e.area?`<textarea rows="3"></textarea>`:`<input>`);
-    ta.value=e.get()||"";
-    ta.addEventListener("input",()=>{ TXT[e.key]=ta.value; e.set(ta.value); txtSave() });
-    row.appendChild(ta);
-    const pv=el(`<div class="txtpv">${rich(e.get()||"")}</div>`);
-    ta.addEventListener("input",()=>{ pv.innerHTML=rich(ta.value) });
-    row.appendChild(pv);
-    if(on){ const u=el(`<button class="mini">되돌리기</button>`);
-      u.onclick=()=>{ delete TXT[e.key]; txtSave(); location.reload() };
-      row.querySelector(".tl").appendChild(u) }
-    box.appendChild(row);
-  });
-  if(list.length>120) box.appendChild(el(`<p class="hint">120개까지만 보입니다. 찾기를 쓰세요.</p>`));
-  wrap.appendChild(box);
+  wrap.appendChild(cnt); wrap.appendChild(box);
+  /* 목록만 다시 그린다 — 찾기 칸은 건드리지 않는다 (한글 조합이 끊긴다) */
+  function paint(){
+    const term=TXT_Q.trim();
+    const list=E.filter(x=>term? (x.label+" "+(x.get()||"")).includes(term) : x.cat===TXT_CAT);
+    cnt.textContent=term?`"${term}" 로 찾은 ${list.length}개`
+                        :`${TXT_CAT} — ${list.length}개`;
+    box.innerHTML="";
+    list.slice(0,120).forEach(e=>{
+      const on=TXT[e.key]!=null;
+      const row=el(`<div class="txtrow ${on?"on":""}">
+        <div class="tl"><b>${esc(e.label)}</b>${on?`<span class="chip on">고침</span>`:""}
+          <span class="grow"></span></div></div>`);
+      const ta=el(e.area?`<textarea rows="3"></textarea>`:`<input>`);
+      ta.value=e.get()||"";
+      row.appendChild(ta);
+      const pv=el(`<div class="txtpv">${rich(e.get()||"")}</div>`);
+      /* 고친 글도 한글을 모으는 중에는 건드리지 않는다.
+         값을 읽어 두는 것뿐이라 화면이 다시 그려지진 않지만,
+         rich() 가 만든 미리보기가 조합을 방해하지 않게 순서를 지킨다. */
+      ta.addEventListener("input",()=>{
+        TXT[e.key]=ta.value; e.set(ta.value); txtSave();
+        pv.innerHTML=rich(ta.value);
+      });
+      row.appendChild(pv);
+      if(on){ const u=el(`<button class="mini">되돌리기</button>`);
+        u.onclick=()=>{ delete TXT[e.key]; txtSave(); location.reload() };
+        row.querySelector(".tl").appendChild(u) }
+      box.appendChild(row);
+    });
+    if(list.length>120) box.appendChild(el(`<p class="hint">120개까지만 보입니다. 찾기를 쓰세요.</p>`));
+  }
+  paint();
 
   const out=el(`<div style="margin-top:22px"><button class="go">돌아가기</button></div>`);
   out.querySelector("button").onclick=()=>{ view=run?(run.txtBack||"map"):"title"; render() };
@@ -11167,6 +11193,7 @@ function pickCount(n){
   const box=()=>tip||(tip=document.getElementById("kwtip"));
   function show(el2){
     const b=box(); if(!b) return;
+    b.classList.remove("wide");
     if(el2.dataset.item){
       const it=ITEMS.find(x=>x.n===el2.dataset.item);
       if(!it) return;
@@ -11182,16 +11209,17 @@ function pickCount(n){
     }
     if(el2.dataset.card||el2.dataset.cards){
       const nm=el2.dataset.card;
+      /* 도감과 같은 카드를 그대로 띄운다 — 화면마다 다르게 보이지 않게 */
       if(nm){
-        const L=CARD_LIB[nm]||{d:""};
-        b.innerHTML='<b style="color:#7fd39a">'+esc(nm)+'</b>'
-          +'<div class="cardpv"><span class="ci">'+cardArt(nm)+'</span>'
-          +'<small>'+rich(L.d||"")+'</small></div>';
+        b.innerHTML=CARD_LIB[nm]?cardCard(nm)
+          :'<b style="color:#7fd39a">'+esc(nm)+'</b>';
+        b.classList.add("wide");
       }else{
+        /* 묶음은 카드 여섯 장을 다 펼치면 화면을 덮는다. 그림과 이름만 늘어놓는다 */
         const list=Object.keys(ARMOR_CARDS);
-        b.innerHTML='<b style="color:#7fd39a">방어구 카드</b>'
-          +'<div class="cardpv"><span class="ci">'+cardArt(list[0])+'</span>'
-          +'<small>'+esc(list.join(" · "))+'<br>이 가운데 하나를 가져옵니다.</small></div>';
+        b.innerHTML='<b style="color:#7fd39a">방어구 카드 — 이 가운데 하나</b>'
+          +'<div class="cardmini">'+list.map(n=>
+             '<span><i>'+cardArt(n)+'</i>'+esc(n)+'</span>').join("")+'</div>';
       }
       b.style.display="block";
       const r0=el2.getBoundingClientRect(), w0=b.offsetWidth, h0=b.offsetHeight;
