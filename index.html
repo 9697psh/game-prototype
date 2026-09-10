@@ -3108,8 +3108,14 @@ function beamFX(a,b,color,w){
 /* 영혼이 뽑혀 나와 다른 칸으로 흘러간다 */
 /* quiet — 영혼이 닿는 자리에서 터지는 고리·불티를 끈다.
    빨아들이는 쪽이 내 대원일 때는 제 머리 위에서 터지는 꼴이라 거슬린다. */
+/* quiet 는 "흘러들기만 하고 그의 머리 위에서 터지지는 않는다" 는 뜻이다.
+   소리도 같이 재운다 — 착취는 겨눈 적마다 이 함수를 부르므로, 그대로 두면
+   840→1680Hz 가 6ms 사이로 세 번 겹쳐 뾱뾱거린다.
+   영혼은 적이 죽어야 들어오는데 소리만 매번 나던 것도 거짓말이었다
+   (바로 아래 착취 쪽 주석과 같은 이야기다 — 그림은 이미 그렇게 하고 있었다).
+   quiet 를 넘기는 곳은 착취뿐이라, 영혼 분리·소환물 쪽은 그대로 운다. */
 function soulFX(from,to,color,cnt,quiet){
-  SFX.play("soul");
+  if(!quiet) SFX.play("soul");
   const a=ctrOf(from.side,from.slot), b=to?ctrOf(to.side,to.slot):null;
   if(!a) return;
   const col=color||"#9ecbf5";
