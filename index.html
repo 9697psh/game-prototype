@@ -52,7 +52,8 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .field{display:flex;justify-content:center;align-items:stretch;gap:10px;
   overflow-x:auto;padding:38px 0 4px}
 .side{display:flex;gap:6px;flex:0 0 auto}
-/* 아군·적군 모두 왼쪽에서부터 1~5 */
+/* 왼쪽부터 한 줄로 1~10 — 아군이 1~5, 적이 6~10.
+   속(f.slot)은 양쪽 다 1~5 다. 보이는 번호만 foeNo() 로 옮긴다. */
 .mid{width:2px;background:var(--rule);align-self:stretch;min-height:230px;flex:0 0 auto}
 .slot{width:var(--slotw);flex:0 0 var(--slotw);min-width:0;overflow:visible;border:1px solid var(--rule);border-radius:var(--rd2);
   background:linear-gradient(180deg,var(--raise),var(--panel) 40%);
@@ -121,7 +122,8 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
   background:rgba(201,80,63,.65)}
 .slot.pick .reach{color:var(--brass)}
 .slot .no{position:absolute;top:-9px;left:7px;background:var(--ink);border:1px solid var(--rule);
-  border-radius:3px;font-size:10px;padding:0 6px;color:var(--faint)}
+  border-radius:3px;font-size:10px;padding:0 6px;color:var(--faint);
+  font-variant-numeric:tabular-nums}
 .slot.pick .no{color:var(--brass);border-color:var(--brass)}
 .res{display:flex;gap:4px;align-items:center;justify-content:center;min-height:13px;flex-wrap:wrap}
 .pips{display:inline-flex;gap:3px;align-items:center}
@@ -6695,9 +6697,11 @@ const TUT_TXT={
 
  btPlace:{t:"대원을 칸에 세우세요",
   d:"아래 <b>손패</b>의 대원 카드를 잡아 위쪽 아군 칸으로 끌어다 놓으세요.\n"
+   +"칸은 왼쪽부터 <b>1번부터 10번까지</b> 한 줄로 이어집니다. 아군이 1~5, 적이 6~10입니다.\n"
    +"오른쪽(5번)일수록 적과 가깝습니다. 근접 대원은 오른쪽, 원거리 대원은 왼쪽이 유리합니다."},
  btDist:{t:"거리",
-  d:"아군 <b>5번</b>과 적 <b>1번</b>이 <b>거리 1</b>입니다. 멀어질수록 숫자가 커집니다.\n"
+  d:"거리는 <b>두 칸 번호를 빼면</b> 나옵니다 — 적 번호에서 내 번호를 빼세요.\n"
+   +"5번에 선 대원이 6번 적을 치면 <b>거리 1</b>, 10번 적을 치면 <b>거리 5</b>입니다.\n"
    +"기술마다 닿는 거리가 정해져 있고, 닿지 않는 칸은 흐리게 보입니다."},
  btIntent:{t:"주고받을 피해를 미리 봅니다",
   d:"적 머리 위의 표시가 <b>다음에 무엇을 할지</b>입니다.\n"
@@ -8570,7 +8574,12 @@ function drawOver(app){
 /* ═══════════ 전투 ═══════════ */
 const SLOTS=5;
 const UNLOCK=[1,1,7,15];   // 3번 기술 7레벨, 궁극기 15레벨 (기획노트)
-const dist=(a,e)=>(SLOTS-a)+e;   /* 아군 a번, 적 e번 · 아군 5번과 적 1번이 거리 1 */
+/* 칸 번호는 한 줄로 이어 센다 — 아군 1~5, 적 6~10.
+   그래서 거리는 두 번호를 빼기만 하면 된다 : 적 번호 − 아군 번호.
+   속으로는 양쪽 다 1~5 그대로다. 눈에 보이는 번호만 옮긴다. */
+const foeNo=s=>s+SLOTS;                 /* 적 칸 → 보이는 번호 */
+const unitNo=u=>!u?"?":((B&&B.foes&&B.foes.indexOf(u)>=0)?u.slot+SLOTS:u.slot);
+const dist=(a,e)=>(SLOTS-a)+e;   /* = foeNo(e) − a · 아군 5번과 적 6번이 거리 1 */
 function foeSet(kind){
   /* 이 전투에만 세울 적이 정해져 있으면 그것부터 (미지의 구역 난동꾼 등) */
   if(run.dun&&run.dun.forceFoes) return run.dun.forceFoes.map(x=>x.slice());
@@ -8936,7 +8945,8 @@ function foePeekHtml(f){
     ${ails.length?`<div class="pfrow"><span class="pl">걸린 것</span>${
       ails.map(b=>`<span class="chip">${esc(b)}</span>`).join("")}</div>`:""}
     <div class="pfrow"><span class="hint">${esc(D.hit||"공격")}${jo(D.hit||"공격","eu")}로 때립니다 ·
-      거리는 아군 칸에서 ${f.slot}번까지입니다 · 적 칸을 다시 누르면 닫힙니다</span></div>
+      ${foeNo(f.slot)}번 칸에 서 있습니다 — 거리는 <b>${foeNo(f.slot)} − 내 칸 번호</b> ·
+      적 칸을 다시 누르면 닫힙니다</span></div>
   </div>`;
 }
 function intentKey(o){
@@ -9344,7 +9354,7 @@ function drawBattle(app){
   }
   for(let s=1;s<=SLOTS;s++){
     const f=foeAt(s);
-    const d=el(`<div class="slot ${f?"":"empty"}"><span class="no">${s}</span>${
+    const d=el(`<div class="slot ${f?"":"empty"}"><span class="no">${foeNo(s)}</span>${
       preSkill&&f?`<span class="reach">거리 ${dist(sel.hero.slot,s)}</span>`:""}</div>`);
     d.dataset.slot=s;
     const fdrop=(B.pick!=null&&!!B.hand[B.pick]);
@@ -9523,7 +9533,7 @@ function promptMsg(){
   return s.tg==="ally"?`${s.n} ×${sel.count} — 이동할 칸을 고르세요`
        +(isMoveSkill(s)&&!moveStayOk(sel.hero,s)?" (지금 칸은 고를 수 없습니다)":"")
        : s.tg==="any" ?`${s.n} ×${sel.count} — 아군 칸 또는 적 칸(빈 칸 포함)을 클릭하세요`
-       : s.tg==="foe" ?`${s.n} ×${sel.count} — 적의 칸을 고르세요`
+       : s.tg==="foe" ?`${s.n} ×${sel.count} — 적의 칸(6~10)을 고르세요`
           +(reachOf(sel.hero,s)!=null?` (사거리 ${reachOf(sel.hero,s)})`:"")
           +" · 같은 기술을 또 누르면 횟수 +1" : "";
 }
@@ -10118,10 +10128,10 @@ function volPanel(anchor){
 /* 단축키를 어디에도 적어 두지 않았다. ? 나 머리줄 [도움말] 로 연다 */
 let HELP_ON=0;
 const HELP_ROWS=[
- ["전투 · 칸 고르기","1~5","아군 칸 번호를 눌러 그 대원을 고릅니다"],
+ ["전투 · 칸 고르기","1~5","아군 칸 번호를 눌러 그 대원을 고릅니다 (6~0 은 그 적을 살펴봅니다)"],
  ["전투 · 기술","1~4","기술 창이 열려 있을 때는 기술 번호가 됩니다"],
  ["전투 · 횟수","1~9","횟수를 고르는 자리에서는 시전 횟수입니다"],
- ["전투 · 대상","1~5","적 칸 또는 아군 칸 번호"],
+ ["전투 · 대상","1~5 / 6~0","아군 칸은 1~5, 적 칸은 6~10 (10은 0 키)"],
  ["전투 · 턴 종료","Enter","같은 일을 아래 [턴 종료] 버튼도 합니다"],
  ["전투 · 손패로","Esc","기술 창을 닫고 손패로 돌아갑니다"],
  ["가방","B","가진 장신구과 카드를 봅니다"],
@@ -10172,12 +10182,25 @@ document.addEventListener("keydown",e=>{
   if(view!=="battle") return;
   if(e.key==="Escape"){ if(B) B.pick=null; sel=null; render(); return }
   if(e.key==="Enter"){ endTurn(); return }
-  const n=parseInt(e.key,10); if(isNaN(n)||n<1||n>9) return;
+  /* 칸이 1~10 이 되었으니 0 을 10번 칸으로 읽는다 */
+  const n=(e.key==="0")?10:parseInt(e.key,10);
+  if(isNaN(n)||n<1||n>10) return;
   e.preventDefault();
-  if(!sel){ pickUnit(n); return }
+  if(!sel){
+    if(n<=SLOTS) pickUnit(n);
+    else { const f=foeAt(n-SLOTS); if(f){ B.peek=(B.peek===f.id)?null:f.id; render() } }
+    return;
+  }
   if(sel.step===2){ if(n<=4) pickSkill(n-1,null); return }
-  if(sel.step===3){ pickCount(n); return }
-  if(sel.step===4){ if(n<=SLOTS) doSkill(n); return }
+  if(sel.step===3){ if(n<=9) pickCount(n); return }
+  if(sel.step===4){
+    const tg=sel.hero.sk[sel.skill].tg;
+    if(n>SLOTS){ if(tg==="foe"||tg==="any") doSkill(n-SLOTS) }
+    else if(tg==="ally") doSkill(n);
+    else if(tg==="any") doSkill(-n);
+    else if(tg==="self"&&sel.hero.slot===n) doSkill(null);
+    return;
+  }
   if(sel.step===5){ if(n<=SLOTS) shadowGoTo(n) }
 });
 
@@ -10689,7 +10712,7 @@ function hurt(f,amt,tag,art,pierce,crit){
       gap:crit?170:undefined, recoil:1, pose:(d>0?"hurt":(s>0?"guard":null)),
       s:crit?null:(pr>=50?"pierce":art==="wind"?"gust":art==="mag"?"mag":
                    art==="boom"?"boom":art==="claw"?"slash2":amt>=12?"blunt":"slash")});
-  say(`${tag} → ${f.name}(${f.slot}번) ${crit?"치명타 ":""}피해 ${amt}${
+  say(`${tag} → ${f.name}(${foeNo(f.slot)}번) ${crit?"치명타 ":""}피해 ${amt}${
     pr?` (관통 ${pr}%${pr<100?` · 체력 ${thru}`:""})`:""}${s?` (보호막 ${s})`:""} · 남은 ${Math.max(0,f.hp)}`,crit?"t1":undefined);
   if(f.thorn&&f.alive&&d>0&&!f.thornBusy){
     const src=B.lastAttacker;
@@ -10792,7 +10815,7 @@ function doSkill(target){
     const pin=pinnedFoe(h,s0);
     if(pin&&pin.slot!==target){
       const dirn=(s0.farshot&&!(h.tag&&h.tag.nearShot))?"멀리":"가까이";
-      say(`${s0.n}${jo(s0.n,"eun")} 가장 ${dirn} 있는 적(${pin.slot}번)만 겨눌 수 있습니다.`,"t2");
+      say(`${s0.n}${jo(s0.n,"eun")} 가장 ${dirn} 있는 적(${foeNo(pin.slot)}번)만 겨눌 수 있습니다.`,"t2");
       render(); return;
     }
   }
@@ -10818,7 +10841,7 @@ function doSkill(target){
                      .sort((a,b)=>dist(h.slot,a.slot)-dist(h.slot,b.slot))[0];
       if(!re){ say(`${s.n} — 사거리 안에 적이 없어 중단합니다.`,"t2"); break }
       if(re.slot!==target){ target=re.slot;
-        say(`${s.n}${jo(s.n,"eun")} ${re.name}(${re.slot}번)에게 나갑니다.`,"t2") }
+        say(`${s.n}${jo(s.n,"eun")} ${re.name}(${foeNo(re.slot)}번)에게 나갑니다.`,"t2") }
     }
     { const pn=pinnedFoe(h,s); if(pn) target=pn.slot; else if(s.farshot||s.nearest) break }
     if(!canPay(h,i,1)){ say("자원이 부족해 중단합니다.","t2"); break }
@@ -10891,7 +10914,7 @@ function doSkill(target){
         || openFoes().filter(f=>inReach(h,_s,f.slot))
                      .sort((a,b)=>dist(h.slot,a.slot)-dist(h.slot,b.slot))[0];
       if(!alt) break;
-      target=alt.slot; say(`대상이 쓰러져 ${alt.name}(${alt.slot}번)으로 옮깁니다.`,"t2");
+      target=alt.slot; say(`대상이 쓰러져 ${alt.name}(${foeNo(alt.slot)}번)으로 옮깁니다.`,"t2");
     }
   }
   checkEnd();
@@ -11034,7 +11057,7 @@ function runEffect(h,i,s,target){
     }
     soulFX({side:"foe",slot:src.slot},{side:mine?"mine":"foe",slot:slot},"#9ecbf5",7);
     fx({side:mine?"mine":"foe",slot:slot,art:"mag",s:"summon",txt:"환영",cls:"mag",gap:420});
-    say(`${src.name}의 환영이 ${mine?"아군":"적"} ${slot}번 칸에 나타납니다.${
+    say(`${src.name}의 환영이 ${mine?"아군":"적"} ${mine?slot:foeNo(slot)}번 칸에 나타납니다.${
       mine?" 도발합니다.":""}`,"t1");
     return;
   }
@@ -11559,7 +11582,7 @@ function runEffect(h,i,s,target){
     }else{
       B.portals.push({side:side,slot:slot,dmg:s.dmg+mod(s,"dmg")+h.mag,shield:3+h.def});
       fx({side:side,slot:slot,art:"mag",s:"mag",ring:"#a06ae0",txt:"차원문",cls:"mag"});
-      say(`${side==="mine"?"아군":"적"} ${slot}번 칸에 차원문이 열립니다.`,"t1");
+      say(`${side==="mine"?"아군":"적"} ${side==="mine"?slot:foeNo(slot)}번 칸에 차원문이 열립니다.`,"t1");
     }
     return;
   }
@@ -11630,7 +11653,7 @@ function runEffect(h,i,s,target){
       if(t.slot<SLOTS&&!foeAt(t.slot+1)){
         t.slot++;
         fx({side:"foe",slot:t.slot,s:"step",ring:"#9c8d77",txt:"밀림",cls:"miss",gap:80});
-        say(`육중한 밀치기 — ${t.name}${jo(t.name,"ig")} ${t.slot}번으로 밀려납니다.`,"t2");
+        say(`육중한 밀치기 — ${t.name}${jo(t.name,"ig")} ${foeNo(t.slot)}번으로 밀려납니다.`,"t2");
       }else{
         addDeb(t,"stun",1,h);
         fx({side:"foe",slot:t.slot,ring:"#a06ae0",txt:"기절",cls:"miss",gap:80});
@@ -11974,7 +11997,7 @@ function foePhase(){
     if(f.intent.t==="move"){
       if(f.slot>1&&!foeAt(f.slot-1)){ f.slot--;
         fx({side:"foe",slot:f.slot,s:"step",ring:"#9c8d77",gap:130});
-        say(`${f.name} 전진 → ${f.slot}번`) }
+        say(`${f.name} 전진 → ${foeNo(f.slot)}번`) }
       else say(`${f.name} 전진 실패.`,"t2");
     }else if(f.intent.t==="thorn"){
       f.thorn=f.intent.v; f.thornTurn=f.intent.turns;
@@ -12021,7 +12044,7 @@ function foePhase(){
     else if(f.intent.t==="back"){
       if(f.slot<SLOTS&&!foeAt(f.slot+1)){ f.slot++;
         fx({side:"foe",slot:f.slot,s:"step",ring:"#9c8d77",gap:130});
-        say(`${f.name} 물러섭니다 → ${f.slot}번`) }
+        say(`${f.name} 물러섭니다 → ${foeNo(f.slot)}번`) }
       else say(`${f.name} 물러서지 못했습니다.`,"t2");
     }
     else if(f.intent.t==="purge"){
