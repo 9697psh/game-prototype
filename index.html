@@ -12284,9 +12284,11 @@ function doSkill(target){
     /* 진선풍도만 예외 — 세 번째마다 회오리로 갈린다. 검 소리 대신 회오리를 문다 */
     if(own&&h.name==="카제"&&s.n==="진선풍도"&&windStrong(h,h.windUses+1))
       own=(typeof SND!=="undefined"&&SND["카제 회오리"])?"카제 회오리":own;
-    /* 모두를 때리는 기술(화살비·팽창 공격)은 겨눌 곳이 없어 tg 가 self 다.
-       그래도 적을 치는 것이므로 공격 자세를 잡아야 한다. */
-    if(h.slot>0&&(s.allHit||(s.tg!=="self"&&s.tg!=="ally"&&hitsFoe(s,target))))
+    /* 적을 치는 기술이면 **tg 가 무엇이든** 공격 자세를 잡는다.
+       겨눌 곳이 없어 tg 를 self 로 적어 둔 것이 여럿이다 —
+       환상통 · 참회의 기류 · 숙주 폭발 · 영광의 족쇄 · 비늘 폭발 · 팽창 공격 · 화살비.
+       '적을 치는가' 는 hitsFoe() 가 FOE_HIT 표로 이미 정확히 답한다. */
+    if(h.slot>0&&hitsFoe(s,target))
       fx({side:"mine",slot:h.slot,pose:"atk",s:own||ATK_SFX[h.name],lunge:1,gap:0});
     /* 자기나 아군에게 거는 기술은 자세를 잡지 않는다.
        그래도 소리는 나야 한다 — 쿠렘타이의 환상통·영혼 분리가 그렇다 */
