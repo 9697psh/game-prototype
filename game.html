@@ -2605,7 +2605,9 @@ function beamFX(a,b,color,w){
   nd.style.transform="rotate("+Math.atan2(dy,dx)+"rad)";
 }
 /* 영혼이 뽑혀 나와 다른 칸으로 흘러간다 */
-function soulFX(from,to,color,cnt){
+/* quiet — 영혼이 닿는 자리에서 터지는 고리·불티를 끈다.
+   빨아들이는 쪽이 내 대원일 때는 제 머리 위에서 터지는 꼴이라 거슬린다. */
+function soulFX(from,to,color,cnt,quiet){
   SFX.play("soul");
   const a=ctrOf(from.side,from.slot), b=to?ctrOf(to.side,to.slot):null;
   if(!a) return;
@@ -2623,7 +2625,7 @@ function soulFX(from,to,color,cnt){
     else { w.style.top=(a.y-70)+"px" }
     w.style.opacity="0"; w.style.transform="translate(-50%,-50%) scale(.3)";
   }, i*55);
-  if(b) setTimeout(()=>{
+  if(b&&!quiet) setTimeout(()=>{
     at(spawn('<div class="soulring" style="border-color:'+col+'"></div>'),b);
     sparks(b,col,9);
   }, 60+n*55);
@@ -11309,14 +11311,27 @@ function runEffect(h,i,s,target){
     if(so>=60){ const f2=foeAt(target-1); if(f2) list.push(f2) }
     const times=so>=200?2:1;
     const dmg=s.dmg+mod(s,"dmg")+h.mag;
+    const so0=run.souls||0;      /* 이번 착취로 정말 거둬들였는지 재려고 적어 둔다 */
     /* 어둠이 먼저 내려오고, 그다음 피해가 들어간다.
        art:"mag" 에 걸면 마법사 전원에게 쿠렘타이의 어둠이 내려온다 — 여기서 직접 띄운다.
        두 번 때릴 때도 그림은 한 번만 (겹쳐 뜨면 지저분하다) */
     list.forEach(f=>{ if(f.alive) fx({side:"foe",slot:f.slot,drain:1,gap:0}) });
     for(let q=0;q<times;q++) list.forEach(f=>{ if(f.alive) hurt(f,dmg,"착취","mag",so>=140?50:0) });
-    setTimeout(()=>{ const me=ctrOf("mine",h.slot);
+    setTimeout(()=>{
+      const me=ctrOf("mine",h.slot);
+      const got=(run.souls||0)-so0;
       list.forEach(f=>{ const p=ctrOf("foe",f.slot);
-        if(p&&me){ beamFX(p,me,"#8f5fd0",5); soulFX({side:"foe",slot:f.slot},{side:"mine",slot:h.slot},"#b58fe0",3) } }) },40);
+        if(p&&me){ beamFX(p,me,"#8f5fd0",5);
+          /* 흘러들기만 하고 그의 머리 위에서 터지지는 않는다 (quiet) */
+          soulFX({side:"foe",slot:f.slot},{side:"mine",slot:h.slot},"#b58fe0",3,1) } });
+      /* 영혼은 착취를 썼다고 들어오지 않는다 — 적이 죽어야 들어온다.
+         그러니 정말 거뒀을 때만 매듭짓는다. 아무것도 못 얻었는데 터지면 거짓말이 된다. */
+      if(got>0&&me) setTimeout(()=>{
+        at(spawn('<div class="soulring" style="border-color:#b58fe0"></div>'),me);
+        sparks(me,"#b58fe0",9);
+        popText(me,"mag","영혼 +"+got);
+      },60+3*55);
+    },40);
     return;
   }
   if(s.phantom){
