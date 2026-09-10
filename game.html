@@ -631,6 +631,10 @@ button.dtl{padding:3px 10px;font-size:11.5px}
 #kwtip .icard{max-width:330px}
 /* ── 미지의 구역 ── 그림 → 제목 → 상황 문구 → 선택지 ── */
 .evbox{max-width:820px;margin:18px auto 0;display:flex;flex-direction:column;align-items:center}
+/* 쌓아 둔 카드의 남은 수 */
+.cc-stk{font-size:9.5px;letter-spacing:.04em;padding:1px 6px;border-radius:9px;
+  border:1px solid var(--brass);color:var(--brass);background:rgba(201,162,39,.12);
+  font-variant-numeric:tabular-nums}
 .evart{width:clamp(200px,34vw,320px);height:clamp(200px,34vw,320px);
   display:flex;align-items:center;justify-content:center;
   background:radial-gradient(circle at 50% 40%,rgba(201,162,39,.13),transparent 68%);
@@ -10438,7 +10442,9 @@ function startBattle(kind,pinned){
   (run.cards||[]).forEach(cd=>{
     const L=CARD_LIB[cd.n];
     if(!L) return;
-    if(L.summon){ B.hand.push({type:"summon",name:cd.n,stock:cd.n}); return }
+    if(L.summon){
+      if(!B.hand.some(c=>c.stock===cd.n)) B.hand.push({type:"summon",name:cd.n,stock:cd.n});
+      return }
     B.hand.push({type:"item",name:cd.n,d:L.d+` (보유 ${cd.c})`,stock:cd.n,use:L.use});
   });
   setTimeout(()=>{ const f=B&&B.foes&&B.foes.filter(x=>x.alive);
@@ -11287,8 +11293,12 @@ function drawBattle(app){
       : S ? `<span class="hp">${ic("hp")} ${S.hp}</span>`
             +(S.mana?`<span class="mn">${ic("mana")} ${S.mana}</span>`:"")
       : "";
+    /* 쌓아 둔 카드는 몇 장 남았는지 보여야 한다 — 소환물 카드는 설명 자리가
+       "빈 칸에 배치하세요" 로 차 있어 여느 카드의 "(보유 N)" 이 들어갈 데가 없다 */
+    const stk=c.stock?((run.cards||[]).find(x=>x.n===c.stock)||{}).c||0:0;
     const card=el(`<div class="card ccard ${kind} ${B.pick===i?"picked":""}" data-i="${i}">
-      <div class="cc-top">${tags.map(t=>`<span class="cc-tag">${esc(t)}</span>`).join("")}</div>
+      <div class="cc-top">${tags.map(t=>`<span class="cc-tag">${esc(t)}</span>`).join("")}${
+        c.stock?`<span class="cc-stk" title="가진 수 — 다 쓰면 손패에서 사라집니다">보유 ${stk}</span>`:""}</div>
       <div class="cc-art">${art}</div>
       <div class="cc-n">${esc(nm)}</div>
       <div class="cc-type">${type}</div>
@@ -13503,7 +13513,10 @@ function runEffect(h,i,s,target){
          stock 을 적어 두면 내려놓을 때 useCard 가 보유량에서 한 장 뺀다
          (여느 보유 카드가 손에 들어오는 꼴과 똑같다 — L.summon 갈래를 볼 것). */
       addCard(run,"악마 하수인",1);
-      B.hand.push({type:"summon",name:"악마 하수인",stock:"악마 하수인"});
+      /* ★ stock 카드는 한 장이 보유량 전체를 뜻한다. 이미 손에 있으면 더 얹지 않는다 —
+         얹으면 차원문을 쓸 때마다 손패가 하수인으로 찬다 */
+      if(!B.hand.some(c=>c.stock==="악마 하수인"))
+        B.hand.push({type:"summon",name:"악마 하수인",stock:"악마 하수인"});
       /* 칸에 놓을 때와 같은 소리 — 틈에서 나오는 놈이나 칸에 서는 놈이나 같은 놈이다 */
       fx({side:side,slot:slot,art:"rift",s:sfxOr("악마 하수인 배치","summon"),
           txt:"하수인",cls:"crit"});
