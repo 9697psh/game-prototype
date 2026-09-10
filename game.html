@@ -509,6 +509,58 @@ button.dtl{padding:3px 10px;font-size:11.5px}
   .startwrap{grid-template-columns:minmax(0,1fr)}
   .hdetail{position:static;min-height:0}
 }
+/* ── 장신구 한 장 ─────────────────────────────────────────
+   등급마다 테두리 색이 다르다 — 파편 동 · 일반 은 · 희귀 금 · 특수 보라 · 전설 빨강 */
+.icard{--gc:#b87333;border:1px solid var(--gc);border-radius:9px;background:var(--panel);
+  padding:9px;display:grid;grid-template-columns:64px minmax(0,1fr);gap:9px;
+  box-shadow:inset 0 0 26px -12px var(--gc)}
+.icard.g일반{--gc:#c3ccd6} .icard.g희귀{--gc:#e0c85a}
+.icard.g특수{--gc:#a06ae0} .icard.g전설{--gc:#e05a5a}
+.icard .ic-art{width:64px;height:64px;display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--rule);border-radius:7px;background:rgba(0,0,0,.28)}
+.icard .ic-art img,.icard .ic-art svg{width:52px;height:52px;image-rendering:pixelated}
+.icard .ic-n{font-size:13px;font-weight:700;line-height:1.3;word-break:keep-all}
+.icard .ic-g{font-size:10px;color:var(--gc);letter-spacing:.1em;margin-top:1px}
+.icard .ic-d{margin-top:6px;font-size:11px;color:var(--dim);line-height:1.55;
+  word-break:keep-all;text-wrap:pretty;border:1px solid var(--rule);border-radius:6px;
+  padding:6px 8px;background:rgba(0,0,0,.2)}
+.icard .ic-rowh{font-size:9.5px;color:var(--faint);letter-spacing:.04em;margin:7px 0 3px;white-space:nowrap}
+.icard .ic-row{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.icard .ic-row .plus{color:var(--faint);font-size:11px}
+.icard .ic-full{grid-column:1/-1}
+.iico{width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;
+  border:1px solid var(--rule);border-radius:6px;background:rgba(0,0,0,.25);cursor:help}
+.iico img,.iico svg{width:24px;height:24px;image-rendering:pixelated}
+.iico:hover{border-color:var(--brass)}
+
+/* ── 카드 한 장 ───────────────────────────────────────── */
+.ccard{border:1px solid var(--rule2);border-radius:9px;background:var(--panel);
+  padding:8px;width:150px;display:flex;flex-direction:column;gap:6px}
+.ccard .cc-top{display:flex;align-items:center;gap:6px;min-height:16px}
+.ccard .cc-tag{font-size:9.5px;color:#c58fd0;border:1px solid rgba(197,143,208,.5);
+  border-radius:5px;padding:0 5px}
+.ccard .cc-own{margin-left:auto;font-size:9.5px;color:#7fd39a;
+  border:1px solid rgba(127,211,154,.5);border-radius:5px;padding:0 5px}
+.ccard .cc-art{height:74px;display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--rule);border-radius:7px;background:rgba(0,0,0,.28)}
+.ccard .cc-art img,.ccard .cc-art svg{width:64px;height:64px;image-rendering:pixelated}
+.ccard .cc-n{font-size:12px;font-weight:700;text-align:center;word-break:keep-all}
+.ccard .cc-type{font-size:9.5px;color:var(--faint);text-align:center;
+  border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:3px 0}
+.ccard .cc-d{font-size:10.5px;color:var(--dim);line-height:1.55;word-break:keep-all;
+  text-wrap:pretty;flex:1}
+.ccard .cc-st{display:flex;gap:5px;justify-content:center}
+.ccard .cc-st span{font-size:10px;border-radius:9px;padding:1px 8px}
+.ccard .cc-st .hp{background:rgba(127,211,154,.16);color:#7fd39a}
+.ccard .cc-st .mn{background:rgba(106,168,224,.16);color:#6aa8e0}
+
+/* ── 도감 ─────────────────────────────────────────────── */
+.dexwrap{max-width:1080px;margin:14px auto 0}
+.dexhd{font-family:var(--serif);font-size:15px;color:var(--brass);letter-spacing:.1em;
+  margin:18px 0 9px;border-bottom:1px solid var(--rule);padding-bottom:5px}
+.dexgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:10px}
+.dexcards{display:flex;flex-wrap:wrap;gap:10px}
+#kwtip .icard{max-width:330px}
 /* ── 미지의 구역 ── 그림 → 제목 → 상황 문구 → 선택지 ── */
 .evbox{max-width:820px;margin:18px auto 0;display:flex;flex-direction:column;align-items:center}
 .evart{width:clamp(200px,34vw,320px);height:clamp(200px,34vw,320px);
@@ -4595,6 +4647,115 @@ function recipeHtml(it){
   return recipeLines(it).map(t=>`<p class="rcp">${esc(t)}</p>`).join("");
 }
 function itemTip(it){ return it.n+" — "+it.d+"\n"+recipeLines(it).join("\n") }
+/* ── 장신구 한 장 ────────────────────────────────────────
+   도감에도, 제련소에도, 손을 올렸을 때 뜨는 쪽지에도 같은 것을 쓴다. */
+function itemIco(name){
+  const it=ITEMS.find(x=>x.n===name);
+  if(!it) return '<span class="iico" title="'+esc(name)+'">?</span>';
+  return '<span class="iico kw" data-item="'+esc(name)+'" title="'+esc(name)+'">'
+    +itemIcon(it,24)+'</span>';
+}
+function itemCard(it){
+  if(!it) return "";
+  const into=ITEMS.filter(x=>x.rc&&x.rc.indexOf(it.n)>=0);
+  const rc=(it.rc||[]).map(itemIco).join('<span class="plus">+</span>');
+  return `<div class="icard g${esc(it.g)}">
+    <div class="ic-art">${itemIcon(it,52)}</div>
+    <div>
+      <div class="ic-n">${esc(it.n)}</div>
+      <div class="ic-g">${esc(it.g)}</div>
+      <div class="ic-d">${rich(it.d)}</div>
+      ${it.rc?`<div class="ic-rowh">조합법 · 제련석 ${it.cost}</div>
+        <div class="ic-row">${rc}</div>`:""}
+    </div>
+    ${into.length?`<div class="ic-full">
+      <div class="ic-rowh">이것으로 만들 수 있는 것</div>
+      <div class="ic-row">${into.map(x=>itemIco(x.n)).join("")}</div></div>`:""}
+  </div>`;
+}
+/* ── 카드 한 장 ─────────────────────────────────────────
+   카드는 세 표에 흩어져 있다. 이름 하나로 세 곳을 다 뒤진다. */
+function cardAll(){
+  const out=[];
+  const put=n=>{ if(out.indexOf(n)<0) out.push(n) };
+  Object.keys(CARD_META).forEach(put);
+  Object.keys(CARD_LIB).forEach(put);
+  Object.keys(ARMOR_CARDS).forEach(put);
+  Object.keys(SUMMONS).forEach(n=>{ if(CARD_META[n]) put(n) });
+  return out;
+}
+function cardDesc(nm){
+  if(CARD_LIB[nm]&&CARD_LIB[nm].d) return CARD_LIB[nm].d;
+  if(ARMOR_CARDS[nm]&&ARMOR_CARDS[nm].d) return ARMOR_CARDS[nm].d;
+  if(SKILL_FULL[nm]) return SKILL_FULL[nm];
+  if(SUMMONS[nm]&&SUMMONS[nm].d) return SUMMONS[nm].d;
+  return "";
+}
+function cardKind(nm){
+  if(SUMMONS[nm]) return "소환물";
+  if(ARMOR_CARDS[nm]) return "방어구";
+  return "전투";
+}
+function cardCard(nm,have){
+  const L={d:cardDesc(nm),foe:!!(CARD_LIB[nm]&&CARD_LIB[nm].foe)},
+        M=CARD_META[nm]||{}, S=SUMMONS[nm];
+  const tags=[];
+  if(M.gone) tags.push("소멸성");
+  if(L.foe) tags.push("적 대상");
+  return `<div class="ccard">
+    <div class="cc-top">${tags.map(t=>`<span class="cc-tag">${esc(t)}</span>`).join("")}
+      ${have!=null?`<span class="cc-own">${have}/10</span>`:""}</div>
+    <div class="cc-art">${cardArt(nm)}</div>
+    <div class="cc-n">${esc(nm)}</div>
+    <div class="cc-type">${esc(cardKind(nm))} 카드</div>
+    <div class="cc-d">${rich(L.d||"")}</div>
+    ${S?`<div class="cc-st"><span class="hp">${ic("hp")} ${S.hp}</span>
+      <span class="mn">${ic("mana")} ${S.mana}</span></div>`:""}
+  </div>`;
+}
+/* ── 장신구 도감 ─────────────────────────────────────── */
+const ITEM_GRADES=["파편","일반","희귀","특수","전설"];
+function drawItemDex(app){
+  app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">장 신 구 도 감</div>
+    <div class="sub">조합법의 그림에 손을 올리면 그 장신구가 펼쳐집니다</div></div>`));
+  const wrap=el(`<div class="dexwrap"></div>`);
+  ITEM_GRADES.forEach(g=>{
+    const list=ITEMS.filter(x=>x.g===g);
+    if(!list.length) return;
+    wrap.appendChild(el(`<div class="dexhd">${esc(g)} · ${list.length}</div>`));
+    wrap.appendChild(el(`<div class="dexgrid">${list.map(itemCard).join("")}</div>`));
+  });
+  const rest=ITEMS.filter(x=>ITEM_GRADES.indexOf(x.g)<0);
+  if(rest.length){
+    wrap.appendChild(el(`<div class="dexhd">그 밖 · ${rest.length}</div>`));
+    wrap.appendChild(el(`<div class="dexgrid">${rest.map(itemCard).join("")}</div>`));
+  }
+  app.appendChild(wrap);
+  const out=el(`<div class="center" style="margin-top:24px"><button class="go">닫기</button></div>`);
+  out.querySelector("button").onclick=()=>{ view=DEX_BACK||"title"; render() };
+  app.appendChild(out);
+}
+/* ── 카드 도감 ───────────────────────────────────────── */
+function drawCardDex(app){
+  app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">카 드 도 감</div>
+    <div class="sub">얻는 곳으로 묶었습니다</div></div>`));
+  const wrap=el(`<div class="dexwrap"></div>`);
+  const names=cardAll();
+  const by={};
+  names.forEach(n=>{ const s=(CARD_META[n]||{}).src||"그 밖";
+    (by[s]=by[s]||[]).push(n) });
+  Object.keys(by).sort().forEach(s=>{
+    wrap.appendChild(el(`<div class="dexhd">${esc(s)} · ${by[s].length}</div>`));
+    wrap.appendChild(el(`<div class="dexcards">${by[s].map(n=>cardCard(n)).join("")}</div>`));
+  });
+  app.appendChild(wrap);
+  const out=el(`<div class="center" style="margin-top:24px"><button class="go">닫기</button></div>`);
+  out.querySelector("button").onclick=()=>{ view=DEX_BACK||"title"; render() };
+  app.appendChild(out);
+}
+let DEX_BACK="title";
+function openDex(which){ DEX_BACK=view; view=which; render() }
+
 function findRecipe(a,b){
   const key=[a,b].sort().join("|");
   return ITEMS.find(it=>it.rc&&it.rc.slice().sort().join("|")===key)||null;
@@ -5871,6 +6032,8 @@ function render0(){
   }
   if(view==="text")     return drawText(app);
   if(view==="codex")    return drawCodex(app);
+  if(view==="itemdex")  return drawItemDex(app);
+  if(view==="carddex")  return drawCardDex(app);
   if(view==="bag")      return drawBag(app);
   if(view==="title")    return drawTitle(app);
   if(view==="heropick") return drawStart(app);
@@ -5894,8 +6057,8 @@ function render0(){
 
 function drawTitle(app){
   app.appendChild(el(`<div class="center" style="margin-top:70px">
-    <div class="title" style="font-size:44px">균 열</div>
-    <div class="sub" style="margin-top:14px">갈라진 세상을 닫으러 간다</div></div>`));
+    <div class="title" style="font-size:44px">${esc(UI_TXT.title)}</div>
+    <div class="sub" style="margin-top:14px">${rich(UI_TXT.sub)}</div></div>`));
   const sv=savePeek();
   if(sv){
     const box=el(`<div class="contsave">
@@ -5926,9 +6089,14 @@ function drawTitle(app){
   const tx=el(`<div style="margin-top:10px"><button style="padding:7px 18px;font-size:12.5px">설명 고치기</button></div>`);
   tx.querySelector("button").onclick=()=>{ view="text"; render() };
   app.querySelector(".center").appendChild(tx);
-  app.querySelector(".center").appendChild(el(`<div class="hint" style="margin-top:26px;max-width:420px">
-    한 판은 세 구역으로 이어집니다. 구역마다 정해진 날짜 안에 <b>우두머리</b>를 잡아야 하고,
-    <b>오염도</b>가 100이 되면 그 자리에서 끝납니다.</div>`));
+  { const dx=el(`<div style="margin-top:10px;display:flex;gap:8px;justify-content:center">
+      <button class="mini">장신구 도감</button><button class="mini">카드 도감</button></div>`);
+    const [bi,bc]=dx.querySelectorAll("button");
+    bi.onclick=()=>openDex("itemdex");
+    bc.onclick=()=>openDex("carddex");
+    app.querySelector(".center").appendChild(dx); }
+  app.querySelector(".center").appendChild(el(`<div class="hint" style="margin-top:26px;max-width:420px">${
+    rich(UI_TXT.intro)}</div>`));
 }
 
 
@@ -6069,6 +6237,13 @@ function saveStamp(t){
 /* ═══════════ 설명 편집기 ═══════════
    고친 글은 이 브라우저에 저장되고 곧바로 게임에 반영됩니다.
    [내보내기]로 받은 파일을 주시면 게임에 영구히 넣습니다. */
+/* 화면에 박혀 있던 글 — 여기 모아 두면 설명 고치기에서 손볼 수 있다 */
+const UI_TXT={
+  title:"균 열",
+  sub:"갈라진 세상을 닫으러 간다",
+  intro:"한 판은 세 구역으로 이어집니다. 구역마다 정해진 날짜 안에 <b>우두머리</b>를 잡아야 하고, "
+       +"<b>오염도</b>가 100이 되면 그 자리에서 끝납니다."
+};
 const TXT_KEY="kyunyeol.text.v1";
 let TXT={};
 try{ TXT=JSON.parse(localStorage.getItem(TXT_KEY)||"{}") }catch(e){ TXT={} }
@@ -6077,6 +6252,9 @@ function txtSave(){ try{ localStorage.setItem(TXT_KEY,JSON.stringify(TXT)) }catc
 function txtEntries(){
   const out=[];
   const add=(cat,key,label,get,set,area)=>out.push({cat,key,label,get,set,area:!!area});
+  add("화면 문구","ui:title","시작 화면 — 제목",()=>UI_TXT.title,v=>UI_TXT.title=v);
+  add("화면 문구","ui:sub","시작 화면 — 한 줄 부제",()=>UI_TXT.sub,v=>UI_TXT.sub=v,true);
+  add("화면 문구","ui:intro","시작 화면 — 아래 안내글",()=>UI_TXT.intro,v=>UI_TXT.intro=v,true);
   Object.keys(SKILL_FULL).forEach(n=>add("기술","full:"+n,n,
     ()=>SKILL_FULL[n], v=>SKILL_FULL[n]=v, true));
   KW_TAB.forEach(k=>add("키워드","kw:"+k.n,k.n,
@@ -7039,6 +7217,9 @@ function drawForge(app){
   app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">제 련</div>
     <div class="sub">조합법이 있는 장신구 둘을 골라 하나로 만듭니다 · 제련석 ${run.stone||0}개 보유</div></div>`));
   const wrap=app.querySelector(".center");
+  { const dx=el(`<div style="margin-top:8px"><button class="mini">장신구 도감</button></div>`);
+    dx.querySelector("button").onclick=()=>openDex("itemdex");
+    wrap.appendChild(dx); }
   const row=el(`<div class="rewards"></div>`);
   let any=0;
   run.heroes.forEach((h,hi)=>h.items.forEach((it,ii)=>{
@@ -7336,6 +7517,20 @@ function fleeBattle(toCamp,msg){
   toast(msg);
   render();
 }
+/* 카드의 곁들이 — 기획 노트의 카드 탭에서 옮겨 적었다.
+   갈래는 SUMMONS 에 있으면 소환물, 아니면 전투.
+   src 는 어디서 얻는가, gone 은 그 판이 끝나면 사라지는가(소멸성). */
+const CARD_META={
+ "강철 갑옷":{src:"대원 · 나이코스",gone:1}, "강철 각반":{src:"대원 · 나이코스",gone:1},
+ "강철 군화":{src:"대원 · 나이코스",gone:1}, "강철 투구":{src:"대원 · 나이코스",gone:1},
+ "마법 부여 보호구":{src:"대원 · 나이코스",gone:1}, "영광의 휘장":{src:"대원 · 나이코스",gone:1},
+ "악마 하수인":{src:"대원 · 굴라",gone:1}, "성벽":{src:"대원 · 헥토",gone:1},
+ "저주받은 성벽":{src:"대원 · 헥토"}, "망자의 육체":{src:"대원 · 트리스탄",gone:1},
+ "귀환서":{src:"상점"}, "위장 망토":{src:"상점"},
+ "불덩이":{src:"상점"}, "빵":{src:"상점"},
+ "맥주":{src:"미지의 구역"}, "소형 방패":{src:"시작 꾸러미"},
+ "간이 신발":{src:"보상"}
+};
 const CARD_LIB={
  "불덩이":{d:"대상 적에게 피해를 6 줍니다.",foe:1,
    use:(f,h)=>{ hurt(f,6,"불덩이","boom") }},
@@ -9572,6 +9767,19 @@ function pickCount(n){
   const box=()=>tip||(tip=document.getElementById("kwtip"));
   function show(el2){
     const b=box(); if(!b) return;
+    if(el2.dataset.item){
+      const it=ITEMS.find(x=>x.n===el2.dataset.item);
+      if(!it) return;
+      b.innerHTML=itemCard(it);
+      b.style.display="block";
+      const ri=el2.getBoundingClientRect(), wi=b.offsetWidth, hi=b.offsetHeight;
+      let xi=ri.left+ri.width/2-wi/2, yi=ri.top-hi-9;
+      if(yi<6) yi=ri.bottom+9;
+      const Wi=innerWidth||document.documentElement.clientWidth||9999;
+      b.style.left=Math.max(6,Math.min(Wi-wi-6,xi))+"px";
+      b.style.top=Math.max(6,yi)+"px";
+      return;
+    }
     if(el2.dataset.card||el2.dataset.cards){
       const nm=el2.dataset.card;
       if(nm){
@@ -9605,14 +9813,14 @@ function pickCount(n){
   }
   function hide(){ const b=box(); if(b) b.style.display="none" }
   document.addEventListener("mouseover",e=>{
-    const t=e.target.closest&&e.target.closest(".kw[data-kw],.kw[data-card],.kw[data-cards]");
+    const t=e.target.closest&&e.target.closest(".kw[data-kw],.kw[data-card],.kw[data-cards],.kw[data-item]");
     if(t) show(t);
   });
   document.addEventListener("mouseout",e=>{
-    if(e.target.closest&&e.target.closest(".kw[data-kw],.kw[data-card],.kw[data-cards]")) hide();
+    if(e.target.closest&&e.target.closest(".kw[data-kw],.kw[data-card],.kw[data-cards],.kw[data-item]")) hide();
   });
   document.addEventListener("click",e=>{
-    const t=e.target.closest&&e.target.closest(".kw[data-kw],.kw[data-card],.kw[data-cards]");
+    const t=e.target.closest&&e.target.closest(".kw[data-kw],.kw[data-card],.kw[data-cards],.kw[data-item]");
     if(t) show(t); else hide();
   },true);
   window.addEventListener("scroll",hide,true);
@@ -11954,41 +12162,37 @@ function drawBag(app){
   run.heroes.forEach(h=>(h.items||[]).forEach(it=>worn.push({it:it,h:h})));
   app.appendChild(el(`<div class="center">
     <div class="title" style="font-size:22px">가 방</div>
-    <div class="sub">가방 ${run.bag.length}개 · 착용 ${worn.length}개 · 카드 ${
-      run.cards.reduce((a,x)=>a+x.c,0)}장 · 제련석 ${run.stone||0} · 금화 ${run.gold}</div></div>`));
-  const wrap=app.querySelector(".center");
+    <div class="sub">제련석 ${run.stone||0} · 금화 ${run.gold}</div></div>`));
+  const wrap=el(`<div class="dexwrap"></div>`);
+  app.appendChild(wrap);
 
-  wrap.appendChild(el(`<div class="hint" style="margin-top:20px">가방에 든 장신구 — 주둔지에서 대원에게 채울 수 있습니다</div>`));
-  const r1=el(`<div class="rewards"></div>`);
-  if(!run.bag.length) r1.appendChild(el(`<div class="hint">비어 있습니다.</div>`));
-  run.bag.forEach(it=>r1.appendChild(el(`<div class="rw ro${gcls(it.g)}" title="${esc(itemTip(it))}">
-    <div class="g">${esc(it.g)}</div><div class="rwi">${rewardIcon(it)}</div>
-    <b>${esc(it.n)}</b><p>${rich(it.d)}</p>${recipeHtml(it)}</div>`)));
-  wrap.appendChild(r1);
+  { const dx=el(`<div style="margin-top:10px;display:flex;gap:8px;justify-content:center">
+      <button class="mini">장신구 도감</button><button class="mini">카드 도감</button></div>`);
+    const [bi,bc]=dx.querySelectorAll("button");
+    bi.onclick=()=>openDex("itemdex");
+    bc.onclick=()=>openDex("carddex");
+    wrap.appendChild(dx); }
 
-  wrap.appendChild(el(`<div class="hint" style="margin-top:24px">대원이 차고 있는 장신구</div>`));
-  const r2=el(`<div class="rewards"></div>`);
-  if(!worn.length) r2.appendChild(el(`<div class="hint">아직 없습니다.</div>`));
-  worn.forEach(x=>r2.appendChild(el(`<div class="rw ro${gcls(x.it.g)}" title="${esc(itemTip(x.it))}">
-    <div class="g">${esc(x.h.name)}</div><div class="rwi">${rewardIcon(x.it)}</div>
-    <b>${esc(x.it.n)}${x.it.bind?" 🔒":""}</b><p>${rich(x.it.d)}</p></div>`)));
-  wrap.appendChild(r2);
+  wrap.appendChild(el(`<div class="dexhd">가방에 든 장신구 · ${run.bag.length}
+    <span class="hint" style="letter-spacing:0"> — 주둔지에서 대원에게 채울 수 있습니다</span></div>`));
+  if(!run.bag.length) wrap.appendChild(el(`<div class="hint">비어 있습니다.</div>`));
+  else wrap.appendChild(el(`<div class="dexgrid">${run.bag.map(itemCard).join("")}</div>`));
 
-  wrap.appendChild(el(`<div class="hint" style="margin-top:24px">카드 — 전투에서 손패로 들어옵니다 (최대 10종)</div>`));
-  const r3=el(`<div class="rewards"></div>`);
-  if(!run.cards.length) r3.appendChild(el(`<div class="hint">가진 카드가 없습니다.</div>`));
-  run.cards.forEach(cd=>{
-    const L=CARD_LIB[cd.n]||{d:""};
-    r3.appendChild(el(`<div class="rw ro">
-      <div class="g">${cd.c}장${L.foe?" · 적 대상":""}</div>
-      <div class="rwi">${cardIcon(cd.n,52)}</div>
-      <b>${esc(cd.n)}</b><p>${rich(L.d)}</p></div>`));
-  });
-  wrap.appendChild(r3);
+  wrap.appendChild(el(`<div class="dexhd">대원이 차고 있는 장신구 · ${worn.length}</div>`));
+  if(!worn.length) wrap.appendChild(el(`<div class="hint">아직 없습니다.</div>`));
+  else wrap.appendChild(el(`<div class="dexgrid">${worn.map(x=>
+    `<div><div class="ic-rowh" style="margin-bottom:4px">${esc(x.h.name)}${
+      x.it.bind?" · 귀속":""}</div>${itemCard(x.it)}</div>`).join("")}</div>`));
 
-  const out=el(`<div style="margin-top:26px"><button class="go">닫기</button></div>`);
+  wrap.appendChild(el(`<div class="dexhd">카드 · ${run.cards.reduce((a,x)=>a+x.c,0)}장
+    <span class="hint" style="letter-spacing:0"> — 전투에서 손패로 들어옵니다 (최대 10종)</span></div>`));
+  if(!run.cards.length) wrap.appendChild(el(`<div class="hint">가진 카드가 없습니다.</div>`));
+  else wrap.appendChild(el(`<div class="dexcards">${run.cards.map(cd=>
+    cardCard(cd.n,cd.c)).join("")}</div>`));
+
+  const out=el(`<div class="center" style="margin-top:26px"><button class="go">닫기</button></div>`);
   out.querySelector("button").onclick=()=>{ view=run.bagBack||"map"; render() };
-  wrap.appendChild(out);
+  app.appendChild(out);
 }
 function pickWeighted(pool,n){
   const out=[], p=pool.slice();
@@ -12140,7 +12344,7 @@ function heroPanel(h){
   if(h.items&&h.items.length){
     box.appendChild(el(`<div class="hp-h">장비</div>`));
     box.appendChild(el(`<div class="hp-tk">${h.items.map(t=>
-      `<span title="${esc(itemTip(t))}">${esc(t.n)}</span>`).join("")}</div>`));
+      `<span class="kw" data-item="${esc(t.n)}">${esc(t.n)}</span>`).join("")}</div>`));
   }
   return box;
 }
