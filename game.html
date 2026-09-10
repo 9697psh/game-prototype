@@ -2591,7 +2591,8 @@ const EV_DIR="ev/";
 /* ═══════════ 배경음악 ═══════════
    파일은 bgm/ 폴더에 따로 둔다. 한 파일 게임에 14MB 를 심을 수는 없다.
    곡을 더 넣을 때는 BGM_SRC 에 파일 이름을, sceneBgm() 에 어느 화면인지를
-   적으면 된다. 그 둘 말고는 손댈 곳이 없다. */
+   적으면 된다. 그 둘 말고는 손댈 곳이 없다.
+   미지의 구역만은 화면이 하나뿐이라 이벤트가 스스로 고른다 — evBgm() 을 볼 것. */
 const BGM_SRC={
   main   :"bgm/main.mp3",     /* 타이틀 · 지도(낮) · 주둔지 */
   night  :"bgm/night.mp3",    /* 지도(밤) */
@@ -2603,8 +2604,22 @@ const BGM_SRC={
   boss1  :"bgm/boss1.mp3",    /* 우두머리 */
   shop   :"bgm/shop.mp3",     /* 상점 */
   forge  :"bgm/forge.mp3",    /* 제련소 */
+  ev_dark:"bgm/ev_dark.mp3",  /* 미지의 구역 — 제단 · 균열 */
+  ev_calm:"bgm/ev_calm.mp3",  /* 미지의 구역 — 정화 · 안식 */
+  ev_folk:"bgm/ev_folk.mp3",  /* 미지의 구역 — 노점 · 도박 · 사람 */
   reward :"bgm/reward.mp3"    /* 보상 · 레벨업 (한 번만 울리는 짧은 곡) */
 };
+/* 곡마다 녹음된 크기가 다르다. 지도 곡(실효값 -18dB)을 기준 삼아 깎는다 —
+   깎지 않으면 미지의 구역에 들어서는 순간 소리가 3dB 튄다.
+   **귀로 어림잡지 말고 재서 넣을 것.** 브라우저에서 decodeAudioData 로
+   실효값을 재고 (기준값/잰값) 을 dB 로 되돌린 수를 적는다. 없으면 1 이다. */
+const BGM_GAIN={
+  ev_dark:0.66,   /* -14.4dB 로 녹음되었다 */
+  ev_folk:0.66,   /* -14.2dB */
+  ev_calm:0.50    /* -14.3dB — 정화의 샘은 나머지보다 한 단 더 낮게 둔다.
+                     오염이 턱까지 찼을 때 만나는 자리라 조용해지는 것 자체가 효과다 */
+};
+const bgmGain=k=>(k&&BGM_GAIN[k])||1;
 /* 전투마다 이 가운데 하나를 고른다. 곡을 더 받으면 여기에 이름만 더하면 된다 */
 const BATTLE_BGM=["battle","battle2","battle3","battle4"];
 /* 곡은 라운드가 아니라 전투에 딸린다 — 라운드가 넘어가도 그대로 이어진다.
@@ -2622,12 +2637,15 @@ function sceneBgm(){
   }
   if(view==="shop") return "shop";
   if(view==="forge") return "forge";
+  /* 미지의 구역 — 이벤트가 스스로 곡을 고른다. 결이 안 잡히면 지도 곡 그대로 */
+  if(view==="relic") return (run&&run.ev&&evBgm(run.ev))||(run&&run.night?"night":"main");
   if(view==="title"||view==="over"||view==="clear") return "main";
   if(!run) return "main";
   return run.night?"night":"main";
 }
 const BGM=(()=>{
   let VOL=0.42; const FADE=700;   /* 효과음이 묻히지 않을 만큼만 */
+  const lv=k=>VOL*bgmGain(k);      /* 그 곡을 틀 때의 실제 크기 */
   let on=true, cur=null, want=null, unlocked=false;
   let a=null, b=null, live=null;   /* 두 개를 번갈아 쓴다 */
   let sting=null, hidden=false;
@@ -2665,7 +2683,7 @@ const BGM=(()=>{
     if(p&&p.catch) p.catch(err=>{
       if(!err||err.name==="NotAllowedError") unlocked=false;
     });
-    fade(nxt,VOL*(sting?0.35:1),FADE);
+    fade(nxt,lv(key)*(sting?0.35:1),FADE);
     /* 새로 트는 것 말고는 무조건 세운다.
        paused 를 보고 넘기면, 아직 받아오는 중인 곡이 살아남아 뒤늦게 울린다.
        뒤늦게 도착한 콜백이 새로 튼 곡을 끄지 않도록 한 번 더 본다. */
@@ -2692,9 +2710,9 @@ const BGM=(()=>{
     once(key){
       if(!on||!unlocked||!BGM_SRC[key]) return;
       try{ if(sting){ sting.pause() } }catch(e){}
-      sting=new Audio(BGM_SRC[key]); sting.volume=VOL*1.25;
-      if(live) fade(live,VOL*0.35,300);
-      const back=()=>{ sting=null; if(live) fade(live,VOL,700) };
+      sting=new Audio(BGM_SRC[key]); sting.volume=lv(key)*1.25;
+      if(live) fade(live,lv(cur)*0.35,300);
+      const back=()=>{ sting=null; if(live) fade(live,lv(cur),700) };
       sting.addEventListener("ended",back);
       sting.addEventListener("error",back);
       const p=sting.play(); if(p&&p.catch) p.catch(back);
@@ -2717,7 +2735,8 @@ const BGM=(()=>{
     set vol(v){
       VOL=Math.max(0,Math.min(1,+v||0));
       if(live&&!hidden){ if(live._ft){ clearInterval(live._ft); live._ft=0 }
-        try{ live.volume=sting?VOL*0.35:VOL }catch(e){} }
+        const g=lv(cur);
+        try{ live.volume=sting?g*0.35:g }catch(e){} }
     }
   };
 })();
@@ -9656,6 +9675,52 @@ function takeGrade(g){
 function pickEvent(){
   const ok=EVENTS.filter(e=>!e.when||e.when());
   return rnd(ok.length?ok:EVENTS.filter(e=>!e.when));
+}
+
+/* ── 미지의 구역 배경음 ──────────────────────────────────────────
+   이벤트마다 곡을 손으로 달지 않는다. 제목 · 상황 문구 · 선택지에서 결을 읽어
+   저절로 고른다. **새 이벤트를 EVENTS 에 적기만 하면 알맞은 곡이 붙는다.**
+   걸리는 낱말이 EV_BGM_MIN 에 못 미치면 곡을 바꾸지 않고 지도 곡을 그대로 쓴다 —
+   스물 몇 칸을 다 갈아 끼우면 새 곡이 되레 안 들린다. 여백이 있어야 산다.
+   골라 준 것이 마음에 안 들면 이벤트에 bgm:"ev_dark" 처럼 적으면 그것이 이긴다.
+   bgm:null 이면 무슨 낱말이 걸리든 지도 곡을 지킨다.
+   낱말은 **두 글자 이상**으로 둘 것 — 한 글자는 엉뚱한 말 속에 걸린다
+   ('술'이 '기술'에, '피'가 '피해'에 걸린다). */
+const EV_BGM_WORD={
+  /* 제단 · 균열 — 영구히 남는 대가를 무는 자리 */
+  ev_dark:["제단","성소","신상","우상","숭배","저주","균열","속삭","제물","희생",
+           "사원","기둥","두건","그림자","검붉","검은 천","돌판","헌금","의식","봉인",
+           "무덤","시체","해골","서늘","목소리","이름을 부르","따라옵","제사","신전"],
+  /* 정화 · 안식 — 이 게임에서 몇 안 되는 숨 돌리는 자리 */
+  ev_calm:["정화","샘물","맑은","씻겨","안식","고요","잔잔","성수","목욕","솟습",
+           "샘가","맑게","깨끗"],
+  /* 노점 · 도박 · 흥정 — 누군가와 부딪치는 자리 */
+  ev_folk:["상인","좌판","진열","노점","행상","수레","사내","흥정","감정","도박",
+           "룰렛","내기","운을 시험","술집","술 한잔","주점","난동","의사","진료","배낭",
+           "돋보기","천막","장사","손님","넝마","구걸","동냥","잡동사니","골동품","주인",
+           "탁자","손을 내밀","값을 매"]
+};
+/* 이벤트에 붙은 얼굴도 힌트다. 다만 한 점뿐이라 혼자서는 곡을 못 바꾼다 */
+const EV_BGM_FACE={"굶주린 그림자":"ev_dark","균열 벌레":"ev_dark",
+                   "얼음 정령":"ev_calm","사슬 광인":"ev_folk","술집 난동꾼":"ev_folk"};
+const EV_BGM_MIN=2;   /* 이만큼은 걸려야 곡을 바꾼다. 제목에 걸리면 두 점 */
+function evBgm(e){
+  if(!e) return null;
+  if(e.bgm!==undefined) return e.bgm;          /* 손으로 적어 둔 것이 이긴다 */
+  if(e._bgm!==undefined) return e._bgm;        /* 한 번 셈했으면 그대로 */
+  const name=e.n||"";
+  let body=name+" "+(e.t||"")+" "+(e.say||"");
+  (e.o||[]).forEach(o=>{ body+=" "+(o.t||"")+" "+(o.d||"")+" "+(o.say||"") });
+  let best=null, hi=0;
+  for(const k in EV_BGM_WORD){
+    let pt=0;
+    EV_BGM_WORD[k].forEach(w=>{
+      if(name.indexOf(w)>=0) pt+=2; else if(body.indexOf(w)>=0) pt+=1;
+    });
+    if(EV_BGM_FACE[e.face]===k) pt+=1;
+    if(pt>hi){ hi=pt; best=k }
+  }
+  return e._bgm=(hi>=EV_BGM_MIN?best:null);
 }
 /* 룰렛 칸 — 예전에는 글자 줄이었다. {t:설명, s:짧은 이름, c:색} 을 쓰되
    옛 형태(문자열)도 그대로 받아 준다. */
