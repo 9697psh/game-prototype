@@ -12680,6 +12680,19 @@ function doSkill(target){
       render(); return }
     if(!B.foes.some(f=>f.alive&&!f.isPhantom)){ say("환영을 뽑을 적이 없습니다.","t2"); render(); return }
   }
+  /* ★ [사형 선고] — 전투당 한 번뿐이고 겨눌 곳도 가린다.
+     이 셋은 runEffect 안에도 그대로 있다(두 겹으로 막는다). 여기 있는 것은
+     **값을 치르기 전에** 돌려보내려는 것이다 — 전수 점검이 찾아 준 자리다. */
+  if(s0.verdict){
+    if(h.verdictUsed){ say("이번 전투에는 이미 썼습니다.","t2"); render(); return }
+    if(target<0){
+      if(!allyAt(-target)){ say("그 칸에는 아군이 없습니다.","t2"); render(); return }
+    }else{
+      const vf=foeAt(target);
+      if(!vf){ say("그 칸에는 적이 없습니다.","t2"); render(); return }
+      if(vf.boss){ say("우두머리에게는 통하지 않습니다.","t2"); render(); return }
+    }
+  }
   if(s0.shadow&&!h.shadowAt&&sel.moveTo==null){
     sel.target=target; sel.step=5; SFX.play("click"); render(); return;
   }
