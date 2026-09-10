@@ -5081,8 +5081,8 @@ const ITEMS=[
    "내 턴 종료시 추진력을 최대 6 소모하여 그 2배만큼 보호막을 얻습니다."),
  IT("불굴의 방패","희귀",["옥 수정","균열석"],20,{maxHp:18},{negShield:5,negHeal:1},
    "부정적인 효과를 받은 후, 체력을 1 회복합니다."),
- IT("불타는 호각","희귀",["옥 수정","라이티늄 수정"],20,{maxHp:18},{endShield:4,alwaysTaunt:1,endBurnRange:4},
-   "항상 도발 상태가 됩니다.\n거리 2 내의 적들에게 내 턴 종료시 피해를 4(추가 ¤ ) 줍니다."),
+ IT("불타는 호각","희귀",["옥 수정","라이티늄 수정"],20,{maxHp:18},{endShield:4,alwaysTaunt:1,endBurn:2},
+   "항상 도발 상태가 됩니다.\n거리 2 내의 적들에게 내 턴 종료시 화상을 2 부여합니다."),
  IT("애곤의 발톱","희귀",["옥 수정","전투 검"],20,{maxHp:18,atk:3},{lastStand:3},
    "체력이 50% 이하일때 에너지 보호막(추가 ⇧ )과 공격력 +3을 얻습니다. *(전투당 1회)*"),
  IT("기초 마법서: 생명","희귀",["옥 수정","전투 마법서"],20,{maxHp:18,mag:3},{hpMag:5},
@@ -12640,10 +12640,15 @@ function endPhase(){
       const v=use*h.tag.dashMul; h.eshield=(h.eshield||0)+v; bump();
       fx({side:"mine",slot:h.slot,s:"pulse",gap:170});
       say(`달리기 — ${h.name} 에너지 보호막 +${v}`) }
-    const eb=itemBt(h,"endBurnRange");
+    /* 불타는 호각 — 때리는 것이 아니라 불을 붙인다. 값은 화상 중첩이다 */
+    const eb=itemBt(h,"endBurn");
     if(eb){ const list=B.foes.filter(f=>f.alive&&dist(h.slot,f.slot)<=2);
       if(list.length) bump();
-      list.forEach(f=>hurt(f,eb,"불타는 호각","slash")) }
+      list.forEach(f=>{
+        f.burn=(f.burn||0)+eb;
+        fx({side:"foe",slot:f.slot,ring:"#e0705a",s:"fire",txt:"화상"+f.burn,cls:"dmg",gap:60});
+        say(`불타는 호각 — ${f.name} 화상 ${f.burn}`,"t2");
+      }) }
     if(h.name==="헥토"){
       const v=(h.tag.allyShield||2)+h.def;
       const esh=!!h.tag.allyEsh;        /* 든든함 폭발 — 보호막 대신 에너지 보호막 */
