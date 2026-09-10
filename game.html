@@ -1511,7 +1511,10 @@ header{align-items:center}
 .fusefx{position:absolute;width:64px;height:64px;margin:-56px 0 0 -32px;
   background-size:384px 64px;background-repeat:no-repeat;image-rendering:pixelated;
   pointer-events:none;z-index:7;transform-origin:50% 87.5%;
-  animation:fuFx .27s step-end forwards}
+  /* 궁극기만 .45s 다. 다른 것은 다 .27s — 여섯 칸이면 한 칸에 45ms 라
+     굴라처럼 몸집 큰 대원 위에서는 한 번 번쩍이고 끝나 보인다.
+     75ms 로 늘리면 기운이 올라오는 것이 눈에 들어온다 */
+  animation:fuFx .45s step-end forwards}
 @keyframes fuFx{
   0%     {background-position:0 0}
   11.11% {background-position:-64px 0}
@@ -2027,6 +2030,13 @@ kbd{display:inline-block;min-width:20px;text-align:center;padding:1px 7px;font-s
    48x18 은 그림 크기 그대로다. 픽셀 그림이라 늘리거나 줄이면 뭉갠다.
    스프라이트보다 앞에 놓으므로 대원이 구멍을 딛고 선 것처럼 보인다 */
 .art .portal{position:absolute;left:50%;bottom:1px;transform:translateX(-50%);
+  width:48px;height:18px;opacity:.95;image-rendering:pixelated;
+  pointer-events:none;z-index:0}
+/* 빈 칸에는 발밑이 없다 — 칸 한가운데에서 10px 올린 자리에 눕힌다.
+   여는 띠(.ptlfx)가 .art 를 못 찾으면 칸 한가운데를 짚고, 거기서 구멍이
+   10px 위에 그려지기 때문이다. 둘이 같은 자리라야 띠가 끝날 때 안 튄다 */
+.slot.empty > .portal{position:absolute;left:50%;top:calc(50% - 10px);
+  transform:translate(-50%,-50%);
   width:48px;height:18px;opacity:.95;image-rendering:pixelated;
   pointer-events:none;z-index:0}
 .slots{display:flex;gap:3px;margin-top:3px;justify-content:center}
@@ -3319,7 +3329,7 @@ function fuseFX(side,slot){
   nd.style.backgroundImage="url("+u+")";
   const z=FX_SCALE.fuse, sx=(Math.random()<0.5?-z:z);
   nd.style.transform="scale("+sx+","+z+")";
-  setTimeout(()=>nd.remove(),420);
+  setTimeout(()=>nd.remove(),600);   /* 마디가 .45s 라 420 이면 도는 중에 지운다 */
 }
 /* 균열 차원문 — 바닥이 꺼지고 문이 열린다.
    돌리지도 뒤집지도 않는다. 빛이 왼쪽 위에서 오는 그림이라
@@ -10968,6 +10978,10 @@ function drawBattle(app){
       my.appendChild(d); continue;
     }
     if(peekFoe&&dist(s,peekFoe.slot)<=peekFoe.rng) d.classList.add("inrng");
+    /* 빈 칸에도 차원문이 열린다 (tg:"any"). 예전에는 누가 서 있을 때만 그려서
+       빈 칸에 연 문이 아무 데도 안 보였다 */
+    { const pe=B.portals&&B.portals.find(p=>p.side==="mine"&&p.slot===s);
+      if(pe&&!pe.fresh&&!h&&!bodyAt(s)) d.innerHTML+=`<img class="portal" src="${ICON_PNG.portal_mark}" alt="" draggable="false">`; }
     if(shOwner&&shOwner.shadowAt===s) d.innerHTML+=shMark(shOwner.darkAt===s);
     if(moveStep&&s!==sel.hero.slot&&Math.abs(s-sel.hero.slot)<=2){
       d.classList.add("pick"); d.onclick=()=>shadowGoTo(s);
@@ -10980,7 +10994,7 @@ function drawBattle(app){
       if(tgMode&&sel.hero===h) d.innerHTML+=selfHitTag(h,preSkill,sel.count);
       d.innerHTML+=incHtml(h,INC[s]);
       const pm=B.portals&&B.portals.find(p=>p.side==="mine"&&p.slot===s);
-      /* 바닥 표시는 .art 안에, 스프라이트보다 **앞에** 넣는다 (아래 그림 칸을 볼 것).
+      /* 바닥 표시는 .art 안에, 스프라이트보다 **뒤에** 넣는다 (아래 그림 칸을 볼 것).
          칸(d)에 붙이면 체력 숫자 밑으로 내려간다 — 거기는 발밑이 아니다.
          fresh 인 동안은 안 그린다. 띠가 다 돌 때까지 기다리는 것이다 */
       const pmk=(pm&&!pm.fresh)?`<img class="portal" src="${ICON_PNG.portal_mark}" alt="" draggable="false">`:"";
@@ -10988,7 +11002,7 @@ function drawBattle(app){
       const shW=h.shield?Math.max(6,Math.min(45,h.shield/h.maxHp*100)):0;
       d.innerHTML+=`${h.isMin?"":gearRow(h)}<div class="res">${manaPips(h)}${heroRes(h)}${
           h.mom?`<span class="rr">${ic("move")}${h.mom}</span>`:""}</div>
-        <div class="art">${pmk}${figure(h.name,poseNow(h))}</div>
+        <div class="art">${figure(h.name,poseNow(h))}${pmk}</div>
         <div class="nm">${esc(h.name)}</div>
         <div class="bar" data-hpk="${hpKey(h)}" data-hpv="${Math.max(0,h.hp/h.maxHp*100)}" data-hpn="${h.hp}"
           data-shv="${(h.shield||0)+(h.eshield||0)}" data-esw="${esW}" data-shw="${shW}">
@@ -11048,6 +11062,8 @@ function drawBattle(app){
     d.dataset.slot=s;
     const fdrop=(B.pick!=null&&!!B.hand[B.pick]);
     if(fdrop) d.classList.add("drop");
+    { const pe=B.portals&&B.portals.find(p=>p.side==="foe"&&p.slot===s);
+      if(pe&&!pe.fresh&&!f) d.innerHTML+=`<img class="portal" src="${ICON_PNG.portal_mark}" alt="" draggable="false">`; }
     if(f){
       d.classList.add("foe");
       const canHit = tgMode!=="foe"&&tgMode!=="any" ? false
@@ -11066,7 +11082,7 @@ function drawBattle(app){
       d.innerHTML+=`${TIER_LABEL[tier]?`<div class="tier">${
           tier==="boss"?tierCrown():tier==="elite"?tierStar():tierMoon()}${TIER_LABEL[tier]}</div>`:""}
         <div class="intentbar">${intentHtml(f)}</div>
-        <div class="art ${fsz}">${pfk}${figure(f.name)}${
+        <div class="art ${fsz}">${figure(f.name)}${pfk}${
           dying?killMark(sel.hero,preSkill,f,sel.count):""}</div>
         <div class="nm">${esc(f.name)}</div>
         <div class="bar" data-hpk="${hpKey(f)}" data-hpv="${Math.max(0,f.hp/f.maxHp*100)}" data-hpn="${f.hp}"
@@ -13393,7 +13409,9 @@ function runEffect(h,i,s,target){
     const ex=B.portals.find(p=>p.side===side&&p.slot===slot);
     if(ex){
       B.hand.push({type:"summon",name:"악마 하수인"});
-      fx({side:side,slot:slot,art:"rift",s:"summon",txt:"하수인",cls:"crit"});
+      /* 칸에 놓을 때와 같은 소리 — 틈에서 나오는 놈이나 칸에 서는 놈이나 같은 놈이다 */
+      fx({side:side,slot:slot,art:"rift",s:sfxOr("악마 하수인 배치","summon"),
+          txt:"하수인",cls:"crit"});
       /* 방금 손에 들어온 카드 위에도 같은 틈을 띄운다.
          둘을 이어서 보면 "저기서 나온 것이 이 카드가 되었다" 로 읽힌다.
          카드를 실제로 내려놓는 자리는 안 건드린다 — 세 번 보게 된다 */
