@@ -122,6 +122,10 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .incm::after{content:"";position:absolute;left:50%;bottom:-7px;width:1px;height:7px;
   background:rgba(201,80,63,.65)}
 .slot.pick .reach{color:var(--brass)}
+/* 눌러 둔 적이 닿는 칸 — 어디로 물러나야 안전한지 한눈에 */
+.slot.inrng{box-shadow:0 0 0 1px rgba(224,112,90,.55) inset;background:rgba(224,112,90,.07)}
+.slot.inrng .no{color:#e0705a}
+.peekfoe .rngline{color:var(--faint)}
 .slot .no{position:absolute;top:-9px;left:7px;background:var(--ink);border:1px solid var(--rule);
   border-radius:3px;font-size:10px;padding:0 6px;color:var(--faint);
   font-variant-numeric:tabular-nums}
@@ -6060,8 +6064,10 @@ const FOE={
    hit:"몽둥이질"},
  "사슬 광인":  {hp:22,atk:6,def:6,rng:4,exp:3,
    el:"공격",
-   /* 사슬을 휘감고 불을 붙인다 — 약한 것을 노려 연달아 후려친다 */
-   ai:{weak:9,combo:6,thorn:5,near:4,buff:3,def:1,debs:["burn"]},
+   /* 사슬을 휘감아 벼리고 연달아 후려친다 — 오래 끌수록 한 방이 아니라
+      세 방이 아파진다. 불(화상)은 사슬과 안 어울려 걷어냈다.
+      대신 buff 를 얼굴로 삼는다: 공격력이 오를수록 연타가 무서워진다. */
+   ai:{combo:10,buff:7,weak:5,near:4,thorn:2,def:1},
    hit:"사슬 후려치기"},
  "굶주린 그림자":{hp:18,atk:5,def:3,rng:3,exp:2,demon:1,
    el:"공격",
@@ -6075,7 +6081,7 @@ const FOE={
       두르는 순간이 의도로 미리 보이므로 피할 수도 있다. */
    gim:{taunt:1},
    /* 앞을 막고 동료를 고친다. 가시는 늘 두르는 것이 아니라 가끔 두른다 */
-   ai:{near:8,def:7,heal:5,thorn:4,debs:["bind"]},
+   ai:{near:8,def:7,heal:5,thorn:2,debs:["bind"]},
    hit:"방패 내려치기"},
  "균열 벌레":  {hp:12,atk:7,def:2,rng:5,exp:3,demon:1,
    el:"마법",
@@ -6124,7 +6130,7 @@ const FOE={
  "간수장":    {hp:46,atk:8,def:10,rng:4,exp:8,boss:1,
    el:"공격",
    gim:{taunt:1},
-   ai:{near:10,weak:6,thorn:6,combo:5,buff:3,back:2,any:2,volley:2,def:1,debs:["bind","stun"]},
+   ai:{near:10,weak:6,thorn:3,combo:5,buff:3,back:2,any:2,volley:2,def:1,debs:["bind","stun"]},
    hit:"철퇴 내려찍기"},
  "고철 거인":  {hp:70,atk:10,def:14,rng:3,exp:12,boss:1,
    el:"공격",
@@ -6134,7 +6140,7 @@ const FOE={
  "서리 군주":  {hp:95,atk:11,def:14,rng:5,exp:18,boss:1,demon:1,
    el:"마법",
    gim:{neg:3},
-   ai:{volley:6,near:6,weak:5,back:4,thorn:3,buff:2,any:2,def:1,ret:0.2,debs:["chill","fear","atkDn"]},
+   ai:{volley:6,near:6,weak:5,back:4,thorn:2,buff:2,any:2,def:1,ret:0.2,debs:["chill","fear","atkDn"]},
    hit:"서리 창"}
 };
 const FIELD_FOES=[
@@ -10022,6 +10028,13 @@ function foePeekHtml(f){
       <b>${esc(f.name)}</b>
       <span class="hint">${ic("hp")}${Math.max(0,f.hp)}/${f.maxHp} ·
         ${ic("atk")}${f.atk} · ${ic("def")}${defVal(f)} · 사거리 ${f.rng} · ${esc(D.el||"공격")}</span>
+      <span class="hint rngline">${(()=>{
+        /* 이 적이 지금 닿는 칸 — 빈 칸까지 포함해 보여 준다.
+           닿는 칸이 없으면 그 사실이 곧 정보다 (앞을 비우면 손이 묶인다) */
+        const hit=[]; for(let q=1;q<=SLOTS;q++) if(dist(q,f.slot)<=f.rng) hit.push(q);
+        return hit.length ? `닿는 칸 ${hit.join(" · ")}번`
+          : `<em style="color:var(--ok)">지금은 닿는 칸이 없습니다</em>`;
+      })()}</span>
       <span class="grow"></span>
       <button class="mini pfx">닫기</button>
     </div>
@@ -10106,7 +10119,9 @@ function rollIntents(){
     if(A.twin){ const n2=2, p2=Math.max(1,Math.round(f.atk*1.2*FM/n2));
       add({t:"atk",v:p2,hits:n2,to:weak.slot,pat:FP+"쌍격",el:EL,far:far},A.twin) }
     add({t:"def",v:defVal(f)},far?A.def+1:A.def);
-    if(!f.thorn) add({t:"thorn",v:Math.max(2,Math.round(2+run.field*1.5)),turns:3},A.thorn||0);
+    /* 가시는 두르는 턴을 빼고 두 턴. 3턴은 되받는 구간이 너무 길어
+       '때릴 수 있는 턴' 보다 '못 때리는 턴' 이 많아졌다. */
+    if(!f.thorn) add({t:"thorn",v:Math.max(2,Math.round(2+run.field*1.5)),turns:2},A.thorn||0);
     add({t:"volley",v:dv(f.atk*0.6),el:EL},far?A.volley+2:A.volley);
     if((f.buffs||0)<3) add({t:"buff",v:Math.max(1,Math.round(f.atk*0.35))},A.buff);
     const mate=B.foes.filter(x=>x.alive&&x!==f&&x.hp<x.maxHp*0.6)[0];
@@ -10372,6 +10387,8 @@ function drawBattle(app){
   /* 이동 기술이면 갈 수 없는 칸은 켜지 않는다 */
   const canGo = n => !(sel && tgMode==="ally" && moveBlock(sel.hero,preSkill,n));
   const INC = incoming();
+  /* 적을 눌러 두면 그 적이 닿는 칸을 밝게 보여 준다 — 어디로 피할지 알 수 있다 */
+  const peekFoe = (B.peek!=null) ? B.foes.find(x=>x.id===B.peek&&x.alive) : null;
   const shOwner = allUnits().find(x=>x.shadowAt);
   const shMark = dk=>`<svg class="shmark" viewBox="0 0 24 24">`
       +`<ellipse cx="12" cy="18" rx="8" ry="3.5" fill="${dk?"#7a4ab0":"#4a3a5e"}" opacity=".85"/>`
@@ -10394,6 +10411,7 @@ function drawBattle(app){
       if(drop) d.onclick=()=>{ const k=B.pick; B.pick=null; playCard(k,s,"mine") };
       my.appendChild(d); continue;
     }
+    if(peekFoe&&dist(s,peekFoe.slot)<=peekFoe.rng) d.classList.add("inrng");
     if(shOwner&&shOwner.shadowAt===s) d.innerHTML+=shMark(shOwner.darkAt===s);
     if(moveStep&&s!==sel.hero.slot&&Math.abs(s-sel.hero.slot)<=2){
       d.classList.add("pick"); d.onclick=()=>shadowGoTo(s);
@@ -11088,9 +11106,21 @@ function reachOf(h,sk){
   }
   return sk.rng||null;
 }
+/* 무리해서 뻗기 — 사거리 안에 겨눌 수 있는 적이 **하나도 없을 때만** 풀린다.
+   멀리서 쏘기만 하는 적을 두고 방어만 올리고 있을 수는 없기 때문이다.
+   대신 위력이 준다 (0.7배) — 적이 사거리 밖에서 때릴 때와 같은 셈이다. */
+const OVER_X=0.7;
+function overReach(h,sk,slot){
+  const r=reachOf(h,sk);
+  if(r==null) return false;
+  if(dist(h.slot,slot)<=r) return false;
+  /* 닿는 적이 하나라도 있으면 사거리는 그대로 지킨다 */
+  return !openFoes().some(f=>dist(h.slot,f.slot)<=r);
+}
 function inReach(h,sk,slot){
   const r=reachOf(h,sk);
-  return r==null || dist(h.slot,slot)<=r;
+  if(r==null||dist(h.slot,slot)<=r) return true;
+  return overReach(h,sk,slot);
 }
 function farthestFoe(h){
   const p=openFoes(), q=p.length?p:B.foes.filter(f=>f.alive);
@@ -11707,8 +11737,10 @@ function predictDmg(h,s,tgt){
     }
   }
   else {
-    if(s.rng&&dist(h.slot,tgt.slot)>s.rng) return null;
+    const OVER=(s.rng&&dist(h.slot,tgt.slot)>s.rng);
+    if(OVER&&!overReach(h,s,tgt.slot)) return null;
     dmg=bs("dmg")+(s.el==="마법"?MAG:ATK*(s.n==="방패 밀치기"?(h.tag.pushAtkX||1):1));
+    if(OVER) dmg=Math.max(1,Math.round(dmg*OVER_X));
     if(s.el==="마법"&&deb(h,"magDn")) dmg=Math.ceil(dmg*0.5);
     else if(s.el!=="마법"&&deb(h,"atkDn")) dmg=Math.ceil(dmg*0.5);
     if(h.name==="이테리오"&&s.el!=="마법"&&(tgt.mark||0)>0){ dmg*=2; crit=1 }
@@ -11978,6 +12010,8 @@ function doSkill(target){
       fx({side:"foe",slot:target,s:"miss",txt:"사거리 "+r,cls:"miss"});
       say(`사거리 ${r} 밖입니다. 다른 대상을 고르세요.`,"t2"); render(); return;
     }
+    if(overReach(h,s0,target))
+      say(`닿는 적이 없어 무리해서 뻗습니다 — 위력이 ${Math.round((1-OVER_X)*100)}% 줍니다.`,"t2");
     const pin=pinnedFoe(h,s0);
     if(pin&&pin.slot!==target){
       const dirn=(s0.farshot&&!(h.tag&&h.tag.nearShot))?"멀리":"가까이";
@@ -12830,8 +12864,11 @@ function runEffect(h,i,s,target){
       h.windBuff=0; return;
     }
     if(!tgt) return;
-    if(s.rng&&dist(h.slot,tgt.slot)>s.rng) return;
+    /* 사거리 밖이라도 닿는 적이 하나도 없으면 무리해서 뻗는다 */
+    const OVER=(s.rng&&dist(h.slot,tgt.slot)>s.rng);
+    if(OVER&&!overReach(h,s,tgt.slot)) return;
     let dmg=s.dmg+mod(s,"dmg")+(s.el==="마법"?h.mag:h.atk*(s.n==="방패 밀치기"?(h.tag.pushAtkX||1):1));
+    if(OVER) dmg=Math.max(1,Math.round(dmg*OVER_X));
     if(s.el==="마법"&&deb(h,"magDn")) dmg=Math.ceil(dmg*0.5);
     else if(s.el!=="마법"&&deb(h,"atkDn")) dmg=Math.ceil(dmg*0.5);
     let CRIT=0;
