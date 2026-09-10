@@ -5612,6 +5612,7 @@ const REW_KIND={
  "하급|후미 준비 회복 강화":"기술 강화"};
 /* 보상 등장 조건 — 기획 노트 설명문의 * 줄을 그대로 옮긴 것 */
 const REW_COND={
+ "상급|한계 해방":{needLimit:1},   /* 사용한도 기술이 없는 대원에겐 빈칸이다 */
  "상급|검과 방패":{once:1},
  "상급|공방전":{once:1},
  "상급|돌격 베기":{once:1},
@@ -5687,7 +5688,18 @@ function rewardOk(h,r){
   if(!c) return true;
   if(c.once&&tookRw(h,r)) return false;
   if(c.need&&c.need.some(nm=>!hasSkill(h,nm))) return false;
+  /* 사용한도 기술이 하나도 없는 대원에게는 [한계 해방] 이 빈칸이다.
+     `if(k.limit) k.limit++` 가 한 번도 참이 안 된다 —
+     가장 귀한 상급을 골랐는데 아무 일도 안 일어난다. 아예 안 내놓는다. */
+  if(c.needLimit&&!hasLimitSkill(h)) return false;
   return true;
+}
+/* 사용한도가 걸린 기술을 하나라도 가지고 있는가 (전환형·선택지까지 본다) */
+function hasLimitSkill(h){
+  if(!h||!h.sk) return false;
+  const any=s=>!!s&&(s.limit>0||(s.alt&&s.alt.limit>0)
+    ||(s.opts||[]).some(o=>o&&(o.limit>0||(o.alt&&o.alt.limit>0))));
+  return h.sk.some(any);
 }
 /* 보상 칸에 조건을 적어 준다 */
 function rewCondHtml(r){
