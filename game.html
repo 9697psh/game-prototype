@@ -485,7 +485,7 @@ button.dtl{padding:3px 10px;font-size:11.5px}
 .card.ccard{width:150px;gap:5px;background:linear-gradient(180deg,var(--raise),var(--panel) 60%)}
 .card.ccard .cc-top:empty{display:none}
 .card.ccard .cc-art{height:60px}
-.card.ccard .cc-art img,.card.ccard .cc-art svg{width:52px;height:52px}
+.card.ccard .cc-art img,.card.ccard .cc-art svg{width:52px;height:52px;object-fit:contain}
 .card.ccard .cc-d{flex:none}
 .card.ccard .cc-st .at{background:rgba(224,112,90,.16);color:#e0705a}
 .card.ccard .cc-st .mg{background:rgba(106,168,224,.16);color:#6aa8e0}
@@ -583,6 +583,40 @@ button.dtl{padding:3px 10px;font-size:11.5px}
 .hcard .st{margin-top:9px;font-size:11px;color:var(--faint);
   display:flex;gap:10px;justify-content:center}
 .startpacks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:6px}
+/* ── 주둔지 — 왼쪽 큰 판(숙면·지도·장비·나가기) + 오른쪽 시설 두루마리 (사용자 시안 2026-09-12) ── */
+.camp{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:16px;margin-top:22px;text-align:left;align-items:start}
+.camp-l{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:18px;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);min-height:360px}
+.cbtn{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;
+  padding:18px 14px;border:1px solid var(--rule);border-radius:10px;background:var(--panel2,rgba(255,255,255,.03));cursor:pointer;
+  transition:transform .13s,border-color .13s,box-shadow .13s}
+.cbtn:hover{transform:translateY(-2px);border-color:var(--brass);box-shadow:0 0 0 1px var(--brass),0 8px 20px -10px var(--brass)}
+.cbtn.off{opacity:.55;cursor:default}
+.cbtn.off:hover{transform:none;border-color:var(--rule);box-shadow:none}
+.cbtn b{font-family:var(--serif);font-size:15px;color:var(--fg)}
+.cbtn small{font-size:12px;color:var(--dim);line-height:1.6;word-break:keep-all}
+.cbtn .cnote{font-size:11px;color:var(--faint);line-height:1.5;word-break:keep-all}
+.cbtn .ci{width:64px;height:64px;display:flex;align-items:center;justify-content:center;color:var(--brass)}
+.cbtn .ci img.npx{width:56px;height:56px;image-rendering:pixelated}
+.cbtn .ci svg{width:44px;height:44px}
+.cbtn .ci.round{border-radius:50%;background:radial-gradient(circle at 50% 40%,rgba(224,168,106,.25),transparent 70%)}
+.cbtn.campsleep{grid-row:span 1}
+.cbtn.campout{background:linear-gradient(180deg,rgba(201,162,39,.10),transparent);border-color:var(--rule2)}
+.camp-r{display:flex;flex-direction:column;gap:10px;max-height:420px;overflow-y:auto;padding-right:6px;scrollbar-width:thin}
+.cfac{display:flex;gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--rule);border-radius:10px;background:var(--panel);
+  cursor:pointer;transition:transform .13s,border-color .13s,box-shadow .13s;flex:0 0 auto}
+.cfac:hover{transform:translateY(-1px);border-color:var(--brass);box-shadow:0 0 0 1px var(--brass)}
+.cfac.off{opacity:.55;cursor:default}
+.cfac.off:hover{transform:none;border-color:var(--rule);box-shadow:none}
+.cfac.soon{opacity:.4;cursor:default;border-style:dashed}
+.cfac.soon:hover{transform:none;border-color:var(--rule);box-shadow:none}
+.cfac .fi{width:48px;height:48px;flex:0 0 48px;display:flex;align-items:center;justify-content:center}
+.cfac .fi img.npx,.cfac .fi svg{width:44px;height:44px;image-rendering:pixelated}
+.cfac .ft{display:flex;flex-direction:column;gap:3px;min-width:0}
+.cfac .ft b{font-family:var(--serif);font-size:14px;color:var(--fg)}
+.cfac .ft small{font-size:11.5px;color:var(--dim);line-height:1.5;word-break:keep-all}
+.cfac .ft .cnote{font-size:11px;color:var(--faint)}
+@media (max-width:760px){ .camp{grid-template-columns:1fr} .camp-r{max-height:none} }
 .startpacks .rw{margin:0}
 /* 오른쪽 — 고르기 전에는 안내만 */
 .hdetail{border:1px solid var(--rule);border-radius:10px;background:var(--panel);
@@ -655,7 +689,7 @@ button.dtl{padding:3px 10px;font-size:11.5px}
   border:1px solid rgba(127,211,154,.5);border-radius:5px;padding:0 5px}
 .ccard .cc-art{height:74px;display:flex;align-items:center;justify-content:center;
   border:1px solid var(--rule);border-radius:7px;background:rgba(0,0,0,.28)}
-.ccard .cc-art img,.ccard .cc-art svg{width:64px;height:64px;image-rendering:pixelated}
+.ccard .cc-art img,.ccard .cc-art svg{width:64px;height:64px;image-rendering:pixelated;object-fit:contain}
 .ccard .cc-n{font-size:12px;font-weight:700;text-align:center;word-break:keep-all}
 .ccard .cc-type{font-size:9.5px;color:var(--faint);text-align:center;
   border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:3px 0}
@@ -8250,11 +8284,20 @@ function savePeek(){
             inBattle:!!s.B, heroes:hs.map(h=>({n:h.name,lv:h.lv,down:h.down}))};
   }catch(e){ return null }
 }
+/* 저장본은 기술 객체를 통째로 싣는다. 그 뒤 정의에 키가 새로 생기면(균형의 shield:2)
+   옛 판에는 없어 셈이 NaN 이 된다 — 빠진 키만 정의에서 채운다. 이미 있는 값은 건드리지 않는다 */
+function syncSkillDefs(h){
+  const d=HEROES[h.name]; if(!d||!d.skills||!h.sk) return;
+  h.sk.forEach(k=>{ if(!k) return;
+    const src=d.skills.find(x=>x.n===k.n)||d.skills.find(x=>x.alt&&x.alt.n===k.n); if(!src) return;
+    Object.keys(src).forEach(key=>{ if(k[key]===undefined&&key!=="mods"&&key!=="alt") k[key]=src[key] }) });
+}
 function loadGame(){
   try{
     const raw=localStorage.getItem(SAVE_KEY); if(!raw) return false;
     const s=JSON.parse(raw); if(!s||s.v!==1) return false;
     const heroes=JSON.parse(s.heroes);
+    heroes.forEach(h=>{ try{ syncSkillDefs(h) }catch(e){} });
     run=decRef(s.run,heroes) || {};
     run.heroes=heroes;
     pending=decRef(s.pending,heroes);
@@ -8289,7 +8332,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=285;
+const BUILD_NO=286;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -8467,7 +8510,7 @@ const TXT_FIX={
  "tut:campRevive:d": "전투에서 체력이 0이 된 대원은 <b>쓰러짐</b>이 됩니다. 영영 볼 수 없는 건 아니지만, 다음 전투에 나설 수 없습니다.\n치료소에서 절반의 체력으로 일으킬 수 있습니다.",
  "tut:campHeal:d": "다친 대원이 최대 체력의 <b>40%</b>를 회복할 수 있는 곳입니다.",
  "tut:campForge:d": "파편이나 일반 장신구 <b>둘</b>을  합쳐 더 좋은 장신구를 만듭니다. <b>제련석</b>이 필요하겠지요?",
- "tut:campOne:d": "이 중 <b>하루에 한 곳</b>만 방문할 수 있기 때문에, 주둔지에서는 항상 신중한 결정을 내려야 됩니다.",
+ "tut:campOne:d": "오른쪽 시설 중 <b>하루에 한 곳</b>만 방문할 수 있기 때문에, 주둔지에서는 항상 신중한 결정을 내려야 됩니다.",
  "tut:campSleep:d": "18시가 지나면 잠에 들 수 있습니다. 밤을 넘기며 오염도를 <b>55</b>만큼 감소시킵니다. 밤엔 무시무시한 적들이 나타날 수 있으니, 꼭 잘 휴식하시길 바랍니다.",
  "tut:campRemap:d": "정찰대를 금화로 고용하면 지도를 다시 그려줍니다. 구역마다 <b>한 번</b>만 새로고침할 수 있습니다.",
  "tut:campRemap:t": "지도 새로고침",
@@ -8845,19 +8888,20 @@ const TUT_TXT={
  campForge:{t:"제련소",
   d:"파편이나 일반 장신구 <b>둘</b>을 조합법대로 합쳐 더 좋은 장신구를 만듭니다. "
    +"<b>제련석</b>이 듭니다."},
- campOne:{t:"하루에 한 가지",
-  d:"이 넷 가운데 <b>하루에 한 가지</b>만 할 수 있습니다. 무엇이 급한지 골라야 합니다."},
+ campOne:{t:"하루에 한 곳",
+  d:"오른쪽 시설 가운데 <b>하루에 한 곳</b>만 들를 수 있습니다. 무엇이 급한지 골라야 합니다. "
+   +"목록은 아래로 굴러갑니다 — 새 시설이 생기면 여기에 늘어납니다."},
  campSleep:{t:"숙면",
   d:"18시가 지나야 잠자리에 들 수 있습니다. 밤을 넘기며 오염도를 <b>55</b> 씻어냅니다. "
-   +"오염도를 줄이는 가장 큰 수단입니다.\n숙면은 하루 한 가지 제한에 들어가지 않습니다."},
+   +"오염도를 줄이는 가장 큰 수단입니다.\n왼쪽 판의 것들은 하루 한 곳 제한에 들어가지 않습니다."},
  campRemap:{t:"지도 재편성",
   d:"금화를 들여 정찰대를 풀면 구역을 다시 그립니다. 전투·정예·상점·쉼터·제련소·"
    +"미지의 구역이 모두 새 자리에 놓입니다. 구역마다 <b>한 번</b>뿐입니다."},
  campGear:{t:"장비 정리",
   d:"가방에 든 장신구를 대원에게 채우거나 빼냅니다. 대원 한 명당 <b>3칸</b>입니다.\n"
-   +"이것도 하루 한 가지 제한에 들어가지 않습니다."},
+   +"이것도 하루 한 곳 제한에 들어가지 않습니다."},
  campOut:{t:"다시 길로",
-  d:"[주둔지를 나선다]를 눌러 지도로 돌아가세요."},
+  d:"[주둔지 나가기]를 눌러 지도로 돌아가세요."},
 
  mapFoe:{t:"적이 있는 칸",
   d:"<b>전투</b> 칸의 숫자는 몇 <b>라운드</b>를 치러야 하는지입니다. 1이면 한 번, "
@@ -8948,7 +8992,7 @@ const TUT_STEPS=[
  {k:"campRemap", lb:"주둔지 — 지도 재편성", sc:"camp", hi:[".campremap"]},
  {k:"campGear",  lb:"주둔지 — 장비 정리", sc:"camp", hi:[".campgear"]},
  {k:"campOut",   lb:"주둔지 — 나서기", sc:"camp", hi:[".campout"],
-  need:()=>view==="map", todo:"[주둔지를 나선다]를 누르세요."},
+  need:()=>view==="map", todo:"[주둔지 나가기]를 누르세요."},
 
  {k:"mapFoe", lb:"지도 — 적 칸", sc:"map", hi:[".gridmap"]},
  {k:"mapGo",  lb:"지도 — 전투로", sc:"map", hi:[".cell.tutgo"],
@@ -9511,9 +9555,10 @@ function trainExp(){
   return Math.max(3,Math.round(3+(lv-1)*0.9));
 }
 function drawCamp(app){
+  const CAMP_CLEANSE=55;
   app.appendChild(el(`<div class="center">
     <div class="title" style="font-size:22px">주 둔 지</div>
-    <div class="sub">${run.day}일차 ${clock()} · 하루에 <b style="color:var(--brass)">한 가지</b>만 할 수 있습니다 (숙면 제외)
+    <div class="sub">${run.day}일차 ${clock()} · 시설은 하루에 <b style="color:var(--brass)">한 곳</b>만 들를 수 있습니다 (숙면·장비 정리 제외)
       ${run.stone?` · 제련석 ${run.stone}`:""}</div></div>`));
   const wrap=app.querySelector(".center");
   const downed=run.heroes.filter(h=>h.down).length;
@@ -9537,44 +9582,30 @@ function drawCamp(app){
      shards>=2&&(run.stone||0)>=5,
      ()=>{ view="forge"; render(); return 1 })
   ];
-  const row=el(`<div class="rewards campacts"></div>`);
-  const doneToday=run.campDone;
-  acts.forEach(a=>{
-    const used=doneToday;
-    const off=used||!a.ok;
-    const ck={revive:"g5",heal:"g5",train:"g2",forge:"g6"}[a.k]||"g0";
-    const c=el(`<div class="rw ${ck} ${off?"no":""}" data-camp="${a.k}">
-      <div class="rwi">${campIcon(a.k)}</div>
-      <b>${esc(a.n)}</b><p>${rich(a.d)}</p>
-      ${used?`<p style="color:var(--faint)">오늘 몫은 이미 썼습니다.</p>`
-            :!a.ok?`<p style="color:var(--faint)">지금은 할 일이 없습니다.</p>`:""}</div>`);
-    if(!off) c.onclick=()=>{ run.campDone=1; const stay=a.fx(); if(!stay) render() };
-    row.appendChild(c);
-  });
-  wrap.appendChild(row);
-  const CAMP_CLEANSE=55;
-  const sleep=el(`<div class="campsleep" style="margin-top:24px">
-    <button class="go">숙면 — 밤을 넘기고 오염도를 ${CAMP_CLEANSE} 씻어낸다</button>
-    <div class="hint" style="margin-top:6px">${run.night
-      ? `주둔지의 불빛이 균열의 기운을 밀어냅니다. (지금 오염도 ${run.taint})`
-      : "아직 해가 지지 않았습니다. 18시가 지나야 잠자리에 들 수 있습니다."}</div></div>`);
-  sleep.querySelector("button").disabled=!run.night;
-  sleep.querySelector("button").onclick=()=>{
+  const lay=el(`<div class="camp"></div>`);
+
+  /* ── 왼쪽 큰 판 — 시설이 아닌 것들. 하루 한 곳 제한 밖 ── */
+  const L=el(`<div class="camp-l"></div>`);
+  const rcost=remapCost();
+  const sleepOk=!!run.night;
+  const sleep=el(`<div class="cbtn campsleep ${sleepOk?"":"off"}">
+    <div class="ci round">${uiPng("clock")}</div>
+    <b>숙면</b>
+    <small>밤을 넘깁니다.<br>오염도가 ${CAMP_CLEANSE} 감소합니다.</small>
+    <span class="cnote">${sleepOk?`지금 오염도 ${run.taint}`:"18시가 지나야 잠자리에 들 수 있습니다."}</span></div>`);
+  if(sleepOk) sleep.onclick=()=>{
     addTaint(-CAMP_CLEANSE);
     toast(`주둔지에서 밤을 보내며 오염도를 ${CAMP_CLEANSE} 씻어냈습니다.`);
     nextDay(); if(view!=="over"){ view="map"; render() }
   };
-  wrap.appendChild(sleep);
-  const rcost=remapCost();
-  const remap=el(`<div class="campremap" style="margin-top:12px">
-    <button>지도 재편성 — ${resIcon("gold")} ${rcost}${
-      run.remapUsed?" · 이번 구역에서는 이미 썼습니다"
-      :run.gold<rcost?` · ${rcost-run.gold} 모자랍니다`:""}</button>
-    <div class="hint" style="margin-top:6px">주둔지에서 정찰대를 풀어 구역을 다시 그립니다.
-      전투·정예·상점·쉼터·제련소·미지의 구역이 모두 새 자리에 놓입니다.
-      구역마다 한 번뿐이고, 금화가 듭니다 (1단계 5 · 2단계 10 · 3단계 20).</div></div>`);
-  remap.querySelector("button").disabled=!!run.remapUsed||run.gold<rcost;
-  remap.querySelector("button").onclick=()=>{
+  const remapOk=!run.remapUsed&&run.gold>=rcost;
+  const remap=el(`<div class="cbtn campremap ${remapOk?"":"off"}">
+    <div class="ci">${uiPng("explore")}</div>
+    <b>지도 재편성</b>
+    <small>정찰대를 풀어 구역을 다시 그립니다.<br>${resIcon("gold")} ${rcost} · 구역마다 한 번</small>
+    <span class="cnote">${run.remapUsed?"이번 구역에서는 이미 썼습니다."
+      :run.gold<rcost?`금화가 ${rcost-run.gold} 모자랍니다.`:"전투·정예·상점·쉼터·제련소·미지의 구역이 모두 새 자리에 놓입니다."}</span></div>`);
+  if(remapOk) remap.onclick=()=>{
     if(run.remapUsed||run.gold<rcost) return;
     run.gold-=rcost;
     run.remapUsed=1;
@@ -9585,15 +9616,34 @@ function drawCamp(app){
     toast(`금화 ${rcost}을 들여 정찰대가 구역을 다시 그렸습니다.`);
     view="map"; render();
   };
-  wrap.appendChild(remap);
-  const gear=el(`<div class="campgear" style="margin-top:12px">
-    <button>장비 정리 — 가방 ${(run.bag||[]).length}개</button>
-    <div class="hint" style="margin-top:6px">장비 정리는 하루 한 번 제한에 들어가지 않습니다.</div></div>`);
-  gear.querySelector("button").onclick=()=>{ run.gearPick=null; view="gear"; render() };
-  wrap.appendChild(gear);
-  const out=el(`<div class="campout" style="margin-top:12px"><button>주둔지를 나선다</button></div>`);
-  out.querySelector("button").onclick=()=>{ view="map"; render() };
-  wrap.appendChild(out);
+  const gear=el(`<div class="cbtn campgear">
+    <div class="ci"><svg viewBox="0 0 24 24">
+        <path d="M4 8h16l-1.4 12H5.4L4 8Z" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <path d="M9 8V6a3 3 0 0 1 6 0v2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></div>
+    <b>장비 정리</b>
+    <small>가방 ${(run.bag||[]).length}개</small>
+    <span class="cnote">하루 한 곳 제한에 들어가지 않습니다.</span></div>`);
+  gear.onclick=()=>{ run.gearPick=null; view="gear"; render() };
+  const out=el(`<div class="cbtn campout"><b>주둔지 나가기</b><small>지도로 돌아갑니다.</small></div>`);
+  out.onclick=()=>{ view="map"; render() };
+  L.appendChild(sleep); L.appendChild(remap); L.appendChild(gear); L.appendChild(out);
+
+  /* ── 오른쪽 — 시설 목록. 하루 한 곳. 세로로 굴러간다 ── */
+  const R=el(`<div class="camp-r campacts"></div>`);
+  const doneToday=run.campDone;
+  acts.forEach(a=>{
+    const off=doneToday||!a.ok;
+    const c=el(`<div class="cfac ${off?"off":""}" data-camp="${a.k}">
+      <div class="fi">${campIcon(a.k)}</div>
+      <div class="ft"><b>${esc(a.n)}</b><small>${rich(a.d)}</small>
+      ${doneToday?`<span class="cnote">오늘 몫은 이미 썼습니다.</span>`
+            :!a.ok?`<span class="cnote">지금은 할 일이 없습니다.</span>`:""}</div></div>`);
+    if(!off) c.onclick=()=>{ run.campDone=1; const stay=a.fx(); if(!stay) render() };
+    R.appendChild(c);
+  });
+  R.appendChild(el(`<div class="cfac soon"><div class="fi"></div><div class="ft"><b>공개 예정</b><small>새 시설이 여기에 들어섭니다.</small></div></div>`));
+  lay.appendChild(L); lay.appendChild(R);
+  wrap.appendChild(lay);
 }
 function drawGear(app){
   run.bag=run.bag||[];
@@ -13465,7 +13515,7 @@ function predictSelf(h,s){
   const out={};
   if(s.shield) out.shield=breakdown(h,s,"shield").total;
   if(s.heal)   out.heal=breakdown(h,s,"heal").total;
-  if(s.balance&&!ffFlare(h)) out.shield=s.shield+mod(s,"shield")+(h.def||0)+(h.balFirst||0);
+  if(s.balance&&!ffFlare(h)) out.shield=(s.shield!=null?s.shield:2)+mod(s,"shield")+(h.def||0)+(h.balFirst||0);
   if(s.armorUp) out.armor=1+(h.tag.armorPlus||0);
   if(s.vanguard) out.shield=(h.tag.vanShield||5)+h.def;
   if(s.rearguard){ out.heal=h.tag.rearHeal||5; out.shield=5+h.def }
@@ -14745,7 +14795,7 @@ function runEffect(h,i,s,target){
         ffHit(h,f,dmg,"균형") });
     } else {
       ffStep(h,h.slot+1,"앞으로 나설 데가 없습니다.");
-      let v=s.shield+mod(s,"shield")+h.def+first; if(deb(h,"defDn")) v=Math.ceil(v*0.5);
+      let v=(s.shield!=null?s.shield:2)+mod(s,"shield")+h.def+first; if(deb(h,"defDn")) v=Math.ceil(v*0.5);
       h.shield+=v; fx({side:"mine",slot:h.slot,sheet:"fx_ff_flow",sheetOpt:{z:1.7,ms:520},s:"shield",txt:"+"+v,cls:"shd",gap:120});
       say(`균형 — ${h.name} 보호막 +${v}`);
     }
