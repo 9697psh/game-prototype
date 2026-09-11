@@ -479,15 +479,18 @@ button.dtl{padding:3px 10px;font-size:11.5px}
    손패가 기술 창 밑에 깔려 있으면 카드 한 장 쓰려고 매번 내려가야 했다.
    좁은 창에서는 예전처럼 한 줄로 쌓인다. */
 @media (min-width:1360px){
-  .wrap.bt2{max-width:1560px;display:grid;grid-template-columns:300px minmax(0,1fr);column-gap:18px;align-items:start}
+  .wrap.bt2{max-width:1560px;display:grid;grid-template-columns:352px minmax(0,1fr);column-gap:18px;align-items:start}
   .wrap.bt2 > *{grid-column:2;min-width:0}
   .wrap.bt2 > .hand{grid-column:1;grid-row:1 / span 80;position:sticky;top:12px;margin-top:0;
-    flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:8px;padding:10px;
+    display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-content:start;gap:8px;padding:10px;overflow-x:hidden;   /* 두 열 · 세로로 긴 카드 (사용자 2026-09-12) */
     max-height:calc(100vh - 24px);overflow-y:auto;
     background:var(--panel);border:1px solid var(--rule);border-radius:8px}
-  .wrap.bt2 > .hand::before{content:"손 패";font-family:var(--serif);font-size:12px;letter-spacing:.3em;color:var(--brass);text-align:center}
-  .wrap.bt2 > .hand:empty::after{content:"쓸 카드가 없습니다";font-size:11px;color:var(--faint);text-align:center;padding:8px 0}
-  .wrap.bt2 > .hand .card.ccard{width:auto}
+  .wrap.bt2 > .hand::before{content:"손 패";font-family:var(--serif);font-size:12px;letter-spacing:.3em;color:var(--brass);text-align:center;grid-column:1/-1}
+  .wrap.bt2 > .hand:empty::after{content:"쓸 카드가 없습니다";font-size:11px;color:var(--faint);text-align:center;padding:8px 0;grid-column:1/-1}
+  .wrap.bt2 > .hand .card.ccard{width:auto;min-width:0;min-height:224px;aspect-ratio:5/7}
+  .wrap.bt2 > .hand .card.ccard .cc-art{height:88px}
+  .wrap.bt2 > .hand .card.ccard .cc-art img,.wrap.bt2 > .hand .card.ccard .cc-art svg{width:64px;height:64px}
+  .wrap.bt2 > .hand .card.ccard .cc-d{flex:1}
 }
 .card{width:120px;border:1px solid var(--rule2);border-radius:var(--rd2);
   background:linear-gradient(180deg,var(--raise),var(--panel) 60%);
@@ -8239,7 +8242,7 @@ function handPack(){
     if(c.type==="hero")   return {t:"hero",n:c.hero.name};
     if(c.type==="summon") return {t:"summon",n:c.name};
     if(c.stock)           return {t:"stock",n:c.stock,d:c.d};
-    return {t:"armor",n:c.name,d:c.d,by:c.by||null};   /* giveArmor 로 들어온 방어구 */
+    return {t:"armor",n:c.name,d:c.d,by:c.by||null,cnt:c.n||1};   /* giveArmor 로 들어온 방어구 (쌓인 장수까지) */
   });
 }
 function handUnpack(list){
@@ -8256,7 +8259,7 @@ function handUnpack(list){
     }
     else if(c.t==="armor"){
       const A=ARMOR_CARDS[c.n], by=c.by&&run.heroes.find(x=>x.name===c.by);
-      out.push({type:"item",name:c.n,d:c.d||(A?A.d:"아군에게 보호막 10"),by:c.by||null,
+      out.push({type:"item",name:c.n,n:c.cnt||1,d:c.d||(A?A.d:"아군에게 보호막 10"),by:c.by||null,
         use:a=>{ if(A) A.use(a,by||a); else { a.shield+=10; say(`${c.n} — ${a.name} 보호막 +10`) } }});
     }
   });
@@ -8372,7 +8375,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=303;
+const BUILD_NO=304;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -12463,7 +12466,8 @@ function drawBattle(app){
     const stk=c.stock?((run.cards||[]).find(x=>x.n===c.stock)||{}).c||0:0;
     const card=el(`<div class="card ccard ${kind} ${B.pick===i?"picked":""}" data-i="${i}">
       <div class="cc-top">${tags.map(t=>`<span class="cc-tag">${esc(t)}</span>`).join("")}${
-        c.stock?`<span class="cc-own" title="가진 수 — 다 쓰면 손패에서 사라집니다">${stk}/10</span>`:""}</div>
+        c.stock?`<span class="cc-own" title="가진 수 — 다 쓰면 손패에서 사라집니다">${stk}/10</span>`
+        :(c.n>1?`<span class="cc-own" title="쌓인 장수 — 한 번에 한 장씩 씁니다">×${c.n}</span>`:"")}</div>
       <div class="cc-art">${art}</div>
       <div class="cc-n">${esc(nm)}</div>
       <div class="cc-type">${type}</div>
@@ -13622,7 +13626,8 @@ function playCard(i,slot,side){
     if(c.stock){ useCard(c.stock);
       const e=(run.cards||[]).find(x=>x.n===c.stock);
       if(e){ c.d=CARD_LIB[c.stock].d+` (보유 ${e.c})` } else B.hand.splice(i,1);
-    } else B.hand.splice(i,1);
+    } else if(c.n>1) c.n--;                          /* 쌓인 방어구 카드 — 한 장만 쓴다 */
+    else B.hand.splice(i,1);
   }
   render();
 }
@@ -14355,13 +14360,18 @@ function applyLeech(h,dmg){
   if(got) fx({side:"mine",slot:h.slot,s:"heal",txt:"+"+got,cls:"heal",gap:60});
   h.leech=0; h.pierceNext=0;
 }
+/* 손패의 방어구 카드 장수 — 쌓인 것(c.n)까지 */
+function armorInHand(){ return (B.hand||[]).filter(c=>c.type==="item"&&ARMOR_CARDS[c.name]).reduce((a,c)=>a+(c.n||1),0) }
 function giveArmor(h,nm){
   const A=ARMOR_CARDS[nm];
   pulseFX("mine",h.slot,"#e0c85a",2);
-  B.hand.push({type:"item",name:nm,d:A?A.d:"아군에게 보호막 10",by:h.name,
+  /* 같은 카드가 손에 있으면 한 장 더 쌓는다 — 카드가 옆으로 늘어나지 않는다 */
+  const have=B.hand.find(c=>c.type==="item"&&c.name===nm&&c.by===h.name);
+  if(have) have.n=(have.n||1)+1;
+  else B.hand.push({type:"item",name:nm,n:1,d:A?A.d:"아군에게 보호막 10",by:h.name,
     use:a=>{ if(A) A.use(a,h); else { a.shield+=10; say(`${nm} — ${a.name} 보호막 +10`) } }});
   fx({side:"mine",slot:h.slot,s:"summon",ring:"#c9a227",glow:1,txt:nm,cls:"shd",gap:70});
-  say(`${nm} 카드를 손에 넣었습니다.`,"t1");
+  say(`${nm} 카드를 손에 넣었습니다.${have?` (${have.n}장)`:""}`,"t1");
 }
 function moveTo(h,to){
   if(deb(h,"bind")){ say(`${h.name}${jo(h.name,"eun")} 속박되어 움직일 수 없습니다.`,"t3"); return }
@@ -15978,7 +15988,7 @@ function startMyTurn(){
     if(h.tag.armorTurn&&h.slot>0) giveArmor(h,rnd(h.tag.armors||["강철 갑옷"]));
     /* 검투 대비 — 손에 쥔 방어구 장수만큼 이번 턴 보호력 */
     if(h.tag.handDef&&h.slot>0){
-      const n2=(B.hand||[]).filter(c=>c.type==="item"&&ARMOR_CARDS[c.name]).length;
+      const n2=armorInHand();
       if(n2){ bumpTurn(h,"def",n2*h.tag.handDef);
         say(`검투 대비 — ${h.name} 이번 턴 보호력 +${n2*h.tag.handDef}`,"t2") } }
     /* guardStack(준비 태세)은 여기서 걷지 않는다 — 베기를 쓸 때까지 남는다.
