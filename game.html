@@ -4827,6 +4827,7 @@ const SKILL_FULL={
  "쓰담쓰담":"피해를 2(추가 ∴ ) 줍니다. 보호막을 1(추가 ¤ ) 얻습니다. ",
  "씹어먹기":"피해를 6(추가 † ) 주고, 체력을 3 회복합니다.",
  "악마 하수인":"굴라의 균열 차원문을 이미 차원문이 있는 자리에 재사용하면 가져옵니다.",
+ "악마 장군":"굴라가 [악마 장군 소환]을 얻은 뒤에는 악마 하수인 대신 이 카드를 가져옵니다.",
  "악마 혐오":"전투 시작시 악마 진영의 적 하나당 보호력을 +2 얻습니다.",
  "악몽 태세":"보호막을 10(추가 ¤ ) 얻고, 다음 턴까지 피해를 받을 때마다 모든 적에게 피해를 4(추가 † ) 줍니다.",
  "어둠 증식":"사용한도(2). 대상 위치에 어두운 그림자를 남깁니다. 그림자가 이미 있었다면 어두운 그림자로 교체합니다. \n어두운 그림자로 이동하면, 다음 상대 턴에 은신 대신 도발과 갑피 4를 얻습니다.",
@@ -5525,7 +5526,13 @@ const HERO_REWARDS={
     h=>h.tag.appetite=(h.tag.appetite||0)+20),
   R("뺏어먹기","중급","전투 종료 후, 다른 아군 대원들의 최대 체력을 1만큼 빼앗아 얻습니다.",h=>h.tag.steal=(h.tag.steal||0)+1),
   /* ── 상급 ── */
-  R("악마 장군 소환","상급","악마 하수인이 악마 장군으로 대체됩니다. 악마 하수인이 얻은 모든 강화 효과를 동일하게 얻습니다.",h=>h.tag.general=1),
+  R("악마 장군 소환","상급","악마 하수인이 악마 장군으로 대체됩니다. 악마 하수인이 얻은 모든 강화 효과를 동일하게 얻습니다.",
+    h=>{ h.tag.general=1;
+      /* 이미 가진 하수인 카드는 장군 카드가 된다 (보유 · 손패) */
+      const e=(run.cards||[]).find(x=>x.n==="악마 하수인");
+      if(e){ run.cards.splice(run.cards.indexOf(e),1); addCard(run,"악마 장군",e.c) }
+      if(typeof B!=="undefined"&&B&&B.hand) B.hand.forEach(c=>{
+        if(c.stock==="악마 하수인"||(c.type==="summon"&&c.name==="악마 하수인")){ c.name="악마 장군"; if(c.stock) c.stock="악마 장군" } }); }),
   R("진두지휘","상급","굴라가 씹어먹기를 사용한 후, 아군 악마 하수인들이 대상을 공격합니다.",h=>h.tag.command=1),
   R("포만감","상급","씹어먹기의 회복량이 추가 보호력만큼 증가합니다.\n*획득시 보상에서 다시 등장하지 않음",h=>h.tag.fullDef=1,0.5),
   R("질긴 피부","상급","응축 폭발을 사용한 후, 다음 상대 턴 동안 갑피를 1 얻습니다.\n*획득시 보상에서 다시 등장하지 않음\n*[응축 폭발] 기술이 없을 때 등장하지 않음",
@@ -9662,7 +9669,7 @@ const CARD_META={
  "강철 갑옷":{src:"대원 · 나이코스",gone:1}, "강철 각반":{src:"대원 · 나이코스",gone:1},
  "강철 군화":{src:"대원 · 나이코스",gone:1}, "강철 투구":{src:"대원 · 나이코스",gone:1},
  "마법 부여 보호구":{src:"대원 · 나이코스",gone:1}, "영광의 휘장":{src:"대원 · 나이코스",gone:1},
- "악마 하수인":{src:"대원 · 굴라",gone:1}, "성벽":{src:"대원 · 헥토",gone:1},
+ "악마 하수인":{src:"대원 · 굴라",gone:1}, "악마 장군":{src:"대원 · 굴라",gone:1}, "성벽":{src:"대원 · 헥토",gone:1},
  "저주받은 성벽":{src:"대원 · 헥토"}, "망자의 육체":{src:"대원 · 트리스탄",gone:1},
  "귀환서":{src:"상점"}, "위장 망토":{src:"상점"},
  "불덩이":{src:"상점"}, "빵":{src:"상점"},
@@ -9697,13 +9704,20 @@ const CARD_LIB={
                        flushFX(); fleeFX("도망쳤습니다");
                        setTimeout(()=>fleeBattle(0,"습격에서 도망쳤습니다."),900) }},
  "악마 하수인":{d:"빈 칸에 악마 하수인을 소환합니다.",summon:1},
+ "악마 장군":{d:"빈 칸에 악마 장군을 소환합니다.",summon:1},
  "간이 신발":{d:"거리 1을 이동합니다.",
               use:a=>{ const to=(a.slot<SLOTS)?a.slot+1:a.slot-1;
                        if(to<1||to>SLOTS){ say("움직일 데가 없습니다.","t2"); return "keep" }
                        moveTo(a,to);
                        say(`간이 신발 — ${a.name} 거리 1을 움직입니다.`) }}
 };
+/* 굴라가 [악마 장군 소환] 을 얻었으면 하수인 카드 대신 장군 카드다 */
+function impCardName(){
+  const g=run&&run.heroes&&run.heroes.find(x=>x.name==="굴라");
+  return (g&&g.tag&&g.tag.general)?"악마 장군":"악마 하수인";
+}
 function addCard(r,name,n){
+  if(name==="악마 하수인") name=impCardName();
   const e=(r.cards=r.cards||[]).find(x=>x.n===name);
   if(e) e.c=Math.min(10,e.c+n); else if(r.cards.length<10) r.cards.push({n:name,c:Math.min(10,n)});
 }
@@ -14000,11 +14014,12 @@ function runEffect(h,i,s,target){
          그러고 나서 이번 전투에 바로 쓰라고 손에도 한 장 얹는다.
          stock 을 적어 두면 내려놓을 때 useCard 가 보유량에서 한 장 뺀다
          (여느 보유 카드가 손에 들어오는 꼴과 똑같다 — L.summon 갈래를 볼 것). */
-      addCard(run,"악마 하수인",1);
+      const cn=impCardName();
+      addCard(run,cn,1);
       /* ★ stock 카드는 한 장이 보유량 전체를 뜻한다. 이미 손에 있으면 더 얹지 않는다 —
          얹으면 차원문을 쓸 때마다 손패가 하수인으로 찬다 */
-      if(!B.hand.some(c=>c.stock==="악마 하수인"))
-        B.hand.push({type:"summon",name:"악마 하수인",stock:"악마 하수인"});
+      if(!B.hand.some(c=>c.stock===cn))
+        B.hand.push({type:"summon",name:cn,stock:cn});
       /* 칸에 놓을 때와 같은 소리 — 틈에서 나오는 놈이나 칸에 서는 놈이나 같은 놈이다 */
       fx({side:side,slot:slot,art:"rift",s:sfxOr("악마 하수인 배치","summon"),
           txt:"하수인",cls:"crit"});
@@ -14012,7 +14027,7 @@ function runEffect(h,i,s,target){
          둘을 이어서 보면 "저기서 나온 것이 이 카드가 되었다" 로 읽힌다.
          카드를 실제로 내려놓는 자리는 안 건드린다 — 세 번 보게 된다 */
       riftOnCard(B.hand.length-1);
-      say("차원문 재사용 — 악마 하수인 카드를 얻습니다. 빈 칸에 끌어다 소환하세요.","t1");
+      say(`차원문 재사용 — ${cn} 카드를 얻습니다. 빈 칸에 끌어다 소환하세요.`,"t1");
     }else{
       /* fresh 가 서 있는 동안은 바닥 표시를 안 그린다 — 띠가 다 돌 때까지.
          내리는 것은 portalFX() 가 손수 한다 */
