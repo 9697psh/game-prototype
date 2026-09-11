@@ -1127,6 +1127,8 @@ body.shakeall{animation:allShake .62s cubic-bezier(.36,.07,.19,.97)}
   border:1px solid var(--rule);border-radius:4px;padding:7px 9px;font:inherit;font-size:12.5px;
   line-height:1.6;resize:vertical}
 .txtrow textarea:focus,.txtrow input:focus{outline:none;border-color:var(--brass)}
+.txtfx{display:flex;gap:4px;margin:4px 0 3px}
+.txtfx .mini{font-size:10.5px;padding:2px 8px}
 .txtpv{margin-top:6px;font-size:12px;color:var(--dim);line-height:1.7;
   border-left:2px solid var(--rule2);padding-left:9px;white-space:pre-line}
 .tutbox{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:200;
@@ -8025,7 +8027,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=249;
+const BUILD_NO=250;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -8247,14 +8249,24 @@ function drawText(app){
           <span class="grow"></span></div></div>`);
       const ta=el(e.area?`<textarea rows="3"></textarea>`:`<input>`);
       ta.value=e.get()||"";
+      /* 꾸밈 단추 — 고른 글자를 <b>·<shake>·<wave> 로 감싼다. 고른 것이 없으면 빈 짝을 넣고 그 사이에 커서 */
+      const bar=el(`<div class="txtfx"><button class="mini" data-t="b">굵게</button><button class="mini" data-t="shake">떨림</button><button class="mini" data-t="wave">물결</button></div>`);
+      bar.querySelectorAll("button").forEach(b=>b.onclick=ev=>{ ev.preventDefault();
+        const t=b.dataset.t, a=ta.selectionStart||0, z=ta.selectionEnd||0, v=ta.value;
+        ta.value=v.slice(0,a)+`<${t}>`+v.slice(a,z)+`</${t}>`+v.slice(z);
+        ta.focus(); const at=a+t.length+2; ta.setSelectionRange(at,at+(z-a));
+        ta.dispatchEvent(new Event("input")) });
+      row.appendChild(bar);
       row.appendChild(ta);
-      const pv=el(`<div class="txtpv">${rich(e.get()||"")}</div>`);
+      /* 미리보기는 게임에 뜨는 그대로 — 이벤트 선택지·결과 글은 중요 낱말이 굵고 커진다 (evRich) */
+      const show=/^ev:.*:o\d+:d$/.test(e.key)?evRich:rich;
+      const pv=el(`<div class="txtpv">${show(e.get()||"")}</div>`);
       /* 고친 글도 한글을 모으는 중에는 건드리지 않는다.
          값을 읽어 두는 것뿐이라 화면이 다시 그려지진 않지만,
          rich() 가 만든 미리보기가 조합을 방해하지 않게 순서를 지킨다. */
       ta.addEventListener("input",()=>{
         TXT[e.key]=ta.value; e.set(ta.value); txtSave();
-        pv.innerHTML=rich(ta.value);
+        pv.innerHTML=show(ta.value);
       });
       row.appendChild(pv);
       if(on){ const u=el(`<button class="mini">되돌리기</button>`);
