@@ -8038,7 +8038,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=256;
+const BUILD_NO=257;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -11960,10 +11960,34 @@ function keyBefore(pre){
   if(/체력[을이]?\s*$/.test(pre)) return "heal";
   return "dmg";
 }
+/* 노트의 빈 자리 *( )* — 그 기술이 지금 낼 값과 까닭. 모르는 기술이면 null (자리를 지운다) */
+function livePlace(h,sk){
+  if(!h||!sk) return null;
+  const n=sk.n, T=h.tag||{}, parts=[];
+  let total=0;
+  if(n==="환상통"){
+    total=h.mag||0;                       /* '추가 마법력' 은 글에 이미 있다 — 까닭에 또 안 적는다 */
+    if(T.painPlus){ total+=T.painPlus; parts.push({n:"환상통 강화",v:T.painPlus}) }
+    if(T.painX2){ total*=2; parts.push({n:"환상폭발",v:"×2"}) }
+    if(T.painNear){ total*=3; parts.push({n:"의식 제거",v:"×3"}) }
+    if(T.painCrit){ total*=2; parts.push({n:"치명적인 고통",v:"×2"}) }
+    return {total:total,parts:parts};
+  }
+  if(n==="정의의 기운"){ return {total:h.shield||0,parts:[]} }
+  if(n==="독소 침"||n==="비늘 폭발"){ return {total:h.scale||0,parts:[]} }
+  return null;
+}
 /* 노트 문장 + 어떤 값을 이미 문장 안에서 보여 줬는지 */
 function richLive(h,sk,txt){
   const done={};
-  const marked=String(txt||"").replace(
+  let txt0=String(txt||"");
+  if(/\*\( \)\*/.test(txt0)){
+    const lp=livePlace(h,sk);
+    txt0=txt0.replace(/\*\( \)\*/g, lp
+      ? NUM_A+lp.total+NUM_B+lp.parts.map(p=>p.n+" "+(typeof p.v==="number"?(p.v>0?"+":"")+p.v:p.v)).join(" / ")+NUM_C
+      : "");
+  }
+  const marked=txt0.replace(
     /(\d+)\(추가 ([\u2020\u00a4\u2234][\u2020\u00a4\u2234\u2261 ]*)([^)]*)\)/g,
     function(m,n,syms,rest,off,whole){
       const pre=whole.slice(Math.max(0,off-18),off);
