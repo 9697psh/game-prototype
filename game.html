@@ -8076,7 +8076,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=266;
+const BUILD_NO=267;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -11776,7 +11776,7 @@ function drawBattle(app){
   if(run.sandbox){
     const h0=run.heroes[0];
     const sb=el(`<div class="sandbar">
-      <b>연습장</b><span>턴을 넘기면 허수아비도 공격합니다 · 턴 종료마다 판이 되돌아옵니다</span>
+      <b>연습장</b><span>턴을 넘기면 허수아비도 공격합니다 · 판은 「판 되돌리기」로 손수 되돌립니다</span>
       <span class="grow"></span><button>도감으로</button></div>`);
     sb.querySelector("button").onclick=()=>{ B=null; run=null; view="codex"; render() };
     app.appendChild(sb);
@@ -11823,13 +11823,15 @@ function drawBattle(app){
     const fb=el(`<div class="knob" style="border-color:var(--brass)">
       <span>허수아비</span><button class="mini">체력 회복</button>
       <button class="mini">도발</button><button class="mini">가시 5</button>
-      <button class="mini">회피 3</button><button class="mini">초기화</button></div>`);
+      <button class="mini">회피 3</button><button class="mini" style="border-color:var(--brass)">판 되돌리기</button>
+      <button class="mini${run.sandAuto?" on":""}" title="켜면 예전처럼 턴마다 판이 처음으로 돌아갑니다">턴마다 되돌림 ${run.sandAuto?"●":"○"}</button></div>`);
     const fbs=fb.querySelectorAll("button");
     fbs[0].onclick=()=>{ B.foes.forEach(f=>{f.alive=1;f.hp=f.maxHp}); render() };
     fbs[1].onclick=()=>{ B.foes.forEach(f=>f.taunt=f.taunt?0:99); render() };
     fbs[2].onclick=()=>{ B.foes.forEach(f=>f.thorn=f.thorn?0:5); render() };
     fbs[3].onclick=()=>{ B.foes.forEach(f=>f.evade=f.evade?0:3); render() };
-    fbs[4].onclick=()=>{ sandboxTick(); render() };
+    fbs[4].onclick=()=>{ sandboxTick(); sel=null; render() };
+    fbs[5].onclick=()=>{ run.sandAuto=run.sandAuto?0:1; render() };
     kb.appendChild(fb);
     app.appendChild(kb);
   }
@@ -15115,7 +15117,7 @@ function startMyTurn(){
   if(!B||B.over) return;
   /* 연습장은 매 턴 판을 처음으로 되돌린다 — 맞은 것은 보되 자국은 남기지 않는다.
      보호막을 걷기 전에 불러야 한다 (되돌린 뒤 걷어야 순서가 맞다). */
-  if(run&&run.sandbox) sandboxTick();
+  if(run&&run.sandbox&&run.sandAuto) sandboxTick();   /* 기본은 손수 — 「판 되돌리기」 단추 */
   run.heroes.forEach(h=>{ if(h.hp>0){ h.shield=0; h.keepShield=0 } });
   liveMins().forEach(m=>{ m.shield=0; m.keepShield=0 });
   if(!run.heroes.some(h=>h.hp>0)&&!lifeLeft()){ B.over=1; battleLost(); render(); return }
