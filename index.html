@@ -8038,7 +8038,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=259;
+const BUILD_NO=260;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -10834,7 +10834,7 @@ function startBattle(kind,pinned){
       h.shotBonus=0;
       const hpl=itemBt(h,'hpPerLv'); if(hpl){ h.hp+=hpl*h.lv }
       h.mana=h.maxMana+itemBt(h,"firstMana")+(h.tag.firstMana||0);
-      if(h.name==="쿠렘타이"&&h.sk[3].startLock>0) h.lock[3]=h.sk[3].startLock;
+      /* 사형 선고의 배치 잠금은 여기서 안 건다 — onSummon 이 배치할 때 건다 (손패에 있는 동안 줄어들면 안 된다) */
     }
     if(!h.down) B.hand.push({type:"hero",hero:h});
   });
@@ -12732,6 +12732,11 @@ function onSummon(h){
     say(`튼튼한 방어구 — 모든 아군 보호막 +${t.gearShield}`,"t2") }
   /* ── 쿠렘타이 — 전투 하나에 한 번 ── */
   if(t.reaper){ gainSouls(1,"수확자"); run.gold+=4; say(`수확자 — 금화 +4`,"t2") }
+  /* 사형 선고 — "대원 배치 시 N턴 잠금된 상태로 시작" (노트). 배치한 그 턴부터 N턴 (lockNew 없음) */
+  if(h.name==="쿠렘타이"){ const vi=h.sk.findIndex(k=>k&&k.verdict);
+    const sl=vi>=0?(h.sk[vi].startLock||0):0;
+    if(sl>0){ h.lock[vi]=sl; if(h.lockNew) delete h.lockNew[vi];
+      say(`사형 선고 — 배치 후 ${sl}턴 동안 잠깁니다.`,"t2") } }
   if(t.gearPlus) for(let q=0;q<t.gearPlus;q++) giveArmor(h,rnd(t.armors||["강철 갑옷"]));
   { const ev=itemBt(h,"startEvade"); if(ev){ h.evade+=ev; say(`${h.name} 회피 +${ev} (장비)`,"t2") } }
   if(itemBt(h,"startHide")){ h.hide=1; hideFX(h.slot); say(`${h.name}${jo(h.name,"ig")} 그림자에 숨습니다.`,"t2") }
