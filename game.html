@@ -64,6 +64,13 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .slot.empty .no{opacity:.5}
 .slot.empty.pick{opacity:1;border-color:var(--brass);background:rgba(201,162,39,.07)}
 .slot.pick{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass) inset}
+/* 기술 칸에 커서를 올렸을 때 — 그 기술이 닿을 칸 */
+.slot.hint{border-color:#e0c85a;box-shadow:0 0 0 1px #e0c85a inset,0 0 16px -2px rgba(224,200,90,.75);
+  animation:slotHint .9s ease-in-out infinite alternate}
+.slot.hint .no{color:#e0c85a;border-color:#e0c85a}
+@keyframes slotHint{from{box-shadow:0 0 0 1px #e0c85a inset,0 0 10px -3px rgba(224,200,90,.5)}
+  to{box-shadow:0 0 0 2px #e0c85a inset,0 0 20px -2px rgba(224,200,90,.9)}}
+@media (prefers-reduced-motion:reduce){ .slot.hint{animation:none} }
 .slot.drop{border-color:var(--hp);box-shadow:0 0 0 1px var(--hp) inset;opacity:1}
 .slot.far{opacity:.3;filter:grayscale(.7);cursor:default}
 .slot.far .no{color:var(--faint)}
@@ -8332,7 +8339,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=286;
+const BUILD_NO=287;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -12723,6 +12730,9 @@ function skillPanel(h){
       </div></div>`);
     { const mo=e.querySelector(".skmore");
       if(mo) mo.onclick=ev=>{ ev.stopPropagation(); SK_OPEN[s.n]=!SK_OPEN[s.n]; render() } }
+    /* 커서를 올리면 닿을 칸이 밝아진다 — 잠긴 기술도 어디에 닿는지는 보여 준다 */
+    e.onmouseenter=()=>{ if(B&&!B.over) hintSlots(previewTargets(h,s)) };
+    e.onmouseleave=()=>hintSlots([]);
     if(ok&&s.opts){
       /* 머리 부분은 선택지 목록을 여닫기만 한다 — 고른 선택지와 횟수는 그대로 둔다 */
       e.onclick=ev=>{ ev.stopPropagation();
@@ -12901,6 +12911,33 @@ function pickSkill(i,count){
    대상을 스스로 정하는 것(페일노트 — 가장 먼 적) */
 const AUTO_SK={"환상통":1,"갑옷 장착":1,"페일노트":1,"피부 강화":1,"화살비":1,"응축 폭발":1,"융합":1,
   "변환":1,"물과 불":1,"균형":h=>!ffFlare(h)};   /* 균형은 플로우일 때만 (플레어면 적을 겨눈다) */
+/* 기술이 지금 닿을 칸들 — 기술 칸에 커서를 올렸을 때 밝힌다. 셈만 하고 아무것도 바꾸지 않는다.
+   새 기술에 '정해진 대상' 규칙이 생기면 여기에 한 줄 더한다 (겨누는 기술은 validTarget 이 알아서 받는다) */
+function previewTargets(h,s){
+  const out=[]; if(!h||!s||!B||!(h.slot>0)) return out;
+  const T=h.tag||{};
+  const foes=B.foes.filter(f=>f.alive);
+  const F=f=>out.push({side:"foe",slot:f.slot});
+  const me=()=>out.push({side:"mine",slot:h.slot});
+  if(s.elemental){ foes.filter(f=>T.elemAll?dist(h.slot,f.slot)<=2:dist(h.slot,f.slot)===2).forEach(F); return out }
+  if(s.balance){ if(ffFlare(h)) foes.filter(f=>validTarget(h,s,f.slot)).forEach(F); else me(); return out }
+  if(s.harmony){ foes.filter(f=>validTarget(h,s,f.slot)).forEach(F); return out }
+  if(s.burst||s.phantomPain||s.scaleBoom||s.warp||s.allHit||s.tune==="edge"){ foes.forEach(F); return out }
+  if(s.shackle||s.nearest){ const f=nearestFoe(h); if(f) F(f); return out }
+  if(s.farshot){ const f=pinnedFoe(h,s); if(f) F(f); return out }
+  if(s.tg==="foe"||s.tg==="any"){ foes.filter(f=>validTarget(h,s,f.slot)).forEach(F); return out }
+  if(s.tg==="ally"&&!isMoveSkill(s)){ run.heroes.filter(a=>a.slot>0&&!a.down&&inReach(h,s,a.slot)).forEach(a=>out.push({side:"mine",slot:a.slot})); return out }
+  if(s.tg==="self"||s.tg==="ally") me();
+  return out;
+}
+/* 칸에 .hint 를 켜고 끈다 — 다시 그리지 않고 DOM 만 만진다 (커서가 자주 오간다) */
+function hintSlots(list){
+  document.querySelectorAll(".slot.hint").forEach(d=>d.classList.remove("hint"));
+  (list||[]).forEach(t=>{
+    const side=document.getElementById(t.side==="foe"?"foeSide":"mySide"); if(!side) return;
+    const d=side.querySelector(`.slot[data-slot="${t.slot}"]`); if(d) d.classList.add("hint");
+  });
+}
 function autoTarget(h,s){
   if(s.balance&&!ffFlare(h)) return null;
   if(s.tg==="self") return null;
