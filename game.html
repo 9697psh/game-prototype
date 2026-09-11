@@ -5068,7 +5068,7 @@ HEROES["트리스탄"]={title:"저주받은 궁수",role:"원거리 · 관통",h
   skills:[
    {n:"페일노트",cost:1,el:"공격",tg:"foe",farshot:1,dmg:4,d:"가장 먼 적에게 피해 4"},
    {n:"피부 강화",cost:1,el:"보호",tg:"self",limit:2,armorUp:1,d:"사용한도(2) · 다음 적 턴 동안 갑피 1"},
-   {n:"꿰뚫는 화살",cost:1,el:"공격",tg:"foe",lock:1,dmg:10,pierce:true,d:"잠금(1) · 관통 피해 10"},
+   {n:"꿰뚫는 화살",cost:1,el:"공격",tg:"foe",lock:1,dmg:10,pierce:true,flat:1,d:"잠금(1) · 관통 피해 10 (추가 공격력 없음)"},
    {n:"명중",cost:2,el:"공격",tg:"foe",limit:1,dmg:20,markKill:1,d:"사용한도(1) · 피해 20 · 처치 시 피부 강화 한도 +1"}
   ]};
 HEROES["인비디아"]={title:"질투의 악마",role:"마법 · 감염",hp:20,mana:4,hpLv:1,
@@ -8358,7 +8358,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=298;
+const BUILD_NO=299;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -12480,11 +12480,19 @@ function weakCut(h,key,total){
   if(!deb(h,"defDn")) return 0;
   return total-Math.ceil(total*0.5);
 }
+/* 추가 능력치를 안 받는 기술 — 정의에 flat:1 이거나, 노트 문장에 「(추가 †)」 표시가 없으면.
+   노트가 기준이다 : 표시가 없는 숫자는 그 값 그대로다 (꿰뚫는 화살) */
+function skillFlat(sk){
+  if(!sk) return false;
+  if(sk.flat) return true;
+  const t=(typeof SKILL_FULL!=="undefined"&&SKILL_FULL[sk.n])||"";
+  return !!t&&t.indexOf("(추가 ")<0;
+}
 function breakdown(h,sk,key){
   let total=sk[key]||0;
   const parts=[];
   modParts(sk,key).forEach(m=>{ total+=m.v; parts.push({n:m.n,v:m.v}) });
-  if(key==="dmg"){
+  if(key==="dmg"&&!skillFlat(sk)){
     const st=(sk.el==="마법")?{v:h.mag,n:"추가 마법력"}:{v:h.atk,n:"추가 공격력"};
     if(st.v){ total+=st.v; parts.push(st) }
   }
@@ -13632,7 +13640,7 @@ function predictDmg(h,s,tgt){
   else {
     const OVER=(s.rng&&dist(h.slot,tgt.slot)>s.rng);
     if(OVER&&!overReach(h,s,tgt.slot)) return null;
-    dmg=bs("dmg")+(s.el==="마법"?MAG:ATK*(s.n==="방패 밀치기"?(h.tag.pushAtkX||1):1));
+    dmg=bs("dmg")+(skillFlat(s)?0:(s.el==="마법"?MAG:ATK*(s.n==="방패 밀치기"?(h.tag.pushAtkX||1):1)));
     if(OVER) dmg=Math.max(1,Math.round(dmg*OVER_X));
     if(s.el==="마법"&&deb(h,"magDn")) dmg=Math.ceil(dmg*0.5);
     else if(s.el!=="마법"&&deb(h,"atkDn")) dmg=Math.ceil(dmg*0.5);
@@ -15259,7 +15267,7 @@ function runEffect(h,i,s,target){
     /* 사거리 밖이라도 닿는 적이 하나도 없으면 무리해서 뻗는다 */
     const OVER=(s.rng&&dist(h.slot,tgt.slot)>s.rng);
     if(OVER&&!overReach(h,s,tgt.slot)) return;
-    let dmg=s.dmg+mod(s,"dmg")+(s.el==="마법"?h.mag:h.atk*(s.n==="방패 밀치기"?(h.tag.pushAtkX||1):1));
+    let dmg=s.dmg+mod(s,"dmg")+(skillFlat(s)?0:(s.el==="마법"?h.mag:h.atk*(s.n==="방패 밀치기"?(h.tag.pushAtkX||1):1)));
     if(OVER) dmg=Math.max(1,Math.round(dmg*OVER_X));
     if(s.el==="마법"&&deb(h,"magDn")) dmg=Math.ceil(dmg*0.5);
     else if(s.el!=="마법"&&deb(h,"atkDn")) dmg=Math.ceil(dmg*0.5);
