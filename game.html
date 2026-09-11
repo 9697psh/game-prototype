@@ -8358,7 +8358,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=300;
+const BUILD_NO=301;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -11651,7 +11651,9 @@ function intentKey(o){
      AI_REPEAT  직전 수를 다시 고를 확률을 몇 배로 줄이는가 (막지는 않는다)
    ★ AI_STREAK 를 0 으로 두면 옛 모습 그대로다 — 견주려고 남긴 손잡이다. */
 let AI_STREAK=2, AI_REPEAT=0.55;
-function rollIntents(){
+/* onlyIdle — 이미 수를 정한 적은 그대로 두고, 기다리던(wait) 적만 새로 정한다.
+   소환물이 서도 적의 의도가 흔들리지 않게 (사용자 2026-09-12 — 하수인만 세워도 도발처럼 굴었다) */
+function rollIntents(onlyIdle){
   const USED={};
   /* 은신 — 전장에 혼자 남으면 숨을 곳이 없다 */
   if(allUnits().length<=1) allUnits().forEach(a=>{ if(a.hide){ a.hide=0;
@@ -11663,6 +11665,7 @@ function rollIntents(){
   if(open.length) allies=open;
   B.foes.forEach(f=>{
     if(!f.alive) return;
+    if(onlyIdle&&f.intent&&f.intent.t!=="wait"){ USED[intentKey(f.intent)]=(USED[intentKey(f.intent)]||0)+1; return }
     if(f.isPhantom){ f.intent={t:"wait"}; return }
     if(!allies.length){ f.intent={t:"wait"}; return }
     if(f.forceDef){ f.forceDef=0; f.intent={t:"def",v:defVal(f)}; return }
@@ -13524,7 +13527,8 @@ function playCard(i,slot,side){
         ring:"#a06ae0",glow:1,txt:"소환",cls:"shd",gap:60});
     say(`${c.name}${jo(c.name,"ig")} ${slot}번 칸에 소환됩니다.`,"t1");
     setTimeout(()=>bark(m,"in"),80);
-    rollIntents(); render(); return;
+    /* 도발하는 소환물이 아니면 적의 의도는 그대로 — 기다리던 적만 새로 정한다 */
+    rollIntents(!m.taunt); render(); return;
   }
   if(c.type==="hero"){
     if(occAt(slot)){ say("그 칸에는 이미 누군가 있습니다.","t2"); return }
