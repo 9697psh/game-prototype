@@ -524,6 +524,7 @@ button.dtl{padding:3px 10px;font-size:11.5px}
 .pick{width:230px;background:var(--panel);border:1px solid var(--rule);border-radius:7px;
   padding:14px;cursor:pointer;text-align:left}
 .pick:hover{border-color:var(--brass)}
+.pick.off{opacity:.45;filter:saturate(.4);cursor:not-allowed;pointer-events:none}
 .pick .art{height:96px;display:flex;align-items:center;justify-content:center;
   background:radial-gradient(circle at 50% 60%,rgba(201,162,39,.1),transparent 68%);border-radius:var(--rd)}
 .pick .art svg{width:92px;height:92px;filter:drop-shadow(0 3px 0 rgba(0,0,0,.5))}
@@ -8044,7 +8045,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=262;
+const BUILD_NO=263;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -15194,16 +15195,19 @@ function drawReward(app){
       app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">누가 받을까요</div>
         <div class="sub">대원을 고르세요</div></div>`));
       const row=el(`<div class="picks"></div>`);
+      /* 쓰러진 대원은 못 받는다 — 서 있는 이가 하나도 없을 때만 누구든 */
+      const anyUp=run.heroes.some(h=>!h.down);
       run.heroes.forEach(h=>{
-        const c=el(`<div class="pick" style="width:200px"><div class="art">${figure(h.name)}</div>
-          <h3>${esc(h.name)}</h3><p>Lv.${h.lv} · ${ic("hp")}${h.hp}/${h.maxHp}</p></div>`);
-        c.onclick=()=>{ pending.hero=h; render() };
+        const off=anyUp&&h.down;
+        const c=el(`<div class="pick${off?" off":""}" style="width:200px"><div class="art">${figure(h.name)}</div>
+          <h3>${esc(h.name)}</h3><p>Lv.${h.lv} · ${ic("hp")}${h.hp}/${h.maxHp}${off?` · <span style="color:#e08a8a">쓰러짐</span>`:""}</p></div>`);
+        if(!off) c.onclick=()=>{ pending.hero=h; render() };
         row.appendChild(c);
       });
       app.querySelector(".center").appendChild(row);
       return;
     }
-    if(!pending.hero) pending.hero=run.heroes[0];
+    if(!pending.hero) pending.hero=run.heroes.find(h=>!h.down)||run.heroes[0];
     const back=pending.back;
     app.appendChild(el(`<div class="center">${expBar(pending.hero)}
       <div class="title" style="font-size:20px">${esc(pending.grade)} 보상</div>
@@ -15304,11 +15308,14 @@ function drawItem(app){
       <div class="sub">누구에게 채울까요 (한 명당 ${ITEM_MAX}칸) · 칸이 없으면 가방에 넣어 두었다가 주둔지에서 정리할 수 있습니다</div></div>`));
     app.querySelector(".center").appendChild(incomingCard(pending.item));
     const row=el(`<div class="picks"></div>`);
+    const anyUp=run.heroes.some(h=>!h.down);
     run.heroes.forEach(h=>{
-      const c=el(`<div class="pick" style="width:200px"><div class="art">${figure(h.name)}</div>
+      const off=anyUp&&h.down;
+      const c=el(`<div class="pick${off?" off":""}" style="width:200px"><div class="art">${figure(h.name)}</div>
         <h3>${esc(h.name)}</h3>
-        <p>${h.items.map(x=>`<span title="${esc(itemTip(x))}">${esc(x.n)}</span>`).join(", ")||"장비 없음"}</p>
+        <p>${off?`<span style="color:#e08a8a">쓰러짐</span> · `:""}${h.items.map(x=>`<span title="${esc(itemTip(x))}">${esc(x.n)}</span>`).join(", ")||"장비 없음"}</p>
         ${itemSlots(h)}</div>`);
+      if(off){ row.appendChild(c); return }
       c.onclick=()=>{
         pending.hero=h;
         if(h.items.length>=ITEM_MAX){ pending.stage="swap"; render() }
