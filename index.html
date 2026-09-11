@@ -1217,6 +1217,12 @@ body:has(.rwq) .hpanel{top:auto;bottom:16px;max-height:min(52vh,calc(100vh - 100
 .hpanel .hp-top b{font-family:var(--serif);font-size:14px;color:var(--brass)}
 .hpanel .hp-top small{display:block;color:var(--dim);font-size:11px}
 .hp-stats{display:flex;flex-wrap:wrap;gap:9px;margin-top:9px;font-size:12px;color:var(--fg)}
+/* 대원마다 쌓는 고유 자원 (영혼·사명감·보물 점수…) */
+.hp-stk{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.hp-stk span{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--dim);
+  padding:2px 8px;border:1px solid var(--rule);border-radius:999px;background:var(--raise);cursor:help}
+.hp-stk span i{width:6px;height:6px;border-radius:50%;display:inline-block}
+.hp-stk span b{font-weight:800}
 .hp-h{font-size:10.5px;color:var(--faint);letter-spacing:.1em;margin:12px 0 5px;
   border-bottom:1px solid var(--rule);padding-bottom:3px}
 .hp-sk{background:var(--raise);border:1px solid var(--rule);border-radius:5px;
@@ -15295,6 +15301,19 @@ function unlockBanner(h,i){
     ${sk.alt?`<div class="ub-d" style="color:var(--faint)">전환 : ${esc(sk.alt.n)} — ${rich(SKILL_FULL[sk.alt.n]||sk.alt.d||"")}</div>`:""}
   </div>`);
 }
+/* 전투 밖에서도 남는 고유 자원 — 대원 판에 줄 하나로.
+   전투 안에서만 사는 것(비늘·어둠·음율·탄알)은 heroRes 가 전장 칸에 보여 준다. */
+function heroStacks(h){
+  const L=[];
+  if(h.name==="쿠렘타이") L.push({n:"영혼",v:`${run.souls||0}`,x:`얻은 마법력 ${h.soulMag||0}`,c:"#8fb4ef"});
+  if(h.name==="트리스탄") L.push({n:"사명감",v:`${h.duty||0}`,x:`얻은 공격력 ${h.dutyAtk||0}`,c:"#e0a86a"});
+  if(h.name==="데린저") L.push({n:"보물 점수",v:`${run.treasure||0}`,x:"5점마다 공격력 +1",c:"#e0c85a"});
+  if(h.name==="나이코스") L.push({n:"전장의 승자",v:`${h.wins||0}/${h.tag.winCap||2}`,x:"이길 때마다 공격력 +1",c:"#e0705a"});
+  if(h.name==="굴라") L.push({n:"탐욕의 악마",v:`${h.greed||0}/${greedCapOf(h)}`,x:"이번 전투에 얻은 최대 체력",c:"#c9a227"});
+  if(h.name==="도미니코") L.push({n:"독서",v:`${h.read||0}/${h.tag.readNeed||10}`,x:h.blessed?"축복 중":"차면 축복",c:"#a06ae0"});
+  if(!L.length) return "";
+  return `<div class="hp-stk">${L.map(r=>`<span title="${esc(r.x)}"><i style="background:${r.c}"></i>${esc(r.n)} <b style="color:${r.c}">${esc(r.v)}</b></span>`).join("")}</div>`;
+}
 function heroPanel(h){
   const box=el(`<div class="hpanel"></div>`);
   box.appendChild(el(`<div class="hp-top">
@@ -15310,6 +15329,7 @@ function heroPanel(h){
     <span>${ic("mag")} ${h.mag}</span>
     <span>${ic("def")} ${h.def}</span>
   </div>`));
+  { const stk=heroStacks(h); if(stk) box.appendChild(el(stk)) }
   const inf=PASSIVE_INFO[h.name]||[];
   if(inf.length){
     box.appendChild(el(`<div class="hp-h">지속</div>`));
