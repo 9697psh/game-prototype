@@ -8038,7 +8038,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=255;
+const BUILD_NO=256;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -14672,6 +14672,9 @@ function unitDown(t){
    기록도 남는다. run.autoImp 로 켜고 끈다 (저장에 같이 실린다). */
 function autoImps(){
   if(!run||!run.autoImp||!B||B.over) return 0;
+  /* 하수인을 부리려고 sel 을 빌려 쓴다 — 끝나면 보고 있던 대원의 기술 창으로 되돌린다.
+     안 되돌리면 턴을 넘길 때마다 창이 닫혀 대원을 다시 눌러야 했다 */
+  const prev=sel&&sel.hero&&!sel.hero.isMin?sel.hero:null;
   let n=0;
   liveMins().filter(m=>/^악마 (하수인|장군)$/.test(m.name)&&m.sk[0]).forEach(m=>{
     if(B.over||m.hp<=0||m.slot<=0) return;
@@ -14684,7 +14687,7 @@ function autoImps(){
     sel={hero:m,slot:m.slot,step:4,skill:0,count:1};
     doSkill(cands[0].slot); n++;
   });
-  if(n) sel=null;
+  if(n) sel=(prev&&prev.slot>0&&prev.hp>0)?{hero:prev,slot:prev.slot,step:2,skill:null,count:1}:null;
   return n;
 }
 function endTurn(){
