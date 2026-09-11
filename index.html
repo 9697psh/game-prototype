@@ -8372,7 +8372,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=302;
+const BUILD_NO=303;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -15505,9 +15505,12 @@ function runEffect(h,i,s,target){
         addDeb(f,"magDn",1,h); addDeb(f,"defDn",1,h);
         fx({side:"foe",slot:f.slot,ring:"#8f5fd0",txt:"약화",cls:"miss",gap:60}) };
       curse(tgt);
-      if(T.pierceAll){                                   /* 척추뼈 화살촉 */
-        B.foes.filter(f=>f.alive&&f!==tgt).forEach(f=>{
-          hurt(f,dmg,s.n,"slash",pierceRate(s.pierce),CRIT);
+      if(T.pierceAll){                                   /* 척추뼈 화살촉 — 나머지 적에게도 화살이 한 대씩 날아간다 */
+        const rest=B.foes.filter(f=>f.alive&&f!==tgt);
+        if(rest.length) say(`척추뼈 화살촉 — 나머지 적 ${rest.length}에게도 꿰뚫는 화살이 꽂힙니다.`,"t1");
+        rest.forEach((f,k)=>{
+          fx({side:"foe",slot:f.slot,arrow:{side:"mine",slot:h.slot,who:h.name},gap:k?90:0});
+          hurt(f,dmg,s.n,"slash",pierceRate(s.pierce),CRIT,1);
           applyLeech(h,dmg); curse(f);
         });
       }
