@@ -8036,7 +8036,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=253;
+const BUILD_NO=254;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -8094,11 +8094,21 @@ function txtEntries(){
   const barkSeen={};
   barkWho.forEach(([n,who])=>{
     if(barkSeen[n]) return; barkSeen[n]=1;
-    BCAT.forEach(([k,label])=>{
-      add("대사","bark:"+n+":"+k,who+" · "+n+" ▸ "+label,
+    const putBark=(k,label)=>add("대사","bark:"+n+":"+k,who+" · "+n+" ▸ "+label,
         ()=>((BARK[n]||{})[k]||[]).join("\n"),
         v=>{ BARK[n]=BARK[n]||{};
              BARK[n][k]=String(v).split("\n").map(x=>x.trim()).filter(Boolean) },true);
+    BCAT.forEach(([k,label])=>putBark(k,label));
+    /* 기술별 · 사건별 — 대원의 기술마다 한 칸, 그리고 표에 이미 있는 갈래(:적 · :카드 · event: · kill:) */
+    const keys=[];
+    if(HEROES[n]){ (HEROES[n].skills||[]).forEach(sk=>{ keys.push("skill:"+sk.n); (sk.opts||[]).forEach(o=>keys.push("skill:"+o.n)) });
+      (HERO_REWARDS[n]||[]).filter(r=>/^\[전투 기술\]/.test(r.d||"")).forEach(r=>keys.push("skill:"+r.n)) }
+    Object.keys(BARK[n]||{}).forEach(k=>{ if(/^(skill|event|kill):/.test(k)) keys.push(k) });
+    [...new Set(keys)].forEach(k=>{
+      const [kind,nm,sub]=k.split(":");
+      const label=kind==="skill"?`기술 · ${nm}${sub?` (${sub==="적"?"적이 선 칸에":sub==="카드"?"카드를 얻을 때":sub})`:""} 을 쓸 때`
+                 :kind==="event"?`사건 · ${nm}`:`처치 · ${nm==="악마"?"악마를 처치할 때":nm+"으로 처치할 때"}`;
+      putBark(k,label);
     });
   });
   /* 상점 주인 · 제련소 브란 — 한 줄이 대사 하나 */
@@ -11074,9 +11084,20 @@ function foePurge(f){
   return n;
 }
 /* 적 하나를 뜯어본다 — 칸에 다 못 적는 것을 여기서 보여 준다 */
+/* 적의 종족 — 대원(HERO_TAGS.race)과 같은 낱말. FOE 에 race 가 없으면 demon 표로, 그것도 없으면 빈 글자 */
+const FOE_RACE={"작은 죄수":"인간","사슬 광인":"인간","굶주린 그림자":"악마","부서진 파수병":"기계","균열 벌레":"악마",
+ "얼음 정령":"정령","술집 난동꾼":"인간","떠도는 불씨":"정령","늑대치기":"인간","무시무시한 늑대":"짐승",
+ "간수장":"인간","고철 거인":"기계","서리 군주":"악마","사슬 처형자":"인간",
+ "감옥의 눈":"악마","메아리 정령":"정령","사슬 간수":"인간","샘의 잔영":"정령","피 먹는 자":"악마"};
+function foeRace(f){
+  const nm=(f&&(f.of||f.name))||"";
+  const D=FOE[nm]||{};
+  return D.race||FOE_RACE[nm]||(D.demon||(f&&f.demon)?"악마":"");
+}
 function foePeekHtml(f){
   const tier={boss:"우두머리",elite:"정예",norm:"일반"}[foeTier(f)]||"일반";
   const D=FOE[f.name]||{};
+  const race=foeRace(f);
   const bits=[];
   if(f.taunt)     bits.push(`도발`);
   if(f.thorn)     bits.push(`가시 ${f.thorn}${f.thornTurn?` (${f.thornTurn}턴)`:""}`);
@@ -11095,7 +11116,7 @@ function foePeekHtml(f){
   return `<div class="peekfoe">
     <div class="pfhead">
       <span class="pft">${esc(tier)}</span>
-      <b>${esc(f.name)}</b>
+      <b>${esc(f.name)}</b>${race?`<span class="pft" title="종족">${esc(race)}</span>`:""}
       <span class="hint">${ic("hp")}${Math.max(0,f.hp)}/${f.maxHp} ·
         ${ic("atk")}${f.atk} · ${ic("def")}${defVal(f)} · 사거리 ${f.rng} · ${esc(D.el||"공격")}</span>
       ${f.role?`<span class="hint rolel" title="${esc(f.roleD||"")}">${esc(f.role)}</span>`:""}
@@ -11396,6 +11417,34 @@ const BARK={
   hurt:["감히.","이 정도 냉기로는 부족한가."],
   down:["봄은… 오지… 않는다…"]}
 };
+/* 기술별·사건별 대사 (2026-09-11 사용자 원고).
+     skill:<기술>            그 기술을 쓸 때 — 공용 atk 와 섞어 하나를 고른다
+     skill:<기술>:적 / :카드  차원문처럼 갈래가 있는 기술
+     event:<이름>            시전이 아니라 일어나는 순간 (응축 폭발이 터질 때)
+     kill:<기술> · kill:악마  그 기술로 처치 · 악마를 처치 */
+BARK["쿠렘타이"]["skill:착취"]=["<shake>내놓아라!!!</shake>","<shake>네 몫은 여기까지다!!!</shake>","<shake>나를 위해 일해라!!!</shake>"];
+BARK["쿠렘타이"]["skill:영혼 분리"]=["후회해라...","너의 영혼은 내 것이다..."];
+BARK["쿠렘타이"]["skill:환상통"]=["죽음을 두려워 하라...","고통!!!"];
+BARK["쿠렘타이"]["skill:사형 선고"]=["죽음께서 기뻐하시겠군...","축하한다..."];
+BARK["굴라"]["skill:씹어먹기"]=["냠냠","쩝쩝","(와그작)"];
+BARK["굴라"]["skill:균열 차원문"]=["열려라!"];
+BARK["굴라"]["skill:균열 차원문:적"]=["후회하게 해줄게!","조오심해!"];
+BARK["굴라"]["skill:균열 차원문:카드"]=["이리로 오너라!","나의 하수인들이여!","드디어..."];
+BARK["굴라"]["skill:응축 폭발"]=["(숨을 들이키는 소리)","쓰으읍..."];
+BARK["굴라"]["event:응축 폭발"]=["하하! 놀랐지!","뻥!"];
+BARK["굴라"]["skill:융합"]=["미식이군!","수고했다!","기억해주지...뭘 기억해야됐더라?"];
+BARK["굴라"]["skill:전투식량"]=["미식이군!","수고했다!","기억해주지...뭘 기억해야됐더라?"];
+BARK["악마 하수인"]={in:["주인님을 위해!","탐욕의 악마님을 위해!","돌격!"],down:["으악...","윽..."]};
+BARK["악마 장군"]={in:["주인님을 위해!","탐욕의 악마님을 위해!","돌격!"],down:["으악...","윽..."]};
+BARK["나이코스"]["skill:베기"]=["받아라!","이 한 번으로 끝낸다."];
+BARK["나이코스"]["skill:막기"]=["흠.","들어와라."];
+BARK["나이코스"]["kill:승리의 일격"]=["영광스러운 전투였다.","영광!","명예로운 전투였다."];
+BARK["트리스탄"]["skill:페일노트"]=["멈춰...있어라.","적중했다...","적들을...섬멸하라!"];
+BARK["트리스탄"]["skill:피부 강화"]=["단단한...피부...","흠집도 못 낼거다...","<wave>(고통스러워하는 소리)</wave>"];
+BARK["트리스탄"]["skill:꿰뚫는 화살"]=["멈춰...있어라.","적중했다...","적들을...섬멸하라!"];
+BARK["트리스탄"]["skill:명중"]=["명중했다...","적...섬멸"];
+BARK["트리스탄"]["kill:악마"]=["죽어라 악마여!!","물러나라!!","여긴 있을 곳이 아니다!!"];
+BARK["트리스탄"]["skill:화살비"]=["하늘을...뒤덮어라"];
 const BARK_ANY={
  in:["…"], atk:["하압!"], hurt:["윽!"], kill:["끝."], down:["크윽…"]
 };
@@ -11408,15 +11457,34 @@ function bark(u,cat,force){
   if(!P||!P.length) return;
   const rate={in:0.42,atk:0.13,hurt:0.16,kill:0.3,down:0.85}[cat]||0.12;
   if(!force&&Math.random()>rate) return;
-  BARK_AT=now;
+  barkShow(u,rnd(P),now);
+}
+function barkShow(u,line,now){
+  BARK_AT=now||Date.now();
   const foe=!!u.isFoe||B.foes.indexOf(u)>=0;
   const p=ctrOf(foe?"foe":"mine",u.slot);
   if(!p) return;
-  const nd=spawn('<div class="bark'+(foe?" f":"")+'">'+esc(rnd(P))+'</div>');
+  const nd=spawn('<div class="bark'+(foe?" f":"")+'">'+rich(line)+'</div>');
   if(!nd) return;
   nd.style.left=p.x+"px";
   nd.style.top=(p.y-58)+"px";
 }
+/* 여러 갈래를 합쳐 하나 — cats 중 앞의 것이 '전용', 마지막이 '공용'. 전용이 하나라도 있으면 자주(rate 0.6) 뜬다 */
+function barkPick(u,cats,force){
+  if(!u||!B||B.over) return;
+  const now=Date.now();
+  if(!force&&now-BARK_AT<1800) return;
+  const T=BARK[u.of||u.name]||{};
+  let pool=[], own=0;
+  cats.forEach((c,i)=>{ const L=T[c]; if(L&&L.length){ pool=pool.concat(L); if(i<cats.length-1) own=1 } });
+  if(!pool.length&&!u.isMin){ const L=BARK_ANY[cats[cats.length-1]]; if(L) pool=L.slice() }
+  if(!pool.length) return;
+  if(!force&&Math.random()>(own?0.6:0.13)) return;
+  barkShow(u,rnd(pool),now);
+}
+/* 기술을 쓸 때 — 그 기술 전용 + 공용(atk). 갈래가 있는 기술(균열 차원문)은 효과 쪽에서 따로 부른다 */
+const BARK_LATE={"균열 차원문":1};
+function barkSkill(h,s){ if(!s||BARK_LATE[s.n]) return; barkPick(h,["skill:"+s.n,"atk"]) }
 function intentHtml(f){
   if(!f.alive||!f.intent) return "";
   const I=f.intent;
@@ -12774,6 +12842,7 @@ function playCard(i,slot,side){
     fx({side:"mine",slot:slot,s:sfxOr(m.name+" 배치",sfxOr(c.name+" 배치","summon")),
         ring:"#a06ae0",glow:1,txt:"소환",cls:"shd",gap:60});
     say(`${c.name}${jo(c.name,"ig")} ${slot}번 칸에 소환됩니다.`,"t1");
+    setTimeout(()=>bark(m,"in"),80);
     rollIntents(); render(); return;
   }
   if(c.type==="hero"){
@@ -13279,7 +13348,7 @@ function doSkill(target){
     sel.target=target; sel.step=5; SFX.play("click"); render(); return;
   }
   h.shadowGo=(sel.moveTo!=null?sel.moveTo:0);
-  bark(h,"atk");
+  barkSkill(h,s0);
   say(`▸ ${h.name} — ${s0.n} ×${n}`,"t1");
   for(let k=0;k<n;k++){
     if(B.over||h.hp<=0) break;
@@ -14219,6 +14288,7 @@ function runEffect(h,i,s,target){
          카드를 실제로 내려놓는 자리는 안 건드린다 — 세 번 보게 된다 */
       riftOnCard(B.hand.length-1);
       say(`차원문 재사용 — ${cn} 카드를 얻습니다. 빈 칸에 끌어다 소환하세요.`,"t1");
+      barkPick(h,["skill:균열 차원문:카드","atk"]);
     }else{
       /* fresh 가 서 있는 동안은 바닥 표시를 안 그린다 — 띠가 다 돌 때까지.
          내리는 것은 portalFX() 가 손수 한다 */
@@ -14229,6 +14299,7 @@ function runEffect(h,i,s,target){
          원근이 어긋나 보인다 */
       fx({side:side,slot:slot,art:"ptl",s:"mag",txt:"차원문",cls:"mag"});
       say(`${side==="mine"?"아군":"적"} ${side==="mine"?slot:foeNo(slot)}번 칸에 차원문이 열립니다.`,"t1");
+      barkPick(h,(side==="foe"&&foeAt(slot))?["skill:균열 차원문:적","skill:균열 차원문","atk"]:["skill:균열 차원문","atk"]);
     }
     return;
   }
@@ -14406,7 +14477,7 @@ function runEffect(h,i,s,target){
       if(h.name==="이테리오"&&s.mark&&tgt.alive){ tgt.mark=(tgt.mark||0)+1;
         fx({side:"foe",slot:tgt.slot,ring:"#6aa8e0",txt:"표식",cls:"mag",gap:60}) }
       if(was&&!tgt.alive){
-        bark(h,"kill");
+        barkPick(h,["kill:"+s.n].concat(tgt.demon||(FOE[tgt.name]||{}).race==="악마"?["kill:악마"]:[]).concat(["kill"]));
         if(!tgt.isPhantom){
           const ke=itemBt(h,"killEsh");
           if(ke) h.eshield=(h.eshield||0)+ke;
@@ -14558,6 +14629,7 @@ function unitDown(t){
   fx({side:"mine",slot:t.slot,s:"down",txt:t.isMin?"파괴":"쓰러짐",cls:"miss",gap:180});
   if(t.isMin){
     say(`${t.name}${jo(t.name,"ig")} 부서졌습니다.`,"t3");
+    bark(t,"down",1);
     if(t.phantomOf!=null){
       phantomGone();
       const src=B.foes.find(f=>f.id===t.phantomOf&&f.alive);
@@ -14924,6 +14996,7 @@ function startMyTurn(){
       const v=Math.floor(h.hp*(20+(h.tag.bombPct||0))/100);
       h.thornTmp=0;
       say("응축 폭발 — 압축된 힘이 터집니다.","t1");
+      barkPick(h,["event:응축 폭발","atk"],1);
       fx({side:"mine",slot:h.slot,quake:1,s:sfxOr("굴라 응축 폭발","quake"),gap:260});
       /* 터지는 그림은 **맞는 쪽**에 뜬다. 피해를 받는 것이 적들이니 그림도 거기 있어야 한다.
          굴라 쪽에는 흔들림(quake)과 소리만 남는다 */
