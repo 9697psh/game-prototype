@@ -871,6 +871,23 @@ button.dtl{padding:3px 10px;font-size:11.5px}
   border:2px solid #0a0809;box-shadow:0 3px 0 rgba(0,0,0,.55);word-break:keep-all;
   text-align:center;white-space:pre-line;
   animation:barkA 2.4s cubic-bezier(.2,1.3,.4,1) forwards}
+.bark.big{font-size:15.5px;padding:9px 15px;max-width:260px;border-width:3px;z-index:140;
+  box-shadow:0 4px 0 rgba(0,0,0,.6),0 0 24px rgba(201,162,39,.55)}
+/* 처치 조명 — 대원이 적을 쓰러뜨린 순간. 다키스트 던전처럼 뒤는 뿌옇게, 둘만 또렷하게.
+   .field.spot 이 켜지면 모든 칸이 가라앉고, spot-hero 와 spot-foe 만 앞으로 나온다.
+   느리게 흐르는 느낌은 전환(.45s)과 붙들고 있는 시간(1.2s)으로 낸다 */
+.field.spot .slot{transition:opacity .45s ease,filter .45s ease,transform .45s cubic-bezier(.2,.9,.3,1);
+  opacity:.28;filter:saturate(.25) blur(1.2px)}
+.field.spot .slot.spot-hero{opacity:1;filter:none;transform:scale(1.2) translateY(-6px);z-index:40;
+  border-color:var(--brass);box-shadow:0 0 0 1px var(--brass),0 0 36px rgba(201,162,39,.55)}
+.field.spot .slot.spot-foe{opacity:1;filter:brightness(1.35) saturate(1.1);transform:scale(1.08);z-index:39;
+  border-color:#e05a5a;box-shadow:0 0 0 1px #e05a5a,0 0 30px rgba(224,90,90,.55)}
+.field.spot .mid{opacity:.3;transition:opacity .45s}
+.slot .art.spotdead{position:absolute;left:0;right:0;top:auto;bottom:10px;height:auto;filter:saturate(.5) brightness(.85);
+  animation:spotDead 1.2s ease-in forwards}
+.slot .art.spotdead .nm{position:absolute;top:-22px;left:0;right:0;text-align:center;font-size:11px;color:var(--dim)}
+@keyframes spotDead{0%,55%{opacity:1}100%{opacity:0}}
+@media (prefers-reduced-motion: reduce){ .field.spot .slot{transition:none} }
 .bark::after{content:"";position:absolute;left:50%;bottom:-9px;transform:translateX(-50%);
   border:5px solid transparent;border-top-color:#0a0809}
 .bark::before{content:"";position:absolute;left:50%;bottom:-5px;transform:translateX(-50%);
@@ -3102,6 +3119,7 @@ function playFX(o){
   if(o.burn) burnFX(o.side,o.slot);
   if(o.lift) liftFX(o.side,o.slot);
   if(o.soulg) soulGainFX(o.side,o.slot,o.soulg===2);
+  if(o.spot!=null){ spotFX(o.slot,o.spot,o.foeName); if(o.barkLine&&o.barkU) barkShow(o.barkU,o.barkLine,Date.now(),1) }
   if(o.fn) o.fn();
   /* 깃발로 건다 — art: 를 쓰면 문지기(ART[o.art])를 또 고쳐야 한다.
      o.blowup 이 s.burst(인비디아 숙주 폭발)와 다른 이름인 까닭이기도 하다 */
@@ -8085,7 +8103,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=269;
+const BUILD_NO=270;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -11523,12 +11541,36 @@ function bark(u,cat,force){
   if(!force&&Math.random()>rate) return;
   barkShow(u,rnd(P),now);
 }
-function barkShow(u,line,now){
+/* 처치 조명 — 대원 칸(mine,slot)과 적 칸(foe,foeSlot)만 남기고 다 가라앉힌다 */
+function spotFX(slot,foeSlot,foeName){
+  const fld=document.querySelector(".field"); if(!fld) return;
+  const a=ctrOf("mine",slot), b=ctrOf("foe",foeSlot);
+  fld.classList.add("spot");
+  if(a&&a.e) a.e.classList.add("spot-hero");
+  let ghost=null;
+  if(b&&b.e){ b.e.classList.add("spot-foe");
+    /* 쓰러진 적은 화면에서 이미 치워졌다 — 조명이 켜진 동안만 맞는 자세로 다시 세운다 */
+    if(foeName&&!b.e.querySelector(".art")){
+      ghost=el(`<div class="art spotdead"><div class="nm">${esc(foeName)}</div>${figure(foeName,"hurt")}</div>`);
+      b.e.appendChild(ghost) } }
+  setTimeout(()=>{ fld.classList.remove("spot");
+    if(a&&a.e) a.e.classList.remove("spot-hero");
+    if(b&&b.e) b.e.classList.remove("spot-foe");
+    if(ghost) ghost.remove() },1200);
+}
+/* 대사 한 줄 고르기 (띄우지는 않는다) — barkPick 과 같은 주머니 */
+function barkLine(u,cats){
+  const T=BARK[(u&&(u.of||u.name))]||{};
+  let pool=[];
+  cats.forEach(c=>{ const L=T[c]; if(L&&L.length) pool=pool.concat(L) });
+  return pool.length?rnd(pool):null;
+}
+function barkShow(u,line,now,big){
   BARK_AT=now||Date.now();
   const foe=!!u.isFoe||B.foes.indexOf(u)>=0;
   const p=ctrOf(foe?"foe":"mine",u.slot);
   if(!p) return;
-  const nd=spawn('<div class="bark'+(foe?" f":"")+'">'+rich(line)+'</div>');
+  const nd=spawn('<div class="bark'+(foe?" f":"")+(big?" big":"")+'">'+rich(line)+'</div>');
   if(!nd) return;
   nd.style.left=p.x+"px";
   nd.style.top=(p.y-58)+"px";
@@ -13300,6 +13342,11 @@ function asSrc(h,fn){
 /* 대원 by 의 피해로 적 f 가 죽었다. tag 는 피해 이름(기술 이름 등) */
 function onKill(by,f,tag){
   if(!by||!by.name||!run||run.heroes.indexOf(by)<0||!by.tag) return;
+  /* 대원이 직접 처치 — 조명 + 처치 대사(반드시, 크게). 환영을 쓰러뜨린 것은 뺀다 */
+  if(!by.isMin&&by.slot>0&&f&&!f.isPhantom){
+    const cats=["kill:"+tag].concat((f.demon||foeRace(f)==="악마")?["kill:악마"]:[]).concat(["kill"]);
+    fx({side:"mine",slot:by.slot,spot:f.slot,foeName:f.name,barkU:by,barkLine:barkLine(by,cats),gap:1100});
+  }
   if(by.name==="굴라"&&tag==="씹어먹기"&&by.tag.chompKillHeal&&by.hp>0){
     const got=healUp(by,by.tag.chompKillHeal);
     if(got){ fx({side:"mine",slot:by.slot,s:"heal",txt:"+"+got,cls:"heal",gap:60});
@@ -14658,7 +14705,6 @@ function runEffect(h,i,s,target){
       if(h.name==="이테리오"&&s.mark&&tgt.alive){ tgt.mark=(tgt.mark||0)+1;
         fx({side:"foe",slot:tgt.slot,ring:"#6aa8e0",txt:"표식",cls:"mag",gap:60}) }
       if(was&&!tgt.alive){
-        barkPick(h,["kill:"+s.n].concat(tgt.demon||(FOE[tgt.name]||{}).race==="악마"?["kill:악마"]:[]).concat(["kill"]));
         if(!tgt.isPhantom){
           const ke=itemBt(h,"killEsh");
           if(ke) h.eshield=(h.eshield||0)+ke;
