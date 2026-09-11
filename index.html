@@ -336,6 +336,8 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .skwrap{margin-top:12px;background:var(--panel);border:1px solid var(--brass);border-radius:6px;padding:10px}
 /* 턴 종료 효과가 흐르는 동안 — 창은 그대로 두되 손대지 못한다는 것을 보여 준다 */
 .skwrap.waiting{opacity:.5;filter:saturate(.7);pointer-events:none;border-color:var(--rule2)}
+.sk .skmore{color:var(--brass);font-size:10.5px;cursor:pointer;white-space:nowrap;margin-left:4px;text-decoration:none;border-bottom:1px dotted var(--brass)}
+.sk .skmore:hover{color:#ffe08a}
 .skhead{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
 .skhead b{font-family:var(--serif);font-size:14px;color:var(--brass)}
 .skills{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
@@ -11993,6 +11995,17 @@ function skillHot(h,i,s){
   if(s.thrust) out.push(`현재 피해량 ${(h.cutSum||0)*3}`);
   return out;
 }
+/* 긴 설명은 첫 문장까지만 — '…니다.' 가 처음 나오는 곳에서 자른다.
+   ("잠금(3)." 같은 머리말은 니다 로 안 끝나니 그 다음 문장까지 딸려 온다 — 영혼 분리가 그렇다)
+   자른 뒤 남는 것이 짧으면 자르지 않는다. 어느 기술을 펼쳐 두었는지는 SK_OPEN 이 기억한다 */
+const SK_OPEN={};
+function shortDesc(t){
+  t=String(t||"");
+  const m=t.match(/니다\./);
+  if(!m) return t;
+  const cut=t.slice(0,m.index+3);
+  return (t.length-cut.length>24)?cut:t;
+}
 function skillPanel(h){
   const p=el(`<div class="skwrap"></div>`);
   p.appendChild(el(`<div class="skhead">
@@ -12021,7 +12034,10 @@ function skillPanel(h){
     const cost = s.costType==="mom" ? ic("move")+" "+payCost(h,i)
                : s.costType==="scale" ? "비늘 "+payCost(h,i) : ic("mana")+" "+payCost(h,i);
     const hot=ok?skillHot(h,i,s):[];
-    const lv=richLive(h,s,SKILL_FULL[s.n]||s.d||"");
+    const fullT=SKILL_FULL[s.n]||s.d||"";
+    const shortT=shortDesc(fullT);
+    const canMore=shortT!==fullT, open=!!SK_OPEN[s.n];
+    const lv=richLive(h,s,(canMore&&!open)?shortT:fullT);
     const nm=s.pick?s.pick:s.n;
     /* 선택 기술은 고른 갈래(s.n)의 그림을 먼저 찾고, 없으면 기술 자체의 그림 */
     const ico=skillIcon(s.n)||skillIcon(nm);
@@ -12042,9 +12058,11 @@ function skillPanel(h){
           ${locked?`<span class="v-lock">${UNLOCK[i]}레벨 해제</span>`:""}
           ${lk?`<span class="v-lock">잠금 ${lk}</span>`:""}
         </div>
-        <small>${lv.html}</small>
+        <small>${lv.html}${canMore?` <a class="skmore" title="${open?"설명을 접습니다":"설명을 다 보여 줍니다"}">${open?"접기 ▴":"자세히 ▸"}</a>`:""}</small>
         ${s.alt?`<div class="fullx"><span>전환 · ${esc(s.alt.n)}</span>${rich(SKILL_FULL[s.alt.n]||s.alt.d||"")}</div>`:""}
       </div></div>`);
+    { const mo=e.querySelector(".skmore");
+      if(mo) mo.onclick=ev=>{ ev.stopPropagation(); SK_OPEN[s.n]=!SK_OPEN[s.n]; render() } }
     if(ok&&s.opts){
       /* 머리 부분은 선택지 목록을 여닫기만 한다 — 고른 선택지와 횟수는 그대로 둔다 */
       e.onclick=ev=>{ ev.stopPropagation();
