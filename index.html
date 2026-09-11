@@ -1404,6 +1404,20 @@ body:has(.rwq) .hpanel{top:auto;bottom:16px;max-height:min(52vh,calc(100vh - 100
 .gslot b{font-size:10px;line-height:1.25;word-break:keep-all}
 .gslot .gg{font-size:9.5px;color:var(--faint)}
 .bagwrap{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:10px}
+/* 끌어다 놓기 — 장비 정리 · 제련소 */
+[draggable="true"]{cursor:grab}
+.dragging{opacity:.45}
+.gslot.dragover,.fslot.dragover{border-color:var(--hp);box-shadow:0 0 0 2px var(--hp) inset;background:rgba(127,211,154,.08)}
+.bagdrop{min-height:64px;padding:8px;border:1px dashed transparent;border-radius:8px}
+.bagdrop.dragover{border-color:var(--hp);background:rgba(127,211,154,.06)}
+.forgeslots{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:14px}
+.fslot{width:120px;min-height:86px;background:var(--raise);border:1px solid var(--rule);border-radius:8px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px;cursor:pointer}
+.fslot.empty{border-style:dashed;color:var(--faint)}
+.fslot.empty span{font-size:12px} .fslot.empty small{font-size:10px;color:var(--faint)}
+.fslot .gi{width:36px;height:36px} .fslot .gi svg,.fslot .gi img{width:36px;height:36px}
+.fslot b{font-size:11px;word-break:keep-all;text-align:center} .fslot .gg{font-size:9.5px;color:var(--faint)}
+.fplus{font-size:22px;color:var(--faint)}
 .bagwrap .gslot{width:104px;flex:0 0 104px}
 .rcbook{margin-top:26px;background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:14px 16px}
 .rcbook h4{margin:0 0 8px;font-family:var(--serif);font-size:13px;color:var(--brass);letter-spacing:.06em}
@@ -8358,7 +8372,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=301;
+const BUILD_NO=302;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -9681,12 +9695,53 @@ function drawCamp(app){
   wrap.appendChild(lay);
   heroPane(wrap);
 }
+/* 장신구 옮기기 — 누르기와 끌기가 같이 쓴다. src {from:"bag",i} 또는 {h,i} · dst {h,i} 또는 {bag:1} */
+function gearMove(src,dst){
+  if(!src||!dst) return;
+  if(dst.bag){
+    if(src.from==="bag") return;
+    const sh=run.heroes[src.h], it=sh&&sh.items[src.i]; if(!it) return;
+    if(it.bind){ toast(`${it.n}${jo(it.n,"eun")} 벗을 수 없습니다.`); return }
+    const old=unequip(sh,src.i); toBag(old); run.gearPick=null; SFX.play("click"); render(); return;
+  }
+  const h=run.heroes[dst.h], i=dst.i, it=h.items[i];
+  if(it&&it.bind){ toast(`${it.n}${jo(it.n,"eun")} 벗을 수 없습니다.`); return }
+  if(src.from==="bag"){
+    const item=run.bag[src.i]; if(!item) return;
+    if(it){ const old=unequip(h,i); run.bag.splice(src.i,1,old); equip(h,item) }
+    else { run.bag.splice(src.i,1); equip(h,item) }
+  }else{
+    const sh=run.heroes[src.h], item=sh.items[src.i];
+    if(sh===h&&src.i===i){ run.gearPick=null; render(); return }
+    if(!item) return;
+    if(item.bind){ toast(`${item.n}${jo(item.n,"eun")} 벗을 수 없습니다.`); run.gearPick=null; render(); return }
+    const a=unequip(sh,src.i);
+    if(it){ const b=unequip(h,i); equip(h,a); equip(sh,b) }
+    else equip(h,a);
+  }
+  run.gearPick=null; SFX.play("click"); render();
+}
+/* 끌고 있는 것 — 화면을 다시 그려도 남게 전역에 */
+let GDRAG=null;
+function dragFrom(el2,payload){
+  el2.draggable=true;
+  el2.addEventListener("dragstart",ev=>{ GDRAG=payload; el2.classList.add("dragging");
+    try{ ev.dataTransfer.setData("text/plain","x"); ev.dataTransfer.effectAllowed="move" }catch(e){} });
+  el2.addEventListener("dragend",()=>{ GDRAG=null; el2.classList.remove("dragging");
+    document.querySelectorAll(".dragover").forEach(x=>x.classList.remove("dragover")) });
+}
+function dropTo(el2,fn){
+  el2.addEventListener("dragover",ev=>{ if(!GDRAG) return; ev.preventDefault(); el2.classList.add("dragover") });
+  el2.addEventListener("dragleave",()=>el2.classList.remove("dragover"));
+  el2.addEventListener("drop",ev=>{ if(!GDRAG) return; ev.preventDefault(); el2.classList.remove("dragover");
+    const p=GDRAG; GDRAG=null; fn(p) });
+}
 function drawGear(app){
   run.bag=run.bag||[];
   const sel2=run.gearPick;
   app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">장 비 정 리</div>
     <div class="sub">${sel2?"놓을 자리를 고르세요. 이미 찬 칸을 누르면 서로 바뀝니다."
-      :"옮길 장신구을 고르세요. 대원의 장비를 누르면 가방으로 들어갑니다."}</div></div>`));
+      :"장신구를 끌어다 칸에 놓거나, 눌러서 고르세요. 대원의 장비를 가방으로 끌면(또는 누르면) 벗습니다."}</div></div>`));
   const wrap=app.querySelector(".center");
   const rs=el(`<div class="gearwrap"></div>`);
   run.heroes.forEach((h,hi)=>{
@@ -9702,25 +9757,11 @@ function drawGear(app){
         title="${it?esc(itemTip(it)):"빈 칸"}">
         ${it?`<div class="gi">${rewardIcon(it)}</div><b>${esc(it.n)}</b>`:`<span>빈 칸</span>`}</div>`);
       cell.onclick=()=>{
-        if(it&&it.bind){ toast(`${it.n}${jo(it.n,"eun")} 벗을 수 없습니다.`); return }
-        if(sel2){
-          if(sel2.from==="bag"){
-            const item=run.bag[sel2.i];
-            if(it){ const old=unequip(h,i); run.bag.splice(sel2.i,1,old); equip(h,item) }
-            else { run.bag.splice(sel2.i,1); equip(h,item) }
-          }else{
-            const src=run.heroes[sel2.h], item=src.items[sel2.i];
-            if(src===h&&sel2.i===i){ run.gearPick=null; render(); return }
-            if(item&&item.bind){ toast(`${item.n}${jo(item.n,"eun")} 벗을 수 없습니다.`);
-              run.gearPick=null; render(); return }
-            const a=unequip(src,sel2.i);
-            if(it){ const b=unequip(h,i); equip(h,a); equip(src,b) }
-            else equip(h,a);
-          }
-          run.gearPick=null; SFX.play("click"); render(); return;
-        }
-        if(it){ const old=unequip(h,i); toBag(old); SFX.play("click"); render() }
+        if(sel2){ gearMove(sel2,{h:hi,i:i}); return }
+        if(it) gearMove({h:hi,i:i},{bag:1});
       };
+      if(it&&!it.bind) dragFrom(cell,{h:hi,i:i});
+      dropTo(cell,p=>gearMove(p,{h:hi,i:i}));
       gs.appendChild(cell);
     }
     rs.appendChild(box);
@@ -9735,8 +9776,11 @@ function drawGear(app){
       <div class="gi">${rewardIcon(it)}</div><b>${esc(it.n)}</b>
       <span class="gg">${esc(it.g)}</span></div>`);
     c.onclick=()=>{ run.gearPick=on?null:{from:"bag",i:i}; render() };
+    dragFrom(c,{from:"bag",i:i});
     bag.appendChild(c);
   });
+  bag.classList.add("bagdrop");
+  dropTo(bag,p=>gearMove(p,{bag:1}));
   wrap.appendChild(bag);
   const back=el(`<div style="margin-top:24px"><button class="go">정리를 마친다</button></div>`);
   back.querySelector("button").onclick=()=>{ run.gearPick=null; view="camp"; render() };
@@ -9864,6 +9908,22 @@ function drawForge(app){
     wrap.appendChild(dx); }
 
   const stock=forgeStock();
+  /* 재료 칸 둘 — 끌어다 놓거나, 아래 재료를 눌러도 여기에 들어온다 */
+  { const fs=el(`<div class="forgeslots"></div>`);
+    for(let k=0;k<2;k++){
+      const key=run.forgePick[k], e=key&&stock.find(x=>x.key===key);
+      const c=el(`<div class="fslot ${e?"":"empty"}" title="${e?esc(itemTip(e.it)):"재료를 끌어다 놓으세요"}">
+        ${e?`<div class="gi">${rewardIcon(e.it)}</div><b>${esc(e.it.n)}</b><span class="gg">${esc(e.who)}</span>`
+           :`<span>재료 ${k+1}</span><small>끌어다 놓기</small>`}</div>`);
+      c.onclick=()=>{ if(e){ run.forgePick.splice(run.forgePick.indexOf(key),1); render() } };
+      dropTo(c,p=>{ if(!p||!p.forge) return;
+        const other=run.forgePick.filter(x=>x&&x!==p.forge);          /* 같은 것을 두 칸에 넣지 않는다 */
+        run.forgePick=k===0?[p.forge].concat(other.slice(0,1)):other.slice(0,1).concat([p.forge]);
+        SFX.play("pick"); render() });
+      fs.appendChild(c);
+      if(k===0) fs.appendChild(el(`<span class="fplus">+</span>`));
+    }
+    wrap.appendChild(fs); }
   /* 지금 하나를 골랐다면, 그것과 붙는 것들만 켜 준다 */
   const solo=(run.forgePick.length===1&&picked.length===1)?picked[0].it.n:null;
   const mateOf=k=>{ const e=stock.find(x=>x.key===k); return !!(e&&solo&&findRecipe(solo,e.it.n)) };
@@ -9898,6 +9958,7 @@ function drawForge(app){
       else if(run.forgePick.length<2){ SFX.play("pick"); run.forgePick.push(e.key) }
       render();
     };
+    if(!on) dragFrom(c,{forge:e.key});
     row.appendChild(c);
   });
   if(!any) wrap.appendChild(el(`<p class="hint" style="margin-top:20px">제련할 수 있는 재료가 없습니다.</p>`));
