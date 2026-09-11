@@ -813,6 +813,8 @@ button.dtl{padding:3px 10px;font-size:11.5px}
 /* 보상 화면 위의 경험치 바 */
 .expwrap{max-width:420px;margin:0 auto 16px;display:flex;align-items:center;gap:10px}
 .expwrap .expn{font-size:11.5px;color:var(--dim);white-space:nowrap}
+.expwrap .expart{height:46px;display:flex;align-items:flex-end;flex:0 0 auto}
+.expwrap .expart img.pxs,.expwrap .expart svg{height:calc(44px * var(--ph,1));width:auto;image-rendering:pixelated}
 .expwrap .expbar{flex:1;height:12px;border-radius:3px;background:#0c0a09;
   border:1px solid var(--rule2);overflow:hidden}
 .expwrap .expbar i{display:block;height:100%;background:linear-gradient(90deg,#7fd39a,#a8e6b8);
@@ -6053,9 +6055,9 @@ function hasLimitSkill(h){
     ||(s.opts||[]).some(o=>o&&(o.limit>0||(o.alt&&o.alt.limit>0))));
   return h.sk.some(any);
 }
-/* 보상 설명 가운데 기획용 메모 줄('*…등장하지 않음')은 화면에서 뺀다 — 칩(한 번만·필요)이 그 뜻을 대신 보여 준다 */
+/* 보상 설명 가운데 '*' 로 시작하는 줄은 기획용 메모다 — 화면에서 다 뺀다 (칩 '한 번만'·'필요' 가 조건을 보여 준다) */
 function rewDesc(d){
-  return String(d||"").split("\n").filter(l=>!/^\s*\*.*등장하지 않음/.test(l)).join("\n").replace(/\n+$/,"");
+  return String(d||"").split("\n").filter(l=>!/^\s*\*/.test(l)).join("\n").replace(/\n+$/,"");
 }
 /* 보상 칸에 조건을 적어 준다 */
 function rewCondHtml(r){
@@ -8042,7 +8044,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=261;
+const BUILD_NO=262;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -15642,7 +15644,7 @@ function heroPanel(h){
 function expBar(h){
   if(!h) return "";
   const need=needExp(h.lv), pct=Math.min(100,Math.round(h.exp/need*100));
-  return `<div class="expwrap"><div class="expn">${esc(h.name)} — Lv.${h.lv}</div>
+  return `<div class="expwrap"><div class="expart">${figure(h.name)}</div><div class="expn">${esc(h.name)} — Lv.${h.lv}</div>
     <div class="expbar"><i style="width:${pct}%"></i></div>
     <div class="expv">${h.exp}/${need}</div></div>`;
 }
