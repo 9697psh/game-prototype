@@ -883,19 +883,21 @@ button.dtl{padding:3px 10px;font-size:11.5px}
 .field.spot .slot.spot-foe{opacity:1;filter:brightness(1.35) saturate(1.1);transform:scale(1.08);z-index:39;
   border-color:#e05a5a;box-shadow:0 0 0 1px #e05a5a,0 0 30px rgba(224,90,90,.55)}
 .field.spot .mid{opacity:.3;transition:opacity .45s}
-/* 처치 임팩트 효과 — 덮개 */
-.kimp{position:fixed;inset:0;z-index:900;background:rgba(0,0,0,0);pointer-events:none;
-  transition:background .45s ease}
-.kimp.on{background:rgba(0,0,0,.93)}
-.kimp.off{background:rgba(0,0,0,0);transition:background .35s ease}
-.kimp.off .kimp-card{opacity:0;transition:opacity .3s}
-.kimp .kimp-card{position:fixed;margin:0;transform-origin:50% 50%;transition:transform .55s cubic-bezier(.2,.9,.25,1.05);
-  box-shadow:0 0 0 1px var(--brass),0 0 48px rgba(201,162,39,.55);border-color:var(--brass);background:var(--panel);opacity:1}
-.kimp .kimp-card.kimp-dead{border-color:#e05a5a;box-shadow:0 0 0 1px #e05a5a,0 0 44px rgba(224,90,90,.6);
-  display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:10px}
-.kimp .kimp-card.kimp-dead .art{filter:saturate(.5) brightness(.85)}
-.kimp .kimp-bark{position:fixed;transform:translate(-50%,-100%) scale(1.15);z-index:950}
-.kimp .kimp-card .incm,.kimp .kimp-card .hitpv{display:none}
+/* 처치 임팩트 효과 — 전장 자체가 움직인다 (--kd 는 전환 시간, 연출 빠르게면 반)
+   내 전장 : 커지며 오른쪽으로. 그 대원 칸은 더 크고 밝게.
+   적 전장 : 작아지며 오른쪽으로. 그 적 칸은 대원의 절반만큼 커진다. 나머지 칸은 어둡게 */
+.field.kimp{overflow:visible}
+.field.kimp .side{transition:transform var(--kd,.5s) cubic-bezier(.2,.9,.25,1)}
+.field.kimp .side.k-mine{transform:translateX(34px) scale(1.12);transform-origin:50% 100%;z-index:5;position:relative}
+.field.kimp .side.k-foe{transform:translateX(44px) scale(.88);transform-origin:50% 100%}
+.field.kimp .slot{transition:transform var(--kd,.5s) cubic-bezier(.2,.9,.25,1),opacity var(--kd,.5s),filter var(--kd,.5s);
+  opacity:.45;filter:saturate(.4) brightness(.7)}
+.field.kimp .slot.k-hero{opacity:1;filter:brightness(1.18);transform:scale(1.22) translateY(-6px);z-index:40;
+  border-color:var(--brass);box-shadow:0 0 0 1px var(--brass),0 0 40px rgba(201,162,39,.6)}
+.field.kimp .slot.k-dead{opacity:1;filter:brightness(1.25) saturate(1.05);transform:scale(1.11) translateY(-3px);z-index:39;
+  border-color:#e05a5a;box-shadow:0 0 0 1px #e05a5a,0 0 30px rgba(224,90,90,.6)}
+.field.kimp .mid{opacity:.25;transition:opacity var(--kd,.5s)}
+@media (prefers-reduced-motion: reduce){ .field.kimp .side,.field.kimp .slot{transition:none} }
 .slot .art.spotdead{position:absolute;left:0;right:0;top:auto;bottom:10px;height:auto;filter:saturate(.5) brightness(.85);
   animation:spotDead 1.2s ease-in forwards}
 .slot .art.spotdead .nm{position:absolute;top:-22px;left:0;right:0;text-align:center;font-size:11px;color:var(--dim)}
@@ -8121,7 +8123,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=271;
+const BUILD_NO=272;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -11565,40 +11567,29 @@ function bark(u,cat,force){
    기술 창·손패는 덮개 아래에 묻힌다. KIMP=0 이면 아무 일도 없다 */
 function spotFX(slot,foeSlot,foeName,barkU,barkLine){
   if(!KIMP) return;
-  const a=ctrOf("mine",slot); if(!a||!a.e) return;
-  const b=ctrOf("foe",foeSlot);
-  const ra=a.e.getBoundingClientRect();
-  const rb=(b&&b.e)?b.e.getBoundingClientRect():ra;
-  const ov=el(`<div class="kimp"></div>`);
-  const ca=a.e.cloneNode(true);
-  ca.classList.remove("pick","drop","inrng","shake","flashd","flashb","soft","spot-hero");
-  ca.classList.add("kimp-card");
-  ca.style.cssText=`left:${ra.left}px;top:${ra.top}px;width:${ra.width}px;height:${ra.height}px`;
-  const cb=el(`<div class="slot kimp-card kimp-dead"><span class="no">${foeNo(foeSlot)}</span>
-    <div class="art">${foeName?figure(foeName,"hurt"):""}</div><div class="nm">${esc(foeName||"")}</div>
-    <div class="mini"><span class="chip deb">처치</span></div></div>`);
-  cb.style.cssText=`left:${rb.left}px;top:${rb.top}px;width:${ra.width}px;height:${ra.height}px`;
-  ov.appendChild(ca); ov.appendChild(cb);
-  document.body.appendChild(ov);
-  /* 목표 — 화면 한가운데, 둘이 나란히. 확대는 1.9배 */
-  const W=innerWidth||1200, H=innerHeight||700;
-  const Z=Math.max(1.2,Math.min(1.9,(H*0.78)/Math.max(1,ra.height)));   /* 작은 창에서는 덜 키운다 — 잘리지 않게 */
-  const gap=28, w=ra.width*Z, h=ra.height*Z;
-  const cy=H/2-h/2;
-  const ax=W/2-gap/2-w, bx=W/2+gap/2;
-  const mv=(elm,r,tx,ty)=>{ elm.style.transform=`translate(${tx-r.left}px,${ty-r.top}px) scale(${Z})` };
-  setTimeout(()=>{ ov.classList.add("on");
-    mv(ca,ra,ax+(w-ra.width)/2,cy+(h-ra.height)/2);
-    mv(cb,rb,bx+(w-ra.width)/2,cy+(h-ra.height)/2); },30);
-  /* 화면 떨림 — 모인 순간에 */
+  const fld=document.querySelector(".field"); if(!fld) return;
+  const my=fld.querySelector(".side.mine"), fs=fld.querySelector("#foeSide");
+  const a=ctrOf("mine",slot), b=ctrOf("foe",foeSlot);
+  if(!my||!fs||!a||!a.e) return;
+  const k=SPD;                                   /* 연출 빠르게면 0.5 — 전환도 붙드는 시간도 반 */
+  fld.style.setProperty("--kd",(0.5*k)+"s");
+  fld.classList.add("kimp");
+  my.classList.add("k-mine"); fs.classList.add("k-foe");
+  a.e.classList.add("k-hero");
+  let ghost=null;
+  if(b&&b.e){ b.e.classList.add("k-dead");
+    /* 쓰러진 적은 이미 치워졌다 — 그 자리에 맞는 자세로 다시 세운다 */
+    if(foeName&&!b.e.querySelector(".art")){
+      ghost=el(`<div class="art spotdead"><div class="nm">${esc(foeName)}</div>${figure(foeName,"hurt")}</div>`);
+      b.e.appendChild(ghost) } }
+  /* 화면 떨림 — 모인 순간 */
   setTimeout(()=>{ document.body.classList.remove("shakeall"); void document.body.offsetWidth;
-    document.body.classList.add("shakeall"); setTimeout(()=>document.body.classList.remove("shakeall"),620) },420);
-  /* 처치 대사 — 대원 베낀 칸 위에, 크게 */
-  if(barkLine) setTimeout(()=>{
-    const bk=el('<div class="bark big kimp-bark">'+rich(barkLine)+'</div>');
-    bk.style.left=(ax+w/2)+"px"; bk.style.top=Math.max(70,cy-14)+"px";
-    ov.appendChild(bk) },430);
-  setTimeout(()=>{ ov.classList.add("off"); setTimeout(()=>ov.remove(),380) },1500);
+    document.body.classList.add("shakeall"); setTimeout(()=>document.body.classList.remove("shakeall"),620*k) },380*k);
+  /* 처치 대사 — 크게 */
+  if(barkLine&&barkU) setTimeout(()=>barkShow(barkU,barkLine,Date.now(),1),400*k);
+  setTimeout(()=>{ fld.classList.remove("kimp"); my.classList.remove("k-mine"); fs.classList.remove("k-foe");
+    a.e.classList.remove("k-hero"); if(b&&b.e) b.e.classList.remove("k-dead");
+    if(ghost) setTimeout(()=>ghost.remove(),400*k) },1400*k);
 }
 /* 대사 한 줄 고르기 (띄우지는 않는다) — barkPick 과 같은 주머니 */
 function barkLine(u,cats){
@@ -13390,7 +13381,7 @@ function onKill(by,f,tag){
   /* 대원이 직접 처치 — 조명 + 처치 대사(반드시, 크게). 환영을 쓰러뜨린 것은 뺀다 */
   if(!by.isMin&&by.slot>0&&f&&!f.isPhantom){
     const cats=["kill:"+tag].concat((f.demon||foeRace(f)==="악마")?["kill:악마"]:[]).concat(["kill"]);
-    fx({side:"mine",slot:by.slot,spot:f.slot,foeName:f.name,barkU:by,barkLine:barkLine(by,cats),gap:KIMP?1700:200});
+    fx({side:"mine",slot:by.slot,spot:f.slot,foeName:f.name,barkU:by,barkLine:barkLine(by,cats),gap:KIMP?Math.round(1600*SPD):200});
   }
   if(by.name==="굴라"&&tag==="씹어먹기"&&by.tag.chompKillHeal&&by.hp>0){
     const got=healUp(by,by.tag.chompKillHeal);
