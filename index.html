@@ -8339,7 +8339,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=287;
+const BUILD_NO=288;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -11378,9 +11378,11 @@ const foeAt=s=>B.foes.find(f=>f.alive&&f.slot===s);
 const allyAt=s=>run.heroes.find(h=>h.slot===s&&h.hp>0);
 const minAt=s=>(B.mins||[]).find(m=>m.alive&&m.slot===s);
 const unitAt=s=>allyAt(s)||minAt(s);
-/* 사람을 쫓는 적인가 — ai 에 chase:1 을 적은 놈만 그렇다.
-   나머지는 칸을 겨누므로, 그 칸에서 빠지면 헛질한다. */
+/* 사람을 쫓는 적인가 — ai 에 chase:1 을 적은 놈은 모든 수가 쫓는다.
+   그 밖의 적도 **수마다** 갈린다 (intent.chase) — 약점 노리기·난타·쌍격·달려들기는 쫓고,
+   내려찍기·후방 급습·연타는 칸을 친다. 칸을 친 수는 그 칸에서 빠지면 빗나간다. */
 const chases=f=>!!((FOE[f&&f.name]||{}).ai||{}).chase;
+const intentChases=(f,I)=>!!(I&&I.chase)||chases(f);
 /* 쓰러진 대원. 그 칸을 차지할 뿐, 주고받는 것은 아무것도 없다.
    자리는 slot 이 아니라 downSlot 에 들고 있다 — 전장에 선 대원을 세는 모든
    계산(탐욕·감염·턴 시작 효과·경험치)에서 몸이 끼지 않게 하기 위해서다. */
@@ -11628,21 +11630,24 @@ function rollIntents(){
     const EL=(FOE[f.name]&&FOE[f.name].el)||"공격";
     /* 안 적은 것은 안 한다. 예전에는 heal·curse 가 기본값이라 누구나 했다 —
        그 탓에 늑대가 서로를 돌보고 잡졸이 저주를 걸었다. */
-    const A=Object.assign({near:8,weak:4,back:2,any:2,def:1,
+    const A=Object.assign({near:6,weak:5,back:2,any:3,def:1,
                            volley:0,buff:0,heal:0,curse:0,combo:0,twin:0,debs:[]},D);
     const hit=(FOE[f.name]&&FOE[f.name].hit)||"내려찍기";
     /* 사람을 쫓는 적은 uid 도 함께 적어 둔다 — 그 사람이 어디로 가든 따라간다 */
-    add({t:"atk",v:dv(f.atk),to:near.slot,toId:uid(near),pat:FP+hit,el:EL,far:far},A.near);
-    add({t:"atk",v:dv(f.atk*1.35),to:weak.slot,toId:uid(weak),pat:FP+"약점 노리기",el:EL,far:far},A.weak);
+    /* 칸을 치는 수와 사람을 쫓는 수 — 사람을 쫓는 쪽이 더 많아야 한다. 이동만으로 다 피해지면 싱겁다 */
+    const nearW=Math.max(0,A.near), nearHalf=Math.round(nearW*0.6);   /* 내려찍기 4 : 달려들기 6 */
+    add({t:"atk",v:dv(f.atk),to:near.slot,toId:uid(near),pat:FP+hit,el:EL,far:far},nearW-nearHalf);
+    add({t:"atk",v:dv(f.atk),to:near.slot,toId:uid(near),pat:FP+"달려들기",el:EL,far:far,chase:1},nearHalf);
+    add({t:"atk",v:dv(f.atk*1.35),to:weak.slot,toId:uid(weak),pat:FP+"약점 노리기",el:EL,far:far,chase:1},A.weak);
     add({t:"atk",v:dv(f.atk),to:back.slot,toId:uid(back),pat:FP+"후방 급습",el:EL,far:far},A.back);
-    add({t:"atk",v:dv(f.atk),to:any.slot,toId:uid(any),pat:FP+"난타",el:EL,far:far},A.any);
+    add({t:"atk",v:dv(f.atk),to:any.slot,toId:uid(any),pat:FP+"난타",el:EL,far:far,chase:1},A.any);
     /* 연타·쌍격 — 같은 총량을 여러 번에 나눠 때린다. 가시·갑피·공격 강화가 크게 작용한다.
        예전에는 near/weak 에서 저절로 나와 **모든 적이** 이 둘을 갖고 있었다.
        지금은 ai 에 combo/twin 을 적은 적만 한다. */
     if(A.combo){ const n3=3, p3=Math.max(1,Math.round(f.atk*FM/n3));
       add({t:"atk",v:p3,hits:n3,to:near.slot,toId:uid(near),pat:FP+"연타",el:EL,far:far},A.combo) }
     if(A.twin){ const n2=2, p2=Math.max(1,Math.round(f.atk*1.2*FM/n2));
-      add({t:"atk",v:p2,hits:n2,to:weak.slot,toId:uid(weak),pat:FP+"쌍격",el:EL,far:far},A.twin) }
+      add({t:"atk",v:p2,hits:n2,to:weak.slot,toId:uid(weak),pat:FP+"쌍격",el:EL,far:far,chase:1},A.twin) }
     add({t:"def",v:defVal(f)},far?A.def+1:A.def);
     /* 가시는 두르는 턴을 빼고 두 턴. 3턴은 되받는 구간이 너무 길어
        '때릴 수 있는 턴' 보다 '못 때리는 턴' 이 많아졌다. */
@@ -11976,12 +11981,12 @@ function intentHtml(f){
       esc((I.pat||"")+" · "+(I.el||"공격"))}${e<I.v?` · 약화로 ${I.v} → ${e}`:""}">${
       ic(I.el==="마법"?"mag":"atk")}<b>${e}</b>${e<I.v?`<s>${I.v}</s>`:""}${
       I.hits>1?`<span class="hits">×${I.hits}</span>`:""} ${(()=>{
-        /* 쫓는 적은 사람 이름을 적는다 — 자리를 옮겨도 따라오니 칸을 적으면 거짓말이 된다 */
-        if(chases(f)&&I.toId){
+        /* 쫓는 수는 사람 이름을 적는다 — 자리를 옮겨도 따라오니 칸을 적으면 거짓말이 된다 */
+        if(intentChases(f,I)&&I.toId){
           const p=allUnits().find(x=>uid(x)===I.toId&&x.hp>0);
           if(p) return `<span class="tgt chase" title="자리를 옮겨도 쫓아옵니다. 사거리 밖으로 달아나야 놓칩니다">↝ ${esc(p.name)}</span>`;
         }
-        return `<span class="tgt" title="이 칸을 칩니다. 자리를 옮기면 헛질합니다">→ ${I.to}번</span>`;
+        return `<span class="tgt" title="이 칸을 칩니다. 자리를 옮기면 빗나갑니다">→ ${I.to}번</span>`;
       })()}</span>`;
   }
   return `<span class="intent">대기</span>`;
@@ -13586,7 +13591,11 @@ function incoming(){
     const purging=f.boss&&f.intent.t==="purge"&&f.intent.k!=="ward";
     if(stunned&&!purging) return;
     if(f.intent.t==="atk"){
-      let t=unitAt(f.intent.to)||list.filter(canAim)[0]||list[0];
+      let t=(intentChases(f,f.intent)&&f.intent.toId)
+        ? (list.find(x=>uid(x)===f.intent.toId&&x.hp>0)||null)
+        : (unitAt(f.intent.to)||null);
+      if(!t&&!intentChases(f,f.intent)) return;               /* 빈 칸을 치는 수 — 아무도 안 맞는다 */
+      if(!t) t=list.filter(canAim)[0]||list[0];
       const wall=t&&tauntWall(t);
       if(wall) t=wall;
       if(!t) return;
@@ -15629,19 +15638,19 @@ function foePhase(){
     }
     else if(f.intent.t==="atk"){
       let t=null;
-      if(chases(f)&&f.intent.toId){
-        /* 쫓는 적 — 그 사람이 어디로 갔든 따라간다 */
+      if(intentChases(f,f.intent)&&f.intent.toId){
+        /* 쫓는 수 — 그 사람이 어디로 갔든 따라간다 */
         t=allUnits().find(x=>uid(x)===f.intent.toId&&x.hp>0)||null;
         if(t&&!f.intent.far&&dist(t.slot,f.slot)>f.rng){
           say(`${f.name}${jo(f.name,"ig")} ${t.name}${jo(t.name,"eul")} 쫓았지만 닿지 못합니다.`,"t2");
           fx({side:"foe",slot:f.slot,txt:"놓침",cls:"miss",gap:120}); return }
       }else{
-        /* 칸을 겨누는 적 — 그 칸이 비었으면 헛질한다.
+        /* 칸을 겨누는 수 — 그 칸이 비었으면 빗나간다.
            예전에는 슬그머니 맨 앞 대원으로 옮겨 가서, 자리를 옮겨 피할 수가 없었다. */
         t=unitAt(f.intent.to)||null;
         if(!t){
-          say(`${f.name}${jo(f.name,"ig")} 빈 ${f.intent.to}번 칸을 칩니다 — 헛질.`,"t2");
-          fx({side:"mine",slot:f.intent.to,txt:"헛질",cls:"miss",gap:130}); return }
+          say(`${f.name}${jo(f.name,"ig")} 빈 ${f.intent.to}번 칸을 칩니다 — 빗나감.`,"t2");
+          fx({side:"mine",slot:f.intent.to,txt:"빗나감",cls:"miss",gap:130}); return }
       }
       if(!t) return;
       const wall=tauntWall(t);
