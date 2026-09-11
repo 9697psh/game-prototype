@@ -8358,7 +8358,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=299;
+const BUILD_NO=300;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -13666,8 +13666,9 @@ function predictDmg(h,s,tgt){
   dmg=Math.max(0,Math.round(dmg));
   /* 보호막을 얼마나 뚫고 체력까지 닿는지 */
   let PR=0;
-  if(s.pierce===true||h.pierceNext) PR=Math.max(PR,50);
+  if(s.pierce===true) PR=100;
   else if(s.pierce) PR=Math.max(PR,+s.pierce);
+  if(h.pierceNext) PR=Math.max(PR,50);
   if(s.el!=="마법"){ PR+=itemBt(h,"pierce"); if(tgt.taunt) PR+=itemBt(h,"tauntPierce") }
   PR=pierceRate(PR);
   const thru=Math.round(dmg*PR/100);
@@ -15368,8 +15369,10 @@ function runEffect(h,i,s,target){
         fx({side:"foe",slot:tgt.slot,arrow:{side:"mine",slot:h.slot,who:h.name},gap:0});
       const was=tgt.alive;
       let PR=0;
-      if(s.pierce===true||h.pierceNext) PR=Math.max(PR,50);
+      /* pierce:true = 관통 피해 — 보호막을 아예 무시하고 체력으로 (사용자 2026-09-12 · 전엔 절반이었다). 숫자면 그 % */
+      if(s.pierce===true) PR=100;
       else if(s.pierce) PR=Math.max(PR,+s.pierce);
+      if(h.pierceNext) PR=Math.max(PR,50);
       if(s.el!=="마법"){
         PR+=itemBt(h,"pierce");
         if(tgt.taunt) PR+=itemBt(h,"tauntPierce");
