@@ -707,6 +707,7 @@ button.dtl{padding:3px 10px;font-size:11.5px}
   50%{text-shadow:0 0 22px rgba(201,162,39,.75)}}
 .evq{font-style:normal;font-weight:700;color:#f0e2c0;text-shadow:0 0 12px rgba(201,162,39,.45)}
 .evk{font-weight:800;font-size:1.09em;color:#f0e2c0}
+.evopts .choice .evcond{display:block;margin-top:3px;font-size:10.5px;color:var(--faint)}
 /* 글자 떨림·물결 (rich 의 <shake> <wave>) */
 .tx-shake,.tx-wave{display:inline-block;white-space:pre-wrap}
 .tx-shake i,.tx-wave i{display:inline-block;font-style:inherit}
@@ -2501,6 +2502,13 @@ const EV_KEYS=["오염도","최대 체력","체력","금화","전투","피해","
 const EV_KEY_RE=new RegExp("("+EV_KEYS.join("|")+")","g");
 function evRich(t){
   return rich(t).split(/(<[^>]+>)/).map(seg=>seg.charAt(0)==="<"?seg:seg.replace(EV_KEY_RE,'<b class="evk">$1</b>')).join("");
+}
+/* 선택지 설명 — 맨 뒤의 괄호 (…) 는 조건이다. 작은 글씨로 따로 둔다.
+   앞으로 조건은 이렇게 적는다 : "…얻습니다. (대원 중 굴라가 있다면 선택할 수 있습니다.)" */
+function evOptHtml(d){
+  const m=String(d||"").match(/^([\s\S]*?)\s*\(([^()]+)\)\s*$/);
+  if(!m) return evRich(d);
+  return evRich(m[1])+`<small class="evcond">(${rich(m[2])})</small>`;
 }
 const esc=s=>String(s??"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
 function jo(w,p){const c=String(w||"").trim().slice(-1).charCodeAt(0);
@@ -8077,7 +8085,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=268;
+const BUILD_NO=269;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -8193,8 +8201,8 @@ const TXT_FIX={
  "ev:해시계 파편:o0:d":"시간이 5시간 전으로 되돌려집니다.",
  "ev:해시계 파편:o1:d":"시계는 제련석으로 이루어진 것 같습니다. 시계를 부숴 제련석을 얻습니다.",
  "ev:야행성 짐승 무리:t":"덤불 속에서 여러 쌍의 눈이 이쪽을 봅니다. ",
- "ev:야행성 짐승 무리:o0:d":"(낮에만 고를 수 있습니다.) 무엇인지는 모르겠지만, 조심히 지나갑니다.",
- "ev:야행성 짐승 무리:o1:d":"(밤에만 고를 수 있습니다.) 무엇인지는 모르겠지만, 그냥 지나칠 수는 없습니다. 싸우고 좋은 보상을 얻습니다.",
+ "ev:야행성 짐승 무리:o0:d":"무엇인지는 모르겠지만, 조심히 지나갑니다. (낮에만 고를 수 있습니다.)",
+ "ev:야행성 짐승 무리:o1:d":"무엇인지는 모르겠지만, 그냥 지나칠 수는 없습니다. 싸우고 좋은 보상을 얻습니다. (밤에만 고를 수 있습니다.)",
  "ev:정화의 샘:t":"바위 틈에서 맑은 물이 솟습니다. 균열의 영향이 닿지 않은 것처럼 보입니다.",
  "ev:균열의 목소리:t":"갈라진 틈 속에서 부정적인 기운이 느껴집니다. 누군가의 이름을 부르는 것 같습니다...어디선가 들어본 것 같기도 합니다.",
  "ev:균열의 목소리:o0:d":"궁금함을 참지 못하고 귀를 기울입니다. 오염도가 20 증가하지만 중급 보상을 1개 얻습니다.",
@@ -10277,10 +10285,10 @@ const EVENTS=[
 
  {n:"야행성 짐승 무리",art:"", face:"무시무시한 늑대",
   t:"덤불 속에서 여러 쌍의 눈이 이쪽을 봅니다. 아직 움직이지는 않습니다.",
-  o:[{t:"조심히 지나가기",d:"낮에만 고를 수 있습니다.",when:()=>!run.night,
+  o:[{t:"조심히 지나가기",d:"무엇인지는 모르겠지만, 조심히 지나갑니다. (낮에만 고를 수 있습니다.)",when:()=>!run.night,
       f:()=>{ const g=rr([2,4])*ST(); run.gold+=g;
         return `숨을 죽이고 빠져나왔습니다. 둥지에서 금화 ${g}을 주웠습니다.` }},
-     {t:"코털 건드리기",d:"밤에만 고를 수 있습니다. 싸우고 더 좋은 보상을 받습니다.",when:()=>run.night,
+     {t:"코털 건드리기",d:"무엇인지는 모르겠지만, 그냥 지나칠 수는 없습니다. 싸우고 좋은 보상을 얻습니다. (밤에만 고를 수 있습니다.)",when:()=>run.night,
       f:()=>{ /* 늑대가 앞, 늑대치기가 뒤. 대원이 많을수록 늑대가 는다 */
         const pack=["무시무시한 늑대","늑대치기"];
         const n=Math.min(2,Math.max(0,run.heroes.length-1));
@@ -10405,7 +10413,12 @@ const EVENTS=[
       f:()=>{ addCard(run,"빵",1); addCard(run,"소형 방패",1); addCard(run,"맥주",1);
         return "쓸 만한 것 세 가지를 챙겼습니다." }},
      {t:"고서 읽기",d:"모든 대원이 경험치 8을 얻습니다.",
-      f:()=>{ giveExp(8,run.heroes.filter(h=>!h.down),true); return "낡은 책장을 넘겼습니다. 모두 경험치 8을 얻습니다." }}]}
+      f:()=>{ giveExp(8,run.heroes.filter(h=>!h.down),true); return "낡은 책장을 넘겼습니다. 모두 경험치 8을 얻습니다." }},
+     {t:"먹을게 많군!",d:"두 선택지 보상을 모두 얻습니다. (대원 중 굴라가 있다면 선택할 수 있습니다.)",
+      when:()=>run.heroes.some(h=>h.name==="굴라"&&!h.down),
+      f:()=>{ addCard(run,"빵",1); addCard(run,"소형 방패",1); addCard(run,"맥주",1);
+        giveExp(8,run.heroes.filter(h=>!h.down),true);
+        return "굴라가 수레를 통째로 뒤집니다. 세 가지를 챙기고 책장도 넘겨 모두 경험치 8을 얻습니다." }}]}
 ];
 /* 등장 조건 · 스테이지 배수 · 장신구 꺼내기 */
 const ST=()=>1+run.field;
@@ -10613,7 +10626,7 @@ function drawRelic(app){
   if(e.wheel) row.appendChild(el(rouletteHTML(e,null)));
   e.o.forEach((o,oi)=>{
     const usable=!o.when||o.when();
-    const c=el(`<div class="choice ${usable?"":"no"}"><b>${esc(o.t)}</b><span>${evRich(o.d)}</span>${
+    const c=el(`<div class="choice ${usable?"":"no"}"><b>${esc(o.t)}</b><span>${evOptHtml(o.d)}</span>${
       usable?"":`<span style="color:var(--faint)">지금은 고를 수 없습니다.</span>`}</div>`);
     if(!usable){ row.appendChild(c); return }
     c.onclick=()=>{
