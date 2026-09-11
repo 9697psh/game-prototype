@@ -1868,10 +1868,12 @@ header{align-items:center}
   background-size:64px 64px;background-repeat:no-repeat;image-rendering:pixelated;
   pointer-events:none;z-index:7;animation:triFly .16s linear forwards}
 @keyframes triFly{
-  0%  {transform:translate(0,0) rotate(var(--rot));opacity:0}
+  0%  {transform:translate(0,0) rotate(var(--rot)) scale(var(--z,1));opacity:0}
   18% {opacity:1}
-  100%{transform:translate(var(--dx),var(--dy)) rotate(var(--rot));opacity:1}
+  100%{transform:translate(var(--dx),var(--dy)) rotate(var(--rot)) scale(var(--z,1));opacity:1}
 }
+/* 플레어의 불덩이 — 화살보다 두 배 넘게 크고 조금 느리다. 적 위에 얹히므로 z 도 위 */
+.arrowfly.fire{--z:2.4;animation-duration:.24s;z-index:9}
 /* 화살비 — 화면 밖에서 오므로 같은 그림을 더 오래, 조금 크게 날린다 */
 .arrowfly.rain{animation-duration:.30s;z-index:8}
 /* 새 UI 그림은 32px 원본이다. 늘일 때는 정수 배율 + 또렷하게,
@@ -3612,13 +3614,13 @@ function flareShotFX(side,slot,from){
   const q=from&&ctrOf(from.side,from.slot);
   let wait=0;
   if(fly&&q){
-    const nd=spawn('<div class="arrowfly"></div>');
+    const nd=spawn('<div class="arrowfly fire"></div>');
     if(nd){ at(nd,q); nd.style.backgroundImage="url("+fly+")";
       nd.style.setProperty("--dx",(p.x-q.x)+"px"); nd.style.setProperty("--dy",(p.y-q.y)+"px");
       nd.style.setProperty("--rot",(Math.atan2(p.y-q.y,p.x-q.x)*180/Math.PI)+"deg");
-      setTimeout(()=>nd.remove(),210); wait=150 }
+      setTimeout(()=>nd.remove(),290); wait=220 }
   }
-  setTimeout(()=>{ sheetFX("fx_ff_hit",side,slot,{z:1.5}); const k=sfxOr("플레어와 플로우 불덩이 명중",null); if(k) SFX.play(k) },wait);
+  setTimeout(()=>{ sheetFX("fx_ff_hit",side,slot,{z:2.6,ms:520}); const k=sfxOr("플레어와 플로우 불덩이 명중",null); if(k) SFX.play(k) },wait);
 }
 /* 영혼 수확 — 절규하는 유령들이 발치에서 솟아 몸을 지나 오른다 (art/이펙트/soulgain).
    매번은 셋(fx_soul), 40개째 마법력이 오를 때는 여섯(fx_soulmag).
@@ -8277,7 +8279,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=282;
+const BUILD_NO=283;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
