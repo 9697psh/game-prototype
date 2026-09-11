@@ -173,6 +173,12 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .slot.body .nm{opacity:.7}
 /* 체력이 닳을 때 — 체력바와 같은 박자로 캐릭터도 점멸한다 */
 .art.hpblink > img.pxs,.art.hpblink > svg{animation:sprHurt .58s ease-out}
+/* 공중에 뜸 — 그림이 정말 떠올랐다 내려온다. margin 으로 띄운다 —
+   transform 은 적 svg 의 scale·환영의 뒤집기가, translate 는 nudge 가 쓰고 있다.
+   그림자(.art::after)는 바닥에 남는다. 맞는 연출(hpblink)과 겹치면 둘 다 돈다. */
+.art.lifted > img.pxs,.art.lifted > svg{animation:sprLift .9s cubic-bezier(.3,.75,.35,1)}
+.art.hpblink.lifted > img.pxs,.art.hpblink.lifted > svg{animation:sprLift .9s cubic-bezier(.3,.75,.35,1),sprHurt .58s ease-out}
+@keyframes sprLift{0%{margin-bottom:0}36%{margin-bottom:30px}60%{margin-bottom:27px}100%{margin-bottom:0}}
 @keyframes sprHurt{
   0%  {filter:brightness(3.2) saturate(.3) drop-shadow(0 0 9px rgba(255,90,66,.95))}
   14% {filter:none}
@@ -195,6 +201,7 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
   100%{opacity:0;transform:translate(-50%,-18px) scale(1)}}
 @media (prefers-reduced-motion: reduce){
   .art.hpblink > img.pxs,.art.hpblink > svg{animation:none}
+  .art.lifted > img.pxs,.art.lifted > svg{animation:none}
   .art .shpop{animation-duration:.4s}}
 .slot.foe .art img.pxs{filter:saturate(.62) contrast(1.14) brightness(.92)
   drop-shadow(0 0 7px rgba(142,43,43,.4))}
@@ -2975,6 +2982,8 @@ function playFX(o){
   if(o.mhit) magicHitFX(o.side,o.slot);
   if(o.expgain) expGainFX(o.side,o.slot);
   if(o.burn) burnFX(o.side,o.slot);
+  if(o.lift) liftFX(o.side,o.slot);
+  if(o.fn) o.fn();
   /* 깃발로 건다 — art: 를 쓰면 문지기(ART[o.art])를 또 고쳐야 한다.
      o.blowup 이 s.burst(인비디아 숙주 폭발)와 다른 이름인 까닭이기도 하다 */
   if(o.swell) swellFX(o.side,o.slot);
@@ -4713,13 +4722,13 @@ HEROES["도미니코"]={title:"왕실의 사서",role:"지원 · 축복",hp:20,m
 /* 기술 원문 — 기획노트 그대로. 고치려면 노트에서 고치세요 */
 const SKILL_FULL={
  "가시 꼬리":"피해를 1(추가 ∴ ) 줍니다. 대상과 떨어진 거리만큼 _비늘 조각_을 얻습니다. ",
- "감싸주기":"잠금 (1). 아군에게 부정 보호막을 1 부여합니다.",
+ "감싸주기":"잠금(1). 아군에게 부정 보호막을 1 부여합니다.",
  "갑옷 장착":"무작위 [방어구 카드]를 가져옵니다.",
  "강철 각반":"모든 아군 대원에게 보호막을 5 부여합니다.",
  "강철 갑옷":"아군 대원에게 보호막을 12 부여합니다.",
  "강철 군화":"아군 대원에게 보호막을 8, 추진력을 2, 공격력을 2 부여합니다.",
  "강철 투구":"아군 대원에게 보호막을 8 부여하고, 다음 내 턴가 시작될 때도 보호막을 8 부여합니다.",
- "고대수목의 씨앗":"잠금 (1). 체력이 가장 높은 적에게 피해를 30(추가 ∴의 2배 ) 줍니다.",
+ "고대수목의 씨앗":"잠금(1). 체력이 가장 높은 적에게 피해를 30(추가 ∴의 2배 ) 줍니다.",
  "공포 태세":"보호막을 10(추가 ¤ ) 얻고, 다음 턴까지 피해를 받을 때마다 모든 적에게 공포와 공격약화를 1 부여합니다.",
  "굳건한 성벽":"사용한도(2). 성벽 카드를 가져옵니다. ",
  "균열 차원문":"대상 위치에 차원문을 생성합니다. 차원문 위의 대상에 따라 효과가 부여됩니다.\n- 대상이 적이면 턴 종료시 피해를 3(추가 ∴ ) 줍니다.\n- 대상이 아군이면 턴 시작시 보호막을 3(추가 ¤ ) 얻습니다.\n이미 차원문이 있는 자리에 재사용시 악마 하수인 카드를 가져옵니다.",
@@ -4727,7 +4736,7 @@ const SKILL_FULL={
  "급습":"은신 상태에서 다음 공격 피해는 치명타로 적용됩니다.",
  "기류 흘리기":"회피를 1 얻습니다. 이번 턴에 기류 흘리기의 비용이 1 증가합니다.",
  "꾸준한 독서":"일터에서 성서를 얻을 수 있습니다.\n성서는 재화로 환전하거나, 추가 보호력을 주는 장신구으로 바꿀 수 있습니다.",
- "꿰뚫는 화살":"잠금 (1). 관통 피해를 10 줍니다.",
+ "꿰뚫는 화살":"잠금(1). 관통 피해를 10 줍니다.",
  "날카로운 음율":"적들에게 피해를 1(추가 ∴ ) 주는 _음율_을 노래합니다.",
  "내 편은 없다":"이 대원이 주둔지에 있을 동안, 전투 시작시 아군들에게서 1의 최대 체력을 빼앗아옵니다.",
  "녹슨 성장":"모든 아군에게 이번 전투 동안 마법력 1, 보호력 1을 부여합니다.",
@@ -4756,7 +4765,7 @@ const SKILL_FULL={
  "부정의 노래":"부정적인 효과를 부여하는 _음율_을 선택하여 시전합니다.",
  "비늘 폭발":"사용한도(1). _비늘 조각_을 모두 소모하여 그 수*( )*만큼 모든 적에게 피해를 줍니다.",
  "빵":"아군 대상의 체력을 1 회복시킵니다.",
- "사형 선고":"전투 시작시 2턴 잠금된 상태로 시작합니다.\n우두머리가 아닌 대상을 처치하고 50%의 체력을 가진 상태로 부활시킵니다. *(전투당 1회)*\n\n아군이면 마법력 2를 부여합니다.\n적군이면 2턴간 공포를 부여합니다.",
+ "사형 선고":"사용한도(1). 대원 배치 시 3턴 잠금된 상태로 시작합니다.\n우두머리가 아닌 대상을 처치하고 50%의 체력을 가진 상태로 부활시킵니다.\n\n아군이면 마법력 2를 부여합니다.\n적군이면 2턴간 공포를 부여합니다.",
  "산들바람":"1칸 이동하고, 추진력을 1 얻습니다. 다음 진선풍도의 거리와 피해량이 1 증가합니다.",
  "생기 갈취":"다음 기술이 흡수 +20%를 얻습니다.\n\n그림자가 있는 상태라면 그림자가 있는 위치로 이동하고, 다음 기술이 관통 +50%도 얻습니다.",
  "생명의 음율":"체력이 가장 낮은 아군의 체력을 3 회복시키는 _음율_을 노래합니다.",
@@ -4765,10 +4774,10 @@ const SKILL_FULL={
  "소형 방패":"아군 대원에게 보호막을 5 부여합니다.",
  "속임수 태세":"악몽 태세와 공포 태세 중 선택하여 시전합니다.\n어떤 태세를 선택했는지 적에게 알려지지 않습니다.",
  "수축 공격":"피해를 2(추가 ∴ ) 줍니다. *(거리 2)*",
- "숙주 폭발":"잠금 (2). 적들에게 피해를 3(추가 ∴ + 감염 중첩의 2배 ) 주고, 감염 중첩을 모두 제거합니다.",
- "순환의 선율":"잠금 (2). 이번 음율란은 리페가 _음율_을 모두 노래한 후, 역방향으로 _음율_을 한 번 더 노래합니다.",
- "승리의 일격":"잠금 (1). 피해를 20(추가 † ≡ ) 줍니다.\n이 기술로 소환물이 아닌 적을 처치할때마다 베기의 피해량이 영구적으로 1 증가합니다.",
- "시공간 폭탄":"잠금 (1). 모든 적에게 _정밀 표식_을 남기고, 위치를 무작위로 이동시킵니다.",
+ "숙주 폭발":"잠금(2). 적들에게 피해를 3(추가 ∴ + 감염 중첩의 2배 ) 주고, 감염 중첩을 모두 제거합니다.",
+ "순환의 선율":"잠금(2). 이번 음율란은 리페가 _음율_을 모두 노래한 후, 역방향으로 _음율_을 한 번 더 노래합니다.",
+ "승리의 일격":"잠금(1). 피해를 20(추가 † ≡ ) 줍니다.\n이 기술로 소환물이 아닌 적을 처치할때마다 베기의 피해량이 영구적으로 1 증가합니다.",
+ "시공간 폭탄":"잠금(1). 모든 적에게 _정밀 표식_을 남기고, 위치를 무작위로 이동시킵니다.",
  "쓰담쓰담":"피해를 2(추가 ∴ ) 줍니다. 보호막을 1(추가 ¤ ) 얻습니다. ",
  "씹어먹기":"피해를 4(추가 † ) 주고, 체력을 2 회복합니다.",
  "악마 하수인":"굴라의 균열 차원문을 이미 차원문이 있는 자리에 재사용하면 가져옵니다.",
@@ -4776,27 +4785,27 @@ const SKILL_FULL={
  "악몽 태세":"보호막을 10(추가 ¤ ) 얻고, 다음 턴까지 피해를 받을 때마다 모든 적에게 피해를 4(추가 † ) 줍니다.",
  "어둠 증식":"사용한도(2). 대상 위치에 어두운 그림자를 남깁니다. 그림자가 이미 있었다면 어두운 그림자로 교체합니다. \n어두운 그림자로 이동하면, 다음 상대 턴에 은신 대신 도발과 갑피 4를 얻습니다.",
  "에너지 융합봉":"수축 공격과 팽창 공격 중 선택하여 시전합니다.",
- "영광의 족쇄":"잠금 (1). 추가 공격력과 마법력을 보호력으로 전환합니다.\n가장 가까운 적을 기절시키고 피해를 8(추가 ¤ ) 줍니다.\n\n_독서 중첩_을 1 얻습니다.\n\n_축복 상태_라면 모든 적을 기절시킵니다.",
+ "영광의 족쇄":"잠금(1). 추가 공격력과 마법력을 보호력으로 전환합니다.\n가장 가까운 적을 기절시키고 피해를 8(추가 ¤ ) 줍니다.\n\n_독서 중첩_을 1 얻습니다.\n\n_축복 상태_라면 모든 적을 기절시킵니다.",
  "영광의 휘장":"아군 대원에게 피해를 4주고 회피를 1 부여합니다.",
  "영혼 분리":"잠금(3). 선택한 자리에 체력이 가장 낮은 적의 환영을 소환합니다.\n환영은 적과 같은 체력을 지니고, 아무 행동도 하지 않습니다.\n처치되면 원래 적에게 피해 4(추가 ∴ +대상 최대 체력의 10%)를 줍니다.\n\n환영으로 얻을 수 있는 영혼은 1개입니다.\n\n영혼 40개당 최대 체력 비례 피해량이 2.5% 증가합니다.\n\n환영이 내 전장에 소환되면 도발을 얻습니다.\n환영은 전장에 최대 하나만 활성화할 수 있습니다.\n환영은 원래 적이 죽을 시 같이 죽습니다.",
  "영혼 수확":"대상이 죽을 때마다 영구히 영혼을 얻습니다.\n일반 적(1개), 정예 적(5개), 우두머리 적(10개)\n아군 소환물(1개), 아군 대원(5개)\n\n얻은 영혼의 개수에 따라 추가 능력치를 얻습니다.\n영혼 40개당 마법력 1을 얻습니다. 얻은 마법력*( )*",
  "영혼 충격":"이 대원이 주둔지에 있을 동안, 전투 시작시 모든 적에게 피해를 2(추가 ∴ ) 줍니다.",
  "왕실 지혜 도서관":"도미니코는 기술을 사용할때마다 _독서_ 중첩을 얻습니다.\n_독서_ 중첩이 10이 되면 중첩을 모두 소모하고 _축복 상태_가 되어 다음 기술을 1회 강화합니다. 얻은 독서 중첩 *( )*",
  "융합":"아군 전장에 있는 모든 소환물을 처치합니다.\n처치한 소환물들의 체력만큼 굴라가 체력을 얻습니다. \n처치한 소환물 하나 당 굴라가 공격력, 마법력, 보호력을 3 얻습니다.",
- "응축 폭발":"잠금 (3). 2턴 동안 도발과 보호막을 14(추가 ¤ ) 얻습니다.\n2턴 후에 모든 적에게 굴라의 현재 체력의 20%만큼의 피해를 줍니다.",
+ "응축 폭발":"잠금(3). 2턴 동안 도발과 보호막을 14(추가 ¤ ) 얻습니다.\n2턴 후에 모든 적에게 굴라의 현재 체력의 20%만큼의 피해를 줍니다.",
  "의지 약화":"다음 턴 동안 선택한 적의 추가 공격력을 3 감소시킵니다.\n\n_독서 중첩_을 4 얻습니다.\n\n_축복 상태_라면 추가 마법력과 보호력도 동일하게 감소시킵니다.",
  "자기장 변환":"적에게 피해를 8(추가 ∴ ) 줍니다. _정밀 표식_이 남겨진 적이라면 1칸 앞으로 이동시키고 속박시킵니다. 이동하지 못하는 상태라면, 대신 기절시킵니다.",
  "자동변환단총":"_탄알_을 1 소모하여 적에게 피해를 2(추가 † ) 줍니다.(거리 2)\n\n남은 탄알 : 5/5\n어떤 개조를 하더라도 제대로 작동하는 죽이는 총!",
- "잠재력 활성":"잠금 (2). 이번 턴에 진선풍도가 거리 내의 모든 적에게 피해를 주고, 회오리는 모든 적을 공중으로 띄웁니다.\n다음 4번의 산들바람의 비용이 0이 됩니다.",
+ "잠재력 활성":"잠금(2). 이번 턴에 진선풍도가 거리 내의 모든 적에게 피해를 주고, 회오리는 모든 적을 공중으로 띄웁니다.\n다음 4번의 산들바람의 비용이 0이 됩니다.",
  "재능 시기":"적을 처치할 때마다 인비디아가 해당 전투에서 적들의 능력치를 얻습니다.\n\n적 처치시 얻을 수 있는 능력치(각 25% 확률로)\n공격력 1, 마법력 1, 보호력 1, 체력 4",
  "저주받은 성벽":"이 소환물이 죽은 후, 거리 1 내의 대상에게 보호약화를 2 부여합니다. 이동할 수 없습니다.",
  "저주받은 육체":"레벨 당 증가하는 최대 체력을 얻을 수 없습니다. 대신 사명감을 1 얻습니다.\n얻은 사명감 2당 영구히 공격력 +1을 얻습니다.\n\n전투 당 1회, 트리스탄이 죽은 후 망자의 육체 카드를 가져옵니다.",
  "적응성 비늘":"내 턴이 끝날 때, 보호막을 1(추가 ¤ + 이번 턴에 얻은 비늘 조각의 수) 얻습니다.",
- "전두엽 감염":"잠금 (1). 감염이 3회 이상 중첩된 적들이 감염 중첩을 1 얻고, 다음 턴에 시전하는 각 기술의 첫 시전시 필요 마나가 1 증가합니다.",
+ "전두엽 감염":"잠금(1). 감염이 3회 이상 중첩된 적들이 감염 중첩을 1 얻고, 다음 턴에 시전하는 각 기술의 첫 시전시 필요 마나가 1 증가합니다.",
  "전장의 승자":"던전에서 승리할 때마다 영구적으로 공격력을 1 얻습니다. (최대 2)\n패배할 시 얻은 공격력을 모두 잃습니다.\n초과로 얻은 공격력은 금화 1으로 대체됩니다.",
  "점프백":"최대 2칸 이동하고 _기동 상태_에 돌입합니다.\n_기동 상태_에서는 다른 기술을 시전한 후 1칸 뒤로 이동합니다.\n이때 이동하지 못하는 상태라면, 에너지 보호막을 1(추가 ∴ ) 얻습니다.",
  "정밀 타격":"이테리오가 마법 피해를 주면 대상에게 _정밀 표식_을 남깁니다.\n_정밀 표식_이 있는 적에게는 이테리오의 공격 피해가 치명타로 적용되고 표식을 하나 제거합니다.",
- "정의의 기운":"잠금 (1). 헥토의 보호막*( )*만큼 가장 가까운 적에게 피해를 줍니다. ",
+ "정의의 기운":"잠금(1). 헥토의 보호막*( )*만큼 가장 가까운 적에게 피해를 줍니다. ",
  "정확한 조준":"적을 선택합니다. 데린저가 _조준 상태_가 되어 해당 적에게 입히는 피해가 치명타로 적용되고 다른 적은 100% 감소합니다.\n_조준 상태_에서는 속박되고, 재사용하거나 대상 적이 죽으면 해제됩니다.",
  "조각난 페일노트":"가장 멀리 있는 적에게 피해를 4(추가 † ) 줍니다.",
  "조화의 노래":"이로운 효과를 부여하는 _음율_을 선택하여 시전합니다.",
@@ -4806,8 +4815,8 @@ const SKILL_FULL={
  "진선풍도":"피해를 2(추가 † ) 줍니다. *(거리 2)*\n세 번째 사용 시에는 강화되어, 거리 3의 회오리를 날려 지나간 적들에게 피해를 주고, 마지막 적은 공중에 뜸 상태로 만듭니다.",
  "질투의 악마":"인비디아의 기술은 적을 감염시킵니다. 감염은 중첩될 수 있고, 감염된 적에게는 턴이 끝날 때 피해를 1(추가 ∴ ) 주고 감염 중첩을 1 감소시킵니다.",
  "착취":"적에게 피해를 2(추가 ∴ ) 줍니다.\n\n영혼이 20개 이상이면 그 뒤의 적에게도 피해를 줍니다.\n영혼이 60개 이상이면 그 앞의 적에게도 피해를 줍니다.\n영혼이 140개 이상이면 관통 +50%를 얻습니다.\n영혼이 200개 이상이면 2번 발동합니다.",
- "참회의 기류":"잠금 (1). 아군에게 보호막을 1(추가 ¤ ), 적에게 공격 피해를 1(추가 ¤ ) 주는 기류를 날립니다.\n\n기류는 가장 먼 적에게 날아갔다가 돌아오고, 캐릭터를 지날 때마다 보호막량과 공격 피해량이 1 증가합니다.",
- "충격의 음율":"잠금 (1). 가장 가까운 적을 기절시키는 _음율_을 노래합니다.",
+ "참회의 기류":"잠금(1). 아군에게 보호막을 1(추가 ¤ ), 적에게 공격 피해를 1(추가 ¤ ) 주는 기류를 날립니다.\n\n기류는 가장 먼 적에게 날아갔다가 돌아오고, 캐릭터를 지날 때마다 보호막량과 공격 피해량이 1 증가합니다.",
+ "충격의 음율":"잠금(1). 가장 가까운 적을 기절시키는 _음율_을 노래합니다.",
  "커져가는 악몽":"그슨대가 공격 피해를 받을 때마다 어둠 조각을 얻습니다.\n어둠 조각을 3개 모을 때마다 그 전투 동안 공격력 +1을 얻습니다.\n\n아군 사후, 학살자 진영 대원도 공격력을 동일하게 얻습니다.",
  "탄알 장전":"남은 _탄알_을 모두 소비하여 적에게 개당 피해를 1 줍니다.\n\n_탄알_을 모두 장전합니다.",
  "탄알집 챙기기":"데린저의 기술은 _탄알_을 기본으로 합니다.\n현재 데린저의 최대 _탄알_ 개수는 5개 입니다.",
@@ -4820,9 +4829,9 @@ const SKILL_FULL={
  "헤드샷":"매 턴 첫번째 자동변환단총의 공격 피해량이 8(추가 † ) 증가합니다. 이 피해는 치명타가 적용될때 2배가 아닌 3배의 피해를 줍니다.",
  "화음과 리듬":"리페는 _음율란_을 3개 가지고 시작합니다.\n기술을 통해 _음을란_을 모두 채우면, _음율_을 노래합니다",
  "확산":"감염된 적들에게 보호약화를 1 부여하고, 대상의 거리1 내의 다른 적들을 1회 감염시킵니다.",
- "환상통":"잠금 (1). 쿠렘타이의 추가 마법력*( )*만큼 모든 적에게 피해를 줍니다.",
+ "환상통":"잠금(1). 쿠렘타이의 추가 마법력*( )*만큼 모든 적에게 피해를 줍니다.",
  "회오리 장막":"카제가 8회 이동하거나 피해를 주면, 그 턴에 보호막을 6(추가 ¤ ) 얻습니다.",
- "후미 준비":"잠금 (1). 가장 뒤로 이동하고 체력을 5 회복합니다.\n지나간 아군들에게 보호막을 5(추가 ¤ ) 부여합니다.\n선두 방어로 전환합니다."
+ "후미 준비":"잠금(1). 가장 뒤로 이동하고 체력을 5 회복합니다.\n지나간 아군들에게 보호막을 5(추가 ¤ ) 부여합니다.\n선두 방어로 전환합니다."
 };
 /* 기술 한 줄 요약은 없앴다 — 기획 노트 문장(SKILL_FULL) 하나로만 간다.
    요약을 따로 두면 노트와 어긋나고, 고칠 곳만 둘로 늘어난다. */
@@ -4867,8 +4876,8 @@ HEROES["쿠렘타이"]={title:"죽음",role:"마법 · 성장",hp:20,mana:3,hpLv
    {n:"착취",cost:1,el:"마법",tg:"foe",dmg:2,drain:1,d:"피해 2 · 영혼이 쌓이면 앞뒤로 번지고 관통·연발까지"},
    {n:"영혼 분리",cost:2,el:"마법",tg:"any",lock:3,phantom:1,d:"잠금(3) · 체력이 가장 낮은 적의 환영을 빈 칸에 소환 · 내 전장이면 도발"},
    {n:"환상통",cost:0,el:"마법",tg:"self",lock:1,phantomPain:1,d:"잠금(1) · 추가 마법력만큼 모든 적에게 피해"},
-   {n:"사형 선고",cost:3,el:"마법",tg:"any",limit:1,verdict:1,startLock:2,
-    d:"우두머리가 아닌 대상을 처치하고 절반의 체력으로 되살림"}
+   {n:"사형 선고",cost:3,el:"마법",tg:"any",limit:1,verdict:1,startLock:3,
+    d:"사용한도(1) · 배치 시 잠금 3 · 우두머리가 아닌 대상을 처치하고 절반의 체력으로 되살림"}
   ]};
 HEROES["이테리오"]={title:"고철의 기술자",role:"마법 · 치명타",hp:20,mana:3,hpLv:2,
   focus:"마나 중독자/유동적 공격/치명타",
@@ -5245,7 +5254,7 @@ const HERO_REWARDS={
   R("중무장","중급","[전투 기술]\n1-6. 중무장 (마나 : 4)\n모든 방어구 카드를 얻습니다. (전투당 1회)",
     h=>{ if(h.sk.length<6) h.sk.push({n:"중무장",cost:4,el:"보호",tg:"self",limit:1,allArmor:1,
       d:"사용한도(1) · 모든 방어구 카드를 얻습니다"}) },0.5),
-  R("찌르기","중급","[전투 기술]\n1-7. 찌르기 (마나 : 2)\n잠금 (3). 이번 턴에 사용한 베기의 피해량의 3배만큼 피해를 줍니다.",
+  R("찌르기","중급","[전투 기술]\n1-7. 찌르기 (마나 : 2)\n잠금(3). 이번 턴에 사용한 베기의 피해량의 3배만큼 피해를 줍니다.",
     h=>{ if(h.sk.length<6) h.sk.push({n:"찌르기",cost:2,el:"공격",tg:"foe",lock:3,thrust:1,
       d:"잠금(3) · 이번 턴 베기 피해 합계의 3배"}) },0.5),
   /* ── 상급 ── */
@@ -5426,6 +5435,68 @@ const HERO_REWARDS={
   R("탐식","중급","탐욕의 악마 전투당 한도 +5",h=>h.tag.greedCap=(h.tag.greedCap||3)+5),
   R("차원 확장","중급","균열 차원문 피해 +3",(h,rn)=>addMod(h,"균열 차원문","dmg",3,rn)),
   R("포식자","상급","융합으로 얻는 능력치 2배",h=>h.tag.fuseX=2)
+ ],
+ /* 쿠렘타이 — 기획 노트(2026-09-11) 그대로. 설명은 노트 문장이다 */
+ "쿠렘타이":[
+  /* ── 하급 ── */
+  R("착취 강화","하급","착취의 피해량이 영구히 1 증가합니다.",(h,rn)=>addMod(h,"착취","dmg",1,rn)),
+  R("영혼 분리 강화","하급","영혼 분리로 뜯어낸 환영이 처치될 때, 적의 최대 체력에 비례한 피해량이 5% 증가합니다.",
+    h=>h.tag.phantomPct=(h.tag.phantomPct||0)+5),
+  R("환상통 강화","하급","환상통의 피해량이 영구히 1 증가합니다.\n*[환상통] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.painPlus=(h.tag.painPlus||0)+1),
+  R("사형 선고 강화","하급","사형 선고가 아군을 부활시킬 때의 체력이 5% 증가합니다. 적을 부활시킬 때의 체력이 5% 감소합니다.\n*[사형 선고] 기술이 없을 때 등장하지 않음",
+    h=>{ h.tag.verdictAllyPct=(h.tag.verdictAllyPct||0)+5; h.tag.verdictFoePct=(h.tag.verdictFoePct||0)+5 }),
+  R("수확자","하급","전투 시작 후, 영혼을 1 얻습니다. 금화를 4개 얻습니다.",h=>h.tag.reaper=1),
+  R("강한 영혼 수확","하급","영혼 수확이 정예 적으로부터 영혼을 3개 더 가져옵니다.",
+    h=>h.tag.eliteSouls=(h.tag.eliteSouls||0)+3),
+  R("영혼 흡수","하급","영혼을 2개 소모하여 최대 체력을 8 얻습니다.",
+    h=>{ run.souls=Math.max(0,(run.souls||0)-2); h.maxHp+=8; h.hp+=8 }),
+  R("경험 흡수","하급","영혼을 2개 소모하여 경험치를 14 얻습니다.",
+    h=>{ run.souls=Math.max(0,(run.souls||0)-2); giveExp(14,[h],true) }),
+  R("정신 분리","하급","영혼 분리를 사용한 후, 그 대상에게 보호약화를 2 부여합니다.",
+    h=>h.tag.mindSplit=(h.tag.mindSplit||0)+2),
+  R("대가를 치뤄라","하급","최대 체력을 2 잃습니다. 영혼을 4개 얻습니다.",
+    h=>{ h.maxHp=Math.max(1,h.maxHp-2); h.hp=Math.min(h.hp,h.maxHp); gainSouls(4) }),
+  /* ── 중급 ── */
+  R("더 빠른 선고","중급","사형 선고의 전투 시작 잠금이 1턴 감소합니다.\n*획득시 보상에서 다시 등장하지 않음\n*[사형 선고] 기술이 없을 때 등장하지 않음",
+    h=>h.sk.forEach(k=>{ if(k.n==="사형 선고") k.startLock=Math.max(0,(k.startLock||3)-1) }),0.5),
+  R("직접 거두기","중급","쿠렘타이의 피해로 적을 처치하면 영혼을 1 더 얻습니다.",h=>h.tag.harvestSelf=1,0.5),
+  R("마나 착취","중급","착취로 적을 처치한 후, 그 턴에만 추가 마나를 1 얻습니다.",h=>h.tag.manaDrain=1),
+  R("으스스한 기운","중급","환영이 적 전장에 소환된 후, 거리 1내의 대상에게 마법약화, 공격약화 2를 부여합니다.",
+    h=>h.tag.eerie=(h.tag.eerie||0)+2),
+  R("쇠약","중급","[전투 기술]\n1-7. 쇠약 (마나 : 1)\n사용한도(1). 적에게 부여된 부정적인 효과를 2배로 만듭니다.\n*획득시 보상에서 다시 등장하지 않음",
+    h=>{ if(h.sk.length<6) h.sk.push({n:"쇠약",cost:1,el:"마법",tg:"foe",limit:1,frail:1,
+      d:"사용한도(1) · 적의 부정적인 효과를 2배로"}) },0.5),
+  R("환영 착취","중급","적 전장에 배치된 환영에게 착취를 시전하면, 보호막을 3 얻습니다.",
+    h=>h.tag.phantomDrain=(h.tag.phantomDrain||0)+3),
+  R("환상폭발","중급","환상통의 마나 비용이 1 증가합니다. 대신 피해량이 2배가 됩니다.",
+    h=>{ h.sk.forEach(k=>{ if(k.n==="환상통") k.cost=(k.cost||0)+1 }); h.tag.painX2=1 },0.5),
+  R("등가 교환","중급","영혼을 10개 소모하여 마법력을 영구히 2 얻습니다.",
+    h=>{ run.souls=Math.max(0,(run.souls||0)-10); h.mag+=2 }),
+  R("다중 환영","중급","영혼 분리로 환영을 하나 더 소환할 수 있습니다.",
+    h=>h.tag.phantomPlus=(h.tag.phantomPlus||0)+1,0.5),
+  R("수확철","중급","영혼을 15개 얻습니다.",h=>gainSouls(15)),
+  R("사후로부터의 지시","중급","사형 선고로 쿠렘타이가 부활한 후, 해당 전투에서만 추가 마법력을 3 얻습니다.\n*[사형 선고] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.afterlife=(h.tag.afterlife||0)+3),
+  R("내면 파괴","중급","대원 배치 후, 환상통을 시전합니다.\n*마나는 소모되지 않습니다.\n*[환상통] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.innerBreak=1),
+  /* ── 상급 ── */
+  R("산 자의 고통","상급","환상통이 흡수 +50%을 얻습니다.\n*획득시 보상에서 다시 등장하지 않음",
+    h=>h.tag.painLeech=50,0.5),
+  R("사형 집행자","상급","사형 선고의 사용한도가 1 증가합니다.",
+    h=>h.sk.forEach(k=>{ if(k.n==="사형 선고"&&k.limit) k.limit++ })),
+  R("망자들의 통솔자","상급","환영을 아군 전장에 소환한 후, 해당 대상이 마지막으로 했던 행동을 1회 따라합니다. (대상은 무작위)\n*획득시 보상에서 다시 등장하지 않음",
+    h=>h.tag.mimic=1,0.5),
+  R("인도","상급","영혼이 300개 이상이라면, 착취가 모든 적을 대상으로 시전됩니다.\n*획득시 보상에서 다시 등장하지 않음",
+    h=>h.tag.guideAll=1),
+  R("치명적인 고통","상급","환상통이 치명타로 적중합니다.\n*획득시 보상에서 다시 등장하지 않음\n*[환상통] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.painCrit=1),
+  R("의식 제거","상급","환상통의 피해량이 3배가 되는 대신, 가장 가까운 대상에게만 적중합니다.\n*[환상통] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.painNear=1),
+  R("망자의 위엄","상급","대원 배치 후, 우두머리를 제외한 모든 적에게 대상 최대 체력의 20%만큼 피해를 줍니다.",
+    h=>h.tag.majesty=(h.tag.majesty||0)+20),
+  R("영혼 둔갑","상급","대원 배치 후, 회피를 4 얻습니다. 쿠렘타이가 회피를 보유할 때, 공격한 대상에게 공포를 1 부여합니다.",
+    h=>{ h.tag.ghostEvade=(h.tag.ghostEvade||0)+4; h.tag.ghostFear=1 })
  ]
 };
 /* 보상의 갈래 — 노트 '보상의 종류' 여덟 가지를 글에서 읽어 낸다.
@@ -5446,6 +5517,11 @@ function skillNamesOf(h){
   return out;
 }
 const REW_KIND={
+ "하급|수확자":"기술 강화",
+ "하급|대가를 치뤄라":"기술 강화",
+ "중급|수확철":"기술 강화",
+ "상급|망자의 위엄":"기술 강화",
+ "상급|영혼 둔갑":"기술 강화",
  "상급|검과 방패":"기술 강화",
  "상급|공방전":"기술 강화",
  "상급|대상 포착":"기술 강화",
@@ -5639,6 +5715,29 @@ const REW_KIND={
 /* 보상 등장 조건 — 기획 노트 설명문의 * 줄을 그대로 옮긴 것 */
 const REW_COND={
  "상급|한계 해방":{needLimit:1},   /* 사용한도 기술이 없는 대원에겐 빈칸이다 */
+ /* 나이코스의 [튼튼한 방어구] 는 지원 기술이라 게임에 없다 — 그것을 키우는 보상도 잠근다 */
+ "하급|튼튼한 방어구 강화":{need:["튼튼한 방어구"]},
+ "중급|쉴 때도 단단하게":{need:["튼튼한 방어구"]},
+ /* 쿠렘타이 */
+ "하급|환상통 강화":{need:["환상통"]},
+ "하급|사형 선고 강화":{need:["사형 선고"]},
+ "하급|영혼 흡수":{needSouls:2},
+ "하급|경험 흡수":{needSouls:2},
+ "중급|더 빠른 선고":{once:1,need:["사형 선고"]},
+ "중급|쇠약":{once:1},
+ "중급|환상폭발":{once:1,need:["환상통"]},
+ "중급|등가 교환":{needSouls:10},
+ "중급|다중 환영":{once:1},
+ "중급|사후로부터의 지시":{need:["사형 선고"]},
+ "중급|내면 파괴":{once:1,need:["환상통"]},
+ "상급|산 자의 고통":{once:1,need:["환상통"]},
+ "상급|사형 집행자":{need:["사형 선고"]},
+ "상급|망자들의 통솔자":{once:1},
+ "상급|인도":{once:1},
+ "상급|치명적인 고통":{once:1,need:["환상통"]},
+ "상급|의식 제거":{once:1,need:["환상통"]},
+ "상급|망자의 위엄":{once:1},
+ "상급|영혼 둔갑":{once:1},
  "상급|검과 방패":{once:1},
  "상급|공방전":{once:1},
  "상급|돌격 베기":{once:1},
@@ -5718,6 +5817,7 @@ function rewardOk(h,r){
      `if(k.limit) k.limit++` 가 한 번도 참이 안 된다 —
      가장 귀한 상급을 골랐는데 아무 일도 안 일어난다. 아예 안 내놓는다. */
   if(c.needLimit&&!hasLimitSkill(h)) return false;
+  if(c.needSouls&&(run.souls||0)<c.needSouls) return false;
   return true;
 }
 /* 사용한도가 걸린 기술을 하나라도 가지고 있는가 (전환형·선택지까지 본다) */
@@ -5734,6 +5834,7 @@ function rewCondHtml(r){
   const L=[];
   if(c.once) L.push(`<span class="chip cond">한 번만</span>`);
   (c.need||[]).forEach(nm=>L.push(`<span class="chip cond">${esc(nm)} 필요</span>`));
+  if(c.needSouls) L.push(`<span class="chip cond">영혼 ${c.needSouls} 필요</span>`);
   return `<div class="rwcond">${L.join("")}</div>`;
 }
 /* 노트에 갈래가 적혀 있으면 그것을 따르고, 없을 때만 글로 짐작한다 */
@@ -10398,7 +10499,7 @@ function startBattle(kind,pinned){
       h.shotBonus=0;
       const hpl=itemBt(h,'hpPerLv'); if(hpl){ h.hp+=hpl*h.lv }
       h.mana=h.maxMana+itemBt(h,"firstMana")+(h.tag.firstMana||0);
-      if(h.name==="쿠렘타이") h.lock[3]=(h.sk[3].startLock||2);
+      if(h.name==="쿠렘타이"&&h.sk[3].startLock>0) h.lock[3]=h.sk[3].startLock;
     }
     if(!h.down) B.hand.push({type:"hero",hero:h});
   });
@@ -12147,11 +12248,21 @@ function onSummon(h){
   /* ── 대원을 배치할 때마다 (라운드마다 다시) ── */
   if(t.startStorm){ say("폭풍 — 전장의 모든 적이 떠오릅니다.","t1");
     B.foes.filter(f=>f.alive).forEach(f=>airborne(h,f)) }
+  /* ── 쿠렘타이 ── */
+  /* 영혼 둔갑의 회피는 전투에 한 번 — 아래 배치 피해(망자의 위엄·내면 파괴)보다
+     먼저 쥐어야 '회피를 보유할 때 공격한 대상에게 공포' 가 그 피해에도 걸린다 */
+  if(t.ghostEvade&&!h.summoned){ h.evade+=t.ghostEvade; say(`영혼 둔갑 — ${h.name} 회피 +${t.ghostEvade}`,"t2") }
+  /* 라운드마다 (새 적이 서므로) */
+  if(t.majesty){ say("망자의 위엄 — 죽음의 기운이 전장을 덮습니다.","t1");
+    asSrc(h,()=>B.foes.filter(f=>f.alive&&!f.boss).forEach(f=>{
+      fx({side:"foe",slot:f.slot,pain:1,gap:0});
+      hurt(f,Math.max(1,Math.round(f.maxHp*t.majesty/100)),"망자의 위엄","mag",0,0,1) })) }
+  if(t.innerBreak&&h.mag+((t.painPlus)||0)>0) asSrc(h,()=>phantomPain(h,null,"내면 파괴"));
   if(t.startBlade){ say("전장의 칼날 — 첫 일격이 전장을 훑습니다.","t1");
-    B.foes.filter(f=>f.alive).forEach(f=>hurt(f,t.startBlade,"전장의 칼날","slash")) }
+    asSrc(h,()=>B.foes.filter(f=>f.alive).forEach(f=>hurt(f,t.startBlade,"전장의 칼날","slash"))) }
   if(t.placeBurn){
     const live=B.foes.filter(f=>f.alive);
-    if(live.length){ const f=rnd(live); f.burn=(f.burn||0)+t.placeBurn;
+    if(live.length){ const f=rnd(live); f.burn=(f.burn||0)+t.placeBurn; f.burnBy=h.name;
       fx({side:"foe",slot:f.slot,ring:"#e0705a",txt:"화상"+f.burn,cls:"dmg",gap:60});
       say(`잔불 — ${f.name} 화상 ${f.burn}`,"t2") } }
   if(t.genMark){
@@ -12176,6 +12287,8 @@ function onSummon(h){
     say(`오염된 피부 — ${h.name} 모든 추가 능력치 +${v}`,"t2") }
   if(t.gearShield){ allAllies().forEach(a=>{ a.shield+=t.gearShield });
     say(`튼튼한 방어구 — 모든 아군 보호막 +${t.gearShield}`,"t2") }
+  /* ── 쿠렘타이 — 전투 하나에 한 번 ── */
+  if(t.reaper){ gainSouls(1,"수확자"); run.gold+=4; say(`수확자 — 금화 +4`,"t2") }
   if(t.gearPlus) for(let q=0;q<t.gearPlus;q++) giveArmor(h,rnd(t.armors||["강철 갑옷"]));
   { const ev=itemBt(h,"startEvade"); if(ev){ h.evade+=ev; say(`${h.name} 회피 +${ev} (장비)`,"t2") } }
   if(itemBt(h,"startHide")){ h.hide=1; hideFX(h.slot); say(`${h.name}${jo(h.name,"ig")} 그림자에 숨습니다.`,"t2") }
@@ -12246,7 +12359,7 @@ function singTune(h,t){
       fx({side:"mine",slot:a.slot,s:"heal",txt:"+3",cls:"heal",gap:60});
       say(`생명의 음율 — ${a.name} 체력 +3`) } }
   if(t==="edge"){ const v=1+h.mag;
-    B.foes.filter(f=>f.alive).forEach(f=>hurt(f,v,"날카로운 음율","mag")) }
+    asSrc(h,()=>B.foes.filter(f=>f.alive).forEach(f=>hurt(f,v,"날카로운 음율","mag"))) }
   if(t==="shock"){ const f=nearestFoe(h);
     if(f){ addDeb(f,"stun",1); say(`충격의 음율 — ${f.name} 기절`) } }
 }
@@ -12618,14 +12731,46 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
     }
     if(f.isPhantom){
       const src=B.foes.find(x=>x.id===f.phantomOf&&x.alive);
-      if(src) hurt(src,f.backlash||4,"환영의 반동","mag");
+      if(src) asSrc(run.heroes.find(x=>x.name==="쿠렘타이"),()=>hurt(src,f.backlash||4,"환영의 반동","mag"));
     }
     /* 원래 적이 죽으면 그 환영도 함께 사라진다 */
     B.foes.filter(x=>x.alive&&x.isPhantom&&x.phantomOf===f.id).forEach(x=>{
       x.alive=0; say(`${x.name}${jo(x.name,"ig")} 흩어집니다.`,"t2") });
     (B.mins||[]).filter(m=>m.alive&&m.phantomOf===f.id).forEach(m=>{
       m.alive=0; m.slot=0; say(`환영이 흩어집니다.`,"t2") });
-    onDeath("foe",f) }
+    onDeath("foe",f);
+    onKill(B.lastAttacker,f,tag) }
+  /* 영혼 둔갑 — 회피를 쥔 쿠렘타이가 때린 적은 공포에 질린다 */
+  { const by=B.lastAttacker;
+    if(f.alive&&d>0&&by&&by.tag&&by.tag.ghostFear&&(by.evade||0)>0&&!deb(f,"fear")){
+      addDeb(f,"fear",1,by); say(`영혼 둔갑 — ${f.name} 공포`,"t2") } }
+}
+/* ★ 피해의 주인은 B.lastAttacker 다 — 기술이든, 그 대원이 찬 장신구든, 화상이든.
+   장신구(전장의 칼날·질풍 각반·가시)와 지속 피해(화상·감염·차원문·응축 폭발·환영의 반동)를
+   내놓는 자리마다 asSrc(대원, …) 로 감싼다. 그래야 '쿠렘타이의 피해로 처치' 가
+   장신구로 잡은 것까지 센다 (직접 거두기). */
+function asSrc(h,fn){
+  const p=B.lastAttacker; if(h) B.lastAttacker=h;
+  try{ fn() } finally { B.lastAttacker=p }
+}
+/* 대원 by 의 피해로 적 f 가 죽었다. tag 는 피해 이름(기술 이름 등) */
+function onKill(by,f,tag){
+  if(!by||!by.name||!run||run.heroes.indexOf(by)<0||!by.tag) return;
+  if(by.name==="쿠렘타이"){
+    if(by.tag.harvestSelf){ gainSouls(1,"직접 거두기") }
+    if(tag==="착취"&&by.tag.manaDrain){ by.mana=(by.mana||0)+1;
+      say(`마나 착취 — ${by.name} 추가 마나 +1`,"t2") }
+  }
+}
+/* 영혼을 n 얻는다 — 40개마다 마법력이 오르는 셈까지 여기서 한다 */
+function gainSouls(n,label){
+  if(!n) return;
+  run.souls=(run.souls||0)+n;
+  if(label) say(`${label} — 영혼 +${n} (영혼 ${run.souls})`,"t2");
+  const k=run.heroes.find(h=>h.name==="쿠렘타이");
+  const want=Math.floor(run.souls/40);
+  if(k&&(k.soulMag||0)<want){ const add=want-(k.soulMag||0); k.soulMag=want; k.mag+=add;
+    say(`영혼 수확 — ${k.name}의 마법력이 ${add} 올랐습니다. (영혼 ${run.souls})`,"t1") }
 }
 function onDeath(kind,who){
   /* 쿠렘타이 영혼 수확 */
@@ -12635,12 +12780,10 @@ function onDeath(kind,who){
     else if(kind==="min") g=1;
     else if(kind==="ally") g=5;
     if(who&&(who.isPhantom||who.of)) g=1;
-    if(g){ run.souls=(run.souls||0)+g;
-      const k=run.heroes.find(h=>h.name==="쿠렘타이");
-      const want=Math.floor(run.souls/40);
-      if(k&&(k.soulMag||0)<want){ const add=want-(k.soulMag||0); k.soulMag=want; k.mag+=add;
-        say(`영혼 수확 — ${k.name}의 마법력이 ${add} 올랐습니다. (영혼 ${run.souls})`,"t1") }
-    }
+    /* 강한 영혼 수확 — 정예에게서 3개 더 */
+    { const k=run.heroes.find(h=>h.name==="쿠렘타이");
+      if(k&&k.tag&&k.tag.eliteSouls&&kind==="foe"&&g===5) g+=k.tag.eliteSouls }
+    if(g) gainSouls(g);
   }
   if(kind==="foe"){
     run.heroes.forEach(h=>{
@@ -12661,11 +12804,24 @@ function onDeath(kind,who){
     }
   });
 }
+/* 그림을 띄운다 — 연출 큐에서 lift:1 로 부른다 */
+function liftFX(side,slot){
+  const p=ctrOf(side,slot); if(!p||!p.e) return;
+  const art=p.e.querySelector(".art"); if(!art) return;
+  art.classList.remove("lifted"); void art.offsetWidth; art.classList.add("lifted");
+  setTimeout(()=>art.classList.remove("lifted"),950);
+}
+/* 공중에 뜸은 **잠깐**이다 — 뜨는 순간에 걸리는 것들(바람처럼 사라져라·독소 침)이
+   그때 다 일어나고, 표시는 그림이 내려올 때 같이 걷힌다. 턴 끝까지 남지 않는다. */
 function airborne(h,f){
   if(!f.alive) return; f.air=1;
   { const p=ctrOf("foe",f.slot);
     if(p){ const u=spawn('<div class="lift"></div>'); at(u,p); sparks(p,"#a8f0ea",7) } }
-  fx({side:"foe",slot:f.slot,art:"wind",s:"gust",txt:"공중",cls:"shd",gap:130});
+  fx({side:"foe",slot:f.slot,lift:1,art:"wind",s:"gust",txt:"공중",cls:"shd",gap:130,
+      fn:()=>setTimeout(()=>{ f.air=0;
+        const p=ctrOf("foe",f.slot);
+        if(p&&p.e) p.e.querySelectorAll(".chip").forEach(c=>{ if(c.textContent==="공중") c.remove() });
+      },900)});
   say(`${f.name}${jo(f.name,"ig")} 공중에 뜸.`,"t2");
   run.heroes.forEach(b=>{
     if(b.name==="보아"&&b.slot>0&&b.venom&&f.alive&&(b.scale||0)>0)
@@ -12675,7 +12831,7 @@ function airborne(h,f){
     bigSlash("foe",f.slot,"#5fd8cf",2);
     punchIn("foe",f.slot);
     hurt(f,4+h.atk+(h.tag.airBonus||0),"바람처럼 사라져라","wind");
-    if(h.tag.burn&&f.alive){ f.burn=(f.burn||0)+h.tag.burn;
+    if(h.tag.burn&&f.alive){ f.burn=(f.burn||0)+h.tag.burn; f.burnBy=h.name;
       say(`${f.name} 화상 ${f.burn}`,"t2") }
   }
 }
@@ -12710,8 +12866,8 @@ function doSkill(target){
      사거리·은신을 막는 이 자리로 올린다. runEffect 쪽 그물은 그대로 둔다 —
      되감기나 딴 길로 들어올 수 있어 두 겹으로 막는 것이 옳다. */
   if(s0.phantom){
-    if(B.mins.some(m=>m.alive&&m.of)||B.foes.some(f=>f.alive&&f.isPhantom)){
-      say("환영은 전장에 하나만 세울 수 있습니다.","t2"); render(); return }
+    if(phantomCount()>=phantomCap(h)){
+      say(phantomFullMsg(h),"t2"); render(); return }
     const pslot=Math.abs(target), pmine=(target<0);
     if(pmine?occAt(pslot):!!foeAt(pslot)){
       say(`그 칸에는 이미 ${pmine?"누군가":"적이"} 있습니다. 빈 칸을 고르세요.`,"t2");
@@ -12722,7 +12878,6 @@ function doSkill(target){
      이 셋은 runEffect 안에도 그대로 있다(두 겹으로 막는다). 여기 있는 것은
      **값을 치르기 전에** 돌려보내려는 것이다 — 전수 점검이 찾아 준 자리다. */
   if(s0.verdict){
-    if(h.verdictUsed){ say("이번 전투에는 이미 썼습니다.","t2"); render(); return }
     if(target<0){
       if(!allyAt(-target)){ say("그 칸에는 아군이 없습니다.","t2"); render(); return }
     }else{
@@ -12910,7 +13065,7 @@ function moveTo(h,to){
   fx({side:"mine",slot:to,s:"step",ring:"#5fd8cf",glow:1,gap:90});
   { const ms=itemBt(h,"moveShield")+((h.tag&&h.tag.moveShield)||0); if(ms) h.shield+=ms;
     const mb=itemBt(h,"moveBlast");
-    if(mb) B.foes.filter(f=>f.alive).forEach(f=>hurt(f,mb,"질풍 각반","wind"));
+    if(mb) asSrc(h,()=>B.foes.filter(f=>f.alive).forEach(f=>hurt(f,mb,"질풍 각반","wind")));
     (h.items||[]).forEach(it=>{ const k=it.bt&&it.bt.moveStat;
       if(k){ bumpTurn(h,k,1) } }); }
   if(deb(h,"shock")){ const v=h.deb.shock;
@@ -12945,6 +13100,40 @@ function hitsFoe(s,target){
   if(s.wand) return target>0;                 /* 지팡이는 아군에게도 쓴다 */
   return FOE_HIT.some(k=>!!s[k]);
 }
+/* 환영 몇이 서 있나 · 몇까지 세울 수 있나 (다중 환영) */
+function phantomCount(){
+  return B.mins.filter(m=>m.alive&&m.of).length+B.foes.filter(f=>f.alive&&f.isPhantom).length }
+function phantomCap(h){ return 1+((h&&h.tag&&h.tag.phantomPlus)||0) }
+function phantomFullMsg(h){ const c=phantomCap(h);
+  return c<=1?"환영은 전장에 하나만 세울 수 있습니다.":`환영은 전장에 ${c}개까지만 세울 수 있습니다.` }
+/* 환상통 — 추가 마법력만큼 모든 적에게. 보상이 닿는 자리는 다 여기다.
+     환상통 강화 painPlus · 환상폭발 painX2 · 의식 제거 painNear(3배·가장 가까운 적만)
+     치명적인 고통 painCrit · 산 자의 고통 painLeech(흡수 50%) */
+function phantomPain(h,s,label){
+  const T=h.tag||{};
+  let v=h.mag+(T.painPlus||0);
+  if(!v){ say("아직 추가 마법력이 없습니다.","t2"); return 0 }
+  if(T.painX2) v*=2;
+  if(T.painNear) v*=3;
+  const crit=!!T.painCrit; if(crit) v*=2;
+  let list=B.foes.filter(f=>f.alive);
+  if(T.painNear&&list.length) list=[list.reduce((a,b)=>dist(h.slot,a.slot)<=dist(h.slot,b.slot)?a:b)];
+  pulseFX("mine",h.slot,"#8f5fd0",3);
+  if(label) say(`${label} — 환상통`,"t1");
+  let dealt=0;
+  list.forEach(f=>{
+    pulseFX("foe",f.slot,"#8f5fd0",2);
+    fx({side:"foe",slot:f.slot,pain:1,gap:0});
+    const hp0=f.hp+(f.shield||0);
+    hurt(f,v,"환상통","mag",0,crit?1:0,1);      /* 제 그림이 생겼으니 옛 마름모는 겹치지 않는다 */
+    dealt+=Math.max(0,hp0-Math.max(0,f.hp)-(f.shield||0));
+  });
+  if(crit&&list.length) say("치명적인 고통 — 환상통이 치명타로 들어갑니다.","t1");
+  if(T.painLeech&&dealt>0){ const got=healUp(h,Math.max(1,Math.round(dealt*T.painLeech/100)));
+    if(got){ fx({side:"mine",slot:h.slot,s:"heal",txt:"+"+got,cls:"heal",gap:60});
+      say(`산 자의 고통 — ${h.name} 체력 +${got}`,"t2") } }
+  return dealt;
+}
 function runEffect(h,i,s,target){
   B.lastAttacker=h;          /* 가시가 되받아칠 상대 */
   const tgt=foeAt(target);
@@ -12957,11 +13146,16 @@ function runEffect(h,i,s,target){
        ※ 녹음은 눌리지 않는다 — 줄어드는 것은 합성음뿐이다. */
     SFX.duck(800,0.35);
     const so=run.souls||0;
-    const list=[t0];
+    let list=[t0];
     if(so>=20){ const b=foeAt(target+1); if(b) list.push(b) }
     if(so>=60){ const f2=foeAt(target-1); if(f2) list.push(f2) }
+    /* 인도 — 영혼 300 부터는 모든 적에게 */
+    if(h.tag.guideAll&&so>=300) list=B.foes.filter(f=>f.alive);
     const times=so>=200?2:1;
     const dmg=s.dmg+mod(s,"dmg")+h.mag;
+    /* 환영 착취 — 적 전장의 환영을 겨누면 보호막 3 */
+    if(t0.isPhantom&&h.tag.phantomDrain){ h.shield+=h.tag.phantomDrain;
+      say(`환영 착취 — ${h.name} 보호막 +${h.tag.phantomDrain}`,"t2") }
     const so0=run.souls||0;      /* 이번 착취로 정말 거둬들였는지 재려고 적어 둔다 */
     /* 어둠이 먼저 내려오고, 그다음 피해가 들어간다.
        art:"mag" 에 걸면 마법사 전원에게 쿠렘타이의 어둠이 내려온다 — 여기서 직접 띄운다.
@@ -12986,12 +13180,13 @@ function runEffect(h,i,s,target){
     return;
   }
   if(s.phantom){
-    if(B.mins.some(m=>m.alive&&m.of)||B.foes.some(f=>f.alive&&f.isPhantom)){
-      say("환영은 전장에 하나만 세울 수 있습니다.","t2"); return }
+    if(phantomCount()>=phantomCap(h)){
+      say(phantomFullMsg(h),"t2"); return }
     const src=B.foes.filter(f=>f.alive&&!f.isPhantom).sort((a,b)=>a.hp-b.hp)[0];
     if(!src){ say("적이 없습니다.","t2"); return }
     const slot=Math.abs(target), mine=(target<0);
-    const back=4+h.mag+Math.round(src.maxHp*(0.10+(run.souls||0)/40*0.025));
+    /* 영혼 분리 강화 : 최대 체력 비례 몫 +5% 씩 (phantomPct) */
+    const back=4+h.mag+Math.round(src.maxHp*(0.10+(run.souls||0)/40*0.025+(h.tag.phantomPct||0)/100));
     if(mine){
       if(occAt(slot)){ say("그 칸에는 이미 누군가 있습니다.","t2"); return }
       const m=makeMin("환영",slot);
@@ -13016,28 +13211,39 @@ function runEffect(h,i,s,target){
     fx({side:mine?"mine":"foe",slot:slot,form:1,s:"summon",txt:"환영",cls:"mag",gap:420});
     say(`${src.name}의 환영이 ${mine?"아군":"적"} ${mine?slot:foeNo(slot)}번 칸에 나타납니다.${
       mine?" 도발합니다.":""}`,"t1");
+    /* 정신 분리 — 뜯긴 적에게 보호약화 */
+    if(h.tag.mindSplit&&src.alive){ addDeb(src,"defDn",h.tag.mindSplit,h);
+      say(`정신 분리 — ${src.name} 보호약화 ${h.tag.mindSplit}`,"t2") }
+    /* 으스스한 기운 — 적 전장에 선 환영 곁(거리 1)의 적들이 약해진다 */
+    if(!mine&&h.tag.eerie){
+      B.foes.filter(f=>f.alive&&!f.isPhantom&&Math.abs(f.slot-slot)<=1).forEach(f=>{
+        addDeb(f,"magDn",h.tag.eerie,h); addDeb(f,"atkDn",h.tag.eerie,h);
+        say(`으스스한 기운 — ${f.name} 마법약화·공격약화 ${h.tag.eerie}`,"t2") }) }
+    /* 망자들의 통솔자 — 아군 전장에 선 환영이 원래 적의 행동을 한 번 따라 한다.
+       적의 마지막 행동은 '때리기' 로 본다 — 그 적의 공격력만큼 무작위 적 하나를 친다. */
+    if(mine&&h.tag.mimic){
+      const foes=B.foes.filter(f=>f.alive&&!f.isPhantom);
+      const v=Math.max(1,foeDmg(src,src.lastHit||src.atk||1));
+      if(foes.length){ const f2=rnd(foes);
+        say(`망자들의 통솔자 — ${src.name}의 환영이 ${src.name}의 행동을 따라 합니다.`,"t1");
+        fx({side:"foe",slot:f2.slot,streak:{side:"mine",slot:slot},gap:120});
+        asSrc(h,()=>hurt(f2,v,"환영의 흉내","mag")) } }
     return;
   }
-  if(s.phantomPain){
-    const v=h.mag;
-    if(!v){ say("아직 추가 마법력이 없습니다.","t2"); return }
-    pulseFX("mine",h.slot,"#8f5fd0",3);
-    B.foes.filter(f=>f.alive).forEach(f=>{
-      pulseFX("foe",f.slot,"#8f5fd0",2);
-      fx({side:"foe",slot:f.slot,pain:1,gap:0});
-      hurt(f,v,"환상통","mag",0,0,1);      /* 제 그림이 생겼으니 옛 마름모는 겹치지 않는다 */
-    });
-    return;
-  }
+  if(s.phantomPain){ phantomPain(h,s); return }
   if(s.verdict){
-    if(h.verdictUsed){ say("이번 전투에는 이미 썼습니다.","t2"); return }
+    const T=h.tag||{};
     if(target<0){
       const a=allyAt(-target); if(!a){ say("그 칸에는 아군이 없습니다.","t2"); return }
       SFX.duck(900,0.3);
-      h.verdictUsed=1; a.hp=Math.max(1,Math.round(a.maxHp*0.5)); bumpTmp(a,"mag",2);
+      const pct=50+(T.verdictAllyPct||0);          /* 사형 선고 강화 : 아군 +5% 씩 */
+      h.verdictUsed=(h.verdictUsed||0)+1; a.hp=Math.max(1,Math.round(a.maxHp*pct/100)); bumpTmp(a,"mag",2);
       pillarFX("mine",a.slot,"rgba(201,162,39,.9)");
       fx({side:"mine",slot:a.slot,art:"mag",s:"summon",txt:"선고",cls:"crit",gap:260});
-      say(`사형 선고 — ${a.name}${jo(a.name,"eul")} 한 번 죽였다가 되살립니다. 마법력 +2`,"t1");
+      say(`사형 선고 — ${a.name}${jo(a.name,"eul")} 한 번 죽였다가 되살립니다. (체력 ${pct}%) 마법력 +2`,"t1");
+      /* 사후로부터의 지시 — 제 몸에 선고를 내려 되살아났을 때 */
+      if(a===h&&T.afterlife){ bumpTmp(h,"mag",T.afterlife);
+        say(`사후로부터의 지시 — ${h.name} 이번 전투 마법력 +${T.afterlife}`,"t1") }
       return;
     }
     const f=foeAt(target); if(!f){ say("그 칸에는 적이 없습니다.","t2"); return }
@@ -13046,12 +13252,13 @@ function runEffect(h,i,s,target){
        dark(톱니 180→70 · 사인 70→38) 가 **똑같은 대역**에 겹쳐 앉는다.
        제일 나쁜 가림이라, 그동안 합성음을 물러서게 한다. 녹음은 안 눌린다. */
     SFX.duck(900,0.3);
-    h.verdictUsed=1;
+    h.verdictUsed=(h.verdictUsed||0)+1;
+    const pctF=Math.max(1,50-(T.verdictFoePct||0));  /* 사형 선고 강화 : 적 −5% 씩 */
     pillarFX("foe",f.slot,"rgba(160,106,224,.9)");
     veil("radial-gradient(circle,rgba(160,106,224,.3),transparent 70%)");
     hurt(f,f.hp+f.shield,"사형 선고","mag",100);
     const nf=B.foes.find(x=>x.id===f.id);
-    nf.alive=1; nf.hp=Math.max(1,Math.round(nf.maxHp*0.5)); nf.shield=0;
+    nf.alive=1; nf.hp=Math.max(1,Math.round(nf.maxHp*pctF/100)); nf.shield=0;
     addDeb(nf,"fear",2);
     say(`${nf.name}${jo(nf.name,"ig")} 죽었다가 다시 일어섭니다.`,"t1");
     return;
@@ -13413,6 +13620,17 @@ function runEffect(h,i,s,target){
     if(h.blessed){ h.blessed=0; h.evade++; say("축복 — 회피 +1","t1") }
     return;
   }
+  /* 쇠약 — 적의 부정적인 효과를 2배로 */
+  if(s.frail){
+    const f=foeAt(target); if(!f){ say("그 칸에는 적이 없습니다.","t2"); return }
+    let n=0;
+    if(f.deb) DEB_KEYS.forEach(k=>{ if(f.deb[k]>0){ n+=f.deb[k]; f.deb[k]*=2 } });
+    ["infect","burn","mark","weak"].forEach(k=>{ if(f[k]>0){ n+=f[k]; f[k]*=2 } });
+    fx({side:"foe",slot:f.slot,ring:"#8f5fd0",s:"mag",txt:n?"쇠약":"—",cls:"mag",gap:120});
+    say(n?`쇠약 — ${f.name}의 부정적인 효과가 두 배가 됩니다. (${n} → ${n*2})`
+         :`쇠약 — ${f.name}에게는 두 배로 만들 것이 없습니다.`,n?"t1":"t2");
+    return;
+  }
   if(s.weaken){
     const f=foeAt(target); if(!f){ say("그 칸에는 적이 없습니다.","t2"); return }
     const v=3+mod(s,"weaken");
@@ -13577,7 +13795,7 @@ function runEffect(h,i,s,target){
     }else{
       /* fresh 가 서 있는 동안은 바닥 표시를 안 그린다 — 띠가 다 돌 때까지.
          내리는 것은 portalFX() 가 손수 한다 */
-      B.portals.push({side:side,slot:slot,dmg:s.dmg+mod(s,"dmg")+h.mag,shield:3+h.def,fresh:1});
+      B.portals.push({side:side,slot:slot,dmg:s.dmg+mod(s,"dmg")+h.mag,shield:3+h.def,fresh:1,by:h.name});
       /* ring 을 뺐다 — 바닥에 눕는 구멍 위로 서 있는 동그라미가 겹치면
          원근이 어긋나 보인다 */
       fx({side:side,slot:slot,art:"ptl",s:"mag",txt:"차원문",cls:"mag"});
@@ -13850,13 +14068,14 @@ function hurtAlly(f,t,raw,label,el){
       txt:(blocked?"막음 ":"-")+raw, cls:blocked?"shd":(mag?"mag":"dmg"), gap:170,
       recoil:1, pose:(d>0?"hurt":(sh>0?"guard":null))});
   say(`${f.name} → ${t.name} ${label} 피해 ${raw}${sh?` (보호막 ${sh})`:""} · ${Math.max(0,t.hp)}/${t.maxHp}`);
+  if(f&&raw>0) f.lastHit=raw;
   { const th=((t.tag&&t.tag.thorn)||0)+(t.thornTmp||0);
     if(th&&f.alive&&!t.thornBusy){
-      t.thornBusy=1; hurt(f,th,`${t.name}의 가시`,"slash"); t.thornBusy=0; } }
+      t.thornBusy=1; asSrc(t,()=>hurt(f,th,`${t.name}의 가시`,"slash")); t.thornBusy=0; } }
   if(t.name==="그슨대"&&raw>0){
     t.dark=(t.dark||0)+1;
     if(t.dark%3===0){ bumpTmp(t,"atk",1); say(`커져가는 악몽 — ${t.name} 공격력 +1`,"t1") }
-    if(t.stance==="nightmare") B.foes.filter(x=>x.alive).forEach(x=>hurt(x,4+t.atk,"악몽 태세","slash"));
+    if(t.stance==="nightmare") asSrc(t,()=>B.foes.filter(x=>x.alive).forEach(x=>hurt(x,4+t.atk,"악몽 태세","slash")));
     if(t.stance==="terror") B.foes.filter(x=>x.alive).forEach(x=>{ addDeb(x,"fear",1,t); addDeb(x,"atkDn",1) });
   }
   if(t.hp<=0) unitDown(t); else if(raw>0) bark(t,"hurt");
@@ -13867,7 +14086,7 @@ function unitDown(t){
     say(`${t.name}${jo(t.name,"ig")} 부서졌습니다.`,"t3");
     if(t.phantomOf!=null){
       const src=B.foes.find(f=>f.id===t.phantomOf&&f.alive);
-      if(src) hurt(src,t.backlash||4,"환영의 반동","mag");
+      if(src) asSrc(run.heroes.find(x=>x.name===t.owner),()=>hurt(src,t.backlash||4,"환영의 반동","mag"));
     }
     if(t.curseOnDeath) B.foes.filter(x=>x.alive&&dist(t.slot,x.slot)<=1)
       .forEach(x=>{ x.weak=(x.weak||0)+t.curseOnDeath;
@@ -13990,7 +14209,7 @@ function endPhase(){
   (B.portals||[]).forEach(p=>{
     if(p.side!=="foe") return;
     const f=foeAt(p.slot);
-    if(f&&f.alive){ bump(); hurt(f,p.dmg,"균열 차원문","mag") }
+    if(f&&f.alive){ bump(); asSrc(run.heroes.find(x=>x.name===p.by),()=>hurt(f,p.dmg,"균열 차원문","mag")) }
   });
   if(n) B.log.splice(mark,0,{t:icoify("— 턴 종료 효과 —"),c:"t2"});
   return n;
@@ -14199,7 +14418,7 @@ function startMyTurn(){
         fx({side:"foe",slot:f.slot,blowup:1,gap:0});
         /* 마지막 true = ownFx. 안 켜면 옛 boom SVG 가 같이 떠서 두 겹으로 겹친다.
            art:"boom" 은 그대로 둔다 — 그림만 끄는 것이고 그 값은 피해 셈과 소리가 본다 */
-        hurt(f,v,"응축 폭발","boom",0,0,true);
+        asSrc(h,()=>hurt(f,v,"응축 폭발","boom",0,0,true));
       });
     }
   });
@@ -14214,14 +14433,14 @@ function startMyTurn(){
         fx({side:"foe",slot:f.slot,burn:1,gap:0});
         /* 끝의 1 = ownFx — art 를 비워 파란 마법 균열을 끈다. 불인데 얼음처럼 보였다.
            art:"mag" 값 자체는 피해 셈과 소리에도 쓰이므로 그대로 둔다. */
-        hurt(f,f.burn,"화상","mag",0,0,1);
+        asSrc(f.burnBy&&run.heroes.find(x=>x.name===f.burnBy),()=>hurt(f,f.burn,"화상","mag",0,0,1));
       }
       f.burn=Math.max(0,f.burn-1);
     }
     if(f.alive&&f.infect){
       const inv=run.heroes.find(x=>x.name==="인비디아"&&x.slot>0);
       const v=1+(inv?inv.mag:0)+(inv?(inv.tag.plaguePlus||0):0);
-      hurt(f,v,"감염","mag"); if(f.alive) f.infect--;
+      asSrc(inv,()=>hurt(f,v,"감염","mag")); if(f.alive) f.infect--;
     } });
   (B.portals||[]).forEach(p=>{
     if(p.side!=="mine") return;
