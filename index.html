@@ -5021,8 +5021,8 @@ const SKILL_FULL={
  "태초의 정령":"배치될 때, 플로우로 전투를 시작합니다.\n\n플로우가 나설 때, 추가 마법력을 모두 추가 보호력으로 전환합니다.\n플레어가 나설 때, 추가 보호력을 모두 추가 마법력으로 전환합니다.",
  "균형":"플로우가 나설 때, 1칸 앞으로 이동하고 보호막을 2(추가 ¤ ) 얻습니다.\n플레어가 나설 때, 1칸 뒤로 이동하고 피해를 2(추가 ∴ ) 줍니다.",
  "변환":"플레어가 나섭니다. 이번 턴에 변환의 비용이 1 증가합니다.",
- "물과 불":"이동할 때마다 추진력을 1 얻습니다.\n\n플로우가 나설 때, 거리 2의 적에게 공격약화, 마법약화를 1 부여합니다.\n플레어가 나설 때, 거리 2의 적에게 화상을 1 부여합니다.",
- "조화":"잠금(2). 피해를 10(추가 ∴,¤ )줍니다.\n\n플로우가 나설 때, 준 피해만큼 보호막을 얻습니다.\n플레어가 나설 때, 치명타로 적중합니다.",
+ "물과 불":"이동할 때마다 추진력을 1 얻습니다.\n\n플로우가 나설 때, 거리 2의 적에게 공격약화, 마법약화를 1 부여합니다.\n플레어가 나설 때, 거리 2의 적에게 화상을 1 부여합니다.\n\n이번 턴에 물과 불의 비용이 1 증가합니다.",
+ "조화":"잠금(1). 피해를 10(추가 ∴,¤ )줍니다.\n\n플로우가 나설 때, 준 피해만큼 보호막을 얻습니다.\n플레어가 나설 때, 치명타로 적중합니다.",
  "쓰담쓰담":"피해를 2(추가 ∴ ) 줍니다. 보호막을 1(추가 ¤ ) 얻습니다. ",
  "씹어먹기":"피해를 6(추가 † ) 주고, 체력을 2 회복합니다.",
  "악마 하수인":"굴라의 균열 차원문을 이미 차원문이 있는 자리에 재사용하면 가져옵니다.",
@@ -5198,8 +5198,8 @@ HEROES["플레어와 플로우"]={title:"물과 불의 정령들",role:"보호 �
   skills:[
    {n:"균형",cost:1,el:"마법",tg:"foe",balance:1,dmg:2,d:"플로우 · 한 칸 앞으로 + 보호막 2 / 플레어 · 한 칸 뒤로 + 피해 2"},
    {n:"변환",cost:0,el:"집중",tg:"self",swap:1,d:"태세를 바꾼다 · 이번 턴에 쓸 때마다 값 +1"},
-   {n:"물과 불",cost:3,costType:"mom",el:"마법",tg:"self",elemental:1,d:"추진력 3 · 플로우 · 거리 2의 적에게 공격약화·마법약화 1 / 플레어 · 화상 1"},
-   {n:"조화",cost:1,el:"마법",tg:"foe",lock:2,harmony:1,dmg:10,d:"잠금(2) · 피해 10(추가 마법력+보호력) · 플로우 · 준 피해만큼 보호막 / 플레어 · 치명타"}
+   {n:"물과 불",cost:3,costType:"mom",el:"마법",tg:"self",elemental:1,d:"추진력 3 · 플로우 · 거리 2의 적에게 공격약화·마법약화 1 / 플레어 · 화상 1 · 이번 턴에 쓸 때마다 값 +1"},
+   {n:"조화",cost:1,el:"마법",tg:"foe",lock:1,harmony:1,dmg:10,d:"잠금(1) · 피해 10(추가 마법력+보호력) · 플로우 · 준 피해만큼 보호막 / 플레어 · 치명타"}
   ]};
 HEROES["보아"]={title:"균열의 짐승",role:"공중 · 비늘",hp:20,mana:2,hpLv:2,
   focus:"공중 띄우기, 상대방 이동, 전용 자원",
@@ -8163,7 +8163,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=280;
+const BUILD_NO=281;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -14545,6 +14545,7 @@ function runEffect(h,i,s,target){
   if(s.elemental){
     /* '거리 2의 적' = 딱 거리 2 (사용자 확인 2026-09-11) */
     const list=B.foes.filter(f=>f.alive&&dist(h.slot,f.slot)===2);
+    h.elemN=(h.elemN||0)+1; s.cost=3+h.elemN;          /* 이번 턴에 또 쓰면 값이 1 오른다 (노트) */
     if(!list.length){ say("거리 2에 적이 없습니다.","t2"); return }
     if(ffFlare(h)){ list.forEach(f=>{ f.burn=(f.burn||0)+1; f.burnBy=h.name;
         fx({side:"foe",slot:f.slot,ring:"#e0705a",s:"fire",txt:"화상"+f.burn,cls:"dmg",gap:70});
@@ -15461,7 +15462,8 @@ function startMyTurn(){
     /* 가시 돋힌 피부 — 응축 폭발이 터질 때까지는 턴이 바뀌어도 가시가 남는다 */
     h.thornTmp=(h.bomb>0&&h.tag.bombThorn)?h.tag.bombThorn:0;
     const es2=itemBt(h,'startTurnShield'); if(es2) h.shield+=es2;
-    if(isFF(h)){ h.swapN=0; const sw=h.sk.find(k=>k&&k.swap); if(sw) sw.cost=0 }
+    if(isFF(h)){ h.swapN=0; const sw=h.sk.find(k=>k&&k.swap); if(sw) sw.cost=0;
+      h.elemN=0; const em=h.sk.find(k=>k&&k.elemental); if(em) em.cost=3 }
     /* 항상 대비하기 — 손에 방어구 카드를 쥐고 턴을 맞으면 보호막 */
     if(h.tag.readyShield&&(B.hand||[]).some(c=>c.type==="item"&&ARMOR_CARDS[c.name])){
       h.shield+=h.tag.readyShield;
