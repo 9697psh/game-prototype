@@ -596,7 +596,10 @@ button.dtl{padding:3px 10px;font-size:11.5px}
   display:flex;gap:10px;justify-content:center}
 .startpacks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:6px}
 /* ── 주둔지 — 왼쪽 큰 판(숙면·지도·장비·나가기) + 오른쪽 시설 두루마리 (사용자 시안 2026-09-12) ── */
-.camp{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:16px;margin-top:22px;text-align:left;align-items:start}
+.camp{display:grid;grid-template-columns:minmax(0,1fr) 240px 232px;gap:16px;margin-top:22px;text-align:left;align-items:start}
+.camp-h{display:flex;flex-direction:column;gap:9px;max-height:420px;overflow-y:auto;padding-right:6px;scrollbar-width:thin}
+.camp-h .rost{margin:0;flex:0 0 auto}
+.camp-hh{font-size:11px;letter-spacing:.12em;color:var(--dim);padding:2px 2px 0}
 .camp-l{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:18px;border:1px solid var(--rule);border-radius:12px;
   background:var(--panel);min-height:360px}
 .cbtn{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;
@@ -628,7 +631,8 @@ button.dtl{padding:3px 10px;font-size:11.5px}
 .cfac .ft b{font-family:var(--serif);font-size:14px;color:var(--fg)}
 .cfac .ft small{font-size:11.5px;color:var(--dim);line-height:1.5;word-break:keep-all}
 .cfac .ft .cnote{font-size:11px;color:var(--faint)}
-@media (max-width:760px){ .camp{grid-template-columns:1fr} .camp-r{max-height:none} }
+@media (max-width:980px){ .camp{grid-template-columns:minmax(0,1fr) 240px} .camp-h{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;max-height:none} }
+@media (max-width:760px){ .camp{grid-template-columns:1fr} .camp-r,.camp-h{max-height:none} }
 .startpacks .rw{margin:0}
 /* 오른쪽 — 고르기 전에는 안내만 */
 .hdetail{border:1px solid var(--rule);border-radius:10px;background:var(--panel);
@@ -8344,7 +8348,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=290;
+const BUILD_NO=291;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -9351,21 +9355,26 @@ ${NODE[cell.t].label} · ${cell.waves}라운드\n${cell.style}\n${cell.loot}`;
   app.appendChild(el(`<div style="margin-top:20px" class="hint">대원${(run.bag||[]).length?` · 가방에 장신구 ${run.bag.length}개 (주둔지에서 정리)`:""}</div>`));
   app.appendChild(el(synHtml()));
   const rs=el(`<div class="roster"></div>`);
-  run.heroes.forEach((h,i)=>{
-    const card=el(`<div class="rost pick2 ${h.down?"down":""} ${run.showHero===i?"on":""}">
-      <div class="art">${figure(h.name)}</div>
-      <div><b>${esc(h.name)}</b>${h.down?`<span class="chip on">쓰러짐</span>`:""}
-        <small>Lv.${h.lv} · 경험치 ${h.exp}/${needExp(h.lv)}</small>
-        <small>${ic("hp")}${h.hp}/${h.maxHp} ${ic("atk")}${h.atk} ${ic("mag")}${h.mag} ${ic("def")}${h.def}</small>
-        ${itemSlots(h)}
-        <small class="more">${(h.tag.taken||[]).length
-          ? `고른 보상 ${(h.tag.taken||[]).length}개 — 눌러서 보기`
-          : "눌러서 상세 보기"}</small>
-      </div></div>`);
-    card.onclick=()=>{ run.showHero=(run.showHero===i)?null:i; render() };
-    rs.appendChild(card);
-  });
+  run.heroes.forEach((h,i)=>rs.appendChild(rostCard(h,i)));
   app.appendChild(rs);
+  heroPane(app);
+}
+/* 대원 카드 — 지도와 주둔지가 같이 쓴다. 누르면 run.showHero 가 바뀌고 heroPane 이 아래에 상세를 편다 */
+function rostCard(h,i){
+  const card=el(`<div class="rost pick2 ${h.down?"down":""} ${run.showHero===i?"on":""}">
+    <div class="art">${figure(h.name)}</div>
+    <div><b>${esc(h.name)}</b>${h.down?`<span class="chip on">쓰러짐</span>`:""}
+      <small>Lv.${h.lv} · 경험치 ${h.exp}/${needExp(h.lv)}</small>
+      <small>${ic("hp")}${h.hp}/${h.maxHp} ${ic("atk")}${h.atk} ${ic("mag")}${h.mag} ${ic("def")}${h.def}</small>
+      ${itemSlots(h)}
+      <small class="more">${(h.tag.taken||[]).length
+        ? `고른 보상 ${(h.tag.taken||[]).length}개 — 눌러서 보기`
+        : "눌러서 상세 보기"}</small>
+    </div></div>`);
+  card.onclick=()=>{ run.showHero=(run.showHero===i)?null:i; render() };
+  return card;
+}
+function heroPane(app){
   if(run.showHero!=null&&run.heroes[run.showHero]){
     const pane=heroPanel(run.heroes[run.showHero]);
     const x=el(`<div style="text-align:right;margin-top:10px"><button>닫기</button></div>`);
@@ -9654,8 +9663,13 @@ function drawCamp(app){
     R.appendChild(c);
   });
   R.appendChild(el(`<div class="cfac soon"><div class="fi"></div><div class="ft"><b>공개 예정</b><small>새 시설이 여기에 들어섭니다.</small></div></div>`));
-  lay.appendChild(L); lay.appendChild(R);
+  /* ── 맨 오른쪽 — 대원 목록 (지도의 카드 그대로). 누르면 아래에 상세 ── */
+  const H=el(`<div class="camp-h"></div>`);
+  H.appendChild(el(`<div class="camp-hh">대원${(run.bag||[]).length?` · 가방 ${run.bag.length}개`:""}</div>`));
+  run.heroes.forEach((h,i)=>H.appendChild(rostCard(h,i)));
+  lay.appendChild(L); lay.appendChild(R); lay.appendChild(H);
   wrap.appendChild(lay);
+  heroPane(wrap);
 }
 function drawGear(app){
   run.bag=run.bag||[];
