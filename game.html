@@ -7744,6 +7744,12 @@ function nextField(){
   });
   dayBreak(1,`${f.n} · ${f.days}일 안에 우두머리를 넘어야 합니다`);
   toast(`${f.n}에 들어섭니다. 대원들이 체력의 40%만큼 추스렸습니다.`);
+  /* 홀로 떠나기 — 새 구역 첫머리에 약속한 보상부터 */
+  if(run.soloBonus){ const sb=run.soloBonus; run.soloBonus=null;
+    run.after=[]; for(let i=0;i<sb.n;i++) run.after.push({grade:sb.grade});
+    run.afterList=null; run.afterUsed=0;
+    toast(`홀로 떠난 값 — ${sb.grade} 보상 ${sb.n}개를 받습니다.`);
+    view="map"; afterChest(); return }
   view="map"; render();
 }
 
@@ -8123,7 +8129,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=274;
+const BUILD_NO=275;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -10728,9 +10734,22 @@ function drawRecruit(app){
     row.appendChild(c);
   });
   wrap.appendChild(row);
-  const sk=el(`<div style="margin-top:20px"><button>${pool.length?"아무도 받지 않는다":"더 합류할 대원이 없습니다 — 계속"}</button></div>`);
-  sk.querySelector("button").onclick=afterChest;
+  /* 홀로 떠나기 — 동료를 안 받는 대신 다음 구역 첫머리에 보상. 1→2 중급 셋 · 2→3 상급 하나 */
+  const solo=soloBonusFor(run.field);
+  const sk=el(`<div style="margin-top:20px">
+    ${pool.length?`<button class="go">홀로 떠나기</button>
+      <div class="hint" style="margin-top:8px;font-size:11.5px">동료를 선택하지 않습니다. 다음 스테이지 시작 시 ${solo?`<b>${esc(solo.grade)} 보상 ${solo.n}개</b>`:"추가 보상"}를 얻습니다.</div>`
+      :`<button>더 합류할 대원이 없습니다 — 계속</button>`}</div>`);
+  sk.querySelector("button").onclick=()=>{
+    if(pool.length&&solo){ run.soloBonus=solo; toast(`홀로 떠납니다 — 다음 구역에서 ${solo.grade} 보상 ${solo.n}개를 받습니다.`) }
+    afterChest() };
   wrap.appendChild(sk);
+}
+/* 이 구역의 우두머리를 넘고 홀로 떠날 때 다음 구역에서 받는 것 */
+function soloBonusFor(field){
+  if(field===0) return {grade:"중급",n:3};
+  if(field===1) return {grade:"상급",n:1};
+  return null;
 }
 function pickHero(title,cb){ pending={title:title,cb:cb}; view="pickhero"; render() }
 function drawPickHero(app){
