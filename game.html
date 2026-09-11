@@ -8344,7 +8344,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=289;
+const BUILD_NO=290;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -11861,6 +11861,18 @@ BARK["쿠렘타이"]["skill:착취"]=["<shake>내놓아라!!!</shake>","<shake>�
 BARK["쿠렘타이"]["skill:영혼 분리"]=["후회해라...","너의 영혼은 내 것이다..."];
 BARK["쿠렘타이"]["skill:환상통"]=["죽음을 두려워 하라...","고통!!!"];
 BARK["쿠렘타이"]["skill:사형 선고"]=["죽음께서 기뻐하시겠군...","축하한다..."];
+/* 플레어와 플로우 — 플로우의 말은 늘 물결. 한 줄에 둘이 말하면 플로우 몫만 물결 */
+{ const W=t=>"<wave>"+t+"</wave>", FF=BARK["플레어와 플로우"]=BARK["플레어와 플로우"]||{};
+  FF["skill:균형:플레어"]=["불타라!","타올라라!","너가 있을 곳이 아니다!"];
+  FF["skill:균형:플로우"]=[W("그만두어라."),W("소용없다."),W("집중해라.")];
+  FF["skill:변환:플로우"]=[W("내가 맡을게.")+" 고마워.",  W("수고했어.")+" 여기까지야."];        /* 플레어 → 플로우 */
+  FF["skill:변환:플레어"]=["내 차례군! "+W("할 수 있어."), "불태워주마! "+W("우리의 목적을 잊지마.")];   /* 플로우 → 플레어 */
+  FF["skill:물과 불:플레어"]=["불기둥!","정화되어라!","후회해라!"];
+  FF["skill:물과 불:플로우"]=[W("그만."),W("약해질거다."),W("포기해라.")];
+  FF["skill:조화:플로우"]=[W("흘러라."),W("흐르는 파도..."),W("최고의 공격은 방어다.")];
+  FF["skill:조화:플레어"]=["아름다워!","나를 믿지? "+W("당연하지."),"하하하!"];
+  FF["skill:밀물"]=[W("저리가라."),W("밀물.")];
+  FF["skill:썰물"]=[W("이리와라."),W("썰물.")]; }
 BARK["굴라"]["skill:씹어먹기"]=["냠냠","쩝쩝","(와그작)"];
 BARK["굴라"]["skill:균열 차원문"]=["열려라!"];
 BARK["굴라"]["skill:균열 차원문:적"]=["후회하게 해줄게!","조오심해!"];
@@ -11955,7 +11967,11 @@ function barkPick(u,cats,force){
 }
 /* 기술을 쓸 때 — 그 기술 전용 + 공용(atk). 갈래가 있는 기술(균열 차원문)은 효과 쪽에서 따로 부른다 */
 const BARK_LATE={"균열 차원문":1};
-function barkSkill(h,s){ if(!s||BARK_LATE[s.n]) return; barkPick(h,["skill:"+s.n,"atk"]) }
+function barkSkill(h,s){ if(!s||BARK_LATE[s.n]) return;
+  /* 플레어와 플로우 — 자세마다 다른 말. 변환은 바뀐 뒤의 자세로 */
+  if(isFF(h)){ const toFlare=s.swap?!ffFlare(h):ffFlare(h);
+    barkPick(h,["skill:"+s.n+":"+(toFlare?"플레어":"플로우"),"skill:"+s.n,"atk"]); return }
+  barkPick(h,["skill:"+s.n,"atk"]) }
 function intentHtml(f){
   if(!f.alive||!f.intent) return "";
   const I=f.intent;
@@ -13813,10 +13829,10 @@ function ffStep(h,to,blockedMsg){
     if(T.blockedDmg){ const f=nearestFoe(h); if(f){ say(`잿불 — ${f.name}에게 피해 ${T.blockedDmg}`,"t2"); ffHit(h,f,T.blockedDmg,"잿불") } }
   } else {
     if(T.blockedShield){ h.shield+=T.blockedShield; say(`빗물 — 보호막 +${T.blockedShield}`,"t2") }
-    if(T.tidePush){ say("밀물 — 파도가 적을 밀어냅니다.","t1"); fx({s:sfxOr("플레어와 플로우 밀물",null),gap:0});
+    if(T.tidePush){ say("밀물 — 파도가 적을 밀어냅니다.","t1"); barkPick(h,["skill:밀물","atk"],1); fx({s:sfxOr("플레어와 플로우 밀물",null),gap:0});
       foes.slice().sort((a,b)=>b.slot-a.slot).forEach(f=>{ if(f.slot<SLOTS&&!foeAt(f.slot+1)) f.slot++;
         fx({side:"foe",slot:f.slot,sheet:"fx_ff_tide",sheetOpt:{z:1.6},gap:60}); ffHit(h,f,3,"밀물") }) }
-    if(T.tidePull){ say("썰물 — 파도가 적을 끌어옵니다.","t1"); fx({s:sfxOr("플레어와 플로우 썰물",null),gap:0});
+    if(T.tidePull){ say("썰물 — 파도가 적을 끌어옵니다.","t1"); barkPick(h,["skill:썰물","atk"],1); fx({s:sfxOr("플레어와 플로우 썰물",null),gap:0});
       foes.slice().sort((a,b)=>a.slot-b.slot).forEach(f=>{ if(f.slot>1&&!foeAt(f.slot-1)) f.slot--;
         fx({side:"foe",slot:f.slot,sheet:"fx_ff_tide",sheetOpt:{z:1.6,flip:1},gap:60}); ffHit(h,f,3,"썰물") }) }
   }
