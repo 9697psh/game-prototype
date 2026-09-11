@@ -2711,9 +2711,12 @@ const SFX=(()=>{
            get vol(){ return vol },
            set vol(v){ vol=Math.max(0,Math.min(1,+v||0)); if(vol>0) ctx() } };
 })();
+/* 누르는 소리 — 기술 카드(.sk)만 제 소리(skillclick)를 낸다. 나머지 버튼은 click.
+   skillclick 녹음이 없으면 click 으로 내려간다 (sfxOr). */
 document.addEventListener("pointerdown",e=>{
   const b=e.target.closest && e.target.closest("button,.pick,.rw,.card,.sk");
-  if(b && !b.classList.contains("off")) SFX.play("click");
+  if(!b || b.classList.contains("off")) return;
+  SFX.play(b.classList.contains("sk") ? sfxOr("skillclick","click") : "click");
 },true);
 
 /* 효과음 파일이 있는 곳. 배경음악(bgm/)과 나란히 둔다 */
@@ -4065,9 +4068,11 @@ const PNG_SPRITE={
 };
 const SND={
  "block":{v:0.22,f:"block.wav"},
+ "click":{v:0.12,f:"click.wav"},
  "eshbreak":{v:0.09,f:"eshbreak.wav"},
  "shbreak":{v:0.15,f:"shbreak.wav"},
  "shield":{v:0.11,f:"shield.wav"},
+ "skillclick":{v:0.16,f:"skillclick.wav"},
  "굴라 균열 차원문":{v:0.05,f:"굴라 균열 차원문.wav"},
  "굴라 씹어먹기":{v:0.24,f:"굴라 씹어먹기.wav"},
  "굴라 융합":{v:0.24,f:"굴라 융합.wav"},
