@@ -8036,7 +8036,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=252;
+const BUILD_NO=253;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -8101,6 +8101,16 @@ function txtEntries(){
              BARK[n][k]=String(v).split("\n").map(x=>x.trim()).filter(Boolean) },true);
     });
   });
+  /* 상점 주인 · 제련소 브란 — 한 줄이 대사 하나 */
+  [["greet","들어설 때"],["sell","판매하기 화면"]].forEach(([k,label])=>
+    add("대사","shopsay:"+k,"상점 주인 ▸ "+label,
+      ()=>(SHOP_SAY[k]||[]).join("\n"),
+      v=>{ SHOP_SAY[k]=String(v).split("\n").map(x=>x.trim()).filter(Boolean) },true));
+  [["none","가져온 것이 없을 때"],["idle","고르기 전"],["one","하나만 골랐을 때"],["bad","안 붙는 둘일 때"],
+   ["poor","제련석이 모자랄 때"],["ok","붙일 수 있을 때"],["done","다 만들었을 때"]].forEach(([k,label])=>
+    add("대사","smithsay:"+k,"제련소 브란 ▸ "+label,
+      ()=>(SMITH_SAY[k]||[]).join("\n"),
+      v=>{ SMITH_SAY[k]=String(v).split("\n").map(x=>x.trim()).filter(Boolean) },true));
   BCAT.forEach(([k,label])=>add("대사","barkany:"+k,"공통 · 이름 없는 대상 ▸ "+label,
     ()=>(BARK_ANY[k]||[]).join("\n"),
     v=>{ BARK_ANY[k]=String(v).split("\n").map(x=>x.trim()).filter(Boolean) },true));
@@ -9970,14 +9980,20 @@ function shopIcon(k){
   }[k]||'<path d="M32 10 L40 26 L58 28 L45 40 L48 56 L32 48 L16 56 L19 40 L6 28 L24 26 Z" fill="@"/>';
   return '<svg viewBox="0 0 64 64">'+g.split("@").join(c)+'</svg>';
 }
+/* 상점 주인의 대사 — 들어설 때 하나, 판매하기 화면에서 하나. 설명 고치기에서 고친다 (한 줄이 대사 하나) */
+const SHOP_SAY={
+  greet:["필요한 게 있으면 골라 보시오. 값은 그때그때 다르니."],
+  sell :["팔 게 있으면 내놓아 보시오. 값은 내가 매기지."]
+};
 function drawShop(app){
   const sh=run.shop;
   const own=ownedItems();
+  const line=rnd((run.sellOpen?SHOP_SAY.sell:SHOP_SAY.greet)||SHOP_SAY.greet)||"";
   /* 머리 — 가운데에 주인, 오른쪽에 판매하기 */
   const head=el(`<div class="shophead">
     <div class="shopnpc"><div class="npcface">${figure("도미니코")}</div>
       <b>${esc(sh.npc)}</b>
-      <p>"필요한 게 있으면 골라 보시오. 값은 그때그때 다르니."</p>
+      <p>"${rich(line)}"</p>
       <p class="gold">${resIcon("gold")} ${run.gold}</p></div>
     <div class="sellwrap">
       <button class="go sellbtn">${run.sellOpen?"진열대로 돌아가기":"판매하기"}</button>
