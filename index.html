@@ -6053,6 +6053,10 @@ function hasLimitSkill(h){
     ||(s.opts||[]).some(o=>o&&(o.limit>0||(o.alt&&o.alt.limit>0))));
   return h.sk.some(any);
 }
+/* 보상 설명 가운데 기획용 메모 줄('*…등장하지 않음')은 화면에서 뺀다 — 칩(한 번만·필요)이 그 뜻을 대신 보여 준다 */
+function rewDesc(d){
+  return String(d||"").split("\n").filter(l=>!/^\s*\*.*등장하지 않음/.test(l)).join("\n").replace(/\n+$/,"");
+}
 /* 보상 칸에 조건을 적어 준다 */
 function rewCondHtml(r){
   const c=rewCond(r);
@@ -8038,7 +8042,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=260;
+const BUILD_NO=261;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -8360,7 +8364,7 @@ function drawCodex(app){
         wrap.appendChild(el(`<div class="cxg">${g} ${list.length}종</div>`));
         const row=el(`<div class="cxrw"></div>`);
         list.forEach(r=>row.appendChild(el(
-          `<div class="cxr1${gcls(g)}"><b>${esc(r.n)}</b><span>${rich(r.d)}</span>${rewCondHtml(r)}</div>`)));
+          `<div class="cxr1${gcls(g)}"><b>${esc(r.n)}</b><span>${rich(rewDesc(r.d))}</span>${rewCondHtml(r)}</div>`)));
         wrap.appendChild(row);
       });
     } }
@@ -11757,7 +11761,7 @@ function drawBattle(app){
         const rs=list.filter(r=>r.g===g); if(!rs.length) return;
         const row=el(`<div class="knob own sandrw"><span>${esc(label)}</span></div>`);
         rs.forEach(r=>{
-          const b=el(`<button class="mini${has(r.n)?" on":""}" title="${esc((r.d||"").replace(/\n/g," "))}">${esc(r.n)}</button>`);
+          const b=el(`<button class="mini${has(r.n)?" on":""}" title="${esc(rewDesc(r.d).replace(/\n/g," "))}">${esc(r.n)}</button>`);
           b.onclick=e=>{ e.stopPropagation(); flip(r.n) };
           row.appendChild(b);
         });
@@ -15707,7 +15711,7 @@ function offerCards(app,hero,grade,done,lvUp){
     const c=el(`<div class="rw rwpick${gcls(r.g)}${mine?" own":""}">${
       mine?`<span class="ownmark">전용</span>`:""}<div class="rwi">${rewardIcon(r)}</div>
       <b>${esc(r.n)}</b>
-      <div class="rwd"><p>${rich(r.d)}</p></div>${rewCondHtml(r)}
+      <div class="rwd"><p>${rich(rewDesc(r.d))}</p></div>${rewCondHtml(r)}
       <div class="rwft"><span class="gd">${esc(r.g)}</span>
         <span class="ow${mine?" mine":""}">${mine?"전용":"공용"}</span></div>
     </div>`);
