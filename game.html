@@ -684,9 +684,12 @@ button.dtl{padding:3px 10px;font-size:11.5px}
    잘라서 맞추면 감정사의 비석과 초롱, 해시계의 웅덩이가 통째로 날아간다.
    ※ .pic 은 '제 그림이 있다' 는 표다. 지금은 꾸밈이 따로 없지만
      아이콘 한 장짜리 이벤트와 가르는 데 쓴다 */
-.evtitle{margin-top:14px;font-family:var(--serif);font-size:21px;color:var(--brass);
+/* 그림 아래 제목+상황 문구 상자 — 그림과 같은 너비 */
+.evpanel{width:min(640px,92vw);margin-top:10px;padding:12px 18px 10px;box-sizing:border-box;
+  background:var(--panel);border:1px solid var(--rule);border-radius:8px}
+.evtitle{margin-top:0;font-family:var(--serif);font-size:19px;color:var(--brass);
   letter-spacing:.06em;text-align:center}
-.evdesc{margin-top:10px;max-width:660px;text-align:center}
+.evdesc{margin-top:6px;max-width:none;text-align:center}
 .evdesc .evp{color:var(--dim);font-size:13.5px;line-height:1.75;margin:0 0 4px;word-break:keep-all}
 /* 대사 — 다른 줄에 가운데로, 굵게, 은은하게 빛난다 */
 .evsay{margin:12px auto;padding:9px 20px;max-width:600px;
@@ -701,18 +704,24 @@ button.dtl{padding:3px 10px;font-size:11.5px}
 @keyframes evGlow{0%,100%{text-shadow:0 0 12px rgba(201,162,39,.34)}
   50%{text-shadow:0 0 22px rgba(201,162,39,.75)}}
 .evq{font-style:normal;font-weight:700;color:#f0e2c0;text-shadow:0 0 12px rgba(201,162,39,.45)}
-.evopts{margin-top:18px;width:100%;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
-.evopts .choice{flex:1 1 210px;max-width:250px;margin:0;
-  text-align:center;align-items:center;padding:14px 16px}
-.evopts .choice b{font-size:13.5px}
-.evopts .choice span{word-break:keep-all}
+/* 선택지 — 세로로 쌓이고, 한 줄이 [이름][설명] 두 칸이다 (그림·상자와 같은 너비) */
+.evopts{margin-top:10px;width:min(640px,92vw);display:flex;flex-direction:column;gap:8px}
+.evopts .choice{flex:none;max-width:none;width:100%;margin:0;box-sizing:border-box;
+  display:grid;grid-template-columns:150px minmax(0,1fr);align-items:center;gap:0;padding:0;
+  text-align:left;overflow:hidden}
+.evopts .choice > b{font-size:13px;display:flex;align-items:center;justify-content:center;text-align:center;
+  align-self:stretch;padding:12px 10px;background:rgba(201,162,39,.08);border-right:1px solid var(--rule);
+  word-break:keep-all}
+.evopts .choice span{word-break:keep-all;padding:11px 14px;font-size:12.5px}
+.evopts .choice span+span{grid-column:2;padding-top:0}
+@media(max-width:560px){ .evopts .choice{grid-template-columns:1fr} .evopts .choice > b{border-right:0;border-bottom:1px solid var(--rule)} .evopts .choice span+span{grid-column:1} }
 /* 설명 고치기에서 넣은 줄바꿈이 그대로 보이게 — 선택지 설명 · 상점 물건 · 보상 설명 · 도감 보상 */
 .choice span,.good .gd p,.rw .rwd p,.rw p,.cxr1 span{white-space:pre-line}
-.evopts .evres{flex:1 1 100%;justify-content:center;text-align:center}
+.evopts .evres{flex:none;width:100%;box-sizing:border-box;justify-content:center;text-align:center}
 .evopts .evres>div{text-align:center}
 .evopts .evres b{display:block;margin-bottom:3px}
 .evopts .evres p{margin:0}
-.evopts .go2{flex:1 1 100%;text-align:center}
+.evopts .go2{flex:none;width:100%;box-sizing:border-box;display:block;text-align:center;padding:12px}
 .rewards{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:22px}
 .rw{--gc:var(--brass);position:relative;width:198px;min-height:244px;
   background:linear-gradient(180deg,var(--raise),var(--panel) 55%);
@@ -10442,8 +10451,8 @@ function drawRelic(app){
   const box=el(`<div class="evbox">
     <div class="evart${big?(pic?" wide pic":" wide"):""}">${
       big||figure(e.face||"작은 죄수")}</div>
-    <div class="evtitle">${esc(e.n)}</div>
-    <div class="evdesc" id="evd"></div>
+    <div class="evpanel"><div class="evtitle">${esc(e.n)}</div>
+    <div class="evdesc" id="evd"></div></div>
     <div class="evopts" id="ch"></div>
   </div>`);
   app.appendChild(box);
