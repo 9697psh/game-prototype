@@ -1,0 +1,2865 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+</head>
+<body>
+<title>기획 노트</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&display=swap">
+
+<style id="appStyle">
+/* 단일 테마: 어두운 다크판타지 세계관에 맞춰 의도적으로 하나의 룩만 유지.
+   모든 색을 토큰으로 명시해 호스트 배경에 영향을 받지 않게 함. */
+:root{
+  --ink:#14110e; --panel:#1c1815; --raise:#252019; --rule:#3a3128; --rule2:#4a3e31;
+  --fg:#e7dcc8; --dim:#9c8d77; --faint:#6d6252;
+  --brass:#c9a227; --blood:#8e2b2b; --moss:#6f8f5e;
+  --k-debuff:#b48ce0; --k-buff:#e0c060; --k-atk:#e0705a; --k-mag:#6aa8e0;
+  --k-def:#e0c85a; --k-hp:#7fd39a; --k-move:#5fd8cf; --k-mana:#5f8fe0; --k-plain:#9c8d77; --k-skill:#e08a3c;
+  --warn:#e0a86a;
+  --s1:4px; --s2:8px; --s3:12px; --s4:18px; --s5:28px;
+  --serif:"Noto Serif KR",serif;
+  --sans:"Pretendard","Apple SD Gothic Neo","Malgun Gothic","맑은 고딕",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ink);color:var(--fg);font-family:var(--sans);
+  font-size:14px;line-height:1.6;-webkit-text-size-adjust:100%}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:var(--fg)}
+input,select,textarea{background:var(--raise);border:1px solid var(--rule);border-radius:3px;
+  padding:8px 10px;width:100%;transition:border-color .12s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brass)}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible,
+.item:focus-visible,.chip:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+textarea{resize:vertical;min-height:64px;line-height:1.7}
+button{background:var(--raise);border:1px solid var(--rule);border-radius:3px;
+  padding:7px 12px;cursor:pointer;transition:border-color .12s,color .12s}
+button:hover{border-color:var(--brass);color:var(--brass)}
+button:disabled{opacity:.4;cursor:default}
+button:disabled:hover{border-color:var(--rule);color:var(--fg)}
+button.mini{padding:3px 9px;font-size:12px}
+button.danger:hover{border-color:var(--blood);color:#e08d8d}
+button.go{background:var(--brass);color:#1a1510;border-color:var(--brass);font-weight:700}
+button.go:hover{color:#1a1510;filter:brightness(1.1)}
+
+/* ── 헤더 ── */
+header{display:flex;align-items:center;gap:var(--s4);flex-wrap:wrap;
+  padding:10px var(--s4);background:var(--panel);border-bottom:1px solid var(--rule);
+  position:sticky;top:0;z-index:30}
+.mark{font-family:var(--serif);font-weight:700;font-size:17px;letter-spacing:.14em;
+  color:var(--brass);white-space:nowrap;margin:0}
+nav{display:flex;gap:2px;flex-wrap:wrap}
+nav button{border:none;background:none;border-radius:0;padding:6px 13px;
+  border-bottom:2px solid transparent;color:var(--dim);letter-spacing:.04em}
+nav button:hover{color:var(--fg)}
+nav button.on{color:var(--brass);border-bottom-color:var(--brass)}
+.grow{flex:1 1 auto}
+.tools{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:4px 11px;
+  border-radius:99px;border:1px solid var(--rule);color:var(--dim);white-space:nowrap}
+.pill .dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.pill.dirty{color:var(--brass);border-color:#5c4a1f}
+.pill.ok{color:var(--moss);border-color:#3b4d33}
+.pill.bad{color:#d98a8a;border-color:#5a3030}
+.pill.busy{color:var(--dim)}
+@media (prefers-reduced-motion:no-preference){
+  .pill.busy .dot{animation:pulse 1s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
+}
+
+/* ── 레이아웃 ── */
+.layout{display:flex;align-items:flex-start;min-height:calc(100vh - 54px)}
+.rail{width:236px;flex:none;background:var(--panel);border-right:1px solid var(--rule);
+  padding:var(--s3);position:sticky;top:54px;max-height:calc(100vh - 54px);overflow-y:auto;
+  display:flex;flex-direction:column;gap:var(--s2)}
+.railList{display:flex;flex-direction:column;gap:2px}
+.item{padding:8px 10px;border-radius:3px;cursor:pointer;border:1px solid transparent;
+  border-left:2px solid transparent;text-align:left;background:none;width:100%}
+.item:hover{background:var(--raise)}
+.item.on{background:var(--raise);border-left-color:var(--brass);color:var(--brass)}
+.item b{font-weight:500;display:block}
+.item small{display:block;color:var(--faint);font-size:11px;line-height:1.4}
+.item.on small{color:var(--dim)}
+main{flex:1 1 0;min-width:0;padding:var(--s5) var(--s5) 80px;max-width:940px}
+
+/* ── 오른쪽 간략 보기 ── */
+.peek{width:352px;flex:none;align-self:flex-start;position:sticky;top:54px;
+  max-height:calc(100vh - 54px);overflow-y:auto;padding:var(--s5) var(--s4) 60px}
+.pk{background:var(--panel);border:1px solid var(--rule);border-radius:5px;overflow:hidden}
+.pk-hd{padding:13px 15px;background:var(--raise);border-bottom:1px solid var(--rule)}
+.pk-nm{font-family:var(--serif);font-size:16px;font-weight:700;line-height:1.3}
+.pk-ti{font-size:11.5px;color:var(--brass);letter-spacing:.06em;margin-top:1px}
+.pk-row{display:flex;flex-wrap:wrap;gap:11px;align-items:center;margin-top:9px;font-size:12.5px}
+.pk-row span{display:inline-flex;align-items:center;gap:4px}
+.pk-focus{font-size:12px;color:var(--dim);margin-top:8px;line-height:1.5}
+.pk-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.pk-tag{font-size:10.5px;border:1px solid var(--rule2);border-radius:2px;padding:1px 6px;color:var(--dim)}
+.pk-sec{font-size:10px;letter-spacing:.16em;color:var(--faint);padding:13px 15px 3px}
+.pk-sk{padding:9px 15px;border-top:1px solid #2a241d}
+.pk-h{display:flex;align-items:center;gap:6px;font-size:13px}
+.pk-slot{font-size:10px;background:var(--rule2);color:#17130f;border-radius:2px;
+  padding:1px 5px;flex:none;font-weight:700;letter-spacing:.04em}
+.pk-n{font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pk-cost{font-size:11.5px;color:var(--dim);display:inline-flex;align-items:center;gap:3px;flex:none}
+.pk-d{font-size:12px;color:var(--dim);margin-top:5px;white-space:pre-wrap;line-height:1.65;
+  word-break:break-word}
+.pk-lock{font-size:10px;color:var(--faint);flex:none}
+.pk-none{padding:9px 15px;font-size:12px;color:var(--faint)}
+.modal{position:fixed;inset:0;background:rgba(11,9,8,.82);z-index:60;display:flex;
+  align-items:center;justify-content:center;padding:18px}
+.sheet{background:var(--panel);border:1px solid var(--rule2);border-radius:6px;
+  width:min(760px,100%);max-height:92vh;overflow:auto;padding:var(--s4);
+  display:flex;flex-direction:column;gap:var(--s3)}
+.sheetHd{display:flex;align-items:center;gap:var(--s2);font-family:var(--serif);
+  font-size:13px;letter-spacing:.14em;color:var(--brass)}
+.sheet textarea{min-height:110px;font-family:ui-monospace,Consolas,monospace;
+  font-size:11.5px;line-height:1.5}
+.sheet .row2{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.localbar{background:#221a11;border-bottom:1px solid #5a4522;color:var(--warn);
+  font-size:12.5px;padding:8px var(--s4);letter-spacing:.01em}
+.localbar b{color:#f0c98a}
+.sy-steps{display:flex;align-items:center;gap:5px;margin-top:10px}
+.sy-step{font-size:12.5px;font-weight:700;color:var(--faint);border:1px solid var(--rule);
+  border-radius:3px;padding:2px 11px;background:var(--ink);cursor:pointer}
+.sy-step:hover{color:var(--fg);border-color:var(--rule2)}
+.sy-step.on{color:#17130f;background:var(--brass);border-color:var(--brass)}
+.sy-step.on:hover{color:#17130f}
+.sy-arrow{color:var(--faint);font-size:10px}
+.pk-sk.off{opacity:.5}
+@media(max-width:1340px){ .peek{display:none} }
+
+.panel{background:var(--panel);border:1px solid var(--rule);border-radius:4px;
+  padding:var(--s4);margin-bottom:var(--s3)}
+.panel > h2{font-family:var(--serif);margin:0 0 var(--s3);font-size:12px;font-weight:700;
+  letter-spacing:.16em;color:var(--brass);display:flex;align-items:center;gap:var(--s2)}
+.panel > h2 .grow{min-width:0}
+.panel > h2 .acts{display:inline-flex;gap:var(--s2);align-items:center}
+.grid{display:grid;gap:var(--s3)}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+label{display:block;font-size:11px;color:var(--dim);margin-bottom:4px;letter-spacing:.06em}
+.stack{display:flex;flex-direction:column;gap:var(--s3)}
+.check{display:flex;align-items:center;gap:8px}
+.check input{width:auto}
+
+.entry{border:1px solid var(--rule);border-radius:3px;padding:var(--s3);background:var(--raise);
+  display:flex;flex-direction:column;gap:var(--s3)}
+.entry .top{display:flex;gap:var(--s2);align-items:center}
+.tag{font-size:11px;color:var(--brass);border:1px solid var(--rule2);border-radius:2px;
+  padding:1px 7px;white-space:nowrap;letter-spacing:.04em}
+
+.preview{padding:9px 11px;background:var(--ink);border:1px solid var(--rule);
+  border-left:2px solid var(--rule2);border-radius:2px;font-size:13px;white-space:pre-wrap;
+  word-break:break-word}
+.preview:empty{display:none}
+.kw{font-weight:700}
+.preview em,.pk-d em{font-style:italic}
+.preview u,.pk-d u{text-decoration:underline;text-underline-offset:2px}
+.preview strong,.pk-d strong{font-weight:700;color:var(--fg)}
+.ref{font-weight:700;cursor:help;text-decoration:underline;text-decoration-style:dotted;
+  text-decoration-color:var(--rule2);text-underline-offset:2px}
+.ref.card{text-decoration-color:var(--brass)}   /* 카드 참조 */
+/* (추가 † 2 ∴ 3) — 본문보다 한 단계 작게, 계수 표기임이 드러나게 */
+.add{font-size:.82em;color:var(--dim);letter-spacing:.01em}
+.ic{width:1.15em;height:1.15em;vertical-align:-.22em;flex:none}
+.kw > .ic{margin-left:0}
+.num{font-weight:700}                     /* 설명문 안의 숫자 */
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{font-size:11px;padding:3px 9px;border:1px solid var(--rule);border-radius:99px;
+  cursor:pointer;background:var(--raise);color:var(--dim);letter-spacing:.02em}
+.chip:hover{border-color:currentColor}
+.chipRow{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.chipLbl{font-size:10.5px;color:var(--faint);letter-spacing:.1em;flex:none;min-width:54px}
+.helper{display:flex;flex-direction:column;gap:6px}
+.sub{border:1px solid var(--rule2);border-radius:3px;padding:var(--s3);
+  display:flex;flex-direction:column;gap:var(--s3);background:#1a1613}
+.sub > .subHd{font-size:11px;letter-spacing:.1em;color:var(--brass);display:flex;
+  align-items:center;gap:var(--s2)}
+.groupHd{font-size:10.5px;color:var(--faint);letter-spacing:.12em;
+  padding:12px 4px 4px;flex:none;border-bottom:1px solid var(--rule);margin-bottom:2px}
+.groupHd:first-child{padding-top:2px}
+.slotRow{display:flex;align-items:center;gap:var(--s2)}
+.slotNo{font-size:11px;color:var(--faint);flex:none;width:16px;text-align:right}
+.warn{font-size:12.5px;color:var(--warn);border-left:2px solid #7a5a2a;
+  padding:7px 11px;background:#211a11;border-radius:2px}
+details.acc{border:1px solid var(--rule);border-radius:3px;background:var(--raise)}
+details.acc > summary{padding:9px 12px;cursor:pointer;display:flex;align-items:center;
+  gap:9px;list-style:none}
+details.acc > summary::-webkit-details-marker{display:none}
+details.acc > summary::before{content:"▸";color:var(--faint);flex:none;font-size:11px}
+details.acc[open] > summary::before{content:"▾";color:var(--brass)}
+details.acc > summary:hover{color:var(--brass)}
+details.acc[open] > summary{border-bottom:1px solid var(--rule);color:var(--brass)}
+details.acc .body{padding:var(--s3);display:flex;flex-direction:column;gap:var(--s3)}
+summary .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+summary .sub2{font-size:11px;color:var(--faint);flex:none}
+.tokens{display:flex;flex-wrap:wrap;gap:6px}
+.token{font-size:12px;border:1px solid var(--rule);border-radius:99px;padding:3px 10px;color:var(--dim)}
+.hint{color:var(--dim);font-size:12.5px;margin:0}
+.empty{color:var(--dim);text-align:center;padding:80px 20px}
+.empty b{display:block;font-family:var(--serif);color:var(--fg);font-size:15px;margin-bottom:8px}
+
+@media(max-width:900px){ .g4{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media(max-width:760px){
+  .layout{flex-direction:column}
+  .rail{width:100%;position:static;max-height:none;border-right:none;
+    border-bottom:1px solid var(--rule)}
+  .railList{flex-direction:row;overflow-x:auto;padding-bottom:4px;gap:6px}
+  .item{width:auto;flex:none;border-left:none;border-bottom:2px solid transparent;
+    border-radius:3px;white-space:nowrap}
+  .item.on{border-left-color:transparent;border-bottom-color:var(--brass)}
+  .groupHd{border-bottom:none;padding:0 2px;align-self:center;
+    border-left:1px solid var(--rule);padding-left:8px}
+  .groupHd:first-child{border-left:none;padding-left:2px}
+  .chipLbl{min-width:auto}
+  main{padding:var(--s4) var(--s3) 80px}
+  .g2,.g3,.g4{grid-template-columns:1fr}
+  input,select,textarea,button{font-size:16px}   /* iOS 확대 방지 */
+  nav button{padding:8px 12px}
+}
+</style>
+
+<header>
+  <h1 class="mark">기획 노트</h1>
+  <nav id="nav"></nav>
+  <span class="grow"></span>
+  <div class="tools" id="tools"></div>
+</header>
+
+<div class="layout">
+  <aside class="rail" id="rail"></aside>
+  <main id="main"></main>
+  <aside class="peek" id="peek"></aside>
+</div>
+<input type="file" id="fileIn" accept=".json" hidden>
+
+<script id="appScript">
+/* ══════════════════════════ 상수 ══════════════════════════ */
+const ELEMENTS=["공격","마법","보호","이동","집중","지속"];
+const BRANCHES=["","선택","전환"];      // 속성과 별개인 시전 방식
+const FACTIONS=["왕실","고철의 무덤","피의 투기장","정령숲","균열","사후","초월체","모래 바다"];
+const JOBS=["검사","궁수","마법사","수호자","지원가","수확자","학살자","무기 전문가","모험가","영광 숭배자","약탈자","방랑자","음악가"];
+const RACES=["악마","기계"];
+/* 기본값 + 이미 쓰고 있는 값을 합쳐 추천 목록으로 — 직접 새로 써 넣을 수 있음 */
+function usedIn(pick,base){
+  const out=base.slice();
+  DB.heroes.forEach(x=>pick(x).forEach(v=>{
+    const s=String(v||"").trim();
+    if(s&&!out.includes(s)) out.push(s);
+  }));
+  return out;
+}
+const factionList=()=>usedIn(x=>[x.faction],FACTIONS);
+const jobList    =()=>usedIn(x=>[x.job,x.job2],JOBS);
+const raceList   =()=>usedIn(x=>[x.race],RACES);
+const SOURCES=["대원","장신구","상점","이벤트","기타"];   // 카드 수급처 — 기본값, 자유롭게 추가 가능
+/* 기본 수급처 + 실제로 쓰이고 있는 수급처를 합쳐서 추천 목록으로 */
+function sourceList(){
+  const out=SOURCES.slice();
+  DB.cards.forEach(c=>{
+    const s=String(c.source||"").trim();
+    if(s&&!out.includes(s)) out.push(s);
+  });
+  return out;
+}
+const KINDS=["전투","지원","소환물"];
+const ENEMY_GRADES=["일반","정예","우두머리"];
+/* 전장의 칸 — 적은 1번(가장 앞)부터 5번(가장 뒤)까지 선다 */
+/* 전장의 칸은 왼쪽부터 한 줄로 1~10 — 아군이 1~5, 적이 6~10.
+   거리는 두 번호를 빼면 된다. 게임 쪽 foeNo() 와 짝이다. */
+const FOE_SLOTS=["6","7","8","9","10"];
+/* 적이 한 마디에 할 수 있는 일 — 직접 적어도 되고 여기서 골라도 된다 */
+const ACT_KINDS=["기술 사용","이동(앞)","이동(뒤)","대기","방어","소환","도발","강화","약화 부여","자폭"];
+function enemyNameList(){
+  return DB.enemies.map(e=>String(e.name||"").trim()).filter(Boolean);
+}
+/* 그 적이 쓸 수 있는 것들 — 패턴의 한 마디를 고를 때 보여 준다 */
+function actList(o){
+  return (o.skills||[]).map(k=>String(k.name||"").trim()).filter(Boolean).concat(ACT_KINDS);
+}
+const ITEM_SOURCES=["상점","던전 보상","유적","이벤트 상자","제작","우두머리 처치","퀘스트"];
+function itemSourceList(){
+  const out=ITEM_SOURCES.slice();
+  DB.items.forEach(i=>(i.sources||[]).forEach(s=>{
+    const t=String(s||"").trim(); if(t&&!out.includes(t)) out.push(t);
+  }));
+  return out;
+}
+const FIELDS=["최초의 숲","백색 궁정","정령샘","핏빛 감옥","얼어붙은 산맥","사해",
+              "녹아내린 섬","마력의 탑","무한한 절벽","균열의 틈"];
+function fieldNameList(){
+  /* 지금 판에서 쓰는 차례가 맨 앞이다 — DB.fieldOrder 에 적혀 있다.
+     (note-fill 이 게임의 FIELDS 차례 그대로 써 넣는다)
+     목록에 나온 차례를 보고 정하면 **한 번 뒤집힌 것이 그대로 굳으므로** 안 된다.
+     그 뒤에 아직 안 만든 필드, 마지막으로 표에만 있는 이름을 붙인다. */
+  const out=[];
+  const push=f=>{ f=String(f||"").trim(); if(f&&!out.includes(f)) out.push(f) };
+  (DB.fieldOrder||[]).forEach(push);
+  FIELDS.forEach(push);
+  DB.battles.forEach(b=>push(b.field));
+  DB.enemies.forEach(e=>push(e.field));
+  return out;
+}
+const SYN_KINDS=["진영","직업","종족"];
+const SQUAD_MAX=6;                       // 스쿼드 최대 인원 (확정되면 이 숫자만 고치면 됨)
+const traitNameList=()=>[...new Set([].concat(factionList(),jobList(),raceList()))];
+const heroesWithTrait=n=>n?DB.heroes.filter(x=>[x.faction,x.job,x.job2,x.race].includes(n)).map(x=>x.name):[];
+/* 특성 위에 커서를 올렸을 때 보여줄 조합 안내 */
+function synergyText(name){
+  const s=DB.synergies.find(x=>x.name===name);
+  if(!s||!(s.tiers||[]).length) return "";
+  return s.tiers.slice().sort((a,b)=>(+a.count||0)-(+b.count||0)).map(t=>{
+    const req=(t.required||[]).length?` [${t.required.join(", ")} 필수]`:"";
+    return `${name}(${t.count})${req}: ${t.desc||"(설명 없음)"}`;
+  }).join("\n");
+}
+const RW_GRADES=["하급","중급","상급"];
+/* 기술 비용의 종류 — 직접 새로 써 넣을 수 있음 */
+const COST_TYPES=["마나","추진력","체력","탄알","영혼"];
+function costTypeList(){
+  const out=COST_TYPES.slice();
+  eachSkill(s=>{
+    const t=String(s.costType||"").trim();
+    if(t&&!out.includes(t)) out.push(t);
+  });
+  return out;
+}
+/* 노트 안의 모든 기술을 훑음 */
+function eachSkill(fn){
+  const visit=s=>{ fn(s); (s.options||[]).slice().forEach(visit) };
+  DB.heroes.forEach(x=>{
+    (x.passives||[]).forEach(visit);
+    ["s1","s2","s3","ult"].forEach(k=>{ if(x[k]) visit(x[k]) });
+    (x.supports||[]).forEach(visit);
+    if(x.support) visit(x.support);
+  });
+  DB.cards.forEach(c=>{ if(c.summon) (c.summon.skills||[]).forEach(visit) });
+  DB.enemies.forEach(e=>(e.skills||[]).forEach(visit));
+}
+const RW_SOURCES=["레벨업","이벤트 상자","유적","퀘스트","상점","던전 보상","기타"];
+function rewardSourceList(){
+  const out=RW_SOURCES.slice();
+  DB.rewards.forEach(r=>{
+    const s=String(r.source||"").trim();
+    if(s&&!out.includes(s)) out.push(s);
+  });
+  return out;
+}
+const REWARD_TYPES=["기술 강화 보상","재화 보상","장신구 보상","카드 보상","대원 강화 보상","특성 강화 보상","주둔지 강화 보상","추가 기술 보상"];
+/* 나열 순서가 곧 키워드 탭의 정렬 순서 */
+const KW_COLOR={plain:"--k-plain",skill:"--k-skill",buff:"--k-buff",debuff:"--k-debuff",
+  atk:"--k-atk",mag:"--k-mag",def:"--k-def",hp:"--k-hp",move:"--k-move"};
+const KW_CATS=Object.keys(KW_COLOR);
+
+const SEED_KEYWORDS=[
+ ["냉각","debuff","기술 사용시 중첩된 냉각만큼 피해. 턴 종료시 초기화"],
+ ["속박","debuff","중첩된 속박 턴만큼 이동불가 상태가 됨"],
+ ["기절","debuff","누적된 기절 중첩만큼 다음 사용 기술이 아무 효과도 발동하지 않음. 턴이 끝나면 초기화"],
+ ["화상","debuff","턴이 끝날 때 중첩된 화상만큼 피해. 턴 종료시 중첩 1 감소"],
+ ["공포","debuff","기술의 대상을 지정할 수 없음"],
+ ["공중에 뜸","debuff","다른 기술과 상호작용"],
+ ["감전","debuff","이동시 중첩된 감전만큼 피해받음. 턴 종료시 초기화"],
+ ["공격약화","debuff","중첩된 턴만큼 공격 피해량이 50% 감소. 턴 종료시 중첩 1 감소"],
+ ["마법약화","debuff","중첩된 턴만큼 마법 피해량이 50% 감소. 턴 종료시 중첩 1 감소"],
+ ["보호약화","debuff","중첩된 턴만큼 보호막 및 회복 효과가 50% 감소. 턴 종료시 중첩 1 감소"],
+ ["보호막","buff","한 턴간 누적된 보호막만큼 피해를 막음. 턴이 끝나면 사라짐"],
+ ["에너지 보호막","buff","한 턴간 누적된 보호막만큼 피해를 막음. 턴이 끝나도 사라지지 않음"],
+ ["부정 보호막","buff","부정적인 효과를 1회 제거. 이미 적용된 효과 먼저 제거"],
+ ["추진력","move","이동 관련 기술이나 효과에 관여하는 전용 표식"],
+ ["회복","hp","생명력을 회복시킴"],
+ ["도발","buff","이 캐릭터의 뒤에 있는 대상들은 상대가 선택할 수 없음"],
+ ["소환물","buff","기술이나 카드에 의해 소환된 대상"],
+ ["연계","buff","이전에 해당 속성 기술을 사용했다면 발동"],
+ ["관통","atk","일정량의 피해가 보호막을 무시함"],
+ ["회피","buff","다음 공격을 무시합니다"],
+ ["치명타","atk","치명타 조건을 만족하면 피해가 2배로 적용"],
+ ["가시","buff","피해를 받으면 중첩된 가시만큼 그 대상에게 피해를 줌"],
+ ["은신","buff","대상으로 지정할 수 없는 상태. 전장에 혼자 남으면 자동 해제"],
+ ["흡수","hp","준 피해의 일정량만큼 체력을 회복"],
+ ["잠금","debuff","해당 기술을 일정 턴 동안 사용할 수 없음"],
+ ["소멸성","debuff","전투 종료시 사라짐"],
+ ["공격력","atk","근거리 공격 대원이 주로 사용 (†)"],
+ ["마법력","mag","원거리 공격 대원이 주로 사용 (∴)"],
+ ["보호력","def","보호막이나 치유 증폭에 사용 (¤)"],
+ ["체력","hp","0이 되면 기절 상태가 됨 (♡)"],
+ ["성장력","buff","대원의 레벨에 비례한 능력치 (⇧)"]
+].map(k=>({name:k[0],cat:k[1],desc:k[2]}));
+
+const sk=(code,name,mana,el,desc)=>({code,name,mana,el,desc});
+const it=(code,name,grade,desc,recipe)=>({code,name,grade,bind:false,desc,
+  recipe:(recipe||[]).concat(["","","",""]).slice(0,4),cost:""});
+
+const CARD_MINION={
+  name:"악마 하수인", kind:"소환물", stack:1, expire:false, owner:"굴라",
+  desc:"굴라의 균열 차원문을 이미 차원문이 있는 자리에 재사용하면 가져옵니다.",
+  summon:{hp:"10",mana:"1",
+    skills:[sk("4-2-1","하급 찌르기",1,"공격","적에게 피해를 4(추가 † ) 줍니다.")]}
+};
+
+/* 노트 PDF에서 옮긴 대원 데이터. 비어 있는 칸만 채우고, 이미 쓴 내용은 건드리지 않음 */
+const hero=(o)=>Object.assign({hp:20,mana:3,maxLv:30,expBase:5,expStep:2,hpPerLv:2,
+  title:"",focus:"",faction:"",job:"",job2:"",race:"",passives:[],
+  s1:sk("","",1,"",""),s2:sk("","",1,"",""),s3:sk("","",2,"",""),ult:sk("","",3,"",""),
+  support:sk("","","","",""),lowRewards:[],midRewards:[],highRewards:[],cards:[],memo:""},o);
+
+const PATCH_CARDS=[
+ {name:"영광의 휘장",source:"대원",owner:"나이코스",kind:"전투",stack:1,expire:true,
+  desc:"아군 대원에게 피해를 4주고 회피를 1 부여합니다."}
+];
+
+const HERO_PATCH=[
+ hero({name:"나이코스",
+  midRewards:[
+   {name:"쉴 때도 단단하게",type:"기술 강화 보상",desc:"튼튼한 방어구가 무작위 방어구 카드를 하나 더 가져옵니다."},
+   {name:"중무장",type:"추가 기술 보상",desc:"[전투 기술]\n1-6. 중무장 (마나 : 4)\n모든 방어구 카드를 얻습니다. (전투당 1회)\n*획득시 보상에서 다시 등장하지 않음 / 해당 기술이 없을 때 등장하지 않음"},
+   {name:"찌르기",type:"추가 기술 보상",desc:"[전투 기술]\n1-7. 찌르기 (마나 : 2)\n이번 차례에 사용한 베기의 피해량의 3배만큼 피해를 줍니다. 3턴 동안 잠금됩니다.\n*획득시 보상에서 다시 등장하지 않음"}],
+  highRewards:[
+   {name:"두 번 베기",type:"기술 강화 보상",desc:"베기가 두 번 사용되는 대신, 사용한도(2)를 얻습니다.\n*획득시 보상에서 다시 등장하지 않음"},
+   {name:"처세술",type:"기술 강화 보상",desc:"막기를 사용한 후, 다음 베기의 비용이 0이 됩니다.\n*획득시 보상에서 다시 등장하지 않음"},
+   {name:"돌격 베기",type:"기술 강화 보상",desc:"베기를 사용한 후 거리 1을 이동하고, 추진력을 1 얻을 수 있습니다. 추진력이 6 이상이면 모두 소모되어 다음 베기가 두 번 사용됩니다.\n*획득시 보상에서 다시 등장하지 않음"},
+   {name:"아드레날린 흡수",type:"기술 강화 보상",desc:"베기를 사용할때마다 체력을 1 회복합니다."},
+   {name:"잔혹한 일격",type:"기술 강화 보상",desc:"승리의 일격으로 얻을 수 있는 베기의 추가 피해량이 2 증가합니다."},
+   {name:"중무장",type:"대원 강화 보상",desc:"내 차례가 시작될 때 무작위 방어구 카드를 가져옵니다."},
+   {name:"영광의 휘장",type:"기술 강화 보상",desc:"방어구 카드 목록에 영광의 휘장을 추가합니다.\n대원의 최대 체력이 16 증가합니다.\n*획득시 보상에서 다시 등장하지 않음 / 해당 기술이 없을 때 등장하지 않음"}],
+  cards:["강철 갑옷","강철 각반","강철 군화","강철 투구","마법 부여 보호구","영광의 휘장"]}),
+
+ hero({name:"카제",title:"바람검사",hpPerLv:1,
+  focus:"공중으로 띄움, 단일 플레이, 바람 검술, 이동",
+  faction:"정령숲",job:"검사",job2:"방랑자",
+  passives:[
+   sk("2-0-1","바람처럼 사라져라","","지속","내 턴에 적이 공중으로 뜬 후에, 피해를 4(추가 † ) 줍니다."),
+   sk("2-0-2","회오리 장막","","지속","이 대원이 12회 이동하거나 피해를 주면, 그 턴에 보호막을 4(추가 ¤ ) 얻습니다.")],
+  s1:sk("2-1","진선풍도",1,"공격","피해를 2(추가 † ) 줍니다(거리 2).\n세 번째 사용 시에는 강화되어, 거리 3의 회오리를 날려 지나간 적들에게 피해를 주고, 마지막 적은 공중으로 띄웁니다."),
+  s2:sk("2-2","산들바람",1,"이동","1칸 이동하고, 추진력을 1 얻습니다. 다음 진선풍도의 거리와 피해량이 1 증가합니다."),
+  s3:sk("2-3","기류 흘리기","추진력 3","보호","회피를 1 얻습니다. 이번 턴에 기류 흘리기의 추진력 비용이 1 증가합니다."),
+  ult:sk("2-4","잠재력 활성",1,"공격","이번 턴에 진선풍도가 거리 안의 모든 적에게 피해를 주고, 회오리는 모든 적을 공중으로 띄웁니다.\n다음 4번의 산들바람의 비용이 0이 됩니다.\n2턴 동안 잠금됩니다."),
+  support:sk("2-5","바람은 너의 곁에 있다","","","이 대원이 주둔지에 있을 동안, 아군 대원들이 이동할때마다 보호막을 1 얻습니다.")}),
+
+ hero({name:"쿠렘타이",title:"죽음",hpPerLv:1,
+  focus:"영혼 수확, 후반 성장, 다수 공격, 체력 비례 공격",
+  faction:"사후",job:"마법사",job2:"수확자",
+  passives:[sk("3-0","영혼 수확","","지속",
+   "대상이 죽을 때마다 영구히 영혼을 얻습니다.\n일반 적(1개), 정예 적(5개), 우두머리 적(10개)\n아군 소환물(1개), 아군 대원(5개)\n\n얻은 영혼의 개수에 따라 추가 능력치를 얻습니다.\n영혼 40개당 마법력 1을 얻습니다. 얻은 마법력( )")],
+  s1:sk("3-1","착취",1,"마법","적에게 피해를 2(추가 ∴ ) 줍니다.\n\n영혼이 20개 이상이면 그 뒤의 적에게도 피해를 줍니다.\n영혼이 60개 이상이면 그 앞의 적에게도 피해를 줍니다.\n영혼이 140개 이상이면 관통 +50%를 얻습니다.\n영혼이 200개 이상이면 2번 발동합니다."),
+  s2:sk("3-2","영혼 분리",2,"마법","선택한 자리에 체력이 가장 낮은 적의 환영을 소환합니다.\n환영은 적과 같은 체력을 지니고, 아무 행동도 하지 않습니다.\n처치되면 원래 적에게 피해 4(추가 ∴ +대상 최대 체력의 10%)를 줍니다.\n\n환영으로 얻을 수 있는 영혼은 1개입니다.\n\n영혼 40개당 최대 체력 비례 피해량이 2.5% 증가합니다.\n\n환영은 전장에 최대 하나만 활성화할 수 있습니다.\n환영은 원래 적이 죽을 시 같이 죽습니다."),
+  s3:sk("3-3","환상통",0,"마법","쿠렘타이의 추가 마법력( )만큼 모든 적에게 피해를 줍니다. 1턴 동안 잠금됩니다."),
+  ult:sk("3-4","사형 선고",3,"마법","전투 시작시 2턴 잠금된 상태로 시작합니다.\n대상을 처치하고 75%의 체력을 가진 상태로 부활시킵니다. (전투당 1회)\n\n아군이면 마법력을 +2 부여합니다.\n적군이면 2턴간 공포를 부여합니다."),
+  support:sk("3-5","죽음 재배술","","","일터에서 영혼꽃을 수확할 수 있습니다.\n영혼꽃은 재화로 환전하거나, 추가 마법력을 주는 장신구으로 바꿀 수 있습니다.\n\n[3-6. 영혼 충격]\n이 대원이 주둔지에 있을 동안, 전투 시작시 모든 적에게 피해를 2(추가 ∴ ) 줍니다."),
+  memo:"지원 기술이 3-5, 3-6 두 개입니다. 칸이 하나뿐이라 3-6은 같은 칸 아래에 적어두었습니다."}),
+
+ hero({name:"굴라",title:"탐욕의 악마",hpPerLv:3,
+  focus:"높은 체력, 악마 소환, 잡아먹기",
+  faction:"균열",job:"수호자",race:"악마",
+  passives:[sk("4-0","탐욕의 악마","","지속","전투에서 아군 또는 적군이 죽을 때마다 최대 체력을 영구히 1 얻습니다. 한 전투당 최대 5의 최대 체력을 얻을 수 있습니다.")],
+  ult:sk("4-4","융합",1,"집중","아군 전장에 있는 모든 소환물을 처치합니다.\n처치한 소환물들의 체력만큼 굴라가 체력을 얻습니다.\n처치한 소환물 하나당 굴라가 공격력, 마법력, 보호력을 1 얻습니다."),
+  support:sk("4-5","미천한 이들에게 탐욕을","","","이 대원이 주둔지에서 휴식하면 굴라는 3, 휴식하는 다른 아군들은 1의 최대 체력을 얻습니다.")}),
+
+ hero({name:"이테리오",title:"고철장의 구원자",
+  focus:"마나 중독자/유동적 공격/치명타",
+  faction:"고철의 무덤",job:"무기 전문가",race:"기계",
+  passives:[
+   sk("5-0-1","마나 중독자","","지속","이테리오가 소비한 마나 1당 그 턴에만 마법력을 1 얻습니다."),
+   sk("5-0-2","정밀 타격","","지속","이테리오가 마법 피해를 주면 대상에게 정밀 표식을 남깁니다.\n표식이 있는 적에게는 이테리오의 공격 피해가 치명타로 적용되고 표식을 제거합니다.")],
+  s1:sk("5-1","에너지 융합봉",1,"공격","수축 공격과 팽창 공격 중 선택하여 시전합니다.\n\n[5-1-1. 수축 공격] (마나 1 / 속성 공격)\n적에게 피해를 2(추가 ∴ ) 줍니다(거리2).\n\n[5-1-2. 팽창 공격] (마나 1 / 속성 공격)\n모든 적에게 피해를 1(추가 † ) 줍니다."),
+  s2:sk("5-2","점프백",1,"이동","최대 2칸 이동하고 기동 상태에 돌입합니다.\n기동 상태에서는 사용 기술을 시전한 후 1칸 뒤로 이동합니다.\n이때 이동하지 못하는 상태라면, 보호막을 1(추가 ∴ ) 얻습니다."),
+  s3:sk("5-3","자기장 변환",2,"마법","적에게 피해를 8(추가 ∴ ) 줍니다. 정밀 표식이 남겨진 적이라면 1칸 앞으로 이동시키고 속박시킵니다. 이동하지 못하는 상태라면, 대신 기절시킵니다."),
+  ult:sk("5-4","시공간 폭탄",1,"마법","모든 적에게 정밀 표식을 남기고, 위치를 무작위로 이동시킵니다.\n1턴 동안 잠금됩니다."),
+  support:sk("5-5","마나 섭취","","","이 대원이 주둔지에 있을 동안, 전투 시작 후 첫 턴에만 모든 아군이 마나를 추가로 1 얻습니다.")}),
+
+ hero({name:"데린저",title:"보물의 무법자",
+  focus:"보상을 통한 공격 방식 교체/보물 사냥꾼/유동적 공격",
+  faction:"고철의 무덤",job:"약탈자",job2:"방랑자",
+  passives:[
+   sk("6-0-1","보물 사냥꾼","","지속","데린저가 보상을 얻을 때마다 금화 _개와 보물 점수를 얻습니다.\n보물 점수는 보상에 따라 다릅니다.\n(하급 보상 1점, 중급 보상 3점, 상급 보상 5점)\n\n보물 점수 5점마다 공격력 1을 얻습니다."),
+   sk("6-0-2","탄알집 챙기기","","지속","데린저의 기술은 탄알을 기본으로 합니다.\n현재 데린저의 최대 탄알 개수는 5개 입니다.")],
+  s1:sk("6-1","자동변환단총",1,"공격","탄알을 1 소모하여 적에게 피해를 2(추가 † ) 줍니다.(거리 2)\n\n남은 탄알 : 5/5\n어떤 개조를 하더라도 제대로 작동하는 죽이는 총!"),
+  s2:sk("6-2","탄알 장전",2,"공격","남은 탄알을 모두 소비하여 적에게 개당 피해를 1 줍니다.\n\n탄알을 모두 장전합니다."),
+  s3:sk("6-3","정확한 조준",1,"집중","적을 선택합니다. 데린저가 조준 상태가 되어 해당 적에게 입히는 피해가 50% 증가하고 다른 적은 50% 감소합니다.\n조준 상태에서는 속박되고, 재사용하거나 대상 적이 죽으면 해제됩니다."),
+  ult:sk("6-4","헤드샷","","지속","매 차례 첫번째 자동변환단총의 피해량이 8(추가 † ) 증가합니다. 이 피해는 치명타가 적용될때 2배가 아닌 3배의 피해를 줍니다."),
+  support:sk("6-5","도굴의 대가","","","일터에서 보물더미을 발굴할 수 있습니다.\n보물더미는 보상이나 금화로 환전할 수 있습니다.")}),
+
+ hero({name:"인비디아",title:"질투의 악마",mana:4,hpPerLv:1,
+  focus:"감염, 회복, 지속적인 피해, 보호약화",
+  faction:"피의 투기장",job:"마법사",race:"악마",
+  passives:[
+   sk("7-0-1","질투의 악마","","지속","인비디아의 기술은 적을 감염시킵니다. 감염은 중첩될 수 있고, 감염된 적에게는 턴이 끝날 때 피해를 1(추가 ∴ ) 주고 감염 중첩을 1 감소시킵니다."),
+   sk("7-0-2","재능 시기","","지속","적을 처치할 때마다 인비디아가 적들의 능력치를 얻습니다.\n\n적 처치시 얻을 수 있는 능력치(각 25% 확률로)\n공격력 1, 마법력 1, 보호력 1, 체력 4")],
+  s1:sk("7-1","죄악의 기침",2,"마법","가장 가까운 적에게 피해를 2(추가 ∴ ) 주고 감염시킵니다.\n감염이 3회 중첩된 적에게 사용시 체력을 4(추가 ¤ ) 회복합니다."),
+  s2:sk("7-2","확산",2,"마법","감염된 적들에게 보호약화를 1 부여하고, 대상의 거리1 내의 다른 적들을 1회 감염시킵니다."),
+  s3:sk("7-3","숙주 폭발",1,"마법","적들에게 피해를 3(추가 ∴ +감염 중첩의 2배 비례 증가) 주고, 감염 중첩을 모두 제거합니다.\n2턴 동안 잠금됩니다."),
+  ult:sk("7-4","전두엽 감염",2,"마법","감염이 3회 이상 중첩된 적들이 감염 중첩을 1 얻고, 다음 턴에 시전하는 각 기술의 첫 시전시 필요 마나가 1 증가합니다.\n1턴 동안 잠금됩니다."),
+  support:sk("7-5","내 편은 없다","","","이 대원이 주둔지에 있을 동안, 전투 시작시 아군들에게서 1의 최대 체력을 빼앗아옵니다.")}),
+
+ hero({name:"리페",title:"조화의 드루이드",
+  focus:"버프/디버프, 음율 조합, 다양한 선택지",
+  faction:"정령숲",job:"지원가",job2:"음악가",
+  passives:[sk("8-0","화음과 리듬","","지속","리페는 음율란을 3개 가지고 시작합니다.\n기술을 통해 음율란을 모두 채우면, 음율을 노래합니다.")],
+  s1:sk("8-1","조화의 노래",1,"보호","이로운 효과를 부여하는 음율을 선택하여 시전합니다.\n\n[8-1-1. 보호의 음율] (마나 1 / 속성 보호)\n모든 아군에게 보호막을 1(추가 ¤ ) 부여하는 음율을 노래합니다.\n\n[8-1-2. 생명의 음율] (마나 2 / 속성 보호)\n체력이 가장 낮은 아군의 체력을 4(추가 ¤ ) 회복시키는 음율을 노래합니다."),
+  s2:sk("8-2","부정의 노래",1,"마법","부정적인 효과를 부여하는 음율을 선택하여 시전합니다.\n\n[8-2-1. 날카로운 음율] (마나 1 / 속성 마법)\n적들에게 피해를 1(추가 ∴ ) 주는 음율을 노래합니다.\n\n[8-2-2. 충격의 음율] (마나 2 / 속성 마법)\n무작위 적을 기절시키는 음율을 노래합니다.\n1턴 동안 잠금됩니다."),
+  s3:sk("8-3","감싸주기",2,"마법","아군에게 부정 보호막을 1 부여합니다.\n1턴 동안 잠금됩니다."),
+  ult:sk("8-4","역재생의 노래",2,"집중","이번 턴에 리페가 음율을 모두 노래한 후, 역방향으로 음율을 한 번 더 노래합니다.\n2턴 동안 잠금됩니다."),
+  support:sk("8-5","모두의 행복","","","이 대원이 주둔지에 있을 동안, 전투 시작시 모든 아군에게 보호막을 4(추가 ¤ ) 부여합니다.")}),
+
+ hero({name:"도미니코",title:"영광의 사제",
+  focus:"체력 회복/기술 강화와 약화/보호력 집중",
+  faction:"왕실",job:"지원가",job2:"영광 숭배자",
+  passives:[
+   sk("9-0-1","왕실의 지혜 도서관","","지속","도미니코는 기술을 사용할때마다 독서 중첩을 얻습니다.\n독서 중첩이 10이 되면 중첩을 모두 소모하고 축복 상태가 되어 다음 기술을 1회 강화합니다."),
+   sk("9-0-2","악마 혐오","","지속","전투 시작시 악마 진영의 적 하나당 보호력을 +2 얻습니다.")],
+  s1:sk("9-1","라이티늄 지팡이",1,"보호","대상을 선택합니다.\n\n아군이면 체력을 2(추가 ¤ ) 회복시킵니다.\n적이면 피해를 2(추가 ¤ ) 줍니다.\n\n독서 중첩을 1 얻습니다.\n\n축복 상태라면 도미니코가 회피 1를 얻습니다."),
+  s2:sk("9-2","의지 약화",2,"마법","다음 턴 동안 선택한 적의 추가 공격력을 3 감소시킵니다.\n\n독서 중첩을 4 얻습니다.\n\n축복 상태라면 추가 마법력과 보호력도 동일하게 감소시킵니다."),
+  s3:sk("9-3","영광의 족쇄",2,"마법","추가 공격력과 마법력을 보호력으로 전환합니다.\n가장 가까운 적을 기절시키고 피해를 8(추가 ¤ ) 줍니다.\n\n독서 중첩을 1 얻습니다.\n\n축복 상태라면 모든 적을 기절시킵니다."),
+  ult:sk("9-4","참회의 기류",3,"보호","아군에게 보호막을 1(추가 ¤ ), 적에게 피해를 1(추가 ¤ ) 주는 기류를 날립니다.\n\n기류는 가장 먼 적에게 날아갔다가 돌아오고, 캐릭터를 지날 때마다 보호막량과 피해량이 1 증가합니다.\n1턴 동안 잠금됩니다."),
+  support:sk("9-5","꾸준한 독서","","","일터에서 성서를 얻을 수 있습니다.\n성서는 재화로 환전하거나, 추가 보호력을 주는 장신구으로 바꿀 수 있습니다.")}),
+
+ hero({name:"그슨대",title:"어둠의 그림자",hpPerLv:1,
+  focus:"공격 피해에 강함, 은신과 기습 공격, 속임수 플레이",
+  faction:"사후",job:"학살자",job2:"방랑자",
+  passives:[
+   sk("10-0-1","커져가는 악몽","","지속","그슨대가 공격 피해를 받을 때마다 어둠 조각을 얻습니다.\n어둠 조각을 5개 모을 때마다 그 전투 동안 공격력 +1을 얻습니다.\n\n아군 사후, 학살자 진영 대원도 공격력을 동일하게 얻습니다."),
+   sk("10-0-2","급습","","지속","은신 상태에서 다음 공격 피해는 치명타로 적용됩니다.")],
+  s1:sk("10-1","그림자 기습",1,"공격","적에게 피해를 3(추가 † ) 줍니다.\n\n자리에 그림자를 남기고, 최대 2칸 이동합니다.\n\n그림자가 있는 상태라면 대신 그림자가 있는 위치로 이동하고, 은신 상태가 됩니다."),
+  s2:sk("10-2","생기 갈취",1,"보호","다음 기술이 흡수 +20%를 얻습니다.\n\n그림자가 있는 상태라면 그림자가 있는 위치로 이동하고, 다음 기술이 관통 +50%도 얻습니다."),
+  s3:sk("10-3","속임수 태세",2,"보호","악몽 태세와 공포 태세 중 선택하여 시전합니다.\n어떤 태세를 선택했는지 적에게 알려지지 않습니다.\n\n[10-3-1. 악몽 태세] (마나 2 / 속성 보호)\n보호막을 10(추가 ¤ ) 얻고, 다음 턴까지 피해를 받을 때마다 모든 적에게 피해를 4(추가 † ) 줍니다.\n\n[10-3-2. 공포 태세] (마나 2 / 속성 보호)\n보호막을 10(추가 ¤ ) 얻고, 다음 턴까지 피해를 받을 때마다 모든 적에게 공포를 1 부여합니다."),
+  ult:sk("10-4","",3,"보호",""),
+  support:sk("10-5","","","",""),
+  memo:"궁극기(10-4)와 지원 기술(10-5)은 노트에 번호만 있고 내용이 없습니다."})
+];
+
+const SEED_ITEMS=[
+ it("1-1","옥 파편","파편","최대 체력 +6"),
+ it("1-2","사파이어 파편","파편","첫 턴의 최대 마나 +1"),
+ it("1-3","에메랄드 파편","파편","전투 시작시 추진력 +3"),
+ it("1-4","균열석 파편","파편","전투 시작시 부정 보호막 +2"),
+ it("1-5","라이티늄 파편","파편","내 턴 종료시 보호막 +2"),
+ it("1-6","검 파편","파편","공격력 +1"),
+ it("1-7","마법서 파편","파편","마법력 +1"),
+ it("1-8","방패 파편","파편","보호력 +1"),
+
+ it("2-1","옥 수정","일반","최대 체력 +18",["옥 파편","옥 파편"]),
+ it("2-2","사파이어 수정","일반","최대 마나 +1",["사파이어 파편","사파이어 파편"]),
+ it("2-3","에메랄드 수정","일반","내 턴에 이동시 추진력 +1",["에메랄드 파편","에메랄드 파편"]),
+ it("2-4","균열석","일반","전투 시작시 부정 보호막 +5",["자수정 파편","자수정 파편"]),
+ it("2-5","라이티늄 수정","일반","내 턴 종료시 보호막 +4",["라이티늄 파편","라이티늄 파편"]),
+ it("2-6","전투 검","일반","공격력 +3",["검 파편","검 파편"]),
+ it("2-7","전투 마법서","일반","마법력 +3",["마법서 파편","마법서 파편"]),
+ it("2-8","전투 방패","일반","보호력 +3",["방패 파편","방패 파편"]),
+
+ it("3-1","생명소리 갑옷","희귀",
+   "최대 체력 +18\n최대 체력(추가 ⇧ )을 추가로 얻습니다.",["옥 수정","옥 수정"]),
+ it("3-2","마나흡수자","희귀",
+   "최대 체력 +18\n최대 마나 +1\n턴 종료시 이번 턴에 사용한 마나의 2배만큼 보호막()을 얻습니다.",
+   ["옥 수정","사파이어 수정"]),
+ it("3-3","동력 전환화","희귀",
+   "최대 체력 +18\n내 턴에 이동시 추진력 +1\n턴 종료시 추진력을 최대 6 소모하여 그 2배만큼 보호막()을 얻습니다.",
+   ["옥 수정","에메랄드 수정"]),
+ it("3-4","불굴의 방패","희귀",
+   "최대 체력 +18\n전투 시작시 부정 보호막 +5\n부정적인 효과를 받은 후, 체력을 2(추가 ¤ ) 회복합니다.",
+   ["옥 수정","균열석"]),
+ it("3-5","불타는 호각","희귀",
+   "최대 체력 +18\n내 턴 종료시 보호막 +4(추가 ¤ )\n항상 도발 상태가 됩니다.\n거리 2 내의 적들에게 내 턴 종료시 피해를 4(추가 ¤ ) 줍니다.",
+   ["옥 수정","라이티늄 수정"]),
+ it("3-6","애곤의 발톱","희귀",
+   "최대 체력 +18\n공격력 +3\n체력이 50% 이하일때 에너지 보호막(추가 ⇧ )과 공격력 +3을 얻습니다. (전투당 1회)",
+   ["옥 수정","전투 검"]),
+ it("3-7","기초 마법서:생명","희귀",
+   "최대 체력 +18\n마법력 +3\n현재 체력의 10%( )만큼 추가 마법력을 얻습니다.",
+   ["옥 수정","전투 마법서"]),
+ it("3-8","","희귀",
+   "최대 체력 +18\n보호력 +3\n전투 시작시 추가 보호력의 3배() 만큼 에너지 보호막을 얻습니다.",
+   ["옥 수정","전투 방패"])
+];
+
+const SEED={
+ version:1,
+ heroes:[
+ {name:"나이코스",title:"승리의 전사",hp:20,mana:3,maxLv:30,expBase:5,expStep:2,hpPerLv:2,
+  focus:"근접/공격력 기반, 평타 위주 공격, 방어구 기술",
+  faction:"피의 투기장",job:"검사",job2:"영광 숭배자",race:"",
+  passives:[sk("1-0","전장의 승자","","지속",
+    "던전에서 승리할때마다 영구적으로 공격력을 1 얻습니다. (최대 10)\n패배할시 얻은 공격력을 모두 잃습니다.\n초과로 얻은 공격력은 1당 금화 _개로 대체됩니다.")],
+  s1:sk("1-1","베기",1,"공격","피해를 3(† 비례 증가) 줍니다."),
+  s2:sk("1-2","막기",1,"보호","보호막을 3(¤ 비례 증가) 얻습니다."),
+  s3:sk("1-3","갑옷 장착",2,"보호","무작위 방어구 카드를 가져옵니다."),
+  ult:sk("1-4","승리의 일격",3,"공격",
+    "피해를 20(† ≡ 비례 증가) 줍니다. 1턴 동안 잠금됩니다.\n이 기술로 적을 처치할때마다 베기의 피해량이 영구적으로 1 증가합니다."),
+  support:sk("1-5","튼튼한 방어구","","","이 대원이 주둔지에 있을 동안, 전투 시작시 무작위 방어구 카드를 얻습니다."),
+  lowRewards:[
+   {name:"전장의 승자 강화",type:"기술 강화 보상",desc:"전장의 승자의 얻을 수 있는 공격력 한도가 1 증가합니다."},
+   {name:"돈은 벌어야지",type:"기술 강화 보상",desc:"전장의 승자로 공격력을 얻을 때마다 금화를 추가로 1 얻습니다."},
+   {name:"베기 강화",type:"기술 강화 보상",desc:"베기의 피해량이 영구히 1 증가합니다."},
+   {name:"막기 강화",type:"기술 강화 보상",desc:"막기의 보호량이 영구히 1 증가합니다."},
+   {name:"갑옷 장착 강화",type:"기술 강화 보상",desc:"갑옷 장착을 사용할시 추가로 보호막을 1 얻습니다.\n*해당 기술이 없을 때 등장하지 않음"},
+   {name:"승리의 일격 강화",type:"기술 강화 보상",desc:"승리의 일격의 피해량이 영구히 1 증가합니다.\n*해당 기술이 없을 때 등장하지 않음"},
+   {name:"튼튼한 방어구 강화",type:"기술 강화 보상",desc:"튼튼한 방어구가 전투 시작시 모든 대원에게 보호막을 추가로 1 부여합니다."},
+   {name:"근거리 타격",type:"기술 강화 보상",desc:"거리 1인 적에게 베기를 사용할 시 2의 추가 피해를 줍니다."}],
+  midRewards:[
+   {name:"늘어가는 실력",type:"기술 강화 보상",desc:"베기로 적을 처치한 후에, 그 전투에서만 베기의 피해량이 2 증가합니다."},
+   {name:"아드레날린 분비",type:"기술 강화 보상",desc:"베기로 적을 처치한 후에, 보호막을 3 얻습니다."},
+   {name:"준비 태세",type:"기술 강화 보상",desc:"막기를 사용한 후, 다음 베기의 피해량이 2 증가합니다."},
+   {name:"처음은 날카롭게",type:"기술 강화 보상",desc:"전투 시작 후, 다음 베기의 피해량이 3(† 비례 증가) 증가합니다."},
+   {name:"처음은 완벽하게",type:"기술 강화 보상",desc:"전투 시작 후, 다음 막기의 보호량이 5(¤ 비례 증가) 증가합니다."},
+   {name:"강철 투구",type:"기술 강화 보상",desc:"방어구 카드 목록에 강철 투구를 추가합니다. 대원의 최대 체력이 8 증가합니다.\n*획득시 보상에서 다시 등장하지 않음 / 해당 기술이 없을 때 등장하지 않음"},
+   {name:"마법 부여 보호구",type:"기술 강화 보상",desc:"방어구 카드 목록에 마법 부여 보호구를 추가합니다. 대원의 최대 체력이 8 증가합니다.\n*획득시 보상에서 다시 등장하지 않음 / 해당 기술이 없을 때 등장하지 않음"},
+   {name:"더 많은 갑옷",type:"기술 강화 보상",desc:"갑옷 장착의 마나가 1 증가하고, 한번 더 시전됩니다.\n*해당 기술이 없을 때 등장하지 않음"},
+   {name:"갑옷 고르기",type:"기술 강화 보상",desc:"갑옷 장착이 세 개의 방어구 카드 중 하나를 선택할 수 있게 됩니다."}],
+  cards:[
+   {name:"강철 갑옷",kind:"전투 카드",desc:"소멸성. 아군 대원에게 보호막을 12 부여합니다."},
+   {name:"강철 각반",kind:"전투 카드",desc:"소멸성. 모든 아군 대원에게 보호막을 5 부여합니다."},
+   {name:"강철 군화",kind:"전투 카드",desc:"소멸성. 아군 대원에게 보호막을 8, 추진력을 2, 공격력을 2 부여합니다."},
+   {name:"강철 투구",kind:"전투 카드",desc:"소멸성. 아군 대원에게 보호막을 8 부여하고, 다음 내 차례가 시작될 때도 보호막을 8 부여합니다."},
+   {name:"마법 부여 보호구",kind:"전투 카드",desc:"소멸성. 아군 대원에게 보호막을 12, 마법력을 2 부여합니다."}],
+  memo:""},
+
+ {name:"카제",title:"바람검사",hp:20,mana:3,maxLv:30,expBase:5,expStep:2,hpPerLv:1,
+  focus:"공중으로 띄움, 단일 플레이, 바람 검술, 이동",
+  faction:"정령숲",job:"검사",job2:"방랑자",race:"",
+  passives:[sk("2-0-1","바람처럼 사라져라","","지속","내 턴에 적이 공중으로 뜬 후에, 피해를 4(† 비례 증가) 줍니다."),
+            sk("2-0-2","회오리 장막","","지속","")],
+  s1:sk("2-1","",1,"공격",""),s2:sk("2-2","",1,"",""),s3:sk("2-3","",2,"",""),ult:sk("2-4","",3,"",""),
+  support:sk("2-5","","","",""),lowRewards:[],midRewards:[],cards:[],memo:"노트 p.24~ 내용 옮겨적기"},
+
+ {name:"굴라",title:"",hp:20,mana:3,maxLv:30,expBase:5,expStep:2,hpPerLv:2,
+  focus:"소환물, 흡수, 도발/광역 폭발",
+  faction:"균열",job:"수호자",job2:"",race:"악마",passives:[],
+  s1:sk("4-1","씹어먹기",2,"공격","피해를 4(† 비례 증가) 주고, 체력을 2(¤ 비례 증가) 회복합니다."),
+  s2:sk("4-2","균열 차원문",2,"마법",
+    "선택 자리에 차원문을 생성합니다. 차원문 위의 대상에 따라 효과가 부여됩니다.\n- 대상이 적이면 턴 종료시 피해를 3(∴ 비례 증가) 줍니다.\n- 대상이 아군이면 턴 시작시 보호막을 3(¤ 비례 증가) 얻습니다.\n이미 차원문이 있는 자리에 재사용시 악마 하수인 카드 하나를 가져옵니다."),
+  s3:sk("4-3","응축 폭발",3,"보호",
+    "2턴간 도발과 보호막을 14(¤ 비례 증가) 얻습니다.\n2턴 후에 모든 적에게 굴라의 현재 체력의 20%만큼의 피해를 줍니다. 3턴간 잠금됩니다."),
+  ult:sk("4-4","융합",1,"집중","아군 전장에 있는 모든 소환물을 처치합니다."),
+  support:sk("4-5","","","",""),lowRewards:[],midRewards:[],
+  cards:[{name:"악마 하수인",kind:"소환물 카드",desc:"체력 10 / 최대 마나 1\n[4-2-1. 하급 찌르기] (마나 1 / 속성 공격) 적에게 피해를 4(† 비례 증가) 줍니다."}],
+  memo:"궁극기 융합의 후속 효과 미작성"},
+
+ {name:"리페",title:"조화의 드루이드",hp:20,mana:3,maxLv:30,expBase:5,expStep:2,hpPerLv:2,
+  focus:"버프/디버프, 음율 조합, 다양한 선택지",
+  faction:"정령숲",job:"지원가",job2:"음악가",race:"",
+  passives:[sk("8-0","화음과 리듬","","지속","리페는 음율란을 3개 가지고 시작합니다.")],
+  s1:sk("8-1","",1,"",""),s2:sk("8-2","",2,"",""),s3:sk("8-3","",2,"",""),ult:sk("8-4","",3,"",""),
+  support:sk("8-5","","","",""),lowRewards:[],midRewards:[],cards:[],memo:""}
+ ],
+ enemies:[{name:"작은 죄수",lv:1,hp:8,exp:1,field:"핏빛 감옥",
+   skills:[{name:"때리기",mana:"",desc:"피해를 3 줍니다."}],memo:""}],
+ cards:[{name:"강철 갑옷",kind:"전투",stack:1,expire:true,owner:"나이코스",
+   desc:"아군 대원에게 보호막을 12 부여합니다."}],
+ items:[],
+ synergies:[],
+ rewards:[],
+ systems:[
+  {title:"배경 이야기",body:"(미작성)"},
+  {title:"대원 — 기술 구성",body:
+"<공격 기술>\n1번 기술(기본 공격) / 2번,3번 기술(주요 기술) / 4번 기술(궁극기)\n\n<지원 기술>\n각 대원마다 지원 기술을 보유. 전투에선 사용 불가, 주로 주둔지에서 효과 발동\n\n- 용사마다 고유 사용 기술, 지속 기술 보유. 기술 점수를 얻어 각 기술이나 능력 강화 가능\n사용 기술 : 직접 눌러서 사용, 마나를 소비\n지속 기술 : 전투 동안 효과 발동\n\n전투 기술은 1번 기술과 2번 기술, 지속 효과를 보유한채로 시작\n3번 기술은 대원이 7레벨, 궁극기는 15레벨에 달성 시 선택 가능\n\n사용한도 : 사용 한도의 횟수만큼 사용시 그 턴에서 기술이 사용 불가 상태가 됨"},
+  {title:"대원 — 레벨 보상 (최대 30)",body:
+"1~4레벨 : 하급 / 5레벨 : 중급 / 6레벨 : 하급\n7레벨 : 3번 기술 해제 + 하급\n8,9레벨 : 하급 / 10레벨 : 상급\n11,12레벨 : 하급 / 13레벨 : 중급 / 14레벨 : 하급\n15레벨 : 궁극기 해제 + 중급\n16,17레벨 : 하급 / 18레벨 : 중급 / 19레벨 : 하급 / 20레벨 : 상급\n21,22레벨 : 하급 / 23레벨 : 중급 / 24레벨 : 하급 / 25레벨 : 중급\n26,27레벨 : 하급 / 28,29레벨 : 중급 / 30레벨 : 상급\n\n*보상의 종류\n1.기술 강화 2.재화 3.장신구 4.카드 5.대원 강화 6.특성 강화 7.주둔지 강화 8.추가 기술"},
+  {title:"카드 (전투/지원)",body:
+"- 최대 10장의 서로 다른 카드 보유 가능\n- 한 카드에 최대 10장의 보유량 존재\n- 보유량이 있는 카드는 보유량을 모두 소모하면 소멸됨\n- 전투 카드는 전투 시에, 지원 카드는 주둔지에서 사용 가능\n- 소멸성이 있는 카드는 전투 종료시 사라짐"},
+  {title:"장신구 (파편/완성/전설)",body:
+"용사 하나에게 최대 3개 장착 가능\n파편 장신구 2개로 일반 장신구 하나 제작 가능\n전설 장신구은 제작 불가, 보상에서만 획득 가능\n- 귀속 : 이 장신구을 장착했다면 제거, 변경 불가능"},
+  {title:"대원 구성",body:
+"- 덱에는 최대 5명의 대원 구성 가능\n전투 덱과 지원 덱으로 구성되며 전투 덱에 최소 한명의 대원이 포함되어야 함\n전투 덱 : 전투 시에 필요한 대원으로 지원 기술은 발동되지 않음\n지원 덱 : 주둔지에서 전용 효과가 발동됨"},
+  {title:"재화",body:"1. 금화 : 각종 재화, 장신구 등을 구매할 때 사용\n2. 제련석 : 주로 장신구을 제작할 때 사용\n3. 자수정 : 주둔지를 강화할때 사용"},
+  {title:"경험치",body:
+"1. 적을 직접 처치할 시 경험치 획득\n2. 전투에 참여한 적이 있다면 게임이 끝날 때 경험치 획득\n3. 치유량, 피해량, 방어량에 비례하여 경험치 획득"},
+  {title:"주둔지",body:
+"게임에는 낮과 밤이 존재. 낮 동안에는 필드를 탐험하며 던전 돌파나 유적을 찾을 수 있음\n관련 행동시 [활동량]이 증가하고 일정 활동량에 도달하면 밤이 됨\n밤에 필드를 돌아다니면 위험한 전투를 치를 수 있음 (활동량을 채우면 낮이 됨)\n\n1. 쉼터 — 대원 배치 가능. 밤을 보낼 수 있으며 일정 체력 회복.\n   기절한 대원은 일정 기간 휴식하여 절반의 체력으로 부활 가능\n2. 회관 — 주둔지 강화. 일정 이상 강화되면 다른 공간 건설 + 다른 지역 이동. 퀘스트와 보상.\n3. 훈련장 — 대원 배치시 일정 기간 후 능력 강화 (공격력/마법력/방어력/체력/마나/…)\n4. 일터 — 농장/광산/목장 등 개발. 대원이나 일꾼을 배치해 재화 수급"},
+  {title:"전투",body:
+"기본 20턴 제한 존재, 제한이 끝나면 모두 사망 (보스전은 제한 없음)\n전투 칸은 아군과 적군 진영이 각 4칸으로 구성"},
+  {title:"필드 구성",body:
+"1. 던전 — 적게는 한번, 많게는 여러번의 스테이지가 이어짐. 마지막 전투 승리시 보상 + 균열 오염도 감소\n2. 유적 — 보상 또는 저주. 선택지가 주어지고 그 결과를 얻음\n   저주 : 3개의 선택지 중 하나 선택, 남은 게임동안 지속\n3. 각종 NPC — 퀘스트를 주거나 여러 선택지를 제시\n\n균열 오염도 : 매일 상승. 최대치인 100에 도달하면 게임 패배. 던전이나 각종 요소로 감소 가능\n\n*주둔지를 일정 강화하면 필드가 이동됨\n3렙 : 랜덤 2단계 필드 / 6렙 : 랜덤 3단계 / 9렙 : 랜덤 4단계 / 10렙 : 최종 보스 등장\n9렙 달성 후 보스전 시 일반 보스, 10렙 달성 후 보스전 시 최종 보스"},
+  {title:"필드 목록",body:
+"1단계 : 최초의 숲\n2단계 : 백색 궁정, 정령샘\n3단계 : 핏빛 감옥, 얼어붙은 산맥, 사해(모래바다)\n4단계 : 녹아내린 섬, 마력의 탑, 무한한 절벽, 균열의 틈"}
+ ],
+ keywords:SEED_KEYWORDS
+};
+
+/* ══════════════════════════ 상태 ══════════════════════════ */
+const LSKEY="gameproject_design_note_v1";
+const DATA_FILE="note.json";
+let DB, TAB="hero", SEL={hero:0,enemy:0,battle:0,card:0,item:0,synergy:0,reward:0,system:0};
+let CLOUD=null, DL=null, READONLY=false, DIRTY=false, BASE=null, SYNC={state:"local",msg:""};
+let WHY="";                              // 클라우드 저장이 안 되는 이유 (진단용)
+
+/* ── Firebase ── 기기 사이 자동 동기화. 연결이 안 되면 이 기기 저장으로 내려앉음 */
+const FB_CONFIG={
+  apiKey:"AIzaSyB06OccL4_Hm3bKsoFhg8eEHDiWjiNZN8A",
+  authDomain:"gameproject-a1d26.firebaseapp.com",
+  projectId:"gameproject-a1d26",
+  storageBucket:"gameproject-a1d26.firebasestorage.app",
+  messagingSenderId:"319588324601",
+  appId:"1:319588324601:web:21486f2338d09e112a3e28"
+};
+const FB_VER="11.9.0", FB_DOC=["notes","main"];
+const CLIENT=Math.random().toString(36).slice(2,10);
+let FB=null, fbTimer=null, fbPending=null, HADLOCAL=false;
+
+async function initFirebase(){
+  try{
+    const [app,auth,fs]=await Promise.all([
+      import(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-app.js`),
+      import(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-auth.js`),
+      import(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-firestore.js`)
+    ]);
+    const a=app.initializeApp(FB_CONFIG);
+    await auth.signInAnonymously(auth.getAuth(a));
+    const db=fs.getFirestore(a);
+    FB={fs,ref:fs.doc(db,...FB_DOC)};
+    setSync("ok","Firebase에 연결되었습니다. 저장은 자동입니다.");
+    let first=true;
+    fs.onSnapshot(FB.ref,snap=>{
+      if(snap.metadata.hasPendingWrites) return;
+      if(!snap.exists()){ if(first){first=false;pushFirebase()} return; }
+      const d=snap.data();
+      if(d.by===CLIENT) return;                  // 내가 쓴 것이 돌아온 것
+      if(first){
+        first=false;
+        // 처음 연결될 때 이 기기와 서버 내용이 다르면 함부로 덮어쓰지 않고 물어봄
+        if(HADLOCAL && d.data!==JSON.stringify(DB)){ chooseSource(d); return; }
+      }
+      fbPending=d.data; applyRemote();
+    },err=>{ WHY="onSnapshot: "+err.code; setSync("bad","동기화가 끊겼습니다.") });
+    if(DIRTY) pushFirebase();
+    renderTools();
+    return true;
+  }catch(e){
+    WHY="Firebase 연결 실패: "+(e&&e.message||e);
+    return false;
+  }
+}
+/* 이 기기와 서버 내용이 다를 때 어느 쪽을 남길지 직접 고르게 함 */
+function summarize(o){
+  try{
+    return [["대원",o.heroes],["적",o.enemies],["전투",o.battles],["카드",o.cards],["장신구",o.items],
+            ["보상",o.rewards],["조합",o.synergies]]
+      .filter(([,a])=>Array.isArray(a)).map(([n,a])=>n+" "+a.length).join(" · ");
+  }catch(e){ return "(읽을 수 없음)" }
+}
+function chooseSource(d){
+  let remote=null;
+  try{ remote=JSON.parse(d.data) }catch(e){ return }
+  setSync("bad","어느 쪽을 남길지 선택해주세요.");
+  sheet("내용이 서로 다릅니다",(box,close)=>{
+    box.appendChild(h(`<p class="hint" style="color:var(--fg);font-size:13.5px">
+      이 기기에 있는 내용과 서버에 저장된 내용이 다릅니다. 어느 쪽을 남길지 골라주세요.
+      <b>고르지 않은 쪽은 사라집니다.</b></p>`));
+    box.appendChild(h(`<div><label>이 기기</label>
+      <div class="preview">${esc(summarize(DB))}</div></div>`));
+    box.appendChild(h(`<div><label>서버 · 마지막 저장 ${esc(when(new Date(d.at||0).toISOString()))}</label>
+      <div class="preview">${esc(summarize(remote))}</div></div>`));
+    box.appendChild(h(`<p class="hint">고르기 전에 <b>내보내기</b>로 이 기기 내용을 백업해 두시면 안전합니다.</p>`));
+    const row=h(`<div class="row2"><span class="grow"></span></div>`);
+    row.appendChild(btn("이 기기 내용을 올리기",()=>{close();DIRTY=true;pushFirebase()},"mini go"));
+    row.appendChild(btn("서버 내용 받기",()=>{close();fbPending=d.data;applyRemote()},"mini"));
+    box.appendChild(row);
+  });
+}
+/* 다른 기기의 변경을 반영 — 입력 중이면 잠시 미룸 */
+function applyRemote(){
+  if(fbPending==null) return;
+  const el=document.activeElement;
+  if(el&&/^(TEXTAREA|INPUT)$/.test(el.tagName)){ setTimeout(applyRemote,1500); return; }
+  const txt=fbPending; fbPending=null;
+  if(txt===JSON.stringify(DB)) return;
+  try{ DB=JSON.parse(txt) }catch(e){ return }
+  normalize();                             // 받은 내용에 형식 정리를 적용
+  DIRTY=false; writeLocal(); render();
+  if(JSON.stringify(DB)!==txt){            // 정리로 내용이 바뀌었으면 되올림
+    DIRTY=true; pushFirebase();
+    setSync("dirty","형식을 정리해서 다시 올리는 중입니다.");
+  }else setSync("ok","다른 기기의 변경을 받았습니다.");
+}
+function pushFirebase(){
+  if(!FB) return;
+  clearTimeout(fbTimer);
+  fbTimer=setTimeout(async()=>{
+    setSync("saving");
+    try{
+      await FB.fs.setDoc(FB.ref,{data:JSON.stringify(DB),at:Date.now(),by:CLIENT});
+      DIRTY=false; writeLocal(); setSync("ok","저장됨 "+when(new Date().toISOString()));
+    }catch(e){
+      WHY="setDoc: "+(e&&e.code||e.message);
+      setSync("bad","저장하지 못했습니다. 연결을 확인해주세요.");
+    }
+  },900);
+}
+
+/* ── 로컬 초안 ── */
+function readLocal(){ try{ return JSON.parse(localStorage.getItem(LSKEY)||"null") }catch(e){ return null } }
+function writeLocal(){
+  try{ localStorage.setItem(LSKEY,JSON.stringify({dirty:DIRTY,baseAt:BASE,data:DB})) }catch(e){}
+}
+let lsTimer=null;
+function touch(){
+  DIRTY=true;
+  if(FB){ setSync("dirty"); pushFirebase(); }
+  else if(SYNC.state!=="readonly") setSync(CLOUD?"dirty":"local");
+  clearTimeout(lsTimer); lsTimer=setTimeout(writeLocal,400);
+}
+function normalize(){
+  for(const k of ["heroes","enemies","battles","cards","items","synergies","rewards","systems","keywords"])
+    if(!Array.isArray(DB[k])) DB[k]=structuredClone(SEED[k]||[]);
+  DB.heroes.forEach(x=>{ if(!Array.isArray(x.highRewards)) x.highRewards=[]; });
+  migrate();
+  resort();
+}
+/* 예전 형식으로 적어둔 내용을 새 항목으로 옮김. 여러 번 실행해도 안전 */
+function migrate(){
+  const card=c=>{
+    if(!isSummon(c.kind)||c.summon) return;
+    const p=parseSummon(c.desc); c.summon=p.summon; c.desc=p.rest;
+  };
+  DB.heroes.forEach(x=>(x.cards||[]).forEach(c=>{ if(c&&typeof c==="object") card(c); }));
+  // 카드 탭에 한 번만 넣어줌 — 나중에 지우면 다시 살아나지 않음.
+  // 대원이 들고 있던 같은 이름 카드와 합쳐지도록 mergeHeroCards 앞에서 실행
+  if(!(DB.seed>=1)){
+    if(!DB.cards.some(c=>c.name==="악마 하수인")) DB.cards.push(structuredClone(CARD_MINION));
+    DB.seed=1;
+  }
+  mergeHeroCards();
+  DB.cards.forEach(card);
+  DB.items.forEach(it=>{
+    if(it.grade==="완성") it.grade="일반";                  // 완성 → 일반/희귀 4단계로 개편
+    if(!GRADES.includes(it.grade)) it.grade="파편";
+    if(!Array.isArray(it.recipe)) it.recipe=[];
+    while(it.recipe.length<SLOTS) it.recipe.push("");
+    if(it.cost===undefined) it.cost="";
+    if(it.code===undefined) it.code="";
+  });
+  if(DB.fmt!==3){ walkText(DB,toAddFormat); DB.fmt=3; }
+  if(!DB.items.length) DB.items=structuredClone(SEED_ITEMS);
+  if(!(DB.seed>=2)){ applyHeroPatch(); DB.seed=2; }
+  if(!(DB.seed>=3)){                       // 마나 칸 → 비용 종류 + 비용
+    eachSkill(s=>{
+      if(s.costType!==undefined) return;
+      const raw=String(s.mana??"").trim();
+      const m=raw.match(/^([^\d\s]+)\s*(\d+)$/);   // "추진력 3" 같은 표기 분리
+      if(m){ s.costType=m[1]; s.mana=m[2]; }
+      else s.costType="마나";
+    });
+    DB.seed=3;
+  }
+  if(!(DB.seed>=4)){                       // 지원 기술 한 칸 → 여러 개
+    DB.heroes.forEach(x=>{
+      if(!Array.isArray(x.supports)) x.supports=[];
+      const s=x.support;
+      if(s&&(String(s.name||"").trim()||String(s.desc||"").trim()))
+        x.supports.push(...splitSkillBlocks(s));
+      delete x.support;
+      if(x.memo==="지원 기술이 3-5, 3-6 두 개입니다. 칸이 하나뿐이라 3-6은 같은 칸 아래에 적어두었습니다.")
+        x.memo="";
+    });
+    DB.seed=4;
+  }
+  DB.heroes.forEach(x=>{ if(!Array.isArray(x.supports)) x.supports=[] });
+  DB.enemies.forEach(e=>{ if(!ENEMY_GRADES.includes(e.grade)) e.grade="일반";
+    ["hpMax","expMax","mana"].forEach(k=>{ if(e[k]===undefined) e[k]="" });
+    if(e.traits===undefined) e.traits="";
+    if(!Array.isArray(e.patterns)) e.patterns=[];
+    e.patterns.forEach(p=>{ if(!Array.isArray(p.steps)) p.steps=[];
+      ["name","when","memo"].forEach(k=>{ if(p[k]===undefined) p[k]="" });
+      p.steps.forEach(s=>{ ["act","note"].forEach(k=>{ if(s[k]===undefined) s[k]="" }) }) });
+    (e.skills||[]).forEach(k=>{ if(k.branch===undefined) k.branch="" }); });
+  DB.battles.forEach(b=>{
+    ["name","field","note","memo"].forEach(k=>{ if(b[k]===undefined) b[k]="" });
+    if(!ENEMY_GRADES.includes(b.kind)) b.kind="일반";
+    if(!Array.isArray(b.rounds)) b.rounds=[];
+    b.rounds.forEach(r=>{ if(!Array.isArray(r.foes)) r.foes=[];
+      if(r.flow===undefined) r.flow="";
+      r.foes.forEach(f=>{ ["name","slot","gimmick"].forEach(k=>{ if(f[k]===undefined) f[k]="" }) }) });
+    if(!Array.isArray(b.special)) b.special=[];
+    b.special.forEach(s=>{ ["name","desc"].forEach(k=>{ if(s[k]===undefined) s[k]="" }) }); });
+  if(!(DB.seed>=5)){                       // 설명에 몰아 적은 선택지를 후속 기술로 분리
+    eachSkill(s=>{
+      if(Array.isArray(s.options)&&s.options.length) return;
+      const got=splitOptions(s.desc);
+      if(!got) return;
+      s.desc=got.desc; s.options=got.options; s.el="선택"; s.mana="";
+    });
+    DB.seed=5;
+  }
+  if(!(DB.seed>=6)){                       // 거리·선택을 사전에 등록 (설명은 직접 작성)
+    ["선택","거리"].forEach(n=>{
+      if(!DB.keywords.some(k=>k.name===n)) DB.keywords.unshift({name:n,cat:"plain",desc:""});
+    });
+    DB.seed=6;
+  }
+  if(!(DB.seed>=7)){                       // 대원들이 쓰는 특성으로 조합 항목 만들어 둠
+    const add=(names,kind)=>names.forEach(n=>{
+      if(n&&!DB.synergies.some(x=>x.name===n)) DB.synergies.push({name:n,kind,tiers:[]});
+    });
+    add([...new Set(DB.heroes.map(x=>x.faction))],"진영");
+    add([...new Set(DB.heroes.flatMap(x=>[x.job,x.job2]))],"직업");
+    add([...new Set(DB.heroes.map(x=>x.race))],"종족");
+    DB.seed=7;
+  }
+  if(!(DB.seed>=8)){                       // 대원 기술 전용 키워드 분류
+    const lock=DB.keywords.find(k=>k.name==="잠금");
+    if(lock) lock.cat="skill";
+    if(!DB.keywords.some(k=>k.name==="사용한도")){
+      const at=DB.keywords.findIndex(k=>k.name==="잠금");
+      DB.keywords.splice(at<0?DB.keywords.length:at+1,0,
+        {name:"사용한도",cat:"skill",
+         desc:"사용 한도의 횟수만큼 사용시 그 턴에서 기술이 사용 불가 상태가 됨"});
+    }
+    DB.seed=8;
+  }
+  if(!(DB.seed>=9)){
+    if(!DB.keywords.some(k=>k.name==="전환")){
+      const at=DB.keywords.findIndex(k=>k.name==="선택");
+      DB.keywords.splice(at<0?0:at+1,0,
+        {name:"전환",cat:"plain",desc:"전환 기술을 사용한 후 특정 기술로 변경됨"});
+    }
+    DB.seed=9;
+  }
+  if(!(DB.seed>=10)){                      // 선택·전환을 속성에서 떼어내 별도 칸으로
+    eachSkill(s=>{
+      if(s.branch!==undefined) return;
+      if(s.el==="선택"||s.el==="전환"){
+        s.branch=s.el;
+        const els=[...new Set((s.options||[]).map(o=>o.el).filter(Boolean))];
+        s.el=els.length===1?els[0]:"";     // 딸린 기술 속성이 하나로 모이면 그것을 물려받음
+      }else s.branch="";
+    });
+    DB.seed=10;
+  }
+  if(!(DB.seed>=11)){                      // 칩으로 띄울 키워드를 직접 고를 수 있게
+    const shown=DB.keywords.filter(k=>k.name&&!STATS.some(x=>x.name===k.name)).slice(0,16);
+    DB.keywords.forEach(k=>{ if(k.pin===undefined) k.pin=shown.includes(k) });
+    DB.seed=11;
+  }
+  if(!(DB.seed>=12)){ walkText(DB,t=>t.replace(/차례/g,"턴")); DB.seed=12; }
+  if(!(DB.seed>=13)){                      // 소환수 → 소환물 (받침이 생기므로 조사도 함께)
+    walkText(DB,t=>t.replace(/소환수/g,"소환물")
+      .replace(/소환물를/g,"소환물을").replace(/소환물가/g,"소환물이")
+      .replace(/소환물는/g,"소환물은").replace(/소환물와/g,"소환물과"));
+    DB.seed=13;
+  }
+  if(!(DB.seed>=14)){                      // 0831 패치
+    DB.enemies.forEach(e=>{ if(e.grade==="보스") e.grade="우두머리" });
+    DB.items.forEach(i=>{ if(!Array.isArray(i.sources)) i.sources=[] });
+    eachSkill(sk0=>{ const r=lockToFront(sk0.desc); if(r!=null) sk0.desc=r; });
+    DB.seed=14;
+  }
+  if(!(DB.seed>=15)){                      // 보상 설명 안의 잠금 표현
+    const fix=list=>(list||[]).forEach(x=>{ const r=lockToFrontLine(x.desc); if(r!=null) x.desc=r });
+    DB.heroes.forEach(hr=>{ fix(hr.lowRewards); fix(hr.midRewards); fix(hr.highRewards) });
+    fix(DB.rewards);
+    DB.seed=15;
+  }
+}
+/* "[5-1-1. 수축 공격] (마나 1 / 속성 공격)" 형태의 덩어리를 후속 기술로 분해 */
+function splitOptions(desc){
+  const src=String(desc||"");
+  const re=/\n*\[\s*([\d\-]+)\.\s*([^\]]+?)\]\s*\(\s*([^\d\s:：]+)\s*[:：]?\s*(\d+)\s*[\/／]\s*속성\s*[:：]?\s*([^)]+?)\s*\)\s*\n?/g;
+  const hits=[]; let m;
+  while((m=re.exec(src))) hits.push({at:m.index,end:re.lastIndex,
+    code:m[1],name:m[2].trim(),costType:m[3].trim(),mana:m[4],el:m[5].trim()});
+  if(hits.length<2) return null;
+  return {
+    desc:src.slice(0,hits[0].at).trim(),
+    options:hits.map((p,i)=>{
+      const stop=i+1<hits.length?hits[i+1].at:src.length;
+      return Object.assign(sk(p.code,p.name,p.mana,p.el,src.slice(p.end,stop).trim()),
+        {costType:p.costType});
+    })
+  };
+}
+/* 설명 안에 [코드. 이름] 으로 덧붙여 둔 기술을 별개 항목으로 분리 */
+function splitSkillBlocks(s){
+  const src=String(s.desc||"");
+  const re=/\n*\[\s*([\d\-]+)\.\s*([^\]]+?)\]\s*\n/g;
+  const hits=[]; let m;
+  while((m=re.exec(src))) hits.push({at:m.index,end:re.lastIndex,code:m[1],name:m[2].trim()});
+  if(!hits.length) return [s];
+  const out=[Object.assign({},s,{desc:src.slice(0,hits[0].at).trim()})];
+  hits.forEach((p,i)=>{
+    const stop=i+1<hits.length?hits[i+1].at:src.length;
+    out.push(sk(p.code,p.name,"","",src.slice(p.end,stop).trim()));
+  });
+  return out;
+}
+/* 노트에서 옮긴 대원 데이터를 한 번만 반영. 이미 적어둔 칸은 절대 덮어쓰지 않음 */
+function applyHeroPatch(){
+  PATCH_CARDS.forEach(c=>{
+    if(!DB.cards.some(x=>x.name===c.name)) DB.cards.push(structuredClone(c));
+  });
+  HERO_PATCH.forEach(p=>{
+    const hit=DB.heroes.find(x=>x.name===p.name);
+    if(!hit){ DB.heroes.push(structuredClone(p)); return; }
+    // 이름도 설명도 없는 기술 칸은 자리표시자이므로 통째로 비워서 새로 채워지게 함
+    ["s1","s2","s3","ult"].forEach(slot=>{
+      const d=hit[slot];
+      if(d&&!String(d.name||"").trim()&&!String(d.desc||"").trim()) hit[slot]=sk("","","","","");
+    });
+    fillEmpty(hit,p);
+  });
+  const order=HERO_PATCH.map(p=>p.name);          // 노트의 1~10번 순서로 정렬
+  const rank=x=>{const i=order.indexOf(x.name);return i<0?999:i};
+  DB.heroes.sort((a,b)=>rank(a)-rank(b));
+}
+/* 비어 있는 칸만 채움. 배열은 항목 단위로 합침 — 이미 적어둔 내용은 그대로 둡니다 */
+const patchKey=v=>typeof v==="string"?v:String((v&&(v.code||v.name))||"");
+function fillEmpty(dst,src){
+  Object.keys(src).forEach(k=>{
+    const s=src[k], d=dst[k];
+    if(Array.isArray(s)){
+      if(!Array.isArray(d)){ dst[k]=structuredClone(s); return; }
+      s.forEach(v=>{
+        const key=patchKey(v);
+        const ex=key ? d.find(x=>patchKey(x)===key) : null;
+        if(ex&&typeof ex==="object"&&typeof v==="object") fillEmpty(ex,v);
+        else if(!ex) d.push(structuredClone(v));
+      });
+    }else if(s&&typeof s==="object"){
+      if(!d||typeof d!=="object") dst[k]=structuredClone(s);
+      else fillEmpty(d,s);
+    }else if(d===undefined||d===null||d==="") dst[k]=s;
+  });
+}
+/* († 비례 증가) → (추가 † )  ·  († ≡ 비례 증가) → (추가 † ≡ )
+   계수는 원래 적어둔 적이 없으므로 비워 둡니다. ⇑ 는 ⇧ 로 통일 */
+function toAddFormat(s){
+  return s.replace(/⇑/g,"⇧")
+    .replace(/\(([^()]*?)\s*비례\s*증가\s*\)/g,(all,inner)=>{
+      const marks=inner.match(/[†∴¤♡≡⇧]/g);
+      return marks&&marks.length ? "(추가 "+marks.join(" ")+" )" : all;
+    })
+    .replace(/\(추가([^()]*)\)/g,(all,inner)=>
+      "(추가"+inner.replace(/(\s*[†∴¤♡≡⇧])\s*1(?=\s|$)/g,"$1").replace(/\s+$/,"")+" )");
+}
+/* "1턴 동안 잠금됩니다" 를 맨 앞의 "잠금 (1)." 로 옮김 */
+function lockToFront(t){
+  let s=String(t||""), n=null;
+  s=s.replace(/([^\n.]*?)하고\s*(\d+)턴\s*(?:동안|간)\s*잠금됩니다\.?/g,(a,b,num)=>{n=num;return b+"합니다."});
+  s=s.replace(/\s*(\d+)턴\s*(?:동안|간)\s*잠금됩니다\.?/g,(a,num)=>{n=num;return ""});
+  if(n==null) return null;
+  const LF=String.fromCharCode(10);
+  s=s.split(LF).map(l=>l.replace(/[ \t]+$/,"")).join(LF)
+       .replace(new RegExp(LF+"{3,}","g"),LF+LF).trim();
+  return "잠금 ("+n+"). "+s;
+}
+/* 보상 설명처럼 안에 기술이 들어 있는 글은 그 줄 앞에만 붙임 */
+function lockToFrontLine(t){
+  const LFC=String.fromCharCode(10);
+  let hit=false;
+  const out=String(t||"").split(LFC).map(line=>{
+    let n=null;
+    const c=line.replace(/\s*(\d+)턴\s*(?:동안|간)\s*잠금됩니다\.?/g,(a,num)=>{n=num;return ""});
+    if(n==null) return line;
+    hit=true; return "잠금 ("+n+"). "+c.trim();
+  }).join(LFC);
+  return hit?out:null;
+}
+function walkText(node,fn){
+  if(Array.isArray(node)) node.forEach(v=>walkText(v,fn));
+  else if(node&&typeof node==="object")
+    for(const k of Object.keys(node)){
+      if(typeof node[k]==="string") node[k]=fn(node[k]);
+      else walkText(node[k],fn);
+    }
+}
+/* 대원이 직접 들고 있던 카드를 카드 탭으로 옮기고, 대원에는 이름만 남김.
+   이미 이름만 남은 상태면 아무 일도 하지 않음 */
+function mergeHeroCards(){
+  const normKind=k=>/소환/.test(String(k||""))?"소환물"
+    :(KINDS.find(x=>String(k||"").includes(x))||"전투");
+  DB.heroes.forEach(hero=>{
+    if(!Array.isArray(hero.cards)) hero.cards=[];
+    hero.cards=hero.cards.map(c=>{
+      if(typeof c==="string") return c.trim()||null;
+      const name=String(c&&c.name||"").trim();
+      if(!name) return null;
+      let hit=DB.cards.find(x=>x.name===name);
+      if(!hit){
+        const desc=String(c.desc||"");
+        hit={name,source:"대원",owner:hero.name,kind:normKind(c.kind),stack:1,
+             expire:/소멸성/.test(desc), desc:desc.replace(/^\s*소멸성\s*[.·]?\s*/,"")};
+        if(c.summon) hit.summon=c.summon;
+        DB.cards.push(hit);
+      }else{
+        if(!hit.owner) hit.owner=hero.name;
+        if(!hit.summon&&c.summon) hit.summon=c.summon;
+        if(!hit.desc&&c.desc) hit.desc=c.desc;
+      }
+      return name;
+    }).filter(Boolean);
+  });
+  DB.cards.forEach(c=>{
+    c.source=String(c.source||"").trim()||"대원";     // 직접 쓴 수급처는 그대로 둠
+    if(!KINDS.includes(c.kind)) c.kind=normKind(c.kind);
+    if(c.stack===undefined) c.stack=1;
+    if(c.owner===undefined) c.owner="";
+  });
+}
+/* 설명란에 줄글로 적힌 소환물 정보를 항목으로 분해 (실패하면 원문 유지) */
+function parseSummon(desc){
+  const src=String(desc||""); const s={hp:"",mana:"",skills:[]}; let rest=src;
+  const take=re=>{ const m=rest.match(re); if(!m) return ""; rest=rest.replace(m[0],""); return m[1]; };
+  s.hp=take(/체력\s*[:：]?\s*(\d+)/);
+  s.mana=take(/최대\s*마나\s*[:：]?\s*(\d+)/);
+  const re=/\[\s*([\d\-]+)\.\s*([^\]]+?)\]\s*\(\s*마나\s*[:：]?\s*(\d+)\s*[/／]\s*속성\s*[:：]?\s*([^)]+?)\s*\)\s*([^\n]*)/g;
+  const hits=[]; let m;
+  while((m=re.exec(src))) hits.push(m);
+  hits.forEach(x=>{
+    s.skills.push(sk(x[1].trim(),x[2].trim(),x[3],x[4].trim(),x[5].trim()));
+    rest=rest.replace(x[0],"");
+  });
+  rest=rest.split("\n").map(l=>l.replace(/^[\s/·|]+|[\s/·|]+$/g,"")).filter(Boolean).join("\n");
+  return {summon:s,rest};
+}
+
+/* ── 부팅 ── */
+function boot(){
+  const draft=readLocal();
+  HADLOCAL=!!(draft&&draft.data);          // 이 기기에 이미 작성한 내용이 있는가
+  DB = draft&&draft.data ? draft.data : structuredClone(SEED);
+  DIRTY = !!(draft&&draft.dirty); BASE = draft?draft.baseAt:null;
+  normalize(); render();
+  initFirebase().then(ok=>{ if(!ok){ pullCloud(); initCaps(); } });
+}
+async function pullCloud(){
+  let cloud=null;
+  try{
+    const r=await fetch(DATA_FILE,{cache:"no-store"});
+    if(r.ok) cloud=await r.json();
+  }catch(e){}
+  if(!cloud||!cloud.data) return;                  // 아직 클라우드 저장 이력 없음
+  const draft=readLocal();
+  const keepDraft = draft&&draft.dirty&&draft.baseAt===cloud.savedAt;
+  BASE=cloud.savedAt;
+  if(!keepDraft){ DB=cloud.data; DIRTY=false; normalize(); writeLocal(); render(); }
+  setSync(DIRTY?"dirty":"ok","마지막 저장 "+when(cloud.savedAt));
+}
+async function initCaps(){
+  try{ CLOUD = window.claude ? await window.claude.use("artifact") : null }catch(e){ CLOUD=null }
+  try{ DL = window.claude ? await window.claude.use("downloads") : null }catch(e){ DL=null }
+  if(CLOUD){ if(SYNC.state==="local") setSync(DIRTY?"dirty":"ok"); }
+  else if(location.protocol==="file:") WHY="로컬 파일이라 클라우드 저장이 없습니다.";
+  else WHY = window.claude ? "use(artifact)가 null — 이 화면에 권한이 없습니다."
+                          : "window.claude 없음 — 공유 링크가 아닌 곳에서 열렸습니다.";
+  renderTools();
+}
+function when(iso){
+  if(!iso) return "";
+  const d=new Date(iso); if(isNaN(d)) return "";
+  return d.toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"});
+}
+
+/* ── 클라우드 저장 ── */
+async function cloudSave(){
+  if(!CLOUD||READONLY) return;
+  setSync("saving"); renderTools();
+  const payload={savedAt:new Date().toISOString(),data:DB};
+  try{
+    await CLOUD.publish({[DATA_FILE]:{content:JSON.stringify(payload),contentType:"application/json"}});
+    BASE=payload.savedAt; DIRTY=false; writeLocal();
+    setSync("ok","마지막 저장 "+when(payload.savedAt));
+  }catch(err){
+    const c=err&&err.code;
+    WHY="publish 실패 코드: "+(c||"알 수 없음")+" / "+(err&&err.message||"");
+    if(c==="conflict")
+      setSync("bad","다른 기기에서 먼저 저장했습니다. 이 화면은 곧 그 내용으로 새로고침됩니다.");
+    else if(c==="not_writer"||c==="not_granted"||c==="not_declared"||c==="consent_required"){
+      READONLY=true; setSync("readonly","읽기 전용으로 열렸습니다. 변경은 이 기기에만 남습니다.");
+    }else if(c==="capability_disabled"||c==="capability_removed"){
+      CLOUD=null; setSync("local","이 화면에서는 클라우드 저장을 쓸 수 없습니다. 내보내기로 백업하세요.");
+    }else if(c==="rate_limited")
+      setSync("bad","저장이 너무 잦습니다. 잠시 후 다시 눌러주세요.");
+    else if(c==="too_large")
+      setSync("bad","내용이 너무 큽니다. 내보내기로 백업 후 정리해주세요.");
+    else
+      setSync("bad","저장하지 못했습니다. 잠시 후 다시 시도하세요.");
+  }
+  renderTools();
+}
+function setSync(state,msg){ SYNC={state,msg:msg||""}; renderTools(); }
+
+/* ── 파일 내보내기/불러오기 ── */
+async function offer(filename,text){
+  if(DL){
+    try{ await DL.save({filename,data:text}); }
+    catch(e){ if(e&&e.code!=="declined") setSync("bad","파일을 저장하지 못했습니다."); }
+    return;
+  }
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([text],{type:"application/json"}));
+  a.download=filename; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+const exportJSON=()=>offer("design-note.json",JSON.stringify(DB,null,2));
+function exportUnity(){
+  const clean=s=>Object.assign({code:s.code,name:s.name,element:s.el,description:s.desc,
+    cost:{type:s.costType||"마나",amount:+s.mana||0}},
+    s.branch?{branch:s.branch}:{},
+    (s.options||[]).length?{options:s.options.map(clean)}:{});
+  const out={
+    heroes:DB.heroes.map(h=>({
+      id:(h.name||"").trim().replace(/\s+/g,"_"),name:h.name,title:h.title,
+      stats:{hp:+h.hp||0,mana:+h.mana||0,maxLevel:+h.maxLv||30,
+        expBase:+h.expBase||0,expStep:+h.expStep||0,hpPerLevel:+h.hpPerLv||0},
+      traits:[h.faction,h.job,h.job2,h.race].filter(Boolean),
+      passives:(h.passives||[]).map(clean),
+      skills:[h.s1,h.s2,h.s3,h.ult].filter(s=>s&&s.name).map(clean),
+      supports:(h.supports||[]).filter(s=>s.name||s.desc).map(clean),
+      rewards:{low:h.lowRewards||[],mid:h.midRewards||[],high:h.highRewards||[]},
+      cardRefs:h.cards||[]})),
+    enemies:DB.enemies,battles:DB.battles,cards:DB.cards,synergies:DB.synergies,commonRewards:DB.rewards,
+    items:DB.items.map(i=>({name:i.name,grade:i.grade,bound:!!i.bind,description:i.desc,
+      sources:i.sources||[],
+      recipe:i.grade==="완성"?(i.recipe||[]).filter(Boolean):[],
+      craftCost:i.grade==="완성"?(+i.cost||0):0})),
+    keywords:DB.keywords.map(k=>({name:k.name,description:k.desc}))};
+  offer("gamedata.json",JSON.stringify(out,null,2));
+}
+document.getElementById("fileIn").addEventListener("change",function(){
+  const f=this.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{ DB=JSON.parse(r.result); normalize(); touch(); render(); setSync(CLOUD?"dirty":"local","불러왔습니다. 저장을 눌러 반영하세요."); }
+    catch(e){ setSync("bad","JSON 형식이 아닙니다. 내보내기로 만든 파일인지 확인해주세요."); }
+  };
+  r.readAsText(f); this.value="";
+});
+
+/* ══════════════════════════ 렌더 도구 ══════════════════════════ */
+const h=s=>{const t=document.createElement("template");t.innerHTML=s.trim();return t.content.firstElementChild};
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* 키워드 사전과 별개로 항상 회색 볼드로 칠하는 말 */
+const PLAIN_TERMS=["거리\\s*\\d+(?:~\\d+)?"];
+/* 사전에 없지만 색을 고정해 두는 말 */
+const FIXED_TERMS={"공격피해":"--k-atk","마법피해":"--k-mag"};
+const FIXED_PATTERNS=["공격\\s*피해","마법\\s*피해"];
+/* 지금 보고 있는 대원의 기술 — 자기 기술을 언급하면 [베기] 처럼 참조로 표시 */
+let SKILL_CTX=[];
+function heroSkillRefs(x){
+  const out=[];
+  const push=s=>{ if(!s) return; if(String(s.name||"").trim()) out.push(s);
+                  (s.options||[]).forEach(push); };
+  (x.passives||[]).forEach(push);
+  ["s1","s2","s3","ult"].forEach(k=>push(x[k]));
+  (x.supports||[]).forEach(push);
+  return out;
+}
+const refTitle=s=>[(s.code?s.code+". ":"")+s.name,s.desc].filter(Boolean).join("\n");
+/* 카드는 대원 전용이 아니므로 어느 화면에서든 참조됨 */
+const cardNameList=()=>DB.cards.map(c=>c.name).filter(Boolean).sort((a,b)=>b.length-a.length);
+function cardTitle(c){
+  const tag=[c.kind,c.expire?"소멸성":"",c.owner].filter(Boolean).join(" · ");
+  const out=[c.name+(tag?` (${tag})`:""),c.desc];
+  if(isSummon(c.kind)&&c.summon){
+    const s=c.summon;
+    const st=[s.hp&&`체력 ${s.hp}`,s.mana&&`최대 마나 ${s.mana}`].filter(Boolean).join(" · ");
+    if(st) out.push(st);
+    (s.skills||[]).forEach(k=>{ if(k.name||k.desc) out.push(`· ${k.name} — ${k.desc}`) });
+  }
+  return out.filter(Boolean).join("\n");
+}
+let kwCache={src:null,re:null};
+function kwRegex(){
+  const names=DB.keywords.map(k=>k.name).filter(Boolean);
+  const refs=SKILL_CTX.map(s=>s.name).filter(Boolean)
+    .sort((a,b)=>b.length-a.length);
+  const cards=cardNameList();
+  const src=names.join(" ")+" | "+refs.join(" ")+" | "+cards.join(" ");
+  if(kwCache.src===src) return kwCache.re;
+  const rxEsc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+  // 순서 주의 — 앞의 패턴이 먼저 잡힘
+  const parts=PLAIN_TERMS.concat(FIXED_PATTERNS)
+    .concat(refs.map(n=>"\\["+rxEsc(n)+"\\]"))      // 이미 [] 로 적은 것
+    .concat(refs.map(rxEsc))                        // 그냥 이름만 적은 것
+    .concat(cards.map(n=>"\\["+rxEsc(n)+"\\]"))     // 카드 이름 (모든 화면 공통)
+    .concat(cards.map(rxEsc))
+    .concat(names.slice().sort((a,b)=>b.length-a.length).map(rxEsc))
+    .concat(STATS.map(s=>rxEsc(s.mark)))
+    .concat(["\\d+(?:\\.\\d+)?%?"]);
+  kwCache={src,re:new RegExp("("+parts.join("|")+")","g")};
+  return kwCache.re;
+}
+/* 키워드와 능력치 기호를 한 번의 치환으로 칠함 — 치환 결과는 다시 훑지 않으므로
+   속성값(title="…") 안의 글자가 또 치환되는 사고가 없음 */
+function paint(seg){
+  const re=kwRegex(); if(!re) return esc(seg);
+  return esc(seg).replace(re,m=>{
+    if(m.startsWith("거리")){                     // "거리 1" 을 한 덩어리로
+      const g=DB.keywords.find(x=>x.name==="거리");
+      return `<span class="kw" style="color:var(${KW_COLOR[g&&g.cat]||"--k-plain"})" title="${esc(g&&g.desc)}">${m}</span>`;
+    }
+    const fixed=FIXED_TERMS[m.replace(/\s+/g,"")];
+    if(fixed) return `<span class="kw" style="color:var(${fixed})">${m}</span>`;
+    const bare=m.replace(/^\[|\]$/g,"");
+    const ref=SKILL_CTX.find(s=>s.name===bare);
+    if(ref) return `<span class="ref" title="${esc(refTitle(ref))}">[${esc(bare)}]</span>`;
+    const cd=DB.cards.find(c=>c.name===bare);
+    if(cd) return `<span class="ref card" title="${esc(cardTitle(cd))}">[${esc(bare)}]</span>`;
+    const st=STATS.find(s=>s.mark===m);
+    if(st) return statIcon(st);
+    const k=DB.keywords.find(x=>x.name===m);
+    if(k){
+      const sm=STATS.find(x=>x.name===k.name);          // 능력치 이름이면 아이콘을 앞에
+      return `<span class="kw" style="color:var(${KW_COLOR[k.cat]||"--brass"})"`
+        +` title="${esc(k.desc)}">${m}${sm?statIcon(sm):""}</span>`;
+    }
+    return `<b class="num">${m}</b>`;
+  });
+}
+/* (추가 † 2 ∴ 3) 묶음은 작은 글씨로 */
+function plainRun(text){
+  const src=String(text??""); const re=/\(추가[^()]*\)/g;
+  let out="",last=0,m;
+  while((m=re.exec(src))){
+    out+=paint(src.slice(last,m.index))+`<span class="add">${paint(m[0])}</span>`;
+    last=re.lastIndex;
+  }
+  return out+paint(src.slice(last));
+}
+/* **굵게** *기울임* _밑줄_ */
+const EMPH=[{re:/\*\*(?!\s)([^*\n]+?)(?<!\s)\*\*/,tag:"strong"},
+            {re:/\*(?!\s)([^*\n]+?)(?<!\s)\*/,tag:"em"},
+            {re:/_(?!\s)([^_\n]+?)(?<!\s)_/,tag:"u"}];
+function highlight(text){
+  const src=String(text??"");
+  let best=null;
+  EMPH.forEach(e=>{
+    const m=src.match(e.re);
+    if(m&&(!best||m.index<best.m.index)) best={m,tag:e.tag};
+  });
+  if(!best) return plainRun(src);
+  const {m,tag}=best;
+  return highlight(src.slice(0,m.index))
+    +`<${tag}>`+highlight(m[1])+`</${tag}>`
+    +highlight(src.slice(m.index+m[0].length));
+}
+function field(label,value,set,type,opts){
+  if(type==="list") return fieldList(label,value,set,opts);
+  const w=h(`<div><label>${esc(label)}</label></div>`);
+  let node;
+  if(type==="select"){
+    node=h(`<select>${opts.map(o=>`<option value="${esc(o)}"${o===value?" selected":""}>${esc(o)||"—"}</option>`).join("")}</select>`);
+  }else if(type==="area"){
+    node=h(`<textarea></textarea>`); node.value=value??"";
+  }else{
+    node=h(`<input>`); node.value=value??"";
+  }
+  if(!label) w.querySelector("label").remove();
+  w.appendChild(node);
+  if(type==="area"){
+    const pv=h(`<div class="preview"></div>`); pv.innerHTML=highlight(value);
+    w.appendChild(pv);
+    node.addEventListener("input",()=>{
+      set(node.value);pv.innerHTML=highlight(node.value);touch();renderPeek();});
+    node.addEventListener("keydown",ev=>{
+      if(!(ev.ctrlKey||ev.metaKey)||ev.altKey) return;
+      const mk={b:"**",i:"*",u:"_"}[ev.key.toLowerCase()];
+      if(!mk) return;
+      ev.preventDefault(); wrapSel(node,mk);
+    });
+  }else{
+    node.addEventListener("input",()=>{set(node.value);touch();renderRail();renderPeek()});
+    node.addEventListener("change",()=>{set(node.value);touch();renderRail();renderPeek()});
+  }
+  return w;
+}
+/* 직접 입력 + 기존 값 추천을 겸하는 칸 */
+function fieldList(label,value,set,opts,onCommit){
+  const id="dl"+Math.random().toString(36).slice(2);
+  const w=h(`<div><label>${esc(label)}</label></div>`);
+  const inp=h(`<input list="${id}" placeholder="직접 입력하거나 목록에서 선택">`);
+  inp.value=value??"";
+  const dl=h(`<datalist id="${id}">${opts.map(o=>`<option value="${esc(o)}"></option>`).join("")}</datalist>`);
+  inp.addEventListener("input",()=>{set(inp.value);touch();renderRail();renderPeek()});
+  inp.addEventListener("change",()=>{                 // 확정(엔터·포커스 이동)될 때만 다시 그림
+    inp.value=inp.value.trim(); set(inp.value); touch();
+    if(onCommit) later(onCommit);
+  });
+  w.append(inp,dl);
+  return w;
+}
+/* 공유 링크는 샌드박스라 alert·confirm이 막힙니다. 화면 안에서 직접 띄웁니다 */
+function sheet(title,build){
+  const wrap=h(`<div class="modal"></div>`);
+  const box=h(`<div class="sheet"></div>`);
+  const hd=h(`<div class="sheetHd">${esc(title)}<span class="grow"></span></div>`);
+  const close=()=>wrap.remove();
+  hd.appendChild(btn("닫기",close,"mini"));
+  box.appendChild(hd);
+  build(box,close);
+  wrap.appendChild(box);
+  wrap.addEventListener("click",e=>{ if(e.target===wrap) close() });
+  document.addEventListener("keydown",function esc2(e){
+    if(e.key==="Escape"){ close(); document.removeEventListener("keydown",esc2) }
+  });
+  document.body.appendChild(wrap);
+  return box;
+}
+function askConfirm(text,onYes,yesLabel){
+  sheet("확인",(box,close)=>{
+    box.appendChild(h(`<p class="hint" style="font-size:13.5px;color:var(--fg)">${esc(text)}</p>`));
+    const row=h(`<div class="row2"><span class="grow"></span></div>`);
+    row.appendChild(btn("취소",close,"mini"));
+    const y=btn(yesLabel||"삭제",()=>{close();onYes()},"mini danger");
+    row.appendChild(y); box.appendChild(row);
+  });
+}
+/* 노트를 통째로 텍스트로 주고받기 — 파일도 클라우드도 필요 없음 */
+function transferSheet(){
+  sheet("노트 옮기기",(box,close)=>{
+    box.appendChild(h(`<p class="hint">아래 글자를 전부 복사해서 다른 기기의 <b>받기</b> 칸에 붙여넣으면 그대로 옮겨집니다.</p>`));
+    const out=h(`<textarea readonly></textarea>`);
+    out.value=JSON.stringify(DB);
+    box.appendChild(h(`<label>보내기 · ${out.value.length.toLocaleString()}자</label>`));
+    box.appendChild(out);
+    const r1=h(`<div class="row2"></div>`);
+    const msg=h(`<span class="hint"></span>`);
+    r1.appendChild(btn("전체 복사",async()=>{
+      out.focus(); out.select();
+      try{ await navigator.clipboard.writeText(out.value); msg.textContent="복사했습니다."; }
+      catch(e){ msg.textContent="Ctrl+C(또는 길게 눌러 복사)를 눌러주세요. 전체 선택해 뒀습니다."; }
+    },"go mini"));
+    r1.appendChild(msg); box.appendChild(r1);
+
+    box.appendChild(h(`<div style="border-top:1px solid var(--rule);margin-top:6px"></div>`));
+    box.appendChild(h(`<label>받기 — 다른 기기에서 복사한 글자를 붙여넣으세요</label>`));
+    const inp=h(`<textarea placeholder="여기에 붙여넣기"></textarea>`);
+    box.appendChild(inp);
+    const r2=h(`<div class="row2"></div>`);
+    const msg2=h(`<span class="hint"></span>`);
+    r2.appendChild(btn("이 내용으로 덮어쓰기",()=>{
+      let data;
+      try{ data=JSON.parse(inp.value) }
+      catch(e){ msg2.textContent="형식이 올바르지 않습니다. 글자 전체를 붙여넣었는지 확인해주세요."; return }
+      if(!data||!Array.isArray(data.heroes)){ msg2.textContent="이 노트의 데이터가 아닙니다."; return }
+      close();
+      askConfirm("지금 노트를 붙여넣은 내용으로 덮어씁니다. 되돌릴 수 없습니다.",()=>{
+        DB=data; normalize(); DIRTY=true; writeLocal(); render();
+        setSync(CLOUD?"dirty":"local","불러왔습니다. 저장을 눌러 반영하세요.");
+      },"덮어쓰기");
+    },"mini"));
+    r2.appendChild(msg2); box.appendChild(r2);
+  });
+}
+/* 여러 개를 고르는 칸 — 입력하거나 목록에서 고르면 칩으로 쌓임 */
+function multiField(label,arr,opts,onChange){
+  const id="ml"+Math.random().toString(36).slice(2);
+  const w=h(`<div><label>${esc(label)}</label></div>`);
+  const inp=h(`<input list="${id}" placeholder="입력하거나 목록에서 선택">`);
+  const dl=h(`<datalist id="${id}">${
+    opts.filter(o=>!arr.includes(o)).map(o=>`<option value="${esc(o)}"></option>`).join("")}</datalist>`);
+  const add=()=>{
+    const v=inp.value.trim();
+    if(!v||arr.includes(v)){ inp.value=""; return }
+    arr.push(v); inp.value=""; touch(); if(onChange) onChange();
+  };
+  inp.addEventListener("change",add);
+  inp.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); add() } });
+  w.append(inp,dl);
+  if(arr.length){
+    const box=h(`<div class="tokens" style="margin-top:6px"></div>`);
+    arr.forEach((v,i)=>{
+      const b=h(`<button class="token" style="cursor:pointer">${esc(v)} ×</button>`);
+      b.addEventListener("click",()=>{arr.splice(i,1);touch();if(onChange)onChange()});
+      box.appendChild(b);
+    });
+    w.appendChild(box);
+  }
+  return w;
+}
+function panel(title,extra){
+  const p=h(`<section class="panel"><h2>${esc(title)}<span class="grow"></span></h2></section>`);
+  if(extra) p.querySelector("h2").appendChild(extra);
+  return p;
+}
+function btn(text,fn,cls){
+  const b=h(`<button class="${cls||""}">${esc(text)}</button>`); b.addEventListener("click",fn); return b;
+}
+/* 전투 능력치 표식 — 기호는 여기서만 정의하므로 나중에 한 곳만 고치면 전부 바뀝니다 */
+/* 능력치 표식. 글에는 기호(†)로 저장되고 화면에는 아이콘으로 그려짐.
+   원본 SVG는 icons/ 폴더에 같은 path로 들어 있음 */
+const STATS=[
+  {name:"공격력",mark:"†",color:"--k-atk",
+   d:"M12 1.5 L15.2 7.4 V13.2 H8.8 V7.4 Z M4.8 13.2 H19.2 V15.8 H4.8 Z M10.6 15.8 H13.4 V19.4 H10.6 Z M12 17.4 A2.1 2.1 0 1 1 12 21.6 A2.1 2.1 0 1 1 12 17.4 Z"},
+  {name:"마법력",mark:"∴",color:"--k-mag",
+   d:"M12 1.2 C13.1 7.7 16.3 10.9 22.8 12 C16.3 13.1 13.1 16.3 12 22.8 C10.9 16.3 7.7 13.1 1.2 12 C7.7 10.9 10.9 7.7 12 1.2 Z"},
+  {name:"보호력",mark:"¤",color:"--k-def",
+   d:"M12 1.6 L20.8 4.8 V11.6 C20.8 16.9 17.2 21 12 22.4 C6.8 21 3.2 16.9 3.2 11.6 V4.8 Z"},
+  {name:"체력",mark:"♡",color:"--k-hp",
+   d:"M12 21.6 C11.4 21.6 2.2 15.4 2.2 8.7 C2.2 5.4 4.8 2.8 8 2.8 C9.9 2.8 11.3 3.8 12 5 C12.7 3.8 14.1 2.8 16 2.8 C19.2 2.8 21.8 5.4 21.8 8.7 C21.8 15.4 12.6 21.6 12 21.6 Z"},
+  {name:"추진력",mark:"≡",color:"--k-move",
+   d:"M4.2 4.2 L12 12 L4.2 19.8 L1.4 17 L6.4 12 L1.4 7 Z M14.6 4.2 L22.4 12 L14.6 19.8 L11.8 17 L16.8 12 L11.8 7 Z"},
+  {name:"성장력",mark:"⇧",color:"--k-buff",alias:"⇑",
+   d:"M12 1.8 L21.6 11.4 H16.4 V22.2 H7.6 V11.4 H2.4 Z"}
+];
+/* 요약 카드에서만 쓰는 아이콘 (글에는 등장하지 않음) */
+const HEART="M.5 .92C.5 .92 0 .6 0 .3 0 .13 .13 0 .28 0 .37 0 .45 .05 .5 .12 .55 .05 .63 0 .72 0 .87 0 1 .13 1 .3 1 .6 .5 .92 .5 .92Z";
+const ARROW="M.5 0 L1 .5 H.72 V1 H.28 V.5 H0 Z";
+const UI_ICONS={
+  마나:{color:"--k-mana",
+    d:"M12 1.8 C12 1.8 4.3 10.4 4.3 15.2 A7.7 7.7 0 0 0 19.7 15.2 C19.7 10.4 12 1.8 12 1.8 Z"},
+  // 가운데 큰 화살표, 양옆에 높이가 다른 작은 화살표 둘 (체력 증가와 같은 배치)
+  "경험치 증가폭":{color:"--k-buff",
+    body:`<g fill="currentColor">
+      <g transform="translate(6.5,11.2) scale(11)"><path d="${ARROW}"/></g>
+      <g transform="translate(0.3,8.5) scale(6)"><path d="${ARROW}"/></g>
+      <g transform="translate(17.2,5.4) scale(6.6)"><path d="${ARROW}"/></g>
+    </g>`},
+  // 가운데 큰 하트, 양옆에 높이가 다른 작은 하트 둘이 더 위쪽에
+  "최대 체력 증가":{color:"--k-hp",
+    body:`<g fill="currentColor">
+      <g transform="translate(6.5,12.08) scale(11)"><path d="${HEART}"/></g>
+      <g transform="translate(0.3,8.98) scale(6)"><path d="${HEART}"/></g>
+      <g transform="translate(17.2,5.93) scale(6.6)"><path d="${HEART}"/></g>
+    </g>`}
+};
+function uiIcon(name){
+  const i=UI_ICONS[name]||STATS.find(s=>s.name===name);
+  if(!i) return "";
+  return `<svg class="ic" viewBox="0 0 24 24" role="img" aria-label="${esc(name)}"`
+    +` style="color:var(${i.color})"><title>${esc(name)}</title>`
+    +(i.body||`<path fill="currentColor" d="${i.d}"/>`)+`</svg>`;
+}
+function statIcon(st){
+  return `<svg class="ic" viewBox="0 0 24 24" role="img" aria-label="${esc(st.name)}"`
+    +` style="color:var(${st.color})"><title>${esc(st.name)}</title>`
+    +`<path fill="currentColor" d="${st.d}"/></svg>`;
+}
+const MARK_RE=/[†∴¤♡≡⇧⇑]/;
+function insertInto(scope,text){
+  const ta=scope.querySelector("textarea"); if(!ta) return;
+  const p=ta.selectionStart;
+  let ins=text;
+  if(MARK_RE.test(text[0])){                        // 기호 단독 삽입은 앞 공백 보정
+    const prev=ta.value[p-1];
+    if(prev&&!/[\s(]/.test(prev)) ins=" "+ins;
+  }
+  ta.value=ta.value.slice(0,p)+ins+ta.value.slice(ta.selectionEnd);
+  ta.dispatchEvent(new Event("input"));
+  ta.focus();
+  // 계수를 적을 자리에 커서를 둠 — 괄호로 닫히면 ')' 바로 앞, 아니면 끝
+  const caret=p+ins.length-(ins.endsWith(")")?1:0);
+  ta.selectionStart=ta.selectionEnd=caret;
+}
+function wrapSel(ta,mark){
+  if(!ta) return;
+  const a=ta.selectionStart,b=ta.selectionEnd;
+  const had=b>a, sel=had?ta.value.slice(a,b):"텍스트";
+  ta.value=ta.value.slice(0,a)+mark+sel+mark+ta.value.slice(b);
+  ta.dispatchEvent(new Event("input"));
+  ta.focus();
+  ta.selectionStart=a+mark.length; ta.selectionEnd=a+mark.length+sel.length;
+}
+function chipRow(label,items,scope){
+  const row=h(`<div class="chipRow"><span class="chipLbl">${esc(label)}</span></div>`);
+  items.forEach(it=>{
+    const c=h(`<button class="chip" type="button" style="color:var(${it.color||"--dim"})" title="${esc(it.title||"")}">${it.html}</button>`);
+    c.addEventListener("click",()=>insertInto(scope,it.insert));
+    row.appendChild(c);
+  });
+  return row;
+}
+/* 보상 설명 끝에 붙이는 상투 문구 */
+function noteChips(scope){
+  const row=h(`<div class="chipRow"><span class="chipLbl">보상 표기</span></div>`);
+  const add=(label,note,intoBracket)=>{
+    const b=h(`<button class="chip" type="button" title="${esc(note)}">${esc(label)}</button>`);
+    b.addEventListener("click",()=>{
+      const ta=scope.querySelector("textarea"); if(!ta) return;
+      if(!intoBracket&&ta.value.includes(note)) return;      // 같은 문구 중복 방지
+      const v=ta.value.replace(/\s+$/,"");
+      const from=v.length;
+      ta.value=v+(v?String.fromCharCode(10):"")+note;
+      ta.dispatchEvent(new Event("input"));
+      ta.focus();
+      const at=intoBracket ? ta.value.indexOf("[]",from)+1 : ta.value.length;
+      ta.selectionStart=ta.selectionEnd=at;
+    });
+    row.appendChild(b);
+  };
+  add("획득 후 제외","*획득시 보상에서 다시 등장하지 않음");
+  add("기술 없으면 제외","*[] 기술이 없을 때 등장하지 않음",true);
+  return row;
+}
+function chips(scope){
+  const box=h(`<div class="helper"></div>`);
+  box.appendChild(chipRow("키워드",
+    DB.keywords.filter(k=>k.name&&k.pin)
+      .map(k=>({html:esc(k.name),title:k.desc,insert:k.name,color:KW_COLOR[k.cat]})),scope));
+  box.appendChild(chipRow("추가 능력치",
+    STATS.map(s=>({html:statIcon(s)+" "+esc(s.name),color:s.color,
+      title:`(추가 ${s.mark} ) 삽입 — 계수 자리에 커서가 놓이니 바로 숫자를 입력하세요. 비워두면 미정`,
+      insert:`(추가 ${s.mark} )`})),scope));
+  const fmtRow=h(`<div class="chipRow"><span class="chipLbl">서식</span></div>`);
+  [["**","굵게","font-weight:700"],["*","기울임","font-style:italic"],
+   ["_","밑줄","text-decoration:underline"]].forEach(([mk,label,css])=>{
+    const b=h(`<button class="chip" type="button" style="${css}" title="${esc(label)} — Ctrl+${
+      mk==="**"?"B":mk==="*"?"I":"U"}">${esc(label)}</button>`);
+    b.addEventListener("click",()=>wrapSel(scope.querySelector("textarea"),mk));
+    fmtRow.appendChild(b);
+  });
+  box.appendChild(fmtRow);
+  box.appendChild(chipRow("덧붙이기",
+    STATS.map(s=>({html:statIcon(s),color:s.color,
+      title:`${s.name} — 이미 있는 (추가 …) 안에 커서를 두고 누르면 ${s.mark} 가 덧붙습니다`,
+      insert:`${s.mark} `})),scope));
+  return box;
+}
+
+/* ══════════════════════════ 화면 ══════════════════════════ */
+const TABS=[["hero","대원"],["enemy","적"],["battle","전투"],["card","카드"],["item","장신구"],
+            ["synergy","대원 조합"],["reward","보상"],["system","시스템"],["keyword","키워드"]];
+function render(){ renderNav(); renderTools(); renderRail(); renderMain(); }
+
+/* ── 대원 조합 간략 보기 ── */
+let SYN_SEL={i:-1,t:0};
+function synergyPeek(box){
+  const idx=Math.min(SEL.synergy,DB.synergies.length-1);
+  const o=DB.synergies[idx];
+  const have=heroesWithTrait(o.name).length;
+  const tiers=(o.tiers||[]).slice().sort((a,b)=>(+a.count||0)-(+b.count||0));
+  if(SYN_SEL.i!==idx){ SYN_SEL={i:idx,t:0} }
+  if(SYN_SEL.t>=tiers.length) SYN_SEL.t=0;
+
+  const card=h(`<div class="pk"></div>`);
+  const hd=h(`<div class="pk-hd">
+    <div class="pk-nm">${esc(o.name||"이름 없음")}</div>
+    <div class="pk-ti">${esc(o.kind||"")}</div>
+  </div>`);
+  if(tiers.length){
+    const row=h(`<div class="sy-steps"></div>`);
+    tiers.forEach((t,i)=>{
+      if(i) row.appendChild(h(`<span class="sy-arrow">▸</span>`));
+      const b=h(`<button class="sy-step${i===SYN_SEL.t?" on":""}" type="button">${esc(t.count)}</button>`);
+      b.addEventListener("click",()=>{ SYN_SEL.t=i; renderPeek() });
+      row.appendChild(b);
+    });
+    hd.appendChild(row);
+  }
+  hd.appendChild(h(`<div class="pk-focus">이 특성을 가진 대원 ${have}명</div>`));
+  card.appendChild(hd);
+
+  if(!tiers.length) card.appendChild(h(`<div class="pk-none">단계가 아직 없습니다.</div>`));
+  tiers.forEach((t,i)=>{
+    const req=(t.required||[]).length
+      ? ` <span class="pk-lock">${esc(t.required.join(", "))} 필수</span>` : "";
+    const el=h(`<div class="pk-sk${i===SYN_SEL.t?"":" off"}">
+      <div class="pk-h"><span class="pk-slot">${esc(o.name||"")}(${esc(t.count)})</span>
+        <span class="grow"></span>${req}</div></div>`);
+    el.appendChild(h(`<div class="pk-d">${t.desc?highlight(t.desc):"(설명 없음)"}</div>`));
+    card.appendChild(el);
+  });
+  box.innerHTML=""; box.appendChild(card);
+}
+/* ── 대원 간략 보기 — 편집 칸 없이 완성된 모습만 ── */
+function renderPeek(){
+  const box=document.getElementById("peek"); box.innerHTML="";
+  if(TAB==="synergy"&&DB.synergies.length){ box.style.display=""; return synergyPeek(box); }
+  if(TAB!=="hero"||!DB.heroes.length){ box.style.display="none"; return; }
+  box.style.display="";
+  const o=DB.heroes[Math.min(SEL.hero,DB.heroes.length-1)];
+  const card=h(`<div class="pk"></div>`);
+
+  const hd=h(`<div class="pk-hd">
+    <div class="pk-nm">${esc(o.name||"이름 없음")}</div>
+    ${o.title?`<div class="pk-ti">${esc(o.title)}</div>`:""}
+    <div class="pk-row">
+      <span title="시작 생명력">${uiIcon("체력")}<b>${esc(o.hp)}</b></span>
+      <span title="최대 마나">${uiIcon("마나")}<b>${esc(o.mana)}</b></span>
+      <span title="필요 경험치 증가폭">${uiIcon("경험치 증가폭")}<b>${esc(o.expStep)}</b></span>
+      <span title="레벨 당 증가하는 최대 체력">${uiIcon("최대 체력 증가")}<b>${esc(o.hpPerLv)}</b></span>
+    </div>
+    ${o.focus?`<div class="pk-focus">${esc(o.focus)}</div>`:""}
+  </div>`);
+  const tags=[o.faction,o.job,o.job2,o.race].filter(Boolean);
+  if(tags.length) hd.appendChild(h(`<div class="pk-tags">${
+    tags.map(t=>`<span class="pk-tag" title="${esc(synergyText(t))}">${esc(t)}</span>`).join("")}</div>`));
+  card.appendChild(hd);
+
+  const line=(slot,s,lock)=>{
+    if(!s||(!s.name&&!s.desc)) return null;
+    const raw=String(s.mana??"").trim();
+    const type=String(s.costType||"마나").trim();
+    const ic=uiIcon(type);
+    const cost=raw===""?"" : `<span class="pk-cost" title="${esc(type)}">`
+      +(ic||esc(type)+" ")+`<b>${esc(raw)}</b></span>`;
+    const el=h(`<div class="pk-sk">
+      <div class="pk-h"><span class="pk-slot">${esc(slot)}</span>
+        <span class="pk-n">${esc(s.name||"이름 없음")}</span>
+        ${lock?`<span class="pk-lock">${esc(lock)}</span>`:""}${cost}</div>
+    </div>`);
+    if(s.desc) el.appendChild(h(`<div class="pk-d">${highlight(s.desc)}</div>`));
+    return el;
+  };
+  const add=(title,nodes)=>{
+    const list=nodes.filter(Boolean);
+    if(!list.length) return;
+    card.appendChild(h(`<div class="pk-sec">${esc(title)}</div>`));
+    list.forEach(n=>card.appendChild(n));
+  };
+
+  const lines=(slot,s,lock)=>{
+    const base=line(slot,s,lock);
+    if(!base) return [];
+    const out=[base];
+    (s.options||[]).forEach(op=>{
+      const n=line(s.branch==="전환"?"전환":"선택",op);
+      if(n){ n.style.paddingLeft="30px"; out.push(n) }
+    });
+    return out;
+  };
+  add("지속 기술",(o.passives||[]).map(p=>line("지속",p)));
+  add("전투 기술",[].concat(lines("1",o.s1),lines("2",o.s2),
+                   lines("3",o.s3,"7레벨"),lines("궁",o.ult,"15레벨")));
+  add("지원 기술",(o.supports||[]).map(p=>line("지원",p)));
+
+  const cards=(o.cards||[]).map(n=>DB.cards.find(c=>c.name===n)).filter(Boolean);
+  if(cards.length){
+    card.appendChild(h(`<div class="pk-sec">관련 카드</div>`));
+    cards.forEach(c=>{
+      const el=h(`<div class="pk-sk">
+        <div class="pk-h"><span class="pk-slot">${esc(c.kind||"카드")}</span>
+          <span class="pk-n">${esc(c.name)}</span>
+          ${c.expire?`<span class="pk-lock">소멸성</span>`:""}</div>
+      </div>`);
+      if(c.desc) el.appendChild(h(`<div class="pk-d">${highlight(c.desc)}</div>`));
+      if(isSummon(c.kind)&&c.summon){
+        const s=c.summon;
+        const st=[s.hp&&`${uiIcon("체력")}<b>${esc(s.hp)}</b>`,
+                  s.mana&&`${uiIcon("마나")}<b>${esc(s.mana)}</b>`].filter(Boolean).join(" ");
+        if(st) el.appendChild(h(`<div class="pk-row" style="margin-top:6px"><span>${st}</span></div>`));
+        (s.skills||[]).forEach(k=>{
+          if(!k.name&&!k.desc) return;
+          el.appendChild(h(`<div class="pk-d"><b>${esc(k.name||"이름 없음")}</b>${
+            k.desc?"<br>"+highlight(k.desc):""}</div>`));
+        });
+      }
+      card.appendChild(el);
+    });
+  }
+  if(!card.querySelector(".pk-sk"))
+    card.appendChild(h(`<div class="pk-none">아직 기술이 없습니다.</div>`));
+  box.appendChild(card);
+}
+
+function renderNav(){
+  const n=document.getElementById("nav"); n.innerHTML="";
+  TABS.forEach(([k,label])=>{
+    const b=h(`<button class="${TAB===k?"on":""}">${label}</button>`);
+    b.addEventListener("click",()=>{TAB=k;render();window.scrollTo(0,0)});
+    n.appendChild(b);
+  });
+}
+const PILL={saving:["busy","저장 중"],ok:["ok","동기화됨"],dirty:["dirty","저장 중…"],
+  bad:["bad","저장 실패"],readonly:["","읽기 전용"],local:["","이 기기에만 저장"]};
+function renderTools(){
+  const t=document.getElementById("tools"); t.innerHTML="";
+  const [cls,label]=PILL[SYNC.state]||PILL.local;
+  const pill=h(`<span class="pill ${cls}" title="${esc(SYNC.msg||WHY)}"><span class="dot"></span>${label}</span>`);
+  t.appendChild(pill);
+  if(!CLOUD&&!FB)
+    t.appendChild(btn("진단",()=>{
+      sheet("클라우드 저장 상태",(box)=>{
+        [["주소",location.protocol+"//"+location.host],
+         ["window.claude",window.claude?"있음":"없음"],
+         ["artifact 권한",CLOUD?"있음":"없음"],
+         ["downloads 권한",DL?"있음":"없음"],
+         ["이유",WHY||"(없음)"]].forEach(([k,v])=>
+          box.appendChild(h(`<div><label>${esc(k)}</label><div class="preview">${esc(v)}</div></div>`)));
+      });
+    },"mini"));
+  if(CLOUD&&!READONLY){
+    const s=btn(DIRTY?"저장":"저장됨",cloudSave,DIRTY?"go":"");
+    s.disabled = !DIRTY || SYNC.state==="saving";
+    t.appendChild(s);
+  }
+  t.appendChild(btn("옮기기",transferSheet,"go"));
+  t.appendChild(btn("내보내기",exportJSON));
+  t.appendChild(btn("불러오기",()=>document.getElementById("fileIn").click()));
+  t.appendChild(btn("Unity 데이터",exportUnity));
+}
+
+/* 항목을 추가하거나 분류를 바꿀 때마다 정해진 순서로 다시 정렬.
+   보고 있던 항목은 그대로 따라갑니다 */
+function resort(){
+  const keys=[["hero",DB.heroes],["enemy",DB.enemies],["battle",DB.battles],["card",DB.cards],
+              ["item",DB.items],["synergy",DB.synergies],["reward",DB.rewards]];
+  const held={}; keys.forEach(([k,arr])=>held[k]=arr[SEL[k]]);
+
+  const at=(list,v)=>{ const i=list.indexOf(v); return i<0?9999:i };
+  const heroAt=n=>{ const i=DB.heroes.findIndex(x=>x.name===n); return i<0?9999:i };
+  const by=(arr,rank)=>{
+    arr.map((o,i)=>({o,i,r:[].concat(rank(o))}))
+       .sort((a,b)=>{
+         for(let d=0;d<a.r.length;d++) if(a.r[d]!==b.r[d]) return a.r[d]-b.r[d];
+         return a.i-b.i;                       // 같은 등급이면 추가한 순서 유지
+       })
+       .map(x=>x.o).forEach((o,i)=>arr[i]=o);
+  };
+  by(DB.keywords, k=>at(KW_CATS,k.cat));
+  by(DB.cards,    c=>[at(SOURCES,c.source),heroAt(c.owner)]);
+  by(DB.rewards,  r=>at(RW_GRADES,r.grade));
+  by(DB.enemies,  e=>[at(fieldNameList(),e.field),at(ENEMY_GRADES,e.grade)]);
+  /* '규칙 · ' 로 시작하는 것은 지도 칸의 규칙을 적어 둔 설명이다.
+     격과 상관없이 맨 위에 모은다 — 안 그러면 일반/정예/우두머리로 갈려
+     조합들 사이에 끼어 읽기 어렵다. */
+  by(DB.battles,  b=>[at(fieldNameList(),b.field),
+                      /^규칙 ·/.test(String(b.name||""))?0:1,
+                      at(ENEMY_GRADES,b.kind)]);
+  by(DB.items,    i=>at(GRADES,i.grade));
+  by(DB.synergies,s=>at(SYN_KINDS,s.kind));
+
+  keys.forEach(([k,arr])=>{ const i=arr.indexOf(held[k]); if(i>=0) SEL[k]=i });
+}
+function spec(){
+  if(TAB==="hero") return {arr:DB.heroes,key:"hero",name:"대원",
+    label:o=>[o.name||"이름 없음",[o.job,o.title].filter(Boolean).join(" · ")],
+    make:()=>({name:"새 대원",title:"",hp:20,mana:3,maxLv:30,expBase:5,expStep:2,hpPerLv:2,focus:"",
+      faction:"",job:"",job2:"",race:"",passives:[],
+      s1:sk("","",1,"공격",""),s2:sk("","",1,"",""),s3:sk("","",2,"",""),ult:sk("","",3,"",""),
+      supports:[],lowRewards:[],midRewards:[],highRewards:[],cards:[],memo:""})};
+  if(TAB==="enemy") return {arr:DB.enemies,key:"enemy",name:"적",
+    group:o=>String(o.field||"").trim()||"필드 미정", groupOrder:fieldNameList().concat("필드 미정"),
+    label:o=>{
+      const hp=o.hpMax?`${o.hp}~${o.hpMax}`:o.hp;
+      return [o.name||"이름 없음",[o.grade||"일반","Lv."+(o.lv||1),"체력 "+hp].join(" · ")];
+    },
+    make:()=>({name:"새 적",grade:"일반",field:"",lv:1,hp:10,hpMax:"",exp:1,expMax:"",
+      mana:"",skills:[],memo:""})};
+  if(TAB==="battle") return {arr:DB.battles,key:"battle",name:"전투",
+    group:o=>String(o.field||"").trim()||"맵 미정", groupOrder:fieldNameList().concat("맵 미정"),
+    label:o=>{
+      /* 이름만으로는 누가 서는지 알 수 없다 — 서는 적을 함께 보여 준다.
+         라운드가 여럿이면 첫 라운드만 보이고 몇 라운드짜리인지 덧붙인다. */
+      const rs=o.rounds||[];
+      const foes=((rs[0]||{}).foes||[])
+        .map(f=>String(f.name||"").trim()).filter(Boolean);
+      const who=foes.length?foes.join(" · "):"";
+      const bits=[o.kind||"일반"];
+      if(rs.length>1) bits.push(`${rs.length}라운드`);
+      if(who) bits.push(who);
+      return [o.name||"이름 없음", bits.join("  ·  ")];
+    },
+    make:()=>({name:"새 전투",field:"",kind:"일반",note:"",
+      rounds:[{foes:[{name:"",slot:"",gimmick:""}],flow:""}],special:[],memo:""})};
+  if(TAB==="card") return {arr:DB.cards,key:"card",name:"카드",
+    group:o=>String(o.source||"").trim()||"기타", groupOrder:sourceList(),
+    label:o=>[o.name||"이름 없음",[o.kind,o.owner].filter(Boolean).join(" · ")],
+    make:()=>({name:"새 카드",source:"대원",kind:"전투",stack:1,expire:false,owner:"",desc:""})};
+  if(TAB==="item") return {arr:DB.items,key:"item",name:"장신구",
+    group:o=>GRADES.includes(o.grade)?o.grade:"기타", groupOrder:GRADES.concat("기타"),
+    label:o=>{
+      const r=(o.recipe||[]).filter(Boolean);
+      return [(o.code?o.code+". ":"")+(o.name||"이름 없음"),
+        [r.length?r.join(" + "):"", (o.sources||[]).join(", "), o.bind?"귀속":""]
+          .filter(Boolean).join(" · ")];
+    },
+    make:()=>({code:"",name:"새 장신구",grade:"파편",bind:false,desc:"",sources:[],
+      recipe:["","","",""],cost:""})};
+  if(TAB==="synergy") return {arr:DB.synergies,key:"synergy",name:"조합",
+    group:o=>SYN_KINDS.includes(o.kind)?o.kind:"기타", groupOrder:SYN_KINDS.concat("기타"),
+    label:o=>[o.name||"이름 없음",
+      (o.tiers||[]).map(t=>+t.count||0).sort((a,b)=>a-b).join(" ▸ ")],
+    make:()=>({name:"",kind:"진영",tiers:[]})};
+  if(TAB==="reward") return {arr:DB.rewards,key:"reward",name:"보상",
+    group:o=>RW_GRADES.includes(o.grade)?o.grade:"기타", groupOrder:RW_GRADES.concat("기타"),
+    label:o=>[(o.rare?"◇ ":"")+(o.name||"이름 없음"),[o.source,o.type].filter(Boolean).join(" · ")],
+    make:()=>({name:"새 보상",grade:"하급",source:"레벨업",type:"기술 강화 보상",desc:""})};
+  return {arr:DB.systems,key:"system",name:"문서",
+    group:o=>SYS_KINDS.includes(o.kind)?o.kind:"문서", groupOrder:SYS_KINDS,
+    label:o=>[o.title||"제목 없음", sysCount(o)],
+    make:()=>({title:"새 문서",kind:"문서",body:""})};
+}
+
+function renderRail(){
+  const rail=document.getElementById("rail"); rail.innerHTML="";
+  if(TAB==="keyword"){
+    rail.appendChild(h(`<p class="hint">여기 등록된 단어는 모든 설명문에서 자동으로 색이 칠해지고, 마우스를 올리면 정의가 뜹니다.</p>`));
+    return;
+  }
+  const S=spec();
+  const q=h(`<input placeholder="${S.name} 검색" aria-label="${S.name} 검색">`);
+  const list=h(`<div class="railList"></div>`);
+  const draw=()=>{
+    list.innerHTML="";
+    const term=q.value.trim();
+    const rows=[];
+    S.arr.forEach((o,i)=>{
+      const [a,b]=S.label(o);
+      if(term&&!(a+" "+b).includes(term)) return;
+      rows.push({o,i,a,b});
+    });
+    if(!rows.length){ list.appendChild(h(`<p class="hint">일치하는 항목이 없습니다.</p>`)); return; }
+    const put=({i,a,b})=>{
+      const d=h(`<button class="item ${SEL[S.key]===i?"on":""}"><b>${esc(a)}</b>${b?`<small>${esc(b)}</small>`:""}</button>`);
+      d.addEventListener("click",()=>{SEL[S.key]=i;renderRail();renderMain()});
+      list.appendChild(d);
+    };
+    if(!S.group){ rows.forEach(put); return; }
+    const order=S.groupOrder.slice();          // 목록에 없는 분류도 빠짐없이 뒤에 붙임
+    rows.forEach(r=>{ const g=S.group(r.o); if(!order.includes(g)) order.push(g); });
+    order.forEach(gname=>{
+      const inGroup=rows.filter(r=>S.group(r.o)===gname);
+      if(!inGroup.length) return;
+      list.appendChild(h(`<div class="groupHd">${esc(gname)} · ${inGroup.length}</div>`));
+      inGroup.forEach(put);
+    });
+  };
+  q.addEventListener("input",draw); draw();
+  rail.append(q,list);
+  rail.appendChild(btn("＋ "+S.name+" 추가",()=>{
+    const o=S.make(); S.arr.push(o); SEL[S.key]=S.arr.length-1;
+    resort(); SEL[S.key]=S.arr.indexOf(o);
+    touch(); render(); window.scrollTo(0,0);
+  }));
+}
+
+function renderMain(){
+  SKILL_CTX = (TAB==="hero"&&DB.heroes.length)
+    ? heroSkillRefs(DB.heroes[Math.min(SEL.hero,DB.heroes.length-1)]) : [];
+  renderPeek();
+  const m=document.getElementById("main"); m.innerHTML="";
+  if(TAB==="keyword") return keywordView(m);
+  const S=spec();
+  if(!S.arr.length){
+    m.appendChild(h(`<div class="empty"><b>아직 ${S.name}이 없습니다</b>왼쪽의 ＋ 버튼으로 추가하세요.</div>`));
+    return;
+  }
+  if(SEL[S.key]>=S.arr.length) SEL[S.key]=S.arr.length-1;
+  const o=S.arr[SEL[S.key]];
+  /* 복제 — 같은 내용을 하나 더 만들어 바로 아래에 놓고 그것을 연다.
+     비슷한 보상을 등급만 바꿔 적을 때 처음부터 다시 쓰지 않게 하려는 것 */
+  const dup=btn("복제",()=>{
+    const c=JSON.parse(JSON.stringify(o));
+    if(typeof c.name==="string")  c.name  = c.name  + " (복사)";
+    if(typeof c.title==="string") c.title = c.title + " (복사)";
+    if(c.code) c.code="";
+    S.arr.splice(SEL[S.key]+1,0,c);
+    SEL[S.key]=S.arr.indexOf(c);
+    resort(); SEL[S.key]=S.arr.indexOf(c);
+    touch(); render(); window.scrollTo(0,0);
+  },"mini");
+  const del=btn("삭제",()=>{
+    const [n]=S.label(o);
+    askConfirm(`"${n}" 을(를) 삭제할까요?`,()=>{
+      S.arr.splice(SEL[S.key],1); SEL[S.key]=0; touch(); render();
+    });
+  },"mini danger");
+  const acts=h(`<span class="acts"></span>`);
+  acts.append(dup,del);
+  ({hero:heroView,enemy:enemyView,battle:battleView,card:cardView,item:itemView,
+    synergy:synergyView,reward:rewardView,system:systemView}[TAB])(m,o,acts);
+}
+
+/* ── 반복 목록 편집기 ── */
+function listView(title,arr,cols,make){
+  const p=panel(title,btn("＋ 추가",()=>{arr.push(make());touch();renderMain()},"mini"));
+  const stack=h(`<div class="stack"></div>`); p.appendChild(stack);
+  if(!arr.length) stack.appendChild(h(`<p class="hint">아직 없습니다.</p>`));
+  arr.forEach((o,i)=>{
+    const e=h(`<div class="entry"></div>`);
+    const top=h(`<div class="top"><span class="tag">${i+1}</span><span class="grow"></span></div>`);
+    top.appendChild(btn("삭제",()=>{arr.splice(i,1);touch();renderMain()},"mini danger"));
+    e.appendChild(top);
+    const short=cols.filter(c=>c[2]!=="area");
+    if(short.length){
+      const g=h(`<div class="grid ${short.length>=3?"g3":"g2"}"></div>`);
+      short.forEach(([k,l,t,op])=>g.appendChild(field(l,o[k],v=>o[k]=v,t,op)));
+      e.appendChild(g);
+    }
+    const areas=cols.filter(c=>c[2]==="area");
+    areas.forEach(([k,l])=>e.appendChild(field(l,o[k],v=>o[k]=v,"area")));
+    if(areas.length) e.appendChild(chips(e));
+    stack.appendChild(e);
+  });
+  return p;
+}
+const later=fn=>setTimeout(fn,0);
+const isSummon=k=>/소환[수물]/.test(k||"");
+function ensureSummon(c){
+  if(!c.summon||typeof c.summon!=="object") c.summon={hp:"",mana:"",skills:[]};
+  if(!Array.isArray(c.summon.skills)) c.summon.skills=[];
+  return c.summon;
+}
+/* 소환물 전용 블록 — 체력·마나·자기 기술을 설명란이 아닌 별도 항목으로 관리 */
+function summonBlock(card,rerender){
+  const s=ensureSummon(card);
+  const box=h(`<div class="sub"><div class="subHd">소환물 정보<span class="grow"></span></div></div>`);
+  box.querySelector(".subHd").appendChild(
+    btn("＋ 기술",()=>{s.skills.push(sk("","",1,"공격",""));touch();rerender()},"mini"));
+  const g=h(`<div class="grid g2"></div>`);
+  g.append(field("체력",s.hp,v=>s.hp=v),field("최대 마나",s.mana,v=>s.mana=v));
+  box.appendChild(g);
+  if(!s.skills.length) box.appendChild(h(`<p class="hint">아직 기술이 없습니다.</p>`));
+  s.skills.forEach((k,i)=>{
+    const e=h(`<div class="entry"></div>`);
+    const top=h(`<div class="top"><span class="tag">기술 ${i+1}</span><span class="grow"></span></div>`);
+    top.appendChild(btn("삭제",()=>{s.skills.splice(i,1);touch();rerender()},"mini danger"));
+    const gg=h(`<div class="grid g4"></div>`);
+    gg.append(field("코드",k.code,v=>k.code=v),field("이름",k.name,v=>k.name=v),
+      field("비용 종류",k.costType||"",v=>{k.costType=v},"list",costTypeList()),
+      field("비용",k.mana,v=>k.mana=v),
+      field("속성",k.el||"",v=>k.el=v,"select",[""].concat(ELEMENTS)));
+    e.append(top,gg,field("설명",k.desc,v=>k.desc=v,"area"));
+    e.appendChild(chips(e));
+    box.appendChild(e);
+  });
+  return box;
+}
+/* 카드 한 장을 읽기 전용으로 요약 */
+function cardSummary(c){
+  const box=h(`<div class="stack" style="gap:6px"></div>`);
+  if(c.desc) box.appendChild(h(`<div class="preview">${highlight(c.desc)}</div>`));
+  if(isSummon(c.kind)&&c.summon){
+    const s=c.summon;
+    const head=[s.hp&&`체력 ${s.hp}`,s.mana&&`최대 마나 ${s.mana}`].filter(Boolean).join(" · ");
+    if(head) box.appendChild(h(`<p class="hint">${esc(head)}</p>`));
+    (s.skills||[]).forEach(k=>{
+      const tit=[k.code&&k.code+".",k.name,(k.mana!==""&&k.mana!=null)&&`(마나 ${k.mana}${k.el?" · "+k.el:""})`]
+        .filter(Boolean).join(" ");
+      box.appendChild(h(`<div class="preview"><b>${esc(tit)}</b><br>${highlight(k.desc)}</div>`));
+    });
+  }
+  return box;
+}
+/* 대원의 연관 카드 — 카드 탭에 있는 카드를 참조만 함 */
+function heroCardRefs(hero){
+  if(!Array.isArray(hero.cards)) hero.cards=[];
+  const p=panel("연관 카드");
+  const head=p.querySelector("h2");
+
+  const picker=h(`<select style="width:auto;max-width:230px"></select>`);
+  const avail=DB.cards.filter(c=>c.name&&!hero.cards.includes(c.name));
+  const mine=avail.filter(c=>c.source==="대원"), rest=avail.filter(c=>c.source!=="대원");
+  const opt=c=>`<option value="${esc(c.name)}">${esc(c.name)}${c.owner&&c.owner!==hero.name?" ("+esc(c.owner)+")":""}</option>`;
+  picker.innerHTML=`<option value="">＋ 카드 추가…</option>`
+    +(mine.length?`<optgroup label="대원에게서 생성">${mine.map(opt).join("")}</optgroup>`:"")
+    +(rest.length?`<optgroup label="그 외 수급처">${rest.map(opt).join("")}</optgroup>`:"");
+  picker.addEventListener("change",()=>{
+    if(!picker.value) return;
+    hero.cards.push(picker.value); touch(); renderMain();
+  });
+  head.appendChild(picker);
+  head.appendChild(btn("새 카드",()=>{
+    const c={name:"새 카드",source:"대원",owner:hero.name,kind:"전투",stack:1,expire:false,desc:""};
+    DB.cards.push(c); hero.cards.push(c.name); touch(); renderMain();
+  },"mini"));
+
+  const stack=h(`<div class="stack"></div>`); p.appendChild(stack);
+  if(!hero.cards.length)
+    stack.appendChild(h(`<p class="hint">아직 없습니다. 위 목록에서 고르거나 새 카드를 만드세요. 카드의 내용은 카드 탭에서 편집합니다.</p>`));
+
+  hero.cards.forEach((name,i)=>{
+    const c=DB.cards.find(x=>x.name===name);
+    const e=h(`<div class="entry"></div>`);
+    const top=h(`<div class="top"><span class="tag">${esc(c?c.kind:"없음")}</span>
+      <b>${esc(name)}</b><span class="grow"></span></div>`);
+    if(c) top.appendChild(btn("카드 탭에서 편집",()=>{
+      TAB="card"; SEL.card=DB.cards.indexOf(c); render(); window.scrollTo(0,0);
+    },"mini"));
+    top.appendChild(btn("제거",()=>{hero.cards.splice(i,1);touch();renderMain()},"mini danger"));
+    e.appendChild(top);
+    if(!c) e.appendChild(h(`<div class="warn">카드 탭에 "${esc(name)}"이(가) 없습니다. 이름이 바뀌었거나 삭제되었습니다.</div>`));
+    else e.appendChild(cardSummary(c));
+    stack.appendChild(e);
+  });
+  return p;
+}
+/* 항목이 많은 목록 — 접어두고 제목만 보여주다가 누르면 펼침 */
+const OPEN=new Set();
+/* 낮은 확률 표시 — 보상이 뽑힐 가중치를 낮출지 여부 */
+function rareBox(o,onChange){
+  const id="rare"+Math.random().toString(36).slice(2);
+  const w=h(`<div class="check" style="margin-top:6px">
+    <input type="checkbox" id="${id}">
+    <label for="${id}" style="margin:0;font-size:12px">낮은 확률로 등장</label></div>`);
+  const cb=w.querySelector("input"); cb.checked=!!o.rare;
+  cb.addEventListener("change",()=>{ o.rare=cb.checked; touch(); if(onChange) onChange() });
+  return w;
+}
+function foldList(title,arr,cols,make,pre){
+  const key=i=>pre+"|"+i;
+  const anyOpen=arr.some((_,i)=>OPEN.has(key(i)));
+  const p=panel(`${title} · ${arr.length}`);
+  const head=p.querySelector("h2");
+  if(arr.length) head.appendChild(btn(anyOpen?"모두 접기":"모두 펼치기",()=>{
+    arr.forEach((_,i)=>anyOpen?OPEN.delete(key(i)):OPEN.add(key(i)));
+    renderMain();
+  },"mini"));
+  head.appendChild(btn("＋ 추가",()=>{
+    arr.push(make()); OPEN.add(key(arr.length-1)); touch(); renderMain();
+  },"mini"));
+
+  const stack=h(`<div class="stack" style="gap:6px"></div>`); p.appendChild(stack);
+  if(!arr.length){ stack.appendChild(h(`<p class="hint">아직 없습니다.</p>`)); return p; }
+
+  arr.forEach((o,i)=>{
+    const k=key(i);
+    const d=h(`<details class="acc"${OPEN.has(k)?" open":""}></details>`);
+    const sum=h(`<summary><span class="nm">${esc(o.name||"이름 없음")}</span>
+      <span class="sub2">${esc([o.grade,o.type,o.rare?"낮은 확률":""].filter(Boolean).join(" · "))}</span></summary>`);
+    d.appendChild(sum);
+    d.addEventListener("toggle",()=>{ d.open?OPEN.add(k):OPEN.delete(k) });
+
+    const body=h(`<div class="body"></div>`);
+    const nm=sum.querySelector(".nm"), sb=sum.querySelector(".sub2");
+    const setter=kk=>v=>{
+      o[kk]=v;
+      if(kk==="name") nm.textContent=v||"이름 없음";
+      if(kk==="grade"||kk==="type") sb.textContent=[o.grade,o.type,o.rare?"낮은 확률":""].filter(Boolean).join(" · ");
+    };
+    const short=cols.filter(c=>c[2]!=="area");
+    if(short.length){
+      const g=h(`<div class="grid ${short.length>=3?"g3":"g2"}"></div>`);
+      short.forEach(([kk,l,t,op])=>g.appendChild(field(l,o[kk],setter(kk),t,op)));
+      body.appendChild(g);
+    }
+    cols.filter(c=>c[2]==="area").forEach(([kk,l])=>body.appendChild(field(l,o[kk],setter(kk),"area")));
+    if(cols.some(c=>c[2]==="area")){ body.appendChild(chips(body)); body.appendChild(noteChips(body)); }
+    const foot=h(`<div class="top"></div>`);
+    if(pre==="low"||pre==="mid"||pre==="high"){
+      foot.appendChild(rareBox(o,()=>{ sb.textContent=[o.grade,o.type,o.rare?"낮은 확률":""].filter(Boolean).join(" · ") }));
+    }
+    foot.appendChild(h(`<span class="grow"></span>`));
+    foot.appendChild(btn("삭제",()=>{arr.splice(i,1);OPEN.clear();touch();renderMain()},"mini danger"));
+    body.appendChild(foot);
+    d.appendChild(body);
+    stack.appendChild(d);
+  });
+  return p;
+}
+function skillView(title,s,note){
+  const p=panel(title);
+  if(note) p.appendChild(h(`<p class="hint" style="margin-bottom:12px">${esc(note)}</p>`));
+  const st=h(`<div class="stack"></div>`);
+  const g1=h(`<div class="grid g2"></div>`);
+  g1.append(field("코드",s.code,v=>s.code=v),field("이름",s.name,v=>s.name=v));
+  const g2=h(`<div class="grid g4"></div>`);
+  g2.append(field("비용 종류",s.costType||"",v=>{s.costType=v},"list",costTypeList()),
+            field("비용",s.mana,v=>s.mana=v),
+            field("속성",s.el||"",v=>{s.el=v;touch()},"select",[""].concat(ELEMENTS)),
+            field("시전 방식",s.branch||"",v=>{s.branch=v;later(renderMain)},"select",BRANCHES));
+  st.append(g1,g2,field("설명",s.desc,v=>s.desc=v,"area"));
+  p.appendChild(st);
+  p.appendChild(chips(p));
+  if(s.branch==="선택"||s.branch==="전환") p.appendChild(optionBlock(s));
+  return p;
+}
+/* 시전 방식이 '선택' 또는 '전환'인 기술에 딸리는 기술들 */
+function optionBlock(s){
+  if(!Array.isArray(s.options)) s.options=[];
+  const swap=s.branch==="전환";
+  const word=swap?"전환 기술":"선택지";
+  const box=h(`<div class="sub"><div class="subHd">${word}<span class="grow"></span></div></div>`);
+  box.querySelector(".subHd").appendChild(
+    btn("＋ "+word,()=>{s.options.push(sk("","",1,"공격",""));touch();renderMain()},"mini"));
+  if(!s.options.length)
+    box.appendChild(h(`<p class="hint">${swap
+      ?"이 기술을 사용한 뒤 바뀌어 들어갈 기술을 넣으세요."
+      :"기술을 누른 뒤 고를 수 있는 후속 기술을 넣으세요."}</p>`));
+  s.options.forEach((o,i)=>{
+    const e=h(`<div class="entry"></div>`);
+    const top=h(`<div class="top"><span class="tag">${swap?"전환":"선택"} ${i+1}</span><span class="grow"></span></div>`);
+    top.appendChild(btn("삭제",()=>{s.options.splice(i,1);touch();renderMain()},"mini danger"));
+    const a=h(`<div class="grid g2"></div>`);
+    a.append(field("코드",o.code,v=>o.code=v),field("이름",o.name,v=>o.name=v));
+    const b=h(`<div class="grid g3"></div>`);
+    b.append(field("비용 종류",o.costType||"",v=>{o.costType=v},"list",costTypeList()),
+             field("비용",o.mana,v=>o.mana=v),
+             field("속성",o.el||"",v=>o.el=v,"select",[""].concat(ELEMENTS)));
+    e.append(top,a,b,field("설명",o.desc,v=>o.desc=v,"area"));
+    e.appendChild(chips(e));
+    box.appendChild(e);
+  });
+  return box;
+}
+
+/* ── 대원 ── */
+function heroView(m,o,del){
+  const p=panel("기본 정보",del);
+  const g1=h(`<div class="grid g2"></div>`);
+  g1.append(field("이름",o.name,v=>o.name=v),field("칭호",o.title,v=>o.title=v));
+  const g2=h(`<div class="grid g3"></div>`);
+  g2.append(field("시작 생명력",o.hp,v=>o.hp=v),field("최대 마나",o.mana,v=>o.mana=v),
+    field("최대 레벨",o.maxLv,v=>o.maxLv=v),field("성장 필요 경험치",o.expBase,v=>o.expBase=v),
+    field("필요 경험치 증가폭",o.expStep,v=>o.expStep=v),
+    field("레벨 당 증가하는 최대 체력",o.hpPerLv,v=>o.hpPerLv=v));
+  const g3=h(`<div class="grid g4"></div>`);
+  g3.append(fieldList("진영",o.faction,v=>{o.faction=v},factionList()),
+    fieldList("직업",o.job,v=>{o.job=v},jobList()),
+    fieldList("직업 2",o.job2||"",v=>{o.job2=v},jobList()),
+    fieldList("종족",o.race||"",v=>{o.race=v},raceList()));
+  [o.faction,o.job,o.job2,o.race].forEach((t,i)=>{      // 커서 올리면 조합 단계가 보이게
+    const inp=g3.querySelectorAll("input")[i], txt=synergyText(t);
+    if(inp&&txt) inp.title=txt;
+  });
+  const st=h(`<div class="stack"></div>`);
+  st.append(g1,g2,field("특화",o.focus,v=>o.focus=v),g3);
+  p.appendChild(st); m.appendChild(p);
+
+  m.appendChild(listView("지속 기술",o.passives,
+    [["code","코드"],["name","이름"],["desc","설명","area"]],
+    ()=>sk("","","","지속","")));
+  m.appendChild(skillView("1번 기술 · 기본 공격",o.s1));
+  m.appendChild(skillView("2번 기술",o.s2));
+  m.appendChild(skillView("3번 기술",o.s3,"대원 7레벨에 해제"));
+  m.appendChild(skillView("궁극기",o.ult,"대원 15레벨에 해제"));
+  const sp=listView("지원 기술",o.supports,
+    [["code","코드"],["name","이름"],["desc","설명","area"]],
+    ()=>sk("","","","",""));
+  sp.querySelector("h2").insertAdjacentElement("afterend",
+    h(`<p class="hint" style="margin-bottom:12px">전투에서는 사용 불가. 주둔지에 배치되어 있을 때 발동. 여러 개를 둘 수 있습니다.</p>`));
+  m.appendChild(sp);
+  const rwCols=[["name","이름"],["type","보상 종류","select",REWARD_TYPES],["desc","설명","area"]];
+  const mkRw=()=>({name:"",type:"기술 강화 보상",desc:""});
+  m.appendChild(foldList("전용 하급 보상",o.lowRewards,rwCols,mkRw,"low"));
+  m.appendChild(foldList("전용 중급 보상",o.midRewards,rwCols,mkRw,"mid"));
+  m.appendChild(foldList("전용 상급 보상",o.highRewards,rwCols,mkRw,"high"));
+  m.appendChild(heroCardRefs(o));
+  const mp=panel("메모"); mp.appendChild(field("",o.memo,v=>o.memo=v,"area")); m.appendChild(mp);
+}
+
+/* ── 적 ── */
+function enemyView(m,o,del){
+  const p=panel("기본 정보",del);
+  const g1=h(`<div class="grid g4"></div>`);
+  g1.append(field("이름",o.name,v=>{o.name=v}),
+    field("등급",o.grade||"일반",v=>{o.grade=v;touch();resort();renderRail()},"select",ENEMY_GRADES),
+    fieldList("등장 필드",o.field||"",v=>{o.field=v},fieldNameList(),()=>{resort();render()}),
+    field("레벨",o.lv,v=>o.lv=v));
+  const g2=h(`<div class="grid g4"></div>`);
+  g2.append(field("생명력",o.hp,v=>o.hp=v), field("생명력 최대",o.hpMax||"",v=>o.hpMax=v),
+    field("처치 경험치",o.exp,v=>o.exp=v), field("경험치 최대",o.expMax||"",v=>o.expMax=v));
+  const st=h(`<div class="stack"></div>`);
+  st.append(g1,g2,
+    h(`<p class="hint">최대 칸을 채우면 그 범위에서 무작위로 정해집니다. 비워두면 고정값입니다.</p>`),
+    field("최대 마나",o.mana||"",v=>o.mana=v));
+  p.appendChild(st); m.appendChild(p);
+  const tp=panel("특징");
+  tp.appendChild(h(`<p class="hint">이 적을 한눈에 알아볼 수 있게 하는 것들 — 생김새, 버릇, 약점, 겨눌 때 주의할 점.</p>`));
+  tp.appendChild(field("",o.traits||"",v=>o.traits=v,"area"));
+  m.appendChild(tp);
+  m.appendChild(enemySkills(o));
+  m.appendChild(enemyPatterns(o));
+  const mp=panel("메모"); mp.appendChild(field("",o.memo,v=>o.memo=v,"area")); m.appendChild(mp);
+}
+/* 적의 행동 패턴 — 한 마디씩 순서대로 늘어놓는다.
+   패턴은 여럿일 수 있고(예: 평상시 / 체력 절반 아래 / 분노),
+   언제 그 패턴으로 도는지는 '조건' 칸에 적는다. */
+function enemyPatterns(o){
+  if(!Array.isArray(o.patterns)) o.patterns=[];
+  const p=panel("행동 패턴",btn("＋ 패턴",()=>{
+    o.patterns.push({name:"",when:"",steps:[{act:"",note:""}],memo:""});
+    touch();renderMain();},"mini"));
+  const stack=h(`<div class="stack"></div>`); p.appendChild(stack);
+  stack.appendChild(h(`<p class="hint">마디를 순서대로 놓으면 그대로 한 바퀴 돕니다. 마지막 마디가 끝나면 첫 마디로 돌아갑니다.</p>`));
+  if(!o.patterns.length) stack.appendChild(h(`<p class="hint">아직 없습니다.</p>`));
+  o.patterns.forEach((pt,pi)=>{
+    const e=h(`<div class="entry"></div>`);
+    const top=h(`<div class="top"><span class="tag">패턴 ${pi+1}</span><span class="grow"></span></div>`);
+    if(pi>0) top.appendChild(btn("▲",()=>{
+      o.patterns.splice(pi-1,0,o.patterns.splice(pi,1)[0]);touch();renderMain()},"mini"));
+    if(pi<o.patterns.length-1) top.appendChild(btn("▼",()=>{
+      o.patterns.splice(pi+1,0,o.patterns.splice(pi,1)[0]);touch();renderMain()},"mini"));
+    top.appendChild(btn("삭제",()=>{o.patterns.splice(pi,1);touch();renderMain()},"mini danger"));
+    const g=h(`<div class="grid g2"></div>`);
+    g.append(field("패턴 이름",pt.name,v=>pt.name=v),
+             field("도는 조건",pt.when,v=>pt.when=v));
+    e.append(top,g);
+
+    const sb=h(`<div class="sub"><div class="subHd">동작 순서<span class="grow"></span></div></div>`);
+    sb.querySelector(".subHd").appendChild(btn("＋ 마디",()=>{
+      pt.steps.push({act:"",note:""});touch();renderMain()},"mini"));
+    if(!pt.steps.length) sb.appendChild(h(`<p class="hint">아직 마디가 없습니다.</p>`));
+    pt.steps.forEach((s,si)=>{
+      const row=h(`<div class="entry"></div>`);
+      const rt=h(`<div class="top"><span class="tag">${si+1}마디</span><span class="grow"></span></div>`);
+      if(si>0) rt.appendChild(btn("▲",()=>{
+        pt.steps.splice(si-1,0,pt.steps.splice(si,1)[0]);touch();renderMain()},"mini"));
+      if(si<pt.steps.length-1) rt.appendChild(btn("▼",()=>{
+        pt.steps.splice(si+1,0,pt.steps.splice(si,1)[0]);touch();renderMain()},"mini"));
+      rt.appendChild(btn("삭제",()=>{pt.steps.splice(si,1);touch();renderMain()},"mini danger"));
+      const rg=h(`<div class="grid g2"></div>`);
+      rg.append(fieldList("무엇을",s.act,v=>s.act=v,actList(o)),
+                field("덧붙임",s.note,v=>s.note=v));
+      row.append(rt,rg);
+      sb.appendChild(row);
+    });
+    e.appendChild(sb);
+    e.appendChild(field("메모",pt.memo,v=>pt.memo=v,"area"));
+    e.appendChild(chips(e));
+    stack.appendChild(e);
+  });
+  return p;
+}
+/* 적의 사용 기술 — '소환' 분류면 소환물을 따로 적을 수 있음 */
+function enemySkills(o){
+  if(!Array.isArray(o.skills)) o.skills=[];
+  const p=panel("사용 기술",btn("＋ 기술",
+    ()=>{o.skills.push({name:"",costType:"마나",mana:"",branch:"",desc:""});touch();renderMain()},"mini"));
+  const stack=h(`<div class="stack"></div>`); p.appendChild(stack);
+  if(!o.skills.length) stack.appendChild(h(`<p class="hint">아직 없습니다.</p>`));
+  o.skills.forEach((k,i)=>{
+    const e=h(`<div class="entry"></div>`);
+    const top=h(`<div class="top"><span class="tag">${i+1}</span><span class="grow"></span></div>`);
+    top.appendChild(btn("삭제",()=>{o.skills.splice(i,1);touch();renderMain()},"mini danger"));
+    const g=h(`<div class="grid g4"></div>`);
+    g.append(field("이름",k.name,v=>k.name=v),
+      field("비용 종류",k.costType||"",v=>{k.costType=v},"list",costTypeList()),
+      field("비용",k.mana,v=>k.mana=v),
+      field("분류",k.branch||"",v=>{k.branch=v;later(renderMain)},"select",["","소환"]));
+    e.append(top,g,field("설명",k.desc,v=>k.desc=v,"area"));
+    e.appendChild(chips(e));
+    if(k.branch==="소환") e.appendChild(summonBlock(k,renderMain));
+    stack.appendChild(e);
+  });
+  return p;
+}
+
+/* ── 전투 ── */
+/* 한 전투 = 지도의 칸 하나. 여러 라운드로 이루어진다.
+   라운드마다 어떤 적이 어느 칸에 서고 어떤 기믹이 도는지 적는다. */
+function battleView(m,o,del){
+  const p=panel("전투",del);
+  const g=h(`<div class="grid g3"></div>`);
+  g.append(field("이름",o.name,v=>{o.name=v}),
+    fieldList("맵",o.field||"",v=>{o.field=v},fieldNameList(),()=>{resort();render()}),
+    field("격",o.kind||"일반",v=>{o.kind=v;touch();resort();renderRail()},"select",ENEMY_GRADES));
+  const st=h(`<div class="stack"></div>`);
+  st.append(g,h(`<p class="hint">라운드 수는 아래에서 라운드를 더하거나 지워 정합니다. 한 라운드를 모두 쓰러뜨리면 다음 라운드가 들어옵니다.</p>`));
+  p.appendChild(st); m.appendChild(p);
+
+  m.appendChild(battleRounds(o));
+
+  const fp=panel("전투 구성");
+  fp.appendChild(h(`<p class="hint">이 전투가 통째로 어떻게 흘러가는지 — 무엇을 시험하는 판인지, 어느 라운드에서 무엇이 뒤집히는지.</p>`));
+  fp.appendChild(field("",o.note||"",v=>o.note=v,"area"));
+  fp.appendChild(chips(fp));
+  m.appendChild(fp);
+
+  m.appendChild(battleSpecial(o));
+  const mp=panel("메모"); mp.appendChild(field("",o.memo,v=>o.memo=v,"area")); m.appendChild(mp);
+}
+function battleRounds(o){
+  if(!Array.isArray(o.rounds)) o.rounds=[];
+  const p=panel(`라운드 (${o.rounds.length})`,btn("＋ 라운드",()=>{
+    o.rounds.push({foes:[{name:"",slot:"",gimmick:""}],flow:""});touch();renderMain()},"mini"));
+  const stack=h(`<div class="stack"></div>`); p.appendChild(stack);
+  if(!o.rounds.length) stack.appendChild(h(`<p class="hint">아직 라운드가 없습니다.</p>`));
+  o.rounds.forEach((r,ri)=>{
+    const e=h(`<div class="entry"></div>`);
+    const top=h(`<div class="top"><span class="tag">${ri+1}라운드</span><span class="grow"></span></div>`);
+    if(ri>0) top.appendChild(btn("▲",()=>{
+      o.rounds.splice(ri-1,0,o.rounds.splice(ri,1)[0]);touch();renderMain()},"mini"));
+    if(ri<o.rounds.length-1) top.appendChild(btn("▼",()=>{
+      o.rounds.splice(ri+1,0,o.rounds.splice(ri,1)[0]);touch();renderMain()},"mini"));
+    top.appendChild(btn("복제",()=>{
+      o.rounds.splice(ri+1,0,JSON.parse(JSON.stringify(r)));touch();renderMain()},"mini"));
+    top.appendChild(btn("삭제",()=>{o.rounds.splice(ri,1);touch();renderMain()},"mini danger"));
+    e.appendChild(top);
+
+    const sb=h(`<div class="sub"><div class="subHd">배치<span class="grow"></span></div></div>`);
+    sb.querySelector(".subHd").appendChild(btn("＋ 적",()=>{
+      r.foes.push({name:"",slot:"",gimmick:""});touch();renderMain()},"mini"));
+    sb.appendChild(h(`<p class="hint">전장은 한 줄로 1~10번입니다 — 아군이 1~5, 적이 6~10.
+      <b>6번이 아군과 가장 가까운 칸</b>이고 10번이 가장 뒤입니다. 앞에서부터 채우세요.</p>`));
+    if(!r.foes.length) sb.appendChild(h(`<p class="hint">아직 없습니다.</p>`));
+    r.foes.forEach((f,fi)=>{
+      const row=h(`<div class="entry"></div>`);
+      const rt=h(`<div class="top"><span class="tag">${fi+1}</span><span class="grow"></span></div>`);
+      rt.appendChild(btn("삭제",()=>{r.foes.splice(fi,1);touch();renderMain()},"mini danger"));
+      const rg=h(`<div class="grid g3"></div>`);
+      rg.append(fieldList("적",f.name,v=>f.name=v,enemyNameList()),
+        field("칸",f.slot||"",v=>f.slot=v,"select",[""].concat(FOE_SLOTS)),
+        field("기믹",f.gimmick,v=>f.gimmick=v));
+      row.append(rt,rg);
+      sb.appendChild(row);
+    });
+    e.appendChild(sb);
+    e.appendChild(field("이 라운드의 진행",r.flow,v=>r.flow=v,"area"));
+    e.appendChild(chips(e));
+    stack.appendChild(e);
+  });
+  return p;
+}
+/* 이 전투에서만 나오는 보상 — 공용 보상표와 별개다 */
+function battleSpecial(o){
+  if(!Array.isArray(o.special)) o.special=[];
+  const p=panel("특별 보상",btn("＋ 보상",()=>{
+    o.special.push({name:"",desc:""});touch();renderMain()},"mini"));
+  const stack=h(`<div class="stack"></div>`); p.appendChild(stack);
+  stack.appendChild(h(`<p class="hint">보상 탭의 공용 보상 말고, 이 전투를 이겼을 때만 주는 것.</p>`));
+  if(!o.special.length) stack.appendChild(h(`<p class="hint">아직 없습니다.</p>`));
+  o.special.forEach((s,i)=>{
+    const e=h(`<div class="entry"></div>`);
+    const top=h(`<div class="top"><span class="tag">${i+1}</span><span class="grow"></span></div>`);
+    top.appendChild(btn("삭제",()=>{o.special.splice(i,1);touch();renderMain()},"mini danger"));
+    e.append(top,field("이름",s.name,v=>s.name=v),
+      field("설명",s.desc,v=>s.desc=v,"area"));
+    e.appendChild(chips(e));
+    stack.appendChild(e);
+  });
+  return p;
+}
+
+/* ── 카드 ── */
+function cardView(m,o,del){
+  const p=panel("카드",del);
+  const g=h(`<div class="grid g4"></div>`);
+  const OWNER={"대원":["생성 대원",DB.heroes.map(x=>x.name)],
+               "장신구":["생성 장신구",DB.items.map(x=>x.name)]};
+  const [oLabel,oList]=OWNER[o.source]||["출처 상세",[]];
+  const cur=o.owner||"";
+  const oOpts=[""].concat(oList.filter(Boolean));
+  if(cur&&!oOpts.includes(cur)) oOpts.push(cur);
+  g.append(field("이름",o.name,v=>{o.name=v}),
+    fieldList("수급처",o.source,v=>{o.source=v},sourceList(),()=>{resort();renderMain()}),
+    field("분류",o.kind,v=>{o.kind=v;later(renderMain)},"select",KINDS),
+    oList.length ? field(oLabel,cur,v=>{o.owner=v;later(renderMain)},"select",oOpts)
+                 : field(oLabel,cur,v=>{o.owner=v}));
+  g.appendChild(field("보유량",o.stack,v=>o.stack=v));
+  const chk=h(`<div class="check"><input type="checkbox" id="cExp"><label for="cExp" style="margin:0">소멸성 — 전투 종료시 사라짐</label></div>`);
+  const box=chk.querySelector("input"); box.checked=!!o.expire;
+  box.addEventListener("change",()=>{o.expire=box.checked;touch()});
+  const st=h(`<div class="stack"></div>`);
+  st.append(g,chk,field("설명",o.desc,v=>o.desc=v,"area"));
+  p.appendChild(st); p.appendChild(chips(p));
+  if(isSummon(o.kind)) p.appendChild(summonBlock(o,renderMain));
+  m.appendChild(p);
+
+  const users=DB.heroes.filter(x=>(x.cards||[]).includes(o.name));
+  const up=panel("이 카드를 쓰는 대원");
+  if(!users.length) up.appendChild(h(`<p class="hint">아직 없습니다. 대원 탭의 연관 카드에서 추가할 수 있습니다.</p>`));
+  else{
+    const box=h(`<div class="tokens"></div>`);
+    users.forEach(u=>{
+      const t=h(`<button class="token" style="cursor:pointer">${esc(u.name)}</button>`);
+      t.addEventListener("click",()=>{TAB="hero";SEL.hero=DB.heroes.indexOf(u);render();window.scrollTo(0,0)});
+      box.appendChild(t);
+    });
+    up.appendChild(box);
+  }
+  m.appendChild(up);
+}
+
+/* ── 장신구 ── */
+const GRADES=["파편","일반","희귀","특수","전설"];
+const CRAFT_FROM={"일반":["파편"],"희귀":["일반","파편"],"특수":["희귀","일반","파편"]};
+const MIN_PARTS={"일반":2,"희귀":2,"특수":0};                // 특수는 조합식이 없어도 됨
+const SLOTS=4;                                              // 조합 칸 수
+function itemView(m,o,del){
+  const p=panel("장신구",del);
+  const g=h(`<div class="grid g3"></div>`);
+  g.append(field("코드",o.code||"",v=>{o.code=v}),
+    field("이름",o.name,v=>{o.name=v}),
+    field("등급",o.grade,v=>{o.grade=v;touch();resort();later(renderMain)},"select",GRADES));
+  const chk=h(`<div class="check"><input type="checkbox" id="iBind"><label for="iBind" style="margin:0">귀속 — 장착 후 제거·변경 불가</label></div>`);
+  const box=chk.querySelector("input"); box.checked=!!o.bind;
+  box.addEventListener("change",()=>{o.bind=box.checked;touch()});
+  if(!Array.isArray(o.sources)) o.sources=[];
+  const st=h(`<div class="stack"></div>`);
+  st.append(g,multiField("수급처 · 여러 개 선택 가능",o.sources,itemSourceList(),renderMain),
+    chk,field("설명",o.desc,v=>o.desc=v,"area"));
+  p.appendChild(st); p.appendChild(chips(p)); m.appendChild(p);
+
+  if(CRAFT_FROM[o.grade]) m.appendChild(recipeView(o));
+  else if(o.grade==="전설"){
+    const lp=panel("제작");
+    lp.appendChild(h(`<p class="hint">전설 장신구은 제작할 수 없습니다. 보상으로만 획득됩니다.</p>`));
+    m.appendChild(lp);
+  }
+  if(o.grade!=="전설") m.appendChild(usageView(o));
+}
+/* 조합법 — 하위 등급 재료 2~4개 */
+function recipeView(o){
+  if(!Array.isArray(o.recipe)) o.recipe=[];
+  while(o.recipe.length<SLOTS) o.recipe.push("");
+  const p=panel("조합법");
+  const from=CRAFT_FROM[o.grade];
+  const frags=DB.items.filter(x=>from.includes(x.grade)&&x.name)
+    .sort((a,b)=>from.indexOf(a.grade)-from.indexOf(b.grade)).map(x=>x.name);
+  const min=MIN_PARTS[o.grade]??2;
+  const st=h(`<div class="stack"></div>`);
+  st.appendChild(h(`<p class="hint">${from.join(" · ")} 등급 재료 ${min}~${SLOTS}개로 제작합니다.
+    ${min===0?"재료 없이 비워두면 제작할 수 없는 장신구이 됩니다." : "남는 칸은 비워두세요."}</p>`));
+  for(let i=0;i<SLOTS;i++){
+    const cur=o.recipe[i]||"";
+    const opts=[""].concat(frags);
+    if(cur&&!opts.includes(cur)) opts.push(cur);          // 삭제·개명된 파편도 보이게
+    const row=h(`<div class="slotRow"><span class="slotNo">${i+1}</span></div>`);
+    const sel=field("",cur,v=>{o.recipe[i]=v;later(renderMain)},"select",opts);
+    sel.style.flex="1 1 auto"; sel.style.minWidth="0";
+    row.appendChild(sel); st.appendChild(row);
+  }
+  st.appendChild(field("제련석 비용",o.cost||"",v=>o.cost=v));
+  p.appendChild(st);
+
+  const used=o.recipe.filter(Boolean);
+  const missing=used.filter(n=>!frags.includes(n));
+  const warns=[];
+  if(!frags.length) warns.push(`${from.join(" 또는 ")} 등급 장신구이 아직 없습니다. 재료를 먼저 만들어야 여기서 고를 수 있습니다.`);
+  else if(used.length<min) warns.push(`재료가 ${used.length}개만 지정되어 있습니다. ${min}개 이상 필요합니다.`);
+  if(missing.length) warns.push("재료 목록에 없는 이름: "+missing.join(", ")+" — 삭제되었거나 이름이 다릅니다.");
+  warns.forEach(w=>p.appendChild(h(`<div class="warn">${esc(w)}</div>`)));
+  return p;
+}
+/* 이 장신구이 어느 상위 장신구의 재료로 쓰이는지 역참조 */
+function usageView(o){
+  const p=panel("사용처");
+  const users=DB.items.filter(x=>Array.isArray(x.recipe)&&o.name&&x.recipe.includes(o.name));
+  if(!users.length) p.appendChild(h(`<p class="hint">이 장신구을 재료로 쓰는 장신구이 아직 없습니다.</p>`));
+  else{
+    const box=h(`<div class="tokens"></div>`);
+    users.forEach(u=>box.appendChild(h(`<span class="token">${esc(u.name||"이름 없음")}</span>`)));
+    p.appendChild(box);
+  }
+  return p;
+}
+
+/* ── 대원 조합 — 진영·직업별 인원을 채우면 발동하는 능력 ── */
+function synergyView(m,o,del){
+  const members=heroesWithTrait(o.name);
+  const p=panel("대원 조합",del);
+  const g=h(`<div class="grid g2"></div>`);
+  g.append(fieldList("이름",o.name,v=>{o.name=v},traitNameList(),renderMain),
+    field("분류",o.kind,v=>{o.kind=v;touch();resort();later(renderMain)},"select",SYN_KINDS));
+  p.appendChild(g);
+  p.appendChild(h(`<p class="hint" style="margin-top:12px">이 특성을 가진 대원 ${members.length}명 ${
+    members.length?"— "+esc(members.join(" · ")):""}</p>`));
+  m.appendChild(p);
+
+  if(!Array.isArray(o.tiers)) o.tiers=[];
+  const tp=panel("단계",btn("＋ 단계",
+    ()=>{o.tiers.push({count:2,desc:"",required:[]});touch();renderMain()},"mini"));
+  const stack=h(`<div class="stack"></div>`); tp.appendChild(stack);
+  if(!o.tiers.length)
+    stack.appendChild(h(`<p class="hint">인원 수를 채우면 발동하는 능력을 단계별로 적으세요.</p>`));
+  o.tiers.forEach((t,i)=>{
+    if(!Array.isArray(t.required)) t.required=[];
+    const e=h(`<div class="entry"></div>`);
+    const top=h(`<div class="top"><span class="tag">${esc(o.name||"조합")}(${esc(t.count)})</span>
+      <span class="grow"></span></div>`);
+    top.appendChild(btn("삭제",()=>{o.tiers.splice(i,1);touch();renderMain()},"mini danger"));
+    const g2=h(`<div class="grid g2"></div>`);
+    g2.appendChild(field("인원 수",String(t.count),v=>{t.count=+v||1;touch();renderMain()},
+      "select",Array.from({length:SQUAD_MAX},(_,n)=>String(n+1))));
+
+    const pick=h(`<div><label>필수 대원 · 비워두면 인원 수만 맞으면 발동</label></div>`);
+    const sel=h(`<select></select>`);
+    const pool=members.filter(n=>!t.required.includes(n));
+    sel.innerHTML=`<option value="">＋ 대원 지정…</option>`
+      +pool.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join("");
+    sel.disabled=!pool.length;
+    sel.addEventListener("change",()=>{
+      if(!sel.value) return;
+      t.required.push(sel.value); touch(); renderMain();
+    });
+    pick.appendChild(sel);
+    if(t.required.length){
+      const box=h(`<div class="tokens" style="margin-top:6px"></div>`);
+      t.required.forEach((n,j)=>{
+        const b=h(`<button class="token" style="cursor:pointer">${esc(n)} ×</button>`);
+        b.addEventListener("click",()=>{t.required.splice(j,1);touch();renderMain()});
+        box.appendChild(b);
+      });
+      pick.appendChild(box);
+    }
+    g2.appendChild(pick);
+    e.append(top,g2,field("설명",t.desc,v=>t.desc=v,"area"));
+    e.appendChild(chips(e));
+    stack.appendChild(e);
+  });
+  m.appendChild(tp);
+}
+/* ── 공용 보상 (대원 전용 보상과 별개) ── */
+function rewardView(m,o,del){
+  const p=panel("보상",del);
+  const g=h(`<div class="grid g2"></div>`);
+  g.append(field("이름",o.name,v=>{o.name=v}),
+    fieldList("수급처",o.source,v=>{o.source=v},rewardSourceList(),renderRail));
+  const g2=h(`<div class="grid g2"></div>`);
+  g2.append(field("등급",o.grade,v=>{o.grade=v;touch();resort();later(renderMain)},"select",RW_GRADES),
+    field("보상 종류",o.type,v=>{o.type=v;touch();renderRail()},"select",REWARD_TYPES));
+  const st=h(`<div class="stack"></div>`);
+  st.append(g,g2,field("설명",o.desc,v=>o.desc=v,"area"));
+  p.appendChild(st);
+  const rb=rareBox(o,()=>{ renderRail() });
+  rb.appendChild(h(`<span class="hint" style="margin:0 0 0 8px">보상 목록에서 다른 것보다 드물게 나옵니다.</span>`));
+  p.appendChild(rb);
+  p.appendChild(chips(p)); p.appendChild(noteChips(p)); m.appendChild(p);
+}
+/* ── 시스템 문서 ── */
+let CURSYS=null;
+function systemView(m,o,del){
+  CURSYS=o;
+  const kind=SYS_KINDS.includes(o.kind)?o.kind:"문서";
+  const p=panel("시스템 문서",del);
+  const g2=h(`<div class="grid g2"></div>`);
+  g2.append(field("제목",o.title,v=>o.title=v),
+            field("형식",kind,v=>{o.kind=v;touch();later(renderMain)},"select",SYS_KINDS));
+  p.appendChild(g2);
+  p.appendChild(h(`<p class="hint">형식을 바꾸면 그 형식에 맞는 전용 양식이 아래에 열립니다. 지금까지 적어둔 글은 <b>원문 메모</b>에 그대로 남고, [본문에서 불러오기]로 양식에 옮겨 담을 수 있습니다.</p>`));
+  m.appendChild(p);
+  if(kind==="상점")       shopBlock(m,o);
+  else if(kind==="미지의 구역") eventBlock(m,o);
+  else if(kind==="UI 화면")  uiBlock(m,o);
+  else if(kind==="보상 상자") chestBlock(m,o);
+  const bp=panel(kind==="문서"?"내용":"원문 메모");
+  const body=field("",o.body,v=>o.body=v,"area");
+  body.querySelector("textarea").style.minHeight=(kind==="문서"?"340px":"200px");
+  bp.appendChild(body); bp.appendChild(chips(bp)); m.appendChild(bp);
+}
+
+/* ══════ 시스템 문서 — 형식별 전용 양식 ══════ */
+const SYS_KINDS=["문서","UI 화면","상점","미지의 구역","보상 상자"];
+function arrOf(o,k){ if(!Array.isArray(o[k])) o[k]=[]; return o[k] }
+function sysCount(o){
+  const k=o.kind||"문서";
+  if(k==="상점")      return arrOf(o,"stages").reduce((a,x)=>a+arrOf(x,"goods").length,0)+"개 품목";
+  if(k==="미지의 구역") return arrOf(o,"events").length+"개 이벤트";
+  if(k==="UI 화면")    return arrOf(o,"screens").length+"개 화면";
+  if(k==="보상 상자")   return arrOf(o,"chests").length+"개 상자";
+  return "";
+}
+/* 반복 항목 한 덩이 — 위쪽에 번호와 삭제, 아래에 칸들 */
+function rowBox(tag,onDel,extra){
+  const e=h(`<div class="entry"></div>`);
+  const top=h(`<div class="top"><span class="tag">${esc(String(tag))}</span><span class="grow"></span></div>`);
+  if(extra) top.appendChild(extra);
+  if(onDel) top.appendChild(btn("삭제",onDel,"mini danger"));
+  e.appendChild(top);
+  return e;
+}
+function moveBtns(arr,i){
+  const w=h(`<span></span>`);
+  w.appendChild(btn("▲",()=>{ if(i>0){ const t=arr[i-1];arr[i-1]=arr[i];arr[i]=t;touch();renderMain() } },"mini"));
+  w.appendChild(btn("▼",()=>{ if(i<arr.length-1){ const t=arr[i+1];arr[i+1]=arr[i];arr[i]=t;touch();renderMain() } },"mini"));
+  return w;
+}
+function loadBtn(o,fn,what){
+  return btn("본문에서 불러오기",()=>{
+    const go=()=>{ fn(o.body||""); touch(); renderMain(); };
+    askConfirm(`아래 원문 메모를 읽어 ${what} 목록을 다시 만듭니다. 지금 입력된 목록은 지워집니다. 계속할까요?`,go);
+  },"mini");
+}
+
+/* ── 상점 ── */
+function shopBlock(m,o){
+  const stages=arrOf(o,"stages");
+  const p=panel("스테이지별 진열대",btn("＋ 스테이지",()=>{stages.push({name:"새 스테이지",goods:[]});touch();renderMain()},"mini"));
+  p.appendChild(h(`<p class="hint">한 번 들를 때 이 목록에서 4~8개가 무작위로 진열됩니다. <b>금화</b>와 <b>수량</b>은 <code>2~6</code> 처럼 범위로 적으면 그 사이에서 무작위로 정해집니다.</p>`));
+  if(!stages.length) p.appendChild(h(`<p class="hint">아직 없습니다. 아래 [본문에서 불러오기]를 누르면 원문 메모에 적어두신 목록을 그대로 가져옵니다.</p>`));
+  stages.forEach((st,si)=>{
+    const goods=arrOf(st,"goods");
+    const e=rowBox(si+1,()=>{stages.splice(si,1);touch();renderMain()},moveBtns(stages,si));
+    e.appendChild(field("스테이지",st.name,v=>st.name=v));
+    const tb=h(`<div class="stack" style="margin-top:8px"></div>`);
+    goods.forEach((g,gi)=>{
+      const row=h(`<div class="entry" style="padding:8px 10px"></div>`);
+      const g4=h(`<div class="grid g3"></div>`);
+      g4.append(field("품목",g.name,v=>g.name=v),
+                field("금화",g.price,v=>g.price=v),
+                field("수량",g.qty,v=>g.qty=v));
+      row.appendChild(g4);
+      row.appendChild(field("설명",g.desc,v=>g.desc=v,"area"));
+      const del=h(`<div style="text-align:right"></div>`);
+      del.appendChild(btn("품목 삭제",()=>{goods.splice(gi,1);touch();renderMain()},"mini danger"));
+      row.appendChild(del);
+      tb.appendChild(row);
+    });
+    e.appendChild(tb);
+    e.appendChild(btn("＋ 품목",()=>{goods.push({name:"",price:"",qty:"",desc:""});touch();renderMain()},"mini"));
+    p.appendChild(e);
+  });
+  p.appendChild(loadBtn(o,parseShop,"진열대"));
+  m.appendChild(p);
+}
+function parseShop(body){
+  const o=CURSYS; o.stages=[];
+  let cur=null, n=0;
+  String(body).split(/\r?\n/).forEach(line=>{
+    const t=line.trim(); if(!t) return;
+    const hd=t.match(/^\[(.+?)\]/);
+    if(hd){ cur={name:hd[1].replace(/\s*판매\s*품목\s*$/,"").trim(),goods:[]}; o.stages.push(cur); return }
+    const mm=t.match(/^(.*):\s*([0-9]+(?:\s*~\s*[0-9]+)?)\s*\(([^()]*)\)\s*$/);
+    if(!mm||!cur) return;
+    let name=mm[1].trim(), desc="";
+    const dm=name.match(/^([^(]+)\((.+)\)$/);
+    if(dm){ name=dm[1].trim(); desc=dm[2].trim() }
+    cur.goods.push({name:name,price:mm[2].replace(/\s/g,""),qty:mm[3].trim(),desc:desc});
+    n++;
+  });
+  return n;
+}
+
+/* ── 미지의 구역 ── */
+function eventBlock(m,o){
+  const evs=arrOf(o,"events");
+  const p=panel("이벤트",btn("＋ 이벤트",()=>{evs.push({name:"새 이벤트",flavor:"",picks:[]});touch();renderMain()},"mini"));
+  p.appendChild(h(`<p class="hint"><b>상황 문구</b>는 칸에 들어섰을 때 보여줄 글이고, <b>선택지</b>는 가로로 늘어놓을 항목입니다. 결과에 <code>2~4</code> 처럼 범위를 적으면 그 사이에서 무작위로 정해집니다.</p>`));
+  if(!evs.length) p.appendChild(h(`<p class="hint">아직 없습니다. 아래 [본문에서 불러오기]를 누르면 원문 메모의 <code>- 이름</code> / <code>&gt; 선택지: 결과</code> 형식을 그대로 가져옵니다.</p>`));
+  evs.forEach((ev,i)=>{
+    const picks=arrOf(ev,"picks");
+    const e=rowBox(i+1,()=>{evs.splice(i,1);touch();renderMain()},moveBtns(evs,i));
+    e.appendChild(field("이벤트 이름",ev.name,v=>ev.name=v));
+    e.appendChild(field("상황 문구",ev.flavor,v=>ev.flavor=v,"area"));
+    picks.forEach((pk,pi)=>{
+      const row=h(`<div class="entry" style="padding:8px 10px"></div>`);
+      const g2=h(`<div class="grid g2"></div>`);
+      g2.append(field("선택지",pk.name,v=>pk.name=v),field("조건",pk.cond,v=>pk.cond=v));
+      row.appendChild(g2);
+      row.appendChild(field("결과",pk.result,v=>pk.result=v,"area"));
+      const del=h(`<div style="text-align:right"></div>`);
+      del.appendChild(btn("선택지 삭제",()=>{picks.splice(pi,1);touch();renderMain()},"mini danger"));
+      row.appendChild(del);
+      e.appendChild(row);
+    });
+    e.appendChild(btn("＋ 선택지",()=>{picks.push({name:"",cond:"",result:""});touch();renderMain()},"mini"));
+    p.appendChild(e);
+  });
+  p.appendChild(loadBtn(o,parseEvents,"이벤트"));
+  m.appendChild(p);
+}
+function parseEvents(body){
+  const o=CURSYS; o.events=[];
+  let cur=null, n=0;
+  String(body).split(/\r?\n/).forEach(line=>{
+    const t=line.trim(); if(!t) return;
+    if(/^-\s+/.test(t)){ cur={name:t.replace(/^-\s+/,"").trim(),flavor:"",picks:[]}; o.events.push(cur); n++; return }
+    if(/^>\s*/.test(t)&&cur){
+      const b=t.replace(/^>\s*/,"");
+      const i=b.indexOf(":");
+      cur.picks.push(i>0?{name:b.slice(0,i).trim(),cond:"",result:b.slice(i+1).trim()}
+                        :{name:b.trim(),cond:"",result:""});
+    }
+  });
+  return n;
+}
+
+/* ── UI 화면 ── */
+function uiBlock(m,o){
+  const scr=arrOf(o,"screens");
+  const p=panel("화면",btn("＋ 화면",()=>{scr.push({name:"새 화면",desc:"",parts:[]});touch();renderMain()},"mini"));
+  p.appendChild(h(`<p class="hint">화면 하나가 한 덩이입니다. <b>구성 요소</b>에는 그 화면에 놓일 것들을 하나씩 적어 두면 나중에 찾기 쉽습니다.</p>`));
+  if(!scr.length) p.appendChild(h(`<p class="hint">아직 없습니다. 아래 [본문에서 불러오기]를 누르면 원문 메모의 <code>1. 제목</code> 형식을 화면 단위로 나눠 가져옵니다.</p>`));
+  scr.forEach((sc,i)=>{
+    const parts=arrOf(sc,"parts");
+    const e=rowBox(i+1,()=>{scr.splice(i,1);touch();renderMain()},moveBtns(scr,i));
+    e.appendChild(field("화면 이름",sc.name,v=>sc.name=v));
+    const dd=field("설명",sc.desc,v=>sc.desc=v,"area");
+    dd.querySelector("textarea").style.minHeight="150px";
+    e.appendChild(dd);
+    parts.forEach((pt,pi)=>{
+      const row=h(`<div class="entry" style="padding:8px 10px"></div>`);
+      row.appendChild(field("구성 요소",pt.name,v=>pt.name=v));
+      row.appendChild(field("설명",pt.desc,v=>pt.desc=v,"area"));
+      const del=h(`<div style="text-align:right"></div>`);
+      del.appendChild(btn("요소 삭제",()=>{parts.splice(pi,1);touch();renderMain()},"mini danger"));
+      row.appendChild(del);
+      e.appendChild(row);
+    });
+    e.appendChild(btn("＋ 구성 요소",()=>{parts.push({name:"",desc:""});touch();renderMain()},"mini"));
+    p.appendChild(e);
+  });
+  p.appendChild(loadBtn(o,parseScreens,"화면"));
+  m.appendChild(p);
+}
+function parseScreens(body){
+  const o=CURSYS; o.screens=[];
+  let cur=null, n=0;
+  String(body).split(/\r?\n/).forEach(line=>{
+    const hd=line.trim().match(/^([0-9]+)\.\s*(.+)$/);
+    if(hd){ cur={name:hd[2].trim(),desc:"",parts:[]}; o.screens.push(cur); n++; return }
+    if(cur) cur.desc+=(cur.desc?"\n":"")+line;
+  });
+  o.screens.forEach(x=>x.desc=x.desc.replace(/\s+$/,""));
+  return n;
+}
+
+/* ── 보상 상자 ── */
+function chestBlock(m,o){
+  const ch=arrOf(o,"chests");
+  const p=panel("보상 상자",btn("＋ 상자",()=>{ch.push({stage:"",name:"",rows:[]});touch();renderMain()},"mini"));
+  p.appendChild(h(`<p class="hint">한 줄이 항목 하나입니다. <b>확률</b>은 그 항목이 나올 확률이고, 100%는 반드시 나옵니다.</p>`));
+  if(!ch.length) p.appendChild(h(`<p class="hint">아직 없습니다. 아래 [본문에서 불러오기]를 누르면 원문 메모의 <code>… 보상 상자: 100% 금화 1~3개 / …</code> 형식을 그대로 가져옵니다.</p>`));
+  ch.forEach((c,i)=>{
+    const rows=arrOf(c,"rows");
+    const e=rowBox(i+1,()=>{ch.splice(i,1);touch();renderMain()},moveBtns(ch,i));
+    const g2=h(`<div class="grid g2"></div>`);
+    g2.append(field("스테이지",c.stage,v=>c.stage=v),field("상자",c.name,v=>c.name=v));
+    e.appendChild(g2);
+    rows.forEach((r,ri)=>{
+      const row=h(`<div class="grid g3" style="align-items:end"></div>`);
+      row.append(field("확률",r.p,v=>r.p=v),field("내용",r.what,v=>r.what=v));
+      const d=h(`<div></div>`);
+      d.appendChild(btn("삭제",()=>{rows.splice(ri,1);touch();renderMain()},"mini danger"));
+      row.appendChild(d);
+      e.appendChild(row);
+    });
+    e.appendChild(btn("＋ 항목",()=>{rows.push({p:"",what:""});touch();renderMain()},"mini"));
+    p.appendChild(e);
+  });
+  p.appendChild(loadBtn(o,parseChests,"보상 상자"));
+  m.appendChild(p);
+}
+function parseChests(body){
+  const o=CURSYS; o.chests=[];
+  let stage="", n=0;
+  String(body).split(/\r?\n/).forEach(line=>{
+    const t=line.trim(); if(!t) return;
+    const hd=t.match(/^\[(.+?)\]/);
+    if(hd){ stage=hd[1].trim(); return }
+    const mm=t.match(/^(.+?상자)\s*:\s*(.+)$/);
+    if(!mm) return;
+    const rows=mm[2].split("/").map(x=>x.trim()).filter(Boolean).map(x=>{
+      const pm=x.match(/^([0-9]+\s*%)\s*(.+)$/);
+      return pm?{p:pm[1].replace(/\s/g,""),what:pm[2].trim()}:{p:"",what:x};
+    });
+    o.chests.push({stage:stage,name:mm[1].trim(),rows:rows}); n++;
+  });
+  return n;
+}
+
+/* ── 키워드 ── */
+function keywordView(m){
+  const p=panel("키워드 사전",btn("＋ 키워드",()=>{DB.keywords.push({name:"",cat:"buff",desc:""});touch();renderMain()},"mini"));
+  p.appendChild(h(`<p class="hint" style="margin-bottom:14px"><b>칩에 표시</b>를 켠 키워드만 설명란 아래 버튼으로 나옵니다. 분류는 설명문에서 칠해질 색을 정합니다. debuff 보라 · buff 금 · atk 적 · mag 청 · def 황 · hp 녹 · move 청록 · plain 회색 · skill 주황</p>`));
+  const stack=h(`<div class="stack"></div>`); p.appendChild(stack);
+  DB.keywords.forEach((k,i)=>{
+    const e=h(`<div class="entry"></div>`);
+    const top=h(`<div class="top"><span class="tag" style="color:var(${KW_COLOR[k.cat]||"--brass"})">${esc(k.name)||"—"}</span><span class="grow"></span></div>`);
+    const id="pin"+i;
+    const chk=h(`<div class="check"><input type="checkbox" id="${id}"><label for="${id}" style="margin:0;font-size:12px">칩에 표시</label></div>`);
+    const cb=chk.querySelector("input"); cb.checked=!!k.pin;
+    cb.addEventListener("change",()=>{k.pin=cb.checked;touch()});
+    top.appendChild(chk);
+    top.appendChild(btn("삭제",()=>{DB.keywords.splice(i,1);touch();renderMain()},"mini danger"));
+    const g=h(`<div class="grid g2"></div>`);
+    g.append(field("이름",k.name,v=>{k.name=v}),field("분류",k.cat,v=>{k.cat=v;touch();resort();later(renderMain)},"select",KW_CATS));
+    e.append(top,g,field("정의",k.desc,v=>k.desc=v,"area"));
+    stack.appendChild(e);
+  });
+  m.appendChild(p);
+}
+
+/* 동기화가 안 되는 화면이면 계속 알림 */
+function offlineBar(){
+  if(FB||document.querySelector(".localbar")) return;
+  document.querySelector("header").insertAdjacentElement("afterend",
+    h(`<div class="localbar">이 화면은 <b>다른 기기와 동기화되지 않습니다</b> —
+      작성한 내용은 이 브라우저에만 남습니다.
+      평소에는 <b>공용 주소</b>로 열어주세요.</div>`));
+}
+setTimeout(offlineBar,6000);
+/* app.html을 직접 연 경우에만 경고 — 공유 링크(https)와 기획노트.html은 해당 없음 */
+if(location.protocol==="file:"&&!document.doctype){
+  document.body.prepend(h(`<div class="warn" style="margin:14px;border-radius:4px">
+    이 파일(<b>app.html</b>)은 직접 여는 파일이 아닙니다. 화면이 깨져 보이고 저장도 되지 않습니다.
+    같은 폴더의 <b>index.html</b>을 열거나, 공유 링크를 사용하세요.</div>`));
+}
+
+boot();
+</script>
+
+</body>
+</html>
