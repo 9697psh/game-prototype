@@ -1164,7 +1164,7 @@ body.shakeall{animation:allShake .62s cubic-bezier(.36,.07,.19,.97)}
 .peekgrid .cell.here{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass) inset}
 /* 받을 것들의 줄 — 오른쪽에 세운다. 대원 판(.hpanel)과 같은 자리를 쓰므로
    이 판이 있을 때는 대원 판을 그 아래로 내린다 (.hpanel 의 top 을 바꾼다) */
-.rwq{position:fixed;right:16px;top:64px;width:238px;z-index:21;text-align:left;
+.rwq{position:fixed;right:16px;top:98px;width:238px;z-index:21;text-align:left;
   background:var(--panel);border:1px solid var(--rule);border-radius:9px;padding:12px 13px}
 .rwq-h{font-size:10px;letter-spacing:.14em;color:var(--faint)}
 .rwq-now{font-family:var(--serif);font-size:16px;color:var(--brass);margin-top:2px;
@@ -1195,13 +1195,20 @@ body:has(.rwq) .hpanel{top:auto;bottom:16px;max-height:min(52vh,calc(100vh - 100
   .rwq{width:200px;right:12px}
   body:has(.rwq) #app{padding-right:224px}
 }
+/* 넓은 창(1400px~)에서는 세 단 — [보상 칸] [받는 목록] [대원 판]. 목록과 대원 판이 나란히 선다.
+   위아래로 쌓으면 대원 판이 반쯤 잘리고 목록이 그 위에 겹쳐 보였다. */
+@media(min-width:1400px){
+  body:has(.rwq) .hpanel{top:98px;bottom:auto;max-height:calc(100vh - 118px)}
+  .rwq{right:340px;top:98px;width:238px;max-height:calc(100vh - 118px);overflow-y:auto}
+  body:has(.rwq) #app{max-width:none;margin:0 600px 0 0;padding-right:16px}
+}
 /* 더 좁으면 오른쪽에 설 자리가 없다. 본문 아래로 내린다 */
 @media(max-width:899px){
   .rwq{position:static;width:auto;max-width:640px;margin:18px auto 0}
   body:has(.rwq) .hpanel{bottom:auto}
   body:has(.rwq) #app{padding-right:0}
 }
-.hpanel{position:fixed;right:16px;top:64px;width:308px;max-height:calc(100vh - 84px);
+.hpanel{position:fixed;right:16px;top:98px;width:308px;max-height:calc(100vh - 118px);
   overflow-y:auto;background:var(--panel);border:1px solid var(--rule);border-radius:9px;
   padding:14px;z-index:20;text-align:left}
 .hpanel .hp-top{display:flex;gap:10px;align-items:center}
@@ -11585,13 +11592,7 @@ function drawBattle(app){
     const eb=el(`<button class="go" id="turnend"${B.busy?" disabled":""}>${
       B.busy?"턴 종료 효과…":"턴 종료 <i>(Enter)</i>"}</button>`);
     eb.onclick=endTurn; tr.appendChild(eb);
-    /* 기술 창이 계속 열려 있으므로, 손패로 돌아가는 길을 손 닿는 곳에 둔다 */
-    const hb=el(`<button class="mini hand-btn" title="기술 창을 닫고 손패로 돌아갑니다. (Esc)">${
-      ic("card")}손패 보기${B.hand.length?` <b>${B.hand.length}</b>`:""}</button>`);
-    hb.onclick=()=>{ sel=null; render();
-      const hd=document.getElementById("hand");
-      if(hd) hd.scrollIntoView({block:"nearest",behavior:"smooth"}) };
-    tr.appendChild(hb);
+    /* '손패 보기' 단추는 뺐다 — 손패가 오른쪽 단에 늘 보인다 (Esc 로 기술 창을 닫는 것은 그대로) */
     const rb=el(`<button class="mini" title="이 전투를 시작 시점으로 되감습니다. 적 구성·능력치·행동 패턴은 그대로입니다.">전투 초기화</button>`);
     rb.onclick=resetBattle; tr.appendChild(rb);
     if(liveMins().some(m=>/^악마 (하수인|장군)$/.test(m.name))||run.autoImp){
