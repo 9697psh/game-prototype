@@ -8354,7 +8354,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=293;
+const BUILD_NO=294;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -12796,7 +12796,7 @@ function skillPanel(h){
     { const mo=e.querySelector(".skmore");
       if(mo) mo.onclick=ev=>{ ev.stopPropagation(); SK_OPEN[s.n]=!SK_OPEN[s.n]; render() } }
     /* 커서를 올리면 닿을 칸이 밝아진다 — 잠긴 기술도 어디에 닿는지는 보여 준다 */
-    e.onmouseenter=()=>{ if(B&&!B.over) hintSlots(previewTargets(h,s)) };
+    e.onmouseenter=()=>{ if(B&&!B.over) hintSlots(previewTargets(h,s),previewMove(h,s)) };
     e.onmouseleave=()=>hintSlots([]);
     if(ok&&s.opts){
       /* 머리 부분은 선택지 목록을 여닫기만 한다 — 고른 선택지와 횟수는 그대로 둔다 */
@@ -12995,9 +12995,26 @@ function previewTargets(h,s){
   if(s.tg==="self"||s.tg==="ally") me();
   return out;
 }
-/* 칸에 .hint 를 켜고 끈다 — 다시 그리지 않고 DOM 만 만진다 (커서가 자주 오간다) */
-function hintSlots(list){
+/* 기술이 정해진 칸으로 움직이는가 — 그 칸 (없으면 null). 균형 : 플로우 앞 한 칸 · 플레어 뒤 한 칸.
+   새 기술이 정해진 걸음을 가지면 여기에 한 줄 더한다 */
+function previewMove(h,s){
+  if(!h||!s||!B||!(h.slot>0)) return null;
+  let to=null;
+  if(s.balance) to=ffFlare(h)?h.slot-1:h.slot+1;
+  if(to==null||to<1||to>SLOTS||to===h.slot) return null;
+  if(bodyAt(to)) return null;
+  const occ=unitAt(to); if(occ&&occ.noMove) return null;
+  return to;
+}
+/* 칸에 .hint 를 켜고 끈다 — 다시 그리지 않고 DOM 만 만진다 (커서가 자주 오간다). mv 는 이동 화살표를 띄울 내 칸 */
+function hintSlots(list,mv){
   document.querySelectorAll(".slot.hint").forEach(d=>d.classList.remove("hint"));
+  document.querySelectorAll(".slot .mvarrow.hintmv").forEach(a=>a.remove());
+  if(mv&&typeof ICON_PNG!=="undefined"&&ICON_PNG.ui_move_down){
+    const side=document.getElementById("mySide");
+    const d=side&&side.querySelector(`.slot[data-slot="${mv}"]`);
+    if(d) d.insertAdjacentHTML("beforeend",`<img class="mvarrow hintmv" src="${ICON_PNG.ui_move_down}" alt="" draggable="false">`);
+  }
   (list||[]).forEach(t=>{
     const side=document.getElementById(t.side==="foe"?"foeSide":"mySide"); if(!side) return;
     const d=side.querySelector(`.slot[data-slot="${t.slot}"]`); if(d) d.classList.add("hint");
