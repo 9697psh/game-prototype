@@ -11548,6 +11548,10 @@ function drawBattle(app){
     tr.appendChild(hb);
     const rb=el(`<button class="mini" title="이 전투를 시작 시점으로 되감습니다. 적 구성·능력치·행동 패턴은 그대로입니다.">전투 초기화</button>`);
     rb.onclick=resetBattle; tr.appendChild(rb);
+    if(liveMins().some(m=>/^악마 (하수인|장군)$/.test(m.name))||run.autoImp){
+      const ab=el(`<button class="mini ${run.autoImp?"on":""}" title="켜면 턴 종료를 누를 때 마나가 남은 악마 하수인·장군이 가장 가까운 적을 제 기술로 공격합니다.">${
+        run.autoImp?"하수인 자동공격 ● 켬":"하수인 자동공격 ○ 끔"}</button>`);
+      ab.onclick=()=>{ run.autoImp=run.autoImp?0:1; SFX.play("click"); render() }; tr.appendChild(ab); }
     const sp=el(`<button class="mini ${SPD<1?"on":""}" title="연출을 빠르게 넘깁니다. 규칙은 그대로입니다.">${
       SPD<1?"연출 ▶▶ 빠르게":"연출 ▶ 보통"}</button>`);
     sp.onclick=()=>setSpeed(SPD>=1); tr.appendChild(sp);
@@ -12751,6 +12755,7 @@ function incoming(){
     if(!u||u.hp<=0) return;
     const m=get(u);
     let raw=v;
+    { const pg=portalGuardOf(u); if(pg&&raw>0) raw=Math.max(0,raw-pg) }   /* 감소의 문 */
     if(u.armor>0&&raw>u.armor) raw=u.armor;   /* 갑피는 한 방을 잘라낸다 */
     if(m._v>0){ m._v--; m.ev++; return }      /* 회피는 한 방을 통째로 흘린다 */
     m.raw+=raw;
@@ -14263,10 +14268,16 @@ function battleLost(){
 function critAlly(t){ FXQ.push({crit:1,side:"mine",slot:t.slot}); flushFX() }
 /* el — 이 피해가 무엇인지. 적의 의도에 실려 오는 값(FOE[].el)을 그대로 받는다.
    안 넘기면 undefined 라 물리로 친다 — 가시가 그대로 할퀴기로 남는 것도 그 덕이다. */
+/* 감소의 문 — 굴라의 차원문 위에 선 아군이 받는 피해에서 빼는 몫.
+   hurtAlly(실제) 와 incoming(머리 위 예고) 이 같은 셈을 써야 한다 */
+function portalGuardOf(t){
+  if(!t||!(t.slot>0)||!B) return 0;
+  const g=run&&run.heroes.find(x=>x.name==="굴라"&&x.tag&&x.tag.portalGuard);
+  if(!g||!(B.portals||[]).some(p=>p.side==="mine"&&p.slot===t.slot)) return 0;
+  return g.tag.portalGuard;
+}
 function hurtAlly(f,t,raw,label,el){
-  /* 감소의 문 — 굴라의 차원문 위에 선 아군은 덜 맞는다 */
-  { const g=run.heroes.find(x=>x.name==="굴라"&&x.tag&&x.tag.portalGuard);
-    if(g&&raw>0&&t.slot>0&&(B.portals||[]).some(p=>p.side==="mine"&&p.slot===t.slot)) raw=Math.max(0,raw-g.tag.portalGuard) }
+  { const pg=portalGuardOf(t); if(pg&&raw>0) raw=Math.max(0,raw-pg) }
   /* 갑피 : 한 번에 받는 피해를 그 수치까지로 잘라낸다 (보호막에 들어가는 몫까지 포함) */
   if(t.armor>0&&raw>t.armor){
     fx({side:"mine",slot:t.slot,ring:"#e0c85a",txt:"갑피"+t.armor,cls:"shd",gap:60});
@@ -14361,11 +14372,33 @@ function unitDown(t){
     say("전장에 설 대원이 없습니다 — 손에 든 소환 카드를 내려놓아야 버팁니다.","t3");
   }
 }
+/* 악마 하수인·장군 자동공격 — 턴 종료를 누르면 마나가 남은 하수인마다 제 공격 기술을
+   겨눌 수 있는 가장 가까운 적에게 쓴다. 여느 시전과 같은 길(doSkill)이라 값도 치르고
+   기록도 남는다. run.autoImp 로 켜고 끈다 (저장에 같이 실린다). */
+function autoImps(){
+  if(!run||!run.autoImp||!B||B.over) return 0;
+  let n=0;
+  liveMins().filter(m=>/^악마 (하수인|장군)$/.test(m.name)&&m.sk[0]).forEach(m=>{
+    if(B.over||m.hp<=0||m.slot<=0) return;
+    const s=m.sk[0];
+    if((m.mana||0)<(s.cost||0)) return;
+    const cands=B.foes.filter(f=>f.alive&&!foeBlockReason(f)&&inReach(m,s,f.slot))
+      .sort((a,b)=>dist(m.slot,a.slot)-dist(m.slot,b.slot));
+    if(!cands.length) return;
+    say(`자동공격 — ${m.name}(${m.slot}번)이 ${cands[0].name}${jo(cands[0].name,"eul")} 노립니다.`,"t2");
+    sel={hero:m,slot:m.slot,step:4,skill:0,count:1};
+    doSkill(cands[0].slot); n++;
+  });
+  if(n) sel=null;
+  return n;
+}
 function endTurn(){
   if(B.over||B.busy) return;
   /* 연습장도 여느 전투와 같은 길을 탄다 — 적이 움직이는 것을 봐야
      보호막·회피·갑피를 시험할 수 있다. 판을 되돌리는 것은 startMyTurn 이 맡는다. */
   if(!allUnits().length){ say("전장에 아군이 없습니다. 먼저 대원을 소환하세요.","t3"); return }
+  autoImps();
+  if(B.over) return;
   /* 마당 ① 턴 종료 효과 → 눈과 귀로 확인 → 마당 ② 적 행동 → 마당 ③ 다음 턴 */
   const n=endPhase();
   if(n>0){
