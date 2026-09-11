@@ -572,6 +572,12 @@ button.dtl{padding:3px 10px;font-size:11.5px}
   text-transform:none}
 .hcard h3{margin:4px 0 0;font-family:var(--serif);font-size:15px;color:var(--fg);
   word-break:keep-all;line-height:1.4}
+.diff{display:inline-block;font-size:10px;letter-spacing:.08em;padding:1px 7px;border-radius:9px;
+  border:1px solid var(--rule2);color:var(--dim);vertical-align:middle;line-height:1.5}
+.diff.d1{color:#7fd39a;border-color:rgba(127,211,154,.45)}
+.diff.d2{color:#e0c85a;border-color:rgba(224,200,90,.45)}
+.diff.d3{color:#e0705a;border-color:rgba(224,112,90,.5)}
+.hcard .diff{margin-top:5px}
 .hcard .one{margin:7px 0 0;font-size:11.5px;color:var(--dim);line-height:1.6;
   word-break:keep-all;min-height:2.4em}
 .hcard .st{margin-top:9px;font-size:11px;color:var(--faint);
@@ -5260,7 +5266,7 @@ HEROES["플레어와 플로우"]={title:"물과 불의 정령들",role:"보호 �
   focus:"보호와 마법 전환, 이동과 방해",
   passive:{n:"태초의 정령",d:"배치될 때 플로우로 시작. 플로우가 나서면 마법력→보호력, 플레어가 나서면 보호력→마법력으로 모두 전환"},
   skills:[
-   {n:"균형",cost:1,el:"마법",tg:"foe",balance:1,dmg:2,d:"플로우 · 한 칸 앞으로 + 보호막 2 / 플레어 · 한 칸 뒤로 + 피해 2"},
+   {n:"균형",cost:1,el:"마법",tg:"foe",balance:1,dmg:2,shield:2,d:"플로우 · 한 칸 앞으로 + 보호막 2 / 플레어 · 한 칸 뒤로 + 피해 2"},
    {n:"변환",cost:0,el:"집중",tg:"self",swap:1,d:"태세를 바꾼다 · 이번 턴에 쓸 때마다 값 +1"},
    {n:"물과 불",cost:3,costType:"mom",el:"마법",tg:"self",elemental:1,d:"추진력 3 · 플로우 · 거리 2의 적에게 공격약화·마법약화 1 / 플레어 · 화상 1 · 이번 턴에 쓸 때마다 값 +1"},
    {n:"조화",cost:1,el:"마법",tg:"foe",lock:1,harmony:1,dmg:10,d:"잠금(1) · 피해 10(추가 마법력+보호력) · 플로우 · 준 피해만큼 보호막 / 플레어 · 치명타"}
@@ -5281,6 +5287,10 @@ const HERO_POOL=["나이코스","카제","굴라","헥토","트리스탄","인�
    나머지는 전용 보상이 아직 임시라 빼 두었다 — 여기에 이름을 도로 넣으면 된다.
    영웅 도감은 이 목록을 보지 않는다. 거기서는 열넷을 다 구경할 수 있다. */
 const PLAYABLE=["나이코스","트리스탄","굴라","쿠렘타이","플레어와 플로우"];
+/* 대원 고르기 화면의 난이도 — 사용자가 정한다. 여기 없는 대원은 표시하지 않는다 */
+const HERO_DIFF={"나이코스":"쉬움","쿠렘타이":"쉬움","트리스탄":"보통","굴라":"쉬움","플레어와 플로우":"어려움"};
+const DIFF_CLS={"쉬움":"d1","보통":"d2","어려움":"d3"};
+function diffChip(n){ const d=HERO_DIFF[n]; return d?`<span class="diff ${DIFF_CLS[d]||""}" title="난이도">${esc(d)}</span>`:"" }
 function playableHeroes(){ return HERO_POOL.filter(n=>PLAYABLE.indexOf(n)>=0) }
 
 function synHtml(){
@@ -5820,8 +5830,8 @@ const HERO_REWARDS={
  /* 플레어와 플로우 — 기획 노트(2026-09-12) 그대로 */
  "플레어와 플로우":[
   /* ── 하급 ── */
-  R("플로우의 균형 강화","하급","플로우가 나설 때, 균형으로 얻을 수 있는 보호막량이 1 증가합니다.",h=>h.tag.balShield=(h.tag.balShield||0)+1),
-  R("플레어의 균형 강화","하급","플레어가 나설 때, 균형으로 줄 수 있는 마법 피해량이 1 증가합니다.",h=>h.tag.balDmg=(h.tag.balDmg||0)+1),
+  R("플로우의 균형 강화","하급","플로우가 나설 때, 균형으로 얻을 수 있는 보호막량이 1 증가합니다.",(h,rn)=>addMod(h,"균형","shield",1,rn)),
+  R("플레어의 균형 강화","하급","플레어가 나설 때, 균형으로 줄 수 있는 마법 피해량이 1 증가합니다.",(h,rn)=>addMod(h,"균형","dmg",1,rn)),
   R("변환 강화","하급","변환을 사용한 후, 보호막을 추가로 1 얻습니다.",h=>h.tag.swapShield=(h.tag.swapShield||0)+1),
   R("플로우의 악의 기운 약화","하급","플로우가 나설 때, 적에게 부정적인 효과를 부여할 때마다 보호막을 2 얻습니다.",h=>h.tag.debShield=(h.tag.debShield||0)+2),
   R("플레어의 악의 기운 소멸","하급","플레어가 나설 때, 적에게 부정적인 효과를 부여할 때마다 해당 적에게 피해를 3 줍니다.",h=>h.tag.debDmg=(h.tag.debDmg||0)+3),
@@ -5834,7 +5844,7 @@ const HERO_REWARDS={
   R("재빠른 이동","중급","플로우가 나설 때, 이동한 후에 보호막을 1 얻습니다.\n플레어가 나설 때, 이동한 후에 가장 가까운 적에게 피해를 1 줍니다.",h=>h.tag.quickMove=1),
   R("빠짐없는 정화","중급","물과 불이 거리 2 내의 모든 적에게 효과를 부여합니다.\n*획득시 보상에서 다시 등장하지 않음\n*[물과 불] 기술이 없을 때 등장하지 않음",h=>h.tag.elemAll=1,0.5),
   R("물불 가리지 않기","중급","플로우가 나설 때, 균형으로 얻을 수 있는 보호막량이 1 증가합니다.\n플레어가 나설 때, 균형으로 줄 수 있는 마법 피해량이 1 증가합니다.\n",
-    h=>{ h.tag.balShield=(h.tag.balShield||0)+1; h.tag.balDmg=(h.tag.balDmg||0)+1 }),
+    (h,rn)=>{ addMod(h,"균형","shield",1,rn); addMod(h,"균형","dmg",1,rn) }),
   R("빗물","중급","플로우가 나설 때, 이동이 막힐 때마다 보호막을 2 얻습니다.",h=>h.tag.blockedShield=(h.tag.blockedShield||0)+2,0.5),
   R("잿불","중급","플레어가 나설 때, 이동이 막힐 때마다 가장 가까운 적에게 피해를 2 줍니다.",h=>h.tag.blockedDmg=(h.tag.blockedDmg||0)+2,0.5),
   R("아름다운 정령숲","중급","물과 불의 비용이 1 감소합니다.",h=>{ h.tag.elemCostDown=(h.tag.elemCostDown||0)+1; h.sk.forEach(k=>{ if(k&&k.elemental) k.cost=Math.max(0,3-h.tag.elemCostDown) }) },0.5),
@@ -8279,7 +8289,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=284;
+const BUILD_NO=285;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -9115,7 +9125,7 @@ function heroDetail(n){
   box.appendChild(el(`<div class="dtop">
     <div class="dart">${figure(n)}</div>
     <div class="dnm">${esc(n)}</div>
-    <div class="dtt">${esc(d.title)}</div>
+    <div class="dtt">${esc(d.title)}${HERO_DIFF[n]?` · 난이도 ${diffChip(n)}`:""}</div>
     <div class="dst" title="최대 30레벨">
       <span class="nb" title="시작 체력">${ic("hp")} ${d.hp}</span>
       <span class="nb" title="최대 마나">${ic("mana")} ${d.mana}</span>
@@ -9129,14 +9139,16 @@ function heroDetail(n){
   box.appendChild(el(`<div class="dsk">${skiHtml(d.passive.n)}<b>${esc(d.passive.n)}</b>
     <small>${rich(SKILL_FULL[d.passive.n]||d.passive.d||"")}</small></div>`));
   box.appendChild(el(`<div class="dh">기술</div>`));
-  d.skills.forEach((sk,i)=>{
+  /* 「N(추가 † )」 가 여기서도 살게 — 아직 고르기 전이라 대원이 없으니 1레벨 대원을 하나 만들어 잰다 */
+  const hh=makeHero(n);
+  hh.sk.forEach((sk,i)=>{
     const lk=(i===2&&UNLOCK[2]>1)||(i===3&&UNLOCK[3]>1);
     const cost=sk.costType==="mom"?ic("move")+sk.cost
       :sk.costType==="scale"?"비늘"+sk.cost:ic("mana")+sk.cost;
     box.appendChild(el(`<div class="dsk ${lk?"lk":""}">
       <span class="c">${cost} · ${esc(sk.el)}${lk?` · ${UNLOCK[i]}레벨`:""}</span>
       ${skiHtml(sk.n)}<b>${i+1}. ${esc(sk.n)}</b>
-      <small>${rich(SKILL_FULL[sk.n]||sk.d||"")}</small></div>`));
+      <small>${richLive(hh,sk,SKILL_FULL[sk.n]||sk.d||"").html}</small></div>`));
   });
   return box;
 }
@@ -9156,6 +9168,7 @@ function drawStart(app){
       <div class="art">${figure(n)}</div>
       <div class="role">${esc([tagsOf(n).fac,tagsOf(n).race].filter(Boolean).join(" · ")||d.role)}</div>
       <h3>${esc(n)}</h3>
+      ${diffChip(n)}
       <p class="one">${rich(d.focus)}</p>
       <div class="st"><span>${ic("hp")} ${d.hp}</span><span>${ic("mana")} ${d.mana}</span></div>
     </div>`);
@@ -12302,6 +12315,8 @@ function extraParts(h,sk,key){
     if(h.name==="나이코스"&&sk.n==="막기"&&t.firstGuard&&fst.guard!==1)
       out.push({n:"처음은 완벽하게",v:t.firstGuard+h.def});
   }
+  /* 플레어와 플로우 — 적절한 균형은 배치 뒤 첫 균형 한 번 (h.balFirst 가 남아 있는 동안) */
+  if(sk.balance&&h.balFirst&&(key==="dmg"||key==="shield")) out.push({n:"적절한 균형",v:h.balFirst});
   return out;
 }
 /* 보호약화는 보호막과 회복을 절반으로 깎는다. 마지막에 걸린다. */
@@ -12383,7 +12398,7 @@ function richLive(h,sk,txt){
       : "");
   }
   const marked=txt0.replace(
-    /(\d+)\(추가 ([\u2020\u00a4\u2234][\u2020\u00a4\u2234\u2261 ]*)([^)]*)\)/g,
+    /(\d+)\(추가 ([\u2020\u00a4\u2234][\u2020\u00a4\u2234\u2261 ,\u00b7]*)([^)]*)\)/g,
     function(m,n,syms,rest,off,whole){
       const pre=whole.slice(Math.max(0,off-18),off);
       const key=keyBefore(pre);
@@ -13355,7 +13370,7 @@ function predictDmg(h,s,tgt){
 
   if(s.justice)          dmg=h.shield||0;
   /* 플레어와 플로우 — 균형은 플레어일 때만 때리고, 조화는 마법력+보호력에 플레어면 치명타 */
-  else if(s.balance){ if(!ffFlare(h)) return null; dmg=bs("dmg")+MAG }
+  else if(s.balance){ if(!ffFlare(h)) return null; dmg=bs("dmg")+MAG+(h.balFirst||0) }
   else if(s.harmony){ dmg=bs("dmg")+MAG+(h.def||0); if(ffFlare(h)){ dmg*=2; crit=1 } }
   else if(s.thrust)      dmg=(h.cutSum||0)*3;
   else if(s.dump)        dmg=h.ammo||0;
@@ -13450,7 +13465,7 @@ function predictSelf(h,s){
   const out={};
   if(s.shield) out.shield=breakdown(h,s,"shield").total;
   if(s.heal)   out.heal=breakdown(h,s,"heal").total;
-  if(s.balance&&!ffFlare(h)) out.shield=2+mod(s,"shield")+(h.def||0);
+  if(s.balance&&!ffFlare(h)) out.shield=s.shield+mod(s,"shield")+(h.def||0)+(h.balFirst||0);
   if(s.armorUp) out.armor=1+(h.tag.armorPlus||0);
   if(s.vanguard) out.shield=(h.tag.vanShield||5)+h.def;
   if(s.rearguard){ out.heal=h.tag.rearHeal||5; out.shield=5+h.def }
@@ -14724,13 +14739,13 @@ function runEffect(h,i,s,target){
     if(ffFlare(h)){
       const f0=foeAt(target); if(!f0){ say("그 칸에는 적이 없습니다.","t2"); return }
       ffStep(h,h.slot-1,"뒤로 물러설 데가 없습니다.");
-      const dmg=s.dmg+mod(s,"dmg")+h.mag+(T.balDmg||0)+first;
+      const dmg=s.dmg+mod(s,"dmg")+h.mag+first;
       const list=T.balanceAll?B.foes.filter(f=>f.alive):[f0];   /* 불의 화신 — 모든 적 */
       list.forEach(f=>{ fx({side:"foe",slot:f.slot,flareShot:{side:"mine",slot:h.slot},gap:list.length>1?60:170});
         ffHit(h,f,dmg,"균형") });
     } else {
       ffStep(h,h.slot+1,"앞으로 나설 데가 없습니다.");
-      let v=2+mod(s,"shield")+h.def+(T.balShield||0)+first; if(deb(h,"defDn")) v=Math.ceil(v*0.5);
+      let v=s.shield+mod(s,"shield")+h.def+first; if(deb(h,"defDn")) v=Math.ceil(v*0.5);
       h.shield+=v; fx({side:"mine",slot:h.slot,sheet:"fx_ff_flow",sheetOpt:{z:1.7,ms:520},s:"shield",txt:"+"+v,cls:"shd",gap:120});
       say(`균형 — ${h.name} 보호막 +${v}`);
     }
