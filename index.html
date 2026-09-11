@@ -725,6 +725,36 @@ button.dtl{padding:3px 10px;font-size:11.5px}
 .ccard .cc-st .hp{background:rgba(127,211,154,.16);color:#7fd39a}
 .ccard .cc-st .mn{background:rgba(106,168,224,.16);color:#6aa8e0}
 
+/* ── 원정 기록 ── */
+.runs{margin-top:16px;display:flex;flex-direction:column;gap:8px;text-align:left}
+.runrow{border:1px solid var(--rule);border-radius:9px;background:var(--panel);overflow:hidden}
+.runrow.win{border-color:rgba(201,162,39,.5)}
+.runrow.open{border-color:var(--brass)}
+.rr-hd{display:flex;align-items:center;gap:12px;padding:10px 14px;cursor:pointer;flex-wrap:wrap;font-size:12px;color:var(--dim)}
+.rr-hd:hover{background:rgba(255,255,255,.03)}
+.rr-res{font-family:var(--serif);font-size:13px;letter-spacing:.1em;padding:2px 9px;border-radius:9px;border:1px solid}
+.runrow.win .rr-res{color:var(--brass);border-color:var(--brass)}
+.runrow.lose .rr-res{color:#e0705a;border-color:rgba(224,112,90,.6)}
+.rr-when{color:var(--faint);font-variant-numeric:tabular-nums}
+.rr-far{color:var(--fg)}
+.rr-time{font-variant-numeric:tabular-nums}
+.rr-heroes{display:flex;gap:6px;flex-wrap:wrap}
+.rr-heroes i{font-style:normal;background:rgba(255,255,255,.04);border:1px solid var(--rule);border-radius:6px;padding:1px 7px;color:var(--fg)}
+.rr-heroes i b{color:var(--brass)}
+.rr-heroes i.dn{opacity:.55;text-decoration:line-through}
+.rr-why{margin-left:auto;color:#e0705a}
+.runrow.win .rr-why{color:var(--brass)}
+.rr-body{border-top:1px solid var(--rule);padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.rr-stat{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--dim)}
+.rr-hs{display:flex;flex-direction:column;gap:8px}
+.rr-h{display:flex;gap:12px;align-items:flex-start;padding:8px 10px;border:1px solid var(--rule);border-radius:7px;background:var(--raise)}
+.rr-h.dn{opacity:.7}
+.rr-h .art{width:46px;height:52px;flex:0 0 46px;display:flex;align-items:flex-end;justify-content:center}
+.rr-h .art img.pxs,.rr-h .art svg{height:50px;width:auto}
+.rr-hi{display:flex;flex-direction:column;gap:3px;min-width:0}
+.rr-hi b{font-size:13px}
+.rr-hi small{font-size:11px;color:var(--dim);line-height:1.5;word-break:keep-all}
+.rr-hi .dnby{color:#e0705a}
 /* ── 도감 ─────────────────────────────────────────────── */
 .dexwrap{max-width:1080px;margin:14px auto 0}
 .dexhd{font-family:var(--serif);font-size:15px;color:var(--brass);letter-spacing:.1em;
@@ -7960,13 +7990,31 @@ function bossFallCard(name){
   setTimeout(()=>card.classList.add("out"),2650);
   setTimeout(()=>card.remove(),3400);
 }
-function lose(msg){ clearSave(); run.lost=msg; view="over"; render() }
+function lose(msg){ clearSave(); run.lost=msg; recordRun("lose",msg); view="over"; render() }
+/* ── 원정 기록 — 판이 끝나면 요약을 남긴다 (localStorage · 최근 60판) ── */
+const RUNS_KEY="gy_runs";
+function loadRuns(){ try{ return JSON.parse(localStorage.getItem(RUNS_KEY)||"[]")||[] }catch(e){ return [] } }
+function saveRuns(L){ try{ localStorage.setItem(RUNS_KEY,JSON.stringify(L.slice(0,60))) }catch(e){} }
+function recordRun(result,reason){
+  if(!run||run.sandbox||run.recorded||TUT.on) return;
+  run.recorded=1;
+  const rec={
+    at:Date.now(), result:result, reason:reason||"",
+    field:Math.min(run.field,FIELDS.length-1), fieldN:FIELDS[Math.min(run.field,FIELDS.length-1)].n,
+    day:run.day, playMs:run.playMs||0, taint:run.taint, gold:run.gold, souls:run.souls||0,
+    kills:run.kills||0, bossKills:run.bossKills||0, battles:run.battles||0, pack:run.pack||null,
+    killer:run.lastKiller||null, killerBy:run.lastKillerBy||null,
+    heroes:run.heroes.map(h=>({n:h.name, lv:h.lv, hp:Math.max(0,h.hp), maxHp:h.maxHp, down:!!h.down||h.hp<=0,
+      atk:h.atk, mag:h.mag, def:h.def, items:(h.items||[]).map(i=>i.n), taken:(h.tag&&h.tag.taken)||[], downBy:h.downBy||null}))
+  };
+  const L=loadRuns(); L.unshift(rec); saveRuns(L);
+}
 let TOAST="";
 function toast(t){ TOAST=t }
 
 function nextField(){
   run.field++;
-  if(run.field>=FIELDS.length){ clearSave(); view="clear"; render(); return }
+  if(run.field>=FIELDS.length){ clearSave(); recordRun("win","마지막 우두머리를 넘고 균열을 닫았습니다."); view="clear"; render(); return }
   const f=FIELDS[run.field], S=f.size, mid=Math.floor(S/2);
   run.size=S; run.grid=buildGrid(run.field);
   run.pos={r:S-1,c:mid};
@@ -8154,6 +8202,7 @@ function render0(){
   }
   if(view==="text")     return drawText(app);
   if(view==="codex")    return drawCodex(app);
+  if(view==="runs")     return drawRuns(app);
   if(view==="itemdex")  return drawItemDex(app);
   if(view==="carddex")  return drawCardDex(app);
   if(view==="bag")      return drawBag(app);
@@ -8211,6 +8260,10 @@ function drawTitle(app){
   const cx=el(`<div style="margin-top:10px"><button style="padding:9px 24px">대원 도감 — 기술을 미리 써 본다</button></div>`);
   cx.querySelector("button").onclick=()=>{ CODEX.pick=HERO_POOL[0]; view="codex"; render() };
   app.querySelector(".center").appendChild(cx);
+  { const n=loadRuns().length;
+    const rr=el(`<div style="margin-top:10px"><button style="padding:9px 24px">원정 기록${n?` — ${n}판`:""}</button></div>`);
+    rr.querySelector("button").onclick=()=>{ RUNS_OPEN=null; view="runs"; render() };
+    app.querySelector(".center").appendChild(rr); }
   const tx=el(`<div style="margin-top:10px"><button style="padding:7px 18px;font-size:12.5px">설명 고치기</button></div>`);
   tx.querySelector("button").onclick=()=>{ view="text"; render() };
   app.querySelector(".center").appendChild(tx);
@@ -8375,7 +8428,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=304;
+const BUILD_NO=305;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -11221,6 +11274,57 @@ function drawClear(app){
   b.querySelector("button").onclick=()=>{ run=null; startPicks=null; view="title"; render() };
   wrap.appendChild(b);
 }
+/* ── 원정 기록 화면 ── */
+let RUNS_OPEN=null;
+function runDate(t){ const d=new Date(t), z=n=>(n<10?"0":"")+n;
+  return `${d.getFullYear()}.${z(d.getMonth()+1)}.${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}` }
+function drawRuns(app){
+  const L=loadRuns();
+  app.appendChild(el(`<div class="center"><div class="title" style="font-size:22px">원 정 기 록</div>
+    <div class="sub">${L.length?`${L.length}판 · 이긴 판 ${L.filter(r=>r.result==="win").length} · 가장 멀리 ${
+      Math.max(...L.map(r=>r.field))+1}구역 ${Math.max(...L.map(r=>r.day))}일차 · 붙잡은 시간 ${playTime(L.reduce((a,r)=>a+(r.playMs||0),0))}`
+      :"아직 마친 원정이 없습니다. 판이 끝나면 여기에 남습니다."}</div></div>`));
+  const wrap=app.querySelector(".center");
+  const list=el(`<div class="runs"></div>`);
+  L.forEach((r,i)=>{
+    const win=r.result==="win", open=RUNS_OPEN===i;
+    const row=el(`<div class="runrow ${win?"win":"lose"} ${open?"open":""}">
+      <div class="rr-hd">
+        <span class="rr-res">${win?"완주":"실패"}</span>
+        <span class="rr-when">${runDate(r.at)}</span>
+        <span class="rr-far">${esc(r.fieldN)} · ${r.day}일차</span>
+        <span class="rr-time" title="붙잡고 있은 시간">${playTime(r.playMs)}</span>
+        <span class="rr-heroes">${r.heroes.map(h=>`<i class="${h.down?"dn":""}">${esc(h.n)} <b>${h.lv}</b></i>`).join("")}</span>
+        <span class="rr-why">${esc(win?"균열을 닫았다":(r.killer?`${r.killer}에게 ${r.reason.indexOf("오염")>=0?"":"쓰러짐"}`:""))}${
+          !win&&!r.killer?esc(r.reason.indexOf("오염")>=0?"오염 100":r.reason.indexOf("일이 지나")>=0?"기한 초과":r.reason):""}</span>
+      </div>
+      ${open?`<div class="rr-body">
+        <div class="rr-stat">
+          <span>이유 · ${esc(r.reason||"")}</span>
+          <span>전투 ${r.battles} · 처치 ${r.kills}${r.bossKills?` (우두머리 ${r.bossKills})`:""}</span>
+          <span>${resIcon("gold")} ${r.gold} · 오염도 ${r.taint}${r.souls?` · 영혼 ${r.souls}`:""}</span>
+          ${r.pack?`<span>시작 꾸러미 · ${esc(r.pack)}</span>`:""}
+        </div>
+        <div class="rr-hs">${r.heroes.map(h=>`<div class="rr-h ${h.down?"dn":""}">
+          <div class="art">${figure(h.n)}</div>
+          <div class="rr-hi"><b>${esc(h.n)}</b> <small>Lv.${h.lv} · ${ic("hp")}${h.hp}/${h.maxHp} · ${ic("atk")}${h.atk} ${ic("mag")}${h.mag} ${ic("def")}${h.def}</small>
+            ${h.down?`<small class="dnby">쓰러짐${h.downBy?` — ${esc(h.downBy)}`:""}</small>`:""}
+            <small>장신구 · ${h.items.length?h.items.map(esc).join(" · "):"없음"}</small>
+            <small>보상 ${h.taken.length}개${h.taken.length?` · ${h.taken.map(esc).join(" · ")}`:""}</small>
+          </div></div>`).join("")}</div>
+      </div>`:""}
+    </div>`);
+    row.querySelector(".rr-hd").onclick=()=>{ RUNS_OPEN=open?null:i; render() };
+    list.appendChild(row);
+  });
+  wrap.appendChild(list);
+  const bar=el(`<div style="margin-top:22px;display:flex;gap:10px;justify-content:center">
+    <button class="go">돌아간다</button>${L.length?`<button class="mini">기록 지우기</button>`:""}</div>`);
+  const [bk,cl]=bar.querySelectorAll("button");
+  bk.onclick=()=>{ view=run?"map":"title"; render() };
+  if(cl) cl.onclick=()=>{ if(confirm("원정 기록을 모두 지웁니다. 되돌릴 수 없습니다.")){ saveRuns([]); render() } };
+  wrap.appendChild(bar);
+}
 function drawOver(app){
   SFX.play("down");
   veil("radial-gradient(circle,rgba(142,43,43,.5),transparent 70%)");
@@ -11229,8 +11333,10 @@ function drawOver(app){
     <div class="sub" style="margin-top:12px">${esc(run.lost||"대원이 모두 쓰러졌습니다.")}</div>
     <div class="sub" style="color:var(--faint);margin-top:6px">
       ${esc(FIELDS[Math.min(run.field,FIELDS.length-1)].n)} · ${run.day}일차 · 오염도 ${run.taint}</div></div>`));
-  const b=el(`<div style="margin-top:26px"><button class="go">다시 도전한다</button></div>`);
-  b.querySelector("button").onclick=()=>{ run=null; startPicks=null; view="title"; render() };
+  const b=el(`<div style="margin-top:26px;display:flex;gap:10px;justify-content:center"><button class="go">다시 도전한다</button><button>원정 기록</button></div>`);
+  const [bb,br]=b.querySelectorAll("button");
+  bb.onclick=()=>{ run=null; startPicks=null; view="title"; render() };
+  br.onclick=()=>{ run=null; startPicks=null; RUNS_OPEN=0; view="runs"; render() };
   app.querySelector(".center").appendChild(b);
 }
 
@@ -11341,6 +11447,7 @@ function foeScale(kind){
 /* 전투를 시작한 그 순간의 판을 적어 둔다. 되감기의 원본이 된다 */
 let BSNAP=null;
 function startBattle(kind,pinned){
+  if(run&&!run.sandbox&&!pinned) run.battles=(run.battles||0)+1;
   const _k=kind;
   if(!pinned){
     BSNAP=null;
@@ -13911,6 +14018,7 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
     } }
   if(f.hp>0&&d>0) bark(f,"hurt");
   if(f.hp<=0&&f.alive){ f.alive=0; bark(f,"down",1);
+    if(run&&!f.isPhantom&&!run.sandbox){ run.kills=(run.kills||0)+1; if(f.boss) run.bossKills=(run.bossKills||0)+1 }
     /* f.exp 는 전투가 끝날 때 더해지는 바로 그 값이다 — 지금까지 안 보여 줬을 뿐이다 */
     fx({side:"foe",slot:f.slot,s:"die",txt:"경험치 +"+f.exp,cls:"crit",gap:170,expgain:1});
     say(`${f.name} 처치.`,"t1");
@@ -15637,7 +15745,8 @@ function hurtAlly(f,t,raw,label,el){
     if(t.stance==="nightmare") asSrc(t,()=>B.foes.filter(x=>x.alive).forEach(x=>hurt(x,4+t.atk,"악몽 태세","slash")));
     if(t.stance==="terror") B.foes.filter(x=>x.alive).forEach(x=>{ addDeb(x,"fear",1,t); addDeb(x,"atkDn",1) });
   }
-  if(t.hp<=0) unitDown(t); else if(raw>0) bark(t,"hurt");
+  if(t.hp<=0){ if(!t.isMin&&run){ t.downBy=f?f.name:label; run.lastKiller=t.downBy; run.lastKillerBy=label } unitDown(t) }
+  else if(raw>0) bark(t,"hurt");
 }
 function unitDown(t){
   fx({side:"mine",slot:t.slot,s:"down",txt:t.isMin?"파괴":"쓰러짐",cls:"miss",gap:180});
