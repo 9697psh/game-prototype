@@ -5198,7 +5198,7 @@ HEROES["플레어와 플로우"]={title:"물과 불의 정령들",role:"보호 �
   skills:[
    {n:"균형",cost:1,el:"마법",tg:"foe",balance:1,dmg:2,d:"플로우 · 한 칸 앞으로 + 보호막 2 / 플레어 · 한 칸 뒤로 + 피해 2"},
    {n:"변환",cost:0,el:"집중",tg:"self",swap:1,d:"태세를 바꾼다 · 이번 턴에 쓸 때마다 값 +1"},
-   {n:"물과 불",cost:3,costType:"mom",el:"마법",tg:"self",elemental:1,d:"추진력 3 · 플로우 · 거리 2 안 적에게 공격약화·마법약화 1 / 플레어 · 화상 1"},
+   {n:"물과 불",cost:3,costType:"mom",el:"마법",tg:"self",elemental:1,d:"추진력 3 · 플로우 · 거리 2의 적에게 공격약화·마법약화 1 / 플레어 · 화상 1"},
    {n:"조화",cost:1,el:"마법",tg:"foe",lock:2,harmony:1,dmg:10,d:"잠금(2) · 피해 10(추가 마법력+보호력) · 플로우 · 준 피해만큼 보호막 / 플레어 · 치명타"}
   ]};
 HEROES["보아"]={title:"균열의 짐승",role:"공중 · 비늘",hp:20,mana:2,hpLv:2,
@@ -8163,7 +8163,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=278;
+const BUILD_NO=279;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -14543,8 +14543,9 @@ function runEffect(h,i,s,target){
     return;
   }
   if(s.elemental){
-    const list=B.foes.filter(f=>f.alive&&dist(h.slot,f.slot)<=2);
-    if(!list.length){ say("거리 2 안에 적이 없습니다.","t2"); return }
+    /* '거리 2의 적' = 딱 거리 2 (사용자 확인 2026-09-11) */
+    const list=B.foes.filter(f=>f.alive&&dist(h.slot,f.slot)===2);
+    if(!list.length){ say("거리 2에 적이 없습니다.","t2"); return }
     if(ffFlare(h)){ list.forEach(f=>{ f.burn=(f.burn||0)+1; f.burnBy=h.name;
         fx({side:"foe",slot:f.slot,ring:"#e0705a",s:"fire",txt:"화상"+f.burn,cls:"dmg",gap:70});
         say(`물과 불 — ${f.name} 화상 ${f.burn}`,"t2") }) }
