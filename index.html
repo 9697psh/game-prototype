@@ -5229,7 +5229,7 @@ const SKILL_FULL={
  "물과 불":"이동할 때마다 추진력을 1 얻습니다.\n\n플로우가 나설 때, 거리 2의 적에게 공격약화, 마법약화를 1 부여합니다.\n플레어가 나설 때, 거리 2의 적에게 화상을 1 부여합니다.\n\n이번 턴에 물과 불의 비용이 1 증가합니다.",
  "조화":"잠금(1). 피해를 10(추가 ∴,¤ )줍니다.\n\n플로우가 나설 때, 준 피해만큼 보호막을 얻습니다.\n플레어가 나설 때, 치명타로 적중합니다.",
  "쓰담쓰담":"피해를 2(추가 ∴ ) 줍니다. 보호막을 1(추가 ¤ ) 얻습니다. ",
- "씹어먹기":"피해를 6(추가 † ) 주고, 체력을 2 회복합니다.",
+ "씹어먹기":"피해를 6(추가 † ) 주고, 체력을 2(추가 ) 회복합니다.",
  "악마 하수인":"굴라의 균열 차원문을 이미 차원문이 있는 자리에 재사용하면 가져옵니다.",
  "악마 장군":"굴라가 [악마 장군 소환]을 얻은 뒤에는 악마 하수인 대신 이 카드를 가져옵니다.",
  "악마 혐오":"전투 시작시 악마 진영의 적 하나당 보호력을 +2 얻습니다.",
@@ -5729,10 +5729,12 @@ const HERO_REWARDS={
   R("찌르기","중급","[전투 기술]\n1-7. 찌르기 (마나 : 2)\n잠금(3). 이번 턴에 사용한 베기의 피해량의 3배만큼 피해를 줍니다.",
     h=>{ if(h.sk.length<6) h.sk.push({n:"찌르기",cost:2,el:"공격",tg:"foe",lock:3,thrust:1,
       d:"잠금(3) · 이번 턴 베기 피해 합계의 3배"}) },0.5),
+  R("전장의 승자 강화","중급","전장의 승자로 얻을 수 있는 공격력 한도가 1 증가합니다.",
+    h=>h.tag.winCap=(h.tag.winCap||2)+1),
   /* ── 상급 ── */
   R("두 번 베기","상급","베기가 두 번 사용되는 대신, 사용한도(2)를 얻습니다.",
     h=>{ h.sk[0].twice=1; h.sk[0].limit=2 },0.5),
-  R("처세술","상급","막기를 사용한 후, 다음 베기의 비용이 0이 됩니다.",h=>h.tag.freeCut=1,0.5),
+  R("처세술","상급","막기를 사용한 후, 다음 베기의 비용이 0이 됩니다.\n*막기를 여러 번 쓰면 그만큼 쌓입니다",h=>h.tag.freeCut=1,0.5),
   R("돌격 베기","상급","베기를 사용한 후 거리 1을 이동하고, 추진력을 1 얻을 수 있습니다. 추진력이 6 이상이면 모두 소모되어 다음 베기가 두 번 사용됩니다.",
     h=>h.tag.chargeCut=1,0.5),
   R("아드레날린 흡수","상급","베기를 사용할때마다 체력을 1 회복합니다.",
@@ -5744,8 +5746,6 @@ const HERO_REWARDS={
          h.maxHp+=16; h.hp+=16 },0.5),
   R("중무장","상급","내 턴가 시작될 때, 무작위 방어구 카드를 가져옵니다.",
     h=>h.tag.armorTurn=1,0.5),
-  R("전장의 승자 강화","상급","전장의 승자로 얻을 수 있는 공격력 한도가 1 증가합니다.",
-    h=>h.tag.winCap=(h.tag.winCap||2)+1),
   R("최후의 검투사","상급","전투에 나이코스 혼자 배치되어 있다면, 모든 능력치를 8 얻습니다.",
     h=>h.tag.soloStat=Math.max(h.tag.soloStat||0,8),0.5),
   R("분노 전환","상급","전장의 승자가 패배할 시 얻은 공격력을 모두 잃는 대신, 나이코스가 영구적으로 공격력을 그만큼 추가로 얻습니다.",
@@ -6137,7 +6137,7 @@ const REW_KIND={
  "상급|장신구: 제련석":"재화",
  "상급|장신구: 희귀":"장신구",
  "상급|저주받은 성벽":"기술 강화",
- "상급|전장의 승자 강화":"기술 강화",
+ "중급|전장의 승자 강화":"기술 강화",
  "상급|정의의 심판":"기술 강화",
  "상급|중무장":"대원 강화",
  "상급|처세술":"기술 강화",
@@ -8504,7 +8504,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=314;
+const BUILD_NO=315;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -12780,6 +12780,7 @@ function extraParts(h,sk,key){
     if(h.name==="나이코스"&&sk.n==="막기"&&t.firstGuard&&fst.guard!==1)
       out.push({n:"처음은 완벽하게",v:t.firstGuard+h.def});
   }
+  if(key==="heal"&&h.name==="굴라"&&sk.n==="씹어먹기"&&t.fullDef&&h.def) out.push({n:"포만감",v:h.def});   /* 회복에 추가 보호력 */
   /* 플레어와 플로우 — 적절한 균형은 배치 뒤 첫 균형 한 번 (h.balFirst 가 남아 있는 동안) */
   if(sk.balance&&h.balFirst&&(key==="dmg"||key==="shield")) out.push({n:"적절한 균형",v:h.balFirst});
   return out;
@@ -12871,7 +12872,7 @@ function richLive(h,sk,txt){
       : "");
   }
   const marked=txt0.replace(
-    /(\d+)\(추가 ([\u2020\u00a4\u2234][\u2020\u00a4\u2234\u2261 ,\u00b7]*)([^)]*)\)/g,
+    /(\d+)\(추가 ?([\u2020\u00a4\u2234][\u2020\u00a4\u2234\u2261 ,\u00b7]*)?([^)]*)\)/g,
     function(m,n,syms,rest,off,whole){
       const pre=whole.slice(Math.max(0,off-18),off);
       const key=keyBefore(pre);
@@ -13061,6 +13062,8 @@ function skillHot(h,i,s){
      &&B.foes.some(f=>f.alive&&(f.mark||0)>0)) out.push("표식 치명타");
   /* 그슨대 */
   if(h.hide&&s.tg==="foe") out.push("은신");
+  /* 나이코스 핏빛 칼날 — 베기 넷째마다 치명타 */
+  if(h.name==="나이코스"&&s.n==="베기"&&h.tag.bloodBlade&&((h.cutUses||0)+1)%4===0) out.push("핏빛 칼날 · 치명타");
   if(h.shadowAt&&(s.shadow||s.leech)) out.push("그림자");
   /* 공통으로 얹히는 것 */
   if(h.leech&&s.tg==="foe") out.push("흡수");
@@ -13071,7 +13074,7 @@ function skillHot(h,i,s){
   if(h.tag.firstGuard&&s.shield&&h.first&&h.first.guard!==1)
     out.push("첫 막기 +"+h.tag.firstGuard);
   /* 처세술 — 막기 뒤의 베기는 공짜 */
-  if(h.tag.freeCut&&i===0&&h.guarded) out.push("무료");
+  if(h.tag.freeCut&&i===0&&h.guarded) out.push("무료"+(h.guarded>1?" ×"+h.guarded:""));
   if(i===0&&h.name==="트리스탄"&&(h.shotFree||0)>0) out.push("무료");
   if(h.tag.guardThen&&h.guardStack&&s.tg==="foe") out.push("연격 +"+h.tag.guardThen*h.guardStack);
   /* 찌르기 — 이번 턴에 벤 만큼 쌓인다. 얼마가 나갈지 미리 보여 준다 */
@@ -13282,7 +13285,7 @@ function canPay(h,i,n){
   let sf=(i===0&&h.name==="트리스탄")?(h.shotFree||0):0;
   for(let k=0;k<n;k++){
     if(h.name==="카제"&&i===1&&free>0){ free--; continue }
-    if(h.tag.freeCut&&i===0&&guard){ guard=0; continue }
+    if(h.tag.freeCut&&i===0&&guard>0){ guard--; continue }
     if(fb){ fb=0; continue }
     if(fp){ fp=0; continue }
     if(sf>0){ sf--; continue }
@@ -14471,7 +14474,7 @@ function doSkill(target){
     else if(s.costType==="mom"){
       if(s.rise){ h.mom-=s.cost+h.airUp; h.airUp++ } else h.mom-=s.cost; }
     else if(h.name==="카제"&&i===1&&h.free>0){ h.free-- }
-    else if(h.tag.freeCut&&i===0&&h.guarded){ h.guarded=0 }
+    else if(h.tag.freeCut&&i===0&&h.guarded){ h.guarded-- }
     else if(h.freeBlock&&s.n==="방패 막기"){ h.freeBlock=0;
       say("방어 후 막기 — 이번 방패 막기는 공짜입니다.","t2") }
     else if(h.freePush&&s.n==="방패 밀치기"){ h.freePush=0;
@@ -15770,7 +15773,7 @@ function runEffect(h,i,s,target){
     }
   }
   if(h.name==="나이코스"&&i===1){
-    h.guarded=1;                                  /* 처세술 — 다음 베기 공짜 */
+    h.guarded=(h.guarded||0)+1;                   /* 처세술 — 다음 베기 공짜. 막기마다 쌓인다 (사용자) */
     h.guardStack=(h.guardStack||0)+1;             /* 준비 태세 — 막기마다 쌓인다 */
   }
 }
