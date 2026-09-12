@@ -659,7 +659,10 @@ button.dtl{padding:3px 10px;font-size:11.5px}
   font-size:12px;color:var(--dim)}
 .hdetail .dfocus{margin-top:10px;text-align:center;font-size:12px;color:var(--dim);
   line-height:1.7;word-break:keep-all}
-.dtags{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-top:9px}
+.dtags{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;margin-top:9px}
+.hpanel .dtags{justify-content:flex-start;margin:8px 0 4px}
+.tgg{display:inline-flex;align-items:center;gap:5px}
+.tgk{font-style:normal;font-size:10px;letter-spacing:.1em;color:var(--faint);margin-right:1px}
 .htag{border:1px solid var(--rule2);border-radius:20px;padding:2px 9px;font-size:10.5px;
   color:var(--faint);cursor:help;white-space:nowrap}
 .htag:hover{color:var(--brass);border-color:var(--brass)}
@@ -8434,7 +8437,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=311;
+const BUILD_NO=312;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -9255,12 +9258,17 @@ function tagRow(name){
   const list=[[g.fac,"진영"]].concat((g.job||[]).map(j=>[j,"직업"]),[[g.race,"종족"]])
     .filter(x=>x[0]);
   if(!list.length) return "";
-  return `<div class="dtags">${list.map(([t,k])=>{
+  /* 진영 / 직업 / 종족 으로 갈라 이름표를 단다 (사용자 2026-09-13) */
+  const chip=([t,k])=>{
     const sy=SYNERGY.find(s=>s.n===t);
     const tip=(sy&&sy.t&&sy.t.length)
       ? k+" · "+sy.t.map(x=>`${x.c}명 — ${x.d}`).join(" / ")
       : k+" · 아직 붙는 조합 효과가 없습니다";
     return `<span class="htag" title="${esc(tip)}">${esc(t)}</span>`;
+  };
+  return `<div class="dtags">${["진영","직업","종족"].map(k=>{
+    const L=list.filter(x=>x[1]===k); if(!L.length) return "";
+    return `<span class="tgg"><i class="tgk">${k}</i>${L.map(chip).join("")}</span>`;
   }).join("")}</div>`;
 }
 function heroDetail(n){
@@ -16736,6 +16744,7 @@ function heroPanel(h){
     <span>${ic("def")} ${h.def}</span>
   </div>`));
   { const stk=heroStacks(h); if(stk) box.appendChild(el(stk)) }
+  { const tr=tagRow(h.name); if(tr) box.appendChild(el(tr)) }        /* 진영 · 직업 · 종족 (사용자 2026-09-13) */
   const inf=PASSIVE_INFO[h.name]||[];
   if(inf.length){
     box.appendChild(el(`<div class="hp-h">지속</div>`));
