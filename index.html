@@ -1893,7 +1893,10 @@ header{align-items:center}
 /* ── 제련소 ───────────────────────────────────────────────── */
 /* 제련사 — 모루 앞에 서서 말을 건다 */
 .smith{display:flex;align-items:center;gap:14px;justify-content:center;
-  margin:14px auto 0;max-width:560px;text-align:left}
+  margin:14px auto 0;max-width:720px;text-align:left}
+.smith .sbtn{display:flex;flex-direction:column;gap:7px;flex:0 0 auto;margin-left:6px}
+.smith .sbtn button{width:112px;padding:9px 0}
+.smith > div:nth-child(2){flex:1 1 auto;min-width:0}
 .smith .face{width:74px;height:74px;flex:0 0 74px;border:1px solid var(--rule2);
   border-radius:10px;background:linear-gradient(180deg,var(--raise),var(--panel));
   display:flex;align-items:center;justify-content:center;overflow:hidden}
@@ -1931,8 +1934,9 @@ header{align-items:center}
 .forgefx .mat{position:absolute;top:50%;left:50%;width:76px;height:76px;margin:-38px 0 0 -38px;
   display:flex;align-items:center;justify-content:center}
 .forgefx .mat img,.forgefx .mat svg{width:72px;height:72px;image-rendering:pixelated}
-.forgefx .mat.l{animation:fgL 1.5s cubic-bezier(.3,.05,.4,1) forwards}
-.forgefx .mat.r{animation:fgR 1.5s cubic-bezier(.3,.05,.4,1) forwards}
+/* 길이 3s — 처음 1.5s 였는데 경박하다 해서 두 배로 (사용자 2026-09-13). 아래 T·소리·브란 칸도 다 같이 ×2 */
+.forgefx .mat.l{animation:fgL 3s cubic-bezier(.3,.05,.4,1) forwards}
+.forgefx .mat.r{animation:fgR 3s cubic-bezier(.3,.05,.4,1) forwards}
 @keyframes fgL{
   0%  {transform:translateX(0) scale(1);opacity:0}
   12% {transform:translateX(-120px) scale(1);opacity:1}
@@ -1952,7 +1956,7 @@ header{align-items:center}
 .forgefx .spark{position:absolute;top:50%;left:50%;width:8px;height:8px;margin:-4px 0 0 -4px;
   border-radius:50%;background:#ffd45e;box-shadow:0 0 8px #ffb03a;opacity:0}
 .forgefx .flash{position:absolute;top:50%;left:50%;width:20px;height:20px;margin:-10px 0 0 -10px;
-  border-radius:50%;background:#fff6e0;opacity:0;animation:fgFlash 1.5s ease-out forwards}
+  border-radius:50%;background:#fff6e0;opacity:0;animation:fgFlash 3s ease-out forwards}
 @keyframes fgFlash{0%,52%{opacity:0;transform:scale(.3)}
   56%{opacity:1;transform:scale(3)}
   62%{opacity:.5;transform:scale(1.6)}
@@ -1960,13 +1964,13 @@ header{align-items:center}
   100%{opacity:0;transform:scale(9)}}
 .forgefx .out{position:absolute;top:50%;left:50%;width:120px;height:120px;margin:-60px 0 0 -60px;
   display:flex;align-items:center;justify-content:center;opacity:0;
-  animation:fgOut .8s cubic-bezier(.2,1.5,.4,1) 1.42s forwards}
+  animation:fgOut 1.2s cubic-bezier(.2,1.5,.4,1) 2.84s forwards}
 .forgefx .out img,.forgefx .out svg{width:112px;height:112px;image-rendering:pixelated;
   filter:drop-shadow(0 0 18px rgba(255,200,90,.75))}
 @keyframes fgOut{0%{opacity:0;transform:scale(.2) rotate(-14deg)}
   100%{opacity:1;transform:scale(1) rotate(0)}}
 .forgefx .cap{width:min(420px,86vw);margin-top:6px;text-align:center;opacity:0;
-  animation:fgCap .5s ease-out 1.9s forwards}
+  animation:fgCap .6s ease-out 3.8s forwards}
 @keyframes fgCap{to{opacity:1}}
 /* > b 로 좁혀야 한다 — rich() 가 키워드를 <b class="kw"> 로 감싸므로
    그냥 b 로 잡으면 설명 속 '체력' 같은 낱말이 제목처럼 커진다 */
@@ -8590,7 +8594,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=330;
+const BUILD_NO=331;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -10062,7 +10066,7 @@ function forgeFX(a,b,made,done){
   /* 튕겨 부딪칠 때마다 불꽃이 튄다 — 애니메이션의 34% · 50% · 64% 자리.
      소리는 첫 번째에만 낸다. [제련 부딪힘] 이 0.9초 동안 빽빽하게 울려
      세 번의 불꽃을 다 덮는다. 세 번 겹쳐 틀면 서로 뭉개진다. */
-  const T=[510,750,960];
+  const T=[1020,1500,1920];              /* 3s 의 34% · 50% · 64% */
   const hits=T.map((t,ti)=>setTimeout(()=>{
     if(ti===0) SFX.play("제련 부딪힘");
     const st=ov.querySelector(".stage"); if(!st) return;
@@ -10076,21 +10080,21 @@ function forgeFX(a,b,made,done){
       setTimeout(()=>s.remove(),720);
     }
   },t));
-  const q=setTimeout(()=>SFX.play("제련 완성"),1400);
-  const lv=setTimeout(()=>SFX.play("level"),1560);
+  const q=setTimeout(()=>SFX.play("제련 완성"),2800);
+  const lv=setTimeout(()=>SFX.play("level"),3120);
   /* 브란 — 부딪치는 자리(T)마다 망치 네 칸을 한 바퀴(셋째 칸이 내려치는 순간 = 불꽃).
      1700ms 에 웃음/놀람 중 하나(smithVoice done). 웃음이면 웃는 네 칸을 85ms 씩 한 바퀴 (상인처럼 한 번만).
      그림이 없으면 아무것도 안 한다 */
   const smithImg=ov.querySelector(".smithfx img"), smithT=[];
   const smithFrame=(key,i)=>{ const u=ICON_PNG[key+"_"+i]; if(u&&smithImg) smithImg.src=u };
   if(smithImg){
-    T.forEach(t=>[[-120,1],[-60,2],[0,3],[60,4]].forEach(([d,i])=>
+    T.forEach(t=>[[-240,1],[-120,2],[0,3],[120,4]].forEach(([d,i])=>
       smithT.push(setTimeout(()=>smithFrame("npc_smith_hammer",i),t+d))));
     smithT.push(setTimeout(()=>{
       if(smithVoice("done")!=="브란 웃음") return;
-      [1,2,3,4].forEach((i,n)=>smithT.push(setTimeout(()=>smithFrame("npc_smith_laugh",i),n*85)));
-      smithT.push(setTimeout(()=>smithFrame("npc_smith_hammer",1),4*85));
-    },1700));
+      [1,2,3,4].forEach((i,n)=>smithT.push(setTimeout(()=>smithFrame("npc_smith_laugh",i),n*170)));
+      smithT.push(setTimeout(()=>smithFrame("npc_smith_hammer",1),4*170));
+    },3400));
   }
   let closed=0;
   const close=()=>{
@@ -10272,13 +10276,16 @@ function drawForge(app){
   else { msg=`${made.n} 완성 · 제련석 ${made.cost} 소모`; ok=true; mood="ok" }
   /* 제련사는 머리말 바로 밑에 세우되, 무슨 말을 할지는 지금 형편을 보고 정한다 */
   smithMood(mood);
-  wrap.insertBefore(smithBox(mood), wrap.children[2]||null);
+  const sbox=smithBox(mood);
+  wrap.insertBefore(sbox, wrap.children[2]||null);
   wrap.appendChild(el(`<p style="margin-top:18px;color:${ok?"var(--brass)":"var(--dim)"}">${rich(msg)}</p>`));
   if(made) wrap.appendChild(el(`<div class="rewards" style="margin-top:10px">
     <div class="rw ${ok?"":"no"}"><div class="rwi">${rewardIcon(made)}</div>
       <div class="g">${esc(made.g)} · 결과물</div>
       <b>${esc(made.n)}</b><p>${rich(made.d)}</p>${recipeHtml(made)}</div></div>`));
-  const go=el(`<div style="margin-top:18px"><button class="go">제련한다</button></div>`);
+  /* 단추 둘은 브란 옆에 (사용자 2026-09-13 — 맨 아래에 있으면 재료가 많을 때 너무 멀다) */
+  const sbtn=el(`<div class="sbtn"></div>`); sbox.appendChild(sbtn);
+  const go=el(`<div><button class="go">제련한다</button></div>`);
   go.querySelector("button").disabled=!ok;
   go.querySelector("button").onclick=()=>{
     const matA=picked[0].it, matB=picked[1].it;
@@ -10299,12 +10306,12 @@ function drawForge(app){
       view="item"; render();
     });
   };
-  wrap.appendChild(go);
-  const back=el(`<div style="margin-top:12px"><button>그만둔다</button></div>`);
+  sbtn.appendChild(go);
+  const back=el(`<div><button>그만둔다</button></div>`);
   back.querySelector("button").onclick=()=>{ run.forgePick=[];
     if(run.here){ leaveNode(); return }        /* 지도의 제련소에서 왔다 */
     run.campDone=0; view="camp"; render() };
-  wrap.appendChild(back);
+  sbtn.appendChild(back);
   app.appendChild(recipeBook());
   if(run.smithLaughAt) setTimeout(smithLaughRun,0);
 }
