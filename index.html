@@ -8434,7 +8434,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=309;
+const BUILD_NO=310;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -12330,7 +12330,8 @@ function drawBattle(app){
   const mvArrow = (k)=>(typeof ICON_PNG!=="undefined"&&ICON_PNG.ui_move_down)
     ? `<img class="mvarrow" src="${ICON_PNG.ui_move_down}" alt="" draggable="false"${k?` style="animation-delay:${k*0.18}s"`:""}>` : "";
   /* 정해진 걸음(균형)을 고른 동안 — 횟수만큼 화살표. hover 는 render 마다 끊기므로 여기서 그린다 */
-  const fixedMv = (preSkill&&sel.step>=2&&sel.step!==5) ? previewMove(sel.hero,preSkill,sel.count||1) : [];
+  /* 화살표는 마지막에 설 칸 하나만 — 세 번 누르면 세 칸 떨어진 칸 (사용자 2026-09-13) */
+  const fixedMv = (preSkill&&sel.step>=2&&sel.step!==5) ? previewMove(sel.hero,preSkill,sel.count||1).slice(-1) : [];
   /* 이동 기술이면 갈 수 없는 칸은 켜지 않는다 */
   const canGo = n => !(sel && tgMode==="ally" && moveBlock(sel.hero,preSkill,n));
   const INC = incoming();
@@ -13063,7 +13064,7 @@ function skillPanel(h){
     { const mo=e.querySelector(".skmore");
       if(mo) mo.onclick=ev=>{ ev.stopPropagation(); SK_OPEN[s.n]=!SK_OPEN[s.n]; render() } }
     /* 커서를 올리면 닿을 칸이 밝아진다 — 잠긴 기술도 어디에 닿는지는 보여 준다 */
-    e.onmouseenter=()=>{ if(B&&!B.over) hintSlots(previewTargets(h,s),previewMove(h,s,(sel&&sel.skill===i)?sel.count:1)) };
+    e.onmouseenter=()=>{ if(B&&!B.over) hintSlots(previewTargets(h,s),previewMove(h,s,(sel&&sel.skill===i)?sel.count:1).slice(-1)) };
     e.onmouseleave=()=>hintSlots([]);
     if(ok&&s.opts){
       /* 머리 부분은 선택지 목록을 여닫기만 한다 — 고른 선택지와 횟수는 그대로 둔다 */
