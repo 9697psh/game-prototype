@@ -8513,7 +8513,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=316;
+const BUILD_NO=317;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -9980,15 +9980,19 @@ function forgeFX(a,b,made,done){
   },t));
   const q=setTimeout(()=>SFX.play("제련 완성"),1400);
   const lv=setTimeout(()=>SFX.play("level"),1560);
-  /* 브란 — 부딪치는 자리(T)마다 망치 네 칸을 한 바퀴(셋째 칸이 내려치는 순간),
-     완성(1400ms)부터 웃음 네 칸을 두 바퀴 돌고 웃음소리. 그림이 없으면 아무것도 안 한다 */
+  /* 브란 — 부딪치는 자리(T)마다 망치 네 칸을 한 바퀴(셋째 칸이 내려치는 순간 = 불꽃).
+     1700ms 에 웃음/놀람 중 하나(smithVoice done). 웃음이면 웃는 네 칸을 85ms 씩 한 바퀴 (상인처럼 한 번만).
+     그림이 없으면 아무것도 안 한다 */
   const smithImg=ov.querySelector(".smithfx img"), smithT=[];
   const smithFrame=(key,i)=>{ const u=ICON_PNG[key+"_"+i]; if(u&&smithImg) smithImg.src=u };
   if(smithImg){
     T.forEach(t=>[[-120,1],[-60,2],[0,3],[60,4]].forEach(([d,i])=>
       smithT.push(setTimeout(()=>smithFrame("npc_smith_hammer",i),t+d))));
-    for(let n=0;n<8;n++) smithT.push(setTimeout(()=>smithFrame("npc_smith_laugh",n%4+1),1400+n*110));
-    smithT.push(setTimeout(()=>smithVoice("done"),1700));
+    smithT.push(setTimeout(()=>{
+      if(smithVoice("done")!=="브란 웃음") return;
+      [1,2,3,4].forEach((i,n)=>smithT.push(setTimeout(()=>smithFrame("npc_smith_laugh",i),n*85)));
+      smithT.push(setTimeout(()=>smithFrame("npc_smith_hammer",1),4*85));
+    },1700));
   }
   let closed=0;
   const close=()=>{
@@ -10028,17 +10032,32 @@ const SMITH_SAY={
 /* 브란의 소리 — 들어올 때 환영 · 하나 골랐을 때 생각 · 안 붙거나 돌이 모자라면 놀람 · 다 만들면 웃음.
    녹음이 없으면 조용하다 (상인 shopVoice 와 같은 꼴) */
 function smithVoice(kind){
-  const pool={enter:["브란 환영"],think:["브란 생각"],bad:["브란 놀람"],done:["브란 웃음"]}[kind]||[];
-  const k=pool.filter(sfxHas); if(!k.length) return;
-  SFX.play(rnd(k));
+  const pool={enter:["브란 환영","브란 웃음"],done:["브란 웃음","브란 놀람"],bad:["브란 생각"]}[kind]||[];
+  const k=pool.filter(sfxHas); if(!k.length) return null;
+  const pick=rnd(k); SFX.play(pick);
+  /* 웃음소리가 나면 웃는 네 칸도 한 바퀴 (상인처럼 한 번만). 연출(forgeFX) 안에서는 제가 알아서 돌린다 */
+  if(pick==="브란 웃음"&&kind!=="done") run.smithLaughAt=Date.now();
+  return pick;
 }
 /* drawForge 가 그릴 때마다 부른다 — 같은 형편이 이어지면 다시 내지 않는다.
-   생각은 빈손(idle)에서 하나를 집었을 때만. 둘째를 뺐다 다시 집을 때까지 웅얼거리면 시끄럽다 */
+   조합법이 없는 둘을 올렸을 때(bad)만 말한다. 제련석이 모자랄 때(poor)는 조용하다 (배정 안 됨) */
 function smithMood(mood){
   const prev=run.smithMood; run.smithMood=mood;
   if(prev===mood) return;
-  if(mood==="one"&&(prev==null||prev==="idle"||prev==="none")) smithVoice("think");
-  else if(mood==="bad"||mood==="poor") smithVoice("bad");
+  if(mood==="bad") smithVoice("bad");
+}
+/* 제련소 화면의 브란 얼굴에 웃음 네 칸을 85ms 씩 한 바퀴 돌리고 제 얼굴로 (shopLaughRun 과 같은 꼴) */
+function smithLaughRun(){
+  const img=document.querySelector(".smith.bran .face img"); if(!img) return;
+  if(!run.smithLaughAt||Date.now()-run.smithLaughAt>2000){ run.smithLaughAt=0; return }
+  run.smithLaughAt=0;
+  const base=img.src, frames=[1,2,3,4].map(i=>ICON_PNG["npc_smith_laugh_"+i]).filter(Boolean);
+  if(!frames.length) return;
+  let n=0;
+  const t=setInterval(()=>{
+    if(!document.body.contains(img)||n>=frames.length){ clearInterval(t); if(document.body.contains(img)) img.src=base; return }
+    img.src=frames[n]; n++;
+  },85);
 }
 function smithBox(mood){
   const line=rnd(SMITH_SAY[mood]||SMITH_SAY.idle);
@@ -10189,6 +10208,7 @@ function drawForge(app){
     run.campDone=0; view="camp"; render() };
   wrap.appendChild(back);
   app.appendChild(recipeBook());
+  if(run.smithLaughAt) setTimeout(smithLaughRun,0);
 }
 function recipeBook(){
   const box=el(`<div class="rcbook"><h4>조 합 표</h4></div>`);
