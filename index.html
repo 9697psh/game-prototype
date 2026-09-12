@@ -2517,6 +2517,16 @@ kbd{display:inline-block;min-width:20px;text-align:center;padding:1px 7px;font-s
   background:#181410;border:1px solid var(--brass);box-shadow:0 6px 22px rgba(0,0,0,.6);
   font-size:12.5px;line-height:1.55;color:#e8dfcc;pointer-events:none;display:none}
 #kwtip b{display:block;margin-bottom:3px;font-size:13px}
+/* 지도 칸 카드 */
+#maptip{position:fixed;z-index:1200;width:250px;border-radius:9px;background:#181410;border:1px solid var(--brass);
+  box-shadow:0 8px 26px rgba(0,0,0,.65);color:#e8dfcc;pointer-events:none;display:none;overflow:hidden;font-size:12.5px;line-height:1.55}
+#maptip .mt-h{display:flex;align-items:center;gap:8px;padding:8px 11px;background:linear-gradient(180deg,rgba(201,162,39,.16),transparent);border-bottom:1px solid rgba(201,162,39,.35)}
+#maptip .mt-h b{font-family:var(--serif);font-size:13.5px;color:var(--brass);letter-spacing:.04em}
+#maptip .mt-i{width:26px;height:26px;flex:0 0 26px;display:flex;align-items:center;justify-content:center}
+#maptip .mt-i svg,#maptip .mt-i img{width:24px;height:24px;image-rendering:pixelated}
+#maptip .mt-done{margin-left:auto;font-style:normal;font-size:10px;color:var(--faint);border:1px solid var(--rule2);border-radius:8px;padding:0 6px}
+#maptip .mt-b{padding:7px 11px;display:flex;flex-direction:column;gap:2px;color:#d6cbb6}
+#maptip .mt-f{padding:5px 11px 7px;font-size:11px;color:var(--faint);border-top:1px solid rgba(255,255,255,.06)}
 .veil{position:fixed;inset:0;pointer-events:none;animation:vl .5s ease-out forwards}
 @keyframes vl{0%{opacity:.5}100%{opacity:0}}
 @media(max-width:960px){
@@ -7483,6 +7493,56 @@ const NODE={
  forge  :{label:"제련소",     c:"#9c8d77"},
  empty  :{label:"",           c:"#3a3128"}
 };
+/* ── 지도 칸 카드 글 — 설명 고치기 「지도」 에서 고친다. 자리표는 mapTipFill 이 채운다 ──
+   {종류} 칸 이름 · {라운드} 라운드 수 · {강화} 적 강화 % · {설명} 적 무리 글 · {전리품} 전리품 글
+   {거리} 여기서 몇 칸 · {습격} 밤에 빈 칸 습격 확률(%) · {날짜} 남은 날 · 줄바꿈은 그대로 줄이 된다 */
+const MAP_TIP={
+ dungeon:"<b>{종류}</b> {라운드}라운드 · 적 강화 +{강화}%\n{설명}\n{전리품}",
+ elite:"<b>{종류}</b> 적 강화 +{강화}%\n{설명}\n{전리품}\n더 세지만 더 좋은 것을 떨어뜨립니다.",
+ boss:"<b>{종류}</b>\n이 구역의 마지막 상대입니다. {날짜}일 안에 넘어야 합니다.",
+ camp:"<b>{종류}</b>\n하루에 한 곳 — 치료소 · 쉼터 · 훈련장 · 제련소. 밤에는 숙면으로 오염도를 씻습니다.",
+ shop:"<b>{종류}</b>\n떠돌이 상인이 카드·장신구·제련석을 팝니다. 가진 것을 팔 수도 있습니다.",
+ rest:"<b>{종류}</b>\n지친 대원이 숨을 돌립니다. 한 번 들르면 사라집니다.",
+ forge:"<b>{종류}</b>\n장신구 둘을 조합법대로 합칩니다. 제련석이 듭니다.",
+ event:"<b>{종류}</b>\n무엇이 있을지 모릅니다 — 사건이거나, 좌판이거나, 버려진 제련소이거나.",
+ empty:"빈 길\n{습격}"
+};
+let MAPTIP_EL=null;
+function mapTipFill(cell,r,c){
+  const kind=cell.t||"empty";
+  let t=MAP_TIP[kind]; if(t==null) return "";
+  const dist=Math.abs(r-run.pos.r)+Math.abs(c-run.pos.c);
+  const amb=ambushChance(cell);
+  const dLeft=Math.max(0,((FIELDS[run.field]||{}).days||7)-run.day+1);
+  const v={
+    "종류":(NODE[kind]||{}).label||"",
+    "라운드":cell.waves||1,
+    "강화":(kind==="dungeon"||kind==="elite"||kind==="boss")?Math.round((foeScale(kind).m-1)*100):0,
+    "설명":cell.style||"", "전리품":cell.loot||"",
+    "거리":dist,
+    "습격":amb?`밤길 — 습격당할 확률 ${Math.round(amb*100)}%`:"",
+    "날짜":dLeft
+  };
+  t=t.replace(/\{(종류|라운드|강화|설명|전리품|거리|습격|날짜)\}/g,(m,k)=>String(v[k]));
+  /* 빈 줄은 접는다 */
+  const lines=t.split("\n").map(x=>x.trim()).filter(Boolean);
+  const head=lines.shift()||"";
+  return `<div class="mt-h"><i class="mt-i">${nodeArt(kind)}</i><span>${rich(head)}</span>${cell.done?`<em class="mt-done">끝냄</em>`:""}</div>`
+    +(lines.length?`<div class="mt-b">${lines.map(x=>`<div>${rich(x)}</div>`).join("")}</div>`:"")
+    +`<div class="mt-f">${dist===0?"지금 서 있는 칸":`여기서 ${dist}칸`}${(kind==="dungeon"||kind==="elite")&&cell.done?" · 이미 치른 전투":""}</div>`;
+}
+function mapTipShow(d,cell,r,c){
+  const html=mapTipFill(cell,r,c); if(!html) return;
+  if(!MAPTIP_EL){ MAPTIP_EL=document.createElement("div"); MAPTIP_EL.id="maptip"; document.body.appendChild(MAPTIP_EL) }
+  const b=MAPTIP_EL; b.innerHTML=html; b.style.display="block";
+  const r0=d.getBoundingClientRect(), w0=b.offsetWidth, h0=b.offsetHeight;
+  let x0=r0.right+10, y0=r0.top+r0.height/2-h0/2;
+  if(x0+w0>innerWidth-6) x0=r0.left-w0-10;
+  if(x0<6) x0=Math.max(6,r0.left+r0.width/2-w0/2), y0=r0.bottom+8;
+  y0=Math.max(6,Math.min(innerHeight-h0-6,y0));
+  b.style.left=x0+"px"; b.style.top=y0+"px";
+}
+function mapTipHide(){ if(MAPTIP_EL) MAPTIP_EL.style.display="none" }
 const DUN_STYLE=[
  "작은 적이 떼로 몰려 있다","단단한 무리가 길을 막고 있다","마법을 쓰는 것들이 섞여 있다",
  "멀리서 쏘아대는 것들이 있다","덩치 하나와 잔챙이들이 있다"
@@ -8444,7 +8504,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=313;
+const BUILD_NO=314;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -8468,6 +8528,8 @@ function txtEntries(){
     add("튜토리얼","tut:"+s.k+":d",no+". "+s.lb+" — 설명",
       ()=>TUT_TXT[s.k].d, v=>TUT_TXT[s.k].d=v, true);
   });
+  Object.keys(MAP_TIP).forEach(k=>add("지도","maptip:"+k,(NODE[k]&&NODE[k].label||"빈 길")+" — 커서를 올리면 뜨는 카드 ({종류} {라운드} {강화} {설명} {전리품} {거리} {습격} {날짜})",
+    ()=>MAP_TIP[k], v=>MAP_TIP[k]=v, true));
   Object.keys(SKILL_FULL).forEach(n=>add("기술","full:"+n,n,
     ()=>SKILL_FULL[n], v=>SKILL_FULL[n]=v, true));
   KW_TAB.forEach(k=>add("키워드","kw:"+k.n,k.n,
@@ -9437,10 +9499,10 @@ function drawMap(app){
       ${kind!=="empty"&&!cell.done?`<span class="cl">${esc(NODE[kind].label)}</span>`:""}
     </div>`);
     d.dataset.rc=r+"-"+c;
-    if(cell.t==="dungeon"||cell.t==="elite")
-      d.title=`적 강화 +${Math.round((foeScale(cell.t).m-1)*100)}%
-${NODE[cell.t].label} · ${cell.waves}라운드\n${cell.style}\n${cell.loot}`;
-    if(adj) d.onclick=()=>{ run.route=null; moveTo2(r,c) };
+    /* 커서를 올리면 카드(#maptip) — 글은 MAP_TIP, 설명 고치기 「지도」 에서 고친다 */
+    d.onmouseenter=()=>mapTipShow(d,cell,r,c);
+    d.onmouseleave=mapTipHide;
+    if(adj) d.onclick=()=>{ run.route=null; mapTipHide(); moveTo2(r,c) };
     else if(here&&cell.t==="camp") d.onclick=()=>{ view="camp"; render() };
     else if(!here) d.onclick=()=>pickRoute(r,c);
     g.appendChild(d);
