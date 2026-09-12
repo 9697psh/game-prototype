@@ -8515,7 +8515,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=321;
+const BUILD_NO=322;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -11126,9 +11126,19 @@ function takeGrade(g){
   if(pick.bag) run.bag.splice(pick.i,1); else pick.h.items.splice(pick.i,1);
   return pick.it;
 }
+/* 같은 이벤트가 연달아 나오는 일을 줄인다 (사용자 2026-09-12).
+   최근 셋을 run.evRecent 에 적어 두고, 바로 앞 것은 무게 0.1 · 그 앞은 0.35 · 셋째는 0.7 로 낮춰 뽑는다.
+   아예 빼지는 않는다 — 뽑을 수 있는 것이 몇 개 없을 때도 굴러가야 한다. 훈련장·튜토리얼도 같은 길 */
+const EV_RECENT_W=[0.1,0.35,0.7];
 function pickEvent(){
   const ok=EVENTS.filter(e=>!e.when||e.when());
-  return rnd(ok.length?ok:EVENTS.filter(e=>!e.when));
+  const pool=ok.length?ok:EVENTS.filter(e=>!e.when);
+  const rec=(run&&run.evRecent)||[];
+  const w=pool.map(e=>{ const i=rec.indexOf(e.n); return i<0?1:EV_RECENT_W[i] });
+  let r=Math.random()*w.reduce((a,b)=>a+b,0), pick=pool[pool.length-1];
+  for(let i=0;i<pool.length;i++){ r-=w[i]; if(r<0){ pick=pool[i]; break } }
+  if(run){ run.evRecent=[pick.n].concat(rec.filter(n=>n!==pick.n)).slice(0,EV_RECENT_W.length) }
+  return pick;
 }
 
 /* ── 미지의 구역 배경음 ──────────────────────────────────────────
