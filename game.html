@@ -8589,7 +8589,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=326;
+const BUILD_NO=327;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -11356,9 +11356,9 @@ function evText(t){
     if(!s) return "";
     const m=s.match(QUOTE);
     if(m) return `<div class="evsay">${rich((m[1]||"")+m[2]+(m[3]||""))}</div>`;
-    /* 줄 가운데 섞인 대사도 굵게 */
-    return `<p class="evp">${rich(s).replace(/'([^']{1,80})'/g,'<em class="evq">\u2018$1\u2019</em>')
-      .replace(/"([^"]{1,80})"/g,'<em class="evq">\u201c$1\u201d</em>')}</p>`;
+    /* 줄 가운데 섞인 대사도 굵게 — rich() 가 만드는 HTML 의 따옴표를 물지 않게, 글에 표를 먼저 찍고 뒤에 바꾼다 */
+    const q=s.replace(/'([^']{1,80})'/g,'\u0001\u2018$1\u2019\u0002').replace(/"([^"]{1,80})"/g,'\u0001\u201c$1\u201d\u0002');
+    return `<p class="evp">${rich(q).replace(/\u0001/g,'<em class="evq">').replace(/\u0002/g,'</em>')}</p>`;
   }).join("");
 }
 /* 이 선택으로 들을 대사 — 선택지에 적힌 것이 먼저, 없으면 이벤트 것 */
