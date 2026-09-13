@@ -667,6 +667,8 @@ button.dtl{padding:3px 10px;font-size:11.5px}
 .tgg{display:inline-flex;align-items:center;gap:5px}
 /* 새로운 동료 카드 안에서는 가운데 정렬 · 줄바꿈 */
 .pick .dtags{display:flex;flex-wrap:wrap;justify-content:center;gap:3px 7px;margin:4px -6px 8px}
+/* 새로운 동료 카드의 등장 대사 — 이벤트 대사 줄과 같은 결, 카드 폭에 맞춰 조금 작게 */
+.pick .rcsay{margin:10px 0 2px;padding:7px 6px;font-size:13.5px;max-width:none}
 .pick .dtags .tgg{gap:3px}
 .pick .dtags .tgk{font-size:9px;letter-spacing:.04em}
 .pick .dtags .htag{padding:1px 5px;font-size:10px;letter-spacing:0}
@@ -8599,7 +8601,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=333;
+const BUILD_NO=334;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -11495,8 +11497,7 @@ function drawRecruit(app){
       <h3>${esc(n)} · ${esc(d.title)}</h3>
       ${tagRow(n)||`<div class="role">${esc(d.role)}</div>`}
       <p>${rich(d.focus)}</p>
-      <p style="color:var(--brass);font-size:11.5px;margin-top:6px">지속 · ${esc(d.passive.n)}</p>
-      <p style="font-size:11px">${rich(d.passive.d)}</p></div>`);
+      ${(()=>{ const L=(BARK[n]||{}).in; return (L&&L.length)?`<div class="evsay rcsay">${rich(rnd(L))}</div>`:"" })()}</div>`);
     c.onclick=()=>{ run.heroes.push(makeHero(n));
       toast(`${n}${jo(n,"ig")} 대원에 합류했습니다.`); afterChest() };
     row.appendChild(c);
@@ -12434,6 +12435,8 @@ BARK["쿠렘타이"]["skill:사형 선고"]=["죽음께서 기뻐하시겠군...
   FF["skill:물과 불:플로우"]=[W("그만."),W("약해질거다."),W("포기해라.")];
   FF["skill:조화:플로우"]=[W("흘러라."),W("흐르는 파도..."),W("최고의 공격은 방어다.")];
   FF["skill:조화:플레어"]=["아름다워!","나를 믿지? "+W("당연하지."),"하하하!"];
+  /* 등장 — 새로운 동료 카드와 배치 때 쓴다 (2026-09-13, 임시 세 줄) */
+  FF["in"]=["우리가 왔다! "+W("조용히 해."), W("흐름을 따라간다."), "불태워주마! "+W("침착해.")];
   FF["skill:밀물"]=[W("저리가라."),W("밀물.")];
   FF["skill:썰물"]=[W("이리와라."),W("썰물.")]; }
 BARK["굴라"]["skill:씹어먹기"]=["냠냠","쩝쩝","(와그작)"];
