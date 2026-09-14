@@ -2278,6 +2278,11 @@ img.ri{width:14px;height:14px;vertical-align:-2px;image-rendering:auto}
 .cell.boon .cbg{opacity:.4}
 @keyframes boonA{0%,100%{filter:none}50%{filter:brightness(1.35)}}
 .cell.boon .cico{animation:boonA 1.8s ease-in-out infinite}
+.mt-r{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:7px;padding-top:6px;border-top:1px solid var(--rule)}
+.mt-r span{font-size:10.5px;padding:1px 7px;border:1px solid var(--rule2);border-radius:99px;color:var(--dim)}
+.mt-r span.on{border-color:#7a5a5a;color:#d98a8a}
+.mt-go{margin-top:6px;font-size:11px;color:var(--faint)}
+.mt-go.on{color:#9cc6ee;font-weight:700}
 .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:11px;color:var(--dim)}
 .legend span{display:inline-flex;align-items:center;gap:5px}
 .legend i{width:16px;height:16px;display:inline-block}
@@ -7763,9 +7768,24 @@ function mapTipFill(cell,r,c){
   /* 빈 줄은 접는다 */
   const lines=t.split("\n").map(x=>x.trim()).filter(Boolean);
   const head=lines.shift()||"";
+  /* 먼 칸 — 갈 길의 값. 고른 길이면 한 번 더 누르라고 알린다 (길 막대 대신, 사용자 2026-09-14) */
+  let route="";
+  if(dist>0&&!near(run.pos,{r:r,c:c})){
+    const picked=run.route&&run.route.to.r===r&&run.route.to.c===c;
+    const rt=picked?run.route:routeTo(r,c);
+    if(rt){
+      const hrs=run.act<=0?rt.steps*2:rt.steps;
+      route=`<div class="mt-r"><span>${rt.steps}칸</span><span>활동량 ${rt.steps}</span><span>${hrs}시간</span>`
+        +`<span class="${run.taint+rt.steps*moveTaint()>=80?"on":""}">오염도 +${rt.steps*moveTaint()}</span>`
+        +`<span class="${rt.pass?"on":""}">${rt.pass?`구역 ${rt.pass}곳 지나침`:"다른 구역은 피해 감"}</span>`
+        +(run.night?`<span class="on">밤 — 빈 칸마다 습격 ${Math.round(ambushChance({t:"empty"})*100)}%</span>`:"")
+        +`</div><div class="mt-go${picked?" on":""}">${picked?"한 번 더 누르면 이동합니다":"누르면 길을 보여 줍니다 · 한 번 더 누르면 이동합니다"}</div>`;
+    } else route=`<div class="mt-go">가는 길이 없습니다</div>`;
+  }
   return `<div class="mt-h"><i class="mt-i">${nodeArt(kind)}</i><span>${rich(head)}</span>${cell.done?`<em class="mt-done">끝냄</em>`:""}</div>`
     +(lines.length?`<div class="mt-b">${lines.map(x=>`<div>${rich(x)}</div>`).join("")}</div>`:"")
-    +`<div class="mt-f">${dist===0?"지금 서 있는 칸":`여기서 ${dist}칸`}${(kind==="dungeon"||kind==="elite")&&cell.done?" · 이미 치른 전투":""}${cell.visited?" · 떠나기 전에는 눌러서 다시 들어갈 수 있습니다":""}</div>`;
+    +`<div class="mt-f">${dist===0?"지금 서 있는 칸":`여기서 ${dist}칸`}${(kind==="dungeon"||kind==="elite")&&cell.done?" · 이미 치른 전투":""}${cell.visited?" · 떠나기 전에는 눌러서 다시 들어갈 수 있습니다":""}</div>`
+    +route;
 }
 function mapTipShow(d,cell,r,c){
   const html=mapTipFill(cell,r,c); if(!html) return;
@@ -8750,7 +8770,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=367;
+const BUILD_NO=368;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -9787,7 +9807,7 @@ function drawMap(app){
   const f=FIELDS[run.field], S=run.size;
   app.appendChild(el(`<div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
     <div class="title" style="font-size:20px">${esc(f.n)}</div>
-    <div class="hint">${run.night?`밤입니다. 빈 칸을 지날 때 습격당할 확률 ${Math.round(Math.min(85,45+nightDepth()*5))}% · 상점·쉼터·미지의 구역·전장 칸은 습격당하지 않습니다`:run.act<=0?"활동량이 바닥났습니다. 이제 한 칸에 2시간이 걸립니다.":`인접한 칸을 눌러 이동합니다. 먼 칸을 누르면 갈 길을 먼저 보여 줍니다. 한 칸에 활동량 1 · 1시간 · 오염도 ${moveTaint()}.`}</div></div>`));
+    <div class="hint">${run.night?`밤입니다. 빈 칸을 지날 때 습격당할 확률 ${Math.round(Math.min(85,45+nightDepth()*5))}% · 상점·쉼터·미지의 구역·전장 칸은 습격당하지 않습니다`:run.act<=0?"활동량이 바닥났습니다. 이제 한 칸에 2시간이 걸립니다.":`인접한 칸을 눌러 이동합니다. 먼 칸은 한 번 누르면 길을 보여 주고, 한 번 더 누르면 갑니다. 한 칸에 활동량 1 · 1시간 · 오염도 ${moveTaint()}.`}</div></div>`));
   /* 무엇을 해야 하는지 한 줄로 — 우두머리 방향과 남은 날 */
   { let br=null;
     for(let r=0;r<S;r++) for(let c=0;c<S;c++) if(run.grid[r][c].t==="boss") br={r:r,c:c};
@@ -9801,28 +9821,8 @@ function drawMap(app){
       <span class="chip ${dLeft<=2?"on":""}">남은 날 ${dLeft}일</span>
       <span class="chip ${run.taint>=70?"on":""}">오염도 ${run.taint}/100</span>
       <span class="grow"></span>
-      <span class="hint">가까운 칸은 바로 이동 · 먼 칸을 누르면 갈 길을 먼저 보여 줍니다</span>
+      <span class="hint">가까운 칸은 바로 이동 · 먼 칸은 두 번 눌러 이동 · 바닥을 누르면 길 취소</span>
     </div>`)); }
-  /* 고른 길 — 가기 전에 값을 먼저 알려 준다 */
-  if(run.route){
-    const rt=run.route, dst=run.grid[rt.to.r][rt.to.c];
-    const hrs=run.act<=0?rt.steps*2:rt.steps;
-    const bar=el(`<div class="routebar">
-      <span class="gl">갈 길</span>
-      <b>${dst.t==="empty"?"빈 칸":esc(NODE[dst.t].label)}까지 ${rt.steps}칸</b>
-      <span class="chip">활동량 ${rt.steps}</span>
-      <span class="chip">${hrs}시간</span>
-      <span class="chip ${run.taint+rt.steps*moveTaint()>=80?"on":""}">오염도 ${rt.steps*moveTaint()}</span>
-      <span class="chip ${rt.pass?"on":""}">${rt.pass?`구역 ${rt.pass}곳을 지나칩니다`:"다른 구역은 피해 갑니다"}</span>
-      ${run.night?`<span class="chip on">밤 — 빈 칸마다 습격 ${Math.round(ambushChance({t:"empty"})*100)}%</span>`:""}
-      <span class="grow"></span>
-      <button class="go rgo">이 길로 간다</button>
-      <button class="rno">취소</button>
-    </div>`);
-    bar.querySelector(".rgo").onclick=walkRoute;
-    bar.querySelector(".rno").onclick=()=>{ run.route=null; render() };
-    app.appendChild(bar);
-  }
   const g=el(`<div class="gridmap pmap" style="grid-template-columns:repeat(${S},1fr)"></div>`);
   const rstep={};
   if(run.route) run.route.path.forEach((p,i)=>{ rstep[p.r+"-"+p.c]=i+1 });
@@ -9873,7 +9873,8 @@ function drawMap(app){
     stage.onmouseleave=()=>{ hand.style.display="none"; last=null };
     /* 격자 밖(양피지 가장자리·바닥)을 누르면 — 칸이 아닌 자리 */
     stage.addEventListener("click",e=>{ if(e.target.closest(".cell")) return;
-      tapDust(stage,e.clientX,e.clientY); if(sfxHas("지도 바닥")) SFX.play("지도 바닥"); mapSay("outside") });   /* 소리는 art/소리/_원본/지도 바닥(1·2·3).wav 를 두면 저절로 */
+      tapDust(stage,e.clientX,e.clientY); if(sfxHas("지도 바닥")) SFX.play("지도 바닥"); mapSay("outside");
+      if(run.route){ run.route=null; render() } });   /* 고른 길은 바닥을 누르면 풀린다 */   /* 소리는 art/소리/_원본/지도 바닥(1·2·3).wav 를 두면 저절로 */
     /* 누르는 동안 누름 손 — 떼거나 무대 밖에서 떼면 되돌린다 */
     stage.addEventListener("pointerdown",e=>{ last=[e.clientX,e.clientY]; set("press") });
     const up=()=>{ if(mode==="press") set("point") };
@@ -9985,8 +9986,9 @@ function sprinkleCell(t,n,extra){
   return put;
 }
 function pickRoute(r,c){
+  /* 이미 고른 그 칸을 한 번 더 누르면 걷는다 (사용자 2026-09-14 — [이 길로 간다] 단추 대신). 취소는 바닥(격자 밖) 클릭 */
+  if(run.route&&run.route.to.r===r&&run.route.to.c===c){ mapTipHide(); walkRoute(); return }
   mapSay("floor");
-  if(run.route&&run.route.to.r===r&&run.route.to.c===c){ run.route=null; render(); return }
   const rt=routeTo(r,c);
   if(!rt){ toast("그 칸으로 가는 길이 없습니다."); return }
   run.route=rt; SFX.play("tock"); render();
