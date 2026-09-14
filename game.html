@@ -1622,7 +1622,16 @@ header{align-items:center}
 .pstage .unf{inset:0;width:100%;height:100%;display:none}
 .pstage.unfolding .unf{display:block}
 .pstage.unfolding .pmapimg,.pstage.unfolding .pmap,.pstage.unfolding .mhand{visibility:hidden}
-.pstage .mhand{width:29.3%;height:auto;display:none;z-index:9}   /* 폭은 그림마다 JS 가 (w/256) 로 다시 준다 */
+.pstage .mhand{width:29.3%;height:auto;display:none;z-index:9}
+/* 말풍선 — 왼손(좌하단) 위쪽에서. 꼬리는 왼손 엄지 쪽으로 */
+.pstage .msay{position:absolute;left:5%;top:66%;max-width:46%;background:#f7ecd2;color:#2a2119;border:2px solid #5a4632;
+  border-radius:14px;padding:8px 13px 9px;font-size:13px;line-height:1.5;z-index:8;pointer-events:none;word-break:keep-all;
+  box-shadow:0 4px 14px rgba(0,0,0,.35);animation:msayIn .22s cubic-bezier(.2,1.4,.4,1);transform-origin:12% 100%}
+.pstage .msay b{display:block;font-size:10px;letter-spacing:.1em;color:#7a5a3a;margin-bottom:2px}
+.pstage .msay::after{content:"";position:absolute;left:14%;bottom:-11px;border:7px solid transparent;border-top:8px solid #5a4632;border-bottom:0}
+.pstage .msay::before{content:"";position:absolute;left:calc(14% + 2px);bottom:-7px;border:5px solid transparent;border-top:6px solid #f7ecd2;border-bottom:0;z-index:1}
+.pstage .msay.out{opacity:0;transition:opacity .4s}
+@keyframes msayIn{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}   /* 폭은 그림마다 JS 가 (w/256) 로 다시 준다 */
 .gridmap.pmap{position:absolute;left:15.1%;top:14.5%;width:71%;height:71%;   /* 양피지 크림색 한가운데 (256 기준 중심 129.5,128) */margin:0;max-width:none;gap:0;
   border-left:1px solid var(--pline);border-top:1px solid var(--pline)}
 /* 칸 — 얇은 흰 선 · 속은 비침 · 커서를 대면 밝게 */
@@ -3105,11 +3114,84 @@ const mapPng=n=>MAP_DIR+encodeURIComponent(n);
    held 양피지+왼손 한 장 · point 가리킴 · press 누름 (몸통만 잘라 둔 그림). w/h 는 256 기준 크기, tip 은 검지 끝 (그림 안 좌표).
    새 대원 손이 오면 여기 한 줄 — art/지도/ 에 그림 넣고 build */
 const MAP_HANDS={
- "나이코스":{held:"양피지-손.png",point:{f:"손-가리킴.png",w:75,h:102,tip:[4,0]},press:{f:"손-누름.png",w:77,h:88,tip:[1,7]}},
- "쿠렘타이":{held:"양피지-손-쿠렘타이.png",point:{f:"손-가리킴-쿠렘타이.png",w:79,h:120,tip:[3,0]},press:{f:"손-누름-쿠렘타이.png",w:85,h:104,tip:[1,9]}}
-};
+ "나이코스":{held:"양피지-손.png",scale:.9,point:{f:"손-가리킴.png",w:75,h:102,tip:[4,0]},press:{f:"손-누름.png",w:77,h:88,tip:[1,7]}},
+ "쿠렘타이":{held:"양피지-손-쿠렘타이.png",scale:.7,point:{f:"손-가리킴-쿠렘타이.png",w:79,h:120,tip:[3,0]},press:{f:"손-누름-쿠렘타이.png",w:85,h:104,tip:[1,9]}}
+};   /* scale — 오른손을 왼손과 비슷한 크기로 (사용자 2026-09-14). 그림 자체가 큰 쿠렘타이는 더 줄인다 */
 document.addEventListener("pointerup",()=>{ const st=document.querySelector(".pstage"); if(st&&st._up) st._up() });
 function mapHands(){ const n=run&&run.heroes&&run.heroes[0]&&run.heroes[0].name; return MAP_HANDS[n]||MAP_HANDS["나이코스"] }
+/* ── 지도 말풍선 (사용자 2026-09-14) ──
+   처음 고른 대원이 왼손 위쪽 말풍선에서 말한다. 상황 열쇠 :
+     move:<칸 종류>  칸에 들어설 때 (empty·dungeon·elite·shop·rest·forge·event·boss·camp)   20%
+     floor           먼 칸(바닥)을 눌러 길을 볼 때                                              8%
+     long            길이 넷 이상이거나 활동량이 바닥나 오래 걸릴 때                            8%
+     back:<곳>       전투·쉼터·제련소·상점·미지의 구역·주둔지에서 돌아와 지도가 펼쳐질 때        30%
+   대원 이름 칸이 있으면 그것, 없으면 "*" 공용. 설명 고치기 「대사」 mapsay:<대원>:<열쇠> 에서 고친다 (한 줄이 대사 하나) */
+const MAP_SAY_P={move:0.2,floor:0.08,long:0.08,back:0.3};
+const MAP_SAY_KEYS=[["move:empty","빈 칸으로 이동"],["move:dungeon","전투 칸에 들어설 때"],["move:elite","정예 전투 칸에 들어설 때"],
+ ["move:shop","상점에 들어설 때"],["move:rest","쉼터에 들어설 때"],["move:forge","제련소에 들어설 때"],["move:event","미지의 구역에 들어설 때"],
+ ["move:boss","우두머리 칸에 들어설 때"],["move:camp","주둔지로 돌아올 때"],["floor","먼 칸(바닥)을 눌렀을 때"],["long","오래 걸리는 길일 때"],
+ ["back:battle","전투를 마치고 지도로"],["back:rest","쉼터를 나와 지도로"],["back:forge","제련소를 나와 지도로"],["back:shop","상점을 나와 지도로"],
+ ["back:event","미지의 구역을 나와 지도로"],["back:camp","주둔지를 나와 지도로"]];
+const MAP_SAY={
+ "*":{
+  "move:empty":["아무것도 없군.","조용하다.","계속 가자.","발자국뿐이다."],
+  "move:dungeon":["기척이 있다.","싸울 준비.","저기다."],
+  "move:elite":["만만치 않겠어.","센 놈이다. 조심하자."],
+  "move:shop":["장사꾼이군.","살 만한 게 있으려나."],
+  "move:rest":["잠깐 쉬자.","숨 좀 돌리자."],
+  "move:forge":["불이 살아 있군.","쇠 냄새다."],
+  "move:event":["뭐지, 저건.","가 보자."],
+  "move:boss":["여기서 끝낸다.","드디어."],
+  "move:camp":["돌아왔다.","여기서 숨을 고르자."],
+  "floor":["멀군.","저기까지 가려면 한참이다.","길을 잡아 보자."],
+  "long":["길다.","해가 지기 전에 닿을까.","다리가 무겁다."],
+  "back:battle":["끝났다.","다음.","한숨 돌리자."],
+  "back:rest":["몸이 좀 낫군.","다시 가자."],
+  "back:forge":["잘 붙었어.","쓸 만하군."],
+  "back:shop":["값이 비싸.","이걸로 됐다."],
+  "back:event":["묘한 자리였어.","가자."],
+  "back:camp":["출발.","지도를 펴자."]},
+ "나이코스":{
+  "move:dungeon":["관중은 없지만, 싸움은 싸움이지.","이름을 남길 자리다."],
+  "move:boss":["이 승부, 기억에 남을 것이다."],
+  "back:battle":["승리."," 다음 상대는 누구지."]},
+ "쿠렘타이":{
+  "move:empty":["…","죽음은 서두르지 않는다."],
+  "move:dungeon":["영혼 냄새가 난다.","거둘 때다."],
+  "move:boss":["큰 영혼이군."],
+  "back:battle":["영혼이 늘었다.","…흡족하군."]}
+};
+let MAP_BUBBLE=null, MAP_FROM=null;
+function mapSayLines(key){
+  const n=run&&run.heroes&&run.heroes[0]&&run.heroes[0].name;
+  const T=(n&&MAP_SAY[n])||{};
+  return (T[key]&&T[key].length)?T[key]:((MAP_SAY["*"]||{})[key]||[]);
+}
+function mapSay(key,force){
+  if(!run||TUT.on) return false;
+  const p=force?1:(MAP_SAY_P[key.split(":")[0]]||0);
+  if(Math.random()>p) return false;
+  const L=mapSayLines(key); if(!L.length) return false;
+  MAP_BUBBLE={t:rnd(L),at:Date.now()}; showMapBubble(); return true;
+}
+/* 무대에 말풍선을 얹는다. 다시 그려도(걸음) 남은 시간만큼 이어 보인다 */
+function showMapBubble(){
+  const st=document.querySelector(".pstage"); if(!st||!MAP_BUBBLE) return;
+  st.querySelectorAll(".msay").forEach(x=>x.remove());
+  const at=MAP_BUBBLE.at, left=2600-(Date.now()-at); if(left<=0){ MAP_BUBBLE=null; return }
+  const n=run.heroes[0].name;
+  const b=el(`<div class="msay"><b>${esc(n)}</b><span>${rich(MAP_BUBBLE.t)}</span></div>`);
+  st.appendChild(b);
+  setTimeout(()=>{ if(MAP_BUBBLE&&MAP_BUBBLE.at===at){ MAP_BUBBLE=null; b.classList.add("out"); setTimeout(()=>b.remove(),400) } },left);
+}
+/* 어디서 돌아왔나 — 화면 이름을 말풍선 열쇠로 */
+function mapFromKind(v){
+  if(!v) return null;
+  if(["battle","reward","chest","wavegap","recruit","item"].indexOf(v)>=0) return "battle";
+  if(v==="relic") return "event";
+  if(["rest","forge","shop","camp"].indexOf(v)>=0) return v;
+  return null;
+}
 /* 펼침 넉 장·양피지·손은 미리 받아 둔다 — 처음 펼칠 때 그림이 아직 안 와서 1·2장이 건너뛰어졌다 */
 const MAP_PRE=[];
 setTimeout(()=>{ const L=["펼침-1.png","펼침-2.png","펼침-3.png","펼침-4.png"];
@@ -8270,9 +8352,10 @@ function nextField(){
 let _lastView=null, MAP_ENTER=0, MAP_UNF_TOK=0;
 function render(){
   if(_lastView!==view){
+    const prevView=_lastView;
     const l=document.getElementById("fx"); if(l) l.innerHTML="";
     HPMEM={}; SHMEM={}; _lastView=view;
-    if(view==="map") MAP_ENTER=1;          /* 양피지를 펼치는 연출은 들어설 때 한 번 */
+    if(view==="map"){ MAP_ENTER=1; MAP_FROM=prevView }   /* 양피지를 펼치는 연출은 들어설 때 한 번. 어디서 왔는지는 말풍선이 쓴다 */
     /* 화면이 바뀌었는데 스크롤이 그대로면 엉뚱한 데를 보고 있게 된다 */
     try{ window.scrollTo({top:0,behavior:"instant"}) }catch(e){ window.scrollTo(0,0) }
   }
@@ -8661,7 +8744,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=344;
+const BUILD_NO=345;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -8749,6 +8832,11 @@ function txtEntries(){
       ()=>(SMITH_SAY[k]||[]).join("\n"),
       v=>{ SMITH_SAY[k]=String(v).split("\n").map(x=>x.trim()).filter(Boolean) },true));
 
+  /* 지도 말풍선 — 공용(*) 과 뽑을 수 있는 대원마다. 한 줄이 대사 하나. 대원 칸을 비우면 공용을 쓴다 */
+  ["*"].concat(playableHeroes()).forEach(hn=>MAP_SAY_KEYS.forEach(([k,label])=>
+    add("대사","mapsay:"+hn+":"+k,(hn==="*"?"지도 말풍선 · 공용":"지도 말풍선 · "+hn)+" ▸ "+label,
+      ()=>((MAP_SAY[hn]||{})[k]||[]).join("\n"),
+      v=>{ (MAP_SAY[hn]=MAP_SAY[hn]||{})[k]=String(v).split("\n").map(x=>x.trim()).filter(Boolean) },true)));
   Object.keys(HEROES).forEach(hn=>{
     const H=HEROES[hn];
     add("대원 소개","hero:"+hn+":focus",hn+" — 한 줄 소개",()=>H.focus,v=>H.focus=v,true);
@@ -9685,10 +9773,11 @@ function drawMap(app){
   stage.appendChild(g);
   { const hand=stage.querySelector(".mhand"); let mode=null, last=null;
     /* 검지 끝이 커서 자리에 오게 — 그림마다 끝(tip)이 다르다. 무대 256 기준 배율 k */
-    const put=()=>{ if(!last) return; const b=stage.getBoundingClientRect(), k=b.width/256, v=H[mode];
+    const SC=H.scale||1;
+    const put=()=>{ if(!last) return; const b=stage.getBoundingClientRect(), k=b.width/256*SC, v=H[mode];
       hand.style.left=(last[0]-b.left-v.tip[0]*k)+"px"; hand.style.top=(last[1]-b.top-v.tip[1]*k)+"px"; hand.style.display="block" };
     const set=m=>{ if(mode===m) return; mode=m; const v=H[m];
-      hand.src=mapPng(v.f); hand.style.width=(v.w/256*100)+"%"; put() };
+      hand.src=mapPng(v.f); hand.style.width=(v.w/256*100*SC)+"%"; put() };
     stage.onmousemove=e=>{ last=[e.clientX,e.clientY]; if(!mode) set("point"); else put() };
     stage.onmouseleave=()=>{ hand.style.display="none"; last=null };
     /* 누르는 동안 누름 손 — 떼거나 무대 밖에서 떼면 되돌린다 */
@@ -9701,8 +9790,10 @@ function drawMap(app){
     const u=stage.querySelector(".unf"); let i=0; const tok=++MAP_UNF_TOK;
     const step=()=>{ if(tok!==MAP_UNF_TOK||!document.body.contains(stage)) return;
       if(i<4){ u.src=mapPng(`펼침-${i+1}.png`); i++; setTimeout(step,i===4?220:150) }   /* 사용자 2026-09-14 조금 더 빠르게 : 150×3+220 ≈ 0.7초 */
-      else stage.classList.remove("unfolding") };
-    setTimeout(step,0); }             /* 무대가 DOM 에 붙은 뒤에 — 바로 부르면 contains 가 거짓이라 접힌 채 멈춘다 */
+      else { stage.classList.remove("unfolding"); const k=mapFromKind(from); if(k) mapSay("back:"+k) } };
+    const from=MAP_FROM; MAP_FROM=null;
+    setTimeout(step,0); }
+  else if(MAP_BUBBLE) setTimeout(showMapBubble,0);             /* 무대가 DOM 에 붙은 뒤에 — 바로 부르면 contains 가 거짓이라 접힌 채 멈춘다 */
   L.appendChild(stage);
   const legend=el(`<div class="legend pleg"></div>`);
   ["camp","dungeon","elite","shop","rest","forge","event","boss"].forEach(t=>
@@ -9799,6 +9890,7 @@ function sprinkleCell(t,n,extra){
   return put;
 }
 function pickRoute(r,c){
+  mapSay("floor");
   if(run.route&&run.route.to.r===r&&run.route.to.c===c){ run.route=null; render(); return }
   const rt=routeTo(r,c);
   if(!rt){ toast("그 칸으로 가는 길이 없습니다."); return }
@@ -9810,6 +9902,7 @@ function walkRoute(){
   run.route=null;
   const path=rt.path.slice(), day0=run.day;
   view="map"; render();
+  if(rt.steps>=4||run.act<=0) mapSay("long");
   const step=()=>{
     if(!run||run.lost||view!=="map"||run.day!==day0) return;
     const p=path.shift(); if(!p) return;
@@ -9828,8 +9921,11 @@ function walkRoute(){
     }
     if(last||(cell.t!=="empty"&&!cell.done)){
       if(!last) toast("가는 길에 있는 구역을 지나칠 수 없었습니다.");
+      const said=mapSay("move:"+(cell.done?"empty":cell.t));
+      if(said&&cell.t!=="empty"&&!cell.done){ view="map"; render(); setTimeout(()=>{ if(view==="map"&&run&&run.pos.r===p.r&&run.pos.c===p.c) enterCell(p.r,p.c) },900); return }
       enterCell(p.r,p.c); return;
     }
+    mapSay("move:empty");
     view="map"; render();
     setTimeout(step, Math.round(300*SPD));
   };
@@ -9872,6 +9968,9 @@ function moveTo2(r,c){
     ambushCard("인기척 하나 없는 자리입니다. 어둠 속에서 무언가 달려듭니다.");
     return;
   }
+  /* 말풍선 — 칸마다 다른 대사 20%. 들어설 곳이 있으면 말을 잠깐 보인 뒤 들어간다 */
+  const said=(tired&&mapSay("long"))||mapSay("move:"+(cell.done?"empty":cell.t));
+  if(said&&cell.t!=="empty"&&!cell.done){ view="map"; render(); setTimeout(()=>{ if(view==="map"&&run&&run.pos.r===r&&run.pos.c===c) enterCell(r,c) },900); return }
   enterCell(r,c);
 }
 /* 미지의 구역에 무엇이 있었나 — 이벤트가 대부분이지만 좌판이나
