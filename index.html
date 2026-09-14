@@ -1615,7 +1615,7 @@ header{align-items:center}
 /* ── 양피지 지도 (사용자 2026-09-14) ──
    무대(.pstage)는 정사각. 256px 그림을 3배(768)까지 키우고, 좁으면 기둥 폭을 따른다.
    격자는 양피지의 크림색 안쪽(256 기준 24~232)에 맞춰 9.375% 안쪽 · 81.25% 크기 — 그림이 커져도 비율로 따라간다 */
-.pstage{position:relative;width:min(704px,100%);aspect-ratio:1;margin:8px auto 0;cursor:none;border-radius:6px;overflow:hidden;
+.pstage{--pline:rgba(110,75,40,.28);position:relative;width:min(704px,100%);aspect-ratio:1;margin:8px auto 0;cursor:none;border-radius:6px;overflow:hidden;
   background:#0f0c0a var(--floor,none) center/50% repeat;image-rendering:pixelated}
 .pstage>img{position:absolute;image-rendering:pixelated;pointer-events:none;user-select:none}
 .pstage .pmapimg{inset:0;width:100%;height:100%}
@@ -1623,24 +1623,24 @@ header{align-items:center}
 .pstage.unfolding .unf{display:block}
 .pstage.unfolding .pmapimg,.pstage.unfolding .pmap,.pstage.unfolding .mhand{visibility:hidden}
 .pstage .mhand{width:29.3%;height:auto;display:none;z-index:9}
-.gridmap.pmap{position:absolute;left:9.375%;top:9.375%;width:81.25%;height:81.25%;margin:0;max-width:none;gap:0;
-  border-left:1px solid rgba(255,255,255,.95);border-top:1px solid rgba(255,255,255,.95)}
+.gridmap.pmap{position:absolute;left:13.3%;top:13.7%;width:71%;height:71%;margin:0;max-width:none;gap:0;
+  border-left:1px solid var(--pline);border-top:1px solid var(--pline)}
 /* 칸 — 얇은 흰 선 · 속은 비침 · 커서를 대면 밝게 */
-.pmap .cell{border:0;border-right:1px solid rgba(255,255,255,.95);border-bottom:1px solid rgba(255,255,255,.95);border-radius:0;
+.pmap .cell{border:0;border-right:1px solid var(--pline);border-bottom:1px solid var(--pline);border-radius:0;
   background:transparent;padding:10%;transition:background .12s,box-shadow .12s}
 .pmap .cell .cbg{display:none}
 .pmap .cell:not(.adj):not(.here):not(.onroute){filter:none;opacity:.82}
 .pmap .cell.emp{background:transparent;border-style:solid;opacity:1}
 .pmap .cell.done{opacity:.35;filter:grayscale(.7)}
-.pmap .cell.adj{background:transparent;border-color:rgba(255,255,255,.95)}
-.pmap .cell.adj:hover{transform:none;border-color:rgba(255,255,255,.95)}
-.pmap .cell:hover,.pmap .cell.adj:hover{background:rgba(255,255,255,.45);z-index:3;
-  box-shadow:0 0 0 1px rgba(255,255,255,.95) inset,0 0 12px rgba(255,255,255,.95) inset,0 0 16px rgba(255,255,255,.7)}
+.pmap .cell.adj{background:transparent;border-color:var(--pline)}
+.pmap .cell.adj:hover{transform:none;border-color:var(--pline)}
+.pmap .cell:hover,.pmap .cell.adj:hover{background:rgba(255,236,190,.55);z-index:3;
+  box-shadow:0 0 0 1px rgba(255,255,255,.85) inset,0 0 10px rgba(255,240,200,.8) inset,0 0 14px rgba(255,230,170,.75)}
 .pmap .cell.here{box-shadow:0 0 0 2px var(--brass) inset;opacity:1}
-.pmap .cell.risk{background:rgba(120,30,30,.22);border-color:rgba(255,255,255,.95)}
+.pmap .cell.risk{background:rgba(120,30,30,.22);border-color:var(--pline)}
 .pmap .cell.risk:hover{background:rgba(160,60,60,.4)}
 .pmap .cell .cl{background:#2a2119;color:#f0e2c0;border-color:#5a4a32}
-.pmap .cell .cico img{width:80%;height:80%}
+.pmap .cell .cico img{width:32px;height:32px;max-width:80%;max-height:80%}
 .pmap .cell .cw{color:#2a2119;background:rgba(255,255,255,.95);border-radius:3px;padding:0 3px}
 .pmap .cell .rn{color:#2a2119}
 /* 범례 — 잉크 아이콘은 검어서 양피지색 칩 위에 */
@@ -3099,6 +3099,10 @@ const EV_DIR="ev/";
 /* 지도 UI 그림 — art/지도/*.png → web/map/ (build.sh 가 나른다). 양피지·손·펼침 넉 장·구역 바닥 */
 const MAP_DIR="map/";
 const mapPng=n=>MAP_DIR+encodeURIComponent(n);
+/* 펼침 넉 장·양피지·손은 미리 받아 둔다 — 처음 펼칠 때 그림이 아직 안 와서 1·2장이 건너뛰어졌다 */
+const MAP_PRE=[];
+setTimeout(()=>{ ["펼침-1.png","펼침-2.png","펼침-3.png","펼침-4.png","양피지-손.png","손-가리킴.png"]
+  .forEach(n=>{ const i=new Image(); i.src=mapPng(n); MAP_PRE.push(i) }) },0);
 /* 구역마다 다른 바닥 — 지금은 핏빛 감옥뿐. 없으면 어두운 바탕 */
 const MAP_FLOOR=["바닥-핏빛 감옥.png",null,null];
 /* 양피지 위에는 검은 잉크 아이콘 (art/아이콘/map-ink-v2). 우두머리·상점은 아직 잉크 판이 없어 금빛 그대로 */
@@ -8645,7 +8649,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=337;
+const BUILD_NO=338;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -9672,10 +9676,10 @@ function drawMap(app){
       hand.style.left=(e.clientX-b.left-4*k)+"px"; hand.style.top=(e.clientY-b.top)+"px"; hand.style.display="block" };
     stage.onmouseleave=()=>{ hand.style.display="none" }; }
   if(MAP_ENTER){ MAP_ENTER=0;
-    /* 펼침 넉 장을 140ms 씩 — 다 펴지면 양피지·격자가 나타난다. 그 사이 다시 그리면(tok) 접는다 */
+    /* 펼침 넉 장을 220ms 씩, 마지막 장은 조금 더 — 다 펴지면 양피지·격자가 나타난다. 그 사이 다시 그리면(tok) 접는다 */
     const u=stage.querySelector(".unf"); let i=0; const tok=++MAP_UNF_TOK;
     const step=()=>{ if(tok!==MAP_UNF_TOK||!document.body.contains(stage)) return;
-      if(i<4){ u.src=mapPng(`펼침-${i+1}.png`); i++; setTimeout(step,140) }
+      if(i<4){ u.src=mapPng(`펼침-${i+1}.png`); i++; setTimeout(step,i===4?320:220) }
       else stage.classList.remove("unfolding") };
     setTimeout(step,0); }             /* 무대가 DOM 에 붙은 뒤에 — 바로 부르면 contains 가 거짓이라 접힌 채 멈춘다 */
   L.appendChild(stage);
