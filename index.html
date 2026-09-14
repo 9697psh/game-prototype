@@ -8232,6 +8232,7 @@ function dayBreak(day,label){
   document.querySelectorAll(".blackout,.daycard").forEach(x=>x.remove());
   const bo=el(`<div class="blackout"></div>`);
   document.body.appendChild(bo);
+  MAP_BO_UNTIL=Date.now()+1900;   /* 어둠이 걷히기 시작한 뒤(1500ms 부터 0.7초) 지도가 펴진다 (사용자 2026-09-15) */
   setTimeout(()=>{
     const card=el(`<div class="daycard">
       <div class="dsun"></div>
@@ -8377,7 +8378,7 @@ function nextField(){
 }
 
 /* ═══════════ 화면 ═══════════ */
-let _lastView=null, MAP_ENTER=0, MAP_UNF_TOK=0;
+let _lastView=null, MAP_ENTER=0, MAP_UNF_TOK=0, MAP_BO_UNTIL=0;   /* MAP_BO_UNTIL — 날이 바뀌는 암전이 걷히는 때. 지도 펼침은 그 뒤에 */
 function render(){
   if(_lastView!==view){
     const prevView=_lastView;
@@ -8775,7 +8776,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=376;
+const BUILD_NO=377;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -9892,8 +9893,12 @@ function drawMap(app){
     const step=()=>{ if(tok!==MAP_UNF_TOK||!document.body.contains(stage)) return;
       if(i<4){ u.src=mapPng(`펼침-${i+1}.png`); i++; setTimeout(step,i===4?220:150) }   /* 사용자 2026-09-14 조금 더 빠르게 : 150×3+220 ≈ 0.7초 */
       else { stage.classList.remove("unfolding"); const k=mapFromKind(from); if(k) mapSay("back:"+k) } };
-    if(sfxHas("지도 펼침")) SFX.play("지도 펼침");   /* art/소리/_원본/지도 펼침(1·2·3).wav 를 두면 저절로 */
-    setTimeout(step,0); }
+    /* 날이 바뀌는 암전 중이면 어둠이 걷힌 뒤에 편다 — 그동안은 접힌 첫 장을 들고 있다 (사용자 2026-09-15) */
+    const wait=Math.max(0,MAP_BO_UNTIL-Date.now());
+    if(wait) u.src=mapPng("펼침-1.png");
+    setTimeout(()=>{ if(tok!==MAP_UNF_TOK||!document.body.contains(stage)) return;
+      if(sfxHas("지도 펼침")) SFX.play("지도 펼침");   /* art/소리/_원본/지도 펼침(1·2·3).wav 를 두면 저절로 */
+      step() },wait); }
   else { const k=mapFromKind(from); if(k) setTimeout(()=>mapSay("back:"+k),0); else if(MAP_BUBBLE) setTimeout(showMapBubble,0) }             /* 무대가 DOM 에 붙은 뒤에 — 바로 부르면 contains 가 거짓이라 접힌 채 멈춘다 */
   L.appendChild(stage);
   const legend=el(`<div class="legend pleg"></div>`);
