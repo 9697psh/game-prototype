@@ -2387,6 +2387,7 @@ kbd{display:inline-block;min-width:20px;text-align:center;padding:1px 7px;font-s
   border:1px solid #4a3f63;border-radius:8px;padding:16px 18px;margin-bottom:4px}
 .evres .evi{width:52px;height:52px;flex:none} .evres .evi svg{width:52px;height:52px}
 .evres b{font-size:11px;color:#b9a2ea;letter-spacing:.08em}
+.evres p b,.evopts .evres p b{font-size:inherit;color:inherit;letter-spacing:0;display:inline;margin:0}
 .evres p{margin:4px 0 0;font-size:13.5px;line-height:1.6;word-break:keep-all}
 /* 룰렛 — 판은 가만히 있고 바늘이 돈다. 판을 돌리면 글자가 누워 안 읽힌다. */
 .rlt{position:relative;width:212px;margin:6px auto 12px;filter:drop-shadow(0 6px 16px rgba(0,0,0,.5))}
@@ -8902,7 +8903,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=388;
+const BUILD_NO=389;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -10341,26 +10342,26 @@ const GIM_EV={
           return "울타리를 따라 몸을 낮추고 돌아갑니다. 관리자의 눈은 피했습니다." }}]}),
   torture:(cell,r,c)=>({n:"고문실",art:"ink11_map_torture_chamber",face:"사슬 광인",gim:1,
     t:"피 냄새가 밴 방입니다. 쇠사슬과 갈고리가 벽에 걸려 있고, 그 곁에 금화가 쌓여 있습니다.",
-    o:[{t:"고문당하기",d:"(무작위로 선택된 대원)이 피해를 3 받습니다. 금화를 2개 얻습니다.",again:1,
+    o:[{t:"고문당하기",d:"(무작위로 /선택된 대원)이 피해를 3 받습니다. 금화를 2개 얻습니다.",again:1,
         f:()=>{ const n=run.gim.tort||0, dmg=3*(n+1), gold=2*(n+1);
           const up=run.heroes.filter(h=>!h.down), h=up.length?rnd(up):null;
           if(h){ h.hp=Math.max(1,h.hp-dmg) }
           run.gold+=gold; run.gim.tort=n+1; if(sfxHas("금화 얻기")) SFX.play("금화 얻기");
-          return `${h?h.name+"이(가) 고문을 견뎠습니다. 피해 "+dmg+". ":""}금화 ${gold}을 얻었습니다.` }},
-       {t:"고문장 부수기",d:"고문실을 부수고 중급 보상을 얻습니다. (사형장에서 선택지를 1번 이상 고른 경우에만 선택이 가능합니다.)",end:1,
+          return `${h?h.name+jo(h.name,"ig")+" 고문을 견뎠습니다. 피해 "+dmg+". ":""}금화 ${gold}을 얻었습니다.` }},
+       {t:"고문장 부수기",d:"고문실을 부수고 중급 보상을 얻습니다. (사형장에서 /선택지를 1번 이상 고른 경우에만 /선택이 가능합니다.)",end:1,
         when:()=>(run.gim&&run.gim.gal)>=1,
         f:()=>{ run.grid[r][c]={t:"empty"}; (run.after=run.after||[]).push({grade:"중급"}); return "고문 기구를 모조리 부쉈습니다." }},
        {t:"나가기",d:"지도로 돌아갑니다.",leave:1,f:()=>""}]}),
   gallows:(cell,r,c)=>({n:"사형장",art:"ink11_map_execution_ground",face:"부서진 파수병",gim:1,
     t:"높은 단 위에 밧줄이 늘어져 있습니다. 올라서는 자에게 무언가를 준다고 합니다.",
-    o:[{t:"사형대 올라가기",d:"(무작위로 선택된 대원)이 10% 확률로 죽습니다. 하급 보상을 얻습니다.",again:1,
+    o:[{t:"사형대 올라가기",d:"(무작위로 /선택된 대원)이 10% 확률로 죽습니다. 하급 보상을 얻습니다.",again:1,
         f:()=>{ const n=run.gim.gal||0, p=0.10+0.05*n;
           const up=run.heroes.filter(h=>!h.down), h=up.length?rnd(up):null;
           run.gim.gal=n+1; (run.after=run.after||[]).push({grade:"하급"});
           if(h&&Math.random()<p){ h.hp=0; h.down=1; if(sfxHas("danger")) SFX.play("danger");
-            return `${h.name}이(가) 사형대에서 내려오지 못했습니다. 밧줄이 끊기고 상자만 남았습니다.` }
-          return `${h?h.name+"이(가) 밧줄 아래 섰다가 무사히 내려왔습니다. ":""}보상이 놓여 있습니다.` }},
-       {t:"사형장 부수기",d:"사형장을 부수고 모든 대원의 체력을 모두 회복합니다. (고문실에서 선택지를 1번 이상 고른 경우에만 선택이 가능합니다.)",end:1,
+            return `${h.name}${jo(h.name,"ig")} 사형대에서 내려오지 못했습니다. 밧줄이 끊기고 상자만 남았습니다.` }
+          return `${h?h.name+jo(h.name,"ig")+" 밧줄 아래 섰다가 무사히 내려왔습니다. ":""}상자가 놓여 있습니다.` }},
+       {t:"사형장 부수기",d:"사형장을 부수고 모든 대원의 체력을 모두 회복합니다. (고문실에서 /선택지를 1번 이상 고른 경우에만 /선택이 가능합니다.)",end:1,
         when:()=>(run.gim&&run.gim.tort)>=1,   /* 서로 엇갈린 조건 — 고문장은 사형장 뒤에, 사형장은 고문실 뒤에 (사용자 2026-09-15) */
         f:()=>{ run.grid[r][c]={t:"empty"}; run.heroes.forEach(h=>{ if(!h.down) h.hp=h.maxHp }); SFX.play("heal");
           return "단을 무너뜨리고 밧줄을 태웠습니다. 대원들의 몸이 가벼워집니다." }},
