@@ -8357,10 +8357,12 @@ function render(){
     const prevView=_lastView;
     const l=document.getElementById("fx"); if(l) l.innerHTML="";
     HPMEM={}; SHMEM={}; _lastView=view;
-    if(view==="map"){ MAP_FROM=prevView; if(run&&run.mapUnfold){ MAP_ENTER=1; run.mapUnfold=0 } }   /* 펼침은 새 판·재편성·새 날·새 구역 뒤 첫 한 번만 (run.mapUnfold). 어디서 왔는지는 말풍선이 쓴다 */
+    if(view==="map") MAP_FROM=prevView;   /* 어디서 왔는지는 말풍선이 쓴다 */
     /* 화면이 바뀌었는데 스크롤이 그대로면 엉뚱한 데를 보고 있게 된다 */
     try{ window.scrollTo({top:0,behavior:"instant"}) }catch(e){ window.scrollTo(0,0) }
   }
+  /* 펼침은 새 판·재편성·새 날·새 구역 뒤 첫 한 번만 (run.mapUnfold) — 화면이 안 바뀌어도(nextField 는 지도에서 지도로) 표가 켜져 있으면 편다 */
+  if(view==="map"&&run&&run.mapUnfold){ MAP_ENTER=1; run.mapUnfold=0 }
   document.querySelectorAll(".peek,.tutbox,.tuthi,.tutdim").forEach(x=>x.remove());
   render0();
   goldWatch();
@@ -8746,7 +8748,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=365;
+const BUILD_NO=366;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
