@@ -8482,6 +8482,7 @@ function nextField(){
   run.day=1; run.time=6; run.actMax=f.act; run.act=f.act;
   run.night=0; run.taint=0; run.campDone=0; run.remapUsed=0;
   if(run.quests) run.quests=run.quests.filter(q=>!(q.field!=null&&q.field!==run.field&&!q.done));   /* '이번 구역 동안' 퀘스트 만료 */
+  run.gim=null;                                            /* 고문실·사형장 스택은 구역 내내 — 새 구역에서 처음부터 */
   /* 다음 구역으로 넘어가도 몸은 다 낫지 않는다 — 최대 체력의 40%만 회복 */
   run.heroes.forEach(h=>{
     const v=Math.max(1,Math.round(h.maxHp*0.4));
@@ -8901,7 +8902,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=387;
+const BUILD_NO=388;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -10340,28 +10341,30 @@ const GIM_EV={
           return "울타리를 따라 몸을 낮추고 돌아갑니다. 관리자의 눈은 피했습니다." }}]}),
   torture:(cell,r,c)=>({n:"고문실",art:"ink11_map_torture_chamber",face:"사슬 광인",gim:1,
     t:"피 냄새가 밴 방입니다. 쇠사슬과 갈고리가 벽에 걸려 있고, 그 곁에 금화가 쌓여 있습니다.",
-    o:[{t:"고문당하기",d:"(무작위로 선택된 대원)이 피해를 3 받습니다. 금화를 2개 얻습니다.",
+    o:[{t:"고문당하기",d:"(무작위로 선택된 대원)이 피해를 3 받습니다. 금화를 2개 얻습니다.",again:1,
         f:()=>{ const n=run.gim.tort||0, dmg=3*(n+1), gold=2*(n+1);
           const up=run.heroes.filter(h=>!h.down), h=up.length?rnd(up):null;
           if(h){ h.hp=Math.max(1,h.hp-dmg) }
           run.gold+=gold; run.gim.tort=n+1; if(sfxHas("금화 얻기")) SFX.play("금화 얻기");
           return `${h?h.name+"이(가) 고문을 견뎠습니다. 피해 "+dmg+". ":""}금화 ${gold}을 얻었습니다.` }},
-       {t:"고문장 부수기",d:"고문실을 부수고 중급 보상을 얻습니다. (사형장에서 선택지를 1번 이상 고른 경우에만 선택이 가능합니다.)",
+       {t:"고문장 부수기",d:"고문실을 부수고 중급 보상을 얻습니다. (사형장에서 선택지를 1번 이상 고른 경우에만 선택이 가능합니다.)",end:1,
         when:()=>(run.gim&&run.gim.gal)>=1,
-        f:()=>{ run.grid[r][c]={t:"empty"}; (run.after=run.after||[]).push({grade:"중급"}); return "고문 기구를 모조리 부쉈습니다." }}]}),
+        f:()=>{ run.grid[r][c]={t:"empty"}; (run.after=run.after||[]).push({grade:"중급"}); return "고문 기구를 모조리 부쉈습니다." }},
+       {t:"나가기",d:"지도로 돌아갑니다.",leave:1,f:()=>""}]}),
   gallows:(cell,r,c)=>({n:"사형장",art:"ink11_map_execution_ground",face:"부서진 파수병",gim:1,
     t:"높은 단 위에 밧줄이 늘어져 있습니다. 올라서는 자에게 무언가를 준다고 합니다.",
-    o:[{t:"사형대 올라가기",d:"(무작위로 선택된 대원)이 10% 확률로 죽습니다. 하급 보상을 얻습니다.",
+    o:[{t:"사형대 올라가기",d:"(무작위로 선택된 대원)이 10% 확률로 죽습니다. 하급 보상을 얻습니다.",again:1,
         f:()=>{ const n=run.gim.gal||0, p=0.10+0.05*n;
           const up=run.heroes.filter(h=>!h.down), h=up.length?rnd(up):null;
           run.gim.gal=n+1; (run.after=run.after||[]).push({grade:"하급"});
           if(h&&Math.random()<p){ h.hp=0; h.down=1; if(sfxHas("danger")) SFX.play("danger");
             return `${h.name}이(가) 사형대에서 내려오지 못했습니다. 밧줄이 끊기고 상자만 남았습니다.` }
           return `${h?h.name+"이(가) 밧줄 아래 섰다가 무사히 내려왔습니다. ":""}보상이 놓여 있습니다.` }},
-       {t:"사형장 부수기",d:"사형장을 부수고 모든 대원의 체력을 모두 회복합니다. (사형장에서 선택지를 1번 이상 고른 경우에만 선택이 가능합니다.)",
-        when:()=>(run.gim&&run.gim.gal)>=1,
+       {t:"사형장 부수기",d:"사형장을 부수고 모든 대원의 체력을 모두 회복합니다. (고문실에서 선택지를 1번 이상 고른 경우에만 선택이 가능합니다.)",end:1,
+        when:()=>(run.gim&&run.gim.tort)>=1,   /* 서로 엇갈린 조건 — 고문장은 사형장 뒤에, 사형장은 고문실 뒤에 (사용자 2026-09-15) */
         f:()=>{ run.grid[r][c]={t:"empty"}; run.heroes.forEach(h=>{ if(!h.down) h.hp=h.maxHp }); SFX.play("heal");
-          return "단을 무너뜨리고 밧줄을 태웠습니다. 대원들의 몸이 가벼워집니다." }}]})
+          return "단을 무너뜨리고 밧줄을 태웠습니다. 대원들의 몸이 가벼워집니다." }},
+       {t:"나가기",d:"지도로 돌아갑니다.",leave:1,f:()=>""}]})
 };
 /* 울타리 부수기 — 선택한 뒤 전투로. 울타리는 공격하지 않는다 (still). 4턴째에 경비원 둘이 나온다 (startMyTurn) */
 function gimFenceBattle(){
@@ -11073,6 +11076,7 @@ function afterChest(){
     /* 상점에서 시작된 줄이었다면 상점으로 돌려보낸다 */
     const b=run.afterBack; run.afterBack=null;
     if(b==="shop"){ view="shop"; render(); return }
+    if(b==="gim"&&run.ev&&run.ev.gim){ view="relic"; render(); return }   /* 고문실·사형장 — 보상을 받고 그 화면으로 */
     backToMap(); return;
   }
   const nx=q.shift();
@@ -12114,7 +12118,12 @@ function drawRelic(app){
     row.appendChild(el(`<div class="hint" style="text-align:center;margin-top:8px;width:100%">바늘이 돌아갑니다…</div>`));
     return;
   }
-  if(run.evMsg){
+  if(run.evMsg&&e.gim){
+    /* 기믹 칸(고문실·사형장) — 결과를 보이고 선택지는 그대로. 나가는 것은 [나가기] (사용자 2026-09-15) */
+    row.appendChild(el(`<div class="evres">
+      <div class="evi">${chestIcon("경험치")}</div>
+      <div><b>결과</b><p style="white-space:pre-line">${evRich(evSent(run.evMsg))}</p></div></div>`));
+  } else if(run.evMsg){
     row.appendChild(el(`<div class="evres">
       <div class="evi">${chestIcon("경험치")}</div>
       <div><b>결과</b><p style="white-space:pre-line">${evRich(evSent(run.evMsg))}</p></div></div>`));
@@ -12155,6 +12164,10 @@ function drawRelic(app){
         return }
       if(e.wheel&&run.evRoll!=null){ spinRoulette(e,msg||"…"); return }
       if(run.gimBattle){ gimFenceBattle(); return }    /* 울타리 부수기 — 전투로 */
+      if(o.leave){ run.evMsg=null; leaveNode(); return }                   /* 기믹 칸 — 나가기 */
+      if(o.end){ run.evMsg=null; if((run.after||[]).length) afterChest(); else leaveNode(); return }   /* 부수고 나감 */
+      if(o.again){ SFX.play("summon"); run.evMsg=msg||"…";
+        if((run.after||[]).length){ run.afterBack="gim"; afterChest() } else render(); return }   /* 보상을 받고 이 화면으로 */
       if(o.quest){ questOffer(o.quest,msg); return }   /* 퀘스트 — 수락자를 고르거나 바로 받는다 */
       SFX.play("summon");
       run.evMsg=msg||"…";
