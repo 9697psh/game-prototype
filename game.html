@@ -3098,9 +3098,11 @@ const SFX=(()=>{
 /* 누르는 소리 — 기술 카드(.sk)만 제 소리(skillclick)를 낸다. 나머지 버튼은 click.
    skillclick 녹음이 없으면 click 으로 내려간다 (sfxOr). */
 document.addEventListener("pointerdown",e=>{
-  const b=e.target.closest && e.target.closest("button,.pick,.rw,.card,.sk");
-  if(!b || b.classList.contains("off")) return;
-  SFX.play(b.classList.contains("sk") ? sfxOr("skillclick","click") : "click");
+  const b=e.target.closest && e.target.closest("button,.pick,.rw,.card,.sk,.choice,.cbtn,.cfac");
+  if(!b || b.classList.contains("off") || b.classList.contains("no")) return;
+  /* 기술 카드 · 이벤트 선택지 · 주둔지 판(.cbtn)·시설(.cfac) 은 같은 소리 (사용자 2026-09-14) */
+  const big=["sk","choice","cbtn","cfac"].some(c=>b.classList.contains(c));
+  SFX.play(big ? sfxOr("skillclick","click") : "click");
 },true);
 
 /* 효과음 파일이 있는 곳. 배경음악(bgm/)과 나란히 둔다 */
@@ -8748,7 +8750,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=366;
+const BUILD_NO=367;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
