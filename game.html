@@ -3130,7 +3130,7 @@ function mapHands(){ const n=run&&run.heroes&&run.heroes[0]&&run.heroes[0].name;
      floor           먼 칸(바닥)을 눌러 길을 볼 때                                              8%
      long            길이 넷 이상이거나 활동량이 바닥나 오래 걸릴 때                            8%
      back:<곳>       전투·쉼터·제련소·상점·미지의 구역·주둔지에서 돌아와 지도가 펼쳐질 때        30%
-   대원 이름 칸이 있으면 그것, 없으면 "*" 공용. 설명 고치기 「대사」 mapsay:<대원>:<열쇠> 에서 고친다 (한 줄이 대사 하나) */
+   대원 이름 칸만 본다 (공용 없음 — 비면 조용). 설명 고치기 「대사」 mapsay:<대원>:<열쇠> 에서 고친다 (한 줄이 대사 하나) */
 const MAP_SAY_P={move:0.2,floor:0.08,outside:0.08,long:0.08,back:0.3};   /* outside = 격자 밖(양피지 가장자리·바닥)을 눌렀을 때 (사용자 2026-09-14, floor 와 별개) */
 const MAP_SAY_KEYS=[["move:empty","빈 칸으로 이동"],["move:dungeon","전투 칸에 들어설 때"],["move:elite","정예 전투 칸에 들어설 때"],
  ["move:shop","상점에 들어설 때"],["move:rest","쉼터에 들어설 때"],["move:forge","제련소에 들어설 때"],["move:event","미지의 구역에 들어설 때"],
@@ -3138,25 +3138,6 @@ const MAP_SAY_KEYS=[["move:empty","빈 칸으로 이동"],["move:dungeon","전�
  ["back:battle","전투를 마치고 지도로"],["back:rest","쉼터를 나와 지도로"],["back:forge","제련소를 나와 지도로"],["back:shop","상점을 나와 지도로"],
  ["back:event","미지의 구역을 나와 지도로"],["back:camp","주둔지를 나와 지도로"]];
 const MAP_SAY={
- "*":{
-  "move:empty":["아무것도 없군.","조용하다.","계속 가자.","발자국뿐이다."],
-  "move:dungeon":["기척이 있다.","싸울 준비.","저기다."],
-  "move:elite":["만만치 않겠어.","센 놈이다. 조심하자."],
-  "move:shop":["장사꾼이군.","살 만한 게 있으려나."],
-  "move:rest":["잠깐 쉬자.","숨 좀 돌리자."],
-  "move:forge":["불이 살아 있군.","쇠 냄새다."],
-  "move:event":["뭐지, 저건.","가 보자."],
-  "move:boss":["여기서 끝낸다.","드디어."],
-  "move:camp":["돌아왔다.","여기서 숨을 고르자."],
-  "floor":["멀군.","저기까지 가려면 한참이다.","길을 잡아 보자."],
-  "outside":["거긴 길이 아니다.","지도를 똑바로 봐.","……."],
-  "long":["길다.","해가 지기 전에 닿을까.","다리가 무겁다."],
-  "back:battle":["끝났다.","다음.","한숨 돌리자."],
-  "back:rest":["몸이 좀 낫군.","다시 가자."],
-  "back:forge":["잘 붙었어.","쓸 만하군."],
-  "back:shop":["값이 비싸.","이걸로 됐다."],
-  "back:event":["묘한 자리였어.","가자."],
-  "back:camp":["출발.","지도를 펴자."]},
  "나이코스":{
   "move:dungeon":["관중은 없지만, 싸움은 싸움이지.","이름을 남길 자리다."],
   "move:boss":["이 승부, 기억에 남을 것이다."],
@@ -3168,10 +3149,11 @@ const MAP_SAY={
   "back:battle":["영혼이 늘었다.","…흡족하군."]}
 };
 let MAP_BUBBLE=null, MAP_FROM=null;
+/* 그 대원의 대사만 — 공용 대사는 없다 (사용자 2026-09-14 : 있는 대원이 공용 대사를 너무 자주 쳤다). 칸이 비면 조용 */
 function mapSayLines(key){
   const n=run&&run.heroes&&run.heroes[0]&&run.heroes[0].name;
   const T=(n&&MAP_SAY[n])||{};
-  return (T[key]&&T[key].length)?T[key]:((MAP_SAY["*"]||{})[key]||[]);
+  return (T[key]&&T[key].length)?T[key]:[];
 }
 function mapSay(key,force){
   if(!run||TUT.on) return false;
@@ -8762,7 +8744,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=360;
+const BUILD_NO=361;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -8850,9 +8832,9 @@ function txtEntries(){
       ()=>(SMITH_SAY[k]||[]).join("\n"),
       v=>{ SMITH_SAY[k]=String(v).split("\n").map(x=>x.trim()).filter(Boolean) },true));
 
-  /* 지도 말풍선 — 공용(*) 과 뽑을 수 있는 대원마다. 한 줄이 대사 하나. 대원 칸을 비우면 공용을 쓴다 */
-  ["*"].concat(playableHeroes()).forEach(hn=>MAP_SAY_KEYS.forEach(([k,label])=>
-    add("대사","mapsay:"+hn+":"+k,(hn==="*"?"지도 말풍선 · 공용":"지도 말풍선 · "+hn)+" ▸ "+label,
+  /* 지도 말풍선 — 뽑을 수 있는 대원마다. 한 줄이 대사 하나. 비우면 그 상황엔 조용 */
+  playableHeroes().forEach(hn=>MAP_SAY_KEYS.forEach(([k,label])=>
+    add("대사","mapsay:"+hn+":"+k,"지도 말풍선 · "+hn+" ▸ "+label,
       ()=>((MAP_SAY[hn]||{})[k]||[]).join("\n"),
       v=>{ (MAP_SAY[hn]=MAP_SAY[hn]||{})[k]=String(v).split("\n").map(x=>x.trim()).filter(Boolean) },true)));
   Object.keys(HEROES).forEach(hn=>{
