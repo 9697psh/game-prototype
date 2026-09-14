@@ -1631,6 +1631,8 @@ header{align-items:center}
 .pstage .msay::after{content:"";position:absolute;left:14%;bottom:-11px;border:7px solid transparent;border-top:8px solid #5a4632;border-bottom:0}
 .pstage .msay::before{content:"";position:absolute;left:calc(14% + 2px);bottom:-7px;border:5px solid transparent;border-top:6px solid #f7ecd2;border-bottom:0;z-index:1}
 .pstage .msay.out{opacity:0;transition:opacity .4s}
+.pstage .tapdust{position:absolute;width:64px;height:64px;background-repeat:no-repeat;background-size:384px 64px;
+  image-rendering:pixelated;pointer-events:none;z-index:7}
 @keyframes msayIn{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}   /* 폭은 그림마다 JS 가 (w/256) 로 다시 준다 */
 .gridmap.pmap{position:absolute;left:15.1%;top:14.5%;width:71%;height:71%;   /* 양피지 크림색 한가운데 (256 기준 중심 129.5,128) */margin:0;max-width:none;gap:0;
   border-left:1px solid var(--pline);border-top:1px solid var(--pline)}
@@ -3186,6 +3188,17 @@ function showMapBubble(){
   st.appendChild(b);
   setTimeout(()=>{ if(MAP_BUBBLE&&MAP_BUBBLE.at===at){ MAP_BUBBLE=null; b.classList.add("out"); setTimeout(()=>b.remove(),400) } },left);
 }
+/* 바닥 클릭 먼지 (art/effects/ground-tap-dust v1, 사용자 2026-09-14) — 64×64 여섯 칸 띠(먼지.png), 40/50/60/70/80/90ms 한 번.
+   피벗 (32,40) 을 클릭 자리에. 무대 256 기준 배율과 상관없이 1배(64px)로 작게 */
+const DUST_T=[40,50,60,70,80,90];
+function tapDust(stage,cx,cy){
+  const b=stage.getBoundingClientRect();
+  const d=el(`<div class="tapdust" style="left:${cx-b.left-32}px;top:${cy-b.top-40}px;background-image:url(${mapPng("먼지.png")})"></div>`);
+  stage.appendChild(d);
+  let i=0; const step=()=>{ if(!document.body.contains(d)) return;
+    if(i>=6){ d.remove(); return } d.style.backgroundPosition=(-i*64)+"px 0"; setTimeout(step,DUST_T[i]); i++ };
+  step();
+}
 /* 어디서 돌아왔나 — 화면 이름을 말풍선 열쇠로 */
 function mapFromKind(v){
   if(!v) return null;
@@ -3196,7 +3209,7 @@ function mapFromKind(v){
 }
 /* 펼침 넉 장·양피지·손은 미리 받아 둔다 — 처음 펼칠 때 그림이 아직 안 와서 1·2장이 건너뛰어졌다 */
 const MAP_PRE=[];
-setTimeout(()=>{ const L=["펼침-1.png","펼침-2.png","펼침-3.png","펼침-4.png"];
+setTimeout(()=>{ const L=["펼침-1.png","펼침-2.png","펼침-3.png","펼침-4.png","먼지.png"];
   Object.values(MAP_HANDS).forEach(h=>L.push(h.held,h.point.f,h.press.f));
   L.forEach(n=>{ const i=new Image(); i.src=mapPng(n); MAP_PRE.push(i) }) },0);
 /* 구역마다 다른 바닥 — 지금은 핏빛 감옥뿐. 없으면 어두운 바탕 */
@@ -8746,7 +8759,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=347;
+const BUILD_NO=348;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -9783,7 +9796,8 @@ function drawMap(app){
     stage.onmousemove=e=>{ last=[e.clientX,e.clientY]; if(!mode) set("point"); else put() };
     stage.onmouseleave=()=>{ hand.style.display="none"; last=null };
     /* 격자 밖(양피지 가장자리·바닥)을 누르면 — 칸이 아닌 자리 */
-    stage.addEventListener("click",e=>{ if(!e.target.closest(".cell")) mapSay("outside") });
+    stage.addEventListener("click",e=>{ if(e.target.closest(".cell")) return;
+      tapDust(stage,e.clientX,e.clientY); mapSay("outside") });
     /* 누르는 동안 누름 손 — 떼거나 무대 밖에서 떼면 되돌린다 */
     stage.addEventListener("pointerdown",e=>{ last=[e.clientX,e.clientY]; set("press") });
     const up=()=>{ if(mode==="press") set("point") };
