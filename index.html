@@ -2755,7 +2755,9 @@ function kwRegex(){
   /* 앞 글자가 한글이면 낱말 한가운데다 — '원거리'가 '원 + 거리'로 쪼개지던 것을 막는다.
      (조사는 뒤에 붙으므로 뒤쪽은 막지 않는다 : '거리를' 은 그대로 잡혀야 한다) */
   const names="(?<![가-힣])(?:"+KW_NAMES.map(esc2).join("|")+")";
-  const parts=["_[^_]+_","\\*[^*]+\\*",names];
+  /* '/선택' 처럼 앞에 / 가 붙으면 여느 낱말로 둔다 (사용자 2026-09-15) — / 는 지운다. 먼저 잡혀야 한다 */
+  const plain="/(?:"+KW_NAMES.map(esc2).join("|")+")";
+  const parts=["_[^_]+_","\\*[^*]+\\*",plain,names];
   KW_RE=new RegExp(parts.join("|"),"g");
   return KW_RE;
 }
@@ -2784,6 +2786,7 @@ function cardify(html){
 /* 한 번만 훑어서 강조·아이콘·키워드를 모두 처리한다 */
 function icoify(html){
   return cardify(String(html)).replace(kwRegex(),m=>{
+    if(m.charAt(0)==="/") return m.slice(1);   /* /키워드 — 강조 없이 낱말만 */
     if(m.charAt(0)==="_"&&m.length>2) return '<u>'+m.slice(1,-1)+'</u>';
     if(m.charAt(0)==="*"&&m.length>2) return '<i>'+m.slice(1,-1)+'</i>';
     const st={"공격력":"atk","마법력":"mag","보호력":"def"}[m];
@@ -2810,9 +2813,9 @@ const rich=t=>txFx(icoify(esc(t))).replace(/&lt;(\/?)(b|i|u)&gt;/g,"<$1$2>");
 /* 이벤트 선택지·결과의 중요한 낱말 — 굵고 조금 크게. 태그 안은 건드리지 않는다 (글 조각에만).
    긴 것이 먼저다 (최대 체력 → 체력) */
 const EV_KEYS=["오염도","최대 체력","체력","금화","전투","피해","경험치","활동량","제련석","장신구","보상","회복","카드"];
-const EV_KEY_RE=new RegExp("("+EV_KEYS.join("|")+")","g");
+const EV_KEY_RE=new RegExp("/(?:"+EV_KEYS.join("|")+")|("+EV_KEYS.join("|")+")","g");   /* /낱말 은 그대로 (icoify 가 먼저 / 를 지우니 여기선 남은 것만) */
 function evRich(t){
-  return rich(t).split(/(<[^>]+>)/).map(seg=>seg.charAt(0)==="<"?seg:seg.replace(EV_KEY_RE,'<b class="evk">$1</b>')).join("");
+  return rich(t).split(/(<[^>]+>)/).map(seg=>seg.charAt(0)==="<"?seg:seg.replace(EV_KEY_RE,(m,k)=>k?'<b class="evk">'+k+'</b>':m.slice(1))).join("");
 }
 /* 선택지 설명 — 맨 뒤의 괄호 (…) 는 조건이다. 작은 글씨로 따로 둔다.
    앞으로 조건은 이렇게 적는다 : "…얻습니다. (대원 중 굴라가 있다면 선택할 수 있습니다.)" */
@@ -8811,7 +8814,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=384;
+const BUILD_NO=385;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -9150,8 +9153,17 @@ function txtFixApply(){
   KW_RE=null;
 }
 /* TXTFIX:END */
+/* 브라우저에 남은 옛 수정 — 게임 쪽 글이 그 뒤에 바뀌었으면 옛 수정이 새 글을 덮는다.
+   여기 적힌 옛 값 그대로면 지운다 (사용자가 다시 고친 것은 값이 달라서 남는다). 사용자 2026-09-15 떨어진 금화 */
+const TXT_STALE={
+  "ev:떨어진 금화:o0:d":["<b>금화</b>를 얻습니다.","금화를 얻습니다."],
+  "ev:떨어진 금화:o1:d":["<b>오염도</b>가 낮아집니다.","오염도가 낮아집니다."]
+};
 /* 저장해 둔 수정을 표에 다시 입힌다 */
 function txtApply(){
+  let dropped=0;
+  Object.keys(TXT_STALE).forEach(k=>{ if(TXT[k]!=null&&TXT_STALE[k].indexOf(String(TXT[k]).trim())>=0){ delete TXT[k]; dropped++ } });
+  if(dropped) txtSave();
   const E=txtEntries();
   E.forEach(e=>{ if(TXT[e.key]!=null) e.set(TXT[e.key]) });
   KW_RE=null; CARD_RE=null;   /* 키워드·카드가 바뀌었을 수 있으니 다시 만든다 */
@@ -11476,7 +11488,7 @@ const EVENTS=[
      {t:"우상 부수기",d:"금화 12. 다음 전투를 모두 기절한 채로 시작합니다.",
       f:()=>{ run.gold+=12; run.curseStun=1;
         return "신상이 부서지며 금화 12가 쏟아집니다. 등 뒤가 서늘합니다." }},
-     {t:"공물 준비하기",d:"퀘스트: 퀘스트 수락자가 적 8명 처치. (보상: 수락자가 중급 보상을 받습니다.)",
+     {t:"공물 준비하기",d:"퀘스트: 퀘스트 수락자가 적 20명 처치. (보상: 수락자가 중급 보상을 받습니다.)",
       quest:"공물 준비하기", when:()=>!questHas("공물 준비하기"),
       f:()=>"신상 앞에 바칠 공물을 마련하기로 합니다."}]},
 
@@ -11782,7 +11794,7 @@ const evSay=(e,o)=>(o&&o.say)||(e&&e.say)||"";
 const QUESTS={
   "주인 찾아주기":{kind:"visit",need:4,field:1,who:"all",
     d:"이번 구역 동안 미지의 구역 {n}번 방문",rd:"금화를 12개 얻습니다.",reward:{gold:12}},
-  "공물 준비하기":{kind:"kill",need:8,who:"hero",
+  "공물 준비하기":{kind:"kill",need:20,who:"hero",
     d:"수락자가 적 {n}명 처치",rd:"수락자가 중급 보상을 받습니다.",reward:{grade:"중급"}}
 };
 function questHas(id){ return !!(run&&(run.quests||[]).some(q=>q.id===id)) }
