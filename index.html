@@ -8159,7 +8159,7 @@ function rollStart(){
 function newRun(name,pack){
   const f=FIELDS[0], S=f.size, mid=Math.floor(S/2);
   run={heroes:[makeHero(name)], gold:0, stone:0, cards:[], bag:[],
-       field:0, size:S, grid:buildGrid(0),
+       field:0, size:S, grid:buildGrid(0), mapUnfold:1,
        pos:{r:S-1,c:mid}, day:1, time:6, act:f.act, actMax:f.act,
        taint:0, night:0, campDone:0, remapUsed:0, bonusLv:null, playMs:0,
        pack:pack?pack.n:null, packDesc:pack?pack.d:null, packIcon:pack?pack.i:null};
@@ -8188,7 +8188,8 @@ function addTaint(v){
   if(run.taint>=100) lose("균열의 오염이 100에 달했습니다. 세상이 갈라집니다.");
 }
 function nextDay(){
-  leaveVisited();                     /* 들른 상점·제련소는 날이 바뀌면 사라진다 (respawn 이 딴 데 새로 놓는다) */
+  leaveVisited();
+  run.mapUnfold=1;                    /* 자고 나면 지도를 다시 펼친다 (사용자 2026-09-14) */                     /* 들른 상점·제련소는 날이 바뀌면 사라진다 (respawn 이 딴 데 새로 놓는다) */
   run.day++;
   if(run.day>FIELDS[run.field].days){
     lose(`${FIELDS[run.field].days}일이 지나도록 우두머리를 넘지 못했습니다.`); return;
@@ -8327,7 +8328,7 @@ function nextField(){
   run.field++;
   if(run.field>=FIELDS.length){ clearSave(); recordRun("win","마지막 우두머리를 넘고 균열을 닫았습니다."); view="clear"; render(); return }
   const f=FIELDS[run.field], S=f.size, mid=Math.floor(S/2);
-  run.size=S; run.grid=buildGrid(run.field);
+  run.size=S; run.grid=buildGrid(run.field); run.mapUnfold=1;
   run.pos={r:S-1,c:mid};
   run.day=1; run.time=6; run.actMax=f.act; run.act=f.act;
   run.night=0; run.taint=0; run.campDone=0; run.remapUsed=0;
@@ -8356,7 +8357,7 @@ function render(){
     const prevView=_lastView;
     const l=document.getElementById("fx"); if(l) l.innerHTML="";
     HPMEM={}; SHMEM={}; _lastView=view;
-    if(view==="map"){ MAP_ENTER=1; MAP_FROM=prevView }   /* 양피지를 펼치는 연출은 들어설 때 한 번. 어디서 왔는지는 말풍선이 쓴다 */
+    if(view==="map"){ MAP_FROM=prevView; if(run&&run.mapUnfold){ MAP_ENTER=1; run.mapUnfold=0 } }   /* 펼침은 새 판·재편성·새 날·새 구역 뒤 첫 한 번만 (run.mapUnfold). 어디서 왔는지는 말풍선이 쓴다 */
     /* 화면이 바뀌었는데 스크롤이 그대로면 엉뚱한 데를 보고 있게 된다 */
     try{ window.scrollTo({top:0,behavior:"instant"}) }catch(e){ window.scrollTo(0,0) }
   }
@@ -8745,7 +8746,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=364;
+const BUILD_NO=365;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -9266,7 +9267,7 @@ function drawCodex(app){
 function startSandbox(name){
   const f=FIELDS[0], S=f.size, mid=Math.floor(S/2);
   run={heroes:[makeHero(name)], gold:99, stone:99, cards:[], bag:[],
-       field:0, size:S, grid:buildGrid(0), pos:{r:S-1,c:mid},
+       field:0, size:S, grid:buildGrid(0), mapUnfold:1, pos:{r:S-1,c:mid},
        day:1, time:6, act:99, actMax:99, taint:0, night:0, campDone:0,
        remapUsed:0, bonusLv:null, sandbox:1, souls:200};
   const h=run.heroes[0];
@@ -9874,16 +9875,16 @@ function drawMap(app){
     const up=()=>{ if(mode==="press") set("point") };
     stage.addEventListener("pointerup",up); stage.addEventListener("pointercancel",up);
     stage._up=up; }   /* 무대 밖에서 뗄 때는 아래 문서 리스너 하나가 지금 무대의 _up 을 부른다 (그릴 때마다 리스너를 쌓지 않는다) */
+  const from=MAP_FROM; MAP_FROM=null;
   if(MAP_ENTER){ MAP_ENTER=0;
     /* 펼침 넉 장을 150ms 씩, 마지막 장은 220ms — 다 펴지면 양피지·격자가 나타난다. 그 사이 다시 그리면(tok) 접는다 */
     const u=stage.querySelector(".unf"); let i=0; const tok=++MAP_UNF_TOK;
     const step=()=>{ if(tok!==MAP_UNF_TOK||!document.body.contains(stage)) return;
       if(i<4){ u.src=mapPng(`펼침-${i+1}.png`); i++; setTimeout(step,i===4?220:150) }   /* 사용자 2026-09-14 조금 더 빠르게 : 150×3+220 ≈ 0.7초 */
       else { stage.classList.remove("unfolding"); const k=mapFromKind(from); if(k) mapSay("back:"+k) } };
-    const from=MAP_FROM; MAP_FROM=null;
     if(sfxHas("지도 펼침")) SFX.play("지도 펼침");   /* art/소리/_원본/지도 펼침(1·2·3).wav 를 두면 저절로 */
     setTimeout(step,0); }
-  else if(MAP_BUBBLE) setTimeout(showMapBubble,0);             /* 무대가 DOM 에 붙은 뒤에 — 바로 부르면 contains 가 거짓이라 접힌 채 멈춘다 */
+  else { const k=mapFromKind(from); if(k) setTimeout(()=>mapSay("back:"+k),0); else if(MAP_BUBBLE) setTimeout(showMapBubble,0) }             /* 무대가 DOM 에 붙은 뒤에 — 바로 부르면 contains 가 거짓이라 접힌 채 멈춘다 */
   L.appendChild(stage);
   const legend=el(`<div class="legend pleg"></div>`);
   ["camp","dungeon","elite","shop","rest","forge","event","boss"].forEach(t=>
@@ -10202,7 +10203,7 @@ function drawCamp(app){
     run.gold-=rcost;
     run.remapUsed=1;
     const S=run.size, mid=Math.floor(S/2);
-    run.grid=buildGrid(run.field);
+    run.grid=buildGrid(run.field); run.mapUnfold=1;
     run.pos={r:S-1,c:mid};
     SFX.play("unlock");
     toast(`금화 ${rcost}을 들여 정찰대가 구역을 다시 그렸습니다.`);
