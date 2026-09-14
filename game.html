@@ -1615,7 +1615,7 @@ header{align-items:center}
 /* ── 양피지 지도 (사용자 2026-09-14) ──
    무대(.pstage)는 정사각. 256px 그림을 3배(768)까지 키우고, 좁으면 기둥 폭을 따른다.
    격자는 양피지의 크림색 안쪽(256 기준 24~232)에 맞춰 9.375% 안쪽 · 81.25% 크기 — 그림이 커져도 비율로 따라간다 */
-.pstage{--pline:rgba(110,75,40,.28);position:relative;width:min(768px,100%);aspect-ratio:1;margin:8px auto 0;cursor:none;border-radius:6px;overflow:hidden;
+.pstage{--pline:transparent;position:relative;width:min(768px,100%);aspect-ratio:1;margin:8px auto 0;cursor:none;border-radius:6px;overflow:hidden;
   background:#0f0c0a var(--floor,none) center/50% repeat;image-rendering:pixelated}
 .pstage>img{position:absolute;image-rendering:pixelated;pointer-events:none;user-select:none}
 .pstage .pmapimg{inset:0;width:100%;height:100%}
@@ -1634,8 +1634,10 @@ header{align-items:center}
 .pmap .cell.done{opacity:.35;filter:grayscale(.7)}
 .pmap .cell.adj{background:transparent;border-color:var(--pline)}
 .pmap .cell.adj:hover{transform:none;border-color:var(--pline)}
-.pmap .cell:hover,.pmap .cell.adj:hover{background:rgba(255,236,190,.55);z-index:3;
-  box-shadow:0 0 0 1px rgba(255,255,255,.85) inset,0 0 10px rgba(255,240,200,.8) inset,0 0 14px rgba(255,230,170,.75)}
+.pmap .cell:hover,.pmap .cell.adj:hover{background:rgba(255,236,190,.35);z-index:3;
+  box-shadow:0 0 0 2px rgba(255,255,255,.95) inset,0 0 10px rgba(255,240,200,.7) inset,0 0 12px rgba(255,230,170,.6)}
+/* 커서를 댄 칸의 상하좌우 — 덜 밝게 */
+.pmap .cell.nb{background:rgba(255,236,190,.16);box-shadow:0 0 0 1px rgba(255,255,255,.55) inset}
 .pmap .cell.here{box-shadow:0 0 0 2px var(--brass) inset;opacity:1}
 .pmap .cell.risk{background:rgba(120,30,30,.22);border-color:var(--pline)}
 .pmap .cell.risk:hover{background:rgba(160,60,60,.4)}
@@ -8649,7 +8651,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=341;
+const BUILD_NO=342;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -9652,8 +9654,8 @@ function drawMap(app){
     </div>`);
     d.dataset.rc=r+"-"+c;
     /* 커서를 올리면 카드(#maptip) — 글은 MAP_TIP, 설명 고치기 「지도」 에서 고친다 */
-    d.onmouseenter=()=>mapTipShow(d,cell,r,c);
-    d.onmouseleave=mapTipHide;
+    d.onmouseenter=()=>{ mapTipShow(d,cell,r,c); nbMark(g,r,c) };
+    d.onmouseleave=()=>{ mapTipHide(); nbMark(g,null) };
     if(adj) d.onclick=()=>{ run.route=null; mapTipHide(); moveTo2(r,c) };
     else if(here&&cell.t==="camp") d.onclick=()=>{ view="camp"; render() };
     else if(here&&cell.visited) d.onclick=()=>{ mapTipHide(); enterCell(r,c) };
@@ -9813,6 +9815,13 @@ function walkRoute(){
     setTimeout(step, Math.round(300*SPD));
   };
   step();
+}
+/* 커서를 댄 칸의 상하좌우 네 칸에 .nb — 격자 선 대신 이렇게 자리를 보여 준다 (사용자 2026-09-14) */
+function nbMark(g,r,c){
+  g.querySelectorAll(".cell.nb").forEach(d=>d.classList.remove("nb"));
+  if(r==null) return;
+  [[r-1,c],[r+1,c],[r,c-1],[r,c+1]].forEach(([rr,cc])=>{
+    const d=g.querySelector(`.cell[data-rc="${rr}-${cc}"]`); if(d) d.classList.add("nb") });
 }
 function nightDepth(){ return run.night?Math.max(0,run.time-18):0 }
 /* 밤의 습격은 아무것도 없는 빈 칸에서만 일어난다.
