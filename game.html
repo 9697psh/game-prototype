@@ -2818,8 +2818,8 @@ function evRich(t){
    앞으로 조건은 이렇게 적는다 : "…얻습니다. (대원 중 굴라가 있다면 선택할 수 있습니다.)" */
 function evOptHtml(d){
   const m=String(d||"").match(/^([\s\S]*?)\s*\(([^()]+)\)\s*$/);
-  if(!m) return evRich(d);
-  return evRich(m[1])+`<small class="evcond">(${rich(m[2])})</small>`;
+  if(!m) return evRich(evSent(d));
+  return evRich(evSent(m[1]))+`<small class="evcond">(${rich(m[2])})</small>`;
 }
 const esc=s=>String(s??"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
 function jo(w,p){const c=String(w||"").trim().slice(-1).charCodeAt(0);
@@ -8811,7 +8811,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=382;
+const BUILD_NO=383;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -11747,6 +11747,9 @@ function spinRoulette(e,msg){
 function pulseAll(){ veil("radial-gradient(circle,rgba(201,162,39,.30),transparent 68%)") }
 /* 상황 문구 — 따옴표로 묶인 곳은 대사다.
    줄을 따로 잡아 가운데에 크게 놓고 빛나게 해서 눈이 먼저 가게 한다. */
+/* 문장마다 줄을 바꾼다 — '…발견합니다. 예물함도' 처럼 문장 가운데서 끊기지 않게 (사용자 2026-09-15).
+   마침표·느낌표·물음표 뒤에 띄어쓰기가 오면 거기서 자른다. 이미 있는 줄바꿈은 그대로 */
+function evSent(t){ return String(t||"").replace(/([.!?])[ \t]+(?=\S)/g,"$1\n") }
 function evText(t){
   /* 따옴표로만 된 줄이 대사 줄이다. 작은따옴표·큰따옴표·「」 다 받고, <shake>…</shake> 같은 꾸밈으로 싼 것도 받는다 */
   const QUOTE=/^(<\w+>)?["'\u2018\u201c\u300c](.+)["'\u2019\u201d\u300d](<\/\w+>)?$/;
@@ -11757,7 +11760,8 @@ function evText(t){
     if(m) return `<div class="evsay">${rich((m[1]||"")+m[2]+(m[3]||""))}</div>`;
     /* 줄 가운데 섞인 대사도 굵게 — rich() 가 만드는 HTML 의 따옴표를 물지 않게, 글에 표를 먼저 찍고 뒤에 바꾼다 */
     const q=s.replace(/'([^']{1,80})'/g,'\u0001\u2018$1\u2019\u0002').replace(/"([^"]{1,80})"/g,'\u0001\u201c$1\u201d\u0002');
-    return `<p class="evp">${rich(q).replace(/\u0001/g,'<em class="evq">').replace(/\u0002/g,'</em>')}</p>`;
+    /* 문장마다 한 줄 */
+    return evSent(q).split("\n").map(x=>`<p class="evp">${rich(x).replace(/\u0001/g,'<em class="evq">').replace(/\u0002/g,'</em>')}</p>`).join("");
   }).join("");
 }
 /* 이 선택으로 들을 대사 — 선택지에 적힌 것이 먼저, 없으면 이벤트 것 */
@@ -11915,7 +11919,7 @@ function drawRelic(app){
   if(run.evMsg){
     row.appendChild(el(`<div class="evres">
       <div class="evi">${chestIcon("경험치")}</div>
-      <div><b>결과</b><p>${evRich(run.evMsg)}</p></div></div>`));
+      <div><b>결과</b><p style="white-space:pre-line">${evRich(evSent(run.evMsg))}</p></div></div>`));
     if(e.wheel) row.appendChild(el(rouletteHTML(e,run.evRoll)));
     const b=el(`<div class="choice go2">길을 계속 간다</div>`);
     b.onclick=()=>{ run.evPick=null;
