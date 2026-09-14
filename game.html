@@ -1622,7 +1622,7 @@ header{align-items:center}
 .pstage .unf{inset:0;width:100%;height:100%;display:none}
 .pstage.unfolding .unf{display:block}
 .pstage.unfolding .pmapimg,.pstage.unfolding .pmap,.pstage.unfolding .mhand{visibility:hidden}
-.pstage .mhand{width:29.3%;height:auto;display:none;z-index:9}
+.pstage .mhand{width:29.3%;height:auto;display:none;z-index:9}   /* 폭은 그림마다 JS 가 (w/256) 로 다시 준다 */
 .gridmap.pmap{position:absolute;left:15.1%;top:14.5%;width:71%;height:71%;   /* 양피지 크림색 한가운데 (256 기준 중심 129.5,128) */margin:0;max-width:none;gap:0;
   border-left:1px solid var(--pline);border-top:1px solid var(--pline)}
 /* 칸 — 얇은 흰 선 · 속은 비침 · 커서를 대면 밝게 */
@@ -3101,10 +3101,20 @@ const EV_DIR="ev/";
 /* 지도 UI 그림 — art/지도/*.png → web/map/ (build.sh 가 나른다). 양피지·손·펼침 넉 장·구역 바닥 */
 const MAP_DIR="map/";
 const mapPng=n=>MAP_DIR+encodeURIComponent(n);
+/* 대원마다 다른 손 (사용자 2026-09-14) — 처음 고른 대원(run.heroes[0]) 기준, 없는 대원은 나이코스.
+   held 양피지+왼손 한 장 · point 가리킴 · press 누름 (몸통만 잘라 둔 그림). w/h 는 256 기준 크기, tip 은 검지 끝 (그림 안 좌표).
+   새 대원 손이 오면 여기 한 줄 — art/지도/ 에 그림 넣고 build */
+const MAP_HANDS={
+ "나이코스":{held:"양피지-손.png",point:{f:"손-가리킴.png",w:75,h:102,tip:[4,0]},press:{f:"손-누름.png",w:77,h:88,tip:[1,7]}},
+ "쿠렘타이":{held:"양피지-손-쿠렘타이.png",point:{f:"손-가리킴-쿠렘타이.png",w:79,h:120,tip:[3,0]},press:{f:"손-누름-쿠렘타이.png",w:85,h:104,tip:[1,9]}}
+};
+document.addEventListener("pointerup",()=>{ const st=document.querySelector(".pstage"); if(st&&st._up) st._up() });
+function mapHands(){ const n=run&&run.heroes&&run.heroes[0]&&run.heroes[0].name; return MAP_HANDS[n]||MAP_HANDS["나이코스"] }
 /* 펼침 넉 장·양피지·손은 미리 받아 둔다 — 처음 펼칠 때 그림이 아직 안 와서 1·2장이 건너뛰어졌다 */
 const MAP_PRE=[];
-setTimeout(()=>{ ["펼침-1.png","펼침-2.png","펼침-3.png","펼침-4.png","양피지-손.png","손-가리킴.png"]
-  .forEach(n=>{ const i=new Image(); i.src=mapPng(n); MAP_PRE.push(i) }) },0);
+setTimeout(()=>{ const L=["펼침-1.png","펼침-2.png","펼침-3.png","펼침-4.png"];
+  Object.values(MAP_HANDS).forEach(h=>L.push(h.held,h.point.f,h.press.f));
+  L.forEach(n=>{ const i=new Image(); i.src=mapPng(n); MAP_PRE.push(i) }) },0);
 /* 구역마다 다른 바닥 — 지금은 핏빛 감옥뿐. 없으면 어두운 바탕 */
 const MAP_FLOOR=["바닥-핏빛 감옥.png",null,null];
 /* 양피지 위에는 검은 잉크 아이콘 (art/아이콘/map-ink-v2). 우두머리·상점은 아직 잉크 판이 없어 금빛 그대로 */
@@ -8651,7 +8661,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=343;
+const BUILD_NO=344;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -9667,16 +9677,25 @@ function drawMap(app){
   const L=two.querySelector(".map-l"), R=two.querySelector(".map-r");
   /* 양피지 무대 — 바닥(구역마다) 위에 왼손이 든 양피지, 그 위에 격자. 커서 대신 가리키는 오른손이 따라다닌다 (무대 안에서만) */
   const floor=MAP_FLOOR[Math.min(run.field,MAP_FLOOR.length-1)];
+  const H=mapHands();
   const stage=el(`<div class="pstage${MAP_ENTER?" unfolding":""}"${floor?` style="--floor:url(${mapPng(floor)})"`:""}>
-    <img class="pmapimg" src="${mapPng("양피지-손.png")}" alt="" draggable="false">
+    <img class="pmapimg" src="${mapPng(H.held)}" alt="" draggable="false">
     <img class="unf" alt="" draggable="false">
-    <img class="mhand" src="${mapPng("손-가리킴.png")}" alt="" draggable="false"></div>`);
+    <img class="mhand" alt="" draggable="false"></div>`);
   stage.appendChild(g);
-  { const hand=stage.querySelector(".mhand");
-    /* 검지 끝이 커서 자리에 오게 — 손 그림(75×102)에서 끝은 (4,0). 무대 256 기준 배율 k */
-    stage.onmousemove=e=>{ const b=stage.getBoundingClientRect(), k=b.width/256;
-      hand.style.left=(e.clientX-b.left-4*k)+"px"; hand.style.top=(e.clientY-b.top)+"px"; hand.style.display="block" };
-    stage.onmouseleave=()=>{ hand.style.display="none" }; }
+  { const hand=stage.querySelector(".mhand"); let mode=null, last=null;
+    /* 검지 끝이 커서 자리에 오게 — 그림마다 끝(tip)이 다르다. 무대 256 기준 배율 k */
+    const put=()=>{ if(!last) return; const b=stage.getBoundingClientRect(), k=b.width/256, v=H[mode];
+      hand.style.left=(last[0]-b.left-v.tip[0]*k)+"px"; hand.style.top=(last[1]-b.top-v.tip[1]*k)+"px"; hand.style.display="block" };
+    const set=m=>{ if(mode===m) return; mode=m; const v=H[m];
+      hand.src=mapPng(v.f); hand.style.width=(v.w/256*100)+"%"; put() };
+    stage.onmousemove=e=>{ last=[e.clientX,e.clientY]; if(!mode) set("point"); else put() };
+    stage.onmouseleave=()=>{ hand.style.display="none"; last=null };
+    /* 누르는 동안 누름 손 — 떼거나 무대 밖에서 떼면 되돌린다 */
+    stage.addEventListener("pointerdown",e=>{ last=[e.clientX,e.clientY]; set("press") });
+    const up=()=>{ if(mode==="press") set("point") };
+    stage.addEventListener("pointerup",up); stage.addEventListener("pointercancel",up);
+    stage._up=up; }   /* 무대 밖에서 뗄 때는 아래 문서 리스너 하나가 지금 무대의 _up 을 부른다 (그릴 때마다 리스너를 쌓지 않는다) */
   if(MAP_ENTER){ MAP_ENTER=0;
     /* 펼침 넉 장을 150ms 씩, 마지막 장은 220ms — 다 펴지면 양피지·격자가 나타난다. 그 사이 다시 그리면(tok) 접는다 */
     const u=stage.querySelector(".unf"); let i=0; const tok=++MAP_UNF_TOK;
