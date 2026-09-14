@@ -8811,7 +8811,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=383;
+const BUILD_NO=384;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -10148,6 +10148,13 @@ function fadeInto(fn){
     setTimeout(()=>bo.classList.add("out"),120);
     setTimeout(()=>bo.remove(),900) },560);
 }
+/* 지도로 돌아간다 — 다른 화면에서 오면 어두워졌다 걷히고, 이미 지도면 그냥 다시 그린다.
+   펼침(run.mapUnfold)이 걸려 있으면 어둠이 걷힐 즈음에 펴지게 MAP_BO_UNTIL 을 민다 */
+function toMap(){
+  if(view==="map"){ render(); return }
+  if(run&&run.mapUnfold) MAP_BO_UNTIL=Math.max(MAP_BO_UNTIL,Date.now()+1000);
+  fadeInto(()=>{ if(run&&!run.lost&&view!=="over"){ view="map"; render() } });
+}
 function enterCell0(r,c){
   const cell=run.grid[r][c];
   if(cell.done||cell.t==="empty"){ view="map"; render(); return }
@@ -10277,7 +10284,7 @@ function drawCamp(app){
     run.pos={r:S-1,c:mid};
     SFX.play("unlock");
     toast(`금화 ${rcost}을 들여 정찰대가 구역을 다시 그렸습니다.`);
-    view="map"; render();
+    toMap();
   };
   const gear=el(`<div class="cbtn campgear">
     <div class="ci">${uiPng("ui_bag")||`<svg viewBox="0 0 24 24">
@@ -10288,7 +10295,7 @@ function drawCamp(app){
     <span class="cnote">하루 한 곳 제한에 들어가지 않습니다.</span></div>`);
   gear.onclick=()=>{ run.gearPick=null; view="gear"; render() };
   const out=el(`<div class="cbtn campout"><b>주둔지 나가기</b><small>지도로 돌아갑니다.</small></div>`);
-  out.onclick=()=>{ view="map"; render() };
+  out.onclick=()=>toMap();
   L.appendChild(sleep); L.appendChild(remap); L.appendChild(gear); L.appendChild(out);
 
   /* ── 오른쪽 — 시설 목록. 하루 한 곳. 세로로 굴러간다 ── */
@@ -10928,7 +10935,7 @@ function backToMap(){
     enterCell(e.r,e.c); return;
   }
   if(payNodeTime()) return;
-  view="map"; render();
+  toMap();
 }
 
 /* ═══════════ 보유 카드 ═══════════ */
@@ -16507,7 +16514,7 @@ function battleLost(){
   addTaint(30);
   say("물러납니다. 오염도가 30 올랐습니다.","t3");
   setTimeout(()=>{ toast(`쓰러진 대원은 주둔지 치료소에서 일으킬 수 있습니다. (성한 대원 ${standing}명)`);
-    if(view!=="over"){ view="map"; render() } },1200);
+    if(view!=="over") toMap() },1200);
 }
 function critAlly(t){ FXQ.push({crit:1,side:"mine",slot:t.slot}); flushFX() }
 /* el — 이 피해가 무엇인지. 적의 의도에 실려 오는 값(FOE[].el)을 그대로 받는다.
