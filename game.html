@@ -2278,7 +2278,9 @@ img.ri{width:14px;height:14px;vertical-align:-2px;image-rendering:auto}
 @keyframes boonA{0%,100%{filter:none}50%{filter:brightness(1.35)}}
 .cell.boon .cico{animation:boonA 1.8s ease-in-out infinite}
 .mt-r{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:7px;padding-top:6px;border-top:1px solid var(--rule)}
-.mt-r span{font-size:10.5px;padding:1px 7px;border:1px solid var(--rule2);border-radius:99px;color:var(--dim)}
+.mt-r span{font-size:10.5px;padding:1px 7px;border:1px solid var(--rule2);border-radius:99px;color:var(--dim);display:inline-flex;align-items:center;gap:3px}
+.mt-r span img.ri,.mt-r span svg{width:13px;height:13px;image-rendering:pixelated;flex:0 0 auto}
+.mt-r span i{font-style:normal;font-size:9.5px;color:var(--faint)}
 .mt-r span.on{border-color:#7a5a5a;color:#d98a8a}
 .mt-go{margin-top:6px;font-size:11px;color:var(--faint)}
 .mt-go.on{color:#9cc6ee;font-weight:700}
@@ -7772,9 +7774,13 @@ function mapTipFill(cell,r,c){
     const picked=run.route&&run.route.to.r===r&&run.route.to.c===c;
     const rt=picked?run.route:routeTo(r,c);
     if(rt){
-      const hrs=run.act<=0?rt.steps*2:rt.steps;
-      route=`<div class="mt-r"><span>${rt.steps}칸</span><span>활동량 ${rt.steps}</span><span>${hrs}시간</span>`
-        +`<span class="${run.taint+rt.steps*moveTaint()>=80?"on":""}">오염도 +${rt.steps*moveTaint()}</span>`
+      /* 늘어나는 양이 아니라 '지금 → 간 뒤' 값으로, 글자 대신 아이콘으로 (사용자 2026-09-14) */
+      const hrs=run.act<=0?rt.steps*2:rt.steps, t1=Math.max(0,run.time)+hrs, tn=run.taint+rt.steps*moveTaint();
+      const nextDay=Math.floor(t1/24)>Math.floor(Math.max(0,run.time)/24);
+      route=`<div class="mt-r"><span>${rt.steps}칸</span>`
+        +`<span title="활동량">${resIcon("act")}${Math.max(0,run.act)} → ${Math.max(0,run.act-rt.steps)}</span>`
+        +`<span title="시간">${clockFace(13)}${clock()} → ${clockAt(t1)}${nextDay?" <i>다음 날</i>":""}</span>`
+        +`<span class="${tn>=80?"on":""}" title="오염도">${resIcon("taint")}${run.taint} → ${Math.min(100,tn)}</span>`
         +`<span class="${rt.pass?"on":""}">${rt.pass?`구역 ${rt.pass}곳 지나침`:"다른 구역은 피해 감"}</span>`
         +(run.night?`<span class="on">밤 — 빈 칸마다 습격 ${Math.round(ambushChance({t:"empty"})*100)}%</span>`:"")
         +`</div><div class="mt-go${picked?" on":""}">${picked?"한 번 더 누르면 이동합니다":"누르면 길을 보여 줍니다 · 한 번 더 누르면 이동합니다"}</div>`;
@@ -8192,10 +8198,8 @@ function newRun(name,pack){
 }
 
 /* ═══════════ 시간 · 오염도 ═══════════ */
-function clock(){
-  const t=Math.max(0,run.time), h=Math.floor(t)%24, m=(t%1)?"30":"00";
-  return (h<10?"0":"")+h+":"+m;
-}
+function clock(){ return clockAt(Math.max(0,run.time)) }
+function clockAt(t){ const h=Math.floor(t)%24, m=(t%1)?"30":"00"; return (h<10?"0":"")+h+":"+m }
 function spend(hours,act){
   const tired=run.act<=0;
   if(act){ run.act=Math.max(0,run.act-act) }
@@ -8770,7 +8774,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.3";
-const BUILD_NO=374;
+const BUILD_NO=375;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
