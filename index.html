@@ -7288,7 +7288,7 @@ function drawGimDex(app){
    FOE 표를 그대로 읽어 구역별로 늘어놓는다 (사용자 2026-09-15). 수치는 배수가 붙기 전 기본값.
    고유 기술(sk)이 있으면 그 표를, 없으면 ai 무게에서 하는 짓을 글로 푼다 — note-fill.py 의 skillsOf 와 같은 셈. */
 const FDX_TG={near:"가장 가까운 대원",back:"가장 뒤 대원",any:"무작위 대원",weak:"체력이 가장 적은 대원",far:"가장 먼 대원",all:"사거리 안 모든 대원",self:"자신",none:"",dist:"거리 조건에 맞는 대원"};
-const FDX_COND={cannonFront:"앞에 대포가 있을 때만",noCannon:"앞에 대포가 없을 때만",dogsAlive:"경비견이 살아 있을 때만",mobDied:"다른 폭도가 죽었을 때 · 한 번"};
+const FDX_COND={cannonFront:"앞에 대포가 있을 때만",noCannon:"앞에 대포가 없을 때만",dogsAlive:"경비견이 살아 있을 때만",mobDied:"다른 폭도가 죽었을 때 · 한 번",noEshield:"에너지 보호막이 없을 때만"};
 const FDX_GIM={taunt:"도발 — 이 적부터 겨눠야 합니다",hide:"은신 — 숨을 곳이 있으면 겨눌 수 없습니다",evade:"회피 — 공격 한 번을 흘립니다",thorn:"가시 — 맞을 때마다 되받아칩니다",neg:"부정 보호막 — 상태 이상을 막아냅니다"};
 function fdxFields(name){
   const out=[];
@@ -7990,7 +7990,7 @@ const FOE={
  "녹슨 철창 골렘":{hp:36,atk:5,def:9,rng:3,exp:4,strong:1,
    el:"공격",
    sk:[
-    {n:"막아내기",w:4,tg:"self",taunt:2,eshield:10,cd:2,d:"2턴 동안 도발하고, 에너지 보호막을 10 얻습니다."},
+    {n:"막아내기",w:2,tg:"self",taunt:2,eshield:10,cd:3,cond:"noEshield",d:"2턴 동안 도발하고, 에너지 보호막을 10 얻습니다."},   /* 너무 잦아 w 4→2 · cd 2→3 · 보호막이 남아 있으면 안 씀 (사용자 2026-09-15) */
     {n:"밀쳐내기",w:4,tg:"near",dmg:7,push:1,d:"가장 가까운 대원에게 공격 피해를 7 주고 1칸 뒤로 밀칩니다."},
     {n:"휴식",w:2,tg:"self",defUp:4,heal:6,cd:2,d:"보호력을 4 얻고 체력을 6 회복합니다."},
     {n:"진동",w:3,tg:"all",dmg:3,deb:{magDn:2},cd:1,d:"사거리 안 모든 대원에게 마법약화를 2 부여하고 공격 피해를 3 줍니다."}],
@@ -9634,7 +9634,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (사용자 2026-09-15) */
-const BUILD_NO=413;
+const BUILD_NO=414;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -13716,6 +13716,7 @@ const SK_COND={
   noCannon:  f=>!B.foes.some(x=>x.alive&&x.name==="대포"&&x.slot<f.slot),
   dogsAlive: f=>B.foes.some(x=>x.alive&&x.name==="경비견"&&x!==f),
   mobDied:   f=>!f.fled&&B.foes.some(x=>!x.alive&&x.name===f.name&&x!==f),
+  noEshield: f=>!(f.eshield>0),
 };
 function foeSK(f){ const D=FOE[f.name]; return (D&&D.sk&&D.sk.length)?D.sk:null }
 function foePas(f,k){ const D=FOE[f.name]; const P=(D&&D.pas)||[]; return P.find(p=>p.k===k)||null }
