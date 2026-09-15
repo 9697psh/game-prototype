@@ -802,6 +802,8 @@ button.dtl{padding:3px 10px;font-size:11.5px}
 .evdx-opt span{color:var(--dim);word-break:keep-all}
 .evdx-opt .evcond{display:block;font-size:11px;color:#8fc9a6}
 .evdx-wheel{font-size:11px;color:var(--dim);line-height:1.7;margin-top:6px}
+.evdx-art.gdx{gap:14px;background:radial-gradient(circle at 50% 60%,#2a2016,#100d0a 70%)} .evdx-art.gdx img{width:64px;height:64px}
+.gdx-well{display:grid;grid-template-columns:repeat(3,32px);gap:0} .evdx-art.gdx .gdx-well img{width:32px;height:32px;display:block}
 .evdx-wheel i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:middle}
 /* 말풍선은 pre-line 이라 카드 틀의 줄바꿈이 빈 줄로 새겨져 세로로 길어졌다 — 카드 안에서는 되돌린다 */
 #kwtip .icard{max-width:330px;white-space:normal}
@@ -3256,7 +3258,7 @@ const MAP_FLOOR=["바닥-핏빛 감옥.png",null,null];
 /* 양피지 위 아이콘 — 잉크 판 v7 (art/아이콘/map-ink-v7, 사용자 2026-09-14). 주둔지는 v7 에 없어 금빛 그대로. v2(검은 잉크)는 ink_* 로 남아 있다 */
 /* 지도 아이콘 — 64px 잉크 판 map-pixel-ink-v11 (사용자 2026-09-15). 기믹 넷(첨탑·울타리·고문실·사형장)도 같은 판 */
 const INK_NODE={dungeon:"ink11_map_battle",elite:"ink11_map_elite",boss:"ink11_map_boss",shop:"ink11_map_shop",rest:"ink11_map_shelter",forge:"ink11_facility_forge",event:"ink11_map_unknown",camp:"ink11_map_garrison",
-  tower:"ink11_map_spire",fence:"ink11_map_fence",torture:"ink11_map_torture_chamber_colored",gallows:"ink11_map_execution_ground_colored",   /* 고문실·사형장은 색칠 판 (사용자 2026-09-15) */
+  tower:"ink11_map_spire",fence:"ink11_map_fence",torture:"ink11_map_torture_chamber",gallows:"ink11_map_execution_ground",   /* 지도는 잉크 판 — 색칠 판은 도착 화면(GIM_EV art)에만 (사용자 2026-09-15) */
   post:"ink11_map_guard_post",wagon:"ink11_map_prison_wagon",tunnel:"ink11_map_tunnel"};
 /* 칸마다 그림이 다른 것 — 장벽(가로/세로) · 우물(3×3 조각) */
 function gimCellArt(cell){
@@ -7072,6 +7074,74 @@ function drawEventDex(app){
   app.appendChild(out);
 }
 
+/* ═══════════ 전용 구역 도감 ═══════════
+   지도 기믹을 '전용 구역' 으로 묶어 보여 준다. 글은 GIM_DEX 에 손으로 적는다 (코드의 GIM_EV·GIM_ODDS 를 고치면 여기도 같이).
+   {n 이름, icon 아이콘 id, field 구역, odds 확률, cells 칸, refresh 새로고침, camp 주둔지 곁, t 설명, o 선택지[{t,d}], fight 전투 글} */
+const GIM_DEX=[
+ {n:"첨탑과 울타리",icon:"ink11_map_spire",icons:["ink11_map_fence"],field:"핏빛 감옥",odds:"60%",cells:"첨탑 1 + 울타리 4",refresh:"새로고침 불가 (재편성해도 그 자리)",camp:0,
+  t:"중심 첨탑을 상하좌우 울타리가 두릅니다. 판 끝에 걸린 울타리는 빠집니다.",
+  o:[{t:"울타리 부수기",d:"3턴 안에 공격하지 않는 울타리를 처치하면 첨탑과 울타리가 모두 무너집니다. 못 하면 4턴째에 감옥 경비병 둘이 출동하고, 이기면 그 울타리 한 칸만 걷힙니다."},
+     {t:"조심히 지나가기",d:"첨탑을 제외한 주변 1칸 이내 구역으로 밀려납니다."},
+     {t:"첨탑",d:"첨탑 관리자(정예)와 전투. 두 턴마다 [감시] 카드를 손패에 끼워 넣고 기술 하나를 2턴 잠급니다. 이기면 정예 상자 + 중급 보상 2 + 일반 장신구 1."}],
+  fight:"첨탑 관리자 · 감옥 경비병 · 울타리"},
+ {n:"고문실과 사형장",icon:"ink11_map_torture_chamber",icons:["ink11_map_execution_ground"],field:"핏빛 감옥",odds:"60%",cells:"고문실 1 · 사형장 1 (5칸 이상 떨어짐)",refresh:"새로고침 가능 (둘 다 부서지면 새 날에 50% 로 다시)",camp:0,
+  t:"여러 번 들를 수 있고, 고른 스택은 이 구역 내내 남습니다. 1번을 고른 뒤에는 같은 화면으로 돌아옵니다.",
+  o:[{t:"고문당하기",d:"무작위 대원이 피해를 3 받고 금화 2. 고를 때마다 3·2씩 늘어납니다."},
+     {t:"고문장 부수기",d:"사형장에서 1번 이상 고른 뒤에만. 고문실을 부수고 중급 보상."},
+     {t:"사형대 올라가기",d:"무작위 대원이 10% 로 쓰러집니다. 하급 보상. 고를 때마다 5%씩 오릅니다."},
+     {t:"사형장 부수기",d:"고문실에서 1번 이상 고른 뒤에만. 사형장을 부수고 모든 대원 체력 회복."}]},
+ {n:"간수 초소",icon:"ink11_map_guard_post",field:"핏빛 감옥",odds:"50%",cells:"1",refresh:"새로고침 가능 (없으면 새 날에 40% 로 다시)",camp:0,
+  t:"초소 둘레 2칸은 빈 칸이 아니어도 낮에 습격 25% — 지도에서 붉게 비칩니다. 낮 습격은 감옥 경비병입니다.",
+  o:[{t:"뇌물 주기",d:"금화를 3~5개 줍니다. 이틀 동안 주변 습격이 일어나지 않습니다."},
+     {t:"초소 부수기",d:"감옥 경비병 셋과 싸웁니다. 이기면 초소가 사라지고 하급 보상 2 + 금화 4~8."}],
+  fight:"감옥 경비병 ×3"},
+ {n:"죄수 호송 마차",icon:"ink11_map_prison_wagon",field:"핏빛 감옥",odds:"40%",cells:"1 (우두머리에서 2~5칸)",refresh:"낮은 확률로 새로고침 (재편성 때 75% 로 자리 유지)",camp:0,
+  t:"날마다 한 칸씩 우두머리 쪽으로 갑니다(빈 칸으로만). 우두머리 칸에 닿으면 호송이 끝나 사라집니다.",
+  o:[{t:"전투",d:"억울한 죄수 + 감옥 경비병 2~3. 짝수 턴마다 경비병이 죄수를 앞세워 도발합니다. 죄수를 죽이면 보상이 없습니다 — 경비병만 처치."},
+     {t:"죄수를 살리면",d:"중급 보상 1 (상자 없음). 실패하면 보통 전투 상자."}],
+  fight:"억울한 죄수 · 감옥 경비병"},
+ {n:"땅굴",icon:"ink11_map_tunnel",field:"핏빛 감옥",odds:"50%",cells:"2 (4칸 이상 떨어짐)",refresh:"새로고침 가능 (없으면 새 날에 40% 로 다시)",camp:1,
+  t:"죄수들이 파 둔 길. 한 쪽에서 다른 쪽으로 곧장 갑니다.",
+  o:[{t:"땅굴로 이동",d:"다른 땅굴로 이동합니다. 1시간, 활동량 3. 세 번 쓰면 둘 다 무너집니다."}]},
+ {n:"감옥 장벽",icon:"ink11_prison_wall_v",icons:["ink11_prison_wall_h"],field:"핏빛 감옥",odds:"50%",cells:"2~4 (가로 또는 세로로 이어짐)",refresh:"낮은 확률로 새로고침 (재편성 때 75% 로 자리 유지)",camp:0,
+  t:"누를 수 없고 지나갈 수 없습니다. 길 찾기가 돌아갑니다.",o:[]},
+ {n:"간수 순찰로",icon:"ink11_map_guard_footprints",field:"핏빛 감옥",odds:"40%",cells:"한 줄 (가로 또는 세로, 맨 끝 줄 제외)",refresh:"낮은 확률로 새로고침 (재편성 때 25% 로만 다시)",camp:1,
+  t:"순찰로의 빈 칸에는 발자국이 희미하게 찍히고, 낮에도 습격 25% 입니다. 그 줄에 다른 구역이 놓이기도 합니다.",o:[]},
+ {n:"감옥의 우물",icon:"ink11_well_22",well:1,field:"핏빛 감옥",odds:"35% (한가운데가 비어 있을 때)",cells:"3×3 (지도 중심)",refresh:"새로고침 불가",camp:0,
+  t:"둘레 2칸의 전투에서 상자 금화가 절반 더 나옵니다(칸이 밝게 빛남). 우물 칸에서 무엇이든 고르면 그 칸은 사라집니다.",
+  o:[{t:"물 마시기",d:"무작위 대원이 체력을 2~4 회복합니다."},
+     {t:"소원 빌기",d:"금화를 3~6개 던집니다. 중급 5% · 하급 15% · 파편 12% · 제련석 12% · 일반 장신구 6% · 꽝 50%."}]}
+];
+function drawGimDex(app){
+  app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">전 용 구 역 도 감</div>
+    <div class="sub">구역마다 개성을 더하는 칸 ${GIM_DEX.length}가지 — 어디에 놓이고, 무엇을 고를 수 있는지</div></div>`));
+  const wrap=el(`<div class="dexwrap"></div>`);
+  wrap.appendChild(el(`<div class="evdx-rule">
+    <b>전용 구역은 구역을 만들 때 먼저 놓이고</b>, 빈자리에 전투·상점·쉼터 같은 보통 칸이 들어갑니다. 확률이 낮아 판마다 있는 것도 없는 것도 있습니다.
+    주둔지 곁 2칸 안에는 놓이지 않는 것이 많습니다. <b>새로고침</b>은 주둔지에서 자고 일어나거나 지도를 재편성할 때 다시 놓이는지를 말합니다.</div>`));
+  const grid=el(`<div class="evdx-grid"></div>`);
+  GIM_DEX.forEach(e=>{
+    const tags=[`<span class="evdx-tag">${esc(e.field)}</span>`,`<span class="evdx-tag r">등장 ${esc(e.odds)}</span>`,`<span class="evdx-tag">칸 ${esc(e.cells)}</span>`,
+      `<span class="evdx-tag c">${esc(e.refresh)}</span>`,`<span class="evdx-tag">${e.camp?"주둔지 곁 가능":"주둔지 곁 ×"}</span>`];
+    const opts=(e.o||[]).map(o=>`<div class="evdx-opt"><b>${esc(o.t)}</b><span>${evOptHtml(o.d)}</span></div>`).join("");
+    const pics=e.well?`<div class="gdx-well">${["11","12","13","21","22","23","31","32","33"].map(k=>iconImg("ink11_well_"+k)).join("")}</div>`
+      :[e.icon].concat(e.icons||[]).map(i=>iconImg(i)).join("");
+    grid.appendChild(el(`<div class="evdx-card">
+      <div class="evdx-art gdx">${pics}</div>
+      <div class="evdx-body">
+        <div class="evdx-name">${esc(e.n)}</div>
+        <div class="evdx-tags">${tags.join("")}</div>
+        <div class="evdx-t">${evText(e.t)}</div>
+        ${opts}${e.fight?`<div class="evdx-wheel">전투 — ${esc(e.fight)}</div>`:""}
+      </div></div>`));
+  });
+  wrap.appendChild(grid);
+  app.appendChild(wrap);
+  const out=el(`<div class="center" style="margin-top:24px"><button class="go">닫기</button></div>`);
+  out.querySelector("button").onclick=()=>{ view=DEX_BACK||"title"; render() };
+  app.appendChild(out);
+}
+
 function findRecipe(a,b){
   const key=[a,b].sort().join("|");
   return ITEMS.find(it=>it.rc&&it.rc.slice().sort().join("|")===key)||null;
@@ -8795,6 +8865,7 @@ function render0(){
   if(view==="itemdex")  return drawItemDex(app);
   if(view==="carddex")  return drawCardDex(app);
   if(view==="evdex")    return drawEventDex(app);
+  if(view==="gimdex")   return drawGimDex(app);
   if(view==="bag")      return drawBag(app);
   if(view==="title")    return drawTitle(app);
   if(view==="heropick") return drawStart(app);
@@ -8860,11 +8931,12 @@ function drawTitle(app){
   tx.querySelector("button").onclick=()=>{ view="text"; render() };
   app.querySelector(".center").appendChild(tx);
   { const dx=el(`<div style="margin-top:10px;display:flex;gap:8px;justify-content:center">
-      <button class="mini">장신구 도감</button><button class="mini">카드 도감</button><button class="mini">이벤트 도감</button></div>`);
-    const [bi,bc,be]=dx.querySelectorAll("button");
+      <button class="mini">장신구 도감</button><button class="mini">카드 도감</button><button class="mini">이벤트 도감</button><button class="mini">전용 구역 도감</button></div>`);
+    const [bi,bc,be,bg]=dx.querySelectorAll("button");
     bi.onclick=()=>openDex("itemdex");
     bc.onclick=()=>openDex("carddex");
     be.onclick=()=>openDex("evdex");
+    bg.onclick=()=>openDex("gimdex");
     app.querySelector(".center").appendChild(dx); }
   app.querySelector(".center").appendChild(el(`<div class="hint" style="margin-top:26px;max-width:420px">${
     rich(UI_TXT.intro)}</div>`));
@@ -9022,8 +9094,8 @@ function saveStamp(t){
 /* 화면에 박혀 있던 글 — 여기 모아 두면 설명 고치기에서 손볼 수 있다 */
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
-const GAME_VER="0.3";
-const BUILD_NO=392;
+const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (사용자 2026-09-15) */
+const BUILD_NO=393;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -17770,11 +17842,12 @@ function drawBag(app){
   app.appendChild(wrap);
 
   { const dx=el(`<div style="margin-top:10px;display:flex;gap:8px;justify-content:center">
-      <button class="mini">장신구 도감</button><button class="mini">카드 도감</button><button class="mini">이벤트 도감</button></div>`);
-    const [bi,bc,be]=dx.querySelectorAll("button");
+      <button class="mini">장신구 도감</button><button class="mini">카드 도감</button><button class="mini">이벤트 도감</button><button class="mini">전용 구역 도감</button></div>`);
+    const [bi,bc,be,bg]=dx.querySelectorAll("button");
     bi.onclick=()=>openDex("itemdex");
     bc.onclick=()=>openDex("carddex");
     be.onclick=()=>openDex("evdex");
+    bg.onclick=()=>openDex("gimdex");
     wrap.appendChild(dx); }
 
   wrap.appendChild(el(`<div class="dexhd">가방에 든 장신구 · ${run.bag.length}
