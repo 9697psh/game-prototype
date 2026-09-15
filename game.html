@@ -5932,7 +5932,7 @@ const COMMON=[
    h=>h.tag.restPlus=(h.tag.restPlus||0)+10),
  R("하급: 카드 마술","하급","카드를 낸 후에, 보호막을 2 얻습니다.",
    h=>h.tag.cardShield=Math.max(h.tag.cardShield||0,2)),
- R("하급: 독이 담긴 병","하급","매 라운드 시작 시, 모든 적에게 공격약화, 마법약화, 보호약화 1을 부여합니다.",
+ R("하급: 독이 담긴 병","하급","대원 배치 시, 모든 적에게 공격약화, 마법약화, 보호약화 1을 부여합니다.",
    h=>h.tag.roundPoison=Math.max(h.tag.roundPoison||0,1)),
  R("탐험가","하급","지도 위 무작위 위치에 미지의 구역 2곳을 추가합니다. 해당 위치에 도착하면 오염도가 20 감소합니다.",
    h=>{ const n=sprinkleCell("event",2,{boon:20});
@@ -5968,7 +5968,7 @@ const COMMON=[
    h=>h.tag.minHp=Math.max(h.tag.minHp||0,40)),
  R("중급: 카드 마술","중급","카드를 낸 후에, 보호막을 4 얻습니다.",
    h=>h.tag.cardShield=Math.max(h.tag.cardShield||0,4)),
- R("중급: 독이 담긴 병","중급","매 라운드 시작 시, 모든 적에게 공격약화, 마법약화, 보호약화 2를 부여합니다.",
+ R("중급: 독이 담긴 병","중급","대원 배치 시, 모든 적에게 공격약화, 마법약화, 보호약화 2를 부여합니다.",
    h=>h.tag.roundPoison=Math.max(h.tag.roundPoison||0,2)),
  R("중급: 가죽 장화끈","중급","이동할 때마다 보호막을 2 얻습니다.",
    h=>h.tag.moveShield=Math.max(h.tag.moveShield||0,2)),
@@ -9636,7 +9636,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (사용자 2026-09-15) */
-const BUILD_NO=419;
+const BUILD_NO=420;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -13442,14 +13442,7 @@ function startBattle(kind,pinned){
     if(h.down||h.hp<=0) return;
     if(h.tag.roundMana){ h.mana+=h.tag.roundMana;
       say(`마나 흡입 — ${h.name} 추가 마나 +${h.tag.roundMana}`,"t2") }
-    if(h.tag.roundPoison){
-      const v=h.tag.roundPoison;
-      B.foes.filter(f=>f.alive).forEach((f,i)=>{
-        addDeb(f,"atkDn",v,h); addDeb(f,"magDn",v,h); addDeb(f,"defDn",v,h);
-        /* 독병 낙하·파손 (art/effects/poison-bottle-break v1, 6칸 465ms) — 적마다 조금씩 어긋나게 (사용자 2026-09-15) */
-        fx({side:"foe",slot:f.slot,sheet:"fx_poison_break",sheetOpt:{z:1.6,ms:470},gap:i?90:160}) });
-      say(`독이 담긴 병 — 모든 적에게 공격약화 · 마법약화 · 보호약화 ${v}`,"t2");
-    }
+    /* 독이 담긴 병은 이제 '대원 배치 시' (사용자 2026-09-15) — placeHooks 의 t.roundPoison */
   });
   B.portals=[]; B.mins=[]; B.corpseUsed=0;
   (run.cards||[]).forEach(cd=>{
@@ -15753,6 +15746,14 @@ function onSummon(h){
   if(t.innerBreak&&h.mag+((t.painPlus)||0)>0) asSrc(h,()=>phantomPain(h,null,"내면 파괴"));
   if(t.startBlade){ say("전장의 칼날 — 첫 일격이 전장을 훑습니다.","t1");
     asSrc(h,()=>B.foes.filter(f=>f.alive).forEach(f=>hurt(f,t.startBlade,"전장의 칼날","slash"))) }
+  if(t.roundPoison){   /* 독이 담긴 병 — 대원 배치 시, 모든 적에게 세 약화 (사용자 2026-09-15: 라운드 시작 → 배치) */
+    const v=t.roundPoison;
+    B.foes.filter(f=>f.alive).forEach((f,i)=>{
+      addDeb(f,"atkDn",v,h); addDeb(f,"magDn",v,h); addDeb(f,"defDn",v,h);
+      /* 독병 낙하·파손 (art/effects/poison-bottle-break v1, 6칸 465ms) — 적마다 조금씩 어긋나게 */
+      fx({side:"foe",slot:f.slot,sheet:"fx_poison_break",sheetOpt:{z:1.6,ms:470},gap:i?90:160}) });
+    say(`독이 담긴 병 — ${h.name}${jo(h.name,"ig")} 나서며 모든 적에게 공격약화 · 마법약화 · 보호약화 ${v}`,"t2");
+  }
   if(t.placeBurn){
     const live=B.foes.filter(f=>f.alive);
     if(live.length){ const f=rnd(live); f.burn=(f.burn||0)+t.placeBurn; f.burnBy=h.name;
