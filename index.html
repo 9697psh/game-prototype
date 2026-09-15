@@ -6107,7 +6107,7 @@ const HERO_REWARDS={
     h=>h.tag.bloodBlade=1,0.5),
   R("한숨 돌리기","하급","전투 시작 후, 나이코스가 체력을 1 회복합니다.",
     h=>h.tag.startHeal=(h.tag.startHeal||0)+1),
-  R("관객의 응원","하급","전투 시작 후, 금화를 1 얻습니다.",
+  R("관객의 응원","하급","전투 시작 후, 50% 확률로 금화를 1개 얻습니다.",
     h=>h.tag.startGold=(h.tag.startGold||0)+1),
   /* ── 중급 ── */
   R("늘어가는 실력","중급","베기로 적을 처치한 후에, 그 전투에서만 베기의 피해량이 2 증가합니다.",
@@ -9837,7 +9837,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (사용자 2026-09-15) */
-const BUILD_NO=430;
+const BUILD_NO=431;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -16106,7 +16106,7 @@ function onSummon(h){
   if(t.startHeal){ healUp(h,t.startHeal);
     fx({side:"mine",slot:h.slot,s:"heal",txt:"+"+t.startHeal,cls:"heal",gap:60});
     say(`한숨 돌리기 — ${h.name} 체력 +${t.startHeal}`,"t2") }
-  if(t.startGold){ run.gold+=t.startGold; say(`관객의 응원 — 금화 +${t.startGold}`,"t2") }
+  if(t.startGold){ if(Math.random()<0.5){ run.gold+=t.startGold; say(`관객의 응원 — 금화 +${t.startGold}`,"t2") } else say("관객의 응원 — 오늘은 조용합니다.","t2") }   /* 50% (사용자 2026-09-16 리메이크) */
   if(t.nightStat&&run.night){ const v=t.nightStat;
     bumpTmp(h,"atk",v); bumpTmp(h,"mag",v); bumpTmp(h,"def",v);
     say(`늑대의 시간 — ${h.name} 모든 추가 능력치 +${v}`,"t2") }
