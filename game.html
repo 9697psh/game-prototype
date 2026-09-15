@@ -9101,7 +9101,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (사용자 2026-09-15) */
-const BUILD_NO=396;
+const BUILD_NO=397;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -10544,6 +10544,7 @@ function gimEnter(cell,r,c){
     run.dun.forceFoes=[["억울한 죄수",1]]; for(let i=0;i<n;i++) run.dun.forceFoes.push(["감옥 경비병",2+i]);
     startBattle("battle");
     say("죄수 호송 마차 — 경비병만 쓰러뜨리면 죄수가 살아납니다. 죄수를 쓰러뜨리면 보상이 없습니다.","t3");
+    setTimeout(()=>{ const pr=B&&B.foes&&B.foes.find(f=>f.alive&&f.name==="억울한 죄수"); if(pr) bark(pr,"in",1) },1000);
     setTimeout(()=>stepBanner("죄 수 호 송 마 차","경비병이 죄수를 앞세웁니다"),40);
     return;
   }
@@ -13348,6 +13349,11 @@ const BARK={
   atk:["물어뜯는다.","목이다."],
   hurt:["크르르…","성가시군."],
   down:["다시… 어둠으로…"]},
+ /* 죄수 호송 마차의 억울한 죄수 — '얘는 치면 안 되겠다' 가 보이게. 맞을 때는 반드시 말한다 (사용자 2026-09-15) */
+ "억울한 죄수":{
+  in:["저는 아무 짓도 안 했어요…","제발… 저를 보지 마세요."],
+  hurt:["안돼요 살려주세요!","절 살려주시면 후회 안할거에요"],
+  down:["…억울해요…"]},
  "부서진 파수병":{
   in:["침입자 확인.","통과 불가.","이 문은 닫혀 있다."],
   atk:["배제한다.","경고는 없다."],
@@ -15346,7 +15352,7 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
       hurtAlly(f,src,f.thorn,`${f.name}의 가시`);
       f.thornBusy=0;
     } }
-  if(f.hp>0&&d>0) bark(f,"hurt");
+  if(f.hp>0&&d>0) bark(f,"hurt",f.name==="억울한 죄수");   /* 억울한 죄수는 맞을 때마다 */
   if(f.hp<=0&&f.alive){ f.alive=0; bark(f,"down",1);
     if(run&&!f.isPhantom&&!run.sandbox){ run.kills=(run.kills||0)+1; if(f.boss) run.bossKills=(run.bossKills||0)+1 }
     /* f.exp 는 전투가 끝날 때 더해지는 바로 그 값이다 — 지금까지 안 보여 줬을 뿐이다 */
