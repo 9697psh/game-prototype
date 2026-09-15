@@ -9818,7 +9818,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (사용자 2026-09-15) */
-const BUILD_NO=426;
+const BUILD_NO=427;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -9848,6 +9848,13 @@ function txtEntries(){
     ()=>SKILL_FULL[n], v=>SKILL_FULL[n]=v, true));
   KW_TAB.forEach(k=>add("키워드","kw:"+k.n,k.n,
     ()=>KW_DESC[k.n], v=>{ KW_DESC[k.n]=v; k.d=v }, true));
+  /* 적 — 지속 능력(느낌표 배지의 글)과 기술 설명 (사용자 2026-09-16). 이름은 안 바꾼다(코드가 이름으로 찾는다) */
+  Object.keys(FOE).forEach(n=>{ const D=FOE[n];
+    (D.pas||[]).forEach((p,i)=>{ if(!p.n) return;
+      add("적","foe:"+n+":pas:"+i,n+" ▸ 지속 능력 「"+p.n+"」",()=>p.d||"",v=>{ p.d=v },true) });
+    (D.sk||[]).forEach((k,i)=>{ if(!k.n) return;
+      add("적","foe:"+n+":sk:"+i,n+" ▸ 기술 「"+k.n+"」",()=>k.d||"",v=>{ k.d=v },true) });
+  });
   ITEMS.forEach(it=>add("장신구","item:"+it.n,it.n+" ("+it.g+")",
     ()=>it.d, v=>it.d=v, true));
   COMMON.forEach((r,i)=>add("공용 보상","common:"+r.g+":"+r.n,"["+r.g+"] "+r.n,
