@@ -7966,7 +7966,7 @@ const FOE={
  "대포병":{hp:20,atk:4,def:4,rng:3,exp:2,
    el:"공격",
    sk:[
-    {n:"포탄 장전",w:6,tg:"none",cond:"cannonFront",fire:1,
+    {n:"포탄 장전",w:6,tg:"none",cond:"cannonFront",fire:1,must:1,   /* 앞에 대포가 있으면 무조건 (사용자 2026-09-15) */
       d:"앞에 배치된 대포들이 「대포 발사」를 사용하게 합니다."},
     {n:"난타",w:3,tg:"any",dmg:4,cond:"noCannon",chase:1,
       d:"무작위 대원에게 공격 피해를 4 줍니다. (앞에 조종할 대포가 없을 때)"}],
@@ -9634,7 +9634,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (사용자 2026-09-15) */
-const BUILD_NO=414;
+const BUILD_NO=415;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -13744,6 +13744,16 @@ function skTargets(f,s,allies){
   if(tg==="weak") return [inR.reduce((a,b)=>a.hp<=b.hp?a:b)];
   return [rnd(inR)];
 }
+/* 사거리 안에 닿을 때까지 한 번에 — 빈 칸이 이어지는 만큼. 갈 곳이 없으면 null (사용자 2026-09-15: 한 칸씩 말고 한 번에) */
+function moveIntent(f,allies){
+  if(f.slot<=1||foeAt(f.slot-1)) return null;
+  const front=allies.length?Math.max(...allies.map(a=>a.slot)):0;
+  const goal=Math.max(1,(f.rng||1)-(SLOTS-front));        /* 이 칸이면 가장 앞 대원이 사거리 안 */
+  let to=f.slot;
+  while(to>goal&&to>1&&!foeAt(to-1)) to--;
+  if(to>=f.slot) return null;
+  return {t:"move",to:to,n:f.slot-to};
+}
 function skRoll(f,allies,inR,far){
   const D=FOE[f.name], S=D.sk;
   f.skCd=f.skCd||{}; f.skUsed=f.skUsed||{};
@@ -13759,13 +13769,14 @@ function skRoll(f,allies,inR,far){
     cand.push({s:s,i:i,T:T});
   });
   /* 닿는 대원이 없으면 먼저 다가간다 — 사거리 안까지 이동 (사용자 2026-09-15) */
-  if(far&&!cand.some(c=>c.s.dmg||c.s.deb||c.s.pull)){
-    if(f.slot>1&&!foeAt(f.slot-1)) return {t:"move"};
+  if(far&&!cand.some(c=>c.s.dmg||c.s.deb||c.s.pull||c.s.must)){   /* must(포탄 장전)가 되면 다가가지 않는다 */
+    const mv=moveIntent(f,allies); if(mv) return mv;
     if(f.slot>1&&foeAt(f.slot-1)&&Math.random()<0.6) return {t:"push"};
   }
   if(!cand.length) return null;
   let pick=null;
-  if(B.turn<=1){ const o=cand.find(c=>c.s.open); if(o) pick=o }
+  { const m=cand.find(c=>c.s.must); if(m) pick=m }        /* must — 조건이 맞으면 다른 것 제쳐 두고 (대포병의 포탄 장전) */
+  if(!pick&&B.turn<=1){ const o=cand.find(c=>c.s.open); if(o) pick=o }
   /* 도망은 조건이 맞는 순간 무조건 */
   if(!pick){ const fl=cand.find(c=>c.s.flee); if(fl) pick=fl }
   if(!pick&&D.seq){
@@ -13970,7 +13981,7 @@ function rollIntents(onlyIdle){
     if(foeSK(f)){ const si=skRoll(f,allies,inR,far); if(si){ f.intent=si; return } }
     if(far){
       /* 먼저 거리를 좁혀 본다 */
-      if(f.slot>1&&!foeAt(f.slot-1)&&Math.random()<0.55){ f.intent={t:"move"}; return }
+      if(Math.random()<0.55){ const mv=moveIntent(f,allies); if(mv){ f.intent=mv; return } }
       if(f.slot>1&&foeAt(f.slot-1)&&Math.random()<0.4){ f.intent={t:"push"}; return }
       /* 다가갈 수 없어도 손 놓고 있지는 않는다 — 무리해서 노린다 */
     }else{
@@ -14392,7 +14403,7 @@ function barkSkill(h,s){ if(!s||BARK_LATE[s.n]) return;
 function intentHtml(f){
   if(!f.alive||!f.intent) return "";
   const I=f.intent;
-  if(I.t==="move")  return `<span class="intent">${ic("move")} 전진</span>`;
+  if(I.t==="move")  return `<span class="intent">${ic("move")} 전진${I.n>1?` ${I.n}칸`:""}</span>`;
   if(I.t==="back")  return `<span class="intent">${ic("move")} 후퇴</span>`;
   if(I.t==="push")  return `<span class="intent">${ic("move")} 앞으로</span>`;
   if(I.t==="def")   return `<span class="intent">${ic("def")}<b>${I.v}</b></span>`;
@@ -18157,9 +18168,12 @@ function foePhase(){
       say(`${f.name} 기절 — 움직이지 못합니다.`,"t2"); return }
     f.lastAct=Object.assign({},f.intent);      /* 망자들의 통솔자가 따라 할 '직전 턴의 실제 행동' */
     if(f.intent.t==="move"){
-      if(f.slot>1&&!foeAt(f.slot-1)){ f.slot--;
+      /* 정한 칸까지 한 번에 — 그 사이 누가 끼어들었으면 갈 수 있는 데까지 */
+      let to=f.intent.to!=null?f.intent.to:f.slot-1, cur=f.slot;
+      while(cur>1&&cur>to&&!foeAt(cur-1)) cur--;
+      if(cur<f.slot){ const n=f.slot-cur; f.slot=cur;
         fx({side:"foe",slot:f.slot,s:"step",ring:"#9c8d77",gap:130});
-        say(`${f.name} 전진 → ${foeNo(f.slot)}번`) }
+        say(`${f.name} 전진 → ${foeNo(f.slot)}번${n>1?` (${n}칸)`:""}`) }
       else say(`${f.name} 전진 실패.`,"t2");
     }else if(f.intent.t==="thorn"){
       f.thorn=f.intent.v; f.thornTurn=f.intent.turns;
