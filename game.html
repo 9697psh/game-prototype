@@ -327,6 +327,20 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .chip.on{color:var(--brass);border-color:#5c4a1f}
 .chip.deb{color:#e08a8a;border-color:#5a3030}
 .chip.pass{color:#9fd3ff;border-color:#2f5a7a;background:rgba(95,160,224,.12)}
+/* 전투 버프·디버프 세 줄 (사용자 2026-09-15) */
+.st{display:flex;flex-wrap:wrap;gap:3px 5px;justify-content:center;align-items:center;padding:2px 5px;margin:1px 4px;border-radius:3px;min-height:15px}
+.st.g{background:rgba(143,212,106,.13)}
+.st.o{background:rgba(240,161,58,.13)}
+.st.p{background:rgba(176,106,224,.15)}
+.bd{display:inline-flex;align-items:center;gap:2px;font-size:10px;line-height:1;color:var(--fg);cursor:default;white-space:nowrap}
+.bd em{font-style:normal;font-weight:700}
+.bd i.ci,.bd img.ci{width:12px;height:12px;border-radius:50%;flex:0 0 12px}
+.bd i.ci{display:inline-flex;align-items:center;justify-content:center;font-size:7.5px;font-weight:800;font-style:normal;color:#151210}
+.bd-g i.ci{background:#8fd46a}
+.bd-o i.ci{background:#f0a13a}
+.bd-p i.ci{background:#b06ae0;color:#fff}
+.bd-t i.ci{background:#e0403a;color:#fff;font-size:9px}
+.bd img.ci{image-rendering:pixelated}
 .chip.itm2{color:#9ecbf5;border-color:#33506b}
 .ipx{width:100%;height:100%;image-rendering:pixelated;display:block}
 .cimg{width:42px;height:42px;margin:0 auto 5px}
@@ -8183,6 +8197,79 @@ function addDeb(u,k,n,src){
     (k==="fear"&&u.fearName)?` (${u.fearName}${jo(u.fearName,"eul")} 겨눌 수 없음)`:""}`,"t3");
   if(u.tag&&u.tag.negHeal){ healUp(u,u.tag.negHeal) }
 }
+/* ═══════════ 전투 버프·디버프 UI (사용자 2026-09-15) ═══════════
+   칸 아래 세 줄 — 특징·버프(초록) · 디버프(주황) · 얻은 능력치(보라). 동그란 작은 아이콘 + 숫자.
+   특징(지속 기술)은 붉은 ! 로만 — 이름은 안 적고, 올리면 효과가 뜬다.
+   KW_ICON[열쇠말] 에 ICON_PNG id 를 적으면 동그라미 대신 그 그림을 쓴다 (아이콘 아트가 오면 여기만 채운다). */
+const KW_ICON={};
+function bdIcon(kind,key,label){
+  const id=KW_ICON[key]||KW_ICON[label];
+  if(id&&typeof ICON_PNG!=="undefined"&&ICON_PNG[id]) return `<img class="ci" src="${ICON_PNG[id]}" alt="">`;
+  const ch=kind==="t"?"!":String(label||key||"?").replace(/\s/g,"").slice(0,1);
+  return `<i class="ci">${esc(ch)}</i>`;
+}
+/* kind g 버프 · o 디버프 · p 얻은 능력치 · t 특징.  val 은 숫자/글(없으면 아이콘만). tip 은 올렸을 때 글 */
+function bd(kind,key,val,tip,label){
+  const nm=label||key;
+  const glossary=(typeof KW_DESC!=="undefined")&&KW_DESC[nm];
+  const attrs=glossary?` class="bd bd-${kind} kw" data-kw="${esc(nm)}"`
+    :` class="bd bd-${kind} kw" data-kw="${esc(nm)}" data-tip="${esc(tip||"")}"`;
+  return `<span${attrs} title="${esc(nm)}${tip?" — "+esc(tip):""}">${bdIcon(kind,key,nm)}${val!=null&&val!==""?`<em>${esc(String(val))}</em>`:""}</span>`;
+}
+function stRows(g,o,p){
+  return (g.length?`<div class="st g">${g.join("")}</div>`:"")
+       +(o.length?`<div class="st o">${o.join("")}</div>`:"")
+       +(p.length?`<div class="st p">${p.join("")}</div>`:"");
+}
+function debBadges(u){
+  if(!u.deb) return [];
+  return DEB_KEYS.filter(k=>u.deb[k]>0).map(k=>bd("o",k,u.deb[k],DEBUFF[k].d,DEBUFF[k].n));
+}
+function foeStatusRows(f){
+  const D=FOE[f.name]||{};
+  const g=[], o=[], p=[];
+  (D.pas||[]).forEach(x=>g.push(bd("t",x.n,"",x.d)));
+  if(f.taunt) g.push(bd("g","도발",f.tauntTurn?`${Math.max(1,f.tauntTurn-1)}턴`:"","겨눌 수 있는 대상이 있으면 이 적부터 겨눠야 합니다"));
+  if(f.thorn) g.push(bd("g","가시",`${f.thorn}${f.thornTurn?` (${f.thornTurn}턴)`:""}`,"맞을 때마다 되받아칩니다"));
+  if(f.evade) g.push(bd("g","회피",f.evade,"다음 공격 한 번을 통째로 흘립니다"));
+  if(f.negShield) g.push(bd("g","부정 보호막",f.negShield,"걸리는 상태 이상을 그만큼 막아냅니다"));
+  if(foeHidden(f)) g.push(bd("g","은신","","숨어 있어 겨눌 수 없습니다. 전장에 혼자 남으면 풀립니다"));
+  if(f.eshield) g.push(bd("g","에너지 보호막",f.eshield,"보호막보다 먼저 깎이고, 턴이 지나도 남습니다"));
+  if(f.air) g.push(bd("g","공중","","공중에 떠 있습니다"));
+  if(f.gmark) g.push(bd("g","장군의 표식","","장군의 표식"));
+  if(f.infect) o.push(bd("o","감염",f.infect,"턴이 끝날 때 중첩만큼 피해. 턴마다 1 감소"));
+  if(f.stun&&!deb(f,"stun")) o.push(bd("o","기절","",DEBUFF.stun.d));
+  if(f.burn) o.push(bd("o","화상",f.burn,DEBUFF.burn.d));
+  if(f.mark) o.push(bd("o","표식",f.mark,"표식이 있는 적에게 주는 공격 피해는 치명타"));
+  if(f.weak) o.push(bd("o","보호력 감소",f.weak,`보호력이 ${f.weak} 줄어듭니다`,"보호약화"));
+  if(f.weakAtk) o.push(bd("o","공격력 감소",f.weakAtk,`이번 적 차례에 내놓는 피해가 ${f.weakAtk} 줄어듭니다`,"공격약화"));
+  o.push(...debBadges(f));
+  if(f.atkUp) p.push(bd("p","공격력","+"+f.atkUp,`스스로를 벼려 공격력이 ${f.atkUp} 올랐습니다`));
+  if(f.defUp) p.push(bd("p","보호력","+"+f.defUp,`보호력이 ${f.defUp} 올랐습니다`));
+  return stRows(g,o,p);
+}
+function heroStatusRows(h){
+  const g=[], o=[], p=[];
+  if(h.evade) g.push(bd("g","회피",h.evade,"다음 공격 한 번을 통째로 흘립니다"));
+  if(h.mom) g.push(bd("g","추진력",h.mom,"추진력"));
+  if(h.windBuff) g.push(bd("g","바람","+"+h.windBuff,"바람"));
+  if(h.taunt) g.push(bd("g","도발","","적의 공격을 대신 받습니다"));
+  if(h.armor) g.push(bd("g","갑피",h.armor,"한 번에 받는 피해를 이 수치까지로 잘라냅니다"));
+  if(h.blessed) g.push(bd("g","축복","","축복"));
+  if(h.name==="도미니코"&&h.read) g.push(bd("g","독서",h.read,"독서"));
+  if(h.free) g.push(bd("g","무료",h.free,"다음 기술을 값 없이 씁니다"));
+  if(h.isMin) g.push(bd("g","소환물","","소환물"));
+  if(h.negShield) g.push(bd("g","부정 보호막",h.negShield,"걸리는 상태 이상을 그만큼 막아냅니다"));
+  { const th=((h.tag&&h.tag.thorn)||0)+(h.thornTmp||0); if(th) g.push(bd("g","가시",th,"맞을 때마다 되받아칩니다")) }
+  if(h.eshield) g.push(bd("g","에너지 보호막",h.eshield,"보호막보다 먼저 깎이고, 턴이 지나도 남습니다"));
+  if(h.curse) o.push(bd("o","저주",h.curse,"다음 턴 마나가 그만큼 줄어듭니다"));
+  o.push(...debBadges(h));
+  /* 얻은 능력치 — 전투·턴 단위로 붙은 것(bumpTmp·bumpTurn) */
+  const T={}; [h.tmp,h.turnTmp].forEach(m=>{ if(m) for(const k in m) T[k]=(T[k]||0)+m[k] });
+  [["atk","공격력"],["mag","마법력"],["def","보호력"],["maxHp","최대 체력"]].forEach(([k,n])=>{
+    if(T[k]) p.push(bd("p",n,(T[k]>0?"+":"")+T[k],`이 전투(또는 이번 턴) 동안 ${n}이 ${T[k]>0?"+":""}${T[k]}`)) });
+  return stRows(g,o,p);
+}
 function debChips(u){
   if(!u.deb) return "";
   return DEB_KEYS.filter(k=>u.deb[k]>0)
@@ -9420,7 +9507,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (사용자 2026-09-15) */
-const BUILD_NO=404;
+const BUILD_NO=405;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -13605,7 +13692,7 @@ function skExec(f,I){
   if(s.buff){ f.atk+=s.buff; f.atkUp=(f.atkUp||0)+s.buff; f.buffs=(f.buffs||0)+1;
     fx({side:"foe",slot:f.slot,s:"buffup",ring:"#e0705a",glow:1,txt:(I.el==="마법"?"마법력":"공격력")+" +"+s.buff,cls:"buf",gap:160});
     say(`${f.name} ${I.el==="마법"?"마법력":"공격력"} +${s.buff} (누적 +${f.atkUp})`,"t2") }
-  if(s.defUp){ f.def+=s.defUp; fx({side:"foe",slot:f.slot,ring:"#8fa2c9",txt:"보호력 +"+s.defUp,cls:"shd",gap:120}); say(`${f.name} 보호력 +${s.defUp}`,"t2") }
+  if(s.defUp){ f.def+=s.defUp; f.defUp=(f.defUp||0)+s.defUp; fx({side:"foe",slot:f.slot,ring:"#8fa2c9",txt:"보호력 +"+s.defUp,cls:"shd",gap:120}); say(`${f.name} 보호력 +${s.defUp}`,"t2") }
   if(s.heal){ healUp(f,s.heal); fx({side:"foe",slot:f.slot,s:"heal",txt:"+"+s.heal,cls:"heal"}); say(`${f.name} 체력 +${s.heal}`,"t2") }
   if(s.shield){ const v=skShield(f,s.shield); f.shield+=v; fx({side:"foe",slot:f.slot,s:"shield"}); say(`${f.name} 보호막 +${v}`) }
   if(s.eshield){ const v=skShield(f,s.eshield); f.eshield=(f.eshield||0)+v;
@@ -14301,22 +14388,7 @@ function drawBattle(app){
           ${h.mag?`<span>${ic("mag")}${h.mag}</span>`:""}
           ${h.def?`<span>${ic("def")}${h.def}</span>`:""}
         </div>
-        <div class="mini">
-          ${h.evade?`<span class="chip on">회피${h.evade}</span>`:""}
-          ${h.mom?`<span class="chip on">${ic("move")}${h.mom}</span>`:""}
-          ${h.windBuff?`<span class="chip on">바람+${h.windBuff}</span>`:""}
-          ${h.taunt?`<span class="chip on">도발</span>`:""}
-          ${h.armor?`<span class="chip on">갑피${h.armor}</span>`:""}
-          ${h.blessed?`<span class="chip on">축복</span>`:""}
-          ${h.name==="도미니코"&&h.read?`<span class="chip">독서${h.read}</span>`:""}
-          ${h.curse?`<span class="chip on">저주${h.curse}</span>`:""}
-          ${h.free?`<span class="chip on">무료${h.free}</span>`:""}
-          ${h.isMin?`<span class="chip">소환물</span>`:""}
-          ${h.negShield?`<span class="chip on">부정 보호막${h.negShield}</span>`:""}
-          ${((h.tag&&h.tag.thorn)||0)+(h.thornTmp||0)?`<span class="chip on">가시${
-            ((h.tag&&h.tag.thorn)||0)+(h.thornTmp||0)}</span>`:""}
-          ${debChips(h)}
-        </div>`;
+        ${heroStatusRows(h)}`;
       d.onclick=()=>{
         if(tgMode==="ally"){ const why=moveBlock(sel.hero,preSkill,s);
           if(why){ say(why,"t2"); render(); return }
@@ -14374,25 +14446,8 @@ function drawBattle(app){
           <u class="shgh"></u>
           <u class="es" data-w="${fesW}"${f.eshield?` title="에너지 보호막 ${f.eshield}"`:""}></u>
           <u class="sh" data-w="${fshW}" data-r="${fesW}"${f.shield?` title="보호막 ${f.shield}"`:""}></u></div>
-        <div class="mini">${ic("hp")}${f.hp}/${f.maxHp}${f.shield?` <span class="shd">${ic("def")}${f.shield}</span>`:""}
-          
-          ${f.atkUp?`<span class="chip up" title="스스로를 벼려 공격력이 ${f.atkUp} 올랐습니다">${ic("atk")}+${f.atkUp}</span>`:""}
-          ${f.weakAtk?`<span class="chip wk" title="이번 적 차례에 내놓는 피해가 ${f.weakAtk} 줄어듭니다">${ic("atk")}−${f.weakAtk}</span>`:""}
-          ${f.weak?`<span class="chip wk" title="보호력이 ${f.weak} 줄어듭니다">${ic("def")}−${f.weak}</span>`:""}
-          ${f.air?`<span class="chip on">공중</span>`:""}
-          ${f.taunt?`<span class="chip on">도발${f.tauntTurn?` · ${f.tauntTurn-1||1}턴`:""}</span>`:""}
-          ${f.thorn?`<span class="chip on">가시${f.thorn}${f.thornTurn?` · ${f.thornTurn}턴`:""}</span>`:""}
-          ${f.eshield?`<span class="chip on" title="에너지 보호막 — 턴이 지나도 남습니다">에너지 ${f.eshield}</span>`:""}
-          ${passChips(f)}
-          ${f.gmark?`<span class="chip on">장군의 표식</span>`:""}
-          ${f.evade?`<span class="chip on">회피${f.evade}</span>`:""}
-          ${f.negShield?`<span class="chip on">부정 보호막${f.negShield}</span>`:""}
-          ${foeHidden(f)?`<span class="chip on">은신</span>`:""}
-          ${f.infect?`<span class="chip deb" title="턴이 끝날 때 중첩만큼 피해. 턴마다 1 감소">감염${f.infect}</span>`:""}
-          ${(f.stun&&!deb(f,"stun"))?`<span class="chip deb" title="${esc(DEBUFF.stun.d)}">기절</span>`:""}
-          ${f.burn?`<span class="chip deb" title="${esc(DEBUFF.burn.d)}">화상${f.burn}</span>`:""}
-          ${f.mark?`<span class="chip deb" title="표식이 있는 적에게 주는 공격 피해는 치명타">표식${f.mark}</span>`:""}
-          ${debChips(f)}</div>`;
+        <div class="mini">${ic("hp")}${f.hp}/${f.maxHp}${f.shield?` <span class="shd">${ic("def")}${f.shield}</span>`:""}</div>
+        ${foeStatusRows(f)}`;
       d.onclick=()=>{
         if(sel&&sel.step===4&&canHit){ doSkill(s); return }
         /* 겨누는 중이 아니면 그 적을 살펴본다 */
@@ -15265,7 +15320,7 @@ function pickCount(n){
       b.style.top=Math.max(6,Math.min(innerHeight-h0-6,y0))+"px";
       return;
     }
-    const k=el2.dataset.kw, d=KW_DESC[k]; if(!d) return;
+    const k=el2.dataset.kw, d=KW_DESC[k]||el2.dataset.tip; if(!d) return;
     const c=KW_COLOR[KW[k]]||KW_COLOR.plain;
     b.innerHTML='<b style="color:'+c+'">'+esc(k)+'</b>'+esc(d);
     b.style.display="block";
