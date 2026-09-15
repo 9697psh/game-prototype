@@ -7988,7 +7988,7 @@ function mapTipFill(cell,r,c){
   }
   return `<div class="mt-h"><i class="mt-i">${nodeArt(kind)}</i><span>${rich(head)}</span>${cell.done?`<em class="mt-done">끝냄</em>`:""}</div>`
     +(lines.length?`<div class="mt-b">${lines.map(x=>`<div>${rich(x).replace("<b>낮 습격",'<b class="mt-red">낮 습격').replace("<b>전투 금화 획득량",'<b class="mt-gold">전투 금화 획득량')}</div>`).join("")}</div>`:"")
-    +`<div class="mt-f">${dist===0?"지금 서 있는 칸":`여기서 ${dist}칸`}${(kind==="dungeon"||kind==="elite")&&cell.done?" · 이미 치른 전투":""}${cell.visited?" · 떠나기 전에는 눌러서 다시 들어갈 수 있습니다":""}</div>`
+    +`<div class="mt-f">${dist===0?"지금 서 있는 칸":`여기서 ${dist}칸`}${(kind==="dungeon"||kind==="elite")&&cell.done?" · 이미 치른 전투":""}${cell.visited||(dist===0&&GIM_T[kind]&&kind!=="wall")?" · 눌러서 다시 들어갈 수 있습니다":""}</div>`
     +route;
 }
 function mapTipShow(d,cell,r,c){
@@ -9101,7 +9101,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (사용자 2026-09-15) */
-const BUILD_NO=395;
+const BUILD_NO=396;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -10191,7 +10191,7 @@ function drawMap(app){
     if(kind==="wall"){ /* 감옥 장벽 — 누를 수 없다 */ }
     else if(adj) d.onclick=()=>{ run.route=null; mapTipHide(); moveTo2(r,c) };
     else if(here&&cell.t==="camp") d.onclick=()=>{ view="camp"; render() };
-    else if(here&&cell.visited) d.onclick=()=>{ mapTipHide(); enterCell(r,c) };
+    else if(here&&(cell.visited||(GIM_T[cell.t]&&cell.t!=="wall"))) d.onclick=()=>{ mapTipHide(); enterCell(r,c) };   /* 서 있는 전용 구역(땅굴 등)도 다시 누르면 들어간다 (사용자 2026-09-15) */
     else if(!here) d.onclick=()=>pickRoute(r,c);
     g.appendChild(d);
   }
