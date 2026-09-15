@@ -331,14 +331,12 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .st{display:flex;flex-wrap:wrap;gap:3px 5px;justify-content:center;align-items:center;padding:2px 5px;margin:1px 4px;border-radius:3px;min-height:15px}
 .st.g{background:rgba(143,212,106,.13)}
 .st.o{background:rgba(240,161,58,.13)}
-.st.p{background:rgba(176,106,224,.15)}
 .bd{display:inline-flex;align-items:center;gap:2px;font-size:10px;line-height:1;color:var(--fg);cursor:default;white-space:nowrap}
 .bd em{font-style:normal;font-weight:700}
 .bd i.ci,.bd img.ci{width:12px;height:12px;border-radius:50%;flex:0 0 12px}
 .bd i.ci{display:inline-flex;align-items:center;justify-content:center;font-size:7.5px;font-weight:800;font-style:normal;color:#151210}
 .bd-g i.ci{background:#8fd46a}
 .bd-o i.ci{background:#f0a13a}
-.bd-p i.ci{background:#b06ae0;color:#fff}
 .bd-t i.ci{background:#e0403a;color:#fff;font-size:9px}
 .bd img.ci{image-rendering:pixelated}
 .chip.itm2{color:#9ecbf5;border-color:#33506b}
@@ -6277,7 +6275,7 @@ const HERO_REWARDS={
   R("임프 무리","하급","악마 하수인을 4장 얻습니다.",h=>{ addCard(run,"악마 하수인",4) }),
   R("혀 내밀기","하급","거리 3 이상의 적에게 주는 씹어먹기의 피해량이 영구히 6 증가합니다.",h=>h.tag.tongue=(h.tag.tongue||0)+6),
   R("육즙의 맛","하급","씹어먹기의 회복량이 영구히 1 증가합니다.",(h,rn)=>addMod(h,"씹어먹기","heal",1,rn),0.5),
-  R("폭발력 강화","하급","응축 폭발이 주는 피해의 체력 비례량이 5% 증가합니다,",h=>h.tag.bombPct=(h.tag.bombPct||0)+5),
+  R("폭발력 강화","하급","응축 폭발이 주는 피해의 체력 비례량이 5% 증가합니다.",h=>h.tag.bombPct=(h.tag.bombPct||0)+5),
   R("나눠먹기","하급","전투 종료 후, 악마 진영의 대원들이 체력을 1 회복합니다.",h=>h.tag.shareHeal=(h.tag.shareHeal||0)+1),
   /* ── 중급 ── */
   R("음미","중급","차원문 위의 적에게 씹어먹기가 치명타로 적중합니다.\n*획득시 보상에서 다시 등장하지 않음",h=>h.tag.portalCrit=1,0.5),
@@ -6647,9 +6645,20 @@ const REW_COND={
  /* 나이코스의 [튼튼한 방어구] 는 지원 기술이라 게임에 없다 — 그것을 키우는 보상도 잠근다 */
  "하급|튼튼한 방어구 강화":{need:["튼튼한 방어구"]},
  "중급|쉴 때도 단단하게":{need:["튼튼한 방어구"]},
+ "상급|잔혹한 일격":{need:["승리의 일격"]},
+ /* 잠긴 3·4번 기술을 키우는 보상 — 배우기 전엔 안 내놓는다 (2026-09-15 감사) */
+ "상급|저주받은 성벽":{need:["굳건한 성벽"]},
+ "상급|척추뼈 화살촉":{need:["꿰뚫는 화살"]},
+ "상급|옥수정 촉":{need:["꿰뚫는 화살"]},
+ "상급|서릿빛 용의 비늘촉":{need:["꿰뚫는 화살"]},
+ "상급|숙주 대폭발":{need:["숙주 폭발"]},
+ "중급|무거운 족쇄":{need:["영광의 족쇄"]},
+ "상급|영원한 참회":{need:["참회의 기류"]},
  /* 굴라 */
  "하급|응축 폭발 강화":{need:["응축 폭발"]},
+ "하급|폭발력 강화":{need:["응축 폭발"]},   /* 이 키가 빠져 있어 굴라 Lv4 에도 나왔다 (2026-09-15) */
  "하급|융합 강화":{need:["융합"]},
+ "중급|소화":{need:["융합"]},
  "중급|음미":{once:1},
  "중급|전투식량":{once:1},
  "중급|가시 돋힌 피부":{need:["응축 폭발"]},
@@ -8208,7 +8217,7 @@ function bdIcon(kind,key,label){
   const ch=kind==="t"?"!":String(label||key||"?").replace(/\s/g,"").slice(0,1);
   return `<i class="ci">${esc(ch)}</i>`;
 }
-/* kind g 버프 · o 디버프 · p 얻은 능력치 · t 특징.  val 은 숫자/글(없으면 아이콘만). tip 은 올렸을 때 글 */
+/* kind g 버프 · o 디버프 · t 특징.  val 은 숫자/글(없으면 아이콘만). tip 은 올렸을 때 글 */
 function bd(kind,key,val,tip,label){
   const nm=label||key;
   const glossary=(typeof KW_DESC!=="undefined")&&KW_DESC[nm];
@@ -8216,10 +8225,10 @@ function bd(kind,key,val,tip,label){
     :` class="bd bd-${kind} kw" data-kw="${esc(nm)}" data-tip="${esc(tip||"")}"`;
   return `<span${attrs} title="${esc(nm)}${tip?" — "+esc(tip):""}">${bdIcon(kind,key,nm)}${val!=null&&val!==""?`<em>${esc(String(val))}</em>`:""}</span>`;
 }
-function stRows(g,o,p){
+/* 두 줄 — 특징·버프 / 디버프.  얻은 능력치는 체력바 밑 능력치 줄에 이미 있어 따로 그리지 않는다 (2026-09-15) */
+function stRows(g,o){
   return (g.length?`<div class="st g">${g.join("")}</div>`:"")
-       +(o.length?`<div class="st o">${o.join("")}</div>`:"")
-       +(p.length?`<div class="st p">${p.join("")}</div>`:"");
+       +(o.length?`<div class="st o">${o.join("")}</div>`:"");
 }
 function debBadges(u){
   if(!u.deb) return [];
@@ -8227,7 +8236,7 @@ function debBadges(u){
 }
 function foeStatusRows(f){
   const D=FOE[f.name]||{};
-  const g=[], o=[], p=[];
+  const g=[], o=[];
   (D.pas||[]).forEach(x=>g.push(bd("t",x.n,"",x.d)));
   if(f.taunt) g.push(bd("g","도발",f.tauntTurn?`${Math.max(1,f.tauntTurn-1)}턴`:"","겨눌 수 있는 대상이 있으면 이 적부터 겨눠야 합니다"));
   if(f.thorn) g.push(bd("g","가시",`${f.thorn}${f.thornTurn?` (${f.thornTurn}턴)`:""}`,"맞을 때마다 되받아칩니다"));
@@ -8244,12 +8253,10 @@ function foeStatusRows(f){
   if(f.weak) o.push(bd("o","보호력 감소",f.weak,`보호력이 ${f.weak} 줄어듭니다`,"보호약화"));
   if(f.weakAtk) o.push(bd("o","공격력 감소",f.weakAtk,`이번 적 차례에 내놓는 피해가 ${f.weakAtk} 줄어듭니다`,"공격약화"));
   o.push(...debBadges(f));
-  if(f.atkUp) p.push(bd("p","공격력","+"+f.atkUp,`스스로를 벼려 공격력이 ${f.atkUp} 올랐습니다`));
-  if(f.defUp) p.push(bd("p","보호력","+"+f.defUp,`보호력이 ${f.defUp} 올랐습니다`));
-  return stRows(g,o,p);
+  return stRows(g,o);
 }
 function heroStatusRows(h){
-  const g=[], o=[], p=[];
+  const g=[], o=[];
   if(h.evade) g.push(bd("g","회피",h.evade,"다음 공격 한 번을 통째로 흘립니다"));
   if(h.mom) g.push(bd("g","추진력",h.mom,"추진력"));
   if(h.windBuff) g.push(bd("g","바람","+"+h.windBuff,"바람"));
@@ -8264,11 +8271,7 @@ function heroStatusRows(h){
   if(h.eshield) g.push(bd("g","에너지 보호막",h.eshield,"보호막보다 먼저 깎이고, 턴이 지나도 남습니다"));
   if(h.curse) o.push(bd("o","저주",h.curse,"다음 턴 마나가 그만큼 줄어듭니다"));
   o.push(...debBadges(h));
-  /* 얻은 능력치 — 전투·턴 단위로 붙은 것(bumpTmp·bumpTurn) */
-  const T={}; [h.tmp,h.turnTmp].forEach(m=>{ if(m) for(const k in m) T[k]=(T[k]||0)+m[k] });
-  [["atk","공격력"],["mag","마법력"],["def","보호력"],["maxHp","최대 체력"]].forEach(([k,n])=>{
-    if(T[k]) p.push(bd("p",n,(T[k]>0?"+":"")+T[k],`이 전투(또는 이번 턴) 동안 ${n}이 ${T[k]>0?"+":""}${T[k]}`)) });
-  return stRows(g,o,p);
+  return stRows(g,o);
 }
 function debChips(u){
   if(!u.deb) return "";
@@ -9507,7 +9510,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (사용자 2026-09-15) */
-const BUILD_NO=407;
+const BUILD_NO=408;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
