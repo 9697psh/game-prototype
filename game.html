@@ -357,8 +357,10 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .gs .ipx{width:20px;height:20px}
 .gear.gear-sm{justify-content:flex-start;margin:4px 0 2px}
 .gear.gear-sm .gs{width:22px;height:22px;flex-basis:22px} .gear.gear-sm .gs .ipx{width:18px;height:18px}
-.intentbar{display:flex;justify-content:center;min-height:20px;margin:-3px 0 3px}
-.intent{font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:4px;
+.intentbar{display:flex;justify-content:center;min-height:20px;margin:-3px 0 3px;position:relative;z-index:6}   /* 긴 의도가 옆 칸에 가리지 않게 */
+.intent{flex:0 0 auto;max-width:none}
+.intent .ideb{display:inline-flex;align-items:center;gap:1px;white-space:nowrap} .intent .ideb img.ci{width:14px;height:14px;image-rendering:auto}
+.intent{white-space:nowrap;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:4px;
   border:1px solid var(--rule2);
   border-radius:3px;padding:0 5px;background:var(--raise)}
 
@@ -9634,7 +9636,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (사용자 2026-09-15) */
-const BUILD_NO=415;
+const BUILD_NO=416;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -13937,6 +13939,29 @@ function skTurnStart(){
     }
   });
 }
+/* 기술의 효과를 짧게 — 의도 칸에 이름 대신 적는다 (사용자 2026-09-15: '화상 2 ↝ 나이코스' 꼴) */
+function skEffectHtml(s){
+  if(!s) return "";
+  const P=[];
+  const deb=(k,v)=>{ const D=DEBUFF[k]; return D?`<span class="ideb" style="color:${D.c}" title="${esc(D.n)} ${v}">${bdIcon("o",D.n,D.n)}${v}</span>`:`${esc(k)} ${v}` };
+  if(s.deb) Object.keys(s.deb).forEach(k=>P.push(deb(k,s.deb[k])));
+  /* 칸이 좁다 — 짧게 */
+  if(s.shield) P.push(`${ic("def")}${s.shield}`);
+  if(s.eshield) P.push(`<span title="에너지 보호막">E${ic("def")}${s.eshield}</span>`);
+  if(s.taunt) P.push(`도발${s.taunt}`);
+  if(s.thorn) P.push(`가시${s.thorn.v||s.thorn}`);
+  if(s.heal) P.push(`${ic("hp")}+${s.heal}`);
+  if(s.defUp) P.push(`보호+${s.defUp}`);
+  if(s.buff) P.push(`${ic("atk")}+${s.buff}`);
+  if(s.snack) P.push(`경비견 ${ic("atk")}+${s.snack.atk||0}${s.snack.shield?` ${ic("def")}${s.snack.shield}`:""}`);
+  if(s.riot) P.push(`폭도 ${ic("atk")}+1`);
+  if(s.fire) P.push("대포 발사");
+  if(s.pull) P.push("끌어당김");
+  if(s.push) P.push("밀치기");
+  if(s.fwd) P.push("전진");
+  if(s.flee) P.push("도망");
+  return P.join(" ");
+}
 function skIntentHtml(f,I){
   const D=FOE[f.name], s=D&&D.sk&&D.sk[I.i]; const tip=esc((s&&s.d)||I.n);
   let who="";
@@ -13947,11 +13972,24 @@ function skIntentHtml(f,I){
                      :`<span class="tgt" title="이 칸을 칩니다">→ ${I.to}번</span>`;
   }
   /* 피해 기술은 여느 공격처럼 '숫자 → 칸' 만 — 이름은 풍선(title)에. 칸이 좁아 이름을 적으면 세로로 부서진다 */
-  if(I.v){ const e=foeDmg(f,I.v,I.el);
+  if(I.v){ const e=foeDmg(f,I.v,I.el); const ex=s&&s.deb?" "+skEffectHtml({deb:s.deb}):"";
     return `<span class="intent${e<I.v?" cut":""}" title="${esc(I.n)} · ${tip}">${ic(I.el==="마법"?"mag":"atk")}<b>${e}</b>${
-      I.hits>1?`<span class="hits">×${I.hits}</span>`:""} ${who}</span>`; }
+      I.hits>1?`<span class="hits">×${I.hits}</span>`:""}${ex} ${who}</span>`; }
   const k=(s&&(s.shield||s.eshield))?"def":(s&&(s.buff||s.snack||s.riot))?"atk":(s&&s.fire)?"atk":"move";
-  return `<span class="intent${(s&&(s.buff||s.snack||s.riot))?" up":""}" title="${tip}">${ic(k)} ${esc(I.n)} ${who}</span>`;
+  const eff=skEffectHtml(s)||esc(I.n);   /* 효과가 글로 안 되면 이름 */
+  return `<span class="intent${(s&&(s.buff||s.snack||s.riot))?" up":""}" title="${esc(I.n)} · ${tip}">${ic(k)} ${eff} ${who}</span>`;
+}
+/* 대포병이 포탄 장전을 하려 하면, 앞의 대포에 '쏠 피해' 를 의도로 보인다 — 표시만(viaFire). 실제 발사는 대포병의 장전이 한다 */
+function cannonIntents(allies){
+  const gunners=B.foes.filter(f=>f.alive&&f.intent&&f.intent.t==="sk"&&(FOE[f.name].sk||[])[f.intent.i]&&FOE[f.name].sk[f.intent.i].fire);
+  B.foes.filter(g=>g.alive&&g.name==="대포").forEach(g=>{
+    const fired=gunners.some(f=>g.slot<f.slot);
+    if(!fired){ if(g.intent&&g.intent.viaFire) g.intent={t:"wait"}; return }
+    const gs=(FOE["대포"].sk||[]).find(x=>x.fireOnly); if(!gs) return;
+    const gi=(FOE["대포"].sk||[]).indexOf(gs);
+    const T=skTargets(g,gs,allies); let t=T[0]||null; if(t){ const wall=tauntWall(t); if(wall) t=wall }
+    g.intent={t:"sk",i:gi,n:gs.n,tg:"near",to:t?t.slot:0,toId:t?uid(t):null,chase:false,v:skDmg(g,gs),hits:1,el:"공격",far:0,viaFire:1};
+  });
 }
 /* onlyIdle — 이미 수를 정한 적은 그대로 두고, 기다리던(wait) 적만 새로 정한다.
    소환물이 서도 적의 의도가 흔들리지 않게 (사용자 2026-09-12 — 하수인만 세워도 도발처럼 굴었다) */
@@ -14088,6 +14126,7 @@ function rollIntents(onlyIdle){
       f.lastKey=bk; }
     f.intent=best;
   });
+  cannonIntents(allies);   /* 대포병이 장전하면 대포에 쏠 피해를 보인다 (사용자 2026-09-15) */
 }
 const tierCrown=()=>'<svg viewBox="0 0 24 24"><path d="M3 8l4 5 5-8 5 8 4-5-2 12H5Z" fill="currentColor"/></svg>';
 const tierStar =()=>'<svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9Z" fill="currentColor"/></svg>';
@@ -16099,7 +16138,7 @@ function incoming(){
       const v=foeDmg(f,f.intent.v,f.intent.el);
       list.forEach(a=>hitOn(a,v));
     }
-    else if(f.intent.t==="sk"){
+    else if(f.intent.t==="sk"&&!f.intent.viaFire){
       const I=f.intent, D=FOE[f.name], s=D&&D.sk&&D.sk[I.i];
       if(s&&s.fire){                                   /* 포탄 장전 — 앞의 대포들이 쏜다 */
         B.foes.filter(x=>x.alive&&x.name==="대포"&&x.slot<f.slot).forEach(g=>{
@@ -18190,7 +18229,7 @@ function foePhase(){
       fx({side:"foe",slot:f.slot,s:"heal",ring:"#e0c85a",txt:"+"+v,cls:"heal"});
       say(`${f.name}${jo(f.name,"ig")} 맥주를 들이켭니다 — 체력 +${v}, 대신 보호약화 2`,"t2");
     }
-    else if(f.intent.t==="sk"){ skExec(f,f.intent) }
+    else if(f.intent.t==="sk"){ if(!f.intent.viaFire) skExec(f,f.intent) }   /* 대포의 표시용 의도는 대포병의 장전이 쏜다 */
     else if(f.intent.t==="atk"){
       let t=null;
       if(intentChases(f,f.intent)&&f.intent.toId){
