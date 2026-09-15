@@ -7220,7 +7220,7 @@ function drawEventDex(app){
 const GIM_DEX=[
  {n:"첨탑과 울타리",icon:"ink11_map_spire",icons:["ink11_map_fence"],field:"핏빛 감옥",odds:"60%",cells:"첨탑 1 + 울타리 4",refresh:"새로고침 불가 (재편성해도 그 자리)",camp:0,
   t:"중심 첨탑을 상하좌우 울타리가 두릅니다. 판 끝에 걸린 울타리는 빠집니다.",
-  o:[{t:"울타리 부수기",d:"3턴 안에 공격하지 않는 울타리를 처치하면 첨탑과 울타리가 모두 무너집니다. 못 하면 4턴째에 감옥 경비병 둘이 출동하고, 이기면 그 울타리 한 칸만 걷힙니다."},
+  o:[{t:"울타리 부수기",d:"공격하지 않는 울타리를 처치하면 그 울타리 한 칸이 걷힙니다. 3턴 안에 못 부수면 4턴째에 감옥 경비병 둘이 출동합니다. 첨탑은 관리자를 쓰러뜨려야 무너집니다."},
      {t:"조심히 지나가기",d:"첨탑을 제외한 주변 1칸 이내 구역으로 밀려납니다."},
      {t:"첨탑",d:"첨탑 관리자(정예)와 전투. 두 턴마다 [감시] 카드를 손패에 끼워 넣고 기술 하나를 2턴 잠급니다. 이기면 정예 상자 + 중급 보상 2 + 일반 장신구 1."}],
   fight:"첨탑 관리자 · 감옥 경비병 · 울타리"},
@@ -9838,7 +9838,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (사용자 2026-09-15) */
-const BUILD_NO=437;
+const BUILD_NO=438;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -11356,7 +11356,7 @@ const GIM_EV={
        {t:"나가기",d:"지도로 돌아갑니다.",leave:1,f:()=>""}]}),
   fence:(cell,r,c)=>({n:"울타리",art:"foe_fence_wood",face:"부서진 파수병",gim:1,   /* 나무색 울타리 스프라이트 (사용자 2026-09-15) */
     t:"첨탑을 두른 울타리가 길을 막고 있습니다. 첨탑 관리자의 눈이 닿는 자리입니다.",
-    o:[{t:"울타리 부수기",d:"3턴 안에 공격하지 않는 울타리를 처치하면 첨탑과 울타리가 모두 무너집니다. 3턴 안에 처치하지 못하면 경비원이 출동합니다.",
+    o:[{t:"울타리 부수기",d:"공격하지 않는 울타리를 처치하면 그 울타리 한 칸이 걷힙니다. 3턴 안에 처치하지 못하면 경비병이 출동합니다.",
         f:()=>{ run.gimBattle={r:r,c:c}; return "" }},
        {t:"조심히 지나가기",d:"첨탑을 제외한 주변 1칸 이내 구역으로 밀려납니다.",end:1,   /* 고르면 곧장 지도로 (사용자 2026-09-15 — 갇히던 버그) */
         f:()=>{ const S=run.size;
@@ -11435,8 +11435,10 @@ function gimBattleWon(d){
     title="첨탑"; sub="첨탑 관리자를 쓰러뜨렸습니다"; msg="첨탑이 무너지고 울타리가 걷힙니다. 관리자의 금고에서 나온 것들입니다." }
   else if(d.cell.fence){
     title="울타리";
-    if(!d.guards){ gimBreakTower(); sub="3턴 안에 울타리를 부쉈습니다"; msg="울타리가 무너지자 첨탑도 함께 주저앉습니다." }
-    else { if(run.grid[d.r]&&run.grid[d.r][d.c]) run.grid[d.r][d.c]={t:"empty"}; sub="경비병을 물리쳤습니다"; msg="늦었지만 울타리 한 곳은 걷어냈습니다. 첨탑은 아직 서 있습니다." }
+    /* 어느 쪽이든 그 울타리 한 칸만 걷힌다 — 첨탑은 관리자를 잡아야 무너진다 (사용자 2026-09-16: 울타리 하나에 첨탑 전체가 무너지던 것 고침) */
+    if(run.grid[d.r]&&run.grid[d.r][d.c]) run.grid[d.r][d.c]={t:"empty"};
+    if(!d.guards){ sub="3턴 안에 울타리를 부쉈습니다"; msg="울타리 한 곳이 걷혔습니다. 첨탑은 아직 서 있습니다." }
+    else { sub="경비병을 물리쳤습니다"; msg="늦었지만 울타리 한 곳은 걷어냈습니다. 첨탑은 아직 서 있습니다." }
   }
   else if(d.cell.post){ if(run.grid[d.r]&&run.grid[d.r][d.c]) run.grid[d.r][d.c]={t:"empty"};
     const g=rr([4,8]); run.gold+=g; extra.push({t:"금화",label:`금화 ${g}`}); (run.after=run.after||[]).push({grade:"하급"},{grade:"하급"});
@@ -14020,7 +14022,15 @@ function skRoll(f,allies,inR,far){
   /* 닿는 대원이 없으면 먼저 다가간다 — 사거리 안까지 이동 (사용자 2026-09-15) */
   if(far&&!cand.some(c=>c.s.dmg||c.s.deb||c.s.pull||c.s.must)){   /* must(포탄 장전)가 되면 다가가지 않는다 */
     const mv=moveIntent(f,allies); if(mv) return mv;
-    if(f.slot>1&&foeAt(f.slot-1)&&Math.random()<0.6) return {t:"push"};
+    { const fr=foeAt(f.slot-1); if(f.slot>1&&fr&&!(FOE[fr.name]&&FOE[fr.name].still)&&Math.random()<0.6) return {t:"push"} }   /* 붙박이(억울한 죄수)는 밀치지 않는다 */
+    /* 다가갈 수도 없으면 손 놓고 막기만 하지 않는다 — 여느 적처럼 사거리 밖으로 무리해서 뻗는다 (0.7배). 사용자 2026-09-16: 호송 마차 경비병이 보호막만 얻던 것 */
+    const over=S.map((x,i)=>({s:x,i:i})).filter(c=>c.s.dmg&&!c.s.fireOnly&&!(f.skCd[c.i]>0)&&!(c.s.once&&f.skUsed[c.i])&&!(c.s.cond&&SK_COND[c.s.cond]&&!SK_COND[c.s.cond](f)));
+    if(over.length&&allies.length){
+      const pool=[]; over.forEach(c=>{ for(let q=0;q<(c.s.w||1);q++) pool.push(c) }); const c=rnd(pool);
+      const r0=f.rng; f.rng=99; const T=skTargets(f,c.s,allies); f.rng=r0;
+      const t=T[0]||rnd(allies);
+      return {t:"atk",v:Math.max(1,Math.round(skDmg(f,c.s)*0.7)),to:t.slot,toId:uid(t),pat:"무리한 "+c.s.n,el:c.s.el||D.el||"공격",far:1,chase:1,hits:Math.max(1,c.s.hits||1)};
+    }
   }
   /* nextMust — 지난 기술이 '다음은 반드시 이것' 을 걸어 두었으면 (주술사 정확한 죽음 → 사형). 조건(never)을 무시하고 세운다 */
   if(f.nextMust!=null){ const i=f.nextMust; f.nextMust=null; const s2=S[i];
@@ -14295,7 +14305,8 @@ function skIntentHtml(f,I){
       I.hits>1?`<span class="hits">×${I.hits}</span>`:""}${ex} ${who}</span>`; }
   const k=(s&&(s.shield||s.eshield))?"def":(s&&(s.buff||s.snack||s.riot))?"atk":(s&&s.fire)?"atk":"move";
   const eff=skEffectHtml(s)||esc(I.n);   /* 효과가 글로 안 되면 이름 */
-  return `<span class="intent${(s&&(s.buff||s.snack||s.riot))?" up":""}" title="${esc(I.n)} · ${tip}">${ic(k)} ${eff} ${who}</span>`;
+  const lead=/^<svg/.test(eff)?"":ic(k)+" ";   /* 효과 글이 이미 아이콘으로 시작하면(보호막·회복) 앞 아이콘을 겹쳐 그리지 않는다 (사용자 2026-09-16) */
+  return `<span class="intent${(s&&(s.buff||s.snack||s.riot))?" up":""}" title="${esc(I.n)} · ${tip}">${lead}${eff} ${who}</span>`;
 }
 /* 대포병이 포탄 장전을 하려 하면, 앞의 대포에 '쏠 피해' 를 의도로 보인다 — 표시만(viaFire). 실제 발사는 대포병의 장전이 한다 */
 function cannonIntents(allies){
@@ -14338,7 +14349,7 @@ function rollIntents(onlyIdle){
     if(far){
       /* 먼저 거리를 좁혀 본다 */
       if(Math.random()<0.55){ const mv=moveIntent(f,allies); if(mv){ f.intent=mv; return } }
-      if(f.slot>1&&foeAt(f.slot-1)&&Math.random()<0.4){ f.intent={t:"push"}; return }
+      { const fr=foeAt(f.slot-1); if(f.slot>1&&fr&&!(FOE[fr.name]&&FOE[fr.name].still)&&Math.random()<0.4){ f.intent={t:"push"}; return } }
       /* 다가갈 수 없어도 손 놓고 있지는 않는다 — 무리해서 노린다 */
     }else{
       /* 원거리형은 붙으면 물러선다 */
@@ -19284,7 +19295,7 @@ function rewardIcon(r){
   }
   return rewardIcon0(r);
 }
-const REW_SKILL_ART={"식욕을 참을 수 없어":"탐욕의 악마","뺏어먹기":"탐욕의 악마"};
+const REW_SKILL_ART={"식욕을 참을 수 없어":"탐욕의 악마","뺏어먹기":"탐욕의 악마","썩어가는 육체":"저주받은 육체"};
 const REW_MINION_ART={"악마 하수인 강화":"악마 하수인","하수인 단련":"악마 하수인","임프 무리":"악마 하수인","탐욕의 시선":"악마 하수인","물량 공세":"악마 하수인","진두지휘":"악마 하수인","악마 장군 소환":"악마 장군"};
 const GCLS={"하급":"g1","중급":"g2","상급":"g3","파편":"g4","일반":"g5","희귀":"g6","특수":"g7","전설":"g8"};
 const gcls=g=>" "+(GCLS[g]||"g0");
