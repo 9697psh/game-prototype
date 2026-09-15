@@ -1661,8 +1661,9 @@ header{align-items:center}
 .pmap .cell.here{box-shadow:0 0 0 2px var(--brass) inset;opacity:1}
 .pmap .cell.risk{background-color:rgba(120,30,30,.22);border-color:var(--pline)}
 .pmap .cell.risk:hover{background-color:rgba(160,60,60,.4)}
-.pmap .cell.watch{background-color:rgba(160,40,30,.16)}          /* 간수 초소 둘레 · 순찰로 — 낮에도 습격 */
-.pmap .cell.glow{background-color:rgba(255,236,150,.22)}          /* 우물 둘레 — 전투 금화 +50% */
+.pmap .cell.watch{background-color:rgba(170,40,30,.28);box-shadow:0 0 0 1px rgba(170,50,40,.55) inset}          /* 간수 초소 둘레 · 순찰로 — 낮에도 습격 */
+.pmap .cell.glow{background-color:rgba(255,215,90,.34);box-shadow:0 0 0 1px rgba(230,180,60,.75) inset,0 0 8px rgba(255,210,90,.35) inset}   /* 우물 둘레 — 전투 금화 +50% */
+.pmap .cell.watch:not(.adj):not(.here):not(.onroute),.pmap .cell.glow:not(.adj):not(.here):not(.onroute){opacity:1}
 .pmap .cell.wall{cursor:default;opacity:1!important}
 .pmap .cell.wall:hover{background-color:transparent;box-shadow:none}
 .pmap .cell .cico.foot img{opacity:.38}
@@ -2329,6 +2330,7 @@ img.ri{width:14px;height:14px;vertical-align:-2px;image-rendering:auto}
 .mt-r span i{font-style:normal;font-size:9.5px;color:var(--faint)}
 .mt-r span.on{border-color:#7a5a5a;color:#d98a8a}
 .mt-go{margin-top:6px;font-size:11px;color:var(--faint)}
+#maptip .mt-red{color:#e08a7a} #maptip .mt-gold{color:#f0c860}
 .mt-go.on{color:#9cc6ee;font-weight:700}
 .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:11px;color:var(--dim)}
 .legend span{display:inline-flex;align-items:center;gap:5px}
@@ -7955,10 +7957,14 @@ function mapTipFill(cell,r,c){
     "강화":(kind==="dungeon"||kind==="elite"||kind==="boss")?Math.round((foeScale(kind).m-1)*100):0,
     "설명":cell.style||"", "전리품":cell.loot||"",
     "거리":dist,
-    "습격":amb?`밤길 — 습격당할 확률 ${Math.round(amb*100)}%`:"",
+    "습격":amb?(run.night?`밤길 — 습격당할 확률 ${Math.round(amb*100)}%`:`낮 습격 확률 ${Math.round(amb*100)}%`):"",
     "날짜":dLeft
   };
   t=t.replace(/\{(종류|라운드|강화|설명|전리품|거리|습격|날짜)\}/g,(m,k)=>String(v[k]));
+  /* 전용 구역의 영향 — 붉은 칸(초소 둘레·순찰로) · 황금 칸(우물 둘레). 사용자 2026-09-15 */
+  { const wt=kind!=="wall"&&kind!=="camp"&&kind!=="boss"&&kind!=="post"&&(postNear(r,c)||(kind==="empty"&&onPatrol(r,c)));
+    if(wt&&(kind!=="empty"||!amb)) t+=`\n<b>낮 습격 확률 ${Math.round(Math.max(amb,0.25)*100)}%</b> — ${postNear(r,c)?"간수 초소 둘레":"간수 순찰로"}`;
+    if(kind!=="well"&&wellNear(r,c)) t+=`\n<b>전투 금화 획득량 +50%</b> — 감옥의 우물 둘레`; }
   /* 빈 줄은 접는다 */
   const lines=t.split("\n").map(x=>x.trim()).filter(Boolean);
   const head=lines.shift()||"";
@@ -7981,7 +7987,7 @@ function mapTipFill(cell,r,c){
     } else route=`<div class="mt-go">가는 길이 없습니다</div>`;
   }
   return `<div class="mt-h"><i class="mt-i">${nodeArt(kind)}</i><span>${rich(head)}</span>${cell.done?`<em class="mt-done">끝냄</em>`:""}</div>`
-    +(lines.length?`<div class="mt-b">${lines.map(x=>`<div>${rich(x)}</div>`).join("")}</div>`:"")
+    +(lines.length?`<div class="mt-b">${lines.map(x=>`<div>${rich(x).replace("<b>낮 습격",'<b class="mt-red">낮 습격').replace("<b>전투 금화 획득량",'<b class="mt-gold">전투 금화 획득량')}</div>`).join("")}</div>`:"")
     +`<div class="mt-f">${dist===0?"지금 서 있는 칸":`여기서 ${dist}칸`}${(kind==="dungeon"||kind==="elite")&&cell.done?" · 이미 치른 전투":""}${cell.visited?" · 떠나기 전에는 눌러서 다시 들어갈 수 있습니다":""}</div>`
     +route;
 }
@@ -9095,7 +9101,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (사용자 2026-09-15) */
-const BUILD_NO=394;
+const BUILD_NO=395;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -10166,7 +10172,7 @@ function drawMap(app){
     const adj=near(run.pos,{r:r,c:c});
     const rn=rstep[r+"-"+c]||0;
     const kind=cell.t;
-    const watch=kind!=="wall"&&(postNear(r,c)||(kind==="empty"&&onPatrol(r,c)));   /* 낮에도 습격 — 붉게 */
+    const watch=kind!=="wall"&&kind!=="camp"&&kind!=="boss"&&kind!=="post"&&(postNear(r,c)||(kind==="empty"&&onPatrol(r,c)));   /* 낮에도 습격 — 붉게 */
     const risky=(run.night&&cell.t==="empty"&&adj)||(watch&&adj);
     const glow=kind!=="well"&&wellNear(r,c);
     const d=el(`<div class="cell k-${kind} ${cell.tutgo?"tutgo":""} ${kind==="empty"?"emp":""} ${here?"here":""} ${adj?"adj":""} ${cell.done?"done":""} ${risky?"risk":""} ${watch?"watch":""} ${glow?"glow":""} ${kind==="wall"?"wall":""} ${(cell.boon||cell.weapon)?"boon":""} ${rn?"onroute":""} ${rn&&rn===(run.route?run.route.steps:0)?"rdest":""}">
@@ -10387,7 +10393,7 @@ function ambushChance(cell,r,c){
   if(!cell) return 0;
   const night=run.night?Math.min(0.85, 0.45+nightDepth()*0.05):0;
   /* 간수 초소 둘레 2칸 — 빈 칸이 아니어도 25%. 순찰로의 빈 칸 — 낮에도 25% (사용자 2026-09-15) */
-  if(r!=null&&postNear(r,c)&&cell.t!=="camp"&&cell.t!=="boss"&&!GIM_T[cell.t]) return Math.max(night,0.25);
+  if(r!=null&&postNear(r,c)&&cell.t!=="camp"&&cell.t!=="boss"&&cell.t!=="wall"&&cell.t!=="post") return Math.max(night,0.25);
   if(cell.t!=="empty") return 0;
   if(r!=null&&onPatrol(r,c)) return Math.max(night,0.25);
   return night;
