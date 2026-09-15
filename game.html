@@ -1664,6 +1664,7 @@ header{align-items:center}
 .pmap .cell.watch{background-color:rgba(170,40,30,.28);box-shadow:0 0 0 1px rgba(170,50,40,.55) inset}          /* 간수 초소 둘레 · 순찰로 — 낮에도 습격 */
 .pmap .cell.glow{background-color:rgba(255,215,90,.34);box-shadow:0 0 0 1px rgba(230,180,60,.75) inset,0 0 8px rgba(255,210,90,.35) inset}   /* 우물 둘레 — 전투 금화 +50% */
 .pmap .cell.watch:not(.adj):not(.here):not(.onroute),.pmap .cell.glow:not(.adj):not(.here):not(.onroute){opacity:1}
+.pmap .cell.glow.watch{background-color:rgba(170,40,30,.28);box-shadow:0 0 0 1px rgba(170,50,40,.55) inset}   /* 겹치면 붉은 표시가 이긴다 (사용자 2026-09-15) */
 .pmap .cell.wall{cursor:default;opacity:1!important}
 .pmap .cell.wall:hover{background-color:transparent;box-shadow:none}
 .pmap .cell .cico.foot img{opacity:.38}
@@ -2403,6 +2404,8 @@ kbd{display:inline-block;min-width:20px;text-align:center;padding:1px 7px;font-s
   border:1px solid #4a3f63;border-radius:8px;padding:16px 18px;margin-bottom:4px}
 .evres .evi{width:52px;height:52px;flex:none} .evres .evi svg{width:52px;height:52px}
 .evres b{font-size:11px;color:#b9a2ea;letter-spacing:.08em}
+.gimres-msg{margin:14px auto 4px;max-width:520px;font-size:13.5px;line-height:1.7;color:var(--fg);white-space:pre-line;text-align:center;
+  padding:10px 16px;border:1px solid var(--rule);border-radius:8px;background:var(--panel)}
 .evres p b,.evopts .evres p b{font-size:inherit;color:inherit;letter-spacing:0;display:inline;margin:0}
 .evres p{margin:4px 0 0;font-size:13.5px;line-height:1.6;word-break:keep-all}
 /* 룰렛 — 판은 가만히 있고 바늘이 돈다. 판을 돌리면 글자가 누워 안 읽힌다. */
@@ -7144,6 +7147,42 @@ function drawGimDex(app){
   app.appendChild(out);
 }
 
+/* ═══════════ 전용 구역 결과 화면 ═══════════
+   run.gimRes={title, sub, msg, tiles:[{t,label}], next:"chest"|"after"} — tiles 는 chestIcon 의 갈래(금화·경험치·파편·일반·하급·중급·상급·동료·회복·제련석) */
+function gimResTiles(afterList,extra){
+  const out=[];
+  (extra||[]).forEach(x=>out.push(x));
+  (afterList||[]).forEach(x=>{
+    if(x.item) out.push({t:x.item.g||"일반",label:`장신구 — ${x.item.n}`});
+    else if(x.recruit) out.push({t:"동료",label:"새로운 동료 영입"});
+    else if(x.grade) out.push({t:x.grade,label:`${x.grade} 보상 선택`});
+  });
+  return out;
+}
+function gimResShow(title,sub,msg,tiles,next){
+  run.gimRes={title:title,sub:sub||"",msg:msg||"",tiles:tiles||[],next:next||"after"};
+  view="gimres"; render();
+}
+function drawGimRes(app){
+  const R=run.gimRes; if(!R){ backToMap(); return }
+  app.appendChild(el(`<div class="center"><div class="title" style="font-size:22px">${esc(R.title)}</div>
+    <div class="sub">${esc(R.sub)}</div></div>`));
+  const wrap=app.querySelector(".center");
+  if(R.msg) wrap.appendChild(el(`<div class="gimres-msg">${evRich(evSent(R.msg))}</div>`));
+  const row=el(`<div class="rewards"></div>`);
+  if(!R.tiles.length) row.appendChild(el(`<div class="rw ro"><div class="rwi">${chestIcon("경험치")}</div><b>받은 것이 없습니다</b></div>`));
+  R.tiles.forEach(x=>row.appendChild(el(`<div class="rw ro${gcls(x.t)}"><div class="rwi">${chestIcon(x.t)}</div><b>${esc(x.label)}</b></div>`)));
+  wrap.appendChild(row);
+  const b=el(`<div style="margin-top:24px"><button class="go">${R.tiles.length?"전부 챙긴다":"계속"}</button></div>`);
+  b.querySelector("button").onclick=()=>{
+    const nx=R.next; run.gimRes=null; SFX.play("summon");
+    if(nx==="chest"&&run.dun){ openChest(run.dun.kind); return }
+    if((run.after||[]).length){ afterChest(); return }
+    if(run.here){ leaveNode(); return }
+    backToMap();
+  };
+  wrap.appendChild(b);
+}
 function findRecipe(a,b){
   const key=[a,b].sort().join("|");
   return ITEMS.find(it=>it.rc&&it.rc.slice().sort().join("|")===key)||null;
@@ -8506,6 +8545,7 @@ function newRun(name,pack){
        pos:{r:S-1,c:mid}, day:1, time:6, act:f.act, actMax:f.act,
        taint:0, night:0, campDone:0, remapUsed:0, bonusLv:null, playMs:0,
        pack:pack?pack.n:null, packDesc:pack?pack.d:null, packIcon:pack?pack.i:null};
+  rollPatrol();                       /* 간수 순찰로 — 튜토리얼이 아닌 새 판에서도 (사용자 2026-09-15 — 안 나오던 버그) */
   if(pack) pack.fx(run);
   const q=run.bonusLv; run.bonusLv=null;
   view="map";
@@ -8872,6 +8912,7 @@ function render0(){
   if(view==="carddex")  return drawCardDex(app);
   if(view==="evdex")    return drawEventDex(app);
   if(view==="gimdex")   return drawGimDex(app);
+  if(view==="gimres")   return drawGimRes(app);
   if(view==="bag")      return drawBag(app);
   if(view==="title")    return drawTitle(app);
   if(view==="heropick") return drawStart(app);
@@ -9101,7 +9142,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (사용자 2026-09-15) */
-const BUILD_NO=398;
+const BUILD_NO=399;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -9926,7 +9967,6 @@ function tutBegin(){
   addCard(run,"악마 하수인",2);
   run.packs=startPacks.map(p=>({n:p.n,d:p.d,i:p.i}));
   run.pack=startPacks.map(p=>p.n).join(" · ");
-  rollPatrol();
   /* 첫 전투는 바로 위 칸에 한 라운드짜리로 깔아 둔다 — 헤매지 않게 */
   const S=run.size, mid=Math.floor(S/2);
   run.grid[S-2][mid]={t:"dungeon",waves:1,style:rnd(DUN_STYLE),loot:rnd(DUN_LOOT),tutgo:1};
@@ -10655,19 +10695,25 @@ function spawnFoeNamed(n,slot){
 /* 전투가 끝났을 때 — 기믹 칸 정리 (dungeonCleared 가 부른다) */
 function gimBattleWon(d){
   if(!d||!d.cell) return;
+  const before=(run.after||[]).length, extra=[];
+  let title=null, sub="", msg="";
   if(d.cell.tower){ gimBreakTower();
     (run.after=run.after||[]).push({grade:"중급"},{grade:"중급"},{item:rnd(ITEMS.filter(i=>i.g==="일반"))});
-    toast("첨탑 관리자를 쓰러뜨렸습니다 — 중급 보상 둘과 일반 장신구.") }
+    title="첨탑"; sub="첨탑 관리자를 쓰러뜨렸습니다"; msg="첨탑이 무너지고 울타리가 걷힙니다. 관리자의 금고에서 나온 것들입니다." }
   else if(d.cell.fence){
-    if(!d.guards) gimBreakTower();                       /* 3턴 안에 — 첨탑까지 무너진다 */
-    else { if(run.grid[d.r]&&run.grid[d.r][d.c]) run.grid[d.r][d.c]={t:"empty"}; toast("경비병을 물리치고 울타리 한 곳을 걷었습니다.") }
+    title="울타리";
+    if(!d.guards){ gimBreakTower(); sub="3턴 안에 울타리를 부쉈습니다"; msg="울타리가 무너지자 첨탑도 함께 주저앉습니다." }
+    else { if(run.grid[d.r]&&run.grid[d.r][d.c]) run.grid[d.r][d.c]={t:"empty"}; sub="경비병을 물리쳤습니다"; msg="늦었지만 울타리 한 곳은 걷어냈습니다. 첨탑은 아직 서 있습니다." }
   }
   else if(d.cell.post){ if(run.grid[d.r]&&run.grid[d.r][d.c]) run.grid[d.r][d.c]={t:"empty"};
-    const g=rr([4,8]); run.gold+=g; (run.after=run.after||[]).push({grade:"하급"},{grade:"하급"});
-    toast(`간수 초소를 무너뜨렸습니다 — 하급 보상 둘과 금화 ${g}.`) }
+    const g=rr([4,8]); run.gold+=g; extra.push({t:"금화",label:`금화 ${g}`}); (run.after=run.after||[]).push({grade:"하급"},{grade:"하급"});
+    title="간수 초소"; sub="초소를 무너뜨렸습니다"; msg="둘레의 감시가 걷힙니다. 초소에 쌓여 있던 것들입니다." }
   else if(d.cell.wagon){ if(run.grid[d.r]&&run.grid[d.r][d.c]) run.grid[d.r][d.c]={t:"empty"};
-    if(d.rescued){ (run.after=run.after||[]).push({grade:"중급"}); toast("억울한 죄수를 구했습니다 — 중급 보상.") }
-    else toast("죄수는 살리지 못했습니다.") }
+    title="죄수 호송 마차";
+    if(d.rescued){ (run.after=run.after||[]).push({grade:"중급"}); sub="죄수를 살렸습니다"; msg="억울한 죄수가 수갑을 벗고 달아나며 무언가를 남깁니다." }
+    else { sub="모두 죽였습니다"; msg="죄수까지 쓰러졌습니다. 마차에 남은 것은 경비병의 것뿐입니다." } }
+  if(title){ const tiles=gimResTiles((run.after||[]).slice(before),extra);
+    run.gimRes={title:title,sub:sub,msg:msg,tiles:tiles,next:(d.cell.wagon&&d.rescued)?"after":"chest"} }
 }
 
 /* ═══════════ 주둔지 ═══════════ */
@@ -11220,6 +11266,7 @@ function dungeonCleared(){
     toast(`파편 상자 — 파편 하나가 딸려 나옵니다. (남은 ${run.shardBox}번)`);
   }
   if(d.kind==="boss") run.bossDone=1;
+  if(run.gimRes){ view="gimres"; render(); return }               /* 전용 구역 — 결과 화면 먼저, 그 다음 상자 */
   if(d.cell&&d.cell.wagon&&d.rescued){ afterChest(); return }   /* 죄수를 살렸으면 상자 대신 중급 보상 하나 */
   openChest(d.kind);
 }
@@ -11264,7 +11311,9 @@ function openChest(kind){
 }
 function chestIcon(t){
   const c={"금화":"#c9a227","경험치":"#7fd39a","파편":"#6aa8e0","일반":"#6aa8e0",
-           "하급":"#9c8d77","중급":"#e0a86a","상급":"#e0705a","동료":"#5fd8cf"}[t]||"#c9a227";
+           "하급":"#9c8d77","중급":"#e0a86a","상급":"#e0705a","동료":"#5fd8cf","회복":"#7fd39a","제련석":"#9c8d77","없음":"#6a6058"}[t]||"#c9a227";
+  if(t==="회복") return '<svg viewBox="0 0 64 64"><path d="M32 54 C10 38 10 20 22 18 C28 17 32 22 32 24 C32 22 36 17 42 18 C54 20 54 38 32 54Z" fill="'+c+'"/></svg>';
+  if(t==="제련석") return '<svg viewBox="0 0 64 64"><path d="M20 14 L44 14 L54 32 L44 50 L20 50 L10 32 Z" fill="none" stroke="'+c+'" stroke-width="5"/></svg>';
   const g=(t==="금화")?'<circle cx="32" cy="34" r="17" fill="none" stroke="@" stroke-width="5"/><path d="M32 24v20M26 30h12" stroke="@" stroke-width="4"/>'
     :(t==="경험치")?'<path d="M32 12 L52 34 H42 V54 H22 V34 H12 Z" fill="@"/>'
     :(t==="파편"||t==="일반")?'<path d="M32 12 L50 24 v18 L32 54 L14 42 V24 Z" fill="none" stroke="@" stroke-width="5"/>'
@@ -12421,6 +12470,7 @@ function drawRelic(app){
     if(!usable){ row.appendChild(c); return }
     c.onclick=()=>{
       run.evRoll=null; run.evPick=oi;
+      const snap={gold:run.gold,stone:run.stone||0,after:(run.after||[]).length,hp:run.heroes.reduce((a,h)=>a+Math.max(0,h.hp),0)};
       const msg=o.f();
       if(run.brawl){
         const who=(run.brawl===true||run.brawl===1)?null:run.brawl;
@@ -12444,7 +12494,12 @@ function drawRelic(app){
       if(e.wheel&&run.evRoll!=null){ spinRoulette(e,msg||"…"); return }
       if(run.gimBattle){ gimFenceBattle(); return }    /* 울타리 부수기 — 전투로 */
       if(o.leave){ run.evMsg=null; leaveNode(); return }                   /* 기믹 칸 — 나가기 */
-      if(o.end){ run.evMsg=null; if((run.after||[]).length) afterChest(); else leaveNode(); return }   /* 부수고 나감 */
+      if(o.end){ run.evMsg=null;
+        /* 무슨 일이 있었고 무엇을 받았는지 — 결과 화면 (사용자 2026-09-15). 금화·제련석·회복은 앞뒤를 견줘 센다 */
+        const extra=[]; const dg=run.gold-(snap.gold||0), ds=(run.stone||0)-(snap.stone||0), dh=run.heroes.reduce((a,h)=>a+Math.max(0,h.hp),0)-snap.hp;
+        if(dg>0) extra.push({t:"금화",label:`금화 ${dg}`}); if(dg<0) extra.push({t:"금화",label:`금화 ${-dg} 씀`});
+        if(ds>0) extra.push({t:"제련석",label:`제련석 ${ds}`}); if(dh>0) extra.push({t:"회복",label:`체력 회복 ${dh}`});
+        gimResShow(e.n,o.t,msg,gimResTiles((run.after||[]).slice(snap.after),extra),"after"); return }   /* 부수고 나감 */
       if(o.again){ SFX.play("summon"); run.evMsg=msg||"…";
         if((run.after||[]).length){ run.afterBack="gim"; afterChest() } else render(); return }   /* 보상을 받고 이 화면으로 */
       if(o.quest){ questOffer(o.quest,msg); return }   /* 퀘스트 — 수락자를 고르거나 바로 받는다 */
