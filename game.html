@@ -5453,7 +5453,7 @@ function figure(name,pose,u){
 const HEROES={
  "나이코스":{title:"승리의 전사",role:"근접 · 방어구",hp:20,mana:3,hpLv:2,
   focus:"근접/공격력 기반, 평타 위주 공격, 방어구 기술",
-  passive:{n:"전장의 승자",d:"전투에서 이길 때마다 공격력 +1 (최대 2). 넘친 몫은 금화가 된다"},
+  passive:{n:"전장의 승자",d:"이길 때마다 자부심 +1 (최대 6). 자부심 2마다 공격력 +1. 쓰러지면 자부심을 모두 잃고, 넘친 몫은 금화가 된다"},
   skills:[
    {n:"베기",cost:1,el:"공격",tg:"foe",dmg:3,d:"피해 3"},
    {n:"막기",cost:1,el:"보호",tg:"self",shield:3,d:"보호막 3"},
@@ -5474,7 +5474,7 @@ const HEROES={
   passive:{n:"탐욕의 악마",d:"누군가 죽을 때마다 최대 체력 +1 (전투당 2)"},
   skills:[
    {n:"씹어먹기",cost:3,el:"공격",tg:"foe",dmg:6,heal:2,d:"피해 6 · 체력 2 회복"},
-   {n:"균열 차원문",cost:3,el:"마법",tg:"any",dmg:3,minion:1,d:"칸에 차원문 설치 · 적 칸이면 내 턴 끝에 피해 3 · 아군 칸이면 내 턴 끝에 보호막 3 · 같은 칸 재사용 시 악마 하수인 카드"},
+   {n:"균열 차원문",cost:3,el:"마법",tg:"any",dmg:3,minion:1,d:"칸에 차원문 설치 · 적 칸이면 내 턴 끝에 피해 3 · 아군 칸이면 내 턴 끝에 보호막 3 · 같은 칸 재사용 시 차원문을 닫고 악마 하수인 카드(소멸성)"},
    {n:"응축 폭발",cost:3,el:"보호",tg:"self",shield:14,taunt:2,lock:2,bomb:1,d:"보호막 14 · 도발 2턴 · 2턴 뒤 전체에 현재 체력 20% 피해 · 잠금(2)"},
    {n:"융합",cost:1,el:"집중",tg:"self",lock:1,fuse:1,d:"잠금(1) · 내 소환물을 모두 삼켜 체력과 능력치를 얻음"}
   ]}
@@ -5530,7 +5530,7 @@ const SKILL_FULL={
  "고대수목의 씨앗":"잠금(1). 체력이 가장 높은 적에게 피해를 30(추가 ∴의 2배 ) 줍니다.",
  "공포 태세":"보호막을 10(추가 ¤ ) 얻고, 다음 턴까지 피해를 받을 때마다 모든 적에게 공포와 공격약화를 1 부여합니다.",
  "굳건한 성벽":"사용한도(2). 성벽 카드를 가져옵니다. ",
- "균열 차원문":"대상 위치에 차원문을 생성합니다. 차원문 위의 대상에 따라 효과가 부여됩니다.\n- 대상이 적이면 내 턴이 끝날 때, 피해를 3(추가 ∴ ) 줍니다.\n- 대상이 아군이면 내 턴이 끝날 때, 보호막을 3(추가 ¤ ) 부여합니다.\n이미 차원문이 있는 자리에 재사용시 악마 하수인 카드를 가져옵니다.",
+ "균열 차원문":"대상 위치에 차원문을 생성합니다. 차원문 위의 대상에 따라 효과가 부여됩니다.\n- 대상이 적이면 내 턴이 끝날 때, 피해를 3(추가 ∴ ) 줍니다.\n- 대상이 아군이면 내 턴이 끝날 때, 보호막을 3(추가 ¤ ) 부여합니다.\n이미 차원문이 있는 자리에 재사용시 차원문을 닫고 [악마 하수인] 카드를 가져옵니다.",
  "그림자 기습":"적에게 피해를 3(추가 † ) 줍니다.\n\n자리에 그림자를 남기고, 최대 2칸 이동합니다.\n\n그림자가 있는 상태라면 대신 그림자가 있는 위치로 이동하고, 은신 상태가 됩니다.",
  "급습":"은신 상태에서 다음 공격 피해는 치명타로 적용됩니다.",
  "기류 흘리기":"회피를 1 얻습니다. 이번 턴에 기류 흘리기의 비용이 1 증가합니다.",
@@ -5584,7 +5584,7 @@ const SKILL_FULL={
  "조화":"잠금(1). 피해를 10(추가 ∴,¤ )줍니다.\n\n플로우가 나설 때, 준 피해만큼 보호막을 얻습니다.\n플레어가 나설 때, 치명타로 적중합니다.",
  "쓰담쓰담":"피해를 2(추가 ∴ ) 줍니다. 보호막을 1(추가 ¤ ) 얻습니다. ",
  "씹어먹기":"피해를 6(추가 † ) 주고, 체력을 2(추가 ) 회복합니다.",
- "악마 하수인":"굴라의 균열 차원문을 이미 차원문이 있는 자리에 재사용하면 가져옵니다.",
+ "악마 하수인":"굴라가 이미 차원문이 있는 자리에 균열 차원문을 재사용하면 차원문을 닫고 가져옵니다. 그렇게 얻은 카드는 소멸성 — 그 전투가 끝나면 사라집니다. 보상으로 얻은 것은 여느 카드처럼 남습니다.",
  "악마 장군":"굴라가 [악마 장군 소환]을 얻은 뒤에는 악마 하수인 대신 이 카드를 가져옵니다.",
  "악마 혐오":"전투 시작시 악마 진영의 적 하나당 보호력을 +2 얻습니다.",
  "악몽 태세":"보호막을 10(추가 ¤ ) 얻고, 다음 턴까지 피해를 받을 때마다 모든 적에게 피해를 4(추가 † ) 줍니다.",
@@ -5607,7 +5607,7 @@ const SKILL_FULL={
  "저주받은 육체":"레벨 당 증가하는 최대 체력을 얻을 수 없습니다. 대신 사명감을 1 얻습니다.\n얻은 사명감 2당 영구히 공격력 +1을 얻습니다.\n\n전투 당 1회, 트리스탄이 죽은 후 망자의 육체 카드를 가져옵니다.",
  "적응성 비늘":"내 턴이 끝날 때, 보호막을 1(추가 ¤ + 이번 턴에 얻은 비늘 조각의 수) 얻습니다.",
  "전두엽 감염":"잠금(1). 감염이 3회 이상 중첩된 적들이 감염 중첩을 1 얻고, 다음 턴에 시전하는 각 기술의 첫 시전시 필요 마나가 1 증가합니다.",
- "전장의 승자":"던전에서 승리할 때마다 영구적으로 공격력을 1 얻습니다. (최대 2)\n패배할 시 얻은 공격력을 모두 잃습니다.\n초과로 얻은 공격력은 금화 1으로 대체됩니다.",
+ "전장의 승자":"전투에서 승리할 때마다 자부심을 1개 얻습니다. (최대 6)\n얻은 자부심 2개마다 영구적으로 공격력을 1 얻습니다.\n쓰러지면 얻은 자부심을 모두 잃습니다.\n초과로 얻은 자부심은 금화 1개로 대체됩니다.",
  "점프백":"최대 2칸 이동하고 _기동 상태_에 돌입합니다.\n_기동 상태_에서는 다른 기술을 시전한 후 1칸 뒤로 이동합니다.\n이때 이동하지 못하는 상태라면, 에너지 보호막을 1(추가 ∴ ) 얻습니다.",
  "정밀 타격":"이테리오가 마법 피해를 주면 대상에게 _정밀 표식_을 남깁니다.\n_정밀 표식_이 있는 적에게는 이테리오의 공격 피해가 치명타로 적용되고 표식을 하나 제거합니다.",
  "정의의 기운":"잠금(1). 헥토의 보호막*( )*만큼 가장 가까운 적에게 피해를 줍니다. ",
@@ -6034,15 +6034,15 @@ const HERO_REWARDS={
     h=>h.tag.gearShield=(h.tag.gearShield||0)+1),
   R("근거리 타격","하급","거리 1인 적에게 [베기]를 사용할 시 2의 추가 공격 피해를 줍니다.",
     h=>h.tag.nearHit=(h.tag.nearHit||0)+2),
-  R("돈은 벌어야지","하급","전장의 승자로 공격력을 얻을 때마다 금화를 추가로 1 얻습니다.",
+  R("돈은 벌어야지","하급","자부심으로 공격력을 얻을 때마다 금화를 추가로 1 얻습니다.",
     h=>h.tag.winGold=(h.tag.winGold||0)+1),
-  R("전투 경험","하급","전장의 승자로 공격력을 얻을 수 없을 때, 경험치 3도 추가로 얻을 수 있습니다. 최대 제한은 없습니다.",
+  R("전투 경험","하급","자부심이 가득 차 더 얻을 수 없을 때, 경험치 3도 추가로 얻을 수 있습니다. 최대 제한은 없습니다.",
     h=>h.tag.winExp=(h.tag.winExp||0)+3),
   R("검투 대비","중급","내 손에 있는 방어구 1장당 보호력을 1 얻습니다.",
     h=>h.tag.handDef=(h.tag.handDef||0)+1),
   R("승리의 연격","중급","승리의 일격으로 적을 처치하면 그 턴에만 추가 마나를 1 얻습니다.",
     h=>h.tag.execMana=(h.tag.execMana||0)+1),
-  R("전장의 지배자","중급","전장의 승자로 공격력을 얻을 수 없을 때,  최대 체력 1도 얻을 수 있습니다. (최대 10)",
+  R("전장의 지배자","중급","자부심이 가득 차 더 얻을 수 없을 때, 최대 체력 1도 얻을 수 있습니다. (최대 10)",
     h=>h.tag.winHp=1),
   R("낡은 투구끈","하급","방어구 카드를 사용할 때마다 체력을 1 회복합니다.",
     h=>h.tag.armorHeal=(h.tag.armorHeal||0)+1),
@@ -6083,8 +6083,8 @@ const HERO_REWARDS={
   R("찌르기","중급","[전투 기술]\n1-7. 찌르기 (마나 : 2)\n잠금(3). 이번 턴에 사용한 베기의 피해량의 3배만큼 피해를 줍니다.",
     h=>{ if(h.sk.length<6) h.sk.push({n:"찌르기",cost:2,el:"공격",tg:"foe",lock:3,thrust:1,
       d:"잠금(3) · 이번 턴 베기 피해 합계의 3배"}) },0.5),
-  R("전장의 승자 강화","중급","전장의 승자로 얻을 수 있는 공격력 한도가 1 증가합니다.",
-    h=>h.tag.winCap=(h.tag.winCap||2)+1),
+  R("전장의 승자 강화","중급","자부심 한도가 2 증가합니다. (공격력을 한 번 더 얻습니다)",
+    h=>h.tag.winCap=(h.tag.winCap||6)+2),
   /* ── 상급 ── */
   R("두 번 베기","상급","베기가 두 번 사용되는 대신, 사용한도(2)를 얻습니다.",
     h=>{ h.sk[0].twice=1; h.sk[0].limit=2 },0.5),
@@ -6102,7 +6102,7 @@ const HERO_REWARDS={
     h=>h.tag.armorTurn=1,0.5),
   R("최후의 검투사","상급","전투에 나이코스 혼자 배치되어 있다면, 모든 능력치를 8 얻습니다.",
     h=>h.tag.soloStat=Math.max(h.tag.soloStat||0,8),0.5),
-  R("분노 전환","상급","전장의 승자가 패배할 시 얻은 공격력을 모두 잃는 대신, 나이코스가 영구적으로 공격력을 그만큼 추가로 얻습니다.",
+  R("분노 전환","상급","쓰러져도 자부심을 잃지 않고, 자부심으로 얻은 공격력만큼 공격력을 영구적으로 추가로 얻습니다.",
     h=>h.tag.rageTurn=1,0.5)
  ],
  "카제":[
@@ -8295,7 +8295,7 @@ let run=null, view="title", B=null, sel=null, pending=null;
 
 /* ═══════════ 필드 · 시간 · 오염도 ═══════════ */
 const FIELDS=[
- {n:"핏빛 감옥", size:9, days:7, act:10},
+ {n:"핏빛 감옥", size:9, days:7, act:12},   /* 활동량 10→12 (사용자 2026-09-15) */
  {n:"정령샘",    size:9, days:8, act:15},
  {n:"얼어붙은 산맥", size:9, days:9, act:20}   /* 셋 다 9×9 (사용자 2026-09-15; 8×8 은 2026-09-14). NODE_N 은 그대로 */
 ];
@@ -9507,7 +9507,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (사용자 2026-09-15) */
-const BUILD_NO=405;
+const BUILD_NO=406;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -10065,7 +10065,7 @@ function startSandbox(name){
 /* 그 대원에게만 있는 자원 — 연습장 손잡이에 얹는다.
    [곳, 이름, 아래, 위]. 곳이 "run.souls" 처럼 점을 물면 run 의 것이다. */
 const SAND_OWN={
- "나이코스":[["wins","전장의 승자",0,9]],
+ "나이코스":[["pride","자부심",0,8]],
  "카제":   [["windUses","진선풍도 쓴 횟수",0,30],["windBuff","다음 진선풍도 강화",0,20],
             ["potential","잠재력 활성",0,1]],
  "트리스탄":[["duty","사명감",0,40],["dutyAtk","사명감으로 얻은 공격력",0,20]],
@@ -11023,7 +11023,7 @@ const GIM_EV={
         f:()=>{ const n=run.gim.gal||0, p=0.20+0.05*n;
           const up=run.heroes.filter(h=>!h.down), h=up.length?rnd(up):null;
           run.gim.gal=n+1; (run.after=run.after||[]).push({grade:"하급"});
-          if(h&&Math.random()<p){ h.hp=0; h.down=1; h.slot=0; if(sfxHas("danger")) SFX.play("danger");
+          if(h&&Math.random()<p){ h.hp=0; h.down=1; h.slot=0; prideFall(h); if(sfxHas("danger")) SFX.play("danger");
             toast(`${h.name}${jo(h.name,"ig")} 쓰러졌습니다. 주둔지 치료소에서만 일어납니다.`);
             /* 남은 대원이 없으면 전투를 기다리지 않고 그 자리에서 끝난다 */
             if(!run.heroes.some(x=>!x.down)){
@@ -11058,7 +11058,7 @@ function spawnFoeNamed(n,slot){
   const d=FOE[n]; if(!d||!B) return null;
   const sc=foeScale(B.kind), hp=Math.round(d.hp*sc.m*sc.hpP)+sc.hpAdd;
   const f={name:n,slot:slot,isFoe:1,maxHp:hp,hp:hp,
-    atk:Math.max(1,Math.round(d.atk*(1+(sc.m-1)*0.5)*sc.atkP))+sc.atkAdd,
+    atk:Math.max(1,Math.round(d.atk*foeAtkMult()*(1+(sc.m-1)*0.5)*sc.atkP))+sc.atkAdd,
     def:Math.round(d.def*(1+(sc.m-1)*0.55)*sc.defP)+sc.defAdd,
     rng:d.rng,exp:d.exp+run.field*2+Math.floor(run.day/3),demon:d.demon||0,boss:0,
     shield:0,air:0,alive:1,id:B.foes.length,infect:0,stun:0,weak:0,taunt:0,thorn:0,evade:0,negShield:0,hide:0,deb:{},ai:null,role:null};
@@ -11869,7 +11869,7 @@ const CARD_META={
  "강철 갑옷":{src:"대원 · 나이코스",gone:1}, "강철 각반":{src:"대원 · 나이코스",gone:1},
  "강철 군화":{src:"대원 · 나이코스",gone:1}, "강철 투구":{src:"대원 · 나이코스",gone:1},
  "마법 부여 보호구":{src:"대원 · 나이코스",gone:1}, "영광의 휘장":{src:"대원 · 나이코스",gone:1},
- "악마 하수인":{src:"대원 · 굴라",gone:1}, "악마 장군":{src:"대원 · 굴라",gone:1}, "성벽":{src:"대원 · 헥토",gone:1},
+ "악마 하수인":{src:"대원 · 굴라"}, "악마 장군":{src:"대원 · 굴라"}, "성벽":{src:"대원 · 헥토",gone:1},
  "저주받은 성벽":{src:"대원 · 헥토"}, "망자의 육체":{src:"대원 · 트리스탄",gone:1},
  "귀환서":{src:"상점"}, "위장 망토":{src:"상점"},
  "불덩이":{src:"상점"}, "빵":{src:"상점"},
@@ -13137,6 +13137,10 @@ function partyPower(){
    구역마다 적을 따로 적어 넣어 세기를 손으로 잡게 되면
    FIELD_MULT 를 [1,1,1] 로 낮추면 계단이 사라진다. */
 const FIELD_MULT=[1, 1.5, 2];
+/* 적 공격력(마법력도 같은 값이다) 배율 — 대원이 너무 쉽게 이겨 올렸다 (사용자 2026-09-15). 고유 기술의 피해도 이 몫만큼 따라 오른다.
+   구역마다 다르게 — 3구역은 sim 기준선이 이미 낮아(lv12 20%) 조금만 */
+const FOE_ATK_MULT=[1.3,1.2,1.1];
+function foeAtkMult(){ return FOE_ATK_MULT[Math.min(run?run.field:0,FOE_ATK_MULT.length-1)] }
 const FIELD_GROW=0.07;
 function fieldMult(f){ return FIELD_MULT[Math.min(f, FIELD_MULT.length-1)] }
 /* ★ 우두머리는 대원 레벨을 따라 세지지 않는다 — 정해진 능력치를 가진다.
@@ -13182,6 +13186,8 @@ function startBattle(kind,pinned){
     BSNAP=null;
     try{ BSNAP={kind:kind,run:JSON.stringify(run)} }catch(e){ BSNAP=null }
   }
+  /* 소멸성 카드(gone) — 라운드 사이에는 남긴다. 전투(칸)가 끝나면 손패가 다시 짜이며 사라진다 (사용자 2026-09-15) */
+  const prevGone=(!pinned&&B&&B.hand&&run.dun&&run.dun.wave>1)?B.hand.filter(c=>c.gone&&c.type!=="hero"):[];
   B={kind,turn:1,over:0,log:[],hand:[],units:[],foes:[],drag:null,pick:null};
   B_ENC=null;                       /* 지난 판의 조합 이름이 남지 않게 */
   /* 전투(옛 던전) 하나는 여러 라운드로 이루어진다.
@@ -13250,7 +13256,7 @@ function startBattle(kind,pinned){
     const lead=(kind==="elite"&&s===1)?1.26:1;
     const hp=Math.round(d.hp*sc.m*sc.hpP*lead)+sc.hpAdd;
     B.foes.push({name:n,slot:s,isFoe:1,maxHp:hp,hp:hp,
-      atk:Math.max(1,Math.round(d.atk*(1+(sc.m-1)*0.5)*sc.atkP*lead))+sc.atkAdd,
+      atk:Math.max(1,Math.round(d.atk*foeAtkMult()*(1+(sc.m-1)*0.5)*sc.atkP*lead))+sc.atkAdd,
       def:Math.round(d.def*(1+(sc.m-1)*0.55)*sc.defP*(lead>1?1.08:1))+sc.defAdd,
       rng:d.rng,exp:d.exp+run.field*2+Math.floor(run.day/3),demon:d.demon||0,boss:d.boss||0,
       shield:0,air:0,alive:1,id:i,infect:0,stun:0,weak:0,
@@ -13309,6 +13315,7 @@ function startBattle(kind,pinned){
       return }
     B.hand.push({type:"item",name:cd.n,d:L.d+` (보유 ${cd.c})`,stock:cd.n,use:L.use});
   });
+  prevGone.forEach(c=>B.hand.push(c));
   setTimeout(()=>{ const f=B&&B.foes&&B.foes.filter(x=>x.alive);
     if(f&&f.length) bark(f[0].boss?f[0]:rnd(f),"in") },700);
   say(`${FIELDS[run.field].n} — ${kind==="boss"?"우두머리":kind==="elite"?"정예":"교전"} `
@@ -14556,8 +14563,9 @@ function drawBattle(app){
     const nm=hero?hero.name:c.name;
     /* 도감과 같은 표 — 소멸성 · 적 대상 */
     const tags=[];
+    if(c.gone) tags.push("소멸성");                  /* 이 카드만 소멸성 (차원문에서 나온 하수인 따위) */
     if(c.type==="item"){
-      if((CARD_META[key]||{}).gone) tags.push("소멸성");
+      if(!c.gone&&(CARD_META[key]||{}).gone) tags.push("소멸성");
       if(CARD_LIB[key]&&CARD_LIB[key].foe) tags.push("적 대상");
     }
     const art=hero?figure(hero.name):(c.type==="summon"?figure(c.name):cardArt(c.name));
@@ -14885,7 +14893,7 @@ function progressOf(h){
   if(h.name==="굴라")
     out.push({n:"탐욕의 악마",c:h.greed||0,m:greedCapOf(h),done:(h.greed||0)>=greedCapOf(h)});
   if(h.name==="나이코스")
-    out.push({n:"전장의 승자",c:h.wins||0,m:h.tag.winCap||2});
+    out.push({n:"전장의 승자",c:h.pride||0,m:prideCap(h)});
   if(h.name==="쿠렘타이")
     out.push({n:"영혼",c:(run.souls||0)%40,m:40,done:false});
   if(h.name==="트리스탄")
@@ -15776,7 +15784,12 @@ function predictDmg(h,s,tgt){
   for(let q=0;q<PRED_OFF.length;q++) if(s[PRED_OFF[q]]) return null;
   /* 이테리오 — 마나를 내는 순간 마법력이 그만큼 오른다 */
   const magB=(h.name==="이테리오"&&s.cost&&s.costType!=="mom"&&s.costType!=="scale")?s.cost:0;
-  const MAG=(h.mag||0)+magB, ATK=h.atk||0;
+  const MAG=(h.mag||0)+magB; let ATK=h.atk||0;
+  /* 물량 공세 — 차원문 위에 선 악마 하수인 (runEffect 와 같은 셈) */
+  if(h.isMin&&/^악마 (하수인|장군)$/.test(h.name)){
+    const ow=run.heroes.find(x=>x.name==="굴라");
+    if(ow&&ow.tag.portalImpAtk&&(B.portals||[]).some(p=>p.side==="mine"&&p.slot===h.slot)) ATK+=ow.tag.portalImpAtk;
+  }
   const bs=k=>(s[k]||0)+mod(s,k);
   const alive=B.foes.filter(x=>x.alive);
   const far=alive.length?alive.reduce((a,b)=>dist(h.slot,a.slot)>=dist(h.slot,b.slot)?a:b):null;
@@ -17440,16 +17453,11 @@ function runEffect(h,i,s,target){
     const side=target<0?"mine":"foe", slot=Math.abs(target);
     const ex=B.portals.find(p=>p.side===side&&p.slot===slot);
     if(ex){
-      /* 여느 카드처럼 보유 카드로 넣는다 (최대 10장) — 그래야 이 전투가 끝나도 남는다.
-         그러고 나서 이번 전투에 바로 쓰라고 손에도 한 장 얹는다.
-         stock 을 적어 두면 내려놓을 때 useCard 가 보유량에서 한 장 뺀다
-         (여느 보유 카드가 손에 들어오는 꼴과 똑같다 — L.summon 갈래를 볼 것). */
+      /* 리메이크 (사용자 2026-09-15) — 차원문을 닫고, 손패에 소멸성 [악마 하수인] 카드 한 장.
+         보유 카드(run.cards)에는 넣지 않는다 — 이 전투가 끝나면 사라진다. 보상으로 얻은 것은 여느 카드처럼 남는다. */
       const cn=impCardName();
-      addCard(run,cn,1);
-      /* ★ stock 카드는 한 장이 보유량 전체를 뜻한다. 이미 손에 있으면 더 얹지 않는다 —
-         얹으면 차원문을 쓸 때마다 손패가 하수인으로 찬다 */
-      if(!B.hand.some(c=>c.stock===cn))
-        B.hand.push({type:"summon",name:cn,stock:cn});
+      B.portals.splice(B.portals.indexOf(ex),1);
+      B.hand.push({type:"summon",name:cn,gone:1});
       /* 칸에 놓을 때와 같은 소리 — 틈에서 나오는 놈이나 칸에 서는 놈이나 같은 놈이다 */
       fx({side:side,slot:slot,art:"rift",s:sfxOr("악마 하수인 배치","summon"),
           txt:"하수인",cls:"crit"});
@@ -17457,7 +17465,7 @@ function runEffect(h,i,s,target){
          둘을 이어서 보면 "저기서 나온 것이 이 카드가 되었다" 로 읽힌다.
          카드를 실제로 내려놓는 자리는 안 건드린다 — 세 번 보게 된다 */
       riftOnCard(B.hand.length-1);
-      say(`차원문 재사용 — ${cn} 카드를 얻습니다. 빈 칸에 끌어다 소환하세요.`,"t1");
+      say(`차원문을 닫고 ${cn} 카드를 얻습니다 — 이 전투가 끝나면 사라집니다. 빈 칸에 끌어다 소환하세요.`,"t1");
       barkPick(h,["skill:균열 차원문:카드","atk"]);
     }else{
       /* fresh 가 서 있는 동안은 바닥 표시를 안 그린다 — 띠가 다 돌 때까지.
@@ -17711,14 +17719,8 @@ function battleLost(){
   run.dun=null; run.pendingEnter=null;
   /* 전장의 승자 — 패배하면 그렇게 얻은 공격력을 모두 잃는다.
      '분노 전환'을 가졌으면 잃는 대신 그만큼 더 얻는다. */
-  run.heroes.forEach(h=>{
-    if(h.name!=="나이코스"||!h.wins) return;
-    const n=h.wins; h.wins=0;
-    if(h.tag.rageTurn){ h.atk+=n;
-      say(`분노 전환 — 잃을 뻔한 공격력이 오히려 ${n} 더 붙습니다.`,"t1") }
-    else { h.atk=Math.max(0,h.atk-n);
-      say(`전장의 승자 — 패배로 얻었던 공격력 ${n}을 잃습니다.`,"t3") }
-  });
+  /* 자부심은 '패배' 가 아니라 '쓰러짐' 에 잃는다 — unitDown 이 이미 처리했다. 여기서는 쓰러진 채 남은 몫만 */
+  run.heroes.forEach(h=>{ if(h.down&&h.pride) prideFall(h) });
   const standing=run.heroes.filter(h=>!h.down).length;
   if(!standing){
     say("모두 쓰러졌습니다. 일으켜 줄 사람이 남지 않았습니다.","t3");
@@ -17836,6 +17838,7 @@ function unitDown(t){
         쓰러짐은 체력이 다해 전투불능이 된 상태다. */
   say(`${t.name} 쓰러짐 — 그 자리에 그대로 남습니다.`,"t3");
   t.hp=0; t.down=1; t.downSlot=t.slot; t.slot=0; onDeath("ally");
+  prideFall(t);                                   /* 나이코스 — 쓰러지면 자부심을 잃는다 */
   if(t.name==="트리스탄"&&!B.corpseUsed){
     B.corpseUsed=1; B.hand.push({type:"summon",name:"망자의 육체"});
     say("저주받은 육체 — 망자의 육체 카드를 얻습니다.","t1");
@@ -18297,15 +18300,33 @@ function checkEnd(){
   }
 }
 /* 전투 하나가 정말 끝났을 때 — 라운드가 아니라 전투 단위로 셈하는 것들 */
+/* 전장의 승자 (리메이크 · 사용자 2026-09-15) — 이길 때마다 자부심 +1 (한도 6, 강화 +2).
+   자부심 2개마다 공격력 +1 (h.prideAtk 에 얼마나 얻었는지 적어 둔다). 가득 찼으면 금화 1 (+지배자·전투 경험).
+   쓰러지면 prideFall — 자부심과 그걸로 얻은 공격력을 모두 잃는다 (분노 전환이면 오히려 그만큼 더). */
+function prideCap(h){ return h.tag.winCap||6 }
+function prideFall(h){
+  if(!h||h.name!=="나이코스"||!h.pride) return;
+  const got=h.prideAtk||0;
+  if(h.tag.rageTurn){ h.atk+=got;
+    say(`분노 전환 — 쓰러져도 자부심 ${h.pride}은 남고, 공격력이 오히려 ${got} 더 붙습니다.`,"t1"); return }
+  h.atk=Math.max(0,h.atk-got);
+  say(`전장의 승자 — 쓰러져 자부심 ${h.pride}${got?`과 공격력 ${got}`:""}을 모두 잃습니다.`,"t3");
+  h.pride=0; h.prideAtk=0;
+}
 function battleWon(){
   run.heroes.forEach(clearTmp);
   run.heroes.forEach(h=>{
-    if(h.name!=="나이코스") return;
-    const cap=h.tag.winCap||2;
-    if(h.tag.winGold) run.gold+=h.tag.winGold;
-    if(h.wins<cap){ h.wins++; h.atk++ }
+    if(h.name!=="나이코스"||h.down) return;
+    const cap=prideCap(h);
+    if((h.pride||0)<cap){
+      h.pride=(h.pride||0)+1;
+      say(`전장의 승자 — 자부심 +1 (${h.pride}/${cap})`,"t2");
+      if(h.pride%2===0){ h.atk++; h.prideAtk=(h.prideAtk||0)+1;
+        if(h.tag.winGold) run.gold+=h.tag.winGold;
+        say(`자부심 ${h.pride} — 공격력 +1 (자부심으로 얻은 공격력 ${h.prideAtk})`,"t1") }
+    }
     else {
-      run.gold+=1; say("전장의 승자 — 넘친 몫이 금화 1로 바뀝니다.","t2");
+      run.gold+=1; say("전장의 승자 — 자부심이 가득 차 넘친 몫이 금화 1로 바뀝니다.","t2");
       /* 공격력을 더 얻을 수 없을 때 대신 받는 것들 */
       if(h.tag.winHp&&(h.winHp||0)<10){
         h.winHp=(h.winHp||0)+1; h.maxHp++; h.hp++;
@@ -18657,8 +18678,11 @@ function rewardSkill(r){
   if(/^\[전투 기술\]/.test(r.d||"")) return r.n;
   /* 2) 이름이 곧 기술 이름 */
   if(N.all[r.n]) return r.n;
-  /* 3) '<기술> 강화' */
-  if(/ 강화$/.test(r.n)&&N.all[r.n.slice(0,-3)]) return r.n.slice(0,-3);
+  /* 3) '<기술> 강화' · '<기술> 강화: 갈래' — 기술 이름의 일부만 적혀 있어도('차원문 강화: 공격' → 균열 차원문) 찾는다 (사용자 2026-09-15) */
+  { const m=r.n.match(/^(.+?) 강화(?::.*)?$/);
+    if(m){ const b=m[1]; if(N.all[b]) return b;
+      const own=(r.own&&N[r.own])||N.all;
+      const k=Object.keys(own).find(x=>x.indexOf(b)>=0); if(k) return k } }
   /* 4) 설명에 나오는 기술 중 가장 먼저 나오는 것.
         그 대원의 기술로만 좁힌다 — 남의 기술과 이름이 겹칠 수 있다 */
   const own=(r.own&&N[r.own])||null;
@@ -18752,7 +18776,7 @@ function heroStacks(h){
   if(h.name==="쿠렘타이") L.push({n:"영혼",v:`${run.souls||0}`,x:`얻은 마법력 ${h.soulMag||0}`,c:"#8fb4ef"});
   if(h.name==="트리스탄") L.push({n:"사명감",v:`${h.duty||0}`,x:`얻은 공격력 ${h.dutyAtk||0}`,c:"#e0a86a"});
   if(h.name==="데린저") L.push({n:"보물 점수",v:`${run.treasure||0}`,x:"5점마다 공격력 +1",c:"#e0c85a"});
-  if(h.name==="나이코스") L.push({n:"전장의 승자",v:`${h.wins||0}/${h.tag.winCap||2}`,x:"이길 때마다 공격력 +1",c:"#e0705a"});
+  if(h.name==="나이코스") L.push({n:"자부심",v:`${h.pride||0}/${prideCap(h)}`,x:`2개마다 공격력 +1 · 얻은 공격력 ${h.prideAtk||0}`,c:"#e0705a"});
   if(h.name==="굴라") L.push({n:"탐욕의 악마",v:`${h.greed||0}/${greedCapOf(h)}`,x:"이번 전투에 얻은 최대 체력",c:"#c9a227"});
   if(h.name==="도미니코") L.push({n:"독서",v:`${h.read||0}/${h.tag.readNeed||10}`,x:h.blessed?"축복 중":"차면 축복",c:"#a06ae0"});
   if(!L.length) return "";
