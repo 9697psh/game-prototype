@@ -9271,7 +9271,7 @@ function nextDay(){
     lose(`${FIELDS[run.field].days}일이 지나도록 우두머리를 넘지 못했습니다.`); return;
   }
   run.time=6; run.act=run.actMax; run.night=0; run.campDone=0; run.route=null;
-  addTaint(10);
+  /* addTaint(10) — 2026-09-16 뺌: 날이 바뀌는 것만으로는 오염도가 오르지 않는다 (노숙의 +10 은 그대로) */
   respawn();
   const left=FIELDS[run.field].days-run.day;
   dayBreak(run.day, left>0?`${FIELDS[run.field].n} · 남은 날 ${left}일`:`${FIELDS[run.field].n} · 마지막 날`);
@@ -9839,7 +9839,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (사용자 2026-09-15) */
-const BUILD_NO=439;
+const BUILD_NO=440;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -12607,7 +12607,7 @@ function drawRest(app){
   b.onclick=()=>{ run.after=run.after||[]; for(let i=0;i<n;i++) run.after.push({grade:grade});
     afterChest() };
   const c=el(`<div class="rw ${run.night?"":"no"}"><div class="rwi">${nodeArt("camp")}</div>
-    <b>노숙한다</b><p>여기서 밤을 보내고 다음 날 아침을 맞습니다. 주둔지가 아니라 오염도가 10 더 오릅니다.</p>
+    <b>노숙한다</b><p>여기서 밤을 보내고 다음 날 아침을 맞습니다. 주둔지가 아니라 오염도가 10 오릅니다.</p>
     ${run.night?"":`<p style="color:var(--faint)">해가 진 뒤에만 할 수 있습니다.</p>`}</div>`);
   if(run.night) c.onclick=()=>{ addTaint(10); nextDay();
     if(view!=="over"){ run.here=null; toast("모닥불 곁에서 밤을 보냈습니다."); view="map"; render() } };
