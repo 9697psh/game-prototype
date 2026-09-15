@@ -7987,6 +7987,8 @@ let MAPTIP_EL=null;
 function mapTipFill(cell,r,c){
   const kind=cell.t||"empty";
   let t=MAP_TIP[kind]; if(t==null) return "";
+  const patrolEmpty=kind==="empty"&&onPatrol(r,c);
+  if(patrolEmpty) t=t.replace(/^빈 길/,"<b>간수 순찰로</b>");
   const dist=Math.abs(r-run.pos.r)+Math.abs(c-run.pos.c);
   const amb=ambushChance(cell,r,c);
   const dLeft=Math.max(0,((FIELDS[run.field]||{}).days||7)-run.day+1);
@@ -8025,7 +8027,7 @@ function mapTipFill(cell,r,c){
         +`</div><div class="mt-go${picked?" on":""}">${picked?"한 번 더 누르면 이동합니다":"누르면 길을 보여 줍니다 · 한 번 더 누르면 이동합니다"}</div>`;
     } else route=`<div class="mt-go">가는 길이 없습니다</div>`;
   }
-  return `<div class="mt-h"><i class="mt-i">${gimCellArt(cell)||inkArt(kind)||nodeArt(kind)}</i><span>${rich(head)}</span>${cell.done?`<em class="mt-done">끝냄</em>`:""}</div>`
+  return `<div class="mt-h"><i class="mt-i">${patrolEmpty?iconImg("ink11_map_guard_footprints"):(gimCellArt(cell)||inkArt(kind)||nodeArt(kind))}</i><span>${rich(head)}</span>${cell.done?`<em class="mt-done">끝냄</em>`:""}</div>`
     +(lines.length?`<div class="mt-b">${lines.map(x=>`<div>${rich(x).replace("<b>낮 습격",'<b class="mt-red">낮 습격').replace("<b>전투 금화 획득량",'<b class="mt-gold">전투 금화 획득량')}</div>`).join("")}</div>`:"")
     +`<div class="mt-f">${dist===0?"지금 서 있는 칸":`여기서 ${dist}칸`}${(kind==="dungeon"||kind==="elite")&&cell.done?" · 이미 치른 전투":""}${cell.visited||(dist===0&&GIM_T[kind]&&kind!=="wall")?" · 눌러서 다시 들어갈 수 있습니다":""}</div>`
     +route;
@@ -9142,7 +9144,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (사용자 2026-09-15) */
-const BUILD_NO=399;
+const BUILD_NO=400;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
