@@ -824,7 +824,7 @@ button.dtl{padding:3px 10px;font-size:11.5px}
 .encs{position:relative;display:flex;align-items:flex-end;justify-content:center;border-right:1px dashed rgba(255,255,255,.08);padding-bottom:6px}
 .encs:last-child{border-right:0} .encs i{position:absolute;left:4px;top:4px;font-style:normal;font-size:9px;color:var(--faint)}
 .encs .encf{display:block;height:64px} .encs .encf img.pxs{width:auto;height:calc(52px * var(--ph,1));max-height:70px;image-rendering:pixelated;filter:saturate(.8) drop-shadow(0 2px 0 rgba(0,0,0,.6))}
-.encs .encf svg{width:48px;height:48px}
+.encs .encf svg{width:48px;height:48px} .encs .encf.big2{display:block;height:64px;border-left:1px dashed rgba(224,168,106,.5);margin-left:-12px}
 .evdx-art.encrow{height:104px;background:radial-gradient(ellipse at 50% 90%,#2a2016,#100d0a 70%)}
 .evdx-art.gdx{gap:14px;background:radial-gradient(circle at 50% 60%,#2a2016,#100d0a 70%)} .evdx-art.gdx img{width:64px;height:64px}
 .gdx-well{display:grid;grid-template-columns:repeat(3,32px);gap:0} .evdx-art.gdx .gdx-well img{width:32px;height:32px;display:block}
@@ -7263,7 +7263,7 @@ function encFeat(e){
   return t;
 }
 function drawEncDex(app){
-  const total=ENCOUNTER.reduce((a,L)=>a+L.length,0);
+  const total=ENCOUNTER.reduce((a,L)=>a+L.length,0)+ELITE_ENC.reduce((a,L)=>a+L.length,0);
   app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">조 합 도 감</div>
     <div class="sub">전투 칸에 서는 적의 조합 ${total}가지 — 자리와 확률, 특징</div></div>`));
   const wrap=el(`<div class="dexwrap"></div>`);
@@ -7286,6 +7286,20 @@ function drawEncDex(app){
           <div class="evdx-t">${e.foes.map(n=>esc(n)).join(" · ")}</div></div></div>`));
     });
     wrap.appendChild(grid);
+    const E=ELITE_ENC[fi]||[];
+    if(E.length){
+      wrap.appendChild(el(`<div class="dexhd" style="margin-top:12px">정예 전투 · ${E.length}가지 (정예 칸에서는 이 중 하나)</div>`));
+      const g3=el(`<div class="evdx-grid encdx"></div>`);
+      E.forEach(e=>{
+        const cells=[]; for(let i=1;i<=SLOTS;i++) cells.push("");
+        e.foes.forEach((nm,i)=>{ const sl=(e.slots&&e.slots[i])||(i+1); if(sl>=1&&sl<=SLOTS) cells[sl-1]+=`<span class="encf" title="${esc(nm)}">${figure(nm)}</span>`; if(FOE[nm]&&FOE[nm].big&&sl<SLOTS) cells[sl]+=`<span class="encf big2" title="${esc(nm)} (두 칸)"></span>` });
+        g3.appendChild(el(`<div class="evdx-card">
+          <div class="evdx-art encrow">${cells.map((c,i)=>`<div class="encs"><i>${i+1}</i>${c}</div>`).join("")}</div>
+          <div class="evdx-body"><div class="evdx-name">★ ${esc(e.n)}</div><div class="evdx-tags"><span class="evdx-tag r">정예</span><span class="evdx-tag">확률 ${e.w||1} (${Math.round((e.w||1)/E.reduce((a,x)=>a+(x.w||1),0)*100)}%)</span></div>
+            <div class="evdx-t">${e.foes.map(n=>esc(n)).join(" · ")}</div></div></div>`));
+      });
+      wrap.appendChild(g3);
+    }
     const Q=ENC_SEQ[fi]||[];
     if(Q.length){
       wrap.appendChild(el(`<div class="dexhd" style="margin-top:12px">짜여진 구성 · ${Q.length}가지</div>`));
@@ -8261,7 +8275,18 @@ const ENC_SEQ=[
  ],
  [], []
 ];
-function encByName(f,n){ return (ENCOUNTER[f]||[]).find(e=>e.n===n)||null }
+/* ── 정예 전투 조합 (ppt '핏빛 감옥. 정예 전투', 사용자 2026-09-16) — 정예 칸은 이것만. 칸은 그림 자리(1이 맨 앞) ── */
+const ELITE_ENC=[
+ [
+  {n:"사슬에 묶인 마귀", w:1, foes:["사슬 간수","사슬에 묶인 마귀","사슬 간수"], slots:[2,3,4], min:1},
+  {n:"정체 모를 주술사", w:1, foes:["정체 모를 주술사"], slots:[3], min:1},
+  {n:"풀려난 장군",     w:1, foes:["풀려난 장군"], slots:[2], min:1},          /* 두 칸 — 2·3 */
+  {n:"간수의 손",       w:1, foes:["간수의 손","감옥의 눈","감옥의 눈"], slots:[2,3,4], min:1},
+  {n:"오염된 갑주",     w:1, foes:["오염된 갑주"], slots:[1], min:1},
+ ],
+ [], []
+];
+function encByName(f,n){ return (ENCOUNTER[f]||[]).find(e=>e.n===n)||(ELITE_ENC[f]||[]).find(e=>e.n===n)||null }
 /* 조합 하나를 실제 판으로 편다 — [[이름,칸],…]. ppt 의 특징을 여기서 푼다 */
 function encLayout(enc){
   let L=enc.foes.map((nm,i)=>({n:nm,s:(enc.slots&&enc.slots[i])||(i+1)}));
@@ -9740,7 +9765,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (사용자 2026-09-15) */
-const BUILD_NO=424;
+const BUILD_NO=425;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -13349,6 +13374,11 @@ function foeSet(kind){
   /* 손으로 짠 조합에서 고른다. 대원이 적으면 큰 판은 빠지고,
      라운드마다 나올 수 있는 것이 다르다 */
   let enc=null;
+  /* 정예 칸 — 정예 조합표가 있는 구역은 그것만 (사용자 2026-09-16) */
+  if(kind==="elite"&&(ELITE_ENC[f]||[]).length){
+    const enc2=rnd(ELITE_ENC[f].filter(e=>(e.min||1)<=n)||ELITE_ENC[f]); B_ENC=enc2.n;
+    encLayout(enc2).forEach(x=>out.push(x)); return out;
+  }
   if(run.dun&&run.dun.seq){ enc=encByName(f,run.dun.seq[((run.dun.wave||1)-1)%run.dun.seq.length]) }   /* 짜여진 구성 */
   if(!enc) enc=pickEncounter(f,n,(run.dun&&run.dun.wave)||1);
   if(enc){
