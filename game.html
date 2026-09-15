@@ -7960,9 +7960,10 @@ const FOE={
    el:"공격",
    /* 두 턴마다 [감시] 카드를 손패에 밀어 넣고 기술 하나를 두 턴 잠근다 (foePhase 의 gimWatch)
       기술은 차례대로 바뀐다 — 찌르기 → 막기 → 두 번 찌르기 → 멀리보기 → 휘두르기 → 무르기 (사용자 2026-09-15) */
-   pas:[{k:"info",n:"차례대로",d:"기술을 쓸 때마다 다음 행동으로 바뀝니다. 먼 곳을 봅니다."}],
+   pas:[{k:"watchAtk",v:2,n:"멀리 보기",d:"손패의 감시 1장 당 공격력을 +2 얻습니다."}],   /* 2026-09-16: '차례대로' → 멀리 보기 (기술은 여전히 차례대로 돈다) */
    ai:{open:"def",near:8,any:5,def:6,weak:3,buff:2},
    sk:[
+    {n:"감시",w:1,tg:"self",open:1,giveCard:"감시",shield:4,d:"[감시] 카드 1장을 줍니다. 보호막을 4 얻습니다. (첫 턴에 시전)"},
     {n:"찌르기",w:1,tg:"any",dmg:8,fwd:1,chase:1,d:"앞으로 한 칸 이동하고, 무작위 대원에게 공격 피해를 8 줍니다."},
     {n:"막기",w:1,tg:"self",shield:6,buff:2,d:"보호막을 6 얻고 공격력을 2 얻습니다."},
     {n:"두 번 찌르기",w:1,tg:"near",dmg:5,hits:2,chase:1,d:"가장 가까운 대원에게 공격 피해를 5씩 2번 줍니다."},
@@ -8991,7 +8992,24 @@ function buildGrid(fi,keep){
   put("rest",nodeCount("rest",fi)+1+(Math.random()<0.5?1:0));   /* 쉼터 +1~2 — 9×9 로 밤이 빨리 온다 (사용자 2026-09-15) */
   put("event",nodeCount("event",fi));
   put("forge",1);                 /* 제련소는 어느 구역에나 한 곳 */
+  campSafe(g);
   return g;
+}
+/* 주둔지 반경 2칸에는 3라운드 전투·정예 전투가 없다 (사용자 2026-09-16) — 새 판·재편성·새 날 모두.
+   정예는 멀리 있는 전투 칸과 자리를 바꾸고(없으면 1라운드 전투로), 3라운드 전투는 1~2라운드로 줄인다 */
+function campSafe(g){
+  const S=g.length, camp=[S-1,Math.floor(S/2)];
+  const near=(r,c)=>Math.abs(r-camp[0])+Math.abs(c-camp[1])<=2;
+  for(let r=0;r<S;r++) for(let c=0;c<S;c++){
+    const x=g[r][c]; if(!near(r,c)) continue;
+    if(x.t==="elite"){
+      let sw=null;
+      for(let r2=0;r2<S&&!sw;r2++) for(let c2=0;c2<S;c2++){ const y=g[r2][c2]; if(!near(r2,c2)&&y.t==="dungeon"&&(y.waves||1)<=2){ sw=[r2,c2]; break } }
+      if(sw){ const y=g[sw[0]][sw[1]]; g[sw[0]][sw[1]]=x; g[r][c]=y }
+      else g[r][c]={t:"dungeon",waves:1,style:x.style||rnd(DUN_STYLE),loot:x.loot||rnd(DUN_LOOT)};
+    }
+    if(g[r][c].t==="dungeon"&&(g[r][c].waves||1)>=3) g[r][c].waves=1+Math.floor(Math.random()*2);
+  }
 }
 /* ═══════════ 지도 기믹 (사용자 2026-09-15) ═══════════
    구역마다 개성 있는 칸. 확률이 낮고(구역당 0~3개), 주둔지 곁(2칸 안)에는 안 놓는다.
@@ -9145,6 +9163,7 @@ function respawn(){
     }
     if(n) toast("정복하지 않은 전투 칸이 사라지고, 새 전투 칸이 나타났습니다.");
   }
+  campSafe(run.grid);
 }
 
 /* ═══════════ 대원 · 원정 ═══════════ */
@@ -9818,7 +9837,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (사용자 2026-09-15) */
-const BUILD_NO=429;
+const BUILD_NO=430;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -13932,7 +13951,9 @@ function passChips(f){
   const D=FOE[f.name]; const P=(D&&D.pas)||[];
   return P.map(p=>`<span class="chip pass" title="${esc(p.d||"")}">${esc(p.n)}</span>`).join("");
 }
-function skDmg(f,s){ const D=FOE[f.name]||{}; return Math.max(1,(s.dmg||0)+(f.atk-(D.atk||f.atk))) }
+function skDmg(f,s){ const D=FOE[f.name]||{}; let v=(s.dmg||0)+(f.atk-(D.atk||f.atk));
+  { const w=foePas(f,"watchAtk"); if(w&&B&&B.hand){ const n=B.hand.filter(c=>c.name==="감시").length; if(n) v+=w.v*n } }   /* 멀리 보기 — 손패의 감시 1장당 +2 */
+  return Math.max(1,v) }
 function skShield(f,v){ const D=FOE[f.name]||{}; return Math.max(1,v+(f.def-(D.def||f.def))) }
 /* 이 기술이 지금 겨눌 수 있는 대원들. 첫째가 대표 대상이다 */
 function skTargets(f,s,allies){
@@ -13990,7 +14011,7 @@ function skRoll(f,allies,inR,far){
   if(!cand.length) return null;
   let pick=null;
   { const m=cand.find(c=>c.s.must); if(m) pick=m }        /* must — 조건이 맞으면 다른 것 제쳐 두고 (대포병의 포탄 장전) */
-  if(!pick&&B.turn<=1){ const o=cand.find(c=>c.s.open); if(o) pick=o }
+  if(!pick&&B.turn<=1){ const o=cand.find(c=>c.s.open); if(o){ pick=o; if(D.seq) f.skIdx=o.i+1 } }   /* 차례 기술의 첫 수도 차례를 민다 */
   /* 도망은 조건이 맞는 순간 무조건 */
   if(!pick){ const fl=cand.find(c=>c.s.flee); if(fl) pick=fl }
   if(!pick&&D.seq){
@@ -14091,6 +14112,8 @@ function skExec(f,I){
   if(s.evade){ f.evade=(f.evade||0)+s.evade; fx({side:"foe",slot:f.slot,ring:"#9cc6ee",txt:"회피 "+f.evade,cls:"shd",gap:120}); say(`${f.name} 회피 +${s.evade}`,"t2") }
   if(s.absorbNext){ f.absorbNext=1; fx({side:"foe",slot:f.slot,ring:"#a34f4f",txt:"흡수",cls:"shd",gap:120}); say(`${f.name} — 다음 공격이 피해만큼 회복합니다.`,"t2") }
   if(s.nextMust!=null) f.nextMust=s.nextMust;
+  if(s.giveCard&&CARD_LIB[s.giveCard]){ B.hand.push({type:"item",name:s.giveCard,d:CARD_LIB[s.giveCard].d,use:CARD_LIB[s.giveCard].use,gone:1});
+    fx({side:"foe",slot:f.slot,ring:"#a06ae0",txt:s.giveCard,cls:"shd",gap:140}); say(`${f.name} — 손패에 [${s.giveCard}] 카드가 끼어듭니다.`,"t3") }
   if(s.summon){ const k=rr([s.summon.min,s.summon.max]); let n=0;
     for(let i=0;i<k;i++){ let sl=1; while(sl<=SLOTS&&foeBlock(sl)) sl++; if(sl>SLOTS) break; const m=spawnFoeNamed(s.summon.n,sl); if(m){ n++; fx({side:"foe",slot:sl,s:"summon",ring:"#a06ae0",txt:"소환",cls:"shd",gap:120}) } }
     say(`${f.name} — ${s.summon.n} ${n}마리를 부릅니다.`,"t3"); if(n) rollIntents(true) }
@@ -14225,6 +14248,7 @@ function skEffectHtml(s){
   if(s.snack) P.push(`경비견 ${ic("atk")}+${s.snack.atk||0}${s.snack.shield?` ${ic("def")}${s.snack.shield}`:""}`);
   if(s.riot) P.push(`폭도 ${ic("atk")}+1`);
   if(s.fire) P.push("대포 발사");
+  if(s.giveCard) P.push(`[${s.giveCard}] 1장`);
   if(s.summon) P.push(`${s.summon.n} 소환`);
   if(s.maxUp) P.push(`최대${ic("hp")}+${s.maxUp}`);
   if(s.evade) P.push(`회피${s.evade}`);
