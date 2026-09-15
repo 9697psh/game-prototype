@@ -180,6 +180,7 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .art img.pxs{height:calc(56px * var(--ph,1));width:auto;image-rendering:pixelated;display:block;
   filter:drop-shadow(0 2px 0 rgba(0,0,0,.55)) drop-shadow(0 0 7px rgba(201,162,39,.22))}
 /* 쓰러진 대원 — 그 자리에 그대로 남는다. 아무것도 주고받지 못한다 */
+.slot.wreck .art img.pxs,.slot.wreck .art svg{filter:saturate(.3) brightness(.6) drop-shadow(0 2px 0 rgba(0,0,0,.6))}
 .slot.body{opacity:.72;border-style:dashed;border-color:rgba(74,62,49,.6);
   background:linear-gradient(180deg,rgba(30,24,21,.7),rgba(18,15,13,.7) 46%)}
 .slot.body .art img.pxs{filter:saturate(.45) brightness(.78) drop-shadow(0 2px 0 rgba(0,0,0,.6))}
@@ -7969,10 +7970,10 @@ const FOE={
     {n:"바라보기",w:6,tg:"all",dmg:1,buff:1,
       d:"모든 대원에게 마법 피해를 1 주고, 마법력을 1 얻습니다."}],
    hit:"바라보기"},
- "대포":{hp:10,atk:4,def:8,rng:5,exp:1,still:1,
+ "대포":{hp:10,atk:4,def:8,rng:5,exp:1,still:1,wreck:1,   /* 부서져도 자리에 남는다 (사용자 2026-09-16) */
    el:"공격",
    gim:{taunt:1},
-   pas:[{k:"info",n:"고정 포대",d:"움직이지 않고 늘 도발합니다. 뒤에 대포병이 있어야 쏩니다."}],
+   pas:[{k:"info",n:"고정 포대",d:"움직이지 않고 늘 도발합니다. 뒤에 대포병이 있어야 쏩니다. 부서져도 잔해가 자리에 남아 길을 막습니다."}],
    sk:[{n:"대포 발사",w:1,tg:"near",dmg:4,fireOnly:1,
       d:"가장 앞 대원에게 공격 피해를 4 줍니다. (대포병의 지시를 받을 때만)"}],
    hit:"대포 발사"},
@@ -9706,7 +9707,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (사용자 2026-09-15) */
-const BUILD_NO=422;
+const BUILD_NO=423;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -11262,7 +11263,7 @@ function gimFenceBattle(){
 }
 function spawnFoeNamed(n,slot){
   const d=FOE[n]; if(!d||!B) return null;
-  if(foeAt(slot)) return null;
+  if(foeBlock(slot)) return null;
   const sc=foeScale(B.kind), hp=Math.round(d.hp*sc.m*sc.hpP)+sc.hpAdd;
   const f={name:n,slot:slot,isFoe:1,maxHp:hp,hp:hp,
     atk:Math.max(1,Math.round(d.atk*foeAtkMult()*(1+(sc.m-1)*0.5)*sc.atkP))+sc.atkAdd,
@@ -13564,6 +13565,8 @@ function say(t,c){ t=icoify(t); B.log.push({t,c}); const l=document.getElementBy
   if(l){ l.insertAdjacentHTML("beforeend",`<div class="${c||""}">${t}</div>`); l.scrollTop=l.scrollHeight } }
 const onField=()=>run.heroes.filter(h=>h.slot>0&&h.hp>0);
 const foeAt=s=>B.foes.find(f=>f.alive&&(f.slot===s||(f.big&&f.slot+1===s)));   /* big 은 뒤 칸도 차지 */
+const wreckAt=s=>B.foes.find(f=>!f.alive&&f.wreck&&f.slot===s);                    /* 부서진 대포 — 자리는 차지한다 */
+const foeBlock=s=>foeAt(s)||wreckAt(s);
 const allyAt=s=>run.heroes.find(h=>h.slot===s&&h.hp>0);
 const minAt=s=>(B.mins||[]).find(m=>m.alive&&m.slot===s);
 const unitAt=s=>allyAt(s)||minAt(s);
@@ -13825,11 +13828,11 @@ function skTargets(f,s,allies){
 }
 /* 사거리 안에 닿을 때까지 한 번에 — 빈 칸이 이어지는 만큼. 갈 곳이 없으면 null (사용자 2026-09-15: 한 칸씩 말고 한 번에) */
 function moveIntent(f,allies){
-  if(f.big||f.slot<=1||foeAt(f.slot-1)) return null;   /* 두 칸짜리는 움직이지 않는다 */
+  if(f.big||f.slot<=1||foeBlock(f.slot-1)) return null;   /* 두 칸짜리는 움직이지 않는다 */
   const front=allies.length?Math.max(...allies.map(a=>a.slot)):0;
   const goal=Math.max(1,(f.rng||1)-(SLOTS-front));        /* 이 칸이면 가장 앞 대원이 사거리 안 */
   let to=f.slot;
-  while(to>goal&&to>1&&!foeAt(to-1)) to--;
+  while(to>goal&&to>1&&!foeBlock(to-1)) to--;
   if(to>=f.slot) return null;
   return {t:"move",to:to,n:f.slot-to};
 }
@@ -13901,7 +13904,7 @@ function foeStep(f,dir,n){
   let moved=0;
   for(let q=0;q<(n||1);q++){
     const to=f.slot+dir;
-    if(to<1||to>SLOTS||foeAt(to)) break;
+    if(to<1||to>SLOTS||foeBlock(to)) break;
     f.slot=to; moved++;
   }
   if(moved){ fx({side:"foe",slot:f.slot,s:"step",ring:"#9c8d77",gap:120});
@@ -13961,7 +13964,7 @@ function skExec(f,I){
   if(s.absorbNext){ f.absorbNext=1; fx({side:"foe",slot:f.slot,ring:"#a34f4f",txt:"흡수",cls:"shd",gap:120}); say(`${f.name} — 다음 공격이 피해만큼 회복합니다.`,"t2") }
   if(s.nextMust!=null) f.nextMust=s.nextMust;
   if(s.summon){ const k=rr([s.summon.min,s.summon.max]); let n=0;
-    for(let i=0;i<k;i++){ let sl=1; while(sl<=SLOTS&&foeAt(sl)) sl++; if(sl>SLOTS) break; const m=spawnFoeNamed(s.summon.n,sl); if(m){ n++; fx({side:"foe",slot:sl,s:"summon",ring:"#a06ae0",txt:"소환",cls:"shd",gap:120}) } }
+    for(let i=0;i<k;i++){ let sl=1; while(sl<=SLOTS&&foeBlock(sl)) sl++; if(sl>SLOTS) break; const m=spawnFoeNamed(s.summon.n,sl); if(m){ n++; fx({side:"foe",slot:sl,s:"summon",ring:"#a06ae0",txt:"소환",cls:"shd",gap:120}) } }
     say(`${f.name} — ${s.summon.n} ${n}마리를 부릅니다.`,"t3"); if(n) rollIntents(true) }
   /* 동료를 부리는 것 */
   if(s.fire) cannonFire(f);
@@ -14763,6 +14766,12 @@ function drawBattle(app){
   for(let s=1;s<=SLOTS;s++){
     const f=foeAt(s);
     if(f&&f.big&&f.slot+1===s){ fs.appendChild(el(`<div class="slot bigshadow"></div>`)); continue }   /* 두 칸짜리의 뒷칸 */
+    if(!f&&wreckAt(s)){ const w=wreckAt(s);   /* 부서진 대포 — 대원의 쓰러짐처럼 자리에 남는다 */
+      const dw=el(`<div class="slot body wreck"><span class="no">${foeNo(s)}</span>
+        <div class="art">${figure(w.name,"hurt")}</div>
+        <div class="nm">${esc(w.name)}</div>
+        <div class="mini"><span class="chip on">부서짐</span></div></div>`);
+      dw.dataset.slot=s; fs.appendChild(dw); continue }
     const d=el(`<div class="slot ${f?"":"empty"}${f&&f.big?" big":""}"><span class="no">${foeNo(s)}${f&&f.big?"·"+foeNo(s+1):""}</span>${
       preSkill&&f?`<span class="reach">거리 ${dist(sel.hero.slot,s)}</span>`:""}</div>`);
     d.dataset.slot=s;
@@ -16439,6 +16448,7 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
   if(f.hp>0&&d>0) bark(f,"hurt",f.name==="억울한 죄수");   /* 억울한 죄수는 맞을 때마다 */
   if(f.hp>0&&d>0&&f.isFoe) foeOnHurt(f,d);                  /* 고통 감내 · 물러남 (정예, 2026-09-16) */
   if(f.hp<=0&&f.alive){ f.alive=0; bark(f,"down",1);
+    if(FOE[f.name]&&FOE[f.name].wreck){ f.wreck=1; say(`${f.name}${jo(f.name,"ig")} 부서졌습니다 — 잔해가 자리에 남습니다.`,"t2") }
     if(run&&!f.isPhantom&&!run.sandbox){ run.kills=(run.kills||0)+1; if(f.boss) run.bossKills=(run.bossKills||0)+1 }
     /* f.exp 는 전투가 끝날 때 더해지는 바로 그 값이다 — 지금까지 안 보여 줬을 뿐이다 */
     fx({side:"foe",slot:f.slot,s:"die",txt:"경험치 +"+f.exp,cls:"crit",gap:170,expgain:1});
@@ -18379,7 +18389,7 @@ function foePhase(){
     if(f.intent.t==="move"){
       /* 정한 칸까지 한 번에 — 그 사이 누가 끼어들었으면 갈 수 있는 데까지 */
       let to=f.intent.to!=null?f.intent.to:f.slot-1, cur=f.slot;
-      while(cur>1&&cur>to&&!foeAt(cur-1)) cur--;
+      while(cur>1&&cur>to&&!foeBlock(cur-1)) cur--;
       if(cur<f.slot){ const n=f.slot-cur; f.slot=cur;
         fx({side:"foe",slot:f.slot,s:"step",ring:"#9c8d77",gap:130});
         say(`${f.name} 전진 → ${foeNo(f.slot)}번${n>1?` (${n}칸)`:""}`) }
@@ -18527,7 +18537,7 @@ function startMyTurn(){
   /* 울타리 — 3턴 안에 못 부수면 4턴째에 경비원 둘 */
   if(run.dun&&run.dun.cell&&run.dun.cell.fence&&B.turn===4&&!run.dun.guards&&B.foes.some(f=>f.alive&&f.name==="울타리")){
     run.dun.guards=1;
-    [1,3].forEach(sl=>{ if(!foeAt(sl)) spawnFoeNamed("감옥 경비병",sl) });
+    [1,3].forEach(sl=>{ if(!foeBlock(sl)) spawnFoeNamed("감옥 경비병",sl) });
     SFX.play("danger"); say("경비원이 출동했습니다!","t3");
     setTimeout(()=>stepBanner("경 비 원 출 동","울타리를 지키러 왔습니다"),60);
   }
