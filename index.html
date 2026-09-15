@@ -7300,6 +7300,15 @@ function drawEncDex(app){
       });
       wrap.appendChild(g3);
     }
+    const QE=ENC_SEQ_EVENT[fi]||[];
+    if(QE.length){
+      wrap.appendChild(el(`<div class="dexhd" style="margin-top:12px">정예로 끝나는 구성 · ${QE.length}가지 <span class="evdx-tag r">이벤트용 — 아직 안 나옴</span></div>`));
+      const g4=el(`<div class="evdx-grid encdx"></div>`);
+      QE.forEach(q=>g4.appendChild(el(`<div class="evdx-card" style="opacity:.75"><div class="evdx-body"><div class="evdx-name">${esc(q.n)}</div>
+        <div class="evdx-tags"><span class="evdx-tag">${q.rounds.length}라운드</span><span class="evdx-tag r">마지막은 정예</span></div>
+        <div class="evdx-t">${q.rounds.map((r,i)=>`${i+1}라운드 — ${esc(r)}`).join("<br>")}</div></div></div>`)));
+      wrap.appendChild(g4);
+    }
     const Q=ENC_SEQ[fi]||[];
     if(Q.length){
       wrap.appendChild(el(`<div class="dexhd" style="margin-top:12px">짜여진 구성 · ${Q.length}가지</div>`));
@@ -8270,8 +8279,40 @@ const ENCOUNTER=[
    startDungeon 이 라운드 수가 맞는 구성을 절반 확률로 고른다 (나머지 절반은 라운드마다 무작위) ── */
 const ENC_SEQ=[
  [
+  /* ── 2라운드 ── (전투 구성 제안.md, 사용자 2026-09-16 전부 넣음) */
   {n:"끝없는 임프",rounds:["임프 무리", "임프 무리"]},
   {n:"임프와 폭도",rounds:["임프와 폭도", "폭도 파티"],rnd:1},
+  {n:"사슬의 뜰",rounds:["임프와 광인", "사슬 파티"]},
+  {n:"간수의 순찰",rounds:["사슬과 임프", "고문 전문가들"]},
+  {n:"어둠 속에서",rounds:["그림자 전투 1", "그림자 전투 2"],rnd:1},
+  {n:"그림자와 사슬",rounds:["광인과 그림자", "임프와 광인 2"],rnd:1},
+  {n:"불씨의 복도",rounds:["떠도는 불씨", "화상 파티"]},
+  {n:"감시의 눈 아래",rounds:["감시의 눈", "눈과 불씨"]},
+  {n:"포열",rounds:["대포병 1", "대포병 2"]},
+  {n:"두 골렘의 문",rounds:["골렘과 하수인", "두 골렘"]},
+  {n:"골렘 포대",rounds:["골렘과 대포", "대포병 3"]},
+  {n:"개 사육장",rounds:["경비견들", "경비견과 주인"]},
+  {n:"피 냄새",rounds:["피의 하수인들", "피 먹는 자"]},
+  {n:"피와 눈",rounds:["피 먹는 자", "피와 관리자"]},
+  {n:"고문실 순례",rounds:["고문 기술자", "고문 전문가들"],rnd:1},
+  {n:"폭동",rounds:["폭도 파티", "폭도와 시선"]},
+  {n:"많은 감시",rounds:["감시의 눈", "많은 감시"]},
+  {n:"죄수 호송",rounds:["임프 호송중", "사슬과 임프"],rnd:1},
+  {n:"화염 진압",rounds:["눈과 불씨", "화상 파티"],rnd:1},
+  {n:"악마의 밤",rounds:["악마 파티", "악마 파티"]},
+  /* ── 3라운드 ── */
+  {n:"감옥 순찰로",rounds:["임프 무리", "임프 호송중", "사슬과 임프"]},
+  {n:"사슬의 끝",rounds:["임프와 광인", "사슬 파티", "고문 전문가들"]},
+  {n:"불의 계단",rounds:["떠도는 불씨", "눈과 불씨", "화상 파티"]},
+  {n:"포병대",rounds:["대포병 1", "대포병 2", "대포병 3"]},
+  {n:"골렘의 방",rounds:["골렘과 하수인", "골렘과 대포", "두 골렘"]},
+  {n:"그림자 무리",rounds:["그림자 전투 1", "광인과 그림자", "그림자 전투 2"],rnd:1},
+  {n:"감시 회랑",rounds:["감시의 눈", "폭도와 시선", "많은 감시"]},
+  {n:"사육장",rounds:["경비견들", "경비견과 주인", "피의 하수인들"]},
+  {n:"피의 우물",rounds:["피의 하수인들", "피 먹는 자", "피와 관리자"]},
+  {n:"폭동 진압",rounds:["임프와 폭도", "폭도 파티", "폭도와 시선"],rnd:1},
+  {n:"고문실",rounds:["고문 기술자", "화상 파티", "고문 전문가들"],rnd:1},
+  {n:"악마 소굴",rounds:["악마 파티", "악마 파티", "악마 파티"]},
  ],
  [], []
 ];
@@ -8283,6 +8324,18 @@ const ELITE_ENC=[
   {n:"풀려난 장군",     w:1, foes:["풀려난 장군"], slots:[2], min:1},          /* 두 칸 — 2·3 */
   {n:"간수의 손",       w:1, foes:["간수의 손","감옥의 눈","감옥의 눈"], slots:[2,3,4], min:1},
   {n:"오염된 갑주",     w:1, foes:["오염된 갑주"], slots:[1], min:1},
+ ],
+ [], []
+];
+/* 정예로 끝나는 3라운드 — 데이터만. 실제 플레이에는 안 나온다(사용자 2026-09-16: 나중에 이벤트로 구역을 붙일 때 쓴다).
+   마지막 라운드는 정예 조합(ELITE_ENC) 이름 — encByName 이 찾는다 */
+const ENC_SEQ_EVENT=[
+ [
+  {n:"사슬을 끊다",rounds:["사슬과 임프", "사슬 파티", "사슬에 묶인 마귀"],elite:1},
+  {n:"첨탑의 주인",rounds:["감시의 눈", "많은 감시", "간수의 손"],elite:1},
+  {n:"갑주의 방",rounds:["두 골렘", "골렘과 대포", "오염된 갑주"],elite:1},
+  {n:"장군 앞으로",rounds:["임프 무리", "임프와 폭도", "풀려난 장군"],elite:1},
+  {n:"주술사의 길",rounds:["그림자 전투 1", "눈과 불씨", "정체 모를 주술사"],elite:1},
  ],
  [], []
 ];
@@ -9765,7 +9818,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (사용자 2026-09-15) */
-const BUILD_NO=425;
+const BUILD_NO=426;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
