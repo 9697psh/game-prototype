@@ -806,6 +806,13 @@ button.dtl{padding:3px 10px;font-size:11.5px}
 .evdx-art.gdx{gap:14px;background:radial-gradient(circle at 50% 60%,#2a2016,#100d0a 70%)} .evdx-art.gdx img{width:64px;height:64px}
 .gdx-well{display:grid;grid-template-columns:repeat(3,32px);gap:0} .evdx-art.gdx .gdx-well img{width:32px;height:32px;display:block}
 .evdx-wheel i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.evdx-art.fdxart{height:120px;background:radial-gradient(circle at 50% 70%,#2a1616,#100d0a 70%)}
+.evdx-art.fdxart img.pxs,.evdx-art.fdxart svg{width:auto;height:96px}
+.fdx-stat{font-size:12px;color:var(--dim);margin:2px 0 8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.fdx-stat b{color:var(--fg)}
+.fdx-sub{font-size:11px;color:var(--brass);margin-top:6px;letter-spacing:1px}
+.evdx-opt em{color:var(--faint);font-style:normal;font-size:10.5px;margin-left:4px}
+.evdx-opt small{display:block;font-size:11px;color:#8fc9a6}
 /* 말풍선은 pre-line 이라 카드 틀의 줄바꿈이 빈 줄로 새겨져 세로로 길어졌다 — 카드 안에서는 되돌린다 */
 #kwtip .icard{max-width:330px;white-space:normal}
 /* ── 미지의 구역 ── 그림 → 제목 → 상황 문구 → 선택지 ── */
@@ -7140,7 +7147,7 @@ const GIM_DEX=[
   t:"여러 번 들를 수 있고, 고른 스택은 이 구역 내내 남습니다. 1번을 고른 뒤에는 같은 화면으로 돌아옵니다.",
   o:[{t:"고문당하기",d:"무작위 대원이 피해를 3 받고 금화 2. 고를 때마다 3·2씩 늘어납니다."},
      {t:"고문장 부수기",d:"사형장에서 1번 이상 고른 뒤에만. 고문실을 부수고 중급 보상."},
-     {t:"사형대 올라가기",d:"무작위 대원이 10% 로 쓰러집니다. 하급 보상. 고를 때마다 5%씩 오릅니다."},
+     {t:"사형대 올라가기",d:"무작위 대원이 20% 로 쓰러집니다. 하급 보상. 고를 때마다 5%씩 오릅니다."},
      {t:"사형장 부수기",d:"고문실에서 1번 이상 고른 뒤에만. 사형장을 부수고 모든 대원 체력 회복."}]},
  {n:"간수 초소",icon:"ink11_map_guard_post",field:"핏빛 감옥",odds:"50%",cells:"1",refresh:"새로고침 가능 (없으면 새 날에 40% 로 다시)",camp:0,
   t:"초소 둘레 2칸은 빈 칸이 아니어도 낮에 습격 25% — 지도에서 붉게 비칩니다. 낮 습격은 감옥 경비병입니다.",
@@ -7188,6 +7195,113 @@ function drawGimDex(app){
       </div></div>`));
   });
   wrap.appendChild(grid);
+  app.appendChild(wrap);
+  const out=el(`<div class="center" style="margin-top:24px"><button class="go">닫기</button></div>`);
+  out.querySelector("button").onclick=()=>{ view=DEX_BACK||"title"; render() };
+  app.appendChild(out);
+}
+
+/* ═══════════ 적 도감 ═══════════
+   FOE 표를 그대로 읽어 구역별로 늘어놓는다 (사용자 2026-09-15). 수치는 배수가 붙기 전 기본값.
+   고유 기술(sk)이 있으면 그 표를, 없으면 ai 무게에서 하는 짓을 글로 푼다 — note-fill.py 의 skillsOf 와 같은 셈. */
+const FDX_TG={near:"가장 가까운 대원",back:"가장 뒤 대원",any:"무작위 대원",weak:"체력이 가장 적은 대원",far:"가장 먼 대원",all:"사거리 안 모든 대원",self:"자신",none:"",dist:"거리 조건에 맞는 대원"};
+const FDX_COND={cannonFront:"앞에 대포가 있을 때만",noCannon:"앞에 대포가 없을 때만",dogsAlive:"경비견이 살아 있을 때만",mobDied:"다른 폭도가 죽었을 때 · 한 번"};
+const FDX_GIM={taunt:"도발 — 이 적부터 겨눠야 합니다",hide:"은신 — 숨을 곳이 있으면 겨눌 수 없습니다",evade:"회피 — 공격 한 번을 흘립니다",thorn:"가시 — 맞을 때마다 되받아칩니다",neg:"부정 보호막 — 상태 이상을 막아냅니다"};
+function fdxFields(name){
+  const out=[];
+  FIELD_FOES.forEach((p,i)=>{ if(p.indexOf(name)>=0&&out.indexOf(FIELDS[i].n)<0) out.push(FIELDS[i].n) });
+  ENCOUNTER.forEach((L,i)=>{ if(L.some(e=>(e.foes||[]).indexOf(name)>=0)&&out.indexOf(FIELDS[i].n)<0) out.push(FIELDS[i].n) });
+  ELITE_LEAD.forEach((n,i)=>{ if(n===name&&out.indexOf(FIELDS[i].n)<0) out.push(FIELDS[i].n+" 정예") });
+  BOSSES.forEach((n,i)=>{ if(n===name&&out.indexOf(FIELDS[i].n)<0) out.push(FIELDS[i].n+" 우두머리") });
+  if(EVENT_ENC.some(e=>(e.foes||[]).indexOf(name)>=0)) out.push("미지의 구역");
+  if(["첨탑 관리자","울타리","감옥 경비병","억울한 죄수"].indexOf(name)>=0) out.push("전용 구역");
+  return out;
+}
+function fdxSkills(D){
+  const el=D.el||"공격", atk=D.atk, dfn=D.def;
+  if(D.sk&&D.sk.length) return D.sk.map(s=>{
+    const tail=[];
+    if(s.open) tail.push("첫 턴에 반드시");
+    if(s.cd) tail.push(`쓰고 나면 ${s.cd}턴 쉼`);
+    if(s.once) tail.push("전투당 한 번");
+    if(s.cond&&FDX_COND[s.cond]) tail.push(FDX_COND[s.cond]);
+    if(s.fireOnly) tail.push("대포병의 「포탄 장전」으로만");
+    if(s.chase) tail.push("자리를 옮겨도 쫓아감");
+    const w=(D.seq||s.fireOnly)?"":` <em>무게 ${s.w||1}</em>`;
+    return {n:s.n,d:(s.d||"")+(tail.length?` <small>(${tail.join(" · ")})</small>`:"")+w};
+  });
+  const a=Object.assign({near:6,weak:5,back:2,any:3,def:1,volley:0,buff:0,heal:0,curse:0,combo:0,twin:0,thorn:0,beer:0,debs:[]},D.ai||{});
+  const L=[], put=(n,d,w)=>L.push({n:n,d:d+(w?` <em>무게 ${w}</em>`:"")});
+  if(D.still){ put("대기","움직이지도 때리지도 않습니다."); return L }
+  put(D.hit||"공격",`가장 가까운 대원에게 ${el} 피해를 ${atk} 줍니다.`,a.near);
+  if(a.weak) put("약점 노리기",`체력이 가장 적은 대원에게 ${el} 피해를 ${Math.round(atk*1.35)} 줍니다.`,a.weak);
+  if(a.back) put("후방 급습",`가장 뒤 대원에게 ${el} 피해를 ${atk} 줍니다.`,a.back);
+  if(a.any) put("난타",`무작위 대원에게 ${el} 피해를 ${atk} 줍니다.`,a.any);
+  if(a.combo) put("연타",`가장 가까운 대원에게 ${el} 피해를 ${Math.max(1,Math.round(atk/3))}씩 3번 줍니다.`,a.combo);
+  if(a.twin) put("쌍격",`체력이 가장 적은 대원에게 ${el} 피해를 ${Math.max(1,Math.round(atk*1.2/2))}씩 2번 줍니다.`,a.twin);
+  if(a.def) put("방어",`보호막을 ${dfn} 얻습니다.`,a.def);
+  if(a.volley) put("일제 사격",`모든 대원에게 ${el} 피해를 ${Math.round(atk*0.6)} 줍니다.`,a.volley);
+  if(a.thorn) put("가시 두르기","2턴 동안 가시를 얻습니다 (1구역 2 · 2구역 4 · 3구역 5).",a.thorn);
+  if(a.buff) put("벼리기",`공격력을 ${Math.max(1,Math.round(atk*0.35))} 얻습니다 (전투당 3번까지).`,a.buff);
+  if(a.heal) put("치유",`체력이 60% 아래인 동료를 ${Math.max(2,Math.round(dfn*0.8))} 회복시킵니다.`,a.heal);
+  if(a.curse) put("저주","대원 하나의 다음 턴 마나를 1 줄입니다.",a.curse);
+  if(a.beer) put("맥주 들이켜기","체력을 되찾고 스스로 보호약화를 얻습니다.",a.beer);
+  (a.debs||[]).forEach(k=>{ const v={burn:2,bind:2,stun:1,fear:1,shock:3,chill:3,atkDn:2,magDn:2}[k]||1;
+    const who=(k==="shock"||k==="fear")?"가장 뒤 대원":(k==="stun"?"체력이 가장 적은 대원":"가장 가까운 대원");
+    put(`${(DEBUFF[k]||{}).n||k} 부여`,`${who}에게 ${(DEBUFF[k]||{}).n||k}을 ${v} 부여합니다.`,2) });
+  if(D.boss) put("떨쳐내기 · 포효 · 결계","몸에 걸린 상태 이상을 걷어내고(포효는 걷어낸 만큼 공격력), 미리 부정 보호막을 두릅니다.");
+  return L;
+}
+function fdxCard(name){
+  const D=FOE[name]||{};
+  const tier=D.boss?"우두머리":D.elite?"정예":D.strong?"일반 !":"일반";
+  const tags=[`<span class="evdx-tag${D.boss?" r":D.elite||D.strong?" c":""}">${esc(tier)}</span>`];
+  const race=foeRace({name:name}); if(race) tags.push(`<span class="evdx-tag">${esc(race)}</span>`);
+  tags.push(`<span class="evdx-tag">${esc(D.el||"공격")} · 사거리 ${D.rng}</span>`);
+  fdxFields(name).forEach(f=>tags.push(`<span class="evdx-tag">${esc(f)}</span>`));
+  if(D.of) tags.push(`<span class="evdx-tag c">${esc(D.of)}의 변종</span>`);
+  const gim=Object.keys(D.gim||{}).map(k=>`<div class="evdx-opt"><b>${esc((FDX_GIM[k]||k).split(" —")[0])}</b><span>${esc((FDX_GIM[k]||k).split("— ")[1]||"")}</span></div>`).join("");
+  const pas=(D.pas||[]).map(p=>`<div class="evdx-opt"><b><span class="chip pass">${esc(p.n)}</span></b><span>${esc(p.d)}</span></div>`).join("");
+  const sk=fdxSkills(D).map(s=>`<div class="evdx-opt"><b>${esc(s.n)}</b><span>${s.d}</span></div>`).join("");
+  const roles=(ROLE[name]||ROLE[D.of]||[]).map(r=>`<span class="evdx-tag c" title="${esc(r.d||"")}">${esc(r.t)}</span>`).join("");
+  return `<div class="evdx-card fdx">
+    <div class="evdx-art fdxart">${figure(name)}</div>
+    <div class="evdx-body">
+      <div class="evdx-name">${esc(name)}</div>
+      <div class="evdx-tags">${tags.join("")}${roles}</div>
+      <div class="fdx-stat">${ic("hp")}<b>${D.hp}</b> ${ic("atk")}<b>${D.atk}</b> ${ic("def")}<b>${D.def}</b> <span class="hint">경험치 ${D.exp}${D.seq?" · 기술이 차례대로 바뀜":""}</span></div>
+      ${pas}${gim}
+      <div class="fdx-sub">기술</div>${sk}
+    </div></div>`;
+}
+function drawFoeDex(app){
+  const all=Object.keys(FOE).filter(n=>!FOE[n].isPhantom);
+  app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">적 도 감</div>
+    <div class="sub">${all.length}종 — 어디에 나오고, 무엇을 하는지. 수치는 구역 배수(1 · 1.5 · 2)와 성장이 붙기 전 기본값</div></div>`));
+  const wrap=el(`<div class="dexwrap"></div>`);
+  wrap.appendChild(el(`<div class="evdx-rule">
+    <b>적의 다음 행동은 의도로 미리 보입니다.</b> 고유 기술이 있는 적은 그 표에서 <em>무게</em>대로 고르고, 나머지는 즐겨 하는 짓의 무게로 고릅니다.
+    기술의 피해·보호막은 그 적이 얻은 능력치(강화·간식 따위)만큼 오릅니다. 파란 칩은 <b>지속 기술</b> — 전장의 칸에 늘 표시됩니다.
+    <span class="evdx-tag c">일반 !</span> 은 일반 중에서도 강한 적입니다.</div>`));
+  const used=new Set();
+  const order=n=>(FOE[n].boss?3:FOE[n].elite?2:FOE[n].strong?1:0);
+  FIELDS.forEach((F,i)=>{
+    const L=[];
+    FIELD_FOES[i].forEach(n=>{ if(L.indexOf(n)<0) L.push(n) });
+    (ENCOUNTER[i]||[]).forEach(e=>(e.foes||[]).forEach(n=>{ if(L.indexOf(n)<0&&FOE[n]) L.push(n) }));
+    if(ELITE_LEAD[i]&&L.indexOf(ELITE_LEAD[i])<0) L.push(ELITE_LEAD[i]);
+    if(BOSSES[i]&&L.indexOf(BOSSES[i])<0) L.push(BOSSES[i]);
+    if(i===0) ["첨탑 관리자","감옥 경비병","억울한 죄수","울타리"].forEach(n=>{ if(FOE[n]&&L.indexOf(n)<0) L.push(n) });
+    L.sort((a,b)=>order(a)-order(b));
+    L.forEach(n=>used.add(n));
+    wrap.appendChild(el(`<div class="dexhd">${esc(F.n)} · ${L.length}</div>`));
+    wrap.appendChild(el(`<div class="evdx-grid">${L.map(fdxCard).join("")}</div>`));
+  });
+  const rest=all.filter(n=>!used.has(n));
+  if(rest.length){
+    wrap.appendChild(el(`<div class="dexhd">미지의 구역 · 그 밖 · ${rest.length}</div>`));
+    wrap.appendChild(el(`<div class="evdx-grid">${rest.map(fdxCard).join("")}</div>`));
+  }
   app.appendChild(wrap);
   const out=el(`<div class="center" style="margin-top:24px"><button class="go">닫기</button></div>`);
   out.querySelector("button").onclick=()=>{ view=DEX_BACK||"title"; render() };
@@ -9074,6 +9188,7 @@ function render0(){
   if(view==="carddex")  return drawCardDex(app);
   if(view==="evdex")    return drawEventDex(app);
   if(view==="gimdex")   return drawGimDex(app);
+  if(view==="foedex")   return drawFoeDex(app);
   if(view==="gimres")   return drawGimRes(app);
   if(view==="bag")      return drawBag(app);
   if(view==="title")    return drawTitle(app);
@@ -9140,12 +9255,13 @@ function drawTitle(app){
   tx.querySelector("button").onclick=()=>{ view="text"; render() };
   app.querySelector(".center").appendChild(tx);
   { const dx=el(`<div style="margin-top:10px;display:flex;gap:8px;justify-content:center">
-      <button class="mini">장신구 도감</button><button class="mini">카드 도감</button><button class="mini">이벤트 도감</button><button class="mini">전용 구역 도감</button></div>`);
-    const [bi,bc,be,bg]=dx.querySelectorAll("button");
+      <button class="mini">장신구 도감</button><button class="mini">카드 도감</button><button class="mini">이벤트 도감</button><button class="mini">전용 구역 도감</button><button class="mini">적 도감</button></div>`);
+    const [bi,bc,be,bg,bf]=dx.querySelectorAll("button");
     bi.onclick=()=>openDex("itemdex");
     bc.onclick=()=>openDex("carddex");
     be.onclick=()=>openDex("evdex");
     bg.onclick=()=>openDex("gimdex");
+    bf.onclick=()=>openDex("foedex");
     app.querySelector(".center").appendChild(dx); }
   app.querySelector(".center").appendChild(el(`<div class="hint" style="margin-top:26px;max-width:420px">${
     rich(UI_TXT.intro)}</div>`));
@@ -9304,7 +9420,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (사용자 2026-09-15) */
-const BUILD_NO=403;
+const BUILD_NO=404;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -10814,13 +10930,19 @@ const GIM_EV={
         when:()=>(run.gim&&run.gim.gal)>=1,
         f:()=>{ run.grid[r][c]={t:"empty"}; (run.after=run.after||[]).push({grade:"중급"}); return "고문 기구를 모조리 부쉈습니다." }},
        {t:"나가기",d:"지도로 돌아갑니다.",leave:1,f:()=>""}]} },
-  gallows:(cell,r,c)=>{ const n0=(run.gim&&run.gim.gal)||0, p0=Math.round((0.10+0.05*n0)*100); return {n:"사형장",art:"ink11_map_execution_ground_colored",face:"부서진 파수병",gim:1,
+  gallows:(cell,r,c)=>{ const n0=(run.gim&&run.gim.gal)||0, p0=Math.round((0.20+0.05*n0)*100); return {n:"사형장",art:"ink11_map_execution_ground_colored",face:"부서진 파수병",gim:1,
     t:"높은 단 위에 밧줄이 늘어져 있습니다. 올라서는 자에게 무언가를 준다고 합니다.",
-    o:[{t:"사형대 올라가기",d:`(무작위로 /선택된 대원)이 ${p0}% 확률로 죽습니다. 하급 보상을 얻습니다. (고를 때마다 5%씩 올라갑니다)`,again:1,
-        f:()=>{ const n=run.gim.gal||0, p=0.10+0.05*n;
+    o:[{t:"사형대 올라가기",d:`(무작위로 /선택된 대원)이 ${p0}% 확률로 쓰러집니다. 하급 보상을 얻습니다. (고를 때마다 5%씩 올라갑니다)`,again:1,
+        f:()=>{ const n=run.gim.gal||0, p=0.20+0.05*n;
           const up=run.heroes.filter(h=>!h.down), h=up.length?rnd(up):null;
           run.gim.gal=n+1; (run.after=run.after||[]).push({grade:"하급"});
-          if(h&&Math.random()<p){ h.hp=0; h.down=1; if(sfxHas("danger")) SFX.play("danger");
+          if(h&&Math.random()<p){ h.hp=0; h.down=1; h.slot=0; if(sfxHas("danger")) SFX.play("danger");
+            toast(`${h.name}${jo(h.name,"ig")} 쓰러졌습니다. 주둔지 치료소에서만 일어납니다.`);
+            /* 남은 대원이 없으면 전투를 기다리지 않고 그 자리에서 끝난다 */
+            if(!run.heroes.some(x=>!x.down)){
+              run.evMsg=null; run.after=[]; run.afterList=null; run.afterBack=null;
+              setTimeout(()=>lose("사형대에서 마지막 대원까지 쓰러졌습니다. 주둔지로 데려갈 사람이 남지 않았습니다."),700);
+              return `${h.name}${jo(h.name,"ig")} 사형대에서 내려오지 못했습니다. 남은 대원이 없습니다.` }
             return `${h.name}${jo(h.name,"ig")} 사형대에서 내려오지 못했습니다. 밧줄이 끊기고 상자만 남았습니다.` }
           return `${h?h.name+jo(h.name,"ig")+" 밧줄 아래 섰다가 무사히 내려왔습니다. ":""}상자가 놓여 있습니다.` }},
        {t:"사형장 부수기",d:"사형장을 부수고 모든 대원의 체력을 모두 회복합니다. (고문실에서 /선택지를 1번 이상 고른 경우에만 /선택이 가능합니다.)",end:1,
@@ -18392,12 +18514,13 @@ function drawBag(app){
   app.appendChild(wrap);
 
   { const dx=el(`<div style="margin-top:10px;display:flex;gap:8px;justify-content:center">
-      <button class="mini">장신구 도감</button><button class="mini">카드 도감</button><button class="mini">이벤트 도감</button><button class="mini">전용 구역 도감</button></div>`);
-    const [bi,bc,be,bg]=dx.querySelectorAll("button");
+      <button class="mini">장신구 도감</button><button class="mini">카드 도감</button><button class="mini">이벤트 도감</button><button class="mini">전용 구역 도감</button><button class="mini">적 도감</button></div>`);
+    const [bi,bc,be,bg,bf]=dx.querySelectorAll("button");
     bi.onclick=()=>openDex("itemdex");
     bc.onclick=()=>openDex("carddex");
     be.onclick=()=>openDex("evdex");
     bg.onclick=()=>openDex("gimdex");
+    bf.onclick=()=>openDex("foedex");
     wrap.appendChild(dx); }
 
   wrap.appendChild(el(`<div class="dexhd">가방에 든 장신구 · ${run.bag.length}
