@@ -326,6 +326,7 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .chip{font-size:10px;border:1px solid var(--rule2);border-radius:2px;padding:0 4px;color:var(--dim)}
 .chip.on{color:var(--brass);border-color:#5c4a1f}
 .chip.deb{color:#e08a8a;border-color:#5a3030}
+.chip.pass{color:#9fd3ff;border-color:#2f5a7a;background:rgba(95,160,224,.12)}
 .chip.itm2{color:#9ecbf5;border-color:#33506b}
 .ipx{width:100%;height:100%;image-rendering:pixelated;display:block}
 .cimg{width:42px;height:42px;margin:0 auto 5px}
@@ -4483,6 +4484,13 @@ const LOOK={
  "울타리":    {skin:"#7a6a5a",cloth:"#7a6a5a",dark:"#3d3328",build:"huge",arm:"none"},
  "감옥 경비병":{skin:"#b09a84",cloth:"#4a4f5a",dark:"#262a30",build:"wide",arm:"sword"},
  "억울한 죄수":{skin:"#c9b09a",cloth:"#7a6a5a",dark:"#3d3328",build:"small",arm:"none"},
+ /* 새 적 — 그림이 오기 전까지 도형으로 (사용자 2026-09-15) */
+ "대포":      {skin:"#6a6a70",cloth:"#4a4046",dark:"#26222a",build:"wide",arm:"none"},
+ "대포병":    {skin:"#b09a84",cloth:"#5a4a3a",dark:"#2e2620",build:"slim",arm:"fist"},
+ "경비견":    {skin:"#8a2a2a",cloth:"#5a1a1a",dark:"#2a0c0c",build:"small",arm:"claw"},
+ "고문 기술자":{skin:"#c9b09a",cloth:"#6a3a2a",dark:"#361c14",build:"slim",arm:"staff"},
+ "녹슨 철창 골렘":{skin:"#7a6a5a",cloth:"#5a4a3a",dark:"#2e2620",build:"huge",arm:"shield"},
+ "폭도":      {skin:"#7a4a9a",cloth:"#4a2a6a",dark:"#261436",build:"small",arm:"claw"},
  "균열 벌레":  {skin:"#7a5a8a",cloth:"#4a2f5a",dark:"#2a1a35",build:"small",arm:"claw",horn:1},
  "얼음 정령":  {skin:"#a8d8e8",cloth:"#4a7f9a",dark:"#28495c",build:"wide",arm:"staff"},
  "고철 거인":  {skin:"#8a8070",cloth:"#7a5a2f",dark:"#43331a",build:"huge",arm:"fist"},
@@ -5208,6 +5216,12 @@ const PX_KIT={
  "울타리":    {b:"machine",h:"none",  a:"none"},
  "감옥 경비병":{b:"runt",   h:"helm",  a:"sword"},
  "억울한 죄수":{b:"runt",   h:"none",  a:"none"},
+ "대포":      {b:"machine",h:"none",  a:"none"},
+ "대포병":    {b:"runt",   h:"helm",  a:"fist"},
+ "경비견":    {b:"crawler",h:"horn",  a:"claw"},
+ "고문 기술자":{b:"cloak",  h:"hood",  a:"staff"},
+ "녹슨 철창 골렘":{b:"hulk",  h:"mask",  a:"shield"},
+ "폭도":      {b:"runt",   h:"horn",  a:"claw"},
  "균열 벌레":  {b:"crawler",h:"horn",  a:"none"},
  "얼음 정령":  {b:"wisp",   h:"none",  a:"none"},
  "간수장":    {b:"armor",  h:"helm",  a:"chain"},
@@ -7642,10 +7656,19 @@ const FOE={
    ai:{open:"back",back:11,weak:5,twin:4,any:1,def:1,chase:1,debs:["fear"]},
    hit:"목덜미 물기"},
  /* ── 지도 기믹 (사용자 2026-09-15) ── */
- "첨탑 관리자":{hp:34,atk:6,def:8,rng:4,exp:6,
+ "첨탑 관리자":{hp:60,atk:6,def:8,rng:4,exp:12,elite:1,seq:1,
    el:"공격",
-   /* 두 턴마다 [감시] 카드를 손패에 밀어 넣고 기술 하나를 두 턴 잠근다 (foePhase 의 gimWatch) */
+   /* 두 턴마다 [감시] 카드를 손패에 밀어 넣고 기술 하나를 두 턴 잠근다 (foePhase 의 gimWatch)
+      기술은 차례대로 바뀐다 — 찌르기 → 막기 → 두 번 찌르기 → 멀리보기 → 휘두르기 → 무르기 (사용자 2026-09-15) */
+   pas:[{k:"info",n:"차례대로",d:"기술을 쓸 때마다 다음 행동으로 바뀝니다. 먼 곳을 봅니다."}],
    ai:{open:"def",near:8,any:5,def:6,weak:3,buff:2},
+   sk:[
+    {n:"찌르기",w:1,tg:"any",dmg:8,fwd:1,chase:1,d:"앞으로 한 칸 이동하고, 무작위 대원에게 공격 피해를 8 줍니다."},
+    {n:"막기",w:1,tg:"self",shield:6,buff:2,d:"보호막을 6 얻고 공격력을 2 얻습니다."},
+    {n:"두 번 찌르기",w:1,tg:"near",dmg:5,hits:2,chase:1,d:"가장 가까운 대원에게 공격 피해를 5씩 2번 줍니다."},
+    {n:"멀리보기",w:1,tg:"far",deb:{stun:2,defDn:2},chase:1,d:"가장 먼 대원에게 기절 2, 보호약화 2를 부여합니다."},
+    {n:"휘두르기",w:1,tg:"all",dmg:3,hits:2,d:"사거리 안 모든 대원에게 공격 피해를 3씩 2번 줍니다."},
+    {n:"무르기",w:1,tg:"self",back:2,shield:12,d:"뒤로 두 칸 이동하고 보호막을 12 얻습니다."}],
    hit:"채찍질"},
  "울타리":{hp:36,atk:0,def:6,rng:0,exp:1,still:1,
    el:"공격",
@@ -7655,10 +7678,103 @@ const FOE={
    el:"공격",
    ai:{open:"wait"},
    hit:""},
- "감옥 경비병":{hp:20,atk:5,def:6,rng:3,exp:3,
+ "감옥 경비병":{hp:22,atk:4,def:6,rng:3,exp:3,
    el:"공격",
+   /* 경비견이 있으면 간식을 주어 부린다 (사용자 2026-09-15) */
    ai:{open:"near",near:10,any:5,def:3,weak:2},
+   sk:[
+    {n:"간식주기",w:6,tg:"none",cond:"dogsAlive",snack:{atk:2,shield:3},
+      d:"경비견들의 공격 피해량을 2 올리고 보호막을 3 줍니다."},
+    {n:"공격",w:5,tg:"near",dmg:4,d:"가장 가까운 대원에게 공격 피해를 4 줍니다."},
+    {n:"막기",w:3,tg:"self",shield:5,d:"보호막을 5 얻습니다."},
+    {n:"난타",w:3,tg:"any",dmg:3,d:"무작위 대원에게 공격 피해를 3 줍니다."}],
    hit:"곤봉질"},
+ /* ── 핏빛 감옥 새 적 (사용자 2026-09-15) ──
+    sk  : 이 적만의 기술. rollIntents 가 ai 대신 이것으로 고른다 (skRoll)
+          tg  near 가장 가까운 · back 가장 뒤 · any 무작위 · weak 체력 적은 · far 가장 먼 ·
+              all 사거리 안 전원 · self 자신 · none 대상 없음 · dist 거리 조건(min·max)
+          dmg 피해 (얻은 공격력만큼 오른다 : dmg + (지금 공격력 − 표의 공격력))
+          shield·eshield 보호막 (얻은 보호력만큼 오른다) · buff 공격력 · defUp 보호력 · heal 회복
+          pull 앞으로 끌어당김 · push 뒤로 밀침 · deb 상태 이상 · thorn 가시 · taunt 도발(턴)
+          fwd·back 자기 이동 · cd 재사용 대기 · open 첫 수 · cond 조건(SK_COND) · seq 차례대로(FOE)
+    pas : 지속 기술. 칸에 늘 표시된다 (passChips) */
+ "사슬 간수":{hp:32,atk:4,def:6,rng:3,exp:5,strong:1,
+   el:"공격",
+   sk:[
+    {n:"사슬 걸기",w:4,tg:"back",dmg:5,pull:1,deb:{bind:2},chase:1,cd:1,
+      d:"가장 뒤 대원에게 공격 피해를 5 주고 가장 앞으로 끌어당깁니다. 그 대원에게 속박을 2 부여합니다."},
+    {n:"사슬 공격",w:4,tg:"near",dmg:4,d:"가장 앞 대원에게 공격 피해를 4 줍니다."},
+    {n:"사슬 두르기",w:3,tg:"self",thorn:{v:3,turns:2},shield:6,cd:2,
+      d:"2턴 동안 가시를 3 얻습니다. 보호막을 6 얻습니다."},
+    {n:"난타",w:2,tg:"any",dmg:4,chase:1,d:"무작위 대원에게 공격 피해를 4 줍니다."}],
+   hit:"사슬 공격"},
+ "피 먹는 자":{hp:16,atk:3,def:2,rng:2,exp:2,demon:1,
+   el:"공격",
+   pas:[{k:"drain",v:1,n:"흡수 100%",d:"체력에 준 피해만큼 회복합니다."},
+        {k:"lowAtk",pct:0.5,v:3,n:"피의 갈증",d:"체력이 절반 아래일 때 공격력 +3"}],
+   sk:[
+    {n:"깨물기",w:5,tg:"near",dmg:3,chase:1,d:"가장 가까운 대원에게 공격 피해를 3 줍니다."},
+    {n:"갈증",w:3,tg:"any",dmg:4,buff:3,chase:1,cd:2,d:"공격력을 3 얻고, 무작위 대원에게 공격 피해를 4 줍니다."},
+    {n:"물어뜯기",w:4,tg:"near",dmg:3,hits:2,chase:1,d:"가장 가까운 대원에게 공격 피해를 3씩 2번 줍니다."}],
+   hit:"깨물기"},
+ "감옥의 눈":{hp:28,atk:1,def:3,rng:5,exp:3,demon:1,strong:1,
+   el:"마법",
+   pas:[{k:"info",n:"오래 볼수록",d:"바라볼 때마다 마법력이 1씩 오릅니다. 오래 끌면 힘들어집니다."}],
+   sk:[
+    {n:"응시",w:1,tg:"all",open:1,deb:{atkDn:2,magDn:2},cd:3,
+      d:"모든 대원에게 공격약화와 마법약화를 2 부여합니다. (첫 번째 패턴)"},
+    {n:"바라보기",w:6,tg:"all",dmg:1,buff:1,
+      d:"모든 대원에게 마법 피해를 1 주고, 마법력을 1 얻습니다."}],
+   hit:"바라보기"},
+ "대포":{hp:10,atk:4,def:8,rng:5,exp:1,still:1,
+   el:"공격",
+   gim:{taunt:1},
+   pas:[{k:"info",n:"고정 포대",d:"움직이지 않고 늘 도발합니다. 뒤에 대포병이 있어야 쏩니다."}],
+   sk:[{n:"대포 발사",w:1,tg:"near",dmg:4,fireOnly:1,
+      d:"가장 앞 대원에게 공격 피해를 4 줍니다. (대포병의 지시를 받을 때만)"}],
+   hit:"대포 발사"},
+ "대포병":{hp:20,atk:4,def:4,rng:3,exp:2,
+   el:"공격",
+   sk:[
+    {n:"포탄 장전",w:6,tg:"none",cond:"cannonFront",fire:1,
+      d:"앞에 배치된 대포들이 「대포 발사」를 사용하게 합니다."},
+    {n:"난타",w:3,tg:"any",dmg:4,cond:"noCannon",chase:1,
+      d:"무작위 대원에게 공격 피해를 4 줍니다. (앞에 조종할 대포가 없을 때)"}],
+   hit:"난타"},
+ "경비견":{hp:12,atk:3,def:3,rng:2,exp:1,
+   el:"공격",
+   pas:[{k:"tauntWith",who:"감옥 경비병",n:"주인의 명령",d:"경비병이 살아 있는 동안 도발합니다."}],
+   sk:[
+    {n:"물기",w:5,tg:"near",dmg:3,fwd:1,chase:1,d:"가장 가까운 대원에게 공격 피해를 3 주고, 앞으로 한 칸 이동합니다."},
+    {n:"후방 물기",w:4,tg:"back",dmg:2,hits:2,chase:1,d:"가장 뒤 대원에게 공격 피해를 2씩 2번 줍니다."}],
+   hit:"물기"},
+ "고문 기술자":{hp:15,atk:3,def:3,rng:3,exp:2,
+   el:"마법",
+   pas:[{k:"info",n:"거리 인두",d:"멀리 있으면 화상 2, 가까이 있으면 화상 4. 가까이 갈수록 불리합니다."}],
+   sk:[
+    {n:"먼 인두질",w:4,tg:"dist",min:3,deb:{burn:2},chase:1,d:"거리 3 이상의 대원에게 화상을 2 부여합니다."},
+    {n:"가까운 인두질",w:4,tg:"dist",max:2,deb:{burn:4},chase:1,d:"거리 2 이내의 대원에게 화상을 4 부여합니다."},
+    {n:"고문하기",w:4,tg:"any",dmg:3,deb:{atkDn:2},burnCrit:1,chase:1,
+      d:"무작위 대원에게 공격약화를 2 부여하고 마법 피해를 3 줍니다. 화상이 있는 대원에게는 치명타."}],
+   hit:"인두질"},
+ "녹슨 철창 골렘":{hp:36,atk:5,def:9,rng:3,exp:4,strong:1,
+   el:"공격",
+   sk:[
+    {n:"막아내기",w:4,tg:"self",taunt:2,eshield:10,cd:2,d:"2턴 동안 도발하고, 에너지 보호막을 10 얻습니다."},
+    {n:"밀쳐내기",w:4,tg:"near",dmg:7,push:1,d:"가장 가까운 대원에게 공격 피해를 7 주고 1칸 뒤로 밀칩니다."},
+    {n:"휴식",w:2,tg:"self",defUp:4,heal:6,cd:2,d:"보호력을 4 얻고 체력을 6 회복합니다."},
+    {n:"진동",w:3,tg:"all",dmg:3,deb:{magDn:2},cd:1,d:"사거리 안 모든 대원에게 마법약화를 2 부여하고 공격 피해를 3 줍니다."}],
+   hit:"밀쳐내기"},
+ "폭도":{hp:12,atk:2,def:3,rng:3,exp:2,demon:1,
+   el:"공격",
+   pas:[{k:"mob",n:"떼",d:"다른 폭도가 죽으면 도망치며 공격력 +2"}],
+   sk:[
+    {n:"도망",w:20,tg:"self",cond:"mobDied",once:1,flee:1,buff:2,d:"공격력을 2 얻고, 죽은 폭도의 자리에서 1칸 멀어집니다."},
+    {n:"공격",w:5,tg:"near",dmg:2,hits:2,chase:1,d:"사거리 안 대원에게 공격 피해를 2씩 2번 줍니다."},
+    {n:"막기",w:3,tg:"self",shield:4,d:"보호막을 4 얻습니다."},
+    {n:"폭동",w:1,tg:"none",riot:1,d:"다른 폭도들의 공격력을 1 올립니다. (낮은 확률)"},
+    {n:"투석",w:3,tg:"any",dmg:1,hits:2,chase:1,d:"무작위 대원에게 공격 피해를 1씩 2번 줍니다."}],
+   hit:"공격"},
  "부서진 파수병":{hp:30,atk:4,def:12,rng:2,exp:3,
    el:"공격",
    /* 가시를 상시로 두르면 때릴 방법이 없다 — 이제 가끔 두르고 세 턴이면 풀린다.
@@ -7730,7 +7846,7 @@ const FOE={
 /* 변종은 밑동 적을 베껴 만든다 — 아래 VARIANT 를 읽어 FOE 에 풀어 넣는다.
    (VARIANT 는 FOE 보다 뒤에 있으므로 실제로 푸는 것은 그 뒤에서 한다) */
 const FIELD_FOES=[
- ["작은 죄수","작은 죄수","사슬 광인","굶주린 그림자","떠도는 불씨"],
+ ["작은 죄수","작은 죄수","사슬 광인","굶주린 그림자","떠도는 불씨","사슬 간수","피 먹는 자","감옥의 눈","경비견","폭도","고문 기술자"],
  ["사슬 광인","부서진 파수병","균열 벌레","굶주린 그림자"],
  ["균열 벌레","얼음 정령","부서진 파수병","얼음 정령"]
 ];
@@ -7756,6 +7872,17 @@ const ENCOUNTER=[
   {n:"불티",           w:3,            foes:["작은 죄수","떠도는 불씨"]},
   {n:"멀고 가까운 것",  w:2, r:[2,3],   foes:["작은 죄수","떠도는 불씨","사슬 광인"], min:2},
   {n:"굶주린 셋",       w:2, r:[2,3],   foes:["작은 죄수","작은 죄수","굶주린 그림자"], min:2},
+  /* ── 새 적 (사용자 2026-09-15) — 각 판이 가르치는 것을 한 줄씩 ── */
+  {n:"굶주린 것",       w:3,            foes:["피 먹는 자","작은 죄수"]},                 /* 약한 대원을 지키기 */
+  {n:"간수와 죄수",     w:3, r:[2,3],   foes:["사슬 간수","작은 죄수"], min:2},          /* 끌려가면 어떻게 되나 */
+  {n:"감시받는 복도",   w:2, r:[2,3],   foes:["작은 죄수","감옥의 눈"], min:2},          /* 뒷줄 지원형부터 */
+  {n:"개와 주인",       w:2, r:[2,3],   foes:["경비견","감옥 경비병"], min:2},           /* 주인을 먼저 */
+  {n:"포열",           w:2, r:[2,3],   foes:["대포","대포병"], min:2},                  /* 앞의 벽은 껍데기 */
+  {n:"고문실",         w:2, r:[2,3],   foes:["작은 죄수","고문 기술자"], min:2},        /* 거리를 재기 */
+  {n:"폭도들",         w:2, r:[2,3],   foes:["폭도","폭도","폭도"], min:2},             /* 하나 죽이면 흩어진다 */
+  {n:"핏자국",         w:2, r:[3],     foes:["사슬 간수","피 먹는 자"], min:2},         /* 벽 뒤의 흡혈귀 */
+  {n:"두 포문",        w:1, r:[3],     foes:["대포","대포","대포병"], min:3},
+  {n:"철창 뒤의 인두",  w:1, r:[3],     foes:["녹슨 철창 골렘","고문 기술자"], min:3},
  ],
  /* ── 2구역 ── 벽과 뒷심. '무엇을 먼저 치우느냐' 를 배운다 ── */
  [
@@ -7788,7 +7915,7 @@ const EVENT_ENC=[
   d:"덩치 하나에 구역 풀의 잡졸이 붙는다 (대원 수 − 1, 최대 둘)."},
 ];
 /* 정예 — 같은 조우표에서 고르되 앞자리에 단단한 놈을 하나 더 세운다 */
-const ELITE_LEAD=["부서진 파수병","부서진 파수병","얼음 정령"];
+const ELITE_LEAD=["녹슨 철창 골렘","부서진 파수병","얼음 정령"];
 
 /* ── 역할 ──
    같은 적이라도 누구와 함께 섰느냐에 따라 하는 짓이 달라야 한다.
@@ -9144,7 +9271,7 @@ function saveStamp(t){
 /* 판 번호 — 앞(0.3)은 손으로 올리고, 빌드는 deploy-pages.sh 가 배포할 때마다 커밋 수로 찍는다.
    'BUILD_NO=' 뒤의 숫자를 갈아 끼우므로 이 줄의 꼴을 바꾸지 말 것 */
 const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (사용자 2026-09-15) */
-const BUILD_NO=400;
+const BUILD_NO=401;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -13047,6 +13174,7 @@ function defVal(f){
 }
 /* 적이 내놓는 피해 — 속성에 따라 공격약화/마법약화를 받는다 */
 function foeDmg(f,v,el){
+  { const P=foePas(f,"lowAtk"); if(P&&f.hp<f.maxHp*P.pct) v+=P.v }   /* 피의 갈증 — 체력이 절반 아래면 +3 */
   let d=Math.max(0,v-(f.weakAtk||0));
   if(el==="마법"){ if(deb(f,"magDn")) d=Math.ceil(d*0.5) }
   else { if(deb(f,"atkDn")) d=Math.ceil(d*0.5) }
@@ -13108,15 +13236,19 @@ function foePurge(f){
 const FOE_RACE={"작은 죄수":"인간","사슬 광인":"인간","굶주린 그림자":"악마","부서진 파수병":"기계","균열 벌레":"악마",
  "얼음 정령":"정령","술집 난동꾼":"인간","떠도는 불씨":"정령","늑대치기":"인간","무시무시한 늑대":"짐승",
  "간수장":"인간","고철 거인":"기계","서리 군주":"악마","사슬 처형자":"인간",
- "감옥의 눈":"악마","메아리 정령":"정령","사슬 간수":"인간","샘의 잔영":"정령","피 먹는 자":"악마"};
+ "감옥의 눈":"악마","메아리 정령":"정령","사슬 간수":"인간","샘의 잔영":"정령","피 먹는 자":"악마",
+ "대포":"기계","대포병":"인간","경비견":"악마","고문 기술자":"인간","녹슨 철창 골렘":"기계","폭도":"악마"};
 function foeRace(f){
   const nm=(f&&(f.of||f.name))||"";
   const D=FOE[nm]||{};
   return D.race||FOE_RACE[nm]||(D.demon||(f&&f.demon)?"악마":"");
 }
 function foePeekHtml(f){
-  const tier={boss:"우두머리",elite:"정예",norm:"일반"}[foeTier(f)]||"일반";
   const D=FOE[f.name]||{};
+  /* '일반 !' 은 일반 중에서도 강한 적 (사용자 2026-09-15) */
+  let tier={boss:"우두머리",elite:"정예",norm:"일반"}[foeTier(f)]||"일반";
+  if(D.elite&&tier==="일반") tier="정예";
+  if(D.strong&&tier==="일반") tier="일반 !";
   const race=foeRace(f);
   const bits=[];
   if(f.taunt)     bits.push(`도발`);
@@ -13156,6 +13288,7 @@ function foePeekHtml(f){
     </div>
     ${bits.length?`<div class="pfrow"><span class="pl">지닌 것</span>${
       bits.map(b=>`<span class="chip on">${esc(b)}</span>`).join("")}</div>`:""}
+    ${(D.pas&&D.pas.length)?`<div class="pfrow"><span class="pl">지속 기술</span>${passChips(f)}</div>`:""}
     ${ails.length?`<div class="pfrow"><span class="pl">걸린 것</span>${
       ails.map(b=>`<span class="chip">${esc(b)}</span>`).join("")}</div>`:""}
     <div class="pfrow"><span class="hint">${esc(D.hit||"공격")}${jo(D.hit||"공격","eu")}로 때립니다 ·
@@ -13166,6 +13299,7 @@ function foePeekHtml(f){
 function intentKey(o){
   if(!o) return "";
   if(o.t==="atk") return "atk:"+(o.pat||"")+(o.hits||1);
+  if(o.t==="sk") return "sk:"+(o.n||"");
   if(o.t==="deb") return "deb:"+o.k;
   if(o.t==="purge") return "purge:"+o.k;
   return o.t;
@@ -13177,6 +13311,240 @@ function intentKey(o){
      AI_REPEAT  직전 수를 다시 고를 확률을 몇 배로 줄이는가 (막지는 않는다)
    ★ AI_STREAK 를 0 으로 두면 옛 모습 그대로다 — 견주려고 남긴 손잡이다. */
 let AI_STREAK=2, AI_REPEAT=0.55;
+/* ═══════════ 적 고유 기술 (sk) · 지속 기술 (pas) — 사용자 2026-09-15 ═══════════
+   FOE[이름].sk 가 있으면 rollIntents 는 ai 무게 대신 이 표에서 고른다 (skRoll).
+   고른 것은 intent {t:"sk"} 로 남고 foePhase 의 skExec 가 푼다.
+   수치는 '얻은 능력치만큼' 오른다 — 피해는 dmg + (지금 공격력 − 표의 공격력),
+   보호막은 shield + (지금 보호력 − 표의 보호력). 강화(buff)·간식주기가 그대로 얹힌다. */
+const SK_COND={
+  cannonFront:f=>B.foes.some(x=>x.alive&&x.name==="대포"&&x.slot<f.slot),
+  noCannon:  f=>!B.foes.some(x=>x.alive&&x.name==="대포"&&x.slot<f.slot),
+  dogsAlive: f=>B.foes.some(x=>x.alive&&x.name==="경비견"&&x!==f),
+  mobDied:   f=>!f.fled&&B.foes.some(x=>!x.alive&&x.name===f.name&&x!==f),
+};
+function foeSK(f){ const D=FOE[f.name]; return (D&&D.sk&&D.sk.length)?D.sk:null }
+function foePas(f,k){ const D=FOE[f.name]; const P=(D&&D.pas)||[]; return P.find(p=>p.k===k)||null }
+function passChips(f){
+  const D=FOE[f.name]; const P=(D&&D.pas)||[];
+  return P.map(p=>`<span class="chip pass" title="${esc(p.d||"")}">${esc(p.n)}</span>`).join("");
+}
+function skDmg(f,s){ const D=FOE[f.name]||{}; return Math.max(1,(s.dmg||0)+(f.atk-(D.atk||f.atk))) }
+function skShield(f,v){ const D=FOE[f.name]||{}; return Math.max(1,v+(f.def-(D.def||f.def))) }
+/* 이 기술이 지금 겨눌 수 있는 대원들. 첫째가 대표 대상이다 */
+function skTargets(f,s,allies){
+  const inR=allies.filter(a=>dist(a.slot,f.slot)<=f.rng);
+  const tg=s.tg||"near";
+  if(tg==="self"||tg==="none") return [];
+  if(tg==="all") return inR;
+  if(tg==="dist"){
+    const L=allies.filter(a=>{ const d=dist(a.slot,f.slot);
+      return d<=f.rng&&(s.min==null||d>=s.min)&&(s.max==null||d<=s.max) });
+    return L.length?[rnd(L)]:[];
+  }
+  if(!inR.length) return [];
+  if(tg==="near") return [inR.reduce((a,b)=>dist(a.slot,f.slot)<=dist(b.slot,f.slot)?a:b)];
+  if(tg==="back") return [inR.reduce((a,b)=>a.slot<=b.slot?a:b)];
+  if(tg==="far")  return [inR.reduce((a,b)=>dist(a.slot,f.slot)>=dist(b.slot,f.slot)?a:b)];
+  if(tg==="weak") return [inR.reduce((a,b)=>a.hp<=b.hp?a:b)];
+  return [rnd(inR)];
+}
+function skRoll(f,allies,inR,far){
+  const D=FOE[f.name], S=D.sk;
+  f.skCd=f.skCd||{}; f.skUsed=f.skUsed||{};
+  const cand=[];
+  S.forEach((s,i)=>{
+    if(s.fireOnly) return;                              /* 대포는 스스로 쏘지 않는다 */
+    if((f.skCd[i]||0)>0) return;
+    if(s.once&&f.skUsed[i]) return;
+    if(s.cond&&SK_COND[s.cond]&&!SK_COND[s.cond](f)) return;
+    const T=skTargets(f,s,allies);
+    const needT=!(s.tg==="self"||s.tg==="none");
+    if(needT&&!T.length) return;
+    cand.push({s:s,i:i,T:T});
+  });
+  /* 닿는 대원이 없으면 먼저 다가간다 — 사거리 안까지 이동 (사용자 2026-09-15) */
+  if(far&&!cand.some(c=>c.s.dmg||c.s.deb||c.s.pull)){
+    if(f.slot>1&&!foeAt(f.slot-1)) return {t:"move"};
+    if(f.slot>1&&foeAt(f.slot-1)&&Math.random()<0.6) return {t:"push"};
+  }
+  if(!cand.length) return null;
+  let pick=null;
+  if(B.turn<=1){ const o=cand.find(c=>c.s.open); if(o) pick=o }
+  /* 도망은 조건이 맞는 순간 무조건 */
+  if(!pick){ const fl=cand.find(c=>c.s.flee); if(fl) pick=fl }
+  if(!pick&&D.seq){
+    const n=S.length; let k=(f.skIdx||0)%n;
+    for(let q=0;q<n;q++){ const c=cand.find(x=>x.i===(k+q)%n); if(c){ pick=c; f.skIdx=((k+q)%n)+1; break } }
+  }
+  if(!pick){ const pool=[]; cand.forEach(c=>{ for(let q=0;q<(c.s.w||1);q++) pool.push(c) }); pick=rnd(pool) }
+  const s=pick.s, t=pick.T[0]||null;
+  return {t:"sk",i:pick.i,n:s.n,tg:s.tg||"near",
+          to:t?t.slot:0,toId:t?uid(t):null,chase:!!s.chase,
+          v:s.dmg?skDmg(f,s):0,hits:Math.max(1,s.hits||1),el:s.el||D.el||"공격",far:0};
+}
+/* 대원을 가장 앞으로 끌어당긴다 / 한 칸 뒤로 밀친다. 그 자리에 누가 있으면 자리를 바꾼다 */
+function pullFront(f,t){
+  const front=allUnits().reduce((m,u)=>Math.max(m,u.slot),0);
+  if(t.slot>=front){ say(`${t.name}${jo(t.name,"eun")} 이미 가장 앞입니다.`,"t2"); return }
+  const occ=unitAt(front), from=t.slot;
+  t.slot=front; if(occ&&occ!==t) occ.slot=from;
+  fx({side:"mine",slot:front,s:"step",ring:"#9c8d77",glow:1,gap:120});
+  say(`${f.name}${jo(f.name,"ig")} ${t.name}${jo(t.name,"eul")} 사슬로 끌어당깁니다 → ${front}번${occ&&occ!==t?` (${occ.name}${jo(occ.name,"gwa")} 자리 바꿈)`:""}`,"t3");
+}
+function pushBack(f,t){
+  const to=t.slot-1;
+  if(to<1){ say(`${t.name}${jo(t.name,"eun")} 더 물러설 곳이 없습니다.`,"t2"); return }
+  const occ=unitAt(to), from=t.slot;
+  t.slot=to; if(occ&&occ!==t) occ.slot=from;
+  fx({side:"mine",slot:to,s:"step",ring:"#9c8d77",gap:120});
+  say(`${f.name}${jo(f.name,"ig")} ${t.name}${jo(t.name,"eul")} 밀쳐냅니다 → ${to}번`,"t3");
+}
+function foeStep(f,dir,n){
+  let moved=0;
+  for(let q=0;q<(n||1);q++){
+    const to=f.slot+dir;
+    if(to<1||to>SLOTS||foeAt(to)) break;
+    f.slot=to; moved++;
+  }
+  if(moved){ fx({side:"foe",slot:f.slot,s:"step",ring:"#9c8d77",gap:120});
+    say(`${f.name} ${dir<0?"전진":"후퇴"} → ${foeNo(f.slot)}번`) }
+  return moved;
+}
+/* 대포 발사 — 대포병이 장전하면 앞의 대포들이 쏜다 */
+function cannonFire(f){
+  const guns=B.foes.filter(x=>x.alive&&x.name==="대포"&&x.slot<f.slot);
+  if(!guns.length){ say(`${f.name} — 쏠 대포가 없습니다.`,"t2"); return }
+  say(`${f.name} — 포탄 장전! 대포 ${guns.length}문이 불을 뿜습니다.`,"t3");
+  guns.forEach(g=>{
+    const s=(FOE["대포"].sk||[]).find(x=>x.fireOnly); if(!s) return;
+    const T=skTargets(g,s,allUnits().filter(canAim)); let t=T[0]; if(!t) return;
+    const wall=tauntWall(t); if(wall) t=wall;
+    fx({side:"foe",slot:g.slot,pose:"atk",lunge:1,gap:0});
+    const one=foeDmg(g,skDmg(g,s),"공격");
+    if(t.evade>0){ t.evade--; fx({side:"mine",slot:t.slot,s:"miss",txt:"회피",cls:"miss",gap:60,evade:1}); say(`대포 발사 — ${t.name} 회피!`,"t2"); return }
+    hurtAlly(g,t,one,"대포 발사","공격");
+  });
+}
+function skExec(f,I){
+  const D=FOE[f.name], s=D&&D.sk&&D.sk[I.i]; if(!s) return;
+  f.skCd=f.skCd||{}; f.skUsed=f.skUsed||{};
+  if(s.cd) f.skCd[I.i]=s.cd;             /* 적 차례가 열릴 때마다 하나 줄어 cd 턴을 쉰다 */
+  f.skUsed[I.i]=1;
+  bark(f,"atk");
+  say(`${f.name} — ${s.n}`,"t3");
+  /* 자기 이동이 먼저 */
+  if(s.fwd) foeStep(f,-1,s.fwd);
+  if(s.back) foeStep(f,+1,s.back);
+  if(s.flee){ f.fled=1;
+    const dead=B.foes.find(x=>!x.alive&&x.name===f.name&&x!==f);
+    const dir=(dead&&dead.slot<f.slot)?+1:-1;
+    if(!foeStep(f,dir,1)) foeStep(f,-dir,1);
+  }
+  /* 자기 강화 */
+  if(s.buff){ f.atk+=s.buff; f.atkUp=(f.atkUp||0)+s.buff; f.buffs=(f.buffs||0)+1;
+    fx({side:"foe",slot:f.slot,s:"buffup",ring:"#e0705a",glow:1,txt:(I.el==="마법"?"마법력":"공격력")+" +"+s.buff,cls:"buf",gap:160});
+    say(`${f.name} ${I.el==="마법"?"마법력":"공격력"} +${s.buff} (누적 +${f.atkUp})`,"t2") }
+  if(s.defUp){ f.def+=s.defUp; fx({side:"foe",slot:f.slot,ring:"#8fa2c9",txt:"보호력 +"+s.defUp,cls:"shd",gap:120}); say(`${f.name} 보호력 +${s.defUp}`,"t2") }
+  if(s.heal){ healUp(f,s.heal); fx({side:"foe",slot:f.slot,s:"heal",txt:"+"+s.heal,cls:"heal"}); say(`${f.name} 체력 +${s.heal}`,"t2") }
+  if(s.shield){ const v=skShield(f,s.shield); f.shield+=v; fx({side:"foe",slot:f.slot,s:"shield"}); say(`${f.name} 보호막 +${v}`) }
+  if(s.eshield){ const v=skShield(f,s.eshield); f.eshield=(f.eshield||0)+v;
+    fx({side:"foe",slot:f.slot,s:"shield",ring:"#5fd8cf",txt:"에너지 보호막 +"+v,cls:"shd",gap:140}); say(`${f.name} 에너지 보호막 +${v}`,"t2") }
+  if(s.thorn){ f.thorn=s.thorn.v; f.thornTurn=s.thorn.turns||2;
+    fx({side:"foe",slot:f.slot,ring:"#b3453a",txt:"가시"+f.thorn,cls:"shd"}); say(`${f.name} 가시 ${f.thorn} (${f.thornTurn}턴)`,"t3") }
+  if(s.taunt){ f.taunt=99; f.tauntTurn=s.taunt+1;
+    fx({side:"foe",slot:f.slot,ring:"#c9a227",txt:"도발",cls:"shd",gap:120}); say(`${f.name}${jo(f.name,"ig")} 앞을 막아섭니다 — ${s.taunt}턴 도발`,"t3") }
+  /* 동료를 부리는 것 */
+  if(s.fire) cannonFire(f);
+  if(s.snack){ const dogs=B.foes.filter(x=>x.alive&&x.name==="경비견");
+    dogs.forEach(d=>{ d.atk+=s.snack.atk; d.atkUp=(d.atkUp||0)+s.snack.atk; d.shield+=s.snack.shield;
+      fx({side:"foe",slot:d.slot,s:"buffup",ring:"#e0705a",txt:"공격력 +"+s.snack.atk,cls:"buf",gap:120}) });
+    say(`${f.name} — 간식주기. 경비견 ${dogs.length}마리 공격력 +${s.snack.atk} · 보호막 +${s.snack.shield}`,"t3") }
+  if(s.riot){ const others=B.foes.filter(x=>x.alive&&x.name===f.name&&x!==f);
+    others.forEach(o=>{ o.atk+=1; o.atkUp=(o.atkUp||0)+1; fx({side:"foe",slot:o.slot,s:"buffup",ring:"#e0705a",txt:"공격력 +1",cls:"buf",gap:100}) });
+    say(`${f.name} — 폭동! 다른 폭도 ${others.length}의 공격력 +1`,"t3") }
+  /* 대상 잡기 */
+  const tg=I.tg||s.tg||"near";
+  let T=[];
+  if(tg==="all") T=allUnits().filter(u=>u.hp>0&&dist(u.slot,f.slot)<=f.rng);
+  else if(tg!=="self"&&tg!=="none"){
+    let t=(I.toId&&allUnits().find(x=>uid(x)===I.toId&&x.hp>0))||unitAt(I.to)||null;
+    if(!t&&!I.chase){ say(`${f.name}${jo(f.name,"ig")} 빈 ${I.to}번 칸을 칩니다 — 빗나감.`,"t2");
+      fx({side:"mine",slot:I.to,txt:"빗나감",cls:"miss",gap:130}); return }
+    if(!t){ const L=skTargets(f,s,allUnits().filter(canAim)); t=L[0]||null }
+    if(t){ const wall=tauntWall(t); if(wall&&(s.dmg||s.push)){ say(`${wall.name}${jo(wall.name,"ig")} 앞을 막아섭니다.`,"t2"); t=wall } }
+    if(t&&dist(t.slot,f.slot)>f.rng){ say(`${f.name} — ${t.name}${jo(t.name,"eun")} 거리 밖입니다.`,"t2");
+      fx({side:"foe",slot:f.slot,txt:"놓침",cls:"miss",gap:120}); t=null }
+    if(t) T=[t];
+  }
+  if(!T.length) return;
+  if(s.dmg) fx({side:"foe",slot:f.slot,pose:"atk",lunge:1,gap:0});
+  T.forEach(t=>{
+    if(s.dmg){
+      const hits=Math.max(1,s.hits||1);
+      let one=foeDmg(f,skDmg(f,s),I.el);
+      const crit=!!(s.burnCrit&&deb(t,"burn")>0);
+      if(crit){ one*=2; say(`${s.n} — 화상 입은 ${t.name}에게 치명타!`,"t1") }
+      for(let q=0;q<hits;q++){
+        if(t.hp<=0) break;
+        if(t.evade>0){ t.evade--; fx({side:"mine",slot:t.slot,s:"miss",txt:"회피",cls:"miss",gap:60,evade:1}); say(`${s.n} — ${t.name} 회피!`,"t2"); continue }
+        const before=t.hp;
+        hurtAlly(f,t,one,s.n+(hits>1?` ${q+1}/${hits}`:""),I.el);
+        const dealt=Math.max(0,before-Math.max(0,t.hp));
+        if(dealt>0&&foePas(f,"drain")&&f.hp<f.maxHp){
+          const v=Math.min(dealt,f.maxHp-f.hp); f.hp+=v;
+          fx({side:"foe",slot:f.slot,s:"heal",ring:"#a34f4f",txt:"+"+v,cls:"heal",gap:80});
+          say(`${f.name} 흡수 — 체력 +${v}`,"t2") }
+      }
+    }
+    if(t.hp<=0) return;
+    if(s.pull) pullFront(f,t);
+    if(s.push) pushBack(f,t);
+    if(s.deb) Object.keys(s.deb).forEach(k=>addDeb(t,k,s.deb[k],f));
+  });
+}
+/* 적이 죽었을 때 — 그 죽음에 반응하는 기술(폭도의 도망)이 있으면 의도를 바로 바꾼다 */
+function skReact(dead){
+  if(!B||B.over) return;
+  B.foes.forEach(f=>{
+    if(!f.alive||f===dead||!foeSK(f)) return;
+    const S=FOE[f.name].sk;
+    const i=S.findIndex((s,ix)=>s.flee&&s.cond&&SK_COND[s.cond]&&SK_COND[s.cond](f)&&!(f.skUsed&&f.skUsed[ix]));
+    if(i<0||(f.intent&&f.intent.t==="sk"&&f.intent.n===S[i].n)) return;
+    const s=S[i];
+    f.intent={t:"sk",i:i,n:s.n,tg:"self",to:0,toId:null,chase:false,v:0,hits:1,el:FOE[f.name].el||"공격",far:0};
+    fx({side:"foe",slot:f.slot,txt:s.n,cls:"miss",gap:100});
+    say(`${f.name}${jo(f.name,"ig")} 동료가 쓰러지자 ${s.n}칠 채비를 합니다.`,"t2");
+  });
+}
+/* 적 차례가 열릴 때 — 지속 기술 갱신 · 재사용 대기 하나 줄임 */
+function skTurnStart(){
+  B.foes.forEach(f=>{
+    if(!f.alive) return;
+    if(f.skCd) Object.keys(f.skCd).forEach(k=>{ if(f.skCd[k]>0) f.skCd[k]-- });
+    const tw=foePas(f,"tauntWith");
+    if(tw&&!f.tauntTurn){
+      const on=B.foes.some(x=>x.alive&&x.name===tw.who);
+      if(on&&!f.taunt){ f.taunt=99; say(`${f.name}${jo(f.name,"ig")} 주인의 명령에 앞을 막아섭니다.`,"t2") }
+      else if(!on&&f.taunt){ f.taunt=0; say(`${f.name} — 주인이 없어 도발이 풀립니다.`,"t2") }
+    }
+  });
+}
+function skIntentHtml(f,I){
+  const D=FOE[f.name], s=D&&D.sk&&D.sk[I.i]; const tip=esc((s&&s.d)||I.n);
+  let who="";
+  if(I.tg==="all") who=`<span class="tgt" title="사거리 안 대원 전원">→ 전원</span>`;
+  else if(I.tg!=="self"&&I.tg!=="none"&&I.to){
+    const p=I.toId&&allUnits().find(x=>uid(x)===I.toId&&x.hp>0);
+    who=(I.chase&&p)?`<span class="tgt chase" title="자리를 옮겨도 쫓아옵니다">↝ ${esc(p.name)}</span>`
+                     :`<span class="tgt" title="이 칸을 칩니다">→ ${I.to}번</span>`;
+  }
+  /* 피해 기술은 여느 공격처럼 '숫자 → 칸' 만 — 이름은 풍선(title)에. 칸이 좁아 이름을 적으면 세로로 부서진다 */
+  if(I.v){ const e=foeDmg(f,I.v,I.el);
+    return `<span class="intent${e<I.v?" cut":""}" title="${esc(I.n)} · ${tip}">${ic(I.el==="마법"?"mag":"atk")}<b>${e}</b>${
+      I.hits>1?`<span class="hits">×${I.hits}</span>`:""} ${who}</span>`; }
+  const k=(s&&(s.shield||s.eshield))?"def":(s&&(s.buff||s.snack||s.riot))?"atk":(s&&s.fire)?"atk":"move";
+  return `<span class="intent${(s&&(s.buff||s.snack||s.riot))?" up":""}" title="${tip}">${ic(k)} ${esc(I.n)} ${who}</span>`;
+}
 /* onlyIdle — 이미 수를 정한 적은 그대로 두고, 기다리던(wait) 적만 새로 정한다.
    소환물이 서도 적의 의도가 흔들리지 않게 (사용자 2026-09-12 — 하수인만 세워도 도발처럼 굴었다) */
 function rollIntents(onlyIdle){
@@ -13201,6 +13569,8 @@ function rollIntents(onlyIdle){
     }
     const inR=allies.filter(a=>dist(a.slot,f.slot)<=f.rng);
     const far=!inR.length;
+    /* 고유 기술을 가진 적은 그 표로 고른다 (사용자 2026-09-15). 못 고르면 예전처럼 */
+    if(foeSK(f)){ const si=skRoll(f,allies,inR,far); if(si){ f.intent=si; return } }
     if(far){
       /* 먼저 거리를 좁혀 본다 */
       if(f.slot>1&&!foeAt(f.slot-1)&&Math.random()<0.55){ f.intent={t:"move"}; return }
@@ -13396,6 +13766,46 @@ const BARK={
   atk:["저리 가!","때리지 마!"],
   hurt:["으윽!","아파!"],
   down:["드디어… 나가는구나…"]},
+ "사슬 간수":{
+  in:["뒤에 숨어 봐야 소용없다.","사슬은 어디든 닿는다.","이리 와."],
+  atk:["끌려와!","묶여라."],
+  hurt:["큭.","사슬을 놓지 않는다."],
+  down:["열쇠는… 못 준다…"]},
+ "피 먹는 자":{
+  in:["냄새… 피 냄새…","살아 있는 것이다.","목이 마르다."],
+  atk:["마시겠다!","더… 더…"],
+  hurt:["으르릉…","피가 샌다…"],
+  down:["갈증이… 끝나는구나…"]},
+ "감옥의 눈":{
+  in:["…보고 있다.","눈을 피할 수 없다.","모두 보인다."],
+  atk:["…","깜빡이지 마라."],
+  hurt:["…!","눈을 감지 않는다."],
+  down:["…감긴다…"]},
+ "대포병":{
+  in:["장전!","포문을 열어라!","조준 끝."],
+  atk:["발사!","쏴라!"],
+  hurt:["포를 지켜!","윽!"],
+  down:["포가… 식는다…"]},
+ "경비견":{
+  in:["크르르…","컹!","으르렁…"],
+  atk:["컹컹!","크왁!"],
+  hurt:["깨갱!","크르…"],
+  down:["끼잉…"]},
+ "고문 기술자":{
+  in:["인두가 달았다.","어디부터 지질까.","비명은 좋은 소리지."],
+  atk:["지진다!","뜨겁지?"],
+  hurt:["아직 식지 않았다.","윽!"],
+  down:["불이… 꺼진다…"]},
+ "녹슨 철창 골렘":{
+  in:["…끼익.","철창이 움직인다.","…"],
+  atk:["쿵!","…밀어낸다."],
+  hurt:["…녹이 떨어진다.","…"],
+  down:["…무너진다…"]},
+ "폭도":{
+  in:["폭동이다!","다 같이!","히히힛!"],
+  atk:["던져!","히익!"],
+  hurt:["아얏!","도망칠까…"],
+  down:["살려…"]},
  "사슬 광인":{
   in:["짤랑… 짤랑…","사슬이 노래한다.","가까이 와."],
   atk:["감아 주마!","묶어 줄게!"],
@@ -13601,6 +14011,7 @@ function intentHtml(f){
       I.k==="ward"?"미리 부정 보호막을 둘러 다음 상태 이상을 막습니다"
       :I.k==="roar"?"몸에 걸린 상태 이상을 모두 걷어내고, 걷어낸 만큼 공격력을 얻습니다"
       :"몸에 걸린 상태 이상을 모두 걷어냅니다"}">✦ ${esc(purgeName(f,I.k))}</span>`;
+  if(I.t==="sk")    return skIntentHtml(f,I);
   if(I.t==="volley"){
     const e=foeDmg(f,I.v,I.el);
     return `<span class="intent${e<I.v?" cut":""}" title="아군 전체${e<I.v?` · 약화로 ${I.v} → ${e}`:""}">${
@@ -13808,8 +14219,10 @@ function drawBattle(app){
           ${f.weakAtk?`<span class="chip wk" title="이번 적 차례에 내놓는 피해가 ${f.weakAtk} 줄어듭니다">${ic("atk")}−${f.weakAtk}</span>`:""}
           ${f.weak?`<span class="chip wk" title="보호력이 ${f.weak} 줄어듭니다">${ic("def")}−${f.weak}</span>`:""}
           ${f.air?`<span class="chip on">공중</span>`:""}
-          ${f.taunt?`<span class="chip on">도발</span>`:""}
+          ${f.taunt?`<span class="chip on">도발${f.tauntTurn?` · ${f.tauntTurn-1||1}턴`:""}</span>`:""}
           ${f.thorn?`<span class="chip on">가시${f.thorn}${f.thornTurn?` · ${f.thornTurn}턴`:""}</span>`:""}
+          ${f.eshield?`<span class="chip on" title="에너지 보호막 — 턴이 지나도 남습니다">에너지 ${f.eshield}</span>`:""}
+          ${passChips(f)}
           ${f.gmark?`<span class="chip on">장군의 표식</span>`:""}
           ${f.evade?`<span class="chip on">회피${f.evade}</span>`:""}
           ${f.negShield?`<span class="chip on">부정 보호막${f.negShield}</span>`:""}
@@ -15304,6 +15717,27 @@ function incoming(){
       const v=foeDmg(f,f.intent.v,f.intent.el);
       list.forEach(a=>hitOn(a,v));
     }
+    else if(f.intent.t==="sk"){
+      const I=f.intent, D=FOE[f.name], s=D&&D.sk&&D.sk[I.i];
+      if(s&&s.fire){                                   /* 포탄 장전 — 앞의 대포들이 쏜다 */
+        B.foes.filter(x=>x.alive&&x.name==="대포"&&x.slot<f.slot).forEach(g=>{
+          const gs=(FOE["대포"].sk||[]).find(x=>x.fireOnly); if(!gs) return;
+          let t=skTargets(g,gs,list.filter(canAim))[0]; if(!t) return;
+          const wall=tauntWall(t); if(wall) t=wall;
+          hitOn(t,foeDmg(g,skDmg(g,gs),"공격")); });
+      }
+      if(!I.v) return;
+      let T=[];
+      if(I.tg==="all") T=list.filter(u=>dist(u.slot,f.slot)<=f.rng);
+      else{
+        let t=(I.toId&&list.find(x=>uid(x)===I.toId&&x.hp>0))||unitAt(I.to)||null;
+        if(!t&&I.chase) t=list.filter(canAim)[0]||list[0];
+        if(t){ const wall=tauntWall(t); if(wall) t=wall }
+        if(t&&dist(t.slot,f.slot)<=f.rng) T=[t];
+      }
+      T.forEach(t=>{ let one=foeDmg(f,I.v,I.el); if(s&&s.burnCrit&&deb(t,"burn")>0) one*=2;
+        for(let q=0;q<Math.max(1,I.hits||1);q++) hitOn(t,one) });
+    }
   });
   return map;
 }
@@ -15371,8 +15805,11 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
   const pr=pierceRate(pierce);
   const thru=Math.round(amt*pr/100);       /* 보호막을 무시하고 체력으로 */
   let rest=amt-thru;
-  const hadS=f.shield||0;
-  if(rest>0){ s=Math.min(f.shield,rest); f.shield-=s; rest-=s }
+  const hadS=f.shield||0, hadE=f.eshield||0;
+  /* 적의 에너지 보호막 — 보호막보다 먼저 깎이고, 턴이 지나도 남는다 (녹슨 철창 골렘) */
+  if(rest>0&&f.eshield>0){ const e=Math.min(f.eshield,rest); f.eshield-=e; rest-=e; s+=e }
+  if(hadE>0&&f.eshield<=0) breakFX(f,"e");
+  if(rest>0){ const s2=Math.min(f.shield,rest); f.shield-=s2; rest-=s2; s+=s2 }
   if(hadS>0&&f.shield<=0) breakFX(f,"s");
   d=thru+rest;
   /* 적의 회피 */
@@ -15434,6 +15871,7 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
     (B.mins||[]).filter(m=>m.alive&&m.phantomOf===f.id).forEach(m=>{
       m.alive=0; m.slot=0; say(`환영이 흩어집니다.`,"t2") });
     onDeath("foe",f);
+    skReact(f);
     onKill(B.lastAttacker,f,tag) }
   /* 영혼 둔갑 — 회피를 쥔 쿠렘타이가 때린 적은 공포에 질린다 */
   { const by=B.lastAttacker;
@@ -17347,6 +17785,7 @@ function foePhase(){
       else if(pr.taunt){ pr.taunt=0; say("죄수가 뒤로 물러납니다.","t2") } } }
   fx({s:"turn",gap:220});
   B.foes.forEach(f=>{ f.shield=0 });   /* 지난 턴에 얻은 보호막은 여기서 사라진다 */
+  skTurnStart();                        /* 지속 기술(도발 따위) · 재사용 대기 */
   B.foes.forEach(f=>{
     if(!f.alive||!f.intent) return;
     const stunned=(f.stun||0)>0||deb(f,"stun")>0;
@@ -17376,6 +17815,7 @@ function foePhase(){
       fx({side:"foe",slot:f.slot,s:"heal",ring:"#e0c85a",txt:"+"+v,cls:"heal"});
       say(`${f.name}${jo(f.name,"ig")} 맥주를 들이켭니다 — 체력 +${v}, 대신 보호약화 2`,"t2");
     }
+    else if(f.intent.t==="sk"){ skExec(f,f.intent) }
     else if(f.intent.t==="atk"){
       let t=null;
       if(intentChases(f,f.intent)&&f.intent.toId){
@@ -17572,6 +18012,8 @@ function startMyTurn(){
   B.foes.forEach(f=>{ f.air=0; f.weakAtk=0;
     if(f.thornTurn>0&&--f.thornTurn<=0){ f.thorn=0;
       say(`${f.name}의 사슬이 늘어집니다 — 가시가 풀렸습니다.`,"t2") }
+    if(f.tauntTurn>0&&--f.tauntTurn<=0){ f.taunt=0;
+      say(`${f.name}의 도발이 풀립니다.`,"t2") }
     if(f.deb){ ["atkDn","magDn","defDn"].forEach(k=>{ if(f.deb[k]>0) f.deb[k]-- });
       if(!f.deb.fear){ f.fearSrc=null; f.fearName=null } }
     if(f.burn){                       /* 노트 : 턴 종료시 중첩 1 감소 */
