@@ -10005,6 +10005,7 @@ const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 470, "v": "0.4", "d": "2026-09-16", "t": "카제 산들바람 — 강화 보상이 기술 칸에 살아서 보임 · 산들바람 강화는 피해만", "big": 0},
  {"b": 469, "v": "0.4", "d": "2026-09-16", "t": "카제 — 고르기·도감에 회오리 장막 표시 · 회오리 장막 보호막 2", "big": 0},
  {"b": 468, "v": "0.4", "d": "2026-09-16", "t": "카제 회오리 — 거리 3 안의 적을 골라 그 적까지, 지나간 적 피해·고른 적 공중", "big": 0},
  {"b": 467, "v": "0.4", "d": "2026-09-16", "t": "사거리 밖 대상은 고르지 못한다 — 대원의 무리해서 뻗기 끔", "big": 0},
@@ -10475,7 +10476,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=469;
+const BUILD_NO=470;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -14368,7 +14369,7 @@ function startBattle(kind,pinned){
        (처음은 완벽하게는 전투당 한 번) */
     h.first=h.first||{}; h.first.cut=0; h.first.shot=0;
     h.shotFree=0; h.thornTmp=0;
-    h.windBuff=0; h.potential=0; h.lock={}; h.lockNew={}; h.airUp=0; h.manaUsed=0;
+    h.windBuff=0; h.windDmg=0; h.potential=0; h.lock={}; h.lockNew={}; h.airUp=0; h.manaUsed=0;
     h.portal=null; h.bomb=0; h.minions=[];
     h.mana=h.maxMana;
     if(fresh){
@@ -15983,8 +15984,8 @@ function extraParts(h,sk,key){
   if(!h||!sk) return out;
   const t=h.tag||{}, fst=h.first||{};
   if(key==="dmg"){
-    if(h.name==="카제"&&sk.n==="진선풍도"&&h.windBuff)
-      out.push({n:"산들바람",v:h.windBuff});
+    if(h.name==="카제"&&sk.n==="진선풍도"&&h.windDmg)
+      out.push({n:"산들바람",v:h.windDmg});
     if(h.name==="나이코스"&&sk.n==="베기"){
       if(h.cutGrow) out.push({n:"늘어가는 실력",v:h.cutGrow});
       if(t.firstCut&&fst.cut!==1) out.push({n:"처음은 날카롭게",v:t.firstCut+h.atk});
@@ -16083,6 +16084,12 @@ function richLive(h,sk,txt){
   /* 카제 진선풍도 — 산들바람 강화가 남아 있으면 거리도 그만큼 올려 보인다 (사용자 2026-09-16). 피해는 extraParts 가 얹는다 */
   if(h&&h.name==="카제"&&sk&&sk.n==="진선풍도"&&h.windBuff)
     txt0=txt0.replace(/거리 (\d+)/g,(m,n)=>"거리 "+NUM_A+(+n+h.windBuff)+NUM_B+"산들바람 +"+h.windBuff+NUM_C);
+  /* 산들바람 — 싹쓸바람(추진력)·산들바람 강화(피해 증가량)가 칸에 살아서 보인다 (사용자 2026-09-16) */
+  if(h&&h.name==="카제"&&sk&&sk.n==="산들바람"&&h.tag){
+    const mp=h.tag.momPlus||0, gp=h.tag.gustPlus||0;
+    if(mp) txt0=txt0.replace(/추진력을 (\d+)/,(m,n)=>"추진력을 "+NUM_A+(+n+mp)+NUM_B+"싹쓸바람 +"+mp+NUM_C);
+    if(gp) txt0=txt0.replace(/피해량이 (\d+)/,(m,n)=>"피해량이 "+NUM_A+(+n+gp)+NUM_B+"산들바람 강화 +"+gp+NUM_C);
+  }
   if(/\*\( \)\*/.test(txt0)){
     const lp=livePlace(h,sk);
     txt0=txt0.replace(/\*\( \)\*/g, lp
@@ -17221,7 +17228,7 @@ function predictDmg(h,s,tgt){
     const bonus=h.windBuff||0;
     const reach=h.tag.noRange?99:(strong?3:s.rng)+bonus;
     if(dist(h.slot,tgt.slot)>reach) return null;
-    dmg=bs("dmg")+bonus+ATK;
+    dmg=bs("dmg")+(h.windDmg||0)+ATK;
     if(h.tag.firstWind&&(h.first||{}).wind!==1) dmg+=h.tag.firstWind;
     /* 회오리에 뜬 적은 '바람처럼 사라져라'가 뒤이어 때린다 */
     if(strong){
@@ -18759,8 +18766,8 @@ function runEffect(h,i,s,target){
     } else { say("이동할 칸을 골라야 합니다.","t2"); return }
     h.mom+=itemBt(h,"moveMom");
     const m=1+(h.tag.momPlus||0);
-    h.mom+=m; h.windBuff+=1+(h.tag.gustPlus||0);
-    say(`${h.name} 추진력 +${m} · 다음 진선풍도의 거리와 피해량 +${1+(h.tag.gustPlus||0)}`);
+    h.mom+=m; h.windBuff+=1; h.windDmg=(h.windDmg||0)+1+(h.tag.gustPlus||0);   /* 강화는 피해만 올린다 (사용자 2026-09-16) */
+    say(`${h.name} 추진력 +${m} · 다음 진선풍도의 거리 +1, 피해량 +${1+(h.tag.gustPlus||0)}`);
     return;
   }
   /* 공통 : 보호막 · 회복 */
@@ -18892,7 +18899,7 @@ function runEffect(h,i,s,target){
       const strong=windStrong(h,h.windUses);
       const bonus=h.windBuff;
       const reach=h.tag.noRange?99:(strong?3:s.rng)+bonus;
-      let dmg=s.dmg+mod(s,"dmg")+bonus+h.atk;
+      let dmg=s.dmg+mod(s,"dmg")+(h.windDmg||0)+h.atk;
       if(h.tag.firstWind&&h.first.wind!==1){ dmg+=h.tag.firstWind; h.first.wind=1 }
       /* 회오리(강화)는 고른 적까지 — 지나가는 적을 다 치고 고른 적을 띄운다 (사용자 2026-09-16). 잠재력 활성이면 사거리 안 전부 */
       const aimed=strong&&!h.potential&&tgt&&dist(h.slot,tgt.slot)<=reach?tgt:null;
@@ -18919,7 +18926,7 @@ function runEffect(h,i,s,target){
           ? alive.reduce((a,b)=>dist(h.slot,a.slot)>=dist(h.slot,b.slot)?a:b) : null);
         (h.potential?alive.slice().sort((a,b)=>a.slot-b.slot):(last?[last]:[])).forEach(f=>airborne(h,f));   /* 고른 적(또는 앞 적부터 차례로) (2026-09-16) */
       }
-      h.windBuff=0; return;
+      h.windBuff=0; h.windDmg=0; return;
     }
     if(!tgt) return;
     /* 사거리 밖이라도 닿는 적이 하나도 없으면 무리해서 뻗는다 */
