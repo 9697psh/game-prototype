@@ -1410,6 +1410,8 @@ body.shakeall{animation:allShake .62s cubic-bezier(.36,.07,.19,.97)}
   padding:16px 18px;max-width:760px;width:100%;box-shadow:0 18px 50px rgba(0,0,0,.6)}
 .peekhead{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
 .peekgrid{max-width:100%;margin-top:10px}
+.pstage.peekstage{width:min(540px,100%);cursor:default;margin-top:10px}
+.pstage.peekstage .cell{cursor:default}
 .peekgrid .cell{cursor:default}
 .peekgrid .cell:hover{border-color:var(--rule)}
 .peekgrid .cell.here{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass) inset}
@@ -8763,7 +8765,7 @@ function mapTipFill(cell,r,c){
     +route;
 }
 function mapTipShow(d,cell,r,c){
-  if(view!=="map"||!document.body.contains(d)) return;   /* 지도가 아니면(또는 이미 갈린 칸이면) 띄우지 않는다 */
+  if((view!=="map"&&!(run&&run.mapPeek))||!document.body.contains(d)) return;   /* 지도(또는 지도 보기)가 아니면, 이미 갈린 칸이면 띄우지 않는다 */
   const html=mapTipFill(cell,r,c); if(!html) return;
   if(!MAPTIP_EL){ MAPTIP_EL=document.createElement("div"); MAPTIP_EL.id="maptip"; document.body.appendChild(MAPTIP_EL) }
   const b=MAPTIP_EL; b.innerHTML=html; b.style.display="block";
@@ -9573,21 +9575,15 @@ function drawMapPeek(){
       <button class="pk-x">닫기 (M)</button>
     </div>
     <div class="hint">지금 위치와 남은 시설을 확인만 합니다. 이동은 지도 화면에서 합니다.</div>
-    <div class="gridmap peekgrid" style="grid-template-columns:repeat(${S},1fr)"></div>
     <div class="legend"></div>
     <div class="roster" style="margin-top:12px"></div>
   </div></div>`);
-  const g=ov.querySelector(".peekgrid");
-  for(let r=0;r<S;r++) for(let c=0;c<S;c++){
-    const cell=run.grid[r][c], here=(run.pos.r===r&&run.pos.c===c);
-    const d=el(`<div class="cell ${cell.t==="empty"?"emp":""} ${here?"here":""}">
-      ${nodeArt(cell.t)}${here?`<span class="you">●</span>`:""}
-      ${cell.t!=="empty"?`<span class="cl">${esc(NODE[cell.t].label)}</span>`:""}</div>`);
-    if(cell.t==="dungeon"||cell.t==="elite"||cell.t==="boss")
-      d.title=`${NODE[cell.t].label}${cell.waves?` · ${cell.waves}라운드`:""}`
-        +`${cell.style?NL1+cell.style:""}${cell.loot?NL1+cell.loot:""}`;
-    g.appendChild(d);
-  }
+  { /* 지도 화면과 같은 양피지 무대 + 같은 판 (사용자 2026-09-16). 손은 없다 */
+    const floor=MAP_FLOOR[Math.min(run.field,MAP_FLOOR.length-1)], H=mapHands();
+    const stage=el(`<div class="pstage peekstage"${floor?` style="--floor:url(${mapPng(floor)})"`:""}>
+      <img class="pmapimg" src="${mapPng(H.held)}" alt="" draggable="false"></div>`);
+    stage.appendChild(mapGridEl(1));
+    ov.querySelector(".hint").after(stage) }
   const lg=ov.querySelector(".legend");
   ["camp","dungeon","elite","shop","rest","forge","event","boss"].forEach(t=>
     lg.appendChild(el(`<span><i>${nodeArt(t)}</i>${esc(NODE[t].label)}</span>`)));
@@ -9596,13 +9592,13 @@ function drawMapPeek(){
     <div class="art">${figure(h.name)}</div>
     <div><b>${esc(h.name)}</b>${h.down?`<span class="chip on">쓰러짐</span>`:""}
       <small>Lv.${h.lv} · ${ic("hp")}${Math.max(0,h.hp)}/${h.maxHp}</small></div></div>`)));
-  ov.querySelector(".pk-x").onclick=()=>{ run.mapPeek=0; render() };
-  ov.onclick=e=>{ if(e.target===ov){ run.mapPeek=0; render() } };
+  ov.querySelector(".pk-x").onclick=()=>{ run.mapPeek=0; mapTipHide(); render() };
+  ov.onclick=e=>{ if(e.target===ov){ run.mapPeek=0; mapTipHide(); render() } };
   document.body.appendChild(ov);
 }
 document.addEventListener("keydown",e=>{
   if(!run||view==="title"||view==="map") return;
-  if(e.key==="m"||e.key==="M"||e.key==="ㅡ"){ run.mapPeek=!run.mapPeek; render() }
+  if(e.key==="m"||e.key==="M"||e.key==="ㅡ"){ run.mapPeek=!run.mapPeek; mapTipHide(); render() }
 });
 function render0(){
   const app=document.getElementById("app");
@@ -9638,7 +9634,7 @@ function render0(){
     qb.onclick=()=>{ HELP_ON=!HELP_ON; drawHelp() }; hb.appendChild(qb); }
   if(run&&view!=="title"&&view!=="map"&&view!=="over"&&view!=="clear"){
     const mb=el(`<button title="M 키로도 열 수 있습니다">${run.mapPeek?"지도 닫기":"지도 보기"}</button>`);
-    mb.onclick=()=>{ run.mapPeek=!run.mapPeek; render() };
+    mb.onclick=()=>{ run.mapPeek=!run.mapPeek; mapTipHide(); render() };
     hb.appendChild(mb);
   }
   if(run){ const b=el(`<button>처음부터</button>`);
@@ -9918,6 +9914,7 @@ const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 451, "v": "0.4", "d": "2026-09-16", "t": "고유 기술 적은 같은 기술 연속 안 씀 · [지도 보기]가 지금 지도 화면 그대로", "big": 0},
  {"b": 450, "v": "0.4", "d": "2026-09-16", "t": "타이틀 오른쪽 업데이트 기록 패널 — 빌드마다 자동으로 한 줄, 큰 패치는 ★", "big": 0},
  {"b": 449, "v": "0.4", "d": "2026-09-16", "t": "미지의 구역 이벤트 5개 — 저항군 결성 · 죄수의 떠도는 영혼 · 현상 수배 · 모닥불 · 채석장", "big": 0},
  {"b": 448, "v": "0.4", "d": "2026-09-16", "t": "전용 보상 아이콘 31개 지정 (REW_FIX) · 소환물 표식 puppet · slash_heart 새 그림", "big": 0},
@@ -10369,7 +10366,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=450;
+const BUILD_NO=451;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -11455,29 +11452,13 @@ function moveTaint(){
   return Math.max(1,MOVE_TAINT-cut)+tagSum("rush");   /* 급한 걸음 */
 }
 const near=(a,b)=>Math.abs(a.r-b.r)+Math.abs(a.c-b.c)===1;
-function drawMap(app){
-  const f=FIELDS[run.field], S=run.size;
-  app.appendChild(el(`<div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
-    <div class="title" style="font-size:20px">${esc(f.n)}</div>
-    <div class="hint">${run.night?`밤입니다. 빈 칸을 지날 때 습격당할 확률 ${Math.round(Math.min(85,45+nightDepth()*5))}% · 상점·쉼터·미지의 구역·전장 칸은 습격당하지 않습니다`:run.act<=0?`활동량이 바닥났습니다. 이제 한 칸에 ${hrsTxt(STEP_H*2)}이 걸립니다.`:`인접한 칸을 눌러 이동합니다. 먼 칸은 한 번 누르면 길을 보여 주고, 한 번 더 누르면 갑니다. 한 칸에 활동량 1 · ${hrsTxt(STEP_H)} · 오염도 ${moveTaint()}.`}</div></div>`));
-  /* 무엇을 해야 하는지 한 줄로 — 우두머리 방향과 남은 날 */
-  { let br=null;
-    for(let r=0;r<S;r++) for(let c=0;c<S;c++) if(run.grid[r][c].t==="boss") br={r:r,c:c};
-    const dLeft=Math.max(0,(f.days||7)-run.day+1);
-    const dir=br?((br.r<run.pos.r?"북":br.r>run.pos.r?"남":"")+(br.c<run.pos.c?"서":br.c>run.pos.c?"동":"")):"";
-    const dist=br?(Math.abs(br.r-run.pos.r)+Math.abs(br.c-run.pos.c)):0;
-    app.appendChild(el(`<div class="goalbar">
-      <span class="gl">목표</span>
-      <b>${esc(f.n)}의 우두머리</b>
-      ${br?`<span class="chip">${dir||"바로 여기"} ${dist?`${dist}칸`:""}</span>`:""}
-      <span class="chip ${dLeft<=2?"on":""}">남은 날 ${dLeft}일</span>
-      <span class="chip ${run.taint>=70?"on":""}">오염도 ${run.taint}/100</span>
-      <span class="grow"></span>
-      <span class="hint">가까운 칸은 바로 이동 · 먼 칸은 두 번 눌러 이동 · 바닥을 누르면 길 취소</span>
-    </div>`)); }
-  const g=el(`<div class="gridmap pmap" style="grid-template-columns:repeat(${S},1fr)"></div>`);
+/* 지도 칸 판 — 지도 화면과 [지도 보기](M) 가 같은 것을 쓴다 (사용자 2026-09-16: 미리보기가 옛 그림으로 그려지던 것).
+   peek 이면 길 번호를 안 찍고 누르지 못한다. 풍선(mapTip)은 둘 다 뜬다 */
+function mapGridEl(peek){
+  const S=run.size;
+  const g=el(`<div class="gridmap pmap${peek?" peekgrid":""}" style="grid-template-columns:repeat(${S},1fr)"></div>`);
   const rstep={};
-  if(run.route) run.route.path.forEach((p,i)=>{ rstep[p.r+"-"+p.c]=i+1 });
+  if(run.route&&!peek) run.route.path.forEach((p,i)=>{ rstep[p.r+"-"+p.c]=i+1 });
   for(let r=0;r<S;r++) for(let c=0;c<S;c++){
     const cell=run.grid[r][c], here=(run.pos.r===r&&run.pos.c===c);
     const adj=near(run.pos,{r:r,c:c});
@@ -11500,6 +11481,7 @@ function drawMap(app){
     /* 커서를 올리면 카드(#maptip) — 글은 MAP_TIP, 설명 고치기 「지도」 에서 고친다 */
     d.onmouseenter=()=>{ mapTipShow(d,cell,r,c); nbMark(g,r,c) };
     d.onmouseleave=()=>{ mapTipHide(); nbMark(g,null) };
+    if(peek){ g.appendChild(d); continue }   /* 미리보기 — 보기만 */
     if(kind==="wall"){ /* 감옥 장벽 — 누를 수 없다 */ }
     else if(adj) d.onclick=()=>{ run.route=null; mapTipHide(); moveTo2(r,c) };
     else if(here&&cell.t==="camp") d.onclick=()=>{ view="camp"; render() };
@@ -11507,6 +11489,29 @@ function drawMap(app){
     else if(!here) d.onclick=()=>pickRoute(r,c);
     g.appendChild(d);
   }
+  return g;
+}
+function drawMap(app){
+  const f=FIELDS[run.field], S=run.size;
+  app.appendChild(el(`<div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+    <div class="title" style="font-size:20px">${esc(f.n)}</div>
+    <div class="hint">${run.night?`밤입니다. 빈 칸을 지날 때 습격당할 확률 ${Math.round(Math.min(85,45+nightDepth()*5))}% · 상점·쉼터·미지의 구역·전장 칸은 습격당하지 않습니다`:run.act<=0?`활동량이 바닥났습니다. 이제 한 칸에 ${hrsTxt(STEP_H*2)}이 걸립니다.`:`인접한 칸을 눌러 이동합니다. 먼 칸은 한 번 누르면 길을 보여 주고, 한 번 더 누르면 갑니다. 한 칸에 활동량 1 · ${hrsTxt(STEP_H)} · 오염도 ${moveTaint()}.`}</div></div>`));
+  /* 무엇을 해야 하는지 한 줄로 — 우두머리 방향과 남은 날 */
+  { let br=null;
+    for(let r=0;r<S;r++) for(let c=0;c<S;c++) if(run.grid[r][c].t==="boss") br={r:r,c:c};
+    const dLeft=Math.max(0,(f.days||7)-run.day+1);
+    const dir=br?((br.r<run.pos.r?"북":br.r>run.pos.r?"남":"")+(br.c<run.pos.c?"서":br.c>run.pos.c?"동":"")):"";
+    const dist=br?(Math.abs(br.r-run.pos.r)+Math.abs(br.c-run.pos.c)):0;
+    app.appendChild(el(`<div class="goalbar">
+      <span class="gl">목표</span>
+      <b>${esc(f.n)}의 우두머리</b>
+      ${br?`<span class="chip">${dir||"바로 여기"} ${dist?`${dist}칸`:""}</span>`:""}
+      <span class="chip ${dLeft<=2?"on":""}">남은 날 ${dLeft}일</span>
+      <span class="chip ${run.taint>=70?"on":""}">오염도 ${run.taint}/100</span>
+      <span class="grow"></span>
+      <span class="hint">가까운 칸은 바로 이동 · 먼 칸은 두 번 눌러 이동 · 바닥을 누르면 길 취소</span>
+    </div>`)); }
+  const g=mapGridEl(0);
   /* 지도는 왼쪽, 대원은 오른쪽 기둥 (사용자 2026-09-13 — 지도 밑에 깔려 있던 것을 옆으로) */
   const two=el(`<div class="mapwrap"><div class="map-l"></div><div class="map-r"></div></div>`);
   const L=two.querySelector(".map-l"), R=two.querySelector(".map-r");
@@ -14704,7 +14709,11 @@ function skRoll(f,allies,inR,far){
     const n=S.length; let k=(f.skIdx||0)%n;
     for(let q=0;q<n;q++){ const c=cand.find(x=>x.i===(k+q)%n); if(c){ pick=c; f.skIdx=((k+q)%n)+1; break } }
   }
-  if(!pick){ const pool=[]; cand.forEach(c=>{ for(let q=0;q<(c.s.w||1);q++) pool.push(c) }); pick=rnd(pool) }
+  if(!pick){
+    /* 같은 기술을 두 턴 연달아 쓰지 않는다 — 고를 것이 둘 이상일 때 (사용자 2026-09-16: 경비병이 공격만 연속으로) */
+    const alt=(f.lastSk!=null&&cand.length>1)?cand.filter(c=>c.i!==f.lastSk):cand;
+    const pool=[]; (alt.length?alt:cand).forEach(c=>{ for(let q=0;q<(c.s.w||1);q++) pool.push(c) }); pick=rnd(pool) }
+  f.lastSk=pick.i;
   const s=pick.s, t=pick.T[0]||null;
   return {t:"sk",i:pick.i,n:s.n,tg:s.tg||"near",
           to:t?t.slot:0,toId:t?uid(t):null,chase:!!s.chase,
