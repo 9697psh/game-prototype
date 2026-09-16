@@ -5814,7 +5814,7 @@ const SKILL_FULL={
  "화음과 리듬":"리페는 _음율란_을 3개 가지고 시작합니다.\n기술을 통해 _음을란_을 모두 채우면, _음율_을 노래합니다",
  "확산":"감염된 적들에게 보호약화를 1 부여하고, 대상의 거리1 내의 다른 적들을 1회 감염시킵니다.",
  "환상통":"잠금(1). 쿠렘타이의 추가 마법력*( )*만큼 모든 적에게 피해를 줍니다.",
- "회오리 장막":"카제가 3회 이동하거나 피해를 주면, 그 턴에 보호막을 1(추가 ¤ ) 얻습니다.",
+ "회오리 장막":"카제가 3회 이동하거나 피해를 주면, 그 턴에 보호막을 2(추가 ¤ ) 얻습니다.",
  "후미 준비":"잠금(1). 가장 뒤로 이동하고 체력을 5 회복합니다.\n지나간 아군들에게 보호막을 5(추가 ¤ ) 부여합니다.\n선두 방어로 전환합니다."
 };
 /* 기술 한 줄 요약은 없앴다 — 기획 노트 문장(SKILL_FULL) 하나로만 간다.
@@ -6307,7 +6307,7 @@ const HERO_REWARDS={
  ],
  "카제":[
   R("바람처럼 사라져라 강화","하급","바람처럼 사라져라의 피해량이 영구히 4 증가합니다.",h=>h.tag.airBonus=(h.tag.airBonus||0)+4),
-  R("회오리 장막 강화","하급","회오리 장막의 보호막량이 영구히 1 증가합니다.",h=>h.tag.veilAmt=(h.tag.veilAmt||1)+1),
+  R("회오리 장막 강화","하급","회오리 장막의 보호막량이 영구히 1 증가합니다.",h=>h.tag.veilAmt=(h.tag.veilAmt||2)+1),
   R("진선풍도 강화","하급","진선풍도의 피해량이 영구히 1 증가합니다.",(h,rn)=>addMod(h,"진선풍도","dmg",1,rn)),
   R("산들바람 강화","하급","산들바람의 진선풍도 피해 증가량이 영구히 1 증가합니다.",h=>h.tag.gustPlus=(h.tag.gustPlus||0)+1),
   R("기류 흘리기 강화","하급","기류 흘리기가 에너지 보호막도 1 부여합니다.",h=>h.tag.flowShield=(h.tag.flowShield||0)+1),
@@ -10005,6 +10005,7 @@ const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 469, "v": "0.4", "d": "2026-09-16", "t": "카제 — 고르기·도감에 회오리 장막 표시 · 회오리 장막 보호막 2", "big": 0},
  {"b": 468, "v": "0.4", "d": "2026-09-16", "t": "카제 회오리 — 거리 3 안의 적을 골라 그 적까지, 지나간 적 피해·고른 적 공중", "big": 0},
  {"b": 467, "v": "0.4", "d": "2026-09-16", "t": "사거리 밖 대상은 고르지 못한다 — 대원의 무리해서 뻗기 끔", "big": 0},
  {"b": 466, "v": "0.4", "d": "2026-09-16", "t": "카제 검 빛 — 칼날 자리에 맞춤", "big": 0},
@@ -10474,7 +10475,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=468;
+const BUILD_NO=469;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -11007,7 +11008,7 @@ function drawCodex(app){
       <div><div class="cxn">${esc(name)} · ${esc(d.title)}</div>
         <div class="cxr">${esc(d.role)} — ${rich(d.focus)}</div>
         <div class="cxt">${esc(tagsOf(name).fac)} · ${(tagsOf(name).job||[]).join(" / ")} · ${esc(tagsOf(name).race)}</div>
-        <div class="cxp">${skillIcon(d.passive.n,1)}<b>지속 · ${esc(d.passive.n)}</b> ${rich(d.passive.d)}</div></div></div>`);
+        ${heroPassives(name).map(p=>`<div class="cxp">${skillIcon(p.n,1)}<b>지속 · ${esc(p.n)}</b> ${rich(p.d)}</div>`).join("")}</div></div>`);
   wrap.appendChild(info);
 
   const sk=el(`<div class="rewards"></div>`);
@@ -11481,8 +11482,8 @@ function heroDetail(n){
     ${d.focus?`<div class="dfocus">${rich(d.focus)}</div>`:""}
     ${tagRow(n)}</div>`));
   box.appendChild(el(`<div class="dh">지속</div>`));
-  box.appendChild(el(`<div class="dsk">${skiHtml(d.passive.n)}<b>${esc(d.passive.n)}</b>
-    <small>${rich(SKILL_FULL[d.passive.n]||d.passive.d||"")}</small></div>`));
+  heroPassives(n).forEach(p=>box.appendChild(el(`<div class="dsk">${skiHtml(p.n)}<b>${esc(p.n)}</b>
+    <small>${rich(p.d)}</small></div>`)));
   box.appendChild(el(`<div class="dh">기술</div>`));
   /* 「N(추가 † )」 가 여기서도 살게 — 아직 고르기 전이라 대원이 없으니 1레벨 대원을 하나 만들어 잰다 */
   const hh=makeHero(n);
@@ -16117,6 +16118,13 @@ function bk(base,parts){
   const tail=list.length?`<span class="brk">(기본 ${base} / ${list.map(p=>icoify(esc(p.n))+" "+p.v).join(" / ")})</span>`:"";
   return `<b>${total}</b>${tail}`;
 }
+/* 대원의 지속 기술 전부 — HEROES.passive 하나에 PASSIVE_INFO 의 둘째 이후(회오리 장막 등)를 잇는다. 고르기·도감이 쓴다 (2026-09-16) */
+function heroPassives(n){
+  const d=HEROES[n]; const out=[]; if(!d) return out;
+  if(d.passive&&d.passive.n) out.push({n:d.passive.n,d:SKILL_FULL[d.passive.n]||d.passive.d||""});
+  ((typeof PASSIVE_INFO!=="undefined"&&PASSIVE_INFO[n])||[]).forEach(p=>{ if(p.n&&!out.some(x=>x.n===p.n)) out.push({n:p.n,d:SKILL_FULL[p.n]||""}) });
+  return out;
+}
 const PASSIVE_INFO={
  "나이코스":[{n:"전장의 승자",p:"전장의 승자",
    d:h=>`전투에서 이길 때마다 공격력을 영구히 1 얻습니다. (최대 ${h.tag.winCap||2}) 넘친 몫은 금화 1로 바뀝니다.`
@@ -16130,7 +16138,7 @@ const PASSIVE_INFO={
         +(h.tag.burn?` 화상 ${h.tag.burn}도 부여합니다.`:"")},
   {n:"회오리 장막",p:"회오리 장막",
    d:h=>`이동하거나 피해를 ${h.tag.veilNeed||3}회 줄 때마다, 그 턴에 보호막을 `
-        +`${bk(h.tag.veilAmt||1,[{n:"추가 보호력",v:h.def}])} 얻습니다.`
+        +`${bk(h.tag.veilAmt||2,[{n:"추가 보호력",v:h.def}])} 얻습니다.`
         +(h.tag.veilAll?" 다른 아군에게도 부여합니다.":"")}],
  "굴라":[{n:"탐욕의 악마",p:"탐욕의 악마",
    d:h=>`소환물이 아닌 누군가 죽을 때마다 최대 체력을 1 얻습니다. (전투당 ${greedCapOf(h)})`}],
@@ -17050,7 +17058,7 @@ function veilCheck(h){
   const done=h.veilDone||0;
   if((h.acts||0)<need*(done+1)) return;
   h.veilDone=done+1;
-  const v=(h.tag.veilAmt||1)+h.def;          /* 보호막 6 → 1 */
+  const v=(h.tag.veilAmt||2)+h.def;          /* 보호막 2 (사용자 2026-09-16) */
   h.shield+=v;
   pulseFX("mine",h.slot,"#5fd8cf",3);
   edgeGlow("rgba(95,216,207,.34)");
