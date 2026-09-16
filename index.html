@@ -8609,7 +8609,8 @@ const KW_ICON={
   /* 버프 */
   "흡수":"status_absorb","도발":"status_taunt","회피":"status_evade","가시":"status_thorns","은신":"status_stealth","갑피":"status_carapace",
   "부정 보호막":"status_negative_shield","에너지 보호막":"status_energy_shield",
-  "소환물":"puppet"};   /* 대원 밑 소환물 표식 — 허수아비 그림 (사용자 2026-09-16) */   /* 2026-09-15 추가 · 아이콘은 status-effects-v2 (64px) */
+  "소환물":"puppet",
+  "공중에 뜸":"wind","공중":"wind"};   /* 대원 밑 소환물 표식 — 허수아비 · 공중에 뜸은 바람 (사용자 2026-09-16) */   /* 2026-09-15 추가 · 아이콘은 status-effects-v2 (64px) */
 function bdIcon(kind,key,label){
   const id=KW_ICON[key]||KW_ICON[label];
   if(id&&typeof ICON_PNG!=="undefined"&&ICON_PNG[id]) return `<img class="ci" src="${ICON_PNG[id]}" alt="">`;
@@ -8643,7 +8644,7 @@ function foeStatusRows(f){
   if(f.negShield) g.push(bd("g","부정 보호막",f.negShield,"걸리는 상태 이상을 그만큼 막아냅니다"));
   if(foeHidden(f)) g.push(bd("g","은신","","숨어 있어 겨눌 수 없습니다. 전장에 혼자 남으면 풀립니다"));
   if(f.eshield) g.push(bd("g","에너지 보호막",f.eshield,"보호막보다 먼저 깎이고, 턴이 지나도 남습니다"));
-  if(f.air) g.push(bd("g","공중","","공중에 떠 있습니다"));
+  if(f.air) o.push(bd("o","공중에 뜸","","잠깐 공중에 떠 있습니다. 내려오면 사라집니다."));   /* 디버프 칸 · 바람 아이콘 (사용자 2026-09-16) */
   if(f.gmark) g.push(bd("g","장군의 표식","","장군의 표식"));
   if(f.summoned) g.push(bd("g","소환물","","적이 부른 소환물입니다 — 경험치도, 처치 수도 세지 않습니다"));
   if(f.infect) o.push(bd("o","감염",f.infect,"턴이 끝날 때 중첩만큼 피해. 턴마다 1 감소"));
@@ -8660,12 +8661,12 @@ function heroStatusRows(h){
   if(h.evade) g.push(bd("g","회피",h.evade,"다음 공격 한 번을 통째로 흘립니다"));
   if(h.leech) g.push(bd("g","흡수","20%","다음 기술로 준 피해의 20%만큼 회복합니다 (최소 1)"));
   /* 추진력은 버프 줄에 안 적는다 — 자원 줄(res)에 이미 있다 (사용자 2026-09-15) */
-  if(h.windBuff) g.push(bd("g","바람","+"+h.windBuff,"바람"));
+  /* 바람(산들바람 강화)은 진선풍도 칸의 수치로 보인다 — 표식은 안 단다 (사용자 2026-09-16) */
   if(h.taunt) g.push(bd("g","도발","","적의 공격을 대신 받습니다"));
   if(h.armor) g.push(bd("g","갑피",h.armor,"한 번에 받는 피해를 이 수치까지로 잘라냅니다"));
   if(h.blessed) g.push(bd("g","축복","","축복"));
   if(h.name==="도미니코"&&h.read) g.push(bd("g","독서",h.read,"독서"));
-  if(h.free) g.push(bd("g","무료",h.free,"다음 기술을 값 없이 씁니다"));
+  /* 무료(잠재력 활성의 산들바람 0비용)도 표식 없음 (사용자 2026-09-16) */
   if(h.isMin) g.push(bd("g","소환물","","소환물"));
   if(h.negShield) g.push(bd("g","부정 보호막",h.negShield,"걸리는 상태 이상을 그만큼 막아냅니다"));
   { const th=((h.tag&&h.tag.thorn)||0)+(h.thornTmp||0); if(th) g.push(bd("g","가시",th,"맞을 때마다 되받아칩니다")) }
@@ -9948,6 +9949,7 @@ const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 460, "v": "0.4", "d": "2026-09-16", "t": "공중에 뜸 — 디버프 칸·바람 아이콘·내려오면 사라짐 · 폭풍 아이콘 · 카제 버프칸 정리 · 진선풍도 칸에 산들바람 거리 반영", "big": 0},
  {"b": 459, "v": "0.4", "d": "2026-09-16", "t": "카제 — 공중 베기 그림 위로 · 잠재력 활성 각성 자세 · 회오리 타격음 교체 · 바람처럼 사라져라 효과음 · 기류 흘리기·잠재력 활성 바로 시전 · 산들바람 화살표 1칸만", "big": 0},
  {"b": 458, "v": "0.4", "d": "2026-09-16", "t": "카제 바람처럼 사라져라 연출 — 뜬 적 위로 순간이동해 베기(앞부터 차례로) · 산들바람 소리", "big": 0},
  {"b": 457, "v": "0.4", "d": "2026-09-16", "t": "카제 회오리2 — 회오리가 적을 칠 때마다", "big": 0},
@@ -10408,7 +10410,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=459;
+const BUILD_NO=460;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -16013,6 +16015,9 @@ function livePlace(h,sk){
 function richLive(h,sk,txt){
   const done={};
   let txt0=String(txt||"");
+  /* 카제 진선풍도 — 산들바람 강화가 남아 있으면 거리도 그만큼 올려 보인다 (사용자 2026-09-16). 피해는 extraParts 가 얹는다 */
+  if(h&&h.name==="카제"&&sk&&sk.n==="진선풍도"&&h.windBuff)
+    txt0=txt0.replace(/거리 (\d+)/g,(m,n)=>"거리 "+NUM_A+(+n+h.windBuff)+NUM_B+"산들바람 +"+h.windBuff+NUM_C);
   if(/\*\( \)\*/.test(txt0)){
     const lp=livePlace(h,sk);
     txt0=txt0.replace(/\*\( \)\*/g, lp
@@ -17613,7 +17618,8 @@ function airborne(h,f){
   fx({side:"foe",slot:f.slot,lift:1,art:"wind",s:(h&&h.name==="카제")?sfxOr("공중 띄움","gust"):"gust",txt:"공중",cls:"shd",gap:130,
       fn:()=>setTimeout(()=>{ f.air=0;
         const p=ctrOf("foe",f.slot);
-        if(p&&p.e) p.e.querySelectorAll(".chip").forEach(c=>{ if(c.textContent==="공중") c.remove() });
+        if(p&&p.e){ p.e.querySelectorAll(".chip").forEach(c=>{ if(c.textContent==="공중") c.remove() });
+          p.e.querySelectorAll('.bd[data-kw="공중에 뜸"]').forEach(c=>c.remove()) }   /* 디버프 칸의 표식도 (2026-09-16) */
       },900)});
   say(`${f.name}${jo(f.name,"ig")} 공중에 뜸.`,"t2");
   run.heroes.forEach(b=>{
@@ -20050,7 +20056,7 @@ function rewardIcon(r){
   return rewardIcon0(r);
 }
 /* 전용 보상 아이콘 — 사용자가 하나하나 정한 것 (2026-09-16). ic 그림 · sk 기술 그림 · spr 소환물 스프라이트. rewardIcon 맨 앞에서 본다 */
-const REW_FIX={"나눠먹기": {"ic": "starter_health"}, "도발적인 몸": {"sk": "응축 폭발"}, "주인님을 받들어라": {"ic": "puppet"}, "망자의 끈기": {"spr": "망자의 육체"}, "망자는 전리품을 남기고": {"ic": "experience"}, "그림자 위장": {"ic": "status_evade"}, "육체 정화": {"spr": "망자의 육체"}, "대상 포착": {"ic": "victory"}, "영광스러운 귀환": {"ic": "victory"}, "수확자": {"sk": "영혼 수확"}, "대가를 치뤄라": {"sk": "영혼 수확"}, "직접 거두기": {"sk": "영혼 수확"}, "영혼 흡수": {"ic": "starter_health"}, "으스스한 기운": {"sk": "영혼 분리"}, "등가 교환": {"ic": "magic"}, "망자들의 통솔자": {"sk": "영혼 분리"}, "망자의 위엄": {"ic": "slash_heart"}, "영혼 둔갑": {"ic": "status_stealth"}, "플로우의 악의 기운 약화": {"ic": "poison"}, "플레어의 악의 기운 소멸": {"ic": "poison"}, "불태우기": {"ic": "status_burn"}, "점화": {"ic": "status_burn"}, "파도 보호막": {"ic": "helmet"}, "피해 흘리기": {"ic": "helmet"}, "재빠른 이동": {"ic": "card_shoes"}, "빗물": {"ic": "card_shoes"}, "잿불": {"ic": "card_shoes"}, "밀물": {"ic": "wind"}, "썰물": {"ic": "wind"}, "불씨 폭발": {"ic": "status_burn"}, "화상 전이": {"ic": "status_burn"}};
+const REW_FIX={"폭풍":{"ic":"wind"},"나눠먹기": {"ic": "starter_health"}, "도발적인 몸": {"sk": "응축 폭발"}, "주인님을 받들어라": {"ic": "puppet"}, "망자의 끈기": {"spr": "망자의 육체"}, "망자는 전리품을 남기고": {"ic": "experience"}, "그림자 위장": {"ic": "status_evade"}, "육체 정화": {"spr": "망자의 육체"}, "대상 포착": {"ic": "victory"}, "영광스러운 귀환": {"ic": "victory"}, "수확자": {"sk": "영혼 수확"}, "대가를 치뤄라": {"sk": "영혼 수확"}, "직접 거두기": {"sk": "영혼 수확"}, "영혼 흡수": {"ic": "starter_health"}, "으스스한 기운": {"sk": "영혼 분리"}, "등가 교환": {"ic": "magic"}, "망자들의 통솔자": {"sk": "영혼 분리"}, "망자의 위엄": {"ic": "slash_heart"}, "영혼 둔갑": {"ic": "status_stealth"}, "플로우의 악의 기운 약화": {"ic": "poison"}, "플레어의 악의 기운 소멸": {"ic": "poison"}, "불태우기": {"ic": "status_burn"}, "점화": {"ic": "status_burn"}, "파도 보호막": {"ic": "helmet"}, "피해 흘리기": {"ic": "helmet"}, "재빠른 이동": {"ic": "card_shoes"}, "빗물": {"ic": "card_shoes"}, "잿불": {"ic": "card_shoes"}, "밀물": {"ic": "wind"}, "썰물": {"ic": "wind"}, "불씨 폭발": {"ic": "status_burn"}, "화상 전이": {"ic": "status_burn"}};
 const REW_SKILL_ART={"식욕을 참을 수 없어":"탐욕의 악마","뺏어먹기":"탐욕의 악마","썩어가는 육체":"저주받은 육체"};
 const REW_MINION_ART={"악마 하수인 강화":"악마 하수인","하수인 단련":"악마 하수인","임프 무리":"악마 하수인","탐욕의 시선":"악마 하수인","물량 공세":"악마 하수인","진두지휘":"악마 하수인","악마 장군 소환":"악마 장군"};
 const GCLS={"하급":"g1","중급":"g2","상급":"g3","파편":"g4","일반":"g5","희귀":"g6","특수":"g7","전설":"g8"};
