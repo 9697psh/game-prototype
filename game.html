@@ -1032,7 +1032,7 @@ button.dtl{padding:3px 10px;font-size:11.5px}
 .slot.punch{animation:pchA .42s cubic-bezier(.2,1.5,.4,1)}
 @keyframes pchA{0%{transform:scale(1)}30%{transform:scale(1.16)}100%{transform:scale(1)}}
 /* 카제 바람처럼 사라져라 — 뜬 적 위에 순간이동한 카제 (art/영웅/카제/air-slash-128.png). 제 자리 그림은 그동안 숨긴다 */
-.airslash{position:absolute;width:116px;height:116px;margin:-74px 0 0 -52px;background-size:116px 116px;background-repeat:no-repeat;
+.airslash{position:absolute;width:116px;height:116px;margin:-118px 0 0 -52px;   /* 체력 줄과 안 겹치게 위로 (사용자 2026-09-16) */background-size:116px 116px;background-repeat:no-repeat;
   image-rendering:pixelated;pointer-events:none;z-index:12;filter:drop-shadow(0 0 7px rgba(95,216,207,.85)) drop-shadow(0 3px 0 rgba(0,0,0,.6));animation:airslashA .46s ease-out forwards}
 @keyframes airslashA{0%{opacity:0;transform:translate(-26px,10px) scale(.86)}18%{opacity:1;transform:translate(0,0) scale(1)}78%{opacity:1;transform:translate(4px,-2px) scale(1)}100%{opacity:0;transform:translate(16px,-8px) scale(.96)}}
 .slot .art.vanish{visibility:hidden}
@@ -4919,12 +4919,13 @@ const SND={
  "지도 바닥":{v:0.05,f:"지도 바닥.wav"},
  "지도 펼침":{v:0.24,f:"지도 펼침.wav"},
  "카제 기류 흘리기":{v:0.19,f:"카제 기류 흘리기.wav"},
+ "카제 바람처럼 사라져라":{v:0.17,f:"카제 바람처럼 사라져라.wav"},
  "카제 산들바람":{v:0.128,f:"카제 산들바람.wav"},
  "카제 잠재력 활성":{v:0.135,f:"카제 잠재력 활성.wav"},
  "카제 진선풍도":{v:0.127,f:"카제 진선풍도.wav"},
  "카제 진선풍도2":{v:0.149,f:"카제 진선풍도2.wav"},
  "카제 회오리":{v:0.139,f:"카제 회오리.wav"},
- "카제 회오리2":{v:0.132,f:"카제 회오리2.wav"},
+ "카제 회오리2":{v:0.105,f:"카제 회오리2.wav"},
  "쿠렘타이 사형 선고":{v:0.35,f:"쿠렘타이 사형 선고.wav"},
  "쿠렘타이 영혼 분리":{v:0.17,f:"쿠렘타이 영혼 분리.wav"},
  "쿠렘타이 착취":{v:0.26,f:"쿠렘타이 착취.wav"},
@@ -9947,6 +9948,7 @@ const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 459, "v": "0.4", "d": "2026-09-16", "t": "카제 — 공중 베기 그림 위로 · 잠재력 활성 각성 자세 · 회오리 타격음 교체 · 바람처럼 사라져라 효과음 · 기류 흘리기·잠재력 활성 바로 시전 · 산들바람 화살표 1칸만", "big": 0},
  {"b": 458, "v": "0.4", "d": "2026-09-16", "t": "카제 바람처럼 사라져라 연출 — 뜬 적 위로 순간이동해 베기(앞부터 차례로) · 산들바람 소리", "big": 0},
  {"b": 457, "v": "0.4", "d": "2026-09-16", "t": "카제 회오리2 — 회오리가 적을 칠 때마다", "big": 0},
  {"b": 456, "v": "0.4", "d": "2026-09-16", "t": "카제 진선풍도2 — 진선풍도 녹음과 동시에", "big": 0},
@@ -10406,7 +10408,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=458;
+const BUILD_NO=459;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -16475,7 +16477,7 @@ function pickSkill(i,count){
 /* 겨눌 것이 없는 기술 — 고르는 순간 나간다. 제 칸을 한 번 더 누르는 일이 없다.
    자기에게 거는 것(막기·환상통·갑옷 장착·피부 강화·화살비·응축 폭발·융합)과
    대상을 스스로 정하는 것(페일노트 — 가장 먼 적). 막기는 사용자 2026-09-12 — 또 누르면 한 번 더 나간다 */
-const AUTO_SK={"막기":1,"환상통":1,"갑옷 장착":1,"페일노트":1,"피부 강화":1,"화살비":1,"응축 폭발":1,"융합":1,
+const AUTO_SK={"막기":1,"환상통":1,"갑옷 장착":1,"페일노트":1,"피부 강화":1,"화살비":1,"응축 폭발":1,"융합":1,"기류 흘리기":1,"잠재력 활성":1,   /* 카제 둘 (사용자 2026-09-16) */
   "변환":1,"물과 불":1,"균형":h=>!ffFlare(h)};   /* 균형은 플로우일 때만 (플레어면 적을 겨눈다) */
 /* 기술이 지금 닿을 칸들 — 기술 칸에 커서를 올렸을 때 밝힌다. 셈만 하고 아무것도 바꾸지 않는다.
    새 기술에 '정해진 대상' 규칙이 생기면 여기에 한 줄 더한다 (겨누는 기술은 validTarget 이 알아서 받는다) */
@@ -17619,7 +17621,7 @@ function airborne(h,f){
       hurt(f,b.scale,"독소 침","mag");
   });
   if(h.name==="카제"){
-    fx({side:"foe",slot:f.slot,airslash:h.slot,gap:150});   /* 순간이동해 베는 카제 (사용자 2026-09-16) */
+    fx({side:"foe",slot:f.slot,airslash:h.slot,s:sfxOr("카제 바람처럼 사라져라",null),gap:150});   /* 순간이동해 베는 카제 + 녹음 같은 순간 (사용자 2026-09-16) */
     punchIn("foe",f.slot);
     hurt(f,4+h.atk+(h.tag.airBonus||0),"바람처럼 사라져라","wind");
     if(h.tag.burn&&f.alive){ f.burn=(f.burn||0)+h.tag.burn; f.burnBy=h.name;
@@ -17817,7 +17819,11 @@ function isMoveSkill(sk){ return !!(sk&&sk.el==="이동"&&sk.tg==="ally") }
 /* 예외 — 카제의 '제자리바람' 특성은 움직이지 않고도 쓸 수 있게 해 준다 */
 function moveStayOk(h,sk){ return !!(h&&h.tag&&h.tag.gustStay&&sk&&sk.el==="이동") }
 /* 고를 수 있는 거리 — 산들바람은 방향만 고르면 알아서 한 칸 나아간다 */
-function movePickRange(sk){ return (sk&&(sk.jumpback||sk.soothe))?2:SLOTS }
+function movePickRange(sk,h){
+  if(sk&&(sk.jumpback||sk.soothe)) return 2;
+  if(h&&h.name==="카제"&&sk&&sk.el==="이동") return (h.tag&&h.tag.gustRange)||1;   /* 산들바람은 1칸(건들바람 +1) — 화살표도 그만큼만 (사용자 2026-09-16) */
+  return SLOTS;
+}
 /* 못 고르는 칸이면 그 이유를 돌려준다 */
 function moveBlock(h,sk,to){
   if(!isMoveSkill(sk)||to==null) return "";
@@ -17825,7 +17831,7 @@ function moveBlock(h,sk,to){
     if(b) return `${b.name}${jo(b.name,"ig")} 쓰러진 채 ${to}번 칸을 막고 있습니다.` }
   if(to===h.slot&&!moveStayOk(h,sk))
     return `${sk.n}${jo(sk.n,"eun")} 지금 서 있는 칸으로는 갈 수 없습니다. 다른 칸을 고르세요.`;
-  const r=movePickRange(sk);
+  const r=movePickRange(sk,h);
   if(Math.abs(to-h.slot)>r)
     return `${sk.n}${jo(sk.n,"eun")} ${r}칸까지만 움직입니다.`;
   return "";
@@ -18695,7 +18701,7 @@ function runEffect(h,i,s,target){
     rainFX("#a8f0ea",22);
     edgeGlow("rgba(95,216,207,.55)");
     punchIn("mine",h.slot);
-    fx({side:"mine",slot:h.slot,art:"wind",s:"tornado",glow:1,txt:"각성",cls:"crit",gap:220});
+    fx({side:"mine",slot:h.slot,pose:"bless",poseMs:1100,art:"wind",s:"tornado",glow:1,txt:"각성",cls:"crit",gap:220});   /* 각성 자세(축복 칸) (사용자 2026-09-16) */
     say("잠재력 활성 — 이번 턴 진선풍도가 전체를 칩니다.","t1") }
   if(s.card||s.allArmor){
     const times=(h.tag.armorTwice?2:1)*(s.allArmor?0:1);
