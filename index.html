@@ -5819,7 +5819,7 @@ const SKILL_FULL={
  "죄악의 기침":"가장 가까운 적에게 피해를 2(추가 ∴ ) 주고 감염시킵니다.\n감염이 3회 중첩된 적에게 사용시 체력을 4 회복합니다.",
  "죽음 재배술":"일터에서 영혼꽃을 수확할 수 있습니다.\n영혼꽃은 재화로 환전하거나, 추가 마법력을 주는 장신구으로 바꿀 수 있습니다.",
  "지면 진동":"적을 공중에 뜸 상태로 만들고 1칸 뒤로 이동시킵니다. 이동하지 못하는 상태라면, 대신 속박시킵니다.",
- "진선풍도":"피해를 2(추가 † ) 줍니다. *(거리 2)*\n세 번째 사용 시에는 강화되어, 거리 3의 회오리를 날려 지나간 적들에게 피해를 주고, 마지막 적은 공중에 뜸 상태로 만듭니다.",
+ "진선풍도":"피해를 2(추가 † ) 줍니다. *(거리 2)*\n세 번째 사용 시에는 강화되어, 거리 3의 회오리를 날려 지나간 적들에게 피해를 2(추가 † ) 주고, 마지막 적은 공중에 뜸 상태로 만듭니다.",
  "질투의 악마":"인비디아의 기술은 적을 감염시킵니다. 감염은 중첩될 수 있고, 감염된 적에게는 턴이 끝날 때 피해를 1(추가 ∴ ) 주고 감염 중첩을 1 감소시킵니다.",
  "착취":"적에게 피해를 2(추가 ∴ ) 줍니다.\n\n영혼이 80개 이상이면 그 뒤의 적에게도 피해를 줍니다.\n영혼이 120개 이상이면 그 앞의 적에게도 피해를 줍니다.\n영혼이 160개 이상이면 관통 +50%를 얻습니다.\n영혼이 200개 이상이면 2번 발동합니다.",
  "참회의 기류":"잠금(1). 아군에게 보호막을 1(추가 ¤ ), 적에게 공격 피해를 1(추가 ¤ ) 주는 기류를 날립니다.\n\n기류는 가장 먼 적에게 날아갔다가 돌아오고, 캐릭터를 지날 때마다 보호막량과 공격 피해량이 1 증가합니다.",
@@ -6367,6 +6367,10 @@ const HERO_REWARDS={
   R("방어의 바람","중급","산들바람을 사용한 후, 50% 확률로 보호막을 1 얻습니다.",h=>h.tag.gustShield=(h.tag.gustShield||0)+1),
   R("보법","중급","산들바람의 이동 가능 거리가 1 증가합니다.",h=>h.tag.gustRange=(h.tag.gustRange||1)+1),
   R("허공답보","중급","산들바람을 3회 사용한 후, 무작위 적을 공중으로 띄웁니다.",h=>h.tag.gustLift=1,0.5),
+  R("바람과 하나되어","중급","산들바람으로 뒤로 이동하면 추진력을 1 더 얻고, 앞으로 이동하면 다음 진선풍도 피해량이 1 증가합니다.",h=>h.tag.windOne=(h.tag.windOne||0)+1),
+  R("연쇄 회오리","중급","회오리의 비용이 마나 대신 추진력 3으로 변경됩니다. 이미 연쇄 회오리를 보유하고 있다면, 추진력 비용이 1 감소합니다. (1 이하로 감소하지 않습니다.)",
+    h=>{ const o=(h.sk[0]&&h.sk[0].n==="회오리")?h.sk[0]:(h.sk[0]&&h.sk[0].alt); if(!o) return;
+      if(o.costType==="mom") o.cost=Math.max(1,o.cost-1); else { o.costType="mom"; o.cost=3 } h.tag.chainWhirl=(h.tag.chainWhirl||0)+1 }),
   R("싹쓸바람","상급","카제가 이동한 후, 가장 가까운 적에게 피해를 1(추가 † ) 줍니다.",h=>h.tag.moveHit=(h.tag.moveHit||0)+1),
   R("잠재력 각성","상급","잠재력 활성의 비용이 1 증가합니다. 잠재력 활성이 '이번 턴에 진선풍도가 두 번째 사용 시마다 강화됩니다.'도 얻습니다.",h=>{h.sk[3].cost++;h.tag.potentialEvery=2},0.5),
   R("폭풍칼날","상급","진선풍도의 거리 제한이 사라집니다. 진선풍도의 피해량이 영구히 4 증가합니다.",(h,rn)=>{ h.tag.noRange=1; addMod(h,"진선풍도","dmg",4,rn) },0.5),
@@ -6374,6 +6378,7 @@ const HERO_REWARDS={
   R("폭풍의 눈","상급","회오리 장막이 다른 아군들에게도 보호막을 부여합니다.",h=>h.tag.veilAll=1,0.5),
   /* 노트 2026-09-17 새 상급 */
   R("용오름","상급","카제가 부정적인 효과를 받을 때마다 모든 적을 공중으로 띄웁니다.",h=>h.tag.debLift=1,0.5),
+  R("맞바람","상급","회오리가 최대 거리에서 적을 공중에 뜸 상태로 만든 후, 카제 쪽으로 다시 되돌아와 가장 가까운 적을 공중에 뜸 상태로 만듭니다.",h=>h.tag.backWind=1,0.5),
   R("청풍검법","상급","산들바람으로도 진선풍도 중첩을 얻을 수 있습니다.",h=>h.tag.gustCounts=1,0.5)
  ],
 
@@ -9376,7 +9381,7 @@ function makeHero(name){
   const d=HEROES[name];
   return {name:name,title:d.title,maxHp:d.hp,hp:d.hp,maxMana:d.mana,hpLv:d.hpLv,
     atk:0,mag:0,def:0, lv:1, exp:0,
-    sk:d.skills.map(s=>Object.assign({},s)),
+    sk:d.skills.map(s=>{ const o=Object.assign({},s); if(s.alt) o.alt=Object.assign({},s.alt); if(s.opts) o.opts=s.opts.map(x=>Object.assign({},x)); return o }),   /* alt·opts 도 제 것으로 — 정의를 같이 쓰면 보상(연쇄 회오리)이 모든 대원에 번진다 (2026-09-17) */
     passive:d.passive,
     tag:{armors:["강철 갑옷","강철 각반","강철 군화","마법 부여 보호구","영광의 휘장"]},
     wins:0, items:[], down:0};
@@ -10058,6 +10063,7 @@ const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 478, "v": "0.4", "d": "2026-09-17", "t": "카제 보상 — 바람과 하나되어 · 연쇄 회오리 · 맞바람", "big": 0},
  {"b": 477, "v": "0.4", "d": "2026-09-17", "t": "조합 칩 카드 — 이름·종류·인원·누가 세는지·단계별 효과", "big": 0},
  {"b": 476, "v": "0.4", "d": "2026-09-17", "t": "카제 보상 건들바람 삭제", "big": 0},
  {"b": 475, "v": "0.4", "d": "2026-09-17", "t": "카제 기술 아이콘 7종 · 전용 보상 30종 아이콘", "big": 0},
@@ -10536,7 +10542,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=477;
+const BUILD_NO=478;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -18818,6 +18824,7 @@ function runEffect(h,i,s,target){
     say("참회의 기류가 오갑니다.","t1"); return;
   }
   if(s.el==="이동"){
+    h.gustFrom=h.slot;   /* 바람과 하나되어 — 어느 쪽으로 갔는지 */
     const reach=h.tag.gustRange||1;
     if(target&&target!==h.slot&&!h.tag.gustStayOnly){
       const step=target>h.slot?1:-1;
@@ -18842,6 +18849,9 @@ function runEffect(h,i,s,target){
     say(`${h.name} 추진력 +${m} · 다음 진선풍도의 거리 +1, 피해량 +${1+(h.tag.gustPlus||0)}`);
     /* 노트 2026-09-17 보상들 */
     if(h.tag.gustCounts&&h.name==="카제"&&h.sk[0]&&h.sk[0].n!=="회오리") windCount(h);          /* 청풍검법 — 산들바람도 진선풍도로 센다 */
+    if(h.tag.windOne&&h.moveOk&&h.gustFrom!=null&&h.slot!==h.gustFrom){   /* 바람과 하나되어 — 뒤(1번 쪽)면 추진력, 앞(5번 쪽)이면 피해 */
+      if(h.slot<h.gustFrom){ h.mom+=h.tag.windOne; say(`바람과 하나되어 — 추진력 +${h.tag.windOne}`,"t2") }
+      else { h.windDmg=(h.windDmg||0)+h.tag.windOne; say(`바람과 하나되어 — 다음 진선풍도 피해 +${h.tag.windOne}`,"t2") } }
     if(h.tag.gustShield&&Math.random()<0.5){ h.shield+=h.tag.gustShield; say(`방어의 바람 — 보호막 +${h.tag.gustShield}`,"t2") }
     if(h.tag.gustLift){ h.gustN=(h.gustN||0)+1; if(h.gustN%3===0){ const L=B.foes.filter(f=>f.alive); if(L.length){ say("허공답보 — 바람이 적을 띄웁니다.","t1"); airborne(h,rnd(L)) } } }
     return;
@@ -19002,6 +19012,10 @@ function runEffect(h,i,s,target){
         const last=aimed?(aimed.alive?aimed:null):(alive.length
           ? alive.reduce((a,b)=>dist(h.slot,a.slot)>=dist(h.slot,b.slot)?a:b) : null);
         (h.potential?alive.slice().sort((a,b)=>a.slot-b.slot):(last?[last]:[])).forEach(f=>airborne(h,f));   /* 고른 적(또는 앞 적부터 차례로) (2026-09-16) */
+        /* 맞바람 (노트 2026-09-17) — 최대 거리의 적을 띄웠으면 회오리가 되돌아와 가장 가까운 적도 띄운다 */
+        if(h.tag.backWind&&last&&dist(h.slot,last.slot)>=reach){ const nf=nearestFoe(h);
+          if(nf&&nf!==last&&nf.alive){ fx({side:"foe",slot:nf.slot,tornado:{side:"foe",slot:last.slot},tornadoMs:300,gap:340});
+            say("맞바람 — 회오리가 되돌아옵니다.","t1"); airborne(h,nf) } }
       }
       h.windBuff=0; h.windDmg=0;
       if(strong){ h.windUses=0; windSwap(h,"진선풍도") } else windCount(h);   /* 두 번 쓰면 회오리, 회오리를 쓰면 진선풍도로 */
@@ -20230,7 +20244,7 @@ function rewardIcon(r){
 const REW_FIX={"폭풍":{"ic":"wind"},
  /* 카제 (2026-09-17) — 지속 기술·회오리를 키우는 보상은 그 기술 그림 */
  "회오리 장막 강화":{"sk":"회오리 장막"},"빠른 회오리":{"sk":"회오리 장막"},"바람걸음":{"sk":"회오리 장막"},"폭풍의 눈":{"sk":"회오리 장막"},
- "회오리 강화":{"sk":"회오리"},"회오리 단련":{"sk":"회오리"},"용오름":{"sk":"회오리"},"화염칼날":{"sk":"회오리"},
+ "회오리 강화":{"sk":"회오리"},"회오리 단련":{"sk":"회오리"},"용오름":{"sk":"회오리"},"화염칼날":{"sk":"회오리"},"연쇄 회오리":{"sk":"회오리"},"맞바람":{"sk":"회오리"},
  "잔향":{"sk":"바람처럼 사라져라"},"불바람":{"sk":"바람처럼 사라져라"},"역풍":{"sk":"기류 흘리기"},
  "청풍검법":{"sk":"산들바람"},"허공답보":{"sk":"산들바람"},"방어의 바람":{"sk":"산들바람"},"보법":{"sk":"산들바람"},"싹쓸바람":{"sk":"산들바람"},
  "소용돌이":{"sk":"진선풍도"},"날카로운 칼끝":{"sk":"진선풍도"},"폭풍칼날":{"sk":"진선풍도"},"눈보다 빠르게":{"ic":"charge"},"자취 감추기":{"ic":"status_evade"},"나눠먹기": {"ic": "starter_health"}, "도발적인 몸": {"sk": "응축 폭발"}, "주인님을 받들어라": {"ic": "puppet"}, "망자의 끈기": {"spr": "망자의 육체"}, "망자는 전리품을 남기고": {"ic": "experience"}, "그림자 위장": {"ic": "status_evade"}, "육체 정화": {"spr": "망자의 육체"}, "대상 포착": {"ic": "victory"}, "영광스러운 귀환": {"ic": "victory"}, "수확자": {"sk": "영혼 수확"}, "대가를 치뤄라": {"sk": "영혼 수확"}, "직접 거두기": {"sk": "영혼 수확"}, "영혼 흡수": {"ic": "starter_health"}, "으스스한 기운": {"sk": "영혼 분리"}, "등가 교환": {"ic": "magic"}, "망자들의 통솔자": {"sk": "영혼 분리"}, "망자의 위엄": {"ic": "slash_heart"}, "영혼 둔갑": {"ic": "status_stealth"}, "플로우의 악의 기운 약화": {"ic": "poison"}, "플레어의 악의 기운 소멸": {"ic": "poison"}, "불태우기": {"ic": "status_burn"}, "점화": {"ic": "status_burn"}, "파도 보호막": {"ic": "helmet"}, "피해 흘리기": {"ic": "helmet"}, "재빠른 이동": {"ic": "card_shoes"}, "빗물": {"ic": "card_shoes"}, "잿불": {"ic": "card_shoes"}, "밀물": {"ic": "wind"}, "썰물": {"ic": "wind"}, "불씨 폭발": {"ic": "status_burn"}, "화상 전이": {"ic": "status_burn"}};
