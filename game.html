@@ -4542,6 +4542,17 @@ function sfxOr(k,alt){ return sfxHas(k)?k:alt }
 /* 카제의 진선풍도는 몇 번째로 쓰느냐에 따라 소리가 다르다 — 검이냐 회오리냐.
    횟수(h.windUses)는 runEffect 안에서 오르므로, 자세를 잡는 쪽에서는
    '다음 한 번'을 미리 세어 봐야 한다. 그래서 셈을 여기 하나로 모아 둔다. */
+/* 카제 — 1번 칸을 진선풍도 ↔ 회오리로 갈아 끼운다 (노트 2026-09-17). mods 는 각자 제 것 */
+function windSwap(h,to){
+  const cur=h.sk[0]; if(!cur||cur.n===to||!cur.alt) return;
+  const nx=Object.assign({},cur.alt); const back=Object.assign({},cur); delete back.alt; nx.alt=back; h.sk[0]=nx;
+  say(to==="회오리"?"바람이 찼습니다 — 진선풍도가 회오리로 바뀝니다.":"회오리가 걷히고 진선풍도로 돌아옵니다.","t2");
+}
+/* 진선풍도(또는 청풍검법의 산들바람)를 한 번 센 뒤 — 다음이 회오리면 칸을 바꾼다 */
+function windCount(h){
+  h.windUses=(h.windUses||0)+1;
+  if(windStrong(h,h.windUses+1)) windSwap(h,"회오리");
+}
 function windStrong(h,nth){
   const t=h.tag||{};
   const every=(h.potential&&t.potentialEvery)||t.windEvery||3;
@@ -5641,7 +5652,8 @@ const HEROES={
   focus:"공중으로 띄움, 단일 플레이, 바람 검술, 이동",
   passive:{n:"바람처럼 사라져라",d:"적이 공중에 뜨면 추가로 피해 4"},
   skills:[
-   {n:"진선풍도",cost:1,el:"공격",tg:"foe",rng:2,dmg:2,wind:1,d:"피해 2 · 거리 2 · 3회째마다 강화(전체 타격 + 공중)"},
+   {n:"진선풍도",cost:1,el:"공격",tg:"foe",rng:2,dmg:2,wind:1,d:"피해 2 · 거리 2 · 두 번 쓰면 회오리로 전환",
+    altBy:"wind",alt:{n:"회오리",cost:1,el:"공격",tg:"foe",rng:3,dmg:2,wind:1,whirl:1,altBy:"wind",d:"거리 3 · 지나간 적 피해 2 · 고른 적 공중에 뜸 · 쓰면 진선풍도로"}},   /* 노트 2026-09-17: 둘은 별개 기술 */
    {n:"산들바람",cost:1,el:"이동",tg:"ally",d:"1칸 이동 · 추진력 +1 · 다음 진선풍도의 거리와 피해량 +1"},
    {n:"기류 흘리기",cost:3,costType:"mom",rise:1,el:"보호",tg:"self",evade:1,d:"회피 +1 · 이번 턴 비용 1씩 상승"},
    {n:"잠재력 활성",cost:1,el:"집중",tg:"self",lock:2,potential:1,d:"잠금(2) · 이번 턴 진선풍도가 거리 안 모든 적 타격 · 회오리는 전부 공중 · 산들바람 4회 무료"}
@@ -5743,6 +5755,7 @@ const SKILL_FULL={
  "빵":"아군 대상의 체력을 1 회복시킵니다.",
  "사형 선고":"사용한도(1). 대원 배치 시 3턴 잠금된 상태로 시작합니다.\n우두머리가 아닌 대상을 처치하고 50%의 체력을 가진 상태로 부활시킵니다.\n\n아군이면 마법력 2를 부여합니다.\n적군이면 2턴간 공포를 부여합니다.",
  "산들바람":"1칸 이동하고, 추진력을 1 얻습니다. 다음 진선풍도의 거리가 1, 피해량이 1 증가합니다.",
+"회오리":"거리 3의 회오리를 날려 지나간 적들에게 피해를 2(추가 † ) 주고, 고른 적은 공중에 뜸 상태로 만듭니다. 쓰고 나면 진선풍도로 돌아옵니다.",
  "생기 갈취":"다음 기술이 흡수 +20%를 얻습니다.\n\n그림자가 있는 상태라면 그림자가 있는 위치로 이동하고, 다음 기술이 관통 +50%도 얻습니다.",
  "생명의 음율":"체력이 가장 낮은 아군의 체력을 3 회복시키는 _음율_을 노래합니다.",
  "선두 방어":"가장 앞으로 이동하고 1턴 동안 도발을 얻습니다. \n지나간 아군 하나 당 보호막을 5(추가 ¤ ) 얻습니다.\n후미 준비로 전환합니다.",
@@ -6307,24 +6320,39 @@ const HERO_REWARDS={
     h=>h.tag.rageTurn=1,0.5)
  ],
  "카제":[
-  R("바람처럼 사라져라 강화","하급","바람처럼 사라져라의 피해량이 영구히 4 증가합니다.",h=>h.tag.airBonus=(h.tag.airBonus||0)+4),
+  R("바람처럼 사라져라 강화","하급","바람처럼 사라져라의 피해량이 영구히 2 증가합니다.",h=>h.tag.airBonus=(h.tag.airBonus||0)+2),
   R("회오리 장막 강화","하급","회오리 장막의 보호막량이 영구히 1 증가합니다.",h=>h.tag.veilAmt=(h.tag.veilAmt||2)+1),
   R("진선풍도 강화","하급","진선풍도의 피해량이 영구히 1 증가합니다.",(h,rn)=>addMod(h,"진선풍도","dmg",1,rn)),
   R("산들바람 강화","하급","산들바람의 진선풍도 피해 증가량이 영구히 1 증가합니다.",h=>h.tag.gustPlus=(h.tag.gustPlus||0)+1),
   R("기류 흘리기 강화","하급","기류 흘리기가 에너지 보호막도 1 부여합니다.",h=>h.tag.flowShield=(h.tag.flowShield||0)+1),
   R("잠재력 활성 강화","하급","잠재력 활성이 산들바람의 비용을 0으로 만드는 횟수가 영구히 1 증가합니다.",h=>h.tag.freePlus=(h.tag.freePlus||0)+1),
-  R("눈보다 빠르게","하급","전투 시작 후, 카제가 추진력을 2 얻습니다.",h=>h.tag.startMom=(h.tag.startMom||0)+2),
+  R("눈보다 빠르게","하급","전투 시작 후, 카제가 추진력을 3 얻습니다.",h=>h.tag.startMom=(h.tag.startMom||0)+3),
   R("날카로운 칼끝","하급","전투 시작 후, 첫 번째 진선풍도의 피해량이 4 증가합니다.",h=>h.tag.firstWind=(h.tag.firstWind||0)+4),
-  R("자취 감추기","중급","전투 시작 후, 카제가 회피를 1 얻습니다.",h=>h.tag.startEvade=(h.tag.startEvade||0)+1),
-  R("폭풍","중급","전투 시작 후, 모든 적을 공중에 뜸 상태로 만듭니다.",h=>h.tag.startStorm=1),
-  R("더 빠른 회오리","중급","회오리 장막이 발동하는데 필요한 횟수가 영구히 1 감소합니다.",h=>h.tag.veilNeed=(h.tag.veilNeed||3)-1),
-  R("제자리바람","중급","산들바람이 이동하지 않고 시전할 수 있습니다.",h=>h.tag.gustStay=1),
+  /* 노트 2026-09-17 새 하급 */
+  R("회오리 강화","하급","회오리(강화 진선풍도)의 피해량이 영구히 2 증가합니다.",(h,rn)=>addMod(h,"회오리","dmg",2,rn)),
+  R("역풍","하급","회피로 적을 공격을 피한 후, 대상을 공중으로 띄웁니다.",h=>h.tag.evadeLift=1,0.5),
+  R("잔향","하급","바람처럼 사라져라로 적을 처치하면 추진력을 2 얻습니다.",h=>h.tag.airKillMom=(h.tag.airKillMom||0)+2),
+  R("소용돌이","하급","대원 배치 후, 가장 가까운 적에게 비용 소모 없이 진선풍도를 사용합니다.",h=>h.tag.startWhirl=1,0.5),
+  R("자취 감추기","중급","대원 배치 후, 회피를 2 얻습니다.",h=>h.tag.startEvade=(h.tag.startEvade||0)+2),
+  R("폭풍","중급","대원 배치 후, 모든 적을 공중에 뜸 상태로 만드는 회오리를 날립니다.",h=>h.tag.startStorm=1,0.5),
+  R("빠른 회오리","중급","회오리 장막이 발동할 때마다, 해당 전투에서 추가 보호력을 1 얻습니다.",h=>h.tag.veilDef=(h.tag.veilDef||0)+1),
+  R("제자리바람","중급","산들바람이 이동하지 않고 시전할 수 있습니다.",h=>h.tag.gustStay=1,0.5),
   R("건들바람","중급","산들바람으로 이동할 수 있는 거리가 영구히 1 증가합니다.",h=>h.tag.gustRange=(h.tag.gustRange||1)+1),
-  R("싹쓸바람","상급","산들바람으로 얻을 수 있는 추진력이 1 증가합니다.",h=>h.tag.momPlus=(h.tag.momPlus||0)+1),
-  R("잠재력 각성","상급","잠재력 활성의 비용이 1 증가합니다. 잠재력 활성이 '이번 턴에 진선풍도가 두 번째 사용 시마다 강화됩니다.'도 얻습니다.",h=>{h.sk[3].cost++;h.tag.potentialEvery=2}),
-  R("폭풍칼날","상급","진선풍도의 거리 제한이 사라집니다.",h=>h.tag.noRange=1),
-  R("화염칼날","상급","바람처럼 사라져라가 화상 2도 부여합니다.",h=>h.tag.burn=(h.tag.burn||0)+2),
-  R("폭풍의 눈","상급","회오리 장막이 다른 아군들에게도 보호막을 부여합니다.",h=>h.tag.veilAll=1)
+  /* 노트 2026-09-17 새 중급 */
+  R("바람걸음","중급","카제가 이동한 후, 회오리 장막 중첩을 1 더 얻습니다.",h=>h.tag.windStep=(h.tag.windStep||0)+1),
+  R("회오리 단련","중급","회오리(강화 진선풍도)의 피해량이 영구히 5 증가합니다.",(h,rn)=>addMod(h,"회오리","dmg",5,rn)),
+  R("불바람","중급","바람처럼 사라져라가 화상 1도 부여합니다.",h=>h.tag.burn=(h.tag.burn||0)+1),
+  R("방어의 바람","중급","산들바람을 사용한 후, 50% 확률로 보호막을 1 얻습니다.",h=>h.tag.gustShield=(h.tag.gustShield||0)+1),
+  R("보법","중급","산들바람의 이동 가능 거리가 1 증가합니다.",h=>h.tag.gustRange=(h.tag.gustRange||1)+1),
+  R("허공답보","중급","산들바람을 3회 사용한 후, 무작위 적을 공중으로 띄웁니다.",h=>h.tag.gustLift=1,0.5),
+  R("싹쓸바람","상급","카제가 이동한 후, 가장 가까운 적에게 피해를 1(추가 † ) 줍니다.",h=>h.tag.moveHit=(h.tag.moveHit||0)+1),
+  R("잠재력 각성","상급","잠재력 활성의 비용이 1 증가합니다. 잠재력 활성이 '이번 턴에 진선풍도가 두 번째 사용 시마다 강화됩니다.'도 얻습니다.",h=>{h.sk[3].cost++;h.tag.potentialEvery=2},0.5),
+  R("폭풍칼날","상급","진선풍도의 거리 제한이 사라집니다. 진선풍도의 피해량이 영구히 4 증가합니다.",(h,rn)=>{ h.tag.noRange=1; addMod(h,"진선풍도","dmg",4,rn) },0.5),
+  R("화염칼날","상급","회오리가 지나가는 모든 적에게 화상 1을 부여합니다. 화상이 부여된 적에게 바람처럼 사라져라가 치명타로 적중합니다.",h=>{ h.tag.whirlBurn=(h.tag.whirlBurn||0)+1; h.tag.airCritBurn=1 }),
+  R("폭풍의 눈","상급","회오리 장막이 다른 아군들에게도 보호막을 부여합니다.",h=>h.tag.veilAll=1,0.5),
+  /* 노트 2026-09-17 새 상급 */
+  R("용오름","상급","카제가 부정적인 효과를 받을 때마다 모든 적을 공중으로 띄웁니다.",h=>h.tag.debLift=1,0.5),
+  R("청풍검법","상급","산들바람으로도 진선풍도 중첩을 얻을 수 있습니다.",h=>h.tag.gustCounts=1,0.5)
  ],
 
  "헥토":[
@@ -8629,6 +8657,7 @@ const uid=x=>!x?"":(x.isFoe||x.id!=null&&x.maxHp!=null&&!x.sk?"F"+x.id:"H"+x.nam
 function addDeb(u,k,n,src){
   if(!u) return;
   u.deb=u.deb||{};
+  if(u.name==="카제"&&u.tag&&u.tag.debLift&&n>0&&B&&!B.over){ const L=B.foes.filter(f=>f.alive); if(L.length){ say("용오름 — 바람이 솟구쳐 모든 적을 띄웁니다.","t1"); L.slice().sort((a,b)=>a.slot-b.slot).forEach(f=>airborne(u,f)) } }   /* 용오름 (노트 2026-09-17) */
   if(src&&isFF(src)&&n>0&&(u.isFoe||(B&&B.foes&&B.foes.indexOf(u)>=0))) setTimeout(()=>ffDebuffHook(src,u),0);
   if(k==="fear"&&src){ u.fearSrc=uid(src); u.fearName=src.name }
   /* 부정 보호막은 부정적인 효과를 1회(중첩 하나) 걷어낸다 */
@@ -9959,7 +9988,8 @@ function syncSkillDefs(h){
   const d=HEROES[h.name]; if(!d||!d.skills||!h.sk) return;
   h.sk.forEach(k=>{ if(!k) return;
     const src=d.skills.find(x=>x.n===k.n)||d.skills.find(x=>x.alt&&x.alt.n===k.n); if(!src) return;
-    Object.keys(src).forEach(key=>{ if(k[key]===undefined&&key!=="mods"&&key!=="alt") k[key]=src[key] }) });
+    Object.keys(src).forEach(key=>{ if(k[key]===undefined&&key!=="mods"&&key!=="alt") k[key]=src[key] });
+    if(src.altBy&&src.alt&&!k.alt&&k.n===src.n){ k.alt=JSON.parse(JSON.stringify(src.alt)); k.altBy=src.altBy } });   /* 카제 진선풍도↔회오리 (2026-09-17) */
 }
 function loadGame(){
   try{
@@ -10006,6 +10036,7 @@ const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 474, "v": "0.4", "d": "2026-09-17", "t": "카제 — 진선풍도·회오리 별개 기술(두 번 쓰면 전환) · 노트대로 전용 보상 30종", "big": 1},
  {"b": 473, "v": "0.4", "d": "2026-09-17", "t": "카제 왼손 양피지 새 그림", "big": 0},
  {"b": 472, "v": "0.4", "d": "2026-09-16", "t": "카제 양피지 — 다른 대원과 같은 비율로 맞춤", "big": 0},
  {"b": 471, "v": "0.4", "d": "2026-09-16", "t": "카제 지도 손 — 왼손 양피지·가리킴·누름 (오른손 .40)", "big": 0},
@@ -10480,7 +10511,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=473;
+const BUILD_NO=474;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -15697,7 +15728,7 @@ function drawBattle(app){
       if(h.isMin&&h.mimic&&h.mimic.act) d.innerHTML+=`<div class="intentbar">${mimicHtml(h)}</div>`;
       d.innerHTML+=`${h.isMin?"":gearRow(h)}<div class="res">${manaPips(h)}${heroRes(h)}${
           h.mom?`<span class="rr">${ic("move")}${h.mom}</span>`:""}</div>
-        <div class="art${(h.name==="카제"&&h.hp>0&&windStrong(h,(h.windUses||0)+1))?" charged":""}">${pmk}${figure(h.name,poseNow(h),h)}${(h.name==="카제"&&h.hp>0&&windStrong(h,(h.windUses||0)+1))?`<i class="swglow" title="다음 진선풍도는 회오리"></i>`:""}</div>
+        <div class="art${(h.name==="카제"&&h.hp>0&&h.sk[0]&&h.sk[0].n==="회오리")?" charged":""}">${pmk}${figure(h.name,poseNow(h),h)}${(h.name==="카제"&&h.hp>0&&h.sk[0]&&h.sk[0].n==="회오리")?`<i class="swglow" title="회오리가 찼습니다"></i>`:""}</div>
         <div class="nm">${esc(h.name)}</div>
         <div class="bar" data-hpk="${hpKey(h)}" data-hpv="${Math.max(0,h.hp/h.maxHp*100)}" data-hpn="${h.hp}"
           data-shv="${(h.shield||0)+(h.eshield||0)}" data-esw="${esW}" data-shw="${shW}">
@@ -15988,7 +16019,7 @@ function extraParts(h,sk,key){
   if(!h||!sk) return out;
   const t=h.tag||{}, fst=h.first||{};
   if(key==="dmg"){
-    if(h.name==="카제"&&sk.n==="진선풍도"&&h.windDmg)
+    if(h.name==="카제"&&(sk.n==="진선풍도"||sk.n==="회오리")&&h.windDmg)
       out.push({n:"산들바람",v:h.windDmg});
     if(h.name==="나이코스"&&sk.n==="베기"){
       if(h.cutGrow) out.push({n:"늘어가는 실력",v:h.cutGrow});
@@ -16086,12 +16117,12 @@ function richLive(h,sk,txt){
   const done={};
   let txt0=String(txt||"");
   /* 카제 진선풍도 — 산들바람 강화가 남아 있으면 거리도 그만큼 올려 보인다 (사용자 2026-09-16). 피해는 extraParts 가 얹는다 */
-  if(h&&h.name==="카제"&&sk&&sk.n==="진선풍도"&&h.windBuff)
+  if(h&&h.name==="카제"&&sk&&(sk.n==="진선풍도"||sk.n==="회오리")&&h.windBuff)
     txt0=txt0.replace(/거리 (\d+)/g,(m,n)=>"거리 "+NUM_A+(+n+h.windBuff)+NUM_B+"산들바람 +"+h.windBuff+NUM_C);
   /* 산들바람 — 싹쓸바람(추진력)·산들바람 강화(피해 증가량)가 칸에 살아서 보인다 (사용자 2026-09-16) */
   if(h&&h.name==="카제"&&sk&&sk.n==="산들바람"&&h.tag){
     const mp=h.tag.momPlus||0, gp=h.tag.gustPlus||0;
-    if(mp) txt0=txt0.replace(/추진력을 (\d+)/,(m,n)=>"추진력을 "+NUM_A+(+n+mp)+NUM_B+"싹쓸바람 +"+mp+NUM_C);
+    if(mp) txt0=txt0.replace(/추진력을 (\d+)/,(m,n)=>"추진력을 "+NUM_A+(+n+mp)+NUM_B+"추진력 강화 +"+mp+NUM_C);
     if(gp) txt0=txt0.replace(/피해량이 (\d+)/,(m,n)=>"피해량이 "+NUM_A+(+n+gp)+NUM_B+"산들바람 강화 +"+gp+NUM_C);
   }
   if(/\*\( \)\*/.test(txt0)){
@@ -16278,10 +16309,8 @@ function progHtml(h){
 function skillHot(h,i,s){
   const out=[];
   if(!s||!B||B.over) return out;
-  /* 카제 — 세 번째 진선풍도는 회오리가 된다 */
-  if(h.name==="카제"&&s.n==="진선풍도"){
-    const every=(h.potential&&h.tag.potentialEvery)||h.tag.windEvery||3;
-    if(h.tag.alwaysStrong||(((h.windUses||0)+1)%every===0)) out.push("회오리");
+  /* 카제 — 진선풍도·회오리 (노트 2026-09-17: 별개 기술) */
+  if(h.name==="카제"&&(s.n==="진선풍도"||s.n==="회오리")){
     if(h.windBuff) out.push("바람 +"+h.windBuff);
     if(h.potential) out.push("잠재력");
   }
@@ -16449,11 +16478,9 @@ function skillPanel(h){
 /* ─ 비용 ─ */
 function reachOf(h,sk){
   if(!sk) return null;
-  if(h.name==="카제"&&sk.n==="진선풍도"){
-    if(h.tag.noRange) return null;
-    const every=(h.potential&&h.tag.potentialEvery)||h.tag.windEvery||3;
-    const strong=h.tag.alwaysStrong||(((h.windUses||0)+1)%every===0);
-    return (strong?3:sk.rng)+(h.windBuff||0);
+  if(h.name==="카제"&&(sk.n==="진선풍도"||sk.n==="회오리")){
+    if(h.tag.noRange&&sk.n==="진선풍도") return null;
+    return sk.rng+(h.windBuff||0);
   }
   return sk.rng||null;
 }
@@ -16900,8 +16927,13 @@ function onSummon(h){
       say(`${h.name} — 첫 턴 추가 마나 +${ex} (마나 ${h.mana})`,"t2");
     } }
   /* ── 대원을 배치할 때마다 (라운드마다 다시) ── */
-  if(t.startStorm){ say("폭풍 — 전장의 모든 적이 떠오릅니다.","t1");
-    B.foes.filter(f=>f.alive).forEach(f=>airborne(h,f)) }
+  if(t.startStorm){ say("폭풍 — 회오리가 전장을 훑고 모든 적이 떠오릅니다.","t1");
+    { const L=B.foes.filter(f=>f.alive); if(L.length){ const far=L.reduce((a,b)=>dist(h.slot,a.slot)>=dist(h.slot,b.slot)?a:b); fx({side:"foe",slot:far.slot,tornado:{side:"mine",slot:h.slot},tornadoMs:420,gap:460}) } }
+    B.foes.filter(f=>f.alive).sort((a,b)=>a.slot-b.slot).forEach(f=>airborne(h,f)) }
+  if(t.startWhirl&&h.name==="카제"){ const f=nearestFoe(h); const s0=h.sk[0];   /* 소용돌이 (노트 2026-09-17) — 비용 없이 진선풍도 한 번 */
+    if(f&&s0&&s0.n==="진선풍도"){ const dmg=s0.dmg+mod(s0,"dmg")+h.atk; say(`소용돌이 — ${f.name}에게 진선풍도`,"t1");
+      fx({side:"foe",slot:f.slot,sheet:"fx_kaze_thrust",sheetOpt:{z:1.8,ms:420},s:sfxOr("카제 진선풍도",null),gap:0});
+      asSrc(h,()=>hurt(f,dmg,"소용돌이","wind")); windCount(h) } }
   /* ── 쿠렘타이 ── */
   /* 영혼 둔갑의 회피는 전투에 한 번 — 아래 배치 피해(망자의 위엄·내면 파괴)보다
      먼저 쥐어야 '회피를 보유할 때 공격한 대상에게 공포' 가 그 피해에도 걸린다 */
@@ -17074,6 +17106,7 @@ function veilCheck(h){
   pulseFX("mine",h.slot,"#5fd8cf",3);
   edgeGlow("rgba(95,216,207,.34)");
   fx({side:"mine",slot:h.slot,sheet:"fx_kaze_shroud",sheetOpt:{z:2.0,ms:560},s:"shield",gap:160});   /* 회오리 장막 띠 mini-shroud (사용자 2026-09-16) */
+  if(h.tag.veilDef){ bumpTmp(h,"def",h.tag.veilDef); say(`빠른 회오리 — 이번 전투 추가 보호력 +${h.tag.veilDef}`,"t2") }   /* 노트 2026-09-17 */
   say(`회오리 장막 — ${h.name} 보호막 +${v}`,"t1");
   if(h.tag.veilAll) run.heroes.forEach(a=>{
     if(a!==h&&a.slot>0&&a.hp>0){ a.shield+=v } });
@@ -17226,11 +17259,10 @@ function predictDmg(h,s,tgt){
     if(h.name==="이테리오"&&s.el!=="마법"&&(tgt.mark||0)>0){ dmg*=2; crit=1 }
   }
   else if(s.dmg==null) return null;
-  else if(h.name==="카제"&&s.n==="진선풍도"){
-    const every=(h.potential&&h.tag.potentialEvery)||h.tag.windEvery||3;
-    const strong=!!(h.tag.alwaysStrong||(((h.windUses||0)+1)%every===0));
+  else if(h.name==="카제"&&(s.n==="진선풍도"||s.n==="회오리")){
+    const strong=(s.n==="회오리");
     const bonus=h.windBuff||0;
-    const reach=h.tag.noRange?99:(strong?3:s.rng)+bonus;
+    const reach=(h.tag.noRange&&!strong)?99:s.rng+bonus;
     if(dist(h.slot,tgt.slot)>reach) return null;
     dmg=bs("dmg")+(h.windDmg||0)+ATK;
     if(h.tag.firstWind&&(h.first||{}).wind!==1) dmg+=h.tag.firstWind;
@@ -17715,7 +17747,10 @@ function airborne(h,f){
   if(h.name==="카제"){
     fx({side:"foe",slot:f.slot,airslash:h.slot,s:sfxOr("카제 바람처럼 사라져라",null),gap:150});   /* 순간이동해 베는 카제 + 녹음 같은 순간 (사용자 2026-09-16) */
     punchIn("foe",f.slot);
-    hurt(f,4+h.atk+(h.tag.airBonus||0),"바람처럼 사라져라","wind");
+    { const crit=!!(h.tag.airCritBurn&&(f.burn||0)>0); const v=(4+h.atk+(h.tag.airBonus||0))*(crit?2:1);
+      if(crit) say("화염칼날 — 불붙은 적에게 치명타!","t1");
+      hurt(f,v,"바람처럼 사라져라","wind",0,crit?1:0);
+      if(!f.alive&&h.tag.airKillMom){ h.mom=(h.mom||0)+h.tag.airKillMom; say(`잔향 — 추진력 +${h.tag.airKillMom}`,"t2") } }   /* 잔향 (노트 2026-09-17) */
     if(h.tag.burn&&f.alive){ f.burn=(f.burn||0)+h.tag.burn; f.burnBy=h.name;
       say(`${f.name} 화상 ${f.burn}`,"t2") }
   }
@@ -17848,9 +17883,6 @@ function doSkill(target){
     /* 적을 때리는 기술이면 어느 갈래로 가든 여기서 공격 자세를 잡는다 */
     let own=skillSfx(h,s);
     h.moveOk=0;   /* 이동 기술이 정말 움직였는지 — moveTo·제자리바람이 1로 세운다 */
-    /* 진선풍도만 예외 — 세 번째마다 회오리로 갈린다. 검 소리 대신 회오리를 문다 */
-    if(own&&h.name==="카제"&&s.n==="진선풍도"&&windStrong(h,h.windUses+1))
-      own=(typeof SND!=="undefined"&&SND["카제 회오리"])?"카제 회오리":own;
     /* 보통 진선풍도는 녹음 둘을 겹친다 — 「카제 진선풍도」+「카제 진선풍도2」 (사용자 2026-09-16) */
     if(own==="카제 진선풍도"&&sfxHas("카제 진선풍도2")) fx({s:"카제 진선풍도2",gap:0});
     /* 승리의 일격 — 검 소리(나이코스 승리의 일격) 위에 관중의 함성 넷 중 둘을 겹친다. 둘은 서로 다르다 */
@@ -17877,7 +17909,7 @@ function doSkill(target){
       if(back>=1&&!occAt(back)) moveTo(h,back);
       else { const v=1+h.mag; h.eshield=(h.eshield||0)+v }
     }
-    if(s.alt){
+    if(s.alt&&!s.altBy){
       const back=Object.assign({},s); const nx=Object.assign({},s.alt);
       back.mods=s.mods; nx.mods=s.alt.mods;
       delete back.alt; nx.alt=back; h.sk[i]=nx;
@@ -17968,6 +18000,8 @@ function moveTo(h,to){
   const from=h.slot, occ=unitAt(to);
   if(occ&&occ!==h&&occ.noMove){ say(`${occ.name}${jo(occ.name,"eun")} 움직일 수 없습니다.`,"t2"); return }
   h.slot=to; h.moveOk=1;
+  if(h.name==="카제"&&h.tag.windStep){ h.acts=(h.acts||0)+h.tag.windStep }   /* 바람걸음 — 이동하면 회오리 장막 셈 +1 더 (노트 2026-09-17) */
+  if(h.name==="카제"&&h.tag.moveHit){ const f=nearestFoe(h); if(f){ say(`싹쓸바람 — ${f.name}에게 피해 ${h.tag.moveHit+h.atk}`,"t2"); asSrc(h,()=>hurt(f,h.tag.moveHit+h.atk,"싹쓸바람","wind")) } }   /* 싹쓸바람 (노트 2026-09-17) */
   if(occ&&occ!==h){ occ.slot=from;
     say(`${h.name}${jo(h.name,"gwa")} ${occ.name}${jo(occ.name,"ig")} 자리를 바꿉니다.`);
     fx({side:"mine",slot:from,s:"step",ring:"#5fd8cf",gap:60});
@@ -18772,6 +18806,10 @@ function runEffect(h,i,s,target){
     const m=1+(h.tag.momPlus||0);
     h.mom+=m; h.windBuff+=1; h.windDmg=(h.windDmg||0)+1+(h.tag.gustPlus||0);   /* 강화는 피해만 올린다 (사용자 2026-09-16) */
     say(`${h.name} 추진력 +${m} · 다음 진선풍도의 거리 +1, 피해량 +${1+(h.tag.gustPlus||0)}`);
+    /* 노트 2026-09-17 보상들 */
+    if(h.tag.gustCounts&&h.name==="카제"&&h.sk[0]&&h.sk[0].n!=="회오리") windCount(h);          /* 청풍검법 — 산들바람도 진선풍도로 센다 */
+    if(h.tag.gustShield&&Math.random()<0.5){ h.shield+=h.tag.gustShield; say(`방어의 바람 — 보호막 +${h.tag.gustShield}`,"t2") }
+    if(h.tag.gustLift){ h.gustN=(h.gustN||0)+1; if(h.gustN%3===0){ const L=B.foes.filter(f=>f.alive); if(L.length){ say("허공답보 — 바람이 적을 띄웁니다.","t1"); airborne(h,rnd(L)) } } }
     return;
   }
   /* 공통 : 보호막 · 회복 */
@@ -18899,10 +18937,9 @@ function runEffect(h,i,s,target){
   /* 피해 */
   if(s.dmg!=null){
     if(h.name==="카제"&&i===0){
-      h.windUses++;
-      const strong=windStrong(h,h.windUses);
+      const strong=(s.n==="회오리");   /* 노트 2026-09-17: 회오리는 제 기술 */
       const bonus=h.windBuff;
-      const reach=h.tag.noRange?99:(strong?3:s.rng)+bonus;
+      const reach=(h.tag.noRange&&!strong)?99:s.rng+bonus;
       let dmg=s.dmg+mod(s,"dmg")+(h.windDmg||0)+h.atk;
       if(h.tag.firstWind&&h.first.wind!==1){ dmg+=h.tag.firstWind; h.first.wind=1 }
       /* 회오리(강화)는 고른 적까지 — 지나가는 적을 다 치고 고른 적을 띄운다 (사용자 2026-09-16). 잠재력 활성이면 사거리 안 전부 */
@@ -18923,14 +18960,18 @@ function runEffect(h,i,s,target){
       } else
       /* 보통 진선풍도 — 찌르기 띠 (art/이펙트/kaze-thrust) */
       list.forEach((f,q)=>fx({side:"foe",slot:f.slot,sheet:"fx_kaze_thrust",sheetOpt:{z:1.8,ms:420},gap:q?60:0}));
-      list.forEach(f=>hurt(f,dmg,`진선풍도${strong?"(강화)":""}`,"wind"));
+      list.forEach(f=>hurt(f,dmg,strong?"회오리":"진선풍도","wind"));
       if(strong&&list.length){
+        /* 화염칼날 — 회오리가 지나간 적 모두 화상 1 (노트 2026-09-17) */
+        if(h.tag.whirlBurn) list.forEach(f=>{ if(f.alive){ f.burn=(f.burn||0)+h.tag.whirlBurn; f.burnBy=h.name } });
         const alive=list.filter(f=>f.alive);
         const last=aimed?(aimed.alive?aimed:null):(alive.length
           ? alive.reduce((a,b)=>dist(h.slot,a.slot)>=dist(h.slot,b.slot)?a:b) : null);
         (h.potential?alive.slice().sort((a,b)=>a.slot-b.slot):(last?[last]:[])).forEach(f=>airborne(h,f));   /* 고른 적(또는 앞 적부터 차례로) (2026-09-16) */
       }
-      h.windBuff=0; h.windDmg=0; return;
+      h.windBuff=0; h.windDmg=0;
+      if(strong){ h.windUses=0; windSwap(h,"진선풍도") } else windCount(h);   /* 두 번 쓰면 회오리, 회오리를 쓰면 진선풍도로 */
+      return;
     }
     if(!tgt) return;
     /* 사거리 밖이라도 닿는 적이 하나도 없으면 무리해서 뻗는다 */
@@ -19172,7 +19213,9 @@ function hurtAlly(f,t,raw,label,el){
   }
   if(t.evade>0){ t.evade--;
     fx({side:"mine",slot:t.slot,s:"miss",txt:"회피",cls:"miss",evade:1});
-    say(`${label} — ${t.name} 회피!`,"t2"); return }
+    say(`${label} — ${t.name} 회피!`,"t2");
+    if(t.name==="카제"&&t.tag&&t.tag.evadeLift&&f&&f.isFoe&&f.alive){ say("역풍 — 흘린 바람이 적을 띄웁니다.","t1"); airborne(t,f) }   /* 역풍 (노트 2026-09-17) */
+    return }
   let d=raw;
   const hadE=t.eshield||0, hadS=t.shield||0;
   const eh=Math.min(t.eshield||0,d); if(eh){ t.eshield-=eh; d-=eh }
