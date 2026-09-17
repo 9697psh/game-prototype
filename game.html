@@ -1494,7 +1494,7 @@ body:has(.rwq) .hpanel{top:auto;bottom:16px;max-height:min(52vh,calc(100vh - 100
 .chl-m i{font-style:normal;color:var(--faint)} .chl-m em{font-style:normal;color:var(--faint);margin-left:auto;font-variant-numeric:tabular-nums}
 .chl-t{font-size:11.5px;color:var(--dim);line-height:1.5;margin-top:2px;word-break:keep-all}
 .chl-r.big .chl-t{color:var(--fg)}
-@media(max-width:1180px){.chlog{display:none}}
+@media(max-width:1180px){.chlog:not(.inline){display:none}}
 /* 오른쪽에 세울 자리가 있으면 본문이 그만큼 비켜 준다 — 보상 칸과 겹치지 않는다.
    대원 판은 1180px 아래에서 본문 밑으로 내려가므로 여기서 다시 위로 붙인다. */
 @media(min-width:900px){
@@ -2445,6 +2445,27 @@ img.ri{width:14px;height:14px;vertical-align:-2px;image-rendering:auto}
 .savedot.on{animation:svd 2.2s ease-out}
 @keyframes svd{0%{opacity:0}10%{opacity:1;color:var(--brass);border-color:var(--brass)}
   55%{opacity:1}100%{opacity:0}}
+/* 시작 화면 — 세 기둥 (사용자 2026-09-17) */
+.tgrid{display:grid;grid-template-columns:minmax(300px,1fr) 240px 300px;gap:28px;max-width:1120px;margin:56px auto 0;padding:0 16px;align-items:start}
+.tcol.tl{text-align:center}
+.tcol.tl .title{margin-top:8px}
+.tsave{margin-top:26px}
+.contsave.big{margin:0;width:auto;min-height:220px;display:flex;flex-direction:column;justify-content:center}
+.contsave.big.empty{border-color:var(--rule);border-style:dashed;opacity:.8}
+.tintro{margin-top:22px;max-width:440px;margin-inline:auto}
+.tcol.tm{display:flex;flex-direction:column;gap:12px;padding-top:70px}
+.tbtn{width:100%;padding:13px 10px;font-size:15px;letter-spacing:.04em}
+.tbtn.go{font-size:16px}
+.tbtn small{font-size:11px;color:inherit;opacity:.75;margin-left:4px}
+.tcol.tr{display:flex;flex-direction:column;gap:12px;padding-top:70px}
+.tcol.tr .chlog.inline{position:static;width:auto;height:420px;bottom:auto;top:auto;right:auto;display:flex}
+.tbtn.tfix{padding:10px;font-size:13.5px}
+@media(max-width:1000px){.tgrid{grid-template-columns:1fr;max-width:520px}.tcol.tm,.tcol.tr{padding-top:0}.tcol.tr .chlog.inline{height:300px}}
+/* 도감 탭 */
+.dextabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:22px auto 6px;max-width:960px}
+.dtab{padding:9px 22px;font-size:13.5px;border:1px solid var(--rule2);border-radius:6px;background:var(--panel);color:var(--dim)}
+.dtab.on{color:#0f0d0a;background:var(--brass);border-color:var(--brass);font-weight:700}
+.dexbody{margin-top:6px}
 .contsave{margin:34px auto 0;width:min(460px,92vw);padding:14px 18px;
   background:var(--panel);border:1px solid var(--brass);border-radius:7px;
   box-shadow:0 6px 20px rgba(0,0,0,.45)}
@@ -9807,6 +9828,7 @@ function render0(){
   if(view==="text")     return drawText(app);
   if(view==="codex")    return drawCodex(app);
   if(view==="runs")     return drawRuns(app);
+  if(view==="dex")      return drawDex(app);
   if(view==="itemdex")  return drawItemDex(app);
   if(view==="carddex")  return drawCardDex(app);
   if(view==="evdex")    return drawEventDex(app);
@@ -9852,13 +9874,22 @@ function changelogPanel(){
   return p;
 }
 function drawTitle(app){
-  app.appendChild(el(`<div class="center" style="margin-top:70px">
-    <div class="title" style="font-size:44px">${esc(UI_TXT.title)}</div>
-    <div class="sub" style="margin-top:14px;font-variant-numeric:tabular-nums;letter-spacing:.08em">test version ${GAME_VER} - build ${BUILD_NO}</div></div>`));
-  { const cl=changelogPanel(); if(cl) app.appendChild(cl) }
   const sv=savePeek();
+  const g=el(`<div class="tgrid">
+    <div class="tcol tl">
+      <div class="title" style="font-size:44px">${esc(UI_TXT.title)}</div>
+      <div class="sub" style="margin-top:10px;font-variant-numeric:tabular-nums;letter-spacing:.08em">test version ${GAME_VER} - build ${BUILD_NO}</div>
+      <div class="tsave"></div>
+      <div class="hint tintro">${rich(UI_TXT.intro)}</div>
+    </div>
+    <div class="tcol tm"></div>
+    <div class="tcol tr"></div>
+  </div>`);
+  app.appendChild(g);
+  /* 왼쪽 — 이어하기 큰 칸 (저장이 없으면 빈 칸으로 자리만) */
+  const saveBox=g.querySelector(".tsave");
   if(sv){
-    const box=el(`<div class="contsave">
+    const box=el(`<div class="contsave big">
       <div class="cshead">이어하기</div>
       <div class="cssub">${esc(FIELDS[sv.field]?FIELDS[sv.field].n:"균열")} · ${sv.day}일차${
         sv.inBattle?" · 전투 도중":""} <span class="hint">${saveStamp(sv.at)}</span></div>
@@ -9869,45 +9900,40 @@ function drawTitle(app){
     const [go,del]=box.querySelectorAll("button");
     go.onclick=()=>{ if(!loadGame()){ toast("저장한 판을 열지 못했습니다."); clearSave(); view="title"; render() } };
     del.onclick=()=>{ if(confirm("저장한 판을 지웁니다. 되돌릴 수 없습니다.")){ clearSave(); render() } };
-    app.querySelector(".center").appendChild(box);
+    saveBox.appendChild(box);
+  } else {
+    saveBox.appendChild(el(`<div class="contsave big empty"><div class="cshead">이어하기</div>
+      <div class="cssub">저장해 둔 판이 없습니다. 새로 시작하면 여기에 이어서 할 판이 남습니다.</div></div>`));
   }
-  const b=el(`<div style="margin-top:${sv?22:40}px"><button class="go" style="font-size:16px;padding:12px 34px">${
-    sv?"새로 시작":"게임 시작"}</button></div>`);
-  b.querySelector("button").onclick=()=>{
+  /* 가운데 — 단추 다섯 */
+  const mid=g.querySelector(".tm");
+  const btn=(label,cls,fn)=>{ const b=el(`<button class="tbtn ${cls||""}">${label}</button>`); b.onclick=fn; mid.appendChild(b); return b };
+  btn(sv?"새로 시작":"게임 시작","go",()=>{
     if(sv&&!confirm("새로 시작하면 저장해 둔 판이 지워집니다. 계속할까요?")) return;
-    clearSave(); TUT.on=0; rollStart(); pendingHero=null; view="heropick"; render() };
-  app.querySelector(".center").appendChild(b);
-  const t=el(`<div style="margin-top:14px"><button style="padding:9px 24px">튜토리얼 — 처음이라면</button></div>`);
-  t.querySelector("button").onclick=()=>{
+    clearSave(); TUT.on=0; rollStart(); pendingHero=null; view="heropick"; render() });
+  btn("튜토리얼","",()=>{
     if(sv&&!confirm("튜토리얼도 새 판입니다. 저장해 둔 판이 지워집니다. 계속할까요?")) return;
-    clearSave(); startTutorial();
-  };
-  app.querySelector(".center").appendChild(t);
-  const cx=el(`<div style="margin-top:10px"><button style="padding:9px 24px">대원 도감 — 기술을 미리 써 본다</button></div>`);
-  cx.querySelector("button").onclick=()=>{ CODEX.pick=playableHeroes()[0]; view="codex"; render() };
-  app.querySelector(".center").appendChild(cx);
-  { const n=loadRuns().length;
-    const rr=el(`<div style="margin-top:10px"><button style="padding:9px 24px">원정 기록${n?` — ${n}판`:""}</button></div>`);
-    rr.querySelector("button").onclick=()=>{ RUNS_OPEN=null; view="runs"; render() };
-    app.querySelector(".center").appendChild(rr); }
-  const tx=el(`<div style="margin-top:10px"><button style="padding:7px 18px;font-size:12.5px">설명 고치기</button></div>`);
-  tx.querySelector("button").onclick=()=>{ view="text"; render() };
-  app.querySelector(".center").appendChild(tx);
-  { const dx=el(`<div style="margin-top:10px;display:flex;gap:8px;justify-content:center">
-      <button class="mini">장신구 도감</button><button class="mini">카드 도감</button><button class="mini">이벤트 도감</button><button class="mini">전용 구역 도감</button><button class="mini">적 도감</button><button class="mini">조합 도감</button></div>`);
-    const [bi,bc,be,bg,bf,bn]=dx.querySelectorAll("button");
-    bi.onclick=()=>openDex("itemdex");
-    bc.onclick=()=>openDex("carddex");
-    be.onclick=()=>openDex("evdex");
-    bg.onclick=()=>openDex("gimdex");
-    bf.onclick=()=>openDex("foedex");
-    bn.onclick=()=>openDex("encdex");
-    app.querySelector(".center").appendChild(dx); }
-  app.querySelector(".center").appendChild(el(`<div class="hint" style="margin-top:26px;max-width:420px">${
-    rich(UI_TXT.intro)}</div>`));
+    clearSave(); startTutorial() });
+  btn("훈련장","",()=>{ CODEX.pick=playableHeroes()[0]; view="codex"; render() });
+  { const n=loadRuns().length; btn(`원정 기록${n?` <small>${n}판</small>`:""}`,"",()=>{ RUNS_OPEN=null; view="runs"; render() }) }
+  btn("도감","",()=>{ DEX_BACK="title"; view="dex"; render() });
+  /* 오른쪽 — 업데이트 기록 + 문구 고치기 */
+  const right=g.querySelector(".tr");
+  { const cl=changelogPanel(); if(cl){ cl.classList.add("inline"); right.appendChild(cl) } }
+  { const tx=el(`<button class="tbtn tfix">문구 고치기</button>`); tx.onclick=()=>{ view="text"; render() }; right.appendChild(tx) }
 }
 
-
+/* ═══════════ 도감 — 탭 하나로 (사용자 2026-09-17) ═══════════ */
+let DEX_TAB="itemdex";
+const DEX_TABS=[["itemdex","장신구"],["carddex","카드"],["evdex","이벤트"],["gimdex","전용 구역"],["foedex","적"],["encdex","조합"]];
+function drawDex(app){
+  const bar=el(`<div class="dextabs">${DEX_TABS.map(([k,n])=>`<button class="dtab ${k===DEX_TAB?"on":""}" data-k="${k}">${esc(n)}</button>`).join("")}</div>`);
+  bar.querySelectorAll(".dtab").forEach(b=>{ b.onclick=()=>{ DEX_TAB=b.dataset.k; render() } });
+  app.appendChild(bar);
+  const body=el(`<div class="dexbody"></div>`); app.appendChild(body);
+  const fn={itemdex:drawItemDex,carddex:drawCardDex,evdex:drawEventDex,gimdex:drawGimDex,foedex:drawFoeDex,encdex:drawEncDex}[DEX_TAB]||drawItemDex;
+  fn(body);
+}
 
 /* ═══════════ 저장 ═══════════
    한 판(run)과 전투 도중(B)까지 통째로 이 브라우저에 적어 둔다.
@@ -10064,6 +10090,7 @@ const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 483, "v": "0.4", "d": "2026-09-17", "t": "시작 화면 세 기둥(이어하기·단추·업데이트 기록) · 도감 탭 하나로", "big": 0},
  {"b": 482, "v": "0.4", "d": "2026-09-17", "t": "회오리 장막 — 피해마다 센다(회오리 통과·바람처럼 사라져라 포함) · 보호막 1", "big": 0},
  {"b": 481, "v": "0.4", "d": "2026-09-17", "t": "설명 고치기 (5) 합침 · 카제 회오리·바람처럼 사라져라 대사", "big": 0},
  {"b": 480, "v": "0.4", "d": "2026-09-17", "t": "카제 기술 아이콘 테두리 없는 판 교체 · 카제 난이도 어려움", "big": 0},
@@ -10547,7 +10574,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=482;
+const BUILD_NO=483;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
