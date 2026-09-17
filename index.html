@@ -10064,6 +10064,7 @@ const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 481, "v": "0.4", "d": "2026-09-17", "t": "설명 고치기 (5) 합침 · 카제 회오리·바람처럼 사라져라 대사", "big": 0},
  {"b": 480, "v": "0.4", "d": "2026-09-17", "t": "카제 기술 아이콘 테두리 없는 판 교체 · 카제 난이도 어려움", "big": 0},
  {"b": 479, "v": "0.4", "d": "2026-09-17", "t": "적 의도 — 끌기·밀치기를 화살표와 칸 수로 (피해 기술에도)", "big": 0},
  {"b": 478, "v": "0.4", "d": "2026-09-17", "t": "카제 보상 — 바람과 하나되어 · 연쇄 회오리 · 맞바람", "big": 0},
@@ -10545,7 +10546,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=480;
+const BUILD_NO=481;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -10619,7 +10620,8 @@ function txtEntries(){
     BCAT.forEach(([k,label])=>putBark(k,label));
     /* 기술별 · 사건별 — 대원의 기술마다 한 칸, 그리고 표에 이미 있는 갈래(:적 · :카드 · event: · kill:) */
     const keys=[];
-    if(HEROES[n]){ (HEROES[n].skills||[]).forEach(sk=>{ keys.push("skill:"+sk.n); (sk.opts||[]).forEach(o=>keys.push("skill:"+o.n)) });
+    if(HEROES[n]){ (HEROES[n].skills||[]).forEach(sk=>{ keys.push("skill:"+sk.n); if(sk.alt) keys.push("skill:"+sk.alt.n); (sk.opts||[]).forEach(o=>keys.push("skill:"+o.n)) });
+      if(typeof PASSIVE_INFO!=="undefined") (PASSIVE_INFO[n]||[]).forEach(p=>keys.push("skill:"+p.n));
       (HERO_REWARDS[n]||[]).filter(r=>/^\[전투 기술\]/.test(r.d||"")).forEach(r=>keys.push("skill:"+r.n)) }
     Object.keys(BARK[n]||{}).forEach(k=>{ if(/^(skill|event|kill):/.test(k)) keys.push(k) });
     [...new Set(keys)].forEach(k=>{
@@ -10896,7 +10898,34 @@ const TXT_FIX={
  "foe:고문 기술자:pas:0": "가까이 있을수록 화상 부여량이 늘어납니다.",
  "foe:폭도:pas:0": "다른 폭도가 죽으면 도망치며 공격력 2를 얻습니다.",
  "foe:풀려난 장군:pas:0": "덩치가 커 두 칸을 차지합니다.",
- "foe:사슬에 묶인 마귀:pas:1": "2턴마다 공격력을 2 얻습니다."
+ "foe:사슬에 묶인 마귀:pas:1": "2턴마다 공격력을 2 얻습니다.",
+ "bark:카제:skill:진선풍도": "여기다!\n하아압!\n신검합일!\n진선풍도!",
+ "bark:카제:skill:기류 흘리기": "바람이여...\n기류 흘리기!",
+ "bark:카제:skill:산들바람": "발은 가볍게.\n움직인다.\n산들바람!",
+ "mapsay:카제:move:empty": "사람의 마음이 담긴 검은 천년을 간다. \n이동하겠소.\n이동하오.",
+ "bark:카제:down": "이것이 운명이로구나...",
+ "mapsay:카제:move:shop": "객잔에 들러야겠소.\n주인장! 여기 죽엽청을 주게!\n",
+ "mapsay:카제:move:forge": "칼날을 갈아야겠소.\n칼날이 무뎌졌군.\n내공이 느껴지는군.",
+ "mapsay:카제:move:event": "기습에 대비하라!\n도적떼를 조심해!",
+ "mapsay:카제:move:rest": "오늘은 이곳에 묵어야겠다.\n쉬어야겠소.",
+ "mapsay:카제:move:boss": "위험에 대비해야 하오!\n엄청난 기운이 느껴지는구나...",
+ "bark:카제:atk": "",
+ "bark:카제:skill:잠재력 활성": "<shake>잠재력 활성!</shake>\n<shake>나의 내면을 깨우겠소!</shake>",
+ "mapsay:카제:move:elite": "고수의 기운이 느껴지는군!",
+ "mapsay:카제:move:camp": "복귀했소.\n무사히 복귀했다.\n",
+ "mapsay:카제:floor": "매우 먼 길이오.\n단단히 준비해야겠소.",
+ "mapsay:카제:outside": "흠...\n일단은...\n\n",
+ "bark:카제:in": "바람이 부는구나.\n조용하구나.\n검에는 눈이 없으니, 조심하시오.",
+ "bark:카제:kill": "하압!\n하아압!\n정화했소.",
+ "bark:카제:hurt": "스쳤을 뿐이오.\n윽...\n",
+ "mapsay:카제:move:dungeon": "전투를 준비하겠소.\n각오하시오!",
+ "mapsay:카제:long": "매우 먼 길이오.\n단단히 준비해야겠소.",
+ "mapsay:카제:back:battle": "굉장한 전투였소.\n기억해두겠소.\n",
+ "mapsay:카제:back:rest": "여정을 시작하겠소.\n이제 시작이오.",
+ "mapsay:카제:back:camp": "오늘은 길보다 흉이 많겠구나.\n동쪽에서 해가 뜨는구나.",
+ "mapsay:카제:back:event": "좋은 경험이었소.\n",
+ "mapsay:카제:back:shop": "좋은 거래였소.\n정당한 상인이군.",
+ "mapsay:카제:back:forge": "칼끝이 날카로워졌소.\n"
 };
 /* 기본 글 자체를 바꾼다. 손으로 고친 것(TXT)은 이 뒤에 입혀지므로 그쪽이 이긴다 */
 function txtFixApply(){
@@ -15529,6 +15558,8 @@ const BARK={
      skill:<기술>:적 / :카드  차원문처럼 갈래가 있는 기술
      event:<이름>            시전이 아니라 일어나는 순간 (응축 폭발이 터질 때)
      kill:<기술> · kill:악마  그 기술로 처치 · 악마를 처치 */
+BARK["카제"]["skill:회오리"]=["날아가라!","받아라!","회오리!"];   /* 사용자 2026-09-17 */
+BARK["카제"]["skill:바람처럼 사라져라"]=["바람처럼 사라져라!","베어주마!"];
 BARK["쿠렘타이"]["skill:착취"]=["<shake>내놓아라!!!</shake>","<shake>네 몫은 여기까지다!!!</shake>","<shake>나를 위해 일해라!!!</shake>"];
 BARK["쿠렘타이"]["skill:영혼 분리"]=["후회해라...","너의 영혼은 내 것이다..."];
 BARK["쿠렘타이"]["skill:환상통"]=["죽음을 두려워 하라...","고통!!!"];
@@ -17804,6 +17835,7 @@ function airborne(h,f){
   });
   if(h.name==="카제"){
     fx({side:"foe",slot:f.slot,airslash:h.slot,s:sfxOr("카제 바람처럼 사라져라",null),gap:150});   /* 순간이동해 베는 카제 + 녹음 같은 순간 (사용자 2026-09-16) */
+    barkPick(h,["skill:바람처럼 사라져라"],1);   /* 대사 (사용자 2026-09-17) */
     punchIn("foe",f.slot);
     { const crit=!!(h.tag.airCritBurn&&(f.burn||0)>0); const v=(4+h.atk+(h.tag.airBonus||0))*(crit?2:1);
       if(crit) say("화염칼날 — 불붙은 적에게 치명타!","t1");
