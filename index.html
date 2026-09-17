@@ -838,6 +838,18 @@ button.dtl{padding:3px 10px;font-size:11.5px}
 .evdx-opt small{display:block;font-size:11px;color:#8fc9a6}
 /* 말풍선은 pre-line 이라 카드 틀의 줄바꿈이 빈 줄로 새겨져 세로로 길어졌다 — 카드 안에서는 되돌린다 */
 #kwtip .icard{max-width:330px;white-space:normal}
+/* 조합 카드 */
+#kwtip .syncard{width:250px;white-space:normal;text-align:left}
+#kwtip .syncard .sc-h{display:flex;align-items:baseline;gap:7px;padding-bottom:6px;border-bottom:1px solid var(--rule);margin-bottom:6px}
+#kwtip .syncard .sc-h b{font-family:var(--serif);font-size:14px;color:var(--brass);display:inline;margin:0}
+#kwtip .syncard .sc-h i{font-style:normal;font-size:10.5px;color:var(--faint);border:1px solid var(--rule2);border-radius:9px;padding:0 6px}
+#kwtip .syncard .sc-h span{margin-left:auto;font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums}
+#kwtip .syncard .sc-who{font-size:11px;color:var(--dim);margin-bottom:6px}
+#kwtip .syncard .sc-t{display:flex;gap:8px;align-items:flex-start;padding:5px 7px;border-radius:4px;margin:3px 0;border:1px solid transparent;font-size:11.5px;line-height:1.5;color:var(--faint)}
+#kwtip .syncard .sc-t b{flex:0 0 32px;display:inline;margin:0;font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums}
+#kwtip .syncard .sc-t.on{color:var(--fg);border-color:rgba(201,162,39,.45);background:rgba(201,162,39,.09)}
+#kwtip .syncard .sc-t.on b{color:var(--brass);font-weight:700}
+#kwtip .syncard .sc-t.none{font-style:italic}
 /* ── 미지의 구역 ── 그림 → 제목 → 상황 문구 → 선택지 ── */
 .evbox{max-width:820px;margin:18px auto 0;display:flex;flex-direction:column;align-items:center}
 .evart{width:clamp(200px,34vw,320px);height:clamp(200px,34vw,320px);
@@ -5976,10 +5988,21 @@ function synHtml(){
   const A=synActive().filter(x=>x.on||x.next);
   if(!A.length) return `<div class="hint"></div>`;
   A.sort((a,b)=>(b.on?1:0)-(a.on?1:0));
-  return `<div class="synbar">${A.map(x=>`<span class="syn ${x.on?"on":""}"
-    title="${esc(x.k+" · "+(x.on?x.on.d:"아직 켜지지 않음")+(x.next?`
-다음 ${x.next.c}명: ${x.next.d}`:""))}">
+  return `<div class="synbar">${A.map(x=>`<span class="syn kw ${x.on?"on":""}" data-syn="${esc(x.n)}">
     <b>${esc(x.n)}</b> ${x.c}${x.next?`/${x.next.c}`:""}</span>`).join("")}</div>`;
+}
+/* 조합 카드 — 칩에 커서를 올리면 (사용자 2026-09-17). 단계마다 몇 명에 무슨 효과인지, 지금 몇 명이고 누가 세는지 */
+function synCard(name){
+  const sy=SYNERGY.find(x=>x.n===name); if(!sy) return "";
+  const c=synCount(name);
+  const who=run?run.heroes.filter(h=>!h.down&&hasTag(h,name)).map(h=>h.name):[];
+  const rows=sy.t.length?sy.t.map(x=>`<div class="sc-t ${c>=x.c?"on":""}"><b>${x.c}명</b><span>${rich(x.d)}</span></div>`).join("")
+    :`<div class="sc-t none"><span>아직 효과가 정해지지 않은 조합입니다.</span></div>`;
+  const next=sy.t.find(x=>x.c>c);
+  return `<div class="syncard">
+    <div class="sc-h"><b>${esc(name)}</b><i>${esc(sy.k)}</i><span>${c}명${next?` / 다음 ${next.c}명`:""}</span></div>
+    ${who.length?`<div class="sc-who">${who.map(esc).join(" · ")}</div>`:""}
+    ${rows}</div>`;
 }
 /* ═══════════ 대원 조합 ═══════════ */
 const HERO_TAGS={
@@ -10035,6 +10058,7 @@ const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 477, "v": "0.4", "d": "2026-09-17", "t": "조합 칩 카드 — 이름·종류·인원·누가 세는지·단계별 효과", "big": 0},
  {"b": 476, "v": "0.4", "d": "2026-09-17", "t": "카제 보상 건들바람 삭제", "big": 0},
  {"b": 475, "v": "0.4", "d": "2026-09-17", "t": "카제 기술 아이콘 7종 · 전용 보상 30종 아이콘", "big": 0},
  {"b": 474, "v": "0.4", "d": "2026-09-17", "t": "카제 — 진선풍도·회오리 별개 기술(두 번 쓰면 전환) · 노트대로 전용 보상 30종", "big": 1},
@@ -10512,7 +10536,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=476;
+const BUILD_NO=477;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -16695,6 +16719,15 @@ function pickCount(n){
       b.style.top=Math.max(6,yi)+"px";
       return;
     }
+    if(el2.dataset.syn){   /* 조합 칩 */
+      b.innerHTML=synCard(el2.dataset.syn); b.classList.add("wide"); b.style.display="block";
+      const r2=el2.getBoundingClientRect(), w2=b.offsetWidth, h2=b.offsetHeight;
+      let x2=r2.left+r2.width/2-w2/2, y2=r2.bottom+9;
+      if(y2+h2>innerHeight-6) y2=r2.top-h2-9;
+      b.style.left=Math.max(6,Math.min(innerWidth-w2-6,x2))+"px";
+      b.style.top=Math.max(6,y2)+"px";
+      return;
+    }
     if(el2.dataset.card||el2.dataset.cards){
       const nm=el2.dataset.card;
       /* 도감과 같은 카드를 그대로 띄운다 — 화면마다 다르게 보이지 않게 */
@@ -16729,14 +16762,14 @@ function pickCount(n){
   }
   function hide(){ const b=box(); if(b) b.style.display="none" }
   document.addEventListener("mouseover",e=>{
-    const t=e.target.closest&&e.target.closest(".kw[data-kw],.kw[data-card],.kw[data-cards],.kw[data-item]");
+    const t=e.target.closest&&e.target.closest(".kw[data-kw],.kw[data-card],.kw[data-cards],.kw[data-item],.kw[data-syn]");
     if(t) show(t);
   });
   document.addEventListener("mouseout",e=>{
-    if(e.target.closest&&e.target.closest(".kw[data-kw],.kw[data-card],.kw[data-cards],.kw[data-item]")) hide();
+    if(e.target.closest&&e.target.closest(".kw[data-kw],.kw[data-card],.kw[data-cards],.kw[data-item],.kw[data-syn]")) hide();
   });
   document.addEventListener("click",e=>{
-    const t=e.target.closest&&e.target.closest(".kw[data-kw],.kw[data-card],.kw[data-cards],.kw[data-item]");
+    const t=e.target.closest&&e.target.closest(".kw[data-kw],.kw[data-card],.kw[data-cards],.kw[data-item],.kw[data-syn]");
     if(t) show(t); else hide();
   },true);
   window.addEventListener("scroll",hide,true);
