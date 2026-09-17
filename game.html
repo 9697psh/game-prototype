@@ -5841,7 +5841,7 @@ const SKILL_FULL={
  "화음과 리듬":"리페는 _음율란_을 3개 가지고 시작합니다.\n기술을 통해 _음을란_을 모두 채우면, _음율_을 노래합니다",
  "확산":"감염된 적들에게 보호약화를 1 부여하고, 대상의 거리1 내의 다른 적들을 1회 감염시킵니다.",
  "환상통":"잠금(1). 쿠렘타이의 추가 마법력*( )*만큼 모든 적에게 피해를 줍니다.",
- "회오리 장막":"카제가 3회 이동하거나 피해를 주면, 그 턴에 보호막을 2(추가 ¤ ) 얻습니다.",
+ "회오리 장막":"카제가 3회 이동하거나 피해를 주면, 그 턴에 보호막을 1(추가 ¤ ) 얻습니다.",
  "후미 준비":"잠금(1). 가장 뒤로 이동하고 체력을 5 회복합니다.\n지나간 아군들에게 보호막을 5(추가 ¤ ) 부여합니다.\n선두 방어로 전환합니다."
 };
 /* 기술 한 줄 요약은 없앴다 — 기획 노트 문장(SKILL_FULL) 하나로만 간다.
@@ -6345,7 +6345,7 @@ const HERO_REWARDS={
  ],
  "카제":[
   R("바람처럼 사라져라 강화","하급","바람처럼 사라져라의 피해량이 영구히 2 증가합니다.",h=>h.tag.airBonus=(h.tag.airBonus||0)+2),
-  R("회오리 장막 강화","하급","회오리 장막의 보호막량이 영구히 1 증가합니다.",h=>h.tag.veilAmt=(h.tag.veilAmt||2)+1),
+  R("회오리 장막 강화","하급","회오리 장막의 보호막량이 영구히 1 증가합니다.",h=>h.tag.veilAmt=(h.tag.veilAmt||1)+1),
   R("진선풍도 강화","하급","진선풍도의 피해량이 영구히 1 증가합니다.",(h,rn)=>addMod(h,"진선풍도","dmg",1,rn)),
   R("산들바람 강화","하급","산들바람의 진선풍도 피해 증가량이 영구히 1 증가합니다.",h=>h.tag.gustPlus=(h.tag.gustPlus||0)+1),
   R("기류 흘리기 강화","하급","기류 흘리기가 에너지 보호막도 1 부여합니다.",h=>h.tag.flowShield=(h.tag.flowShield||0)+1),
@@ -10064,6 +10064,7 @@ const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 482, "v": "0.4", "d": "2026-09-17", "t": "회오리 장막 — 피해마다 센다(회오리 통과·바람처럼 사라져라 포함) · 보호막 1", "big": 0},
  {"b": 481, "v": "0.4", "d": "2026-09-17", "t": "설명 고치기 (5) 합침 · 카제 회오리·바람처럼 사라져라 대사", "big": 0},
  {"b": 480, "v": "0.4", "d": "2026-09-17", "t": "카제 기술 아이콘 테두리 없는 판 교체 · 카제 난이도 어려움", "big": 0},
  {"b": 479, "v": "0.4", "d": "2026-09-17", "t": "적 의도 — 끌기·밀치기를 화살표와 칸 수로 (피해 기술에도)", "big": 0},
@@ -10546,7 +10547,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=481;
+const BUILD_NO=482;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -16260,7 +16261,7 @@ const PASSIVE_INFO={
         +(h.tag.burn?` 화상 ${h.tag.burn}도 부여합니다.`:"")},
   {n:"회오리 장막",p:"회오리 장막",
    d:h=>`이동하거나 피해를 ${h.tag.veilNeed||3}회 줄 때마다, 그 턴에 보호막을 `
-        +`${bk(h.tag.veilAmt||2,[{n:"추가 보호력",v:h.def}])} 얻습니다.`
+        +`${bk(h.tag.veilAmt||1,[{n:"추가 보호력",v:h.def}])} 얻습니다.`
         +(h.tag.veilAll?" 다른 아군에게도 부여합니다.":"")}],
  "굴라":[{n:"탐욕의 악마",p:"탐욕의 악마",
    d:h=>`소환물이 아닌 누군가 죽을 때마다 최대 체력을 1 얻습니다. (전투당 ${greedCapOf(h)})`}],
@@ -17022,7 +17023,7 @@ function onSummon(h){
   if(t.startWhirl&&h.name==="카제"){ const f=nearestFoe(h); const s0=h.sk[0];   /* 소용돌이 (노트 2026-09-17) — 비용 없이 진선풍도 한 번 */
     if(f&&s0&&s0.n==="진선풍도"){ const dmg=s0.dmg+mod(s0,"dmg")+h.atk; say(`소용돌이 — ${f.name}에게 진선풍도`,"t1");
       fx({side:"foe",slot:f.slot,sheet:"fx_kaze_thrust",sheetOpt:{z:1.8,ms:420},s:sfxOr("카제 진선풍도",null),gap:0});
-      asSrc(h,()=>hurt(f,dmg,"소용돌이","wind")); windCount(h) } }
+      asSrc(h,()=>hurt(f,dmg,"소용돌이","wind")); veilAct(h,1); windCount(h) } }
   /* ── 쿠렘타이 ── */
   /* 영혼 둔갑의 회피는 전투에 한 번 — 아래 배치 피해(망자의 위엄·내면 파괴)보다
      먼저 쥐어야 '회피를 보유할 때 공격한 대상에게 공포' 가 그 피해에도 걸린다 */
@@ -17184,13 +17185,15 @@ function endShield(h,v){
   if(!v) return;
   h.shield+=v;
 }
+/* 회오리 장막 셈 — 피해 한 번(맞은 적 하나)마다, 이동 한 번마다 (사용자 2026-09-17: 기술 1번이 아니라 피해마다) */
+function veilAct(h,n){ if(!h||h.name!=="카제") return; h.acts=(h.acts||0)+(n||1); veilCheck(h) }
 function veilCheck(h){
   if(h.name!=="카제") return;
   const need=Math.max(1,h.tag.veilNeed||3);   /* 노트 2026-09-16: 8회 → 3회 */
   const done=h.veilDone||0;
   if((h.acts||0)<need*(done+1)) return;
   h.veilDone=done+1;
-  const v=(h.tag.veilAmt||2)+h.def;          /* 보호막 2 (사용자 2026-09-16) */
+  const v=(h.tag.veilAmt||1)+h.def;          /* 보호막 1 — 피해마다 세므로 (사용자 2026-09-17) */
   h.shield+=v;
   pulseFX("mine",h.slot,"#5fd8cf",3);
   edgeGlow("rgba(95,216,207,.34)");
@@ -17839,7 +17842,7 @@ function airborne(h,f){
     punchIn("foe",f.slot);
     { const crit=!!(h.tag.airCritBurn&&(f.burn||0)>0); const v=(4+h.atk+(h.tag.airBonus||0))*(crit?2:1);
       if(crit) say("화염칼날 — 불붙은 적에게 치명타!","t1");
-      hurt(f,v,"바람처럼 사라져라","wind",0,crit?1:0);
+      hurt(f,v,"바람처럼 사라져라","wind",0,crit?1:0); veilAct(h,1);
       if(!f.alive&&h.tag.airKillMom){ h.mom=(h.mom||0)+h.tag.airKillMom; say(`잔향 — 추진력 +${h.tag.airKillMom}`,"t2") } }   /* 잔향 (노트 2026-09-17) */
     if(h.tag.burn&&f.alive){ f.burn=(f.burn||0)+h.tag.burn; f.burnBy=h.name;
       say(`${f.name} 화상 ${f.burn}`,"t2") }
@@ -18005,7 +18008,7 @@ function doSkill(target){
       delete back.alt; nx.alt=back; h.sk[i]=nx;
       say(`${s.n} → ${nx.n}${jo(nx.n,"eu")}로 전환됩니다.`,"t2");
     }
-    if(h.name==="카제"&&((s.el==="이동"&&h.moveOk)||s.dmg!=null)){ h.acts=(h.acts||0)+1; veilCheck(h) }   /* 이동은 실제로 움직였을 때만 (속박·막힘이면 안 쌓임, 사용자 2026-09-16) */
+    if(h.name==="카제"&&s.el==="이동"&&h.moveOk) veilAct(h,1);   /* 이동은 실제로 움직였을 때만 (속박·막힘이면 안 쌓임). 피해는 맞힌 적마다 hurt 자리에서 센다 (2026-09-17) */
     if(h.name==="나이코스"&&i===0&&h.tag.chargeCut){
       const fr=h.slot+1<=SLOTS?h.slot+1:h.slot-1;
       if(fr>=1&&fr<=SLOTS&&fr!==h.slot) moveTo(h,fr);
@@ -18091,7 +18094,7 @@ function moveTo(h,to){
   if(occ&&occ!==h&&occ.noMove){ say(`${occ.name}${jo(occ.name,"eun")} 움직일 수 없습니다.`,"t2"); return }
   h.slot=to; h.moveOk=1;
   if(h.name==="카제"&&h.tag.windStep){ h.acts=(h.acts||0)+h.tag.windStep }   /* 바람걸음 — 이동하면 회오리 장막 셈 +1 더 (노트 2026-09-17) */
-  if(h.name==="카제"&&h.tag.moveHit){ const f=nearestFoe(h); if(f){ say(`싹쓸바람 — ${f.name}에게 피해 ${h.tag.moveHit+h.atk}`,"t2"); asSrc(h,()=>hurt(f,h.tag.moveHit+h.atk,"싹쓸바람","wind")) } }   /* 싹쓸바람 (노트 2026-09-17) */
+  if(h.name==="카제"&&h.tag.moveHit){ const f=nearestFoe(h); if(f){ say(`싹쓸바람 — ${f.name}에게 피해 ${h.tag.moveHit+h.atk}`,"t2"); asSrc(h,()=>hurt(f,h.tag.moveHit+h.atk,"싹쓸바람","wind")); veilAct(h,1) } }   /* 싹쓸바람 (노트 2026-09-17) */
   if(occ&&occ!==h){ occ.slot=from;
     say(`${h.name}${jo(h.name,"gwa")} ${occ.name}${jo(occ.name,"ig")} 자리를 바꿉니다.`);
     fx({side:"mine",slot:from,s:"step",ring:"#5fd8cf",gap:60});
@@ -19055,6 +19058,7 @@ function runEffect(h,i,s,target){
       /* 보통 진선풍도 — 찌르기 띠 (art/이펙트/kaze-thrust) */
       list.forEach((f,q)=>fx({side:"foe",slot:f.slot,sheet:"fx_kaze_thrust",sheetOpt:{z:1.8,ms:420},gap:q?60:0}));
       list.forEach(f=>hurt(f,dmg,strong?"회오리":"진선풍도","wind"));
+      if(list.length) veilAct(h,list.length);   /* 회오리 장막 — 맞힌 적 수만큼 */
       if(strong&&list.length){
         /* 화염칼날 — 회오리가 지나간 적 모두 화상 1 (노트 2026-09-17) */
         if(h.tag.whirlBurn) list.forEach(f=>{ if(f.alive){ f.burn=(f.burn||0)+h.tag.whirlBurn; f.burnBy=h.name } });
