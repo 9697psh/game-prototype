@@ -362,6 +362,7 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .intentbar{display:flex;justify-content:center;min-height:20px;margin:-3px 0 3px;position:relative;z-index:6}   /* 긴 의도가 옆 칸에 가리지 않게 */
 .intent{flex:0 0 auto;max-width:none}
 .intent .ideb{display:inline-flex;align-items:center;gap:1px;white-space:nowrap} .intent .ideb img.ci{width:14px;height:14px;image-rendering:auto}
+.ideb img.mvar{width:13px;height:13px;image-rendering:pixelated;filter:drop-shadow(0 0 2px rgba(255,120,90,.6))} .ideb img.mvar.back{transform:scaleX(-1)}
 .intent{white-space:nowrap;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:4px;
   border:1px solid var(--rule2);
   border-radius:3px;padding:0 5px;background:var(--raise)}
@@ -10063,6 +10064,7 @@ const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 479, "v": "0.4", "d": "2026-09-17", "t": "적 의도 — 끌기·밀치기를 화살표와 칸 수로 (피해 기술에도)", "big": 0},
  {"b": 478, "v": "0.4", "d": "2026-09-17", "t": "카제 보상 — 바람과 하나되어 · 연쇄 회오리 · 맞바람", "big": 0},
  {"b": 477, "v": "0.4", "d": "2026-09-17", "t": "조합 칩 카드 — 이름·종류·인원·누가 세는지·단계별 효과", "big": 0},
  {"b": 476, "v": "0.4", "d": "2026-09-17", "t": "카제 보상 건들바람 삭제", "big": 0},
@@ -10542,7 +10544,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=478;
+const BUILD_NO=479;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -15114,6 +15116,20 @@ function foeEndPassives(){
   });
 }
 /* 기술의 효과를 짧게 — 의도 칸에 이름 대신 적는다 (사용자 2026-09-15: '화상 2 ↝ 나이코스' 꼴) */
+/* 끌기·밀치기 — 화살표 그림 + 칸 수. pull 은 맞는 대원이 어디 서 있느냐에 따라 칸 수가 달라 대상(t)을 받는다 */
+function moveArrow(dir,n){
+  const u=(typeof ICON_PNG!=="undefined")&&ICON_PNG.ui_move_right;
+  const im=u?`<img class="ci mvar${dir<0?" back":""}" src="${u}" alt="">`:(dir<0?"◀":"▶");
+  return `<span class="ideb" title="${dir<0?"뒤로":"앞으로"} ${n}칸">${im}${n}칸</span>`;
+}
+function skMoveHtml(s,t){
+  if(!s) return "";
+  const P=[];
+  if(s.pullN) P.push(moveArrow(1,s.pullN));
+  if(s.pull){ const n=t?Math.max(0,SLOTS-t.slot):null; P.push(moveArrow(1,n==null?"맨 앞":n)) }
+  if(s.push) P.push(moveArrow(-1,s.push===true?1:(s.push||1)));
+  return P.join(" ");
+}
 function skEffectHtml(s){
   if(!s) return "";
   const P=[];
@@ -15137,9 +15153,7 @@ function skEffectHtml(s){
   if(s.absorbNext) P.push("흡수");
   if(s.moveTo4) P.push("거리 4로");
   if(s.debOut) Object.keys(s.debOut).forEach(k=>P.push(`밖: `+deb(k,s.debOut[k])));
-  if(s.pullN) P.push(`${s.pullN}칸 끌기`);
-  if(s.pull) P.push("끌어당김");
-  if(s.push) P.push("밀치기");
+  if(s.pullN||s.pull||s.push) P.push(skMoveHtml(s,null));
   if(s.fwd) P.push("전진");
   if(s.flee) P.push("도망");
   return P.join(" ");
@@ -15154,7 +15168,10 @@ function skIntentHtml(f,I){
                      :`<span class="tgt" title="이 칸을 칩니다">→ ${I.to}번</span>`;
   }
   /* 피해 기술은 여느 공격처럼 '숫자 → 칸' 만 — 이름은 풍선(title)에. 칸이 좁아 이름을 적으면 세로로 부서진다 */
-  if(I.v){ const e=foeDmg(f,I.v,I.el); const ex=s&&s.deb?" "+skEffectHtml({deb:s.deb}):"";
+  if(I.v){ const e=foeDmg(f,I.v,I.el);
+    const tgtU=I.toId&&allUnits().find(x=>uid(x)===I.toId&&x.hp>0);
+    const mv=s?skMoveHtml(s,tgtU||null):"";
+    const ex=(s&&s.deb?" "+skEffectHtml({deb:s.deb}):"")+(mv?" "+mv:"");   /* 끌기·밀치기도 (사용자 2026-09-17) */
     return `<span class="intent${e<I.v?" cut":""}" title="${esc(I.n)} · ${tip}">${ic(I.el==="마법"?"mag":"atk")}<b>${e}</b>${
       I.hits>1?`<span class="hits">×${I.hits}</span>`:""}${ex} ${who}</span>`; }
   const k=(s&&(s.shield||s.eshield))?"def":(s&&(s.buff||s.snack||s.riot))?"atk":(s&&s.fire)?"atk":"move";
