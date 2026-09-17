@@ -2463,8 +2463,16 @@ img.ri{width:14px;height:14px;vertical-align:-2px;image-rendering:auto}
 /* 판 그림 그대로(인쇄된 줄·문양까지) 위에 글만 얹는다 (사용자 2026-09-18). 스크롤 칸을 잘라낸 335×450 판을 테두리 24로 잘라 늘림 */
 .contsave.paperbox,.chlog.paperbox{border:24px solid transparent;border-image:url("ui/menu-panel-plain-335x450.png") 24 fill stretch;image-rendering:pixelated;
   background:transparent;box-shadow:none;border-radius:0;color:#f0e2c4;text-shadow:0 1px 0 rgba(0,0,0,.55)}
+/* 업데이트 기록 — 스크롤 판 그림을 원본 크기 그대로. 홈(x 324~343, y 50~425)에 track·thumb 스프라이트 (사용자 2026-09-18) */
+.chlog.paperbox{position:relative;border:0;border-image:none;width:350px;height:450px;box-sizing:border-box;padding:22px 30px 26px 26px;
+  background:url("ui/menu-scroll-panel-350x450.png") 0 0/350px 450px no-repeat}
+.chlog.paperbox .chl-l{scrollbar-width:none} .chlog.paperbox .chl-l::-webkit-scrollbar{display:none;width:0;height:0}
+.chl-track{position:absolute;left:326px;top:52px;width:18px;height:374px;background:url("ui/menu-scroll-track-18x374.png") 0 0/18px 374px no-repeat;image-rendering:pixelated;cursor:pointer}
+.chl-thumb{position:absolute;left:327px;top:55px;width:16px;height:70px;background:url("ui/menu-scroll-thumb-16x70.png") 0 0/16px 70px no-repeat;image-rendering:pixelated;cursor:grab;touch-action:none}
+.chl-thumb.drag{cursor:grabbing}
+.chlog.paperbox.noscroll .chl-thumb{display:none}
+.tcol.tr .chlog.inline.paperbox{width:350px;height:450px}
 .contsave.big.paperbox{padding:6px 10px 14px;min-height:150px}
-.tcol.tr .chlog.inline.paperbox{padding:0 4px 0 6px}
 .chlog.paperbox .chl-r{background:rgba(0,0,0,.12)} .chlog.paperbox .chl-r.big{background:rgba(201,162,39,.22)}
 .contsave.big.paperbox .csh{background:rgba(0,0,0,.28)}
 .contsave.big.paperbox .cshead{color:#f0d488;font-size:19px}
@@ -2473,14 +2481,9 @@ img.ri{width:14px;height:14px;vertical-align:-2px;image-rendering:auto}
 .contsave.big.paperbox .csbtn button{background:url("ui/menu-button-short-176x58.png") center/100% 100% no-repeat;border:0;width:176px;height:58px;color:#d8c8a6;box-shadow:none;border-radius:0;font-size:14px}
 .contsave.big.paperbox .csbtn button.go,.contsave.big.paperbox .csbtn button:hover{background:url("ui/menu-button-short-selected-176x58.png") center/100% 100% no-repeat;color:#2a2016}
 .contsave.big.paperbox.empty{opacity:.9;border-style:solid}
-.tcol.tr .chlog.inline.paperbox{height:450px;padding:0 4px 0 2px}
 .chlog.paperbox .chl-h{color:#f0d488;border-bottom-color:rgba(240,212,136,.3)} .chlog.paperbox .chl-h span{color:#c7b696}
 .chlog.paperbox .chl-m,.chlog.paperbox .chl-t{color:#dccbaa} .chlog.paperbox .chl-m b{color:#fff2cc} .chlog.paperbox .chl-m i,.chlog.paperbox .chl-m em{color:#b3a284}
 .chlog.paperbox .chl-r{border-left-color:rgba(240,212,136,.25)} .chlog.paperbox .chl-r.big{border-left-color:#e2b93a;background:rgba(201,162,39,.2)} .chlog.paperbox .chl-r.big .chl-m b{color:#ffd45e} .chlog.paperbox .chl-r.big .chl-t{color:#fff4d6}
-.chlog.paperbox .chl-l{scrollbar-width:auto;scrollbar-color:#c9a227 transparent}
-.chlog.paperbox .chl-l::-webkit-scrollbar{width:18px}
-.chlog.paperbox .chl-l::-webkit-scrollbar-track{background:url("ui/menu-scroll-track-18x374.png") center/100% 100% no-repeat}
-.chlog.paperbox .chl-l::-webkit-scrollbar-thumb{background:url("ui/menu-scroll-thumb-16x70.png") center/100% 100% no-repeat;border:1px solid transparent;background-clip:content-box}
 .tcol.tl{text-align:center}
 .tcol.tl .title{margin-top:8px}
 .tsave{margin-top:26px}
@@ -2494,7 +2497,7 @@ img.ri{width:14px;height:14px;vertical-align:-2px;image-rendering:auto}
 .tcol.tr{display:flex;flex-direction:column;gap:12px;padding-top:70px}
 .tcol.tr .chlog.inline{position:static;width:auto;height:420px;bottom:auto;top:auto;right:auto;display:flex}
 .tbtn.tfix{padding:10px;font-size:13.5px}
-@media(max-width:1000px){.tgrid{grid-template-columns:1fr;max-width:520px}.tcol.tm,.tcol.tr{padding-top:0}.tcol.tr .chlog.inline{height:300px}}
+@media(max-width:1000px){.tgrid{grid-template-columns:1fr;max-width:520px}.tcol.tm,.tcol.tr{padding-top:0}.tcol.tr .chlog.inline:not(.paperbox){height:300px}}
 /* 도감 탭 */
 .dextabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:22px auto 6px;max-width:960px}
 .dtab{padding:9px 22px;font-size:13.5px;border:1px solid var(--rule2);border-radius:6px;background:var(--panel);color:var(--dim)}
@@ -9907,8 +9910,29 @@ function changelogPanel(){
         <div class="chl-m"><b>${o.big?"★ ":""}build ${o.b}</b><i>v${esc(o.v)}</i><em>${esc(o.d)}</em></div>
         <div class="chl-t">${esc(o.t)}</div>
       </div>`).join("")}</div>
+    <div class="chl-track"></div><div class="chl-thumb"></div>
   </aside>`);
+  spriteScroll(p);
   return p;
+}
+/* 스프라이트 스크롤 막대 — 판의 .chl-l 스크롤에 thumb(16×70)를 맞춘다. 홈 y 52~426 안에서 thumb 는 55~353 (사용자 2026-09-18: 받은 track·thumb 그림 그대로) */
+function spriteScroll(p){
+  const l=p.querySelector(".chl-l"), th=p.querySelector(".chl-thumb"), tr=p.querySelector(".chl-track");
+  if(!l||!th||!tr) return;
+  const Y0=55, Y1=353;
+  const range=()=>Math.max(0,l.scrollHeight-l.clientHeight);
+  const place=()=>{ const r=range(); p.classList.toggle("noscroll",r<=0); th.style.top=(Y0+(r?l.scrollTop/r:0)*(Y1-Y0))+"px" };
+  l.addEventListener("scroll",place);
+  th.addEventListener("pointerdown",e=>{
+    e.preventDefault(); th.setPointerCapture(e.pointerId); th.classList.add("drag");
+    const y=e.clientY, st=l.scrollTop;
+    const mv=ev=>{ l.scrollTop=st+(ev.clientY-y)/(Y1-Y0)*range() };
+    const up=()=>{ th.classList.remove("drag"); th.removeEventListener("pointermove",mv); th.removeEventListener("pointerup",up); th.removeEventListener("pointercancel",up) };
+    th.addEventListener("pointermove",mv); th.addEventListener("pointerup",up); th.addEventListener("pointercancel",up);
+  });
+  tr.addEventListener("pointerdown",e=>{   /* 홈을 누르면 그쪽으로 한 장 */
+    const top=th.getBoundingClientRect().top; l.scrollBy({top:(e.clientY<top?-1:1)*l.clientHeight*.9,behavior:"smooth"}) });
+  requestAnimationFrame(place); setTimeout(place,300);   /* 글꼴이 늦게 와도 다시 잰다 */
 }
 function drawTitle(app){
   const sv=savePeek();
@@ -10129,6 +10153,7 @@ const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 488, "v": "0.4", "d": "2026-09-18", "t": "업데이트 기록 — 스크롤 판 그림 원본 크기로, 스크롤 막대를 받은 track·thumb 스프라이트로", "big": 0},
  {"b": 487, "v": "0.4", "d": "2026-09-18", "t": "이어하기·업데이트 기록 판 — 갈색 네모 대신 받은 판 그림 위에 글만 얹음", "big": 0},
  {"b": 486, "v": "0.4", "d": "2026-09-18", "t": "둥근모꼴 글꼴 전체 적용 · 시작 화면에 받은 메뉴 그림(단추·양피지 판) 입힘", "big": 1},
  {"b": 485, "v": "0.4", "d": "2026-09-18", "t": "버튼 철커덩 음량 낮춤", "big": 0},
@@ -10617,7 +10642,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=487;
+const BUILD_NO=488;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
