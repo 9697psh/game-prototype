@@ -2527,6 +2527,11 @@ body.vtitle header #hBtns button:hover{border-color:#f4d67c;color:#f4d67c}
   background:url("ui/menu-card-wide-512x192.png") center/100% 100% no-repeat;image-rendering:pixelated;color:#e6d6b2;filter:drop-shadow(0 12px 22px rgba(0,0,0,.6));animation:pkdIn .5s ease-out both}
 @keyframes pkdIn{from{opacity:0;transform:translateY(-50%) translateX(-10px)}to{opacity:1;transform:translateY(-50%)}}
 .pkdesc *{image-rendering:auto}
+.pkdw{position:fixed;right:4vw;top:50%;transform:translateY(-50%);z-index:2;display:flex;flex-direction:column;align-items:center;gap:16px;width:440px}
+.pkdw .pkdesc{position:static;transform:none;animation:pkdIn2 .5s ease-out both}
+@keyframes pkdIn2{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
+.pkquote.under{position:static;transform:none;animation:none;white-space:normal;text-align:center;max-width:420px;font-size:18px;line-height:1.5}
+@media(max-width:1300px){.pkdw{right:2vw;width:360px}}
 .pkdesc .pkdi{width:72px;height:72px;flex:0 0 72px;display:flex;align-items:center;justify-content:center}
 .pkdesc .pkdi img,.pkdesc .pkdi svg{width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
 .pkdesc .pkdt{min-width:0;text-align:left}
@@ -10452,6 +10457,7 @@ const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 521, "v": "0.4", "d": "2026-09-19", "t": "대원 선택 — 선물을 고르면 파수꾼 대사가 선물 카드 밑에", "big": 0},
  {"b": 520, "v": "0.4", "d": "2026-09-19", "t": "주둔지 판 맨 아래 안내 줄 없앰", "big": 0},
  {"b": 519, "v": "0.4", "d": "2026-09-19", "t": "이어하기 저장 칸 — 네모 카드 그림으로", "big": 0},
  {"b": 518, "v": "0.4", "d": "2026-09-19", "t": "가방 — 지도 시계 밑, 같은 상자에 그림만", "big": 0},
@@ -10973,7 +10979,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=520;
+const BUILD_NO=521;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -12044,7 +12050,7 @@ function drawStart(app){
     <div class="pkhd">${chosen?"파수꾼의 선물 선택":"대원 선택"}</div>
     <div class="pkstage heropick"></div>
     <div class="pkpacks startpacks ${chosen?"up":""}"></div>
-    ${PICK_QUOTE?`<div class="pkquote ${PICK_QSEEN?"still":""}"><span>“</span>${esc(PICK_QUOTE)}<span>”</span></div>`:""}
+    ${PICK_QUOTE&&PICK_PACK==null?`<div class="pkquote ${PICK_QSEEN?"still":""}"><span>“</span>${esc(PICK_QUOTE)}<span>”</span></div>`:""}
     <div class="pkfoot"></div>
   </div>`);
   /* 제단과 대원 셋 */
@@ -12087,8 +12093,10 @@ function drawStart(app){
   /* 골라 둔 선물의 설명 카드 — 왼쪽에 고정. 안의 낱말(카드·장신구)은 여느 풍선처럼 커서로 본다 */
   if(PICK_PACK!=null&&startPacks[PICK_PACK]){
     const p=startPacks[PICK_PACK];
-    g.appendChild(el(`<div class="pkdesc"><div class="pkdi">${packArt(p.i,p.n)}</div>
-      <div class="pkdt"><b>${esc(p.n)}</b><div class="pkdd">${rich(p.d)}</div></div></div>`));
+    /* 선물을 골랐으면 파수꾼 대사는 이 카드 밑에 (사용자 2026-09-19) */
+    g.appendChild(el(`<div class="pkdw"><div class="pkdesc"><div class="pkdi">${packArt(p.i,p.n)}</div>
+      <div class="pkdt"><b>${esc(p.n)}</b><div class="pkdd">${rich(p.d)}</div></div></div>
+      ${PICK_QUOTE?`<div class="pkquote under"><span>“</span>${esc(PICK_QUOTE)}<span>”</span></div>`:""}</div>`));
   }
   /* 오른쪽 판 — 가운데 대원 */
   g.appendChild(pickPanel(center));
