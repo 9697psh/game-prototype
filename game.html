@@ -10481,6 +10481,7 @@ const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 528, "v": "0.4", "d": "2026-09-19", "t": "미지의 구역도 들르기 전엔 못 떠남", "big": 0},
  {"b": 527, "v": "0.4", "d": "2026-09-19", "t": "옛 저장본의 전투 칸도 '등장/획득 확률 증가' 힌트로", "big": 0},
  {"b": 526, "v": "0.4", "d": "2026-09-19", "t": "조합 아이콘 — 받은 진영·직업·종족 그림 · 퀘스트는 가방 밑 느낌표(개수·커서로 판)", "big": 0},
  {"b": 525, "v": "0.4", "d": "2026-09-19", "t": "전투 칸마다 보상 확률 다르게 — '획득 확률 증가: …' 힌트 (확률 ×1.5, 금화·경험치 양 ×1.4)", "big": 0},
@@ -11009,7 +11010,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=527;
+const BUILD_NO=528;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -12390,7 +12391,7 @@ function mapInspector(at){
     } else if(kind==="camp"){ /* 시설이 위에 */ }
     else foot.appendChild(el(`<div class="mif">지금 서 있는 칸</div>`));
   } else if(kind==="wall"){ foot.appendChild(el(`<div class="mif">지나갈 수 없습니다</div>`)) }
-  else if(locked){ foot.appendChild(el(`<div class="mif on">전투를 끝내야 움직일 수 있습니다</div>`)) }
+  else if(locked){ foot.appendChild(el(`<div class="mif on">${run.grid[run.pos.r][run.pos.c].t==="event"?"미지의 구역을 들르고 나서야 움직일 수 있습니다":"전투를 끝내야 움직일 수 있습니다"}</div>`)) }
   else {
     const rt=near(run.pos,{r:r,c:c})?{steps:1,pass:0}:(run.route&&run.route.to.r===r&&run.route.to.c===c?run.route:routeTo(r,c));
     if(rt){
@@ -12579,7 +12580,7 @@ function arriveAt(r,c){
 }
 let MAP_CLK={t:0,r:-1,c:-1};
 /* 전투 칸에 올라섰으면 끝내기 전엔 못 떠난다 (사용자 2026-09-18) */
-const LOCK_T={dungeon:1,elite:1,boss:1,tower:1,wagon:1};
+const LOCK_T={dungeon:1,elite:1,boss:1,tower:1,wagon:1,event:1};   /* 미지의 구역도 들르기 전엔 못 떠난다 (사용자 2026-09-19) */
 function mapLocked(){ const c=run&&run.grid[run.pos.r][run.pos.c]; return !!(c&&LOCK_T[c.t]&&!c.done) }
 /* 한 번 누름 — 고르기. 먼 칸은 길도 보여 준다 */
 function mapSelect(r,c){
@@ -12594,7 +12595,7 @@ function mapGo(r,c){
   const cell=run.grid[r][c], here=run.pos.r===r&&run.pos.c===c;
   mapTipHide();
   if(here){ mapEnter(); return }
-  if(mapLocked()){ toast("전투를 끝내야 움직일 수 있습니다."); return }
+  if(mapLocked()){ toast(run.grid[run.pos.r][run.pos.c].t==="event"?"미지의 구역을 들르고 나서야 움직일 수 있습니다.":"전투를 끝내야 움직일 수 있습니다."); return }
   if(near(run.pos,{r:r,c:c})){ run.route=null; moveTo2(r,c); return }
   const rt=routeTo(r,c); if(!rt){ toast("그 칸으로 가는 길이 없습니다."); return }
   run.route=rt; walkRoute();
