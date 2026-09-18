@@ -9533,9 +9533,9 @@ function buildGrid(fi,keep){
       g[rc[0]][rc[1]]=Object.assign({t:t},mk?mk():{});
     }
   };
-  const dun=()=>({waves:1+Math.floor(Math.random()*3),style:rnd(DUN_STYLE),loot:rnd(DUN_LOOT)});
+  const dun=()=>{ const w=1+Math.floor(Math.random()*3); return Object.assign({waves:w,loot:rnd(DUN_LOOT)},encRoll("dungeon",fi,w)) };
   put("dungeon",nodeCount("dungeon",fi),dun);
-  put("elite",nodeCount("elite",fi),()=>({waves:1,style:rnd(DUN_STYLE),loot:rnd(DUN_LOOT)}));
+  put("elite",nodeCount("elite",fi),()=>Object.assign({waves:1,loot:rnd(DUN_LOOT)},encRoll("elite",fi,1)));
   put("shop",nodeCount("shop",fi));
   put("rest",nodeCount("rest",fi)+1+(Math.random()<0.5?1:0));   /* 쉼터 +1~2 — 9×9 로 밤이 빨리 온다 (사용자 2026-09-15) */
   put("event",nodeCount("event",fi));
@@ -9705,9 +9705,8 @@ function respawn(){
     const n=4+Math.floor(Math.random()*3)+run.field*2;
     for(let i=0;i<n&&free.length;i++){
       const k=Math.floor(Math.random()*free.length), rc=free.splice(k,1)[0];
-      run.grid[rc[0]][rc[1]]={t:i<2?"elite":"dungeon",
-        waves:i<2?1:1+Math.floor(Math.random()*3),
-        style:rnd(DUN_STYLE),loot:rnd(DUN_LOOT)};
+      { const t=i<2?"elite":"dungeon", w=i<2?1:1+Math.floor(Math.random()*3);
+        run.grid[rc[0]][rc[1]]=Object.assign({t:t,waves:w,loot:rnd(DUN_LOOT)},encRoll(t,run.field,w)) }
     }
     if(n) toast("정복하지 않은 전투 칸이 사라지고, 새 전투 칸이 나타났습니다.");
   }
@@ -10467,6 +10466,7 @@ const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 524, "v": "0.4", "d": "2026-09-19", "t": "전투 칸 설명 — '등장: <적 하나>' (전투 50%·정예 70% 는 확인 불가), 첫 라운드 조합을 칸을 놓을 때 정함", "big": 0},
  {"b": 523, "v": "0.4", "d": "2026-09-19", "t": "주둔지 판 — 그림만, 커서 올리면 설명 · 위/아래 줄과 '오늘 방문 가능 1/1'", "big": 0},
  {"b": 522, "v": "0.4", "d": "2026-09-19", "t": "이어하기 → 지도 들어갈 때 암전", "big": 0},
  {"b": 521, "v": "0.4", "d": "2026-09-19", "t": "대원 선택 — 선물을 고르면 파수꾼 대사가 선물 카드 밑에", "big": 0},
@@ -10991,7 +10991,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=523;
+const BUILD_NO=524;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -11892,7 +11892,7 @@ function tutBegin(){
   run.pack=startPacks.map(p=>p.n).join(" · ");
   /* 첫 전투는 바로 위 칸에 한 라운드짜리로 깔아 둔다 — 헤매지 않게 */
   const S=run.size, mid=Math.floor(S/2);
-  run.grid[S-2][mid]={t:"dungeon",waves:1,style:rnd(DUN_STYLE),loot:rnd(DUN_LOOT),tutgo:1};
+  run.grid[S-2][mid]=Object.assign({t:"dungeon",waves:1,loot:rnd(DUN_LOOT),tutgo:1},encRoll("dungeon",run.field,1));
   view="map"; render();
 }
 function tutNext(){
@@ -13351,7 +13351,8 @@ function startDungeon(cell,r,c){
            kind:cell.t==="boss"?"boss":cell.t==="elite"?"elite":cell.t==="ambush"?"ambush":"battle"};
   if(cell.t==="ambush"&&!run.night){ const n=Math.min(3,Math.max(2,run.heroes.length)); run.dun.forceFoes=[]; for(let i=0;i<n;i++) run.dun.forceFoes.push(["감옥 경비병",i+1]) }   /* 낮 습격 = 간수 초소·순찰로의 경비병 */
   /* 여러 라운드 전투 — 절반은 짜여진 구성(ENC_SEQ), 절반은 라운드마다 무작위 (ppt 1장) */
-  { const f=Math.min(run.field,2), cands=(ENC_SEQ[f]||[]).filter(q=>q.rounds.length===run.dun.waves);
+  if(cell.seq){ run.dun.seq=cell.seq.slice(); run.dun.seqName=cell.seqName }   /* 칸을 놓을 때 정해 둔 구성 (encRoll) */
+  else if(!cell.enc){ const f=Math.min(run.field,2), cands=(ENC_SEQ[f]||[]).filter(q=>q.rounds.length===run.dun.waves);
     if(run.dun.waves>1&&cands.length&&Math.random()<0.5&&(cell.t==="dungeon"||cell.t==="elite")){
       const q=rnd(cands); run.dun.seq=q.rnd?q.rounds.slice().sort(()=>Math.random()-0.5):q.rounds.slice(); run.dun.seqName=q.n } }
   /* 이 전투에서 내내 쓸 곡을 여기서 한 번 고른다 */
@@ -14934,6 +14935,22 @@ const UNLOCK=[1,1,7,15];   // 3번 기술 7레벨, 궁극기 15레벨 (기획노
 const foeNo=s=>s+SLOTS;                 /* 적 칸 → 보이는 번호 */
 const unitNo=u=>!u?"?":((B&&B.foes&&B.foes.indexOf(u)>=0)?u.slot+SLOTS:u.slot);
 const dist=(a,e)=>(SLOTS-a)+e;   /* = foeNo(e) − a · 아군 5번과 적 6번이 거리 1 */
+/* 칸을 놓을 때 첫 라운드 조합을 미리 정하고, 그 조합의 적 하나를 힌트로 (사용자 2026-09-19).
+   전투는 50%, 정예는 70% 가 '확인 불가'. 여러 라운드면 짜여진 구성(ENC_SEQ)도 여기서 고른다 */
+function encRoll(kind,fi,waves){
+  const f=Math.min(fi||0,2), n=(run&&run.heroes&&run.heroes.length)||1;
+  let enc=null, seq=null, seqName=null;
+  if(kind==="elite"&&(ELITE_ENC[f]||[]).length){ const L=ELITE_ENC[f].filter(e=>(e.min||1)<=n); enc=rnd(L.length?L:ELITE_ENC[f]) }
+  else {
+    const cands=(ENC_SEQ[f]||[]).filter(q=>q.rounds.length===(waves||1));
+    if((waves||1)>1&&cands.length&&Math.random()<0.5){ const q=rnd(cands); seq=q.rnd?q.rounds.slice().sort(()=>Math.random()-0.5):q.rounds.slice(); seqName=q.n; enc=encByName(f,seq[0]) }
+    if(!enc) enc=pickEncounter(f,n,1);
+  }
+  const foes=enc?(enc.foes||[]).filter(x=>FOE[x]):[];
+  const hide=Math.random()<(kind==="elite"?0.7:0.5);
+  const hint=(!hide&&foes.length)?rnd(foes):null;
+  return {enc:enc?enc.n:null, seq:seq, seqName:seqName, hint:hint, style:`등장: ${hint||"확인 불가"}`};
+}
 function pickEncounter(f,n,round){
   const rd=Math.max(1,Math.min(3,round||1));
   const ok=e=>(e.min||1)<=n && (!e.r||e.r.indexOf(rd)>=0);
@@ -14961,10 +14978,12 @@ function foeSet(kind){
   let enc=null;
   /* 정예 칸 — 정예 조합표가 있는 구역은 그것만 (사용자 2026-09-16) */
   if(kind==="elite"&&(ELITE_ENC[f]||[]).length){
-    const enc2=rnd(ELITE_ENC[f].filter(e=>(e.min||1)<=n)||ELITE_ENC[f]); B_ENC=enc2.n;
+    const pre=run.dun&&run.dun.wave===1&&run.dun.cell&&run.dun.cell.enc&&ELITE_ENC[f].find(e=>e.n===run.dun.cell.enc);   /* 미리 정한 조합 — 힌트가 참이게 */
+    const enc2=pre||rnd(ELITE_ENC[f].filter(e=>(e.min||1)<=n)||ELITE_ENC[f]); B_ENC=enc2.n;
     encLayout(enc2).forEach(x=>out.push(x)); return out;
   }
   if(run.dun&&run.dun.seq){ enc=encByName(f,run.dun.seq[((run.dun.wave||1)-1)%run.dun.seq.length]) }   /* 짜여진 구성 */
+  if(!enc&&run.dun&&run.dun.wave===1&&run.dun.cell&&run.dun.cell.enc) enc=encByName(f,run.dun.cell.enc);   /* 칸을 놓을 때 정한 첫 라운드 (힌트가 참이게) */
   if(!enc) enc=pickEncounter(f,n,(run.dun&&run.dun.wave)||1);
   if(enc){
     B_ENC=enc.n;
