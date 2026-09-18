@@ -2518,6 +2518,20 @@ body.vtitle header #hBtns button:hover{border-color:#f4d67c;color:#f4d67c}
 .pkpk .pkpn{position:absolute;top:100%;margin-top:8px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:12.5px;color:#c7b696;text-shadow:0 1px 0 #000;opacity:0;transition:opacity .45s .2s}
 .pkpacks.up .pkpk .pkpn{opacity:1}
 .pkfoot{position:fixed;left:0;right:0;bottom:4vh;text-align:center;z-index:2}
+/* 골라 둔 선물 — 밝게 + 금빛 테. 설명 카드는 왼쪽(대원 판의 맞은편) */
+.pkpacks.up .pkpk.sel{filter:brightness(1.18) drop-shadow(0 0 10px rgba(244,214,124,.55))}
+.pkpacks.up .pkpk.sel .pkpn{color:#f4d67c}
+.pkdesc{position:fixed;left:4vw;top:50%;transform:translateY(-50%);width:440px;height:165px;box-sizing:border-box;z-index:2;display:flex;align-items:center;gap:18px;padding:26px 40px 26px 34px;
+  background:url("ui/menu-card-wide-512x192.png") center/100% 100% no-repeat;image-rendering:pixelated;color:#e6d6b2;filter:drop-shadow(0 12px 22px rgba(0,0,0,.6));animation:pkdIn .5s ease-out both}
+@keyframes pkdIn{from{opacity:0;transform:translateY(-50%) translateX(-10px)}to{opacity:1;transform:translateY(-50%)}}
+.pkdesc *{image-rendering:auto}
+.pkdesc .pkdi{width:72px;height:72px;flex:0 0 72px;display:flex;align-items:center;justify-content:center}
+.pkdesc .pkdi img,.pkdesc .pkdi svg{width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
+.pkdesc .pkdt{min-width:0;text-align:left}
+.pkdesc .pkdd b{display:inline;font-family:inherit;font-size:inherit;letter-spacing:0;margin:0;text-shadow:none}
+.pkdesc .pkdt>b{display:block;font-family:var(--serif);font-size:17px;color:#f4d67c;letter-spacing:.08em;margin-bottom:6px;text-shadow:0 2px 0 #000}
+.pkdesc .pkdd{font-size:13.5px;line-height:1.6;word-break:keep-all;color:#e6d6b2}
+@media(max-width:1300px){.pkdesc{left:2vw;width:360px;height:140px;padding:22px 30px 22px 26px}}
 /* 파수꾼의 대사 — 선물과 새로 시작 사이. 받은 본보기처럼 어두운 띠 위에 황동빛 글, 살며시 떠오른다 */
 .pkquote{position:fixed;left:50%;top:84vh;transform:translateX(-50%);z-index:2;padding:4px 12px;
   font-family:var(--serif);font-size:20px;color:#e8c46a;letter-spacing:.1em;white-space:nowrap;text-shadow:0 2px 0 #000,0 0 12px rgba(0,0,0,.9);animation:pkqIn .9s ease-out both}   /* 글만 (사용자 2026-09-18) */
@@ -10325,6 +10339,7 @@ const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 507, "v": "0.4", "d": "2026-09-18", "t": "선물 — 한 번 누르면 설명 카드 고정(안의 낱말 카드 볼 수 있음), 두 번 누르면 시작", "big": 0},
  {"b": 506, "v": "0.4", "d": "2026-09-18", "t": "대원 판 — 초상 줄이고 이름표는 글만, 안쪽으로", "big": 0},
  {"b": 505, "v": "0.4", "d": "2026-09-18", "t": "파수꾼의 선물 설명을 문구 수정에서 고칠 수 있게 · 선물 풍선 낱말 중간 줄바꿈 고침", "big": 0},
  {"b": 504, "v": "0.4", "d": "2026-09-18", "t": "대원 선택 — 한 번 고른 뒤엔 돌려도 선물이 계속 보임", "big": 0},
@@ -10832,7 +10847,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=506;
+const BUILD_NO=507;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -11888,13 +11903,14 @@ function heroDetail(n){
   return box;
 }
 /* 대원 선택 — 돌 제단 (사용자 2026-09-18 그림). PICK_ORDER = [왼, 가운데, 오른]. 가운데를 눌러야 고른 것 */
-let PICK_ORDER=null, PICK_QUOTE=null;
+let PICK_ORDER=null, PICK_QUOTE=null, PICK_PACK=null;   /* PICK_PACK = 한 번 눌러 둔 선물 (설명 카드 고정) */
 const TIP_HTML={};
 function wardenQuote(){ const L=String(UI_TXT.warden||"").split("\n").map(x=>x.trim()).filter(Boolean); return L.length?L[Math.floor(Math.random()*L.length)]:"" }   /* .kw[data-tid] 풍선의 안 — 기술·선물 설명 */
 function pickTip(id,html){ TIP_HTML[id]=html; return `data-tid="${id}"` }
 function drawStart(app){
+  { const kt=document.getElementById("kwtip"); if(kt) kt.style.display="none" }   /* 누른 선물의 풍선이 남지 않게 */
   app.appendChild(el(`<div class="titlebg pickbg"><div class="tbgf on" style="background-image:url(bg/pick.webp)"></div></div>`));
-  if(!PICK_ORDER||PICK_ORDER.length!==startPicks.length||PICK_ORDER.some(n=>startPicks.indexOf(n)<0)){ PICK_ORDER=startPicks.slice(); PICK_QUOTE=wardenQuote() }
+  if(!PICK_ORDER||PICK_ORDER.length!==startPicks.length||PICK_ORDER.some(n=>startPicks.indexOf(n)<0)){ PICK_ORDER=startPicks.slice(); PICK_QUOTE=wardenQuote(); PICK_PACK=null }
   if(PICK_QUOTE==null) PICK_QUOTE=wardenQuote();
   const n=PICK_ORDER.length, ci=n===3?1:0, center=PICK_ORDER[ci];
   if(TUT.on&&!pendingHero) pendingHero=center;   /* 튜토리얼은 대원이 정해져 있다 */
@@ -11928,21 +11944,33 @@ function drawStart(app){
   const packs=g.querySelector(".pkpacks");
   startPacks.forEach((p,i)=>{
     const tid="pack-"+i;
-    const c=el(`<div class="pkpk kw ${(TUT.on||chosen)?"":"no"}" ${pickTip(tid,`<b style="color:var(--brass)">${esc(p.n)}</b><br>${rich(p.d)}`)}>
+    /* 골라 둔 선물이 있으면 풍선은 안 띄운다 — 왼쪽 카드가 그 몫 */
+    const c=el(`<div class="pkpk ${PICK_PACK==null?"kw":""} ${(TUT.on||chosen)?"":"no"} ${PICK_PACK===i?"sel":""}" ${PICK_PACK==null?pickTip(tid,`<b style="color:var(--brass)">${esc(p.n)}</b><br>${rich(p.d)}`):""}>
       <div class="pkpi">${packArt(p.i,p.n)}</div><div class="pkpn">${esc(p.n)}</div></div>`);
     c.onclick=()=>{
+      if(!TUT.on&&!pendingHero){ toast("먼저 제단 위의 대원을 눌러 고르세요."); return }
+      if(PICK_PACK===i) return;
+      PICK_PACK=i; SFX.play("click"); render();
+    };
+    c.ondblclick=()=>{
       if(TUT.on){ toast("이번에는 파수꾼의 선물 셋을 모두 드립니다. 아래 [다음]을 누르세요."); return }
-      if(!pendingHero){ toast("먼저 제단 위의 대원을 눌러 고르세요."); return }
+      if(!pendingHero) return;
       newRun(pendingHero,p);
     };
     packs.appendChild(c);
   });
+  /* 골라 둔 선물의 설명 카드 — 왼쪽에 고정. 안의 낱말(카드·장신구)은 여느 풍선처럼 커서로 본다 */
+  if(PICK_PACK!=null&&startPacks[PICK_PACK]){
+    const p=startPacks[PICK_PACK];
+    g.appendChild(el(`<div class="pkdesc"><div class="pkdi">${packArt(p.i,p.n)}</div>
+      <div class="pkdt"><b>${esc(p.n)}</b><div class="pkdd">${rich(p.d)}</div></div></div>`));
+  }
   /* 오른쪽 판 — 가운데 대원 */
   g.appendChild(pickPanel(center));
   /* 아래 — 새로 시작(암전 뒤 다시 뽑기) */
   if(!TUT.on){
     const rr=el(`<button class="tlink small">새로 시작</button>`);
-    rr.onclick=()=>{ blackout(()=>{ rollStart(); PICK_ORDER=null; PICK_QUOTE=null; pendingHero=null; render() }) };
+    rr.onclick=()=>{ blackout(()=>{ rollStart(); PICK_ORDER=null; PICK_QUOTE=null; PICK_PACK=null; pendingHero=null; render() }) };
     g.querySelector(".pkfoot").appendChild(rr);
   }
   app.appendChild(g);
