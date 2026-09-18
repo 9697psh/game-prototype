@@ -2737,6 +2737,10 @@ body.vbattle .bagbtn{bottom:auto;top:9px;right:auto;left:16px;padding:6px 10px;g
 /* 겨눌 수 있는 적 — 자리는 그대로, 조금 커진다 (사용자 2026-09-19) */
 .bfstage .slot.foe.pick .art img.pxs,.bfstage .slot.foe.pick .art svg{transform:scale(1.12);transform-origin:50% 100%;transition:transform .15s}
 .bfstage .slot .mvarrow,.bfstage .slot .reach{position:absolute}
+/* 차원문 — 무대에선 3배 (사용자 2026-09-19) */
+.bfstage .art .portal{transform:translateX(-50%) scale(3);transform-origin:50% 100%;bottom:-6px}
+.bfstage .slot.empty > .portal{transform:translate(-50%,-50%) scale(3);top:auto;bottom:6px}
+.bfstage .slot.empty:has(> .portal){opacity:1}
 /* 가할 피해 예고 — 칸 꼭대기가 아니라 머리 위(의도 위)에. 흐름에 두면 그림 높이에 따라 알아서 올라간다 */
 .bfstage .slot .hitpv{position:static;transform:none;margin:0 0 3px;font-size:14px;padding:2px 10px}
 .bfstage .slot .reach{bottom:auto;top:100%;margin-top:34px;font-size:11px;color:#f4d67c;text-shadow:0 1px 0 #000}
@@ -4601,7 +4605,7 @@ function portalFX(side,slot){
   if(!nd) return;
   at(nd,p);
   nd.style.backgroundImage="url("+u+")";
-  nd.style.transform="scale("+FX_SCALE.portal+")";
+  nd.style.transform="scale("+(FX_SCALE.portal*(document.querySelector(".bfstage")?3:1))+")";   /* 무대에선 3배 (사용자 2026-09-19: 너무 작아 안 보인다) */
   if(side==="foe"&&typeof fxDimFoe==="function") fxDimFoe(nd,side);
   /* 띠가 다 돌면 그때 바닥 표시를 내놓는다.
      연출 큐가 언제 이 함수를 부를지 모르니 **여기서** 재는 것이 맞다 —
@@ -10643,6 +10647,7 @@ const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 545, "v": "0.4", "d": "2026-09-19", "t": "전투 — 차원문 3배", "big": 0},
  {"b": 544, "v": "0.4", "d": "2026-09-19", "t": "전투 — 안 켜진 조합은 불이 꺼짐", "big": 0},
  {"b": 543, "v": "0.4", "d": "2026-09-19", "t": "전투 — 적 체력 밑에 이름, 그 밑에 특징 느낌표 줄", "big": 0},
  {"b": 542, "v": "0.4", "d": "2026-09-19", "t": "전투 — 접힌 퀘스트 목록은 머리줄만 · 고른 대원 조금 크게", "big": 0},
@@ -11188,7 +11193,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=544;
+const BUILD_NO=545;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
