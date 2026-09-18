@@ -10253,6 +10253,7 @@ const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 501, "v": "0.4", "d": "2026-09-18", "t": "시작 꾸러미 → 파수꾼의 선물", "big": 0},
  {"b": 500, "v": "0.4", "d": "2026-09-18", "t": "시작 화면 글 크기 키움 (135% 확대 크기가 기본)", "big": 0},
  {"b": 499, "v": "0.4", "d": "2026-09-18", "t": "카드 설명 문구 가운데 맞춤", "big": 0},
  {"b": 498, "v": "0.4", "d": "2026-09-18", "t": "훈련장·원정 기록·도감·문구 수정도 시작 화면 곡", "big": 0},
@@ -10754,7 +10755,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=500;
+const BUILD_NO=501;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -10934,7 +10935,7 @@ const TXT_FIX={
  "hero:트리스탄:pass": "과거 영광스러웠던 왕실의 장군",
  "common:상급:장신구: 희귀": "무작위 희귀 장신구를 얻습니다.",
  "tut:pick:d": "대원 카드를 누르면 대원의 상세한 설명과 능력치를 볼 수 있습니다.\n처음이니 홀로 남아 있는 저 검투사부터 익혀 봅시다.",
- "tut:pack:d": "이곳은 처음이시니 <b>모든 꾸러미</b>를 챙길 수 있게 해 드리겠습니다.\n다음부터는 단 <b>한 개만</b> 고르실 수 있습니다.",
+ "tut:pack:d": "이곳은 처음이시니 파수꾼의 선물을 <b>모두</b> 챙길 수 있게 해 드리겠습니다.\n다음부터는 단 <b>한 개만</b> 고르실 수 있습니다.",
  "tut:hudTime:d": "지금 몇 시인지 알려 줍니다. 지도에서 한 칸을 움직일 때마다 <b>1시간</b>이 흐르고, <b>18시</b>가 지나면 밤이 됩니다.",
  "tut:hudDay:d": "이 구역에 머무를 수 있는 날입니다. 정해진 날 안에 <b>우두머리</b>를 넘지 못하면 원정에 실패합니다.",
  "tut:hudAct:d": "한 칸 옮길 때마다 <b>1</b>씩 감소합니다. 0이 되어도 움직일 수는 있지만, 시간이 <b>두 배</b>로 빠르게 지나가는 것을 조심하세요. 날이 밝으면 다시 얻을 수 있습니다.",
@@ -11453,7 +11454,7 @@ const TUT_TXT={
   d:"왼쪽 대원 카드를 누르면 오른쪽에 그 대원의 능력치와 기술이 펼쳐집니다.\n"
    +"처음이니 <b>나이코스</b>부터 익혀 봅시다."},
  pack:{t:"이번만은 모두 챙겨 가십시오",
-  d:"이 세상에 오시는 건 처음이시니 <b>모든 꾸러미</b>를 챙길 수 있게 해 드리겠습니다.\n"
+  d:"이 세상에 오시는 건 처음이시니 파수꾼의 선물을 <b>모두</b> 챙길 수 있게 해 드리겠습니다.\n"
    +"다음부터는 단 <b>한 개만</b> 고르실 수 있습니다."},
 
  hudTime:{t:"시간",
@@ -11574,7 +11575,7 @@ const TUT={on:0,step:0};
 const TUT_STEPS=[
  {k:"pick", lb:"대원 고르기", sc:"heropick", hi:[".heropick"],
   need:()=>!!pendingHero, todo:"대원을 눌러 고르세요."},
- {k:"pack", lb:"시작 꾸러미", sc:"heropick", hi:[".startpacks"], go:()=>tutBegin()},
+ {k:"pack", lb:"파수꾼의 선물", sc:"heropick", hi:[".startpacks"], go:()=>tutBegin()},
 
  {k:"hudTime",  lb:"머리줄 — 시간",   sc:"map", hi:[".clock"]},
  {k:"hudDay",   lb:"머리줄 — 제한 일자", sc:"map", hi:[".res.rday"]},
@@ -11808,8 +11809,8 @@ function heroDetail(n){
 function drawStart(app){
   app.appendChild(el(`<div class="center">
     <div class="title" style="font-size:22px">함께 떠날 대원</div>
-    <div class="sub">${TUT.on?"처음이니 나이코스와 함께, 꾸러미는 모두 챙겨 갑니다"
-      :"대원 하나를 고르고, 함께 챙길 꾸러미를 고르세요"}</div></div>`));
+    <div class="sub">${TUT.on?"처음이니 나이코스와 함께, 파수꾼의 선물은 모두 챙겨 갑니다"
+      :"대원 하나를 고르고, 함께 챙길 파수꾼의 선물을 고르세요"}</div></div>`));
   const wrap=el(`<div class="startwrap"></div>`);
   const left=el(`<div class="startleft"></div>`);
 
@@ -11830,7 +11831,7 @@ function drawStart(app){
   });
   left.appendChild(row);
 
-  left.appendChild(el(`<div class="starthd" style="margin-top:22px">시 작 꾸 러 미${
+  left.appendChild(el(`<div class="starthd" style="margin-top:22px">파 수 꾼 의 선 물${
     TUT.on?` <span style="color:var(--faint);letter-spacing:0;font-size:11px">— 이번에는 모두 드립니다</span>`
     :pendingHero?"":` <span style="color:var(--faint);letter-spacing:0;font-size:11px">— 대원을 먼저 고르세요</span>`}</div>`));
   const row2=el(`<div class="startpacks"></div>`);
@@ -11838,7 +11839,7 @@ function drawStart(app){
     const c=el(`<div class="rw ${(TUT.on||pendingHero)?"":"no"}"><div class="rwi">${packArt(p.i,p.n)}</div>
       <b>${esc(p.n)}</b><p>${rich(p.d)}</p></div>`);
     c.onclick=()=>{
-      if(TUT.on){ toast("이번에는 세 꾸러미를 모두 드립니다. 아래 [다음]을 누르세요."); return }
+      if(TUT.on){ toast("이번에는 파수꾼의 선물 셋을 모두 드립니다. 아래 [다음]을 누르세요."); return }
       if(!pendingHero){ toast("먼저 대원을 고르세요."); return }
       newRun(pendingHero,p);
     };
@@ -13232,7 +13233,7 @@ const CARD_META={
  "저주받은 성벽":{src:"대원 · 헥토"}, "망자의 육체":{src:"대원 · 트리스탄",gone:1},
  "귀환서":{src:"상점"}, "위장 망토":{src:"상점"},
  "불덩이":{src:"상점"}, "빵":{src:"상점"},
- "맥주":{src:"미지의 구역"}, "소형 방패":{src:"시작 꾸러미"},
+ "맥주":{src:"미지의 구역"}, "소형 방패":{src:"파수꾼의 선물"},
  "간이 신발":{src:"보상"}, "감시":{src:"첨탑 관리자",gone:1}
 };
 const CARD_LIB={
@@ -14455,7 +14456,7 @@ function drawRuns(app){
           <span>이유 · ${esc(r.reason||"")}</span>
           <span>전투 ${r.battles} · 처치 ${r.kills}${r.bossKills?` (우두머리 ${r.bossKills})`:""}</span>
           <span>${resIcon("gold")} ${r.gold} · 오염도 ${r.taint}${r.souls?` · 영혼 ${r.souls}`:""}</span>
-          ${r.pack?`<span>시작 꾸러미 · ${esc(r.pack)}</span>`:""}
+          ${r.pack?`<span>파수꾼의 선물 · ${esc(r.pack)}</span>`:""}
         </div>
         <div class="rr-hs">${r.heroes.map(h=>`<div class="rr-h ${h.down?"dn":""}">
           <div class="art">${figure(h.n)}</div>
@@ -20623,7 +20624,7 @@ function heroPanel(h){
   { const pks=(run&&run.packs&&run.packs.length)?run.packs
       :(run&&run.pack)?[{n:run.pack,d:run.packDesc,i:run.packIcon}]:[];
     if(pks.length){
-      box.appendChild(el(`<div class="hp-h">시작 꾸러미${pks.length>1?` ${pks.length}개`:""}</div>`));
+      box.appendChild(el(`<div class="hp-h">파수꾼의 선물${pks.length>1?` ${pks.length}개`:""}</div>`));
       pks.forEach(p=>box.appendChild(el(`<div class="hp-tr"><div class="tr1 withi">
         <span class="ti">${packArt(p.i,p.n)}</span>
         <b>${esc(p.n)}</b>
