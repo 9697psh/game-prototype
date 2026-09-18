@@ -2809,9 +2809,21 @@ body.vbattle .sk .skv{font-size:10.5px}
 .v-lock i.dm{width:8px;height:8px;background:#c9a227;transform:rotate(45deg);display:inline-block;margin:0 2px}
 /* 처치 임팩트 — 무대에선 side 를 움직이면(position:relative) 절대 자리의 칸이 다 튄다. 칸만 키운다 (2026-09-19) */
 .bfstage .field.kimp .side,.bfstage .field.kimp .side.k-mine,.bfstage .field.kimp .side.k-foe{transform:none;position:static}
-.bfstage .field.kimp .slot{transform:translateX(-50%)}
-.bfstage .field.kimp .slot.k-hero{transform:translateX(-50%) scale(1.3) translateY(-8px);border:0;box-shadow:none}
-.bfstage .field.kimp .slot.k-dead{transform:translateX(-50%) scale(1.18) translateY(-4px);border:0;box-shadow:none}
+.bfstage .field.kimp .slot{transform:translateX(-50%);opacity:.25;filter:saturate(.2) brightness(.5)}
+/* 더 크게 — 전장이 어두워지고(덮개), 둘이 가운데로 다가서며 커진다. 적 자리에서 붉은 빛이 터진다 (사용자 2026-09-19) */
+.bfstage .field.kimp::before{content:"";position:absolute;inset:-10%;background:radial-gradient(ellipse at 50% 60%,rgba(0,0,0,.35),rgba(0,0,0,.8) 75%);z-index:20;pointer-events:none;animation:kimpDim var(--kd,.5s) ease-out both}
+@keyframes kimpDim{from{opacity:0}to{opacity:1}}
+.bfstage .field.kimp .slot.k-hero{opacity:1;filter:brightness(1.2) drop-shadow(0 0 18px rgba(244,214,124,.55));transform:translateX(calc(-50% + 70px)) scale(1.75) translateY(-14px);border:0;box-shadow:none;z-index:40}
+.bfstage .field.kimp .slot.k-dead{opacity:1;filter:brightness(1.3) saturate(1.1) drop-shadow(0 0 18px rgba(224,90,90,.6));transform:translateX(calc(-50% - 60px)) scale(1.5) translateY(-8px);border:0;box-shadow:none;z-index:39}
+.bfstage .field.kimp .slot .no,.bfstage .field.kimp .slot.k-hero .ublw,.bfstage .field.kimp .slot.k-dead .ublw,.bfstage .field.kimp .slot.k-hero .res,.bfstage .field.kimp .slot.k-hero .gear,.bfstage .field.kimp .slot.k-dead .intentbar{opacity:0;transition:opacity .2s}
+.kburst{position:absolute;width:10px;height:10px;border-radius:50%;pointer-events:none;z-index:38;transform:translate(-50%,-50%);
+  background:radial-gradient(circle,rgba(255,240,220,.95),rgba(224,90,90,.75) 35%,rgba(224,90,90,0) 70%);animation:kburst .55s ease-out forwards}
+@keyframes kburst{0%{transform:translate(-50%,-50%) scale(.2);opacity:1}100%{transform:translate(-50%,-50%) scale(26);opacity:0}}
+.kslash{position:absolute;width:6px;height:260px;pointer-events:none;z-index:41;transform:translate(-50%,-50%) rotate(-28deg) scaleY(0);
+  background:linear-gradient(180deg,rgba(255,255,255,0),#fff 40%,#ffd9c0 60%,rgba(255,255,255,0));animation:kslash .32s ease-out forwards;filter:drop-shadow(0 0 10px #fff)}
+@keyframes kslash{0%{transform:translate(-50%,-50%) rotate(-28deg) scaleY(0);opacity:1}55%{transform:translate(-50%,-50%) rotate(-28deg) scaleY(1);opacity:1}100%{transform:translate(-50%,-50%) rotate(-28deg) scaleY(1);opacity:0}}
+.kflash{position:absolute;inset:0;pointer-events:none;z-index:37;background:rgba(255,230,210,.9);animation:kflash .28s ease-out forwards}
+@keyframes kflash{from{opacity:.9}to{opacity:0}}
 .bfstage .field.kimp .slot.k-hero .art::after{background:radial-gradient(ellipse at center,rgba(244,214,124,.6),rgba(244,214,124,0) 70%);filter:none;width:90px;height:18px}
 @media(max-width:900px){.bfstage .slot{height:150px;top:calc(58% - 150px)} .bfstage .art img.pxs{height:44px} .bfq{display:none}}
 /* 이어하기 — 저장 칸 셋 */
@@ -10592,6 +10604,7 @@ const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 535, "v": "0.4", "d": "2026-09-19", "t": "처치 임팩트 — 전장이 어두워지고 둘이 가운데로 크게, 붉은 터짐·베기 자국·번쩍", "big": 0},
  {"b": 534, "v": "0.4", "d": "2026-09-19", "t": "전투 — 그림 2.2배 · 기술 창 낮게(두 줄 + 커서 풀이) · 닿는 칸은 발밑 빛", "big": 0},
  {"b": 533, "v": "0.4", "d": "2026-09-19", "t": "전투 — 그림 2.2배로", "big": 0},
  {"b": 532, "v": "0.4", "d": "2026-09-19", "t": "전투 — 전장이 화면을 채움 · 처치 임팩트 때 그림이 사라지던 것 고침", "big": 0},
@@ -11127,7 +11140,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=534;
+const BUILD_NO=535;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -16433,9 +16446,15 @@ function spotFX(slot,foeSlot,foeName,barkU,barkLine){
     if(foeName&&!b.e.querySelector(".art")){
       ghost=el(`<div class="art spotdead"><div class="nm">${esc(foeName)}</div>${figure(foeName,"hurt")}</div>`);
       b.e.appendChild(ghost) } }
-  /* 화면 떨림 — 모인 순간 */
+  /* 화면 떨림 — 모인 순간. 무대면 적 자리에서 붉은 빛이 터지고 흰 베기 자국·번쩍 (2026-09-19) */
   setTimeout(()=>{ document.body.classList.remove("shakeall"); void document.body.offsetWidth;
     document.body.classList.add("shakeall"); setTimeout(()=>document.body.classList.remove("shakeall"),620*k) },380*k);
+  const stage=fld.closest(".bfstage");
+  if(stage&&b&&b.e) setTimeout(()=>{ if(!document.body.contains(b.e)) return;
+    const sr=stage.getBoundingClientRect(), r=b.e.getBoundingClientRect(), x=r.left+r.width/2-sr.left, y=r.top+r.height*0.62-sr.top;
+    const fl=el(`<div class="kflash"></div>`), bu=el(`<div class="kburst" style="left:${x}px;top:${y}px"></div>`), sl=el(`<div class="kslash" style="left:${x}px;top:${y}px"></div>`);
+    stage.appendChild(fl); stage.appendChild(bu); stage.appendChild(sl);
+    setTimeout(()=>{ fl.remove(); bu.remove(); sl.remove() },700*k) },360*k);
   /* 처치 대사 — 크게 */
   if(barkLine&&barkU) setTimeout(()=>barkShow(barkU,barkLine,Date.now(),1),400*k);
   setTimeout(()=>{ fld.classList.remove("kimp"); my.classList.remove("k-mine"); fs.classList.remove("k-foe");
