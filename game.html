@@ -2706,7 +2706,8 @@ body.vmap .bagbtn{display:none}   /* 지도에서는 무대 안 시계 밑의 .m
 @media(max-width:1560px){body.vmap .wrap{max-width:1240px} .mapwrap.m3{grid-template-columns:560px 190px minmax(0,1fr);gap:20px} .m3 .pstage{width:560px} .mcards{width:140px} .mcard{width:140px;height:186px;padding:16px 14px 14px} .mcard .mca{height:78px} .mcard .mca img.pxs,.mcard .mca svg{height:74px} .msyn{width:42px} .minsp{max-width:400px} .mtop .mchip{font-size:15px} .mfield{font-size:26px} .mres .mchip{font-size:15px}}
 @media(max-width:1180px){.mapwrap.m3{grid-template-columns:minmax(0,1fr) 190px 340px} .m3 .pstage{width:100%}}
 /* ── 전투 화면 (2026-09-19) — 전장 그림 위 ── */
-body.vbattle .wrap{max-width:1300px}
+body.vbattle .wrap{max-width:none;padding:0;margin:0}   /* 전장이 화면을 채운다 (사용자 2026-09-19) — 세로를 다 쓰고 가로는 16:9 만큼 */
+body.vbattle{overflow:hidden}
 body.vbattle header{background:rgba(12,10,12,.92);justify-content:center;position:sticky}
 body.vbattle header h1,body.vbattle header .fname,body.vbattle header .rday,body.vbattle header #ptv,body.vbattle header .grow{display:none}
 body.vbattle header #hRun{display:flex;align-items:center;gap:12px;margin:0 auto}
@@ -2714,7 +2715,7 @@ body.vbattle header #hRun .taint{order:1} body.vbattle header #hRun .act{order:2
 body.vbattle header #hRun>.res:not(.gold):not(.act):not(.taint):not(.stone),body.vbattle header .savedot{display:none}   /* 저장됨 같은 자잘한 것 */
 body.vbattle header #hBtns{position:absolute;right:120px;top:50%;transform:translateY(-50%)}
 body.vbattle .bagbtn{bottom:auto;top:9px;right:16px;padding:6px 10px;gap:6px;font-size:12px}
-.bfstage{position:relative;width:100%;aspect-ratio:832/468;background:url("bg/battle.webp") center/100% 100% no-repeat;image-rendering:pixelated;margin-top:6px;border-radius:6px;overflow:visible}
+.bfstage{position:relative;width:min(100vw,calc((100vh - 58px)*832/468));aspect-ratio:832/468;background:url("bg/battle.webp") center/100% 100% no-repeat;image-rendering:pixelated;margin:0 auto;border-radius:0;overflow:visible}
 .bfstage>*{image-rendering:auto}
 .bfstage .field{position:absolute;inset:0;display:block;padding:0;overflow:visible;gap:0}
 .bfstage .side{position:static;display:block} .bfstage .mid{display:none}
@@ -2773,19 +2774,28 @@ body.vbattle .bagbtn{bottom:auto;top:9px;right:16px;padding:6px 10px;gap:6px;fon
 .bfq{position:absolute;right:12px;top:12px;width:280px;z-index:8}
 .bfq .qpanel{margin:0;background:rgba(10,9,10,.85)}
 /* 손패 — 아래 가운데 부채꼴, 무대 아래를 덮는다 */
-body.vbattle .hand{margin-top:-150px;justify-content:center;flex-wrap:nowrap;gap:0;padding:0 0 10px;position:relative;z-index:12;min-height:240px;align-items:flex-end}
+body.vbattle .hand{position:fixed;left:0;right:0;bottom:0;margin:0;justify-content:center;flex-wrap:nowrap;gap:0;padding:0 0 8px;z-index:30;min-height:0;align-items:flex-end;pointer-events:none}
+body.vbattle .hand .card{pointer-events:auto}
 body.vbattle .hand .card.ccard{width:150px;margin:0 -14px;transform:rotate(var(--rot,0deg)) translateY(var(--dy,0px));transform-origin:50% 120%;transition:transform .15s,z-index 0s;box-shadow:0 8px 20px rgba(0,0,0,.7)}
 body.vbattle .hand .card.ccard:hover,body.vbattle .hand .card.ccard.picked{transform:rotate(0deg) translateY(-26px) scale(1.06);z-index:40!important}
 body.vbattle .hand:empty{min-height:40px}
 /* 기술 창 — 손패 자리 */
-body.vbattle .skwrap{margin-top:-120px;position:relative;z-index:12;background:rgba(14,12,14,.94)}
+body.vbattle .skwrap{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:min(1240px,96vw);max-height:46vh;overflow:auto;margin:0;z-index:30;background:rgba(14,12,14,.94);border-radius:6px 6px 0 0}
 body.vbattle .skwrap+.hand{display:none}
-body.vbattle .prompt{margin-top:8px}
+body.vbattle .prompt,body.vbattle .pickbar{margin:0;background:rgba(10,9,10,.6);border-color:rgba(240,212,136,.25);padding:2px 10px;font-size:11px;max-width:760px;justify-content:center}
+body.vbattle .prompt>.hint:last-child{display:none}
+body.vbattle .prompt .step{font-size:10.5px}
 .skhand{border-color:var(--brass);color:var(--brass)}
 .v-lim,.v-lock{display:inline-flex;align-items:center;gap:2px}
 .v-lim .hg{width:11px;height:14px;color:#e0a86a} .v-lim i{width:7px;height:9px;border:1px solid #8a7350;background:rgba(0,0,0,.4);display:inline-block} .v-lim i.on{background:#e0a86a;border-color:#e0a86a}
 .v-lock .lk{width:11px;height:14px;color:#c9a227} .v-lock b{color:#c9a227;font-size:11px}
 .v-lock i.dm{width:8px;height:8px;background:#c9a227;transform:rotate(45deg);display:inline-block;margin:0 2px}
+/* 처치 임팩트 — 무대에선 side 를 움직이면(position:relative) 절대 자리의 칸이 다 튄다. 칸만 키운다 (2026-09-19) */
+.bfstage .field.kimp .side,.bfstage .field.kimp .side.k-mine,.bfstage .field.kimp .side.k-foe{transform:none;position:static}
+.bfstage .field.kimp .slot{transform:translateX(-50%)}
+.bfstage .field.kimp .slot.k-hero{transform:translateX(-50%) scale(1.3) translateY(-8px);border:0;box-shadow:none}
+.bfstage .field.kimp .slot.k-dead{transform:translateX(-50%) scale(1.18) translateY(-4px);border:0;box-shadow:none}
+.bfstage .field.kimp .slot.k-hero .art::after{background:radial-gradient(ellipse at center,rgba(244,214,124,.6),rgba(244,214,124,0) 70%);filter:none;width:90px;height:18px}
 @media(max-width:900px){.bfstage .slot{height:150px;top:calc(58% - 150px)} .bfstage .art img.pxs{height:44px} .bfq{display:none}}
 /* 이어하기 — 저장 칸 셋 */
 .tsaves{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:30px;padding:60px 0 40px}   /* 옆 여백 0 — 380×3+30×2=1200 이 .wrap 안(1208)에 한 줄로 */
@@ -10565,6 +10575,7 @@ const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 532, "v": "0.4", "d": "2026-09-19", "t": "전투 — 전장이 화면을 채움 · 처치 임팩트 때 그림이 사라지던 것 고침", "big": 0},
  {"b": 531, "v": "0.4", "d": "2026-09-19", "t": "전투 화면 새로 — 전장 그림 위 판 자리 · 비용은 고른 대원만 · 부채꼴 손패 · 기록 펼치기 · 적 두 번 눌러 살펴보기 · 기술 창 표식", "big": 1},
  {"b": 530, "v": "0.4", "d": "2026-09-19", "t": "조합 — 궁수 겹침 정리", "big": 0},
  {"b": 529, "v": "0.4", "d": "2026-09-19", "t": "조합 — 효과 없는 무리도 보임 (트리스탄) · 궁수 추가", "big": 0},
@@ -11097,7 +11108,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=531;
+const BUILD_NO=532;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -16847,6 +16858,7 @@ function drawBattle(app){
       <span class="grow"></span>
       <button class="mini pkx">취소</button></div>`));
     app.querySelector(".pkx").onclick=()=>{ B.pick=null; render() };
+    stage.querySelector(".bftop").appendChild(app.querySelector(".pickbar"));   /* 무대 위 띠에 */
   }
   const pr=el(`<div class="prompt">
     <span class="step ${!sel?"on":""}">1 · 내 칸</span>
@@ -16858,7 +16870,7 @@ function drawBattle(app){
     <span class="grow"></span><span class="hint">${sel
       ?"다른 아군의 칸을 누르면 그 대원으로 바뀝니다 · Esc — 손패 보기"
       :"Esc — 선택 해제"}</span></div>`);
-  app.appendChild(pr);
+  stage.querySelector(".bftop").appendChild(pr);
   const lg=el(`<div class="log ${B.logOpen?"open":""}" id="log"></div>`); stage.appendChild(lg);
   B.log.forEach(x=>lg.insertAdjacentHTML("beforeend",`<div class="${x.c||""}">${x.t}</div>`));
   lg.scrollTop=lg.scrollHeight;
