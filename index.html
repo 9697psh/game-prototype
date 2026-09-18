@@ -1499,6 +1499,7 @@ body:has(.rwq) .hpanel{top:auto;bottom:16px;max-height:min(52vh,calc(100vh - 100
 .chl-t{font-size:11.5px;color:var(--dim);line-height:1.5;margin-top:2px;word-break:keep-all}
 .chl-r.big .chl-t{color:var(--fg)}
 @media(max-width:1180px){.chlog:not(.inline){display:none}}
+@media(max-height:620px){.tcorner.r .chlog.paperbox{display:none}}
 /* 오른쪽에 세울 자리가 있으면 본문이 그만큼 비켜 준다 — 보상 칸과 겹치지 않는다.
    대원 판은 1180px 아래에서 본문 밑으로 내려가므로 여기서 다시 위로 붙인다. */
 @media(min-width:900px){
@@ -2451,9 +2452,52 @@ img.ri{width:14px;height:14px;vertical-align:-2px;image-rendering:auto}
   55%{opacity:1}100%{opacity:0}}
 /* 시작 화면 배경 — 균열 빛 애니메이션 (art/배경/시작화면 → web/bg, 사용자 2026-09-18). 화면을 덮고(cover) 프레임을 겹쳐 두고 하나만 보인다 */
 .titlebg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:#0b0a0c}
-.titlebg .tbgf{position:absolute;inset:0;background:center/cover no-repeat;opacity:0}
+.titlebg .tbgf{position:absolute;inset:0;background:center/cover no-repeat;opacity:0;transition:opacity .35s}
 .titlebg .tbgf.on{opacity:1}
 .titlebg::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(0,0,0,.18) 30%,rgba(0,0,0,.6) 100%)}   /* 가장자리를 살짝 눌러 글이 읽히게 */
+/* 시작 화면 — 글만 (2026-09-18). 단추 그림·기둥(.tgrid/.tbtn) 은 안 쓰지만 이어하기 칸(.tslot.paperbox)·업데이트 판(.chlog.paperbox) 은 그대로 쓴다 */
+.tmenu{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;padding:70px 16px 120px;min-height:calc(100vh - 260px)}
+.tmenu .title{font-size:56px;letter-spacing:.3em;text-shadow:0 3px 0 #000,0 0 18px rgba(0,0,0,.9)}
+.tmenu .sub{margin-top:8px;font-variant-numeric:tabular-nums;letter-spacing:.08em;color:#c7b696;text-shadow:0 1px 0 #000}
+.tlinks{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:64px}
+.tlink,.tlink:hover:not(:disabled){background:none;border:0;box-shadow:none;border-radius:0;padding:6px 20px;font-family:var(--serif);font-size:22px;letter-spacing:.14em;
+  color:#e6d6b2;text-shadow:0 2px 0 #000,0 0 10px rgba(0,0,0,.9);cursor:pointer}
+.tlink:hover:not(:disabled),.tlink.go{color:#f4d67c}
+.tlink.go,.tlink.go:hover{background:none;border:0;box-shadow:none}   /* button.go 의 금빛 판을 걷는다 */
+.tlink.go{font-size:27px}
+.tlink:hover:not(:disabled){transform:translateY(-1px)}
+.tlink small{font-size:12px;opacity:.75;margin-left:6px;letter-spacing:0}
+.tlink.small,.tlink.small:hover:not(:disabled){font-size:15px;letter-spacing:.08em;padding:4px 10px}
+.tlink.small{color:#c7b696}
+.tlink.chl .tfold{display:inline-block;margin-left:10px;padding:1px 9px;border:1px solid rgba(230,214,178,.45);font-size:12px;letter-spacing:.06em;color:#e6d6b2}
+.tlink.chl:hover .tfold{border-color:#f4d67c;color:#f4d67c}
+.tlink.tiny,.tlink.tiny:hover:not(:disabled){font-size:12px;letter-spacing:.06em;padding:2px 8px;color:#b9a888;font-family:var(--sans)}
+.tlink.tiny:hover:not(:disabled){color:#f4d67c}
+.tcorner{position:fixed;z-index:2;bottom:22px}
+.tcorner.l{left:26px}
+.tcorner.r{right:26px;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.tcorner.r .chlog.paperbox{top:auto;bottom:auto;right:auto;left:auto}   /* .chlog 의 fixed 자리값이 relative 에 밀려 들어오지 않게 */
+/* 시작·이어하기 화면에서는 머리줄을 지운다 — 소리·도움말 단추만 오른쪽 위에 (사용자 2026-09-18) */
+body.vtitle header{background:transparent;border-bottom:0;position:fixed;top:0;left:0;right:0;pointer-events:none;box-shadow:none}
+body.vtitle header h1,body.vtitle header #hRun{display:none}
+body.vtitle header #hBtns{pointer-events:auto}
+body.vtitle header #hBtns button{background:rgba(0,0,0,.45);border-color:rgba(230,214,178,.3);color:#e6d6b2}
+body.vtitle header #hBtns button:hover{border-color:#f4d67c;color:#f4d67c}
+/* 이어하기 — 저장 칸 셋 */
+.tsaves{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:26px;padding:60px 16px 40px}
+.tshead{font-family:var(--serif);font-size:32px;color:#f4d67c;letter-spacing:.2em;text-shadow:0 3px 0 #000,0 0 14px rgba(0,0,0,.9)}
+.tsrow{display:flex;gap:28px;flex-wrap:wrap;justify-content:center}
+.tslot{width:310px;min-height:300px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;text-align:center;color:#f0e2c4;text-shadow:0 1px 0 rgba(0,0,0,.55)}
+.tslot.paperbox{border:40px solid transparent;border-image:url("ui/menu-panel-wide-760x328.png") 40 fill stretch;image-rendering:pixelated;padding:6px 2px}
+.tslot:hover{filter:brightness(1.12)}
+.tslot .tsname{font-family:var(--serif);font-size:13px;color:#c7b696;letter-spacing:.12em}
+.tslot .cssub{color:#e0cfae;font-size:13px;margin-top:2px}
+.tslot .csros{margin-top:6px;gap:4px}
+.tslot .csh{border-color:#9c8b6c;color:#ead9b8;background:rgba(0,0,0,.25);text-shadow:none} .tslot .csh b{color:#fff2cc}
+.tslot .tsat{color:#b9a888;font-size:11px;margin-top:4px}
+.tslot .tsgo{font-family:var(--serif);font-size:24px;color:#f4d67c;letter-spacing:.14em;margin-top:8px;text-shadow:0 2px 0 #000}
+.tslot.empty .tsgo{color:#d8c8a6}
+.tslot.empty .cssub{color:#a8977a}
 .tgrid{position:relative;z-index:1}
 /* 시작 화면 — 세 기둥 (사용자 2026-09-17) */
 .tgrid{display:grid;grid-template-columns:minmax(300px,1fr) 285px 350px;gap:32px;max-width:1160px;margin:56px auto 0;padding:0 16px;align-items:start}
@@ -3450,7 +3494,8 @@ function inkArt(t){ return iconImg(INK_NODE[t]) }
    적으면 된다. 그 둘 말고는 손댈 곳이 없다.
    미지의 구역만은 화면이 하나뿐이라 이벤트가 스스로 고른다 — evBgm() 을 볼 것. */
 const BGM_SRC={
-  main   :"bgm/main.mp3",     /* 타이틀 · 지도(낮) · 주둔지 */
+  title  :"bgm/title.mp3",    /* 시작 화면 · 이어하기 — The Weeping Bell (사용자 2026-09-18) */
+  main   :"bgm/main.mp3",     /* 지도(낮) · 주둔지 · 끝 화면 */
   night  :"bgm/night.mp3",    /* 지도(밤) */
   battle :"bgm/battle.mp3",   /* 전투 — BATTLE THEME */
   battle2:"bgm/battle2.mp3",  /* 전투 — A Solemn Lurching Gait */
@@ -3470,6 +3515,7 @@ const BGM_SRC={
    **귀로 어림잡지 말고 재서 넣을 것.** 브라우저에서 decodeAudioData 로
    실효값을 재고 (기준값/잰값) 을 dB 로 되돌린 수를 적는다. 없으면 1 이다. */
 const BGM_GAIN={
+  title:0.65,     /* The Weeping Bell — 실효 -14.1dB, main(-17.8dB) 에 맞춤 */
   ev_dark:0.66,   /* -14.4dB 로 녹음되었다 */
   ev_folk:0.66,   /* -14.2dB */
   ev_calm:0.50    /* -14.3dB — 정화의 샘은 나머지보다 한 단 더 낮게 둔다.
@@ -3495,7 +3541,8 @@ function sceneBgm(){
   if(view==="forge") return "forge";
   /* 미지의 구역 — 이벤트가 스스로 곡을 고른다. 결이 안 잡히면 지도 곡 그대로 */
   if(view==="relic") return (run&&run.ev&&evBgm(run.ev))||(run&&run.night?"night":"main");
-  if(view==="title"||view==="over"||view==="clear") return "main";
+  if(view==="title"||view==="saves") return "title";
+  if(view==="over"||view==="clear") return "main";
   if(!run) return "main";
   return run.night?"night":"main";
 }
@@ -9827,6 +9874,7 @@ document.addEventListener("keydown",e=>{
 });
 function render0(){
   const app=document.getElementById("app");
+  document.body.classList.toggle("vtitle",view==="title"||view==="saves");   /* 머리줄 없는 화면 */
   app.classList.remove("bt2");       /* 전투 화면만 두 단이다 — drawBattle 이 다시 단다 */
   const hr=document.getElementById("hRun");
   /* 마지막 구역을 넘기면 run.field 가 FIELDS 밖으로 나간다.
@@ -9884,6 +9932,7 @@ function render0(){
   if(view==="codex")    return drawCodex(app);
   if(view==="runs")     return drawRuns(app);
   if(view==="dex")      return drawDex(app);
+  if(view==="saves")    return drawSaves(app);
   if(view==="itemdex")  return drawItemDex(app);
   if(view==="carddex")  return drawCardDex(app);
   if(view==="evdex")    return drawEventDex(app);
@@ -9950,7 +9999,7 @@ function spriteScroll(p){
   requestAnimationFrame(place); setTimeout(place,300);   /* 글꼴이 늦게 와도 다시 잰다 */
 }
 /* 시작 화면 배경 애니메이션 — start.json 의 차례(seq)와 fps 대로 프레임을 돌린다. 화면을 떠나면 저절로 멈춘다 */
-let TBG={fps:7,seq:[0,0,1,2,1,0]}, tbgTimer=0;
+let TBG={fps:2.5,seq:[0,0,1,2,1,0]}, tbgTimer=0;   /* start.json 이 오기 전 기본값 */
 fetch("bg/start.json").then(r=>r.json()).then(j=>{ if(j&&j.seq) TBG={fps:j.fps||7,seq:j.seq} }).catch(()=>{});
 function titleBg(app){
   const n=Math.max(...TBG.seq)+1;
@@ -9961,59 +10010,65 @@ function titleBg(app){
   step(); clearInterval(tbgTimer);
   tbgTimer=setInterval(()=>{ if(!b.isConnected){ clearInterval(tbgTimer); return } step() },1000/TBG.fps);
 }
+let CHLOG_OPEN=false;
+/* 시작 화면 — 배경 위에 글만 (사용자 2026-09-18 그림). 저장이 하나라도 있으면 '이어하기'(저장 칸 고르기), 없으면 '새로 시작' */
 function drawTitle(app){
   titleBg(app);
-  const sv=savePeek();
-  const g=el(`<div class="tgrid">
-    <div class="tcol tl">
-      <div class="title" style="font-size:44px">${esc(UI_TXT.title)}</div>
-      <div class="sub" style="margin-top:10px;font-variant-numeric:tabular-nums;letter-spacing:.08em">test version ${GAME_VER} - build ${BUILD_NO}</div>
-      <div class="tsave"></div>
-      <div class="hint tintro">${rich(UI_TXT.intro)}</div>
-    </div>
-    <div class="tcol tm"></div>
-    <div class="tcol tr"></div>
+  const has=anySave();
+  const g=el(`<div class="tmenu">
+    <div class="title">${esc(UI_TXT.title)}</div>
+    <div class="sub">test version ${GAME_VER} - build ${BUILD_NO}</div>
+    <div class="tlinks"></div>
   </div>`);
   app.appendChild(g);
-  /* 왼쪽 — 이어하기 큰 칸 (저장이 없으면 빈 칸으로 자리만) */
-  const saveBox=g.querySelector(".tsave");
-  if(sv){
-    const box=el(`<div class="contsave big paperbox">
-      <div class="cshead">이어하기</div>
-      <div class="cssub">${esc(FIELDS[sv.field]?FIELDS[sv.field].n:"균열")} · ${sv.day}일차${
-        sv.inBattle?" · 전투 도중":""} <span class="hint">${saveStamp(sv.at)}</span></div>
-      <div class="csros">${sv.heroes.map(h=>
-        `<span class="csh ${h.down?"down":""}">${esc(h.n)} <b>Lv${h.lv}</b>${h.down?" · 쓰러짐":""}</span>`).join("")}</div>
-      <div class="csbtn"><button class="go">이어서 하기</button><button class="mini">지우기</button></div>
+  const box=g.querySelector(".tlinks");
+  const link=(label,cls,fn,where)=>{ const b=el(`<button class="tlink ${cls||""}">${label}</button>`); b.onclick=fn; (where||box).appendChild(b); return b };
+  if(has) link("이어하기","go",()=>{ view="saves"; render() });
+  else    link("새로 시작","go",()=>{ setSlot(0); clearSave(); run=null; TUT.on=0; rollStart(); pendingHero=null; view="heropick"; render() });
+  link("튜토리얼","",()=>{
+    let i=firstEmptySlot();
+    if(i<0){ if(!confirm("빈 저장 칸이 없습니다. 저장 1 의 판을 지우고 튜토리얼을 시작할까요?")) return; i=0 }
+    setSlot(i); clearSave(); startTutorial() });
+  link("훈련장","",()=>{ CODEX.pick=playableHeroes()[0]; view="codex"; render() });
+  { const n=loadRuns().length; link(`원정 기록${n?` <small>${n}판</small>`:""}`,"",()=>{ RUNS_OPEN=null; view="runs"; render() }) }
+  link("도감","",()=>{ DEX_BACK="title"; view="dex"; render() });
+  /* 왼쪽 아래 — 문구 수정 */
+  const bl=el(`<div class="tcorner l"></div>`); app.appendChild(bl);
+  link("문구 수정","small",()=>{ view="text"; render() },bl);
+  /* 오른쪽 아래 — 업데이트 기록 · 펼치기/접기 */
+  const br=el(`<div class="tcorner r"></div>`); app.appendChild(br);
+  if(CHLOG_OPEN){ const cl=changelogPanel(); if(cl){ cl.classList.add("inline"); cl.classList.add("paperbox"); br.appendChild(cl) } }
+  link(`업데이트 기록 <span class="tfold">${CHLOG_OPEN?"접기":"펼치기"}</span>`,"small chl",()=>{ CHLOG_OPEN=!CHLOG_OPEN; render() },br);
+}
+/* 이어하기 — 저장 칸 셋. 있는 칸은 눌러 이어가고, 빈 칸은 새로 시작 */
+function drawSaves(app){
+  titleBg(app);
+  const g=el(`<div class="tsaves"><div class="tshead">이어하기</div><div class="tsrow"></div></div>`);
+  const row=g.querySelector(".tsrow");
+  for(let i=0;i<SAVE_SLOTS;i++){
+    const sv=savePeek(i);
+    const box=el(`<div class="tslot paperbox ${sv?"":"empty"}">
+      <div class="tsname">저장 ${i+1}</div>
+      ${sv?`<div class="cssub">${esc(FIELDS[sv.field]?FIELDS[sv.field].n:"균열")} · ${sv.day}일차${sv.inBattle?" · 전투 도중":""}</div>
+        <div class="csros">${sv.heroes.map(h=>`<span class="csh ${h.down?"down":""}">${esc(h.n)} <b>Lv${h.lv}</b>${h.down?" · 쓰러짐":""}</span>`).join("")}</div>
+        <div class="hint tsat">${saveStamp(sv.at)}</div>
+        <div class="tsgo">이어하기</div>
+        <button class="tlink tiny del">지우기</button>`
+      :`<div class="cssub">비어 있음</div><div class="tsgo">새로 시작</div>`}
     </div>`);
-    const [go,del]=box.querySelectorAll("button");
-    go.onclick=()=>{ if(!loadGame()){ toast("저장한 판을 열지 못했습니다."); clearSave(); view="title"; render() } };
-    del.onclick=()=>{ if(confirm("저장한 판을 지웁니다. 되돌릴 수 없습니다.")){ clearSave(); render() } };
-    saveBox.appendChild(box);
-  } else {
-    saveBox.appendChild(el(`<div class="contsave big paperbox empty"><div class="cshead">이어하기</div>
-      <div class="cssub">저장해 둔 판이 없습니다. 새로 시작하면 여기에 이어서 할 판이 남습니다.</div></div>`));
+    box.onclick=e=>{
+      if(e.target.classList.contains("del")) return;
+      if(sv){ if(!loadGame(i)){ toast("저장한 판을 열지 못했습니다."); clearSave(i); render() } }
+      else { setSlot(i); clearSave(); run=null; TUT.on=0; rollStart(); pendingHero=null; view="heropick"; render() }   /* 다른 칸에서 불러온 run 이 새 칸에 적히지 않게 비운다 */
+    };
+    const del=box.querySelector(".del");
+    if(del) del.onclick=()=>{ if(confirm(`저장 ${i+1} 의 판을 지웁니다. 되돌릴 수 없습니다.`)){ clearSave(i); render() } };
+    row.appendChild(box);
   }
-  /* 가운데 — 단추 다섯 */
-  const mid=g.querySelector(".tm");
-  const btn=(label,cls,fn)=>{ const b=el(`<button class="tbtn ${cls||""}">${label}</button>`); b.onclick=fn; mid.appendChild(b); return b };
-  btn(sv?"새로 시작":"게임 시작","go",()=>{
-    if(sv&&!confirm("새로 시작하면 저장해 둔 판이 지워집니다. 계속할까요?")) return;
-    clearSave(); TUT.on=0; rollStart(); pendingHero=null; view="heropick"; render() });
-  btn("튜토리얼","",()=>{
-    if(sv&&!confirm("튜토리얼도 새 판입니다. 저장해 둔 판이 지워집니다. 계속할까요?")) return;
-    clearSave(); startTutorial() });
-  btn("훈련장","",()=>{ CODEX.pick=playableHeroes()[0]; view="codex"; render() });
-  { const n=loadRuns().length; btn(`원정 기록${n?` <small>${n}판</small>`:""}`,"",()=>{ RUNS_OPEN=null; view="runs"; render() }) }
-  btn("도감","",()=>{ DEX_BACK="title"; view="dex"; render() });
-  /* 오른쪽 — 업데이트 기록 + 문구 고치기 */
-  const right=g.querySelector(".tr");
-  { const cl=changelogPanel(); if(cl){ cl.classList.add("inline"); cl.classList.add("paperbox"); right.appendChild(cl) } }
-  { const tx=el(`<button class="tbtn tfix">문구 고치기</button>`); tx.onclick=()=>{ view="text"; render() }; right.appendChild(tx) }
+  const back=el(`<button class="tlink small">돌아가기</button>`); back.onclick=()=>{ view="title"; render() }; g.appendChild(back);
+  app.appendChild(g);
 }
 
-/* 메뉴 단추 소리 — 시작 화면·도감·훈련장·원정 기록·문구 고치기의 단추는 [버튼 철커덩] (사용자 2026-09-17). 녹음이 없으면 합성 click */
-const MENU_VIEWS={title:1,dex:1,codex:1,runs:1,text:1,itemdex:1,carddex:1,evdex:1,gimdex:1,foedex:1,encdex:1,heropick:1};   /* 소리는 위의 pointerdown 걸이가 낸다 */
 /* ═══════════ 도감 — 탭 하나로 (사용자 2026-09-17) ═══════════ */
 let DEX_TAB="itemdex";
 const DEX_TABS=[["itemdex","장신구"],["carddex","카드"],["evdex","이벤트"],["gimdex","전용 구역"],["foedex","적"],["encdex","조합"]];
@@ -10036,6 +10091,13 @@ function drawDex(app){
         무엇으로 만든 카드인지만 적어 두고(handPack), 불러올 때 다시 만든다. */
 const SAVE_KEY="kyunyeol.save.v1";
 let SAVE_ON=true;                    /* 되감기·연습장에서는 잠시 끈다 */
+/* 저장 칸 셋 (사용자 2026-09-18). 0번은 옛 열쇠 그대로라 예전 저장본이 '저장 1' 로 보인다. 지금 놀고 있는 칸은 SLOT */
+const SLOT_KEY="kyunyeol.slot", SAVE_SLOTS=3;
+let SLOT=0; try{ SLOT=Math.min(SAVE_SLOTS-1,Math.max(0,parseInt(localStorage.getItem(SLOT_KEY))||0)) }catch(e){}
+function slotKey(i){ return i?`${SAVE_KEY}.s${i}`:SAVE_KEY }
+function setSlot(i){ SLOT=i; try{ localStorage.setItem(SLOT_KEY,String(i)) }catch(e){} }
+function anySave(){ for(let i=0;i<SAVE_SLOTS;i++) if(savePeek(i)) return true; return false }
+function firstEmptySlot(){ for(let i=0;i<SAVE_SLOTS;i++) if(!savePeek(i)) return i; return -1 }
 
 function handPack(){
   return (B.hand||[]).map(c=>{
@@ -10097,7 +10159,7 @@ function saveGame(){
   if(!SAVE_ON||!run||run.sandbox) return;
   /* 끝난 판은 적어 두지 않는다 — 적어 두면 죽은 판을 '이어하기'로 되살리게 된다.
      lose()/clear 에서 지워도 곧바로 render() 가 다시 적어 버려서 여기서 막는다. */
-  if(view==="title"||view==="over"||view==="clear"||run.lost) return;
+  if(view==="title"||view==="saves"||view==="over"||view==="clear"||run.lost) return;
   try{
     const hs=run.heroes;
     const heroes=JSON.stringify(hs,(k,v)=>typeof v==="function"?undefined:v);
@@ -10110,16 +10172,16 @@ function saveGame(){
                   foes:B.foes,mins:B.mins||[],portals:B.portals||[],
                   corpseUsed:B.corpseUsed||0,hand:handPack()},hs);
     }
-    localStorage.setItem(SAVE_KEY,JSON.stringify({
+    localStorage.setItem(slotKey(SLOT),JSON.stringify({
       v:1, at:Date.now(), view:view, heroes:heroes, run:runS,
       pending:encRef(pending,hs), B:bat, snap:BSNAP?JSON.stringify(BSNAP):null
     }));
     saveBlip();
   }catch(e){ /* 저장 실패는 놀이를 막지 않는다 */ }
 }
-function savePeek(){
+function savePeek(i){
   try{
-    const raw=localStorage.getItem(SAVE_KEY); if(!raw) return null;
+    const raw=localStorage.getItem(slotKey(i==null?SLOT:i)); if(!raw) return null;
     const s=JSON.parse(raw); if(!s||s.v!==1) return null;
     const hs=JSON.parse(s.heroes||"[]");
     const r=JSON.parse(s.run||"{}");
@@ -10136,9 +10198,10 @@ function syncSkillDefs(h){
     Object.keys(src).forEach(key=>{ if(k[key]===undefined&&key!=="mods"&&key!=="alt") k[key]=src[key] });
     if(src.altBy&&src.alt&&!k.alt&&k.n===src.n){ k.alt=JSON.parse(JSON.stringify(src.alt)); k.altBy=src.altBy } });   /* 카제 진선풍도↔회오리 (2026-09-17) */
 }
-function loadGame(){
+function loadGame(i){
   try{
-    const raw=localStorage.getItem(SAVE_KEY); if(!raw) return false;
+    if(i!=null) setSlot(i);
+    const raw=localStorage.getItem(slotKey(SLOT)); if(!raw) return false;
     const s=JSON.parse(raw); if(!s||s.v!==1) return false;
     const heroes=JSON.parse(s.heroes);
     heroes.forEach(h=>{ try{ syncSkillDefs(h) }catch(e){} });
@@ -10165,7 +10228,7 @@ function loadGame(){
     return true;
   }catch(e){ return false }
 }
-function clearSave(){ try{ localStorage.removeItem(SAVE_KEY) }catch(e){} }
+function clearSave(i){ try{ localStorage.removeItem(slotKey(i==null?SLOT:i)) }catch(e){} }
 function saveStamp(t){
   const d=new Date(t), z=n=>(n<10?"0":"")+n;
   return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`;
@@ -10181,6 +10244,7 @@ const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 493, "v": "0.4", "d": "2026-09-18", "t": "시작 화면 새 배치 — 배경 위에 글만 · 저장 칸 셋(이어하기) · 머리줄 없앰 · 배경 2.5fps · 시작 화면 곡 The Weeping Bell", "big": 1},
  {"b": 492, "v": "0.4", "d": "2026-09-18", "t": "시작 화면 배경 — 균열 빛 애니메이션(RIFT FLOW, 7fps 되풀이)", "big": 1},
  {"b": 491, "v": "0.4", "d": "2026-09-18", "t": "메뉴 단추 — 보통은 리벳 모서리, 고른 것은 황동 모서리(받은 선택 단추)", "big": 0},
  {"b": 490, "v": "0.4", "d": "2026-09-18", "t": "메뉴 단추 — 받은 고밀도 단추(v4)로 교체", "big": 0},
@@ -10674,7 +10738,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=492;
+const BUILD_NO=493;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
