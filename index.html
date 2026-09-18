@@ -2537,6 +2537,7 @@ body.vtitle header #hBtns button:hover{border-color:#f4d67c;color:#f4d67c}
   font-family:var(--serif);font-size:20px;color:#e8c46a;letter-spacing:.1em;white-space:nowrap;text-shadow:0 2px 0 #000,0 0 12px rgba(0,0,0,.9);animation:pkqIn .9s ease-out both}   /* 글만 (사용자 2026-09-18) */
 .pkquote span{color:#a8863a;margin:0 8px;font-size:17px}
 @keyframes pkqIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%)}}
+.pkquote.still{animation:none}
 /* 풍선 안 글 — #kwtip b 가 block 이라 숫자마다 줄이 바뀌던 것 */
 #kwtip.tidtip b,#kwtip.tidtip .kw,#kwtip.tidtip i{display:inline;margin:0;font-size:inherit}
 #kwtip.tidtip>b:first-child{font-size:13.5px}
@@ -10339,6 +10340,7 @@ const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 508, "v": "0.4", "d": "2026-09-18", "t": "파수꾼 대사 떠오름 — 화면 처음 들어올 때 한 번만", "big": 0},
  {"b": 507, "v": "0.4", "d": "2026-09-18", "t": "선물 — 한 번 누르면 설명 카드 고정(안의 낱말 카드 볼 수 있음), 두 번 누르면 시작", "big": 0},
  {"b": 506, "v": "0.4", "d": "2026-09-18", "t": "대원 판 — 초상 줄이고 이름표는 글만, 안쪽으로", "big": 0},
  {"b": 505, "v": "0.4", "d": "2026-09-18", "t": "파수꾼의 선물 설명을 문구 수정에서 고칠 수 있게 · 선물 풍선 낱말 중간 줄바꿈 고침", "big": 0},
@@ -10847,7 +10849,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=507;
+const BUILD_NO=508;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -11903,15 +11905,16 @@ function heroDetail(n){
   return box;
 }
 /* 대원 선택 — 돌 제단 (사용자 2026-09-18 그림). PICK_ORDER = [왼, 가운데, 오른]. 가운데를 눌러야 고른 것 */
-let PICK_ORDER=null, PICK_QUOTE=null, PICK_PACK=null;   /* PICK_PACK = 한 번 눌러 둔 선물 (설명 카드 고정) */
+let PICK_ORDER=null, PICK_QUOTE=null, PICK_PACK=null, PICK_QSEEN=false;   /* PICK_QSEEN — 대사 떠오르는 효과는 화면에 처음 들어올 때 한 번만 */   /* PICK_PACK = 한 번 눌러 둔 선물 (설명 카드 고정) */
 const TIP_HTML={};
 function wardenQuote(){ const L=String(UI_TXT.warden||"").split("\n").map(x=>x.trim()).filter(Boolean); return L.length?L[Math.floor(Math.random()*L.length)]:"" }   /* .kw[data-tid] 풍선의 안 — 기술·선물 설명 */
 function pickTip(id,html){ TIP_HTML[id]=html; return `data-tid="${id}"` }
 function drawStart(app){
   { const kt=document.getElementById("kwtip"); if(kt) kt.style.display="none" }   /* 누른 선물의 풍선이 남지 않게 */
   app.appendChild(el(`<div class="titlebg pickbg"><div class="tbgf on" style="background-image:url(bg/pick.webp)"></div></div>`));
-  if(!PICK_ORDER||PICK_ORDER.length!==startPicks.length||PICK_ORDER.some(n=>startPicks.indexOf(n)<0)){ PICK_ORDER=startPicks.slice(); PICK_QUOTE=wardenQuote(); PICK_PACK=null }
+  if(!PICK_ORDER||PICK_ORDER.length!==startPicks.length||PICK_ORDER.some(n=>startPicks.indexOf(n)<0)){ PICK_ORDER=startPicks.slice(); PICK_QUOTE=wardenQuote(); PICK_PACK=null; PICK_QSEEN=false }
   if(PICK_QUOTE==null) PICK_QUOTE=wardenQuote();
+  setTimeout(()=>{ PICK_QSEEN=true },0);
   const n=PICK_ORDER.length, ci=n===3?1:0, center=PICK_ORDER[ci];
   if(TUT.on&&!pendingHero) pendingHero=center;   /* 튜토리얼은 대원이 정해져 있다 */
   const chosen=!!pendingHero;
@@ -11919,7 +11922,7 @@ function drawStart(app){
     <div class="pkhd">${chosen?"파수꾼의 선물 선택":"대원 선택"}</div>
     <div class="pkstage heropick"></div>
     <div class="pkpacks startpacks ${chosen?"up":""}"></div>
-    ${PICK_QUOTE?`<div class="pkquote"><span>“</span>${esc(PICK_QUOTE)}<span>”</span></div>`:""}
+    ${PICK_QUOTE?`<div class="pkquote ${PICK_QSEEN?"still":""}"><span>“</span>${esc(PICK_QUOTE)}<span>”</span></div>`:""}
     <div class="pkfoot"></div>
   </div>`);
   /* 제단과 대원 셋 */
@@ -11970,7 +11973,7 @@ function drawStart(app){
   /* 아래 — 새로 시작(암전 뒤 다시 뽑기) */
   if(!TUT.on){
     const rr=el(`<button class="tlink small">새로 시작</button>`);
-    rr.onclick=()=>{ blackout(()=>{ rollStart(); PICK_ORDER=null; PICK_QUOTE=null; PICK_PACK=null; pendingHero=null; render() }) };
+    rr.onclick=()=>{ blackout(()=>{ rollStart(); PICK_ORDER=null; PICK_QUOTE=null; PICK_PACK=null; PICK_QSEEN=false; pendingHero=null; render() }) };
     g.querySelector(".pkfoot").appendChild(rr);
   }
   app.appendChild(g);
