@@ -2517,7 +2517,9 @@ body.vtitle header #hBtns button:hover{border-color:#f4d67c;color:#f4d67c}
 .pkpacks.up .pkpk:hover{filter:brightness(1.18);transform:translateY(-3px)}
 .pkpk .pkpn{position:absolute;top:100%;margin-top:8px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:12.5px;color:#c7b696;text-shadow:0 1px 0 #000;opacity:0;transition:opacity .45s .2s}
 .pkpacks.up .pkpk .pkpn{opacity:1}
-.pkfoot{position:fixed;left:0;right:0;bottom:4vh;text-align:center;z-index:2}
+.pkfoot{position:fixed;left:0;right:0;bottom:2.5vh;text-align:center;z-index:2;display:flex;flex-direction:column;align-items:center;gap:2px}
+.pkgo,.pkgo:hover:not(:disabled){font-size:26px;padding:2px 24px}
+.pkgo.dim,.pkgo.dim:hover:not(:disabled){color:#6f6352;text-shadow:0 2px 0 #000;transform:none;cursor:default}
 /* 골라 둔 선물 — 밝게 + 금빛 테. 설명 카드는 왼쪽(대원 판의 맞은편) */
 .pkpacks.up .pkpk.sel{filter:brightness(1.18) drop-shadow(0 0 10px rgba(244,214,124,.55))}
 .pkpacks.up .pkpk.sel .pkpn{color:#f4d67c}
@@ -2533,7 +2535,7 @@ body.vtitle header #hBtns button:hover{border-color:#f4d67c;color:#f4d67c}
 .pkdesc .pkdd{font-size:13.5px;line-height:1.6;word-break:keep-all;color:#e6d6b2}
 @media(max-width:1300px){.pkdesc{right:2vw;width:360px;height:140px;padding:22px 30px 22px 26px}}
 /* 파수꾼의 대사 — 선물과 새로 시작 사이. 받은 본보기처럼 어두운 띠 위에 황동빛 글, 살며시 떠오른다 */
-.pkquote{position:fixed;left:50%;top:84vh;transform:translateX(-50%);z-index:2;padding:4px 12px;
+.pkquote{position:fixed;left:50%;top:82.5vh;transform:translateX(-50%);z-index:2;padding:4px 12px;
   font-family:var(--serif);font-size:20px;color:#e8c46a;letter-spacing:.1em;white-space:nowrap;text-shadow:0 2px 0 #000,0 0 12px rgba(0,0,0,.9);animation:pkqIn .9s ease-out both}   /* 글만 (사용자 2026-09-18) */
 .pkquote span{color:#a8863a;margin:0 8px;font-size:17px}
 @keyframes pkqIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%)}}
@@ -10340,6 +10342,7 @@ const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 510, "v": "0.4", "d": "2026-09-18", "t": "대원 선택 — '원정 시작' 단추 (대원·선물 다 고르면 켜짐)", "big": 0},
  {"b": 509, "v": "0.4", "d": "2026-09-18", "t": "대원 선택 — 대원 판은 왼쪽, 선물 설명 카드는 오른쪽", "big": 0},
  {"b": 508, "v": "0.4", "d": "2026-09-18", "t": "파수꾼 대사 떠오름 — 화면 처음 들어올 때 한 번만", "big": 0},
  {"b": 507, "v": "0.4", "d": "2026-09-18", "t": "선물 — 한 번 누르면 설명 카드 고정(안의 낱말 카드 볼 수 있음), 두 번 누르면 시작", "big": 0},
@@ -10850,7 +10853,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=509;
+const BUILD_NO=510;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -11973,6 +11976,11 @@ function drawStart(app){
   g.appendChild(pickPanel(center));
   /* 아래 — 새로 시작(암전 뒤 다시 뽑기) */
   if(!TUT.on){
+    /* 원정 시작 — 대원과 선물을 다 골랐을 때만 (두 번 누르기 말고도, 사용자 2026-09-18) */
+    const ready=!!pendingHero&&PICK_PACK!=null&&!!startPacks[PICK_PACK];
+    const go=el(`<button class="tlink pkgo ${ready?"go":"dim"}">원정 시작</button>`);
+    go.onclick=()=>{ if(!pendingHero){ toast("먼저 제단 위의 대원을 눌러 고르세요."); return } if(!ready){ toast("파수꾼의 선물을 하나 고르세요."); return } newRun(pendingHero,startPacks[PICK_PACK]) };
+    g.querySelector(".pkfoot").appendChild(go);
     const rr=el(`<button class="tlink small">새로 시작</button>`);
     rr.onclick=()=>{ blackout(()=>{ rollStart(); PICK_ORDER=null; PICK_QUOTE=null; PICK_PACK=null; PICK_QSEEN=false; pendingHero=null; render() }) };
     g.querySelector(".pkfoot").appendChild(rr);
