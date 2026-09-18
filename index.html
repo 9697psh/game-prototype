@@ -10020,8 +10020,7 @@ function playTime(ms){
 }
 setInterval(()=>{
   playTick();
-  const e=document.getElementById("ptv");
-  if(e&&run) e.textContent=playTime(run.playMs);
+  if(run) document.querySelectorAll("#ptv").forEach(e=>{ e.textContent=playTime(run.playMs) });
 },1000);
 document.addEventListener("visibilitychange",()=>{ _ptAt=Date.now() });
 
@@ -10077,7 +10076,7 @@ function render0(){
   const hr=document.getElementById("hRun");
   /* 마지막 구역을 넘기면 run.field 가 FIELDS 밖으로 나간다.
      그때도 머리줄을 그리려 들면 FIELDS[3] 이 없어 화면이 통째로 죽는다. */
-  if(run&&view!=="title"&&FIELDS[run.field]){
+  if(run&&view!=="title"&&view!=="map"&&FIELDS[run.field]){   /* 지도는 제 띠를 그린다 — 숨은 머리줄의 #ptv 가 앞서 잡혀 시간이 안 오르던 것 (2026-09-19) */
     /* 오늘까지 세어 남은 날 — 지도 목표 줄과 같은 셈이어야 한다 */
     const dLeft=Math.max(0,FIELDS[run.field].days-run.day+1);
     const tPct=Math.min(100,run.taint);
@@ -10451,6 +10450,7 @@ const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 517, "v": "0.4", "d": "2026-09-19", "t": "지도의 플레이 시간이 안 오르던 것 고침", "big": 0},
  {"b": 516, "v": "0.4", "d": "2026-09-19", "t": "지도 — 날짜·시간·자원은 글만, 머리줄 단추는 시작 화면 꼴, 처음부터 없앰, 길 값 글만(색), 가방은 가운데 아래 그림만", "big": 0},
  {"b": 515, "v": "0.4", "d": "2026-09-19", "t": "판의 '여기서 N칸' 줄 없앰", "big": 0},
  {"b": 514, "v": "0.4", "d": "2026-09-19", "t": "지도의 단추·칩·가방을 모두 가로 카드 그림으로", "big": 0},
@@ -10968,7 +10968,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=516;
+const BUILD_NO=517;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
