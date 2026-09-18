@@ -2449,6 +2449,12 @@ img.ri{width:14px;height:14px;vertical-align:-2px;image-rendering:auto}
 .savedot.on{animation:svd 2.2s ease-out}
 @keyframes svd{0%{opacity:0}10%{opacity:1;color:var(--brass);border-color:var(--brass)}
   55%{opacity:1}100%{opacity:0}}
+/* 시작 화면 배경 — 균열 빛 애니메이션 (art/배경/시작화면 → web/bg, 사용자 2026-09-18). 화면을 덮고(cover) 프레임을 겹쳐 두고 하나만 보인다 */
+.titlebg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:#0b0a0c}
+.titlebg .tbgf{position:absolute;inset:0;background:center/cover no-repeat;opacity:0}
+.titlebg .tbgf.on{opacity:1}
+.titlebg::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(0,0,0,.18) 30%,rgba(0,0,0,.6) 100%)}   /* 가장자리를 살짝 눌러 글이 읽히게 */
+.tgrid{position:relative;z-index:1}
 /* 시작 화면 — 세 기둥 (사용자 2026-09-17) */
 .tgrid{display:grid;grid-template-columns:minmax(300px,1fr) 285px 350px;gap:32px;max-width:1160px;margin:56px auto 0;padding:0 16px;align-items:start}
 /* ── 받은 메뉴 그림 (art/UI/menu → web/ui/) ── */
@@ -9943,7 +9949,20 @@ function spriteScroll(p){
     const top=th.getBoundingClientRect().top; l.scrollBy({top:(e.clientY<top?-1:1)*l.clientHeight*.9,behavior:"smooth"}) });
   requestAnimationFrame(place); setTimeout(place,300);   /* 글꼴이 늦게 와도 다시 잰다 */
 }
+/* 시작 화면 배경 애니메이션 — start.json 의 차례(seq)와 fps 대로 프레임을 돌린다. 화면을 떠나면 저절로 멈춘다 */
+let TBG={fps:7,seq:[0,0,1,2,1,0]}, tbgTimer=0;
+fetch("bg/start.json").then(r=>r.json()).then(j=>{ if(j&&j.seq) TBG={fps:j.fps||7,seq:j.seq} }).catch(()=>{});
+function titleBg(app){
+  const n=Math.max(...TBG.seq)+1;
+  const b=el(`<div class="titlebg">${Array.from({length:n},(_,i)=>`<div class="tbgf" style="background-image:url(bg/start-${i}.webp)"></div>`).join("")}</div>`);
+  app.appendChild(b);
+  const fr=[...b.querySelectorAll(".tbgf")]; let k=0;
+  const step=()=>{ const cur=TBG.seq[k%TBG.seq.length]; fr.forEach((f,i)=>f.classList.toggle("on",i===cur)); k++ };
+  step(); clearInterval(tbgTimer);
+  tbgTimer=setInterval(()=>{ if(!b.isConnected){ clearInterval(tbgTimer); return } step() },1000/TBG.fps);
+}
 function drawTitle(app){
+  titleBg(app);
   const sv=savePeek();
   const g=el(`<div class="tgrid">
     <div class="tcol tl">
@@ -10162,6 +10181,7 @@ const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 492, "v": "0.4", "d": "2026-09-18", "t": "시작 화면 배경 — 균열 빛 애니메이션(RIFT FLOW, 7fps 되풀이)", "big": 1},
  {"b": 491, "v": "0.4", "d": "2026-09-18", "t": "메뉴 단추 — 보통은 리벳 모서리, 고른 것은 황동 모서리(받은 선택 단추)", "big": 0},
  {"b": 490, "v": "0.4", "d": "2026-09-18", "t": "메뉴 단추 — 받은 고밀도 단추(v4)로 교체", "big": 0},
  {"b": 489, "v": "0.4", "d": "2026-09-18", "t": "시작 화면 — 튀어나온 스크롤 막대 고침 · 이어하기 판을 menu-panel-detailed 로", "big": 0},
@@ -10654,7 +10674,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=491;
+const BUILD_NO=492;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
