@@ -3541,7 +3541,9 @@ function sceneBgm(){
   if(view==="forge") return "forge";
   /* 미지의 구역 — 이벤트가 스스로 곡을 고른다. 결이 안 잡히면 지도 곡 그대로 */
   if(view==="relic") return (run&&run.ev&&evBgm(run.ev))||(run&&run.night?"night":"main");
-  if(view==="title"||view==="saves") return "title";
+  /* 시작 화면 곡 — 시작·이어하기, 그리고 시작 화면에서 들어가는 훈련장·원정 기록·도감·문구 수정 (사용자 2026-09-18). 판 도중에 연 도감·문구 수정은 판의 곡 그대로 */
+  if(view==="title"||view==="saves"||view==="codex"||view==="runs") return "title";
+  if((view==="text"||/dex$/.test(view))&&(!run||DEX_BACK==="title")) return "title";
   if(view==="over"||view==="clear") return "main";
   if(!run) return "main";
   return run.night?"night":"main";
@@ -10249,6 +10251,7 @@ const GAME_VER="0.4";   /* 0.4 — 퀘스트 · 전용 구역(지도 기믹) (�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 498, "v": "0.4", "d": "2026-09-18", "t": "훈련장·원정 기록·도감·문구 수정도 시작 화면 곡", "big": 0},
  {"b": 497, "v": "0.4", "d": "2026-09-18", "t": "시작 화면 배경 — 21:9 판(2000×941), 한 바퀴 8초", "big": 0},
  {"b": 496, "v": "0.4", "d": "2026-09-18", "t": "배경 프레임 속도 4 → 3fps", "big": 0},
  {"b": 495, "v": "0.4", "d": "2026-09-18", "t": "배경 12프레임이 안 돌던 것 고침 — 프레임 수를 start.json 에 맞춤", "big": 0},
@@ -10747,7 +10750,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=497;
+const BUILD_NO=498;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
