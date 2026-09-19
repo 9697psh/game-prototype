@@ -2616,6 +2616,8 @@ body.vmap header #hBtns button:hover{border-color:#f4d67c;color:#f4d67c}
 .mcard .mcb{position:relative;width:100%;height:11px;background:rgba(0,0,0,.55);border:1px solid rgba(240,212,136,.25);overflow:hidden}
 .mcard .mcb u{position:absolute;left:0;top:0;bottom:0;display:block;text-decoration:none} .mcard .mcb.hp u{background:linear-gradient(180deg,#8fe0a6,#3f9a58)} .mcard .mcb.ex u{background:linear-gradient(180deg,#f0d488,#a8863a)}
 .mcard .mcb span{position:absolute;inset:0;font-size:9px;line-height:9px;color:#fff;text-align:center;text-shadow:0 1px 0 #000,0 0 3px #000}
+.mcard .gear{margin:4px 0 0;gap:4px}   /* 경험치 밑 장신구 칸 (사용자 2026-09-19) */
+.mcard .gear .gs{width:26px;height:26px}
 .mres{display:flex;gap:6px;justify-content:space-between;margin-bottom:8px}
 .mres .mchip{width:calc(25% - 5px);height:40px}
 .minsp{width:100%;max-width:400px;aspect-ratio:768/1024;box-sizing:border-box;padding:6.5% 7.5% 7%;background:url("ui/menu-frame-inspector-768x1024.png") center/100% 100% no-repeat;image-rendering:pixelated;margin:0 auto;position:relative}
@@ -2907,6 +2909,10 @@ body.vpage .chip.on{border-color:#f4d67c;color:#f4d67c}
 /* 상점·제련소·이벤트 머리 */
 body.vpage .evtitle,body.vpage .rctitle,body.vpage .cxsec,body.vpage .dexhd,body.vpage .rr-hd{color:#f4d67c;text-shadow:0 2px 0 #000}
 body.vpage .npcface img,body.vpage .evart img{filter:drop-shadow(0 6px 10px rgba(0,0,0,.7))}
+/* 현상 수배 — 적 고르기 줄에 그림 */
+.choice.evfoe{display:grid;grid-template-columns:72px minmax(0,1fr);grid-template-rows:auto auto;column-gap:14px;align-items:center}
+.choice.evfoe .evfart{grid-row:1/span 2;width:72px;height:72px;display:flex;align-items:flex-end;justify-content:center}
+.choice.evfoe .evfart img.pxs,.choice.evfoe .evfart svg{height:68px;width:auto;image-rendering:pixelated}
 /* 제련소 — 두 단: 왼쪽 대장장이·재료 칸·결과, 오른쪽 재료 목록(작은 카드) (사용자 2026-09-19) */
 .center.forge2{max-width:1240px;display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:22px;text-align:center;align-items:start}
 .center.forge2>*{grid-column:1} .center.forge2>.fmats{grid-column:2;grid-row:1/span 40;align-self:start;text-align:left;max-height:calc(100vh - 120px);overflow:auto;padding:4px 8px 4px 0;scrollbar-width:thin}
@@ -10711,6 +10717,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 549, "v": "0.5", "d": "2026-09-19", "t": "현상 수배 — 적 고르는 동안 다른 선택지 숨김 · 적 그림 · 지도 대원 카드에 장신구 칸", "big": 0},
  {"b": 548, "v": "0.5", "d": "2026-09-19", "t": "제련소 — 같은 장신구는 한 장에 ×수량", "big": 0},
  {"b": 547, "v": "0.5", "d": "2026-09-19", "t": "제련소 — 새 꼴(대장장이·말풍선·재료 칸) · 재료는 오른쪽에 작은 카드로", "big": 0},
  {"b": 546, "v": "0.5", "d": "2026-09-19", "t": "v0.5 — 받은 그림으로 화면 전부 새로: 시작·대원 선택·지도·전투, 그리고 상점·제련소·쉼터·미지의 구역·상자·보상·가방·장비·도감·훈련장·기록도 감옥 방 배경 + 철 테 판 + 세로 카드 + 가로 카드 단추", "big": 1},
@@ -11260,7 +11267,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=548;
+const BUILD_NO=549;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -12575,6 +12582,7 @@ function heroCardM(h,i){
     ${h.down?`<div class="mcs">쓰러짐</div>`:""}
     <div class="mcb hp" title="체력 ${h.hp}/${h.maxHp}"><u style="width:${hp}%"></u><span>${h.hp}/${h.maxHp}</span></div>
     <div class="mcb ex" title="경험치 ${h.exp}/${needExp(h.lv)}"><u style="width:${ex}%"></u><span>${h.exp}/${needExp(h.lv)}</span></div>
+    ${gearRow(h)}
   </div>`);
   c.onclick=()=>{ run.showHero=(run.showHero===i)?null:i; render() };
   return c;
@@ -14964,10 +14972,11 @@ function drawRelic(app){
       <div class="evi">${chestIcon("경험치")}</div>
       <div><b>결과</b><p style="white-space:pre-line">${evRich(evSent(run.evMsg))}</p></div></div>`));
     run.evSub.foes.forEach(nm=>{
-      const c=el(`<div class="choice"><b>${esc(nm)}</b><span>다음에 전투에서 만나면 체력이 1이 됩니다. (1회만)</span></div>`);
+      const c=el(`<div class="choice evfoe"><span class="evfart">${figure(nm)}</span><b>${esc(nm)}</b><span>다음에 전투에서 만나면 체력이 1이 됩니다. (1회만)</span></div>`);   /* 적 그림 함께 (사용자 2026-09-19) */
       c.onclick=()=>{ run.bountyFoe=nm; run.evSub=null; run.evMsg=`${nm}의 수배지를 판에 못 박습니다. 전투에서 만나면 체력이 1이 되어 있을 것입니다.`; render() };
       row.appendChild(c);
     });
+    return;   /* 적을 고르는 동안은 다른 선택지를 안 보인다 (사용자 2026-09-19) */
   } else if(run.evMsg){
     row.appendChild(el(`<div class="evres">
       <div class="evi">${chestIcon("경험치")}</div>
