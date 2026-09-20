@@ -2753,6 +2753,10 @@ body.vbattle .bagbtn{bottom:auto;top:9px;right:auto;left:16px;padding:6px 10px;g
 .bfstage .slot.t-elite,.bfstage .slot.t-boss,.bfstage .slot.t-norm{border:0;box-shadow:none}
 .bfstage .art,.bfstage .slot.foe .art{height:auto;min-height:62px;z-index:1}   /* .slot.foe .art{height:72px} 가 이겨 큰 적의 그림이 의도 밑으로 올라오던 것 */
 .bfstage .art img.pxs{height:calc(124px * var(--ph,1));filter:drop-shadow(0 3px 0 rgba(0,0,0,.6))} .bfstage .art svg{height:118px}   /* 무대가 화면을 채우니 그림도 2.2배 (사용자 2026-09-19) */
+/* 정예·우두머리는 더 크게 — 임팩트 (사용자 2026-09-20) */
+.bfstage .slot.foe .art.lead img.pxs{height:calc(160px * var(--ph,1));filter:drop-shadow(0 4px 0 rgba(0,0,0,.65)) drop-shadow(0 0 10px rgba(224,140,80,.35))} .bfstage .slot.foe .art.lead svg{height:150px;transform:none}
+.bfstage .slot.foe .art.boss img.pxs{height:calc(190px * var(--ph,1));filter:drop-shadow(0 5px 0 rgba(0,0,0,.7)) drop-shadow(0 0 14px rgba(224,90,90,.45))} .bfstage .slot.foe .art.boss svg{height:180px;transform:none}
+.bfstage .slot.foe .art.lead::after{width:100px;height:14px} .bfstage .slot.foe .art.boss::after{width:120px;height:16px}
 .bfstage .slot .art::after{width:80px;height:12px;bottom:-4px}
 /* 비용 — 고른 대원만 */
 .bfstage .slot .res{display:none;position:absolute;left:50%;transform:translateX(-50%);bottom:calc(100% - 40px);background:rgba(10,9,10,.8);border:1px solid rgba(240,212,136,.35);border-radius:4px;padding:3px 8px;white-space:nowrap;z-index:5;flex-wrap:nowrap}
@@ -6143,11 +6147,13 @@ function poseOf(name,pose){
 /* 대기 움직임 (사용자 2026-09-20) — 평소엔 1·2·3칸만 숨 쉬듯 돌고, 낮은 확률(칸당 5%, 대략 8초에 한 번)로 1~6칸을 한 바퀴 돈 뒤 다시 숨 쉰다.
    적마다 제 박자(data-k)와 제 주사위라 같은 움직임이 나란히 되풀이되지 않는다. 280ms 한 칸 */
 let IDLE_K=0;
+const IDLE_LOOP={"간수의 손":1};
 setInterval(()=>{ IDLE_K++;
   document.querySelectorAll('img.pxs[data-anim]').forEach(im=>{ const set=PNG_SPRITE[im.dataset.nm]; if(!set||!set.idleA) return;
     const n=set.idleA.length; let k=+im.dataset.k; if(!(k>=0)) k=Math.floor(Math.random()*3);
     let full=im.dataset.full==="1";
-    if(!full){ k=(k+1)%3; if(k===0&&Math.random()<0.05){ full=true; k=1 } }   /* 숨 쉬기 0→1→2. 0 으로 돌아온 순간 주사위 (사용자 2026-09-20: 1~3칸) */
+    if(IDLE_LOOP[im.dataset.nm]){ k=(k+1)%n; full=false }   /* 늘 한 바퀴 도는 것 (사용자 2026-09-20: 간수의 손) */
+    else if(!full){ k=(k+1)%3; if(k===0&&Math.random()<0.05){ full=true; k=1 } }   /* 숨 쉬기 0→1→2. 0 으로 돌아온 순간 주사위 (사용자 2026-09-20: 1~3칸) */
     else { k++; if(k>=n){ k=0; full=false } }
     im.dataset.k=k; im.dataset.full=full?"1":"0";
     const u=set.idleA[k]; if(im.getAttribute("src")!==u) im.src=u }) },280);   /* 사용자 2026-09-20: 280ms */
@@ -9208,6 +9214,7 @@ const EVENT_ENC=[
 const ELITE_LEAD=["녹슨 철창 골렘","부서진 파수병","얼음 정령"];
 /* 1구역 정예 — 골렘 말고도 정예 다섯 가운데 하나가 선다 (사용자 2026-09-16). 사슬에 묶인 마귀는 사슬 간수 둘과 함께 */
 const ELITE_LEADS=[["녹슨 철창 골렘","풀려난 장군","간수의 손","오염된 갑주","사슬에 묶인 마귀","정체 모를 주술사"],["부서진 파수병"],["얼음 정령"]];
+const ELITE_NAMES={"첨탑 관리자":1,"사슬에 묶인 마귀 (각성)":1}; ELITE_LEADS.forEach(L=>L.forEach(n=>ELITE_NAMES[n]=1));   /* 정예 적 이름 — 전투에서 크게 그린다 */
 
 /* ── 역할 ──
    같은 적이라도 누구와 함께 섰느냐에 따라 하는 짓이 달라야 한다.
@@ -10748,6 +10755,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 560, "v": "0.5", "d": "2026-09-20", "t": "정예 적은 어느 자리든 크게(160px, 우두머리 190px) · 간수의 손은 늘 한 바퀴", "big": 0},
  {"b": 559, "v": "0.5", "d": "2026-09-20", "t": "적 대기 움직임 — 평소 1~3칸", "big": 0},
  {"b": 558, "v": "0.5", "d": "2026-09-20", "t": "적 대기 움직임 280ms", "big": 0},
  {"b": 557, "v": "0.5", "d": "2026-09-20", "t": "적 대기 움직임 — 평소엔 1·2칸 숨 쉬기, 가끔 한 바퀴", "big": 0},
@@ -11308,7 +11316,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=559;
+const BUILD_NO=560;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -16884,7 +16892,7 @@ function drawBattle(app){
       const fshW=f.shield?Math.max(6,Math.min(60,f.shield/f.maxHp*100)):0;
       const tier=foeTier(f);
       d.classList.add("t-"+tier);
-      const fsz=tier==="boss"?"boss":(tier==="elite"&&f.slot===1)?"lead":"";
+      const fsz=tier==="boss"?"boss":(ELITE_NAMES[f.name]||(tier==="elite"&&f.slot===1))?"lead":"";   /* 정예 적은 어느 자리든 크게 (사용자 2026-09-20) */
       if(peekFoe&&peekFoe===f) d.classList.add("peeked");   /* 살펴보는 적 — 능력치·표식이 보인다 (2026-09-19) */
       d.innerHTML+=`${TIER_LABEL[tier]?`<div class="tier">${
           tier==="boss"?tierCrown():tier==="elite"?tierStar():tierMoon()}${TIER_LABEL[tier]}</div>`:""}
