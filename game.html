@@ -6147,7 +6147,7 @@ function poseOf(name,pose){
   return set[pose]||set.idle||null;
 }
 /* 대기 움직임 (사용자 2026-09-20) — 평소엔 1·2·3칸만 숨 쉬듯 돌고, 낮은 확률(칸당 5%, 대략 8초에 한 번)로 1~6칸을 한 바퀴 돈 뒤 다시 숨 쉰다.
-   적마다 제 박자(data-k)와 제 주사위라 같은 움직임이 나란히 되풀이되지 않는다. 500ms 한 칸 */
+   적마다 제 박자(data-k)와 제 주사위라 같은 움직임이 나란히 되풀이되지 않는다. 1000ms 한 칸 */
 let IDLE_K=0;
 const IDLE_LOOP={"간수의 손":1};
 setInterval(()=>{ IDLE_K++;
@@ -6158,7 +6158,7 @@ setInterval(()=>{ IDLE_K++;
     else if(!full){ k=(k+1)%3; if(k===0&&Math.random()<0.05){ full=true; k=1 } }   /* 숨 쉬기 0→1→2. 0 으로 돌아온 순간 주사위 (사용자 2026-09-20: 1~3칸) */
     else { k++; if(k>=n){ k=0; full=false } }
     im.dataset.k=k; im.dataset.full=full?"1":"0";
-    const u=set.idleA[k]; if(im.getAttribute("src")!==u) im.src=u }) },500);   /* 사용자 2026-09-20: 500ms */
+    const u=set.idleA[k]; if(im.getAttribute("src")!==u) im.src=u }) },1000);   /* 사용자 2026-09-20: 1000ms */
 function pxFigure(name,pose){
   const set=PNG_SPRITE[name];
   if(set){
@@ -10757,6 +10757,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 563, "v": "0.5", "d": "2026-09-20", "t": "적 대기 움직임 1000ms", "big": 0},
  {"b": 562, "v": "0.5", "d": "2026-09-20", "t": "적 대기 움직임 500ms", "big": 0},
  {"b": 561, "v": "0.5", "d": "2026-09-20", "t": "적을 누르면 사거리(칸·숫자) 보임", "big": 0},
  {"b": 560, "v": "0.5", "d": "2026-09-20", "t": "정예 적은 어느 자리든 크게(160px, 우두머리 190px) · 간수의 손은 늘 한 바퀴", "big": 0},
@@ -11320,7 +11321,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=562;
+const BUILD_NO=563;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
