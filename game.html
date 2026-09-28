@@ -2662,10 +2662,18 @@ body.vmap header #hBtns button:hover{border-color:#f4d67c;color:#f4d67c}
 .map-r .qpanel{margin-top:10px}
 .movl{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px}
 .movp{max-width:720px;max-height:88vh;overflow:auto;background:var(--panel);border:1px solid var(--rule2);border-radius:10px;padding:16px 18px;box-shadow:0 20px 50px rgba(0,0,0,.7)}
-/* 지도 화면 크기 — 사용자가 125% 확대로 본 것을 기본으로 (2026-09-18). 위 값들의 ×1.25 */
-body.vmap .wrap{max-width:1560px}
-.mapwrap.m3{grid-template-columns:700px 240px minmax(0,1fr);gap:24px}
-.m3 .pstage{width:700px}
+/* 지도 화면 크기 — 창(F11) 높이에 맞춰 스스로 커진다. --ms = 지도 한 변 (사용자 2026-09-29) */
+body.vmap .wrap{max-width:none;padding:6px 28px 10px;margin:0}
+.mapwrap.m3{--ms:min(calc(100vh - 152px),980px);--mp:min(calc(var(--ms)*0.78),620px,calc((100vh - 200px)*0.75));grid-template-columns:var(--ms) auto var(--mp);gap:26px;justify-content:center;margin-top:2px}
+.m3 .pstage{width:var(--ms)}
+/* 대원 카드 — 전투 손패 카드와 같은 크기 (사용자 2026-09-29: 150×200) */
+.mcards{width:auto;gap:10px}
+.mcards .mcard{width:150px;height:200px;padding:7% 8% 6%}
+.mcard .mca{height:44%} .mcard .mca img.pxs,.mcard .mca svg{height:100%;width:auto}
+.mcard .mcb{height:8%;min-height:12px}
+.map-r{display:flex;flex-direction:column;align-items:center}
+.mres{width:100%;max-width:none}
+.minsp{max-width:none}
 .mclock{left:18px;top:15px} .mclock svg,.mclock canvas{width:64px;height:64px} .mclock b{font-size:16px}
 .mbag{left:18px;top:118px;width:61px;height:63px;box-sizing:border-box} .mbag img.npx{width:44px;height:44px;margin:0}
 .mquest{left:18px;top:189px} .mquest img.npx{width:44px;height:44px} .mquest .qn{font-size:12px}
@@ -2678,7 +2686,6 @@ body.vmap .wrap{max-width:1560px}
 .mcard .mcn{font-size:15px} .mcard .mcn i{font-size:12px} .mcard .mcs{font-size:12px}
 .mcard .mcb{height:14px} .mcard .mcb span{font-size:11px;line-height:12px}
 .mres{gap:8px;margin-bottom:14px;justify-content:space-around;padding:6px 0} .mres .mchip{font-size:18px}
-.minsp{max-width:500px}
 .minsp .mih{font-size:25px} .minsp .mih em{font-size:13px}
 .minsp .mii{height:80px;margin:10px 0 5px} .minsp .mii img,.minsp .mii svg{width:70px;height:70px}
 .minsp .mir{font-size:17px} .minsp .midist{font-size:14px} .minsp .mit{font-size:15.5px} .minsp .mil{font-size:13.5px;margin-top:15px;padding-top:10px}
@@ -2708,7 +2715,7 @@ body.vmap .bagbtn{display:none}   /* 지도에서는 무대 안 시계 밑의 .m
 .mquest .mqpop .qpanel{margin:0;box-shadow:0 12px 26px rgba(0,0,0,.6)}
 .msy img{width:32px;height:32px;image-rendering:pixelated}
 .syncard .sc-i{display:inline-flex;margin-right:6px} .syncard .sc-i img{width:22px;height:22px;image-rendering:pixelated}
-@media(max-width:1560px){body.vmap .wrap{max-width:1240px} .mapwrap.m3{grid-template-columns:560px 190px minmax(0,1fr);gap:20px} .m3 .pstage{width:560px} .mcards{width:140px} .mcard{width:140px;height:186px;padding:16px 14px 14px} .mcard .mca{height:78px} .mcard .mca img.pxs,.mcard .mca svg{height:74px} .msyn{width:42px} .minsp{max-width:400px} .mtop .mchip{font-size:15px} .mfield{font-size:26px} .mres .mchip{font-size:15px}}
+@media(max-width:1500px){.mapwrap.m3{--ms:min(calc(100vh - 152px),700px);gap:18px} .msyn{width:42px} .mtop .mchip{font-size:15px} .mfield{font-size:26px} .mres .mchip{font-size:15px}}
 @media(max-width:1180px){.mapwrap.m3{grid-template-columns:minmax(0,1fr) 190px 340px} .m3 .pstage{width:100%}}
 /* ── 전투 화면 (2026-09-19) — 전장 그림 위 ── */
 body.vbattle .wrap{max-width:none;padding:0;margin:0}   /* 전장이 화면을 채운다 (사용자 2026-09-19) — 세로를 다 쓰고 가로는 16:9 만큼 */
@@ -10769,6 +10776,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 568, "v": "0.5", "d": "2026-09-29", "t": "지도 화면 — 창 크기(F11)에 맞춰 커지고 좌우·위아래 여백 맞춤 · 대원 카드는 전투 카드 크기", "big": 0},
  {"b": 567, "v": "0.5", "d": "2026-09-20", "t": "풀려난 장군 고통 감내 — 여느 공격에도 붙고, 의도·예고·표식에 미리 보임", "big": 0},
  {"b": 566, "v": "0.5", "d": "2026-09-20", "t": "적 대기 움직임 6종 더 · 숨 쉬기 폭 섞기", "big": 0},
  {"b": 565, "v": "0.5", "d": "2026-09-20", "t": "오염된 갑주 — 대기 움직임 뺌", "big": 0},
@@ -11337,7 +11345,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=567;
+const BUILD_NO=568;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
