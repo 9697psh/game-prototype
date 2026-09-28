@@ -2736,7 +2736,7 @@ body.vbattle .bagbtn{bottom:auto;top:9px;right:auto;left:16px;padding:6px 10px;g
 .bfstage .field{position:absolute;inset:0;display:block;padding:0;overflow:visible;gap:0}
 .bfstage .side{position:static;display:block} .bfstage .mid{display:none}
 /* 칸 — 판 자리에. 가운데 표적을 두고 아군 5→1 이 왼쪽으로, 적 1→5 가 오른쪽으로 */
-.bfstage .slot{position:absolute;width:11%;top:calc(55.5% - 240px);height:240px;transform:translateX(-50%);border:0;background:none;box-shadow:none;padding:0;gap:3px;min-height:0;justify-content:flex-end;align-items:center;border-radius:0;overflow:visible}
+.bfstage .slot{position:absolute;width:11%;bottom:44.5%;top:auto;height:auto;transform:translateX(-50%);border:0;background:none;box-shadow:none;padding:0;gap:3px;min-height:0;justify-content:flex-end;align-items:center;border-radius:0;overflow:visible}
 .bfstage .slot.big{width:19%}
 .bfstage .slot.bigshadow{display:none}
 .bfstage .side.mine .slot:nth-child(1){left:8.5%} .bfstage .side.mine .slot:nth-child(2){left:16.7%} .bfstage .side.mine .slot:nth-child(3){left:24.8%} .bfstage .side.mine .slot:nth-child(4){left:32.8%} .bfstage .side.mine .slot:nth-child(5){left:40.9%}
@@ -2761,7 +2761,8 @@ body.vbattle .bagbtn{bottom:auto;top:9px;right:auto;left:16px;padding:6px 10px;g
 .bfstage .slot .hitpv{position:static;transform:none;margin:0 0 3px;font-size:14px;padding:2px 10px}
 .bfstage .slot .reach{bottom:auto;top:100%;margin-top:34px;font-size:11px;color:#f4d67c;text-shadow:0 1px 0 #000}
 .bfstage .slot.foe{background:none} .bfstage .slot.foe::before,.bfstage .slot.t-elite::after{display:none}
-.bfstage .slot.t-elite,.bfstage .slot.t-boss,.bfstage .slot.t-norm{border:0;box-shadow:none}
+.bfstage .slot.t-elite,.bfstage .slot.t-boss,.bfstage .slot.t-norm{border:0;box-shadow:none;animation:none}   /* 우두머리 붉은 네모(bossAura)도 무대에선 끈다 — 그림에 붉은 빛으로 이미 표가 난다 */
+.bfstage .slot.t-boss .art img.pxs{filter:drop-shadow(0 5px 0 rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(224,90,90,.55))}
 .bfstage .art,.bfstage .slot.foe .art{height:auto;min-height:62px;z-index:1}   /* .slot.foe .art{height:72px} 가 이겨 큰 적의 그림이 의도 밑으로 올라오던 것 */
 .bfstage .art img.pxs{height:calc(124px * var(--ph,1));filter:drop-shadow(0 3px 0 rgba(0,0,0,.6))} .bfstage .art svg{height:118px}   /* 무대가 화면을 채우니 그림도 2.2배 (사용자 2026-09-19) */
 /* 정예·우두머리는 더 크게 — 임팩트 (사용자 2026-09-20) */
@@ -2902,7 +2903,7 @@ body.vbattle .sk .skv{font-size:10.5px}
 .kflash{position:absolute;inset:0;pointer-events:none;z-index:37;background:rgba(255,230,210,.9);animation:kflash .28s ease-out forwards}
 @keyframes kflash{from{opacity:.9}to{opacity:0}}
 .bfstage .field.kimp .slot.k-hero .art::after{background:radial-gradient(ellipse at center,rgba(244,214,124,.6),rgba(244,214,124,0) 70%);filter:none;width:90px;height:18px}
-@media(max-width:900px){.bfstage .slot{height:150px;top:calc(58% - 150px)} .bfstage .art img.pxs{height:44px} .bfq{display:none}}
+@media(max-width:900px){.bfstage .slot{bottom:42%} .bfstage .art img.pxs{height:44px} .bfq{display:none}}
 /* ── 나머지 화면 (v0.5, 2026-09-19) — 감옥 방 배경, 철 테 판, 세로 카드, 가로 카드 단추 ── */
 body.vpage{background:#0b0a0c url("bg/pick.webp") center/cover fixed no-repeat}
 body.vpage::before{content:"";position:fixed;inset:0;background:rgba(6,5,7,.74);z-index:-1;pointer-events:none}
@@ -7561,6 +7562,7 @@ const REW_COND={
  "상급|잔혹한 일격":{need:["승리의 일격"]},
  /* 잠긴 3·4번 기술을 키우는 보상 — 배우기 전엔 안 내놓는다 (2026-09-15 감사) */
  "상급|저주받은 성벽":{need:["굳건한 성벽"]},
+ "중급|손아귀 강화":{once:1},   /* 한 번 고르면 더 안 나온다 (사용자 2026-09-29) */
  "상급|척추뼈 화살촉":{need:["꿰뚫는 화살"]},
  "상급|옥수정 촉":{need:["꿰뚫는 화살"]},
  "상급|서릿빛 용의 비늘촉":{need:["꿰뚫는 화살"]},
@@ -9181,7 +9183,7 @@ const ENC_SEQ=[
 /* ── 정예 전투 조합 (ppt '핏빛 감옥. 정예 전투', 사용자 2026-09-16) — 정예 칸은 이것만. 칸은 그림 자리(1이 맨 앞) ── */
 const ELITE_ENC=[
  [
-  {n:"사슬에 묶인 마귀", w:1, foes:["사슬 간수","사슬에 묶인 마귀","사슬 간수"], slots:[2,3,4], min:1},
+  {n:"사슬에 묶인 마귀", w:1, foes:["사슬 간수","사슬에 묶인 마귀","사슬 간수"], slots:[1,2,3], min:1},   /* 한 칸 앞으로 (사용자 2026-09-29) */
   {n:"정체 모를 주술사", w:1, foes:["정체 모를 주술사"], slots:[3], min:1},
   {n:"풀려난 장군",     w:1, foes:["풀려난 장군"], slots:[2], min:1},          /* 두 칸 — 2·3 */
   {n:"간수의 손",       w:1, foes:["간수의 손","감옥의 눈","감옥의 눈"], slots:[2,3,4], min:1},
@@ -10790,6 +10792,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 576, "v": "0.5", "d": "2026-09-29", "t": "손아귀 강화 한 번만 · 사슬에 묶인 마귀 한 칸 앞 · 큰 적의 의도·표식이 그림에 가리지 않게", "big": 0},
  {"b": 575, "v": "0.5", "d": "2026-09-29", "t": "트리스탄 갑피 이펙트 적용 · 전투 장신구 빛은 등급마다(파편 없음·일반 조금·희귀 뚜렷)", "big": 0},
  {"b": 574, "v": "0.5", "d": "2026-09-29", "t": "고통 감내는 공격 아이콘 · 특징 느낌표 커서 풀이 · 정예 전투 1번 자리라고 커지던 것 고침", "big": 0},
  {"b": 573, "v": "0.5", "d": "2026-09-29", "t": "적이 대원을 밀거나 당길 때 '밀려남!'·'당겨짐!' 을 붉게", "big": 0},
@@ -11366,7 +11369,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=575;
+const BUILD_NO=576;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
