@@ -2783,7 +2783,8 @@ body.vbattle .bagbtn{bottom:auto;top:9px;right:auto;left:16px;padding:6px 10px;g
 /* 적 — 체력 막대 밑에 이름, 그 밑에 특징 느낌표 줄 (사용자 2026-09-19) */
 .bfstage .slot.foe .ublw .bar{order:1} .bfstage .slot.foe .ublw .mini{order:2} .bfstage .slot.foe .ublw .nm{order:3;display:block;font-size:12.5px;letter-spacing:.04em;margin-top:1px} .bfstage .slot.foe .ublw .st.t{order:4}
 .bfstage .slot.foe .ublw .prog{order:5}
-.bfstage .ublw .st.t{display:flex;position:static;flex-direction:row;align-items:center;justify-content:center;gap:6px;margin-top:2px;right:auto}
+.bfstage .ublw .st.t{display:flex;position:static;flex-direction:row;align-items:center;justify-content:center;gap:6px;margin-top:2px;right:auto;pointer-events:auto;position:relative;z-index:6}
+.bfstage .ublw .st.t .bd{cursor:help;pointer-events:auto}
 .bfstage .ublw .st.t .bd em{display:none} .bfstage .ublw .st.t .bd img.ci,.bfstage .ublw .st.t .bd i.ci{width:20px;height:20px;flex:0 0 20px}
 .bfstage .slot.selh .ublw .st.t,.bfstage .slot.peeked .ublw .st.t{display:flex}
 .bfstage .ublw .bar{width:78%;height:11px;background:rgba(0,0,0,.65);border:1px solid rgba(240,212,136,.3);border-radius:2px;position:relative;overflow:hidden}
@@ -9371,7 +9372,8 @@ const KW_ICON={
   "흡수":"status_absorb","도발":"status_taunt","회피":"status_evade","가시":"status_thorns","은신":"status_stealth","갑피":"status_carapace",
   "부정 보호막":"status_negative_shield","에너지 보호막":"status_energy_shield",
   "소환물":"puppet",
-  "공중에 뜸":"wind","공중":"wind"};   /* 대원 밑 소환물 표식 — 허수아비 · 공중에 뜸은 바람 (사용자 2026-09-16) */   /* 2026-09-15 추가 · 아이콘은 status-effects-v2 (64px) */
+  "공중에 뜸":"wind","공중":"wind",
+  "고통 감내":"sword"};   /* 다음 공격이 세진다 — 공격 아이콘 (사용자 2026-09-29) */   /* 대원 밑 소환물 표식 — 허수아비 · 공중에 뜸은 바람 (사용자 2026-09-16) */   /* 2026-09-15 추가 · 아이콘은 status-effects-v2 (64px) */
 function bdIcon(kind,key,label){
   const id=KW_ICON[key]||KW_ICON[label];
   if(id&&typeof ICON_PNG!=="undefined"&&ICON_PNG[id]) return `<img class="ci" src="${ICON_PNG[id]}" alt="">`;
@@ -10780,6 +10782,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 574, "v": "0.5", "d": "2026-09-29", "t": "고통 감내는 공격 아이콘 · 특징 느낌표 커서 풀이 · 정예 전투 1번 자리라고 커지던 것 고침", "big": 0},
  {"b": 573, "v": "0.5", "d": "2026-09-29", "t": "적이 대원을 밀거나 당길 때 '밀려남!'·'당겨짐!' 을 붉게", "big": 0},
  {"b": 572, "v": "0.5", "d": "2026-09-29", "t": "사슬 간수 공격 그림 반전 · 버프/디버프 표식을 그림 위로(커서 풀이 되게)", "big": 0},
  {"b": 571, "v": "0.5", "d": "2026-09-29", "t": "사슬 간수 피격(죽을 때) 그림 좌우 반전", "big": 0},
@@ -11354,7 +11357,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=573;
+const BUILD_NO=574;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -16926,7 +16929,7 @@ function drawBattle(app){
       const fshW=f.shield?Math.max(6,Math.min(60,f.shield/f.maxHp*100)):0;
       const tier=foeTier(f);
       d.classList.add("t-"+tier);
-      const fsz=tier==="boss"?"boss":(ELITE_NAMES[f.name]||(tier==="elite"&&f.slot===1))?"lead":"";   /* 정예 적은 어느 자리든 크게 (사용자 2026-09-20) */
+      const fsz=tier==="boss"?"boss":ELITE_NAMES[f.name]?"lead":"";   /* 정예 적만 크게 — 정예 전투의 1번 자리라고 키우면 소환된 작은 죄수까지 커진다 (사용자 2026-09-29) */
       if(peekFoe&&peekFoe===f){ d.classList.add("peeked"); d.innerHTML+=`<span class="reach frng">사거리 ${f.rng||1}</span>` }   /* 살펴보는 적 — 능력치·표식·사거리 (2026-09-19/20) */
       d.innerHTML+=`${TIER_LABEL[tier]?`<div class="tier">${
           tier==="boss"?tierCrown():tier==="elite"?tierStar():tierMoon()}${TIER_LABEL[tier]}</div>`:""}
