@@ -1668,6 +1668,8 @@ body:has(.rwq) .hpanel{top:auto;bottom:16px;max-height:min(52vh,calc(100vh - 100
 .pop.dmg{color:var(--atk)} .pop.mag{color:var(--mag)} .pop.heal{color:var(--hp)}
 .pop.shd{color:var(--def)} .pop.miss{color:var(--dim);font-size:16px}
 .pop.crit{color:#ffd45e;font-size:27px}
+.pop.moved{color:#ff6a55;font-size:25px;font-weight:900;letter-spacing:.06em;   /* 밀려남·당겨짐 (사용자 2026-09-29) */
+  text-shadow:0 2px 0 #000,0 0 12px rgba(224,60,40,.95),0 0 22px rgba(224,60,40,.6)}
 @keyframes pop{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}
   18%{opacity:1;transform:translate(-50%,-70%) scale(1.12)}
   32%{transform:translate(-50%,-72%) scale(1)}
@@ -10778,6 +10780,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 573, "v": "0.5", "d": "2026-09-29", "t": "적이 대원을 밀거나 당길 때 '밀려남!'·'당겨짐!' 을 붉게", "big": 0},
  {"b": 572, "v": "0.5", "d": "2026-09-29", "t": "사슬 간수 공격 그림 반전 · 버프/디버프 표식을 그림 위로(커서 풀이 되게)", "big": 0},
  {"b": 571, "v": "0.5", "d": "2026-09-29", "t": "사슬 간수 피격(죽을 때) 그림 좌우 반전", "big": 0},
  {"b": 570, "v": "0.5", "d": "2026-09-29", "t": "전투 — 버프·디버프 표식은 늘 보이게", "big": 0},
@@ -11351,7 +11354,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=572;
+const BUILD_NO=573;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -15963,7 +15966,7 @@ function pullN(f,t,n){
   const from=t.slot, to=Math.min(SLOTS,from+n);
   if(to===from){ say(`${t.name}${jo(t.name,"eun")} 이미 가장 앞입니다.`,"t2"); return }
   const occ=unitAt(to); t.slot=to; if(occ&&occ!==t) occ.slot=from;
-  fx({side:"mine",slot:to,s:"step",ring:"#9c8d77",glow:1,gap:120});
+  fx({side:"mine",slot:to,s:"step",ring:"#9c8d77",glow:1,txt:"당겨짐!",cls:"moved",gap:120});
   say(`${f.name}${jo(f.name,"ig")} ${t.name}${jo(t.name,"eul")} ${to-from}칸 잡아 끌어옵니다 → ${to}번${occ&&occ!==t?` (${occ.name}${jo(occ.name,"gwa")} 자리 바꿈)`:""}`,"t3");
 }
 /* 대원을 가장 앞으로 끌어당긴다 / 한 칸 뒤로 밀친다. 그 자리에 누가 있으면 자리를 바꾼다 */
@@ -15972,7 +15975,7 @@ function pullFront(f,t){
   if(t.slot>=front){ say(`${t.name}${jo(t.name,"eun")} 이미 가장 앞입니다.`,"t2"); return }
   const occ=unitAt(front), from=t.slot;
   t.slot=front; if(occ&&occ!==t) occ.slot=from;
-  fx({side:"mine",slot:front,s:"step",ring:"#9c8d77",glow:1,gap:120});
+  fx({side:"mine",slot:front,s:"step",ring:"#9c8d77",glow:1,txt:"당겨짐!",cls:"moved",gap:120});
   say(`${f.name}${jo(f.name,"ig")} ${t.name}${jo(t.name,"eul")} 사슬로 끌어당깁니다 → ${front}번${occ&&occ!==t?` (${occ.name}${jo(occ.name,"gwa")} 자리 바꿈)`:""}`,"t3");
 }
 function pushBack(f,t){
@@ -15980,7 +15983,7 @@ function pushBack(f,t){
   if(to<1){ say(`${t.name}${jo(t.name,"eun")} 더 물러설 곳이 없습니다.`,"t2"); return }
   const occ=unitAt(to), from=t.slot;
   t.slot=to; if(occ&&occ!==t) occ.slot=from;
-  fx({side:"mine",slot:to,s:"step",ring:"#9c8d77",gap:120});
+  fx({side:"mine",slot:to,s:"step",ring:"#9c8d77",txt:"밀려남!",cls:"moved",gap:120});
   say(`${f.name}${jo(f.name,"ig")} ${t.name}${jo(t.name,"eul")} 밀쳐냅니다 → ${to}번`,"t3");
 }
 function foeStep(f,dir,n){
