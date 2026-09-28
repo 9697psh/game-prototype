@@ -10799,6 +10799,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 578, "v": "0.5", "d": "2026-09-29", "t": "사슬에 묶인 마귀 — 묶인 동안 속박 99 · 연습장에서 만들어진 적 조합 통째로 세우기", "big": 0},
  {"b": 577, "v": "0.5", "d": "2026-09-29", "t": "전투 칸에 카드를 못 놓던 것 고침 · 연습장 손잡이·적 세우기 다시 보이게", "big": 0},
  {"b": 576, "v": "0.5", "d": "2026-09-29", "t": "손아귀 강화 한 번만 · 사슬에 묶인 마귀 한 칸 앞 · 큰 적의 의도·표식이 그림에 가리지 않게", "big": 0},
  {"b": 575, "v": "0.5", "d": "2026-09-29", "t": "트리스탄 갑피 이펙트 적용 · 전투 장신구 빛은 등급마다(파편 없음·일반 조금·희귀 뚜렷)", "big": 0},
@@ -11377,7 +11378,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=577;
+const BUILD_NO=578;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -15572,6 +15573,8 @@ function startBattle(kind,pinned){
       shield:0,air:0,alive:1,id:i,infect:0,stun:0,weak:0,
       taunt:0,thorn:0,evade:0,negShield:0,hide:0,deb:{}});
   });
+  /* 사슬에 묶인 마귀 — 묶여 있는 동안은 속박 99 (사용자 2026-09-29). 사슬 간수가 다 죽어 각성하면 boundCheck 가 푼다 */
+  B.foes.forEach(f=>{ if(foePas(f,"bound")&&!f.awake){ f.deb=f.deb||{}; f.deb.bind=99 } });
   /* 현상 수배 걸기 — 수배된 적을 만나면 체력 1 (한 번만). 사용자 2026-09-16 */
   if(run.bountyFoe&&!run.sandbox&&!pinned){ const bf=B.foes.find(x=>x.name===run.bountyFoe);
     if(bf){ bf.hp=1; run.bountyFoe=null; say(`현상 수배 — ${bf.name}${jo(bf.name,"eun")} 이미 만신창이로 끌려 나옵니다. 체력 1.`,"t1") } }
@@ -16182,6 +16185,7 @@ function boundCheck(f){
   if(!f.alive||f.awake||!foePas(f,"bound")) return;
   if(B.foes.some(x=>x.alive&&x.name==="사슬 간수")) return;
   f.awake=1; f.awakeTurns=0;
+  if(f.deb) f.deb.bind=0;   /* 사슬이 끊겼으니 속박도 풀린다 (2026-09-29) */
   fx({side:"foe",slot:f.slot,quake:1,s:"summon",ring:"#e0705a",glow:1,txt:"각성",cls:"crit",gap:200});
   say(`${f.name}${jo(f.name,"ig")} 사슬을 끊고 각성합니다!`,"t1");
   bark(f,"awake",1);
@@ -17044,6 +17048,32 @@ function drawBattle(app){
     kb.appendChild(fb);
     /* 적 고르기 — 골라서 빈 칸에 세운다 (사용자 2026-09-16). 진짜 능력치로 선다(허수아비처럼 체력을 부풀리지 않는다) */
     { const names=Object.keys(FOE).filter(n=>!FOE[n].boss).sort((a,b)=>a.localeCompare(b,"ko"));
+      /* 만들어진 조합 통째로 — ENCOUNTER · ELITE_ENC · 정예(앞자리 하나 더) (사용자 2026-09-29) */
+      { const fi=Math.min(run.field,2);
+        const ENC=(ENCOUNTER[fi]||[]).map(e=>({e:e,k:"조합"})).concat((ELITE_ENC[fi]||[]).map(e=>({e:e,k:"정예"})));
+        if(ENC.length){
+          const er=el(`<div class="knob" style="border-color:var(--brass)"><span>적 조합</span>
+            <select class="sandenc">${ENC.map((x,i)=>`<option value="${i}"${run.sandEnc==i?" selected":""}>[${x.k}] ${esc(x.e.n)} — ${esc((x.e.foes||[]).join(" · "))}</option>`).join("")}</select>
+            <button class="mini">그대로 세운다</button><label class="mini" style="cursor:pointer"><input type="checkbox" ${run.sandEncLead?"checked":""}> 정예 앞자리 하나 더</label></div>`);
+          const es=er.querySelector("select"), eb=er.querySelector("button"), ec=er.querySelector("input");
+          es.onchange=()=>{ run.sandEnc=+es.value };
+          ec.onchange=()=>{ run.sandEncLead=ec.checked?1:0 };
+          eb.onclick=ev=>{ ev.stopPropagation();
+            const x=ENC[+es.value||0]; if(!x) return;
+            B.foes=[];
+            let lay=encLayout(x.e);   /* [이름,자리] 짝의 줄 */
+            if(run.sandEncLead&&lay.length<SLOTS){          /* foeSet 의 정예 셈과 같은 꼴 */
+              const lead=rnd(ELITE_LEADS[fi]||[ELITE_LEAD[fi]]), w=(FOE[lead]&&FOE[lead].big)?2:1;
+              if(lead==="사슬에 묶인 마귀") lay=[["사슬 간수",2],["사슬 간수",3]];
+              else lay=lay.map(([nm,sl])=>[nm,Math.min(SLOTS,sl+w)]);
+              lay.unshift([lead,1]);
+              const used=new Set(); lay.sort((a,b)=>a[1]-b[1]).forEach(o=>{ while(used.has(o[1])) o[1]++; used.add(o[1]) }); lay=lay.filter(o=>o[1]<=SLOTS);
+            }
+            lay.forEach(([nm,sl])=>{ const f=spawnFoeNamed(nm,sl); if(f){ f.exp=0; if(!run.sandFoeReal){ f.maxHp=9999; f.hp=9999 } } });
+            B.foes.forEach(f=>{ if(foePas(f,"bound")&&!f.awake){ f.deb=f.deb||{}; f.deb.bind=99 } });
+            rollIntents(true); render() };
+          kb.appendChild(er);
+        } }
       const row=el(`<div class="knob" style="border-color:var(--brass)"><span>적 세우기</span>
         <select class="sandsel">${names.map(n=>`<option value="${esc(n)}"${run.sandFoe===n?" selected":""}>${esc(n)}</option>`).join("")}</select>
         <button class="mini">세운다</button><button class="mini">모두 치운다</button>
