@@ -2754,7 +2754,7 @@ body.vbattle .bagbtn{bottom:auto;top:9px;right:auto;left:16px;padding:6px 10px;g
 .bfstage .slot.pick .art::after,.bfstage .slot.hint .art::after{background:radial-gradient(ellipse at center,rgba(244,214,124,.55),rgba(244,214,124,0) 70%);filter:none;width:80px;height:16px;z-index:0}
 .bfstage .slot.inrng .art::after{background:radial-gradient(ellipse at center,rgba(224,112,90,.55),rgba(224,112,90,0) 70%);filter:none;width:80px;height:16px}
 .bfstage .slot.empty.inrng{opacity:1;background:radial-gradient(ellipse at 50% 100%,rgba(224,112,90,.4),transparent 70%)}   /* 빈 칸도 적 사거리 안이면 붉게 (사용자 2026-09-20) */
-.bfstage .slot .reach.frng{color:#ffb4a8;top:100%;margin-top:66px;font-size:12px}
+.bfstage .slot .reach.frng{color:#ffb4a8;top:100%;margin-top:96px;font-size:12px}   /* 지속 능력 줄(이름 밑 느낌표)을 가리지 않게 더 아래로 (사용자 2026-09-29) */
 .bfstage .slot.far{opacity:.55}
 /* 겨눌 수 있는 적 — 자리는 그대로, 조금 커진다 (사용자 2026-09-19) */
 .bfstage .slot.foe.pick .art img.pxs,.bfstage .slot.foe.pick .art svg{transform:scale(1.12);transform-origin:50% 100%;transition:transform .15s}
@@ -10799,6 +10799,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 580, "v": "0.5", "d": "2026-09-29", "t": "적 사거리 표시 아래로 · 연습장 턴 제한 없음", "big": 0},
  {"b": 579, "v": "0.5", "d": "2026-09-29", "t": "연습장 — 적 강화 배율도 손으로 (약하게/세게/판대로)", "big": 0},
  {"b": 578, "v": "0.5", "d": "2026-09-29", "t": "사슬에 묶인 마귀 — 묶인 동안 속박 99 · 연습장에서 만들어진 적 조합 통째로 세우기", "big": 0},
  {"b": 577, "v": "0.5", "d": "2026-09-29", "t": "전투 칸에 카드를 못 놓던 것 고침 · 연습장 손잡이·적 세우기 다시 보이게", "big": 0},
@@ -11379,7 +11380,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=579;
+const BUILD_NO=580;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -16795,7 +16796,7 @@ function drawBattle(app){
   const stage=el(`<div class="bfstage"><div class="bftop"></div><div class="bflog"></div><div class="bfsyn"></div><div class="bfq"></div></div>`);
   app.appendChild(stage);
   const head=el(`<div class="bfturn">
-    <div class="title" style="font-size:17px">${B.turn}턴 / 20</div>
+    <div class="title" style="font-size:17px">${B.turn}턴${(run&&run.sandbox)?"":" / 20"}</div>
     <span class="chip" title="필드·일차·대원의 성장에 따라 적이 강해집니다">적 강화 +${Math.round((foeScale(B.kind).m-1)*100)}%</span></div>`);
   stage.querySelector(".bftop").appendChild(head);
   { const qm=questMini(); if(qm) stage.querySelector(".bfq").appendChild(qm) }
@@ -20873,7 +20874,7 @@ function startMyTurn(){
   if(!run.heroes.some(h=>h.hp>0)&&!lifeLeft()){ B.over=1; battleLost(); render(); return }
   if(!run.heroes.some(h=>!h.down)&&!lifeLeft()){ B.over=1; battleLost(); render(); return }
   B.turn++;
-  if(B.turn>20){ B.over=1; say("20턴이 지나 물러납니다.","t3"); battleLost(); render(); return }
+  if(B.turn>20&&!(run&&run.sandbox)){ B.over=1; say("20턴이 지나 물러납니다.","t3"); battleLost(); render(); return }   /* 연습장은 턴 제한 없음 (사용자 2026-09-29) */
   /* 울타리 — 3턴 안에 못 부수면 4턴째에 경비원 둘 */
   if(run.dun&&run.dun.cell&&run.dun.cell.fence&&B.turn===4&&!run.dun.guards&&B.foes.some(f=>f.alive&&f.name==="울타리")){
     run.dun.guards=1;
