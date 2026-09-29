@@ -4245,6 +4245,10 @@ function at(nd,p){ if(nd){ nd.style.left=p.x+"px"; nd.style.top=p.y+"px" } }
 /* 잔상 — 옛 자리에서 새 자리 사이에 그림 몇을 뿌려 둔다 (사용자 2026-09-30) */
 function trailFX(side,name,fromSlot,toSlot,n){
   const a=ctrOf(side,fromSlot), b=ctrOf(side,toSlot); if(!a||!b) return;
+  /* 그림 자체도 옛 자리에서 옆으로 미끄러져 온다 — 위로는 뜨지 않는다 (사용자 2026-09-30) */
+  { const im=b.e&&b.e.querySelector(".art img.pxs, .art svg");
+    if(im&&im.animate) im.animate([{translate:(a.x-b.x)+"px 0px"},{translate:"0px 0px"}],
+      {duration:Math.round(300*SPD),easing:"cubic-bezier(.25,.7,.3,1)",fill:"none"}); }
   const po=poseOf(name,"idle"); const u=po&&(po.u||po); if(!u) return;
   const im0=b.e&&b.e.querySelector(".art img.pxs");
   const ah=im0?Math.round(im0.getBoundingClientRect().height):120;
@@ -4307,8 +4311,8 @@ function bigPoseFX(p,ms){
   const GLOW="drop-shadow(0 0 9px rgba(160,225,255,.95)) drop-shadow(0 0 22px rgba(110,180,255,.75)) brightness(1.2)";
   im.style.transformOrigin="50% 100%";
   im.animate([{scale:1,filter:"none"},
-              {scale:1.2,filter:GLOW,offset:.16},
-              {scale:1.17,filter:GLOW,offset:.78},
+              {scale:1.2,filter:GLOW,offset:.08},
+              {scale:1.17,filter:GLOW,offset:.88},
               {scale:1,filter:"none"}],
              {duration:d,easing:"cubic-bezier(.2,.8,.3,1)",fill:"none"});
 }
@@ -5243,12 +5247,12 @@ function flushFX(){
 }
 /* 자세 — 잠깐 다른 그림으로 갈아 끼웠다가 원래 자세로 되돌린다.
    그림 스프라이트가 없는 캐릭터에서는 아무 일도 일어나지 않는다. */
-const POSE_MS={atk:520,hurt:620,bless:1200,stun:900,guard:520,jump:560,expand:620,bomb:1000,magnet:1000};
+const POSE_MS={atk:520,hurt:620,bless:1200,stun:900,guard:520,jump:560,expand:620,bomb:2500,magnet:2500};
 /* 기술 전용 자세 (사용자 2026-09-30) — 「대원|기술」 : {p:자세, ms:머무는 동안, big:크게 빛남} */
 const SKILL_POSE={
  "이테리오|팽창 공격":{p:"expand",ms:620},
- "이테리오|시공간 폭탄":{p:"bomb",ms:1000,big:1},
- "이테리오|자기장 변환":{p:"magnet",ms:1000,big:1},
+ "이테리오|시공간 폭탄":{p:"bomb",ms:2500,big:1},
+ "이테리오|자기장 변환":{p:"magnet",ms:2500,big:1},
 };
 const skillPose=(h,s)=>(h&&s)?SKILL_POSE[h.name+"|"+s.n]:null;
 /* 캐릭터 전용 공격 효과음 — art/소리/ 의 파일 이름을 그대로 적는다.
@@ -11199,6 +11203,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 608, "v": "0.5", "d": "2026-09-30", "t": "이테리오 이동·강조 손질", "big": 0},
  {"b": 607, "v": "0.5", "d": "2026-09-30", "t": "이테리오", "big": 0},
  {"b": 606, "v": "0.5", "d": "2026-09-30", "t": "경험치 벌이 줄임", "big": 0},
  {"b": 605, "v": "0.5", "d": "2026-09-30", "t": "밀려날 때 포물선", "big": 0},
@@ -11807,7 +11812,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=607;
+const BUILD_NO=608;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
