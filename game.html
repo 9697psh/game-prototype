@@ -9850,6 +9850,7 @@ function heroStatusRows(h){
   /* 추진력은 버프 줄에 안 적는다 — 자원 줄(res)에 이미 있다 (사용자 2026-09-15) */
   /* 바람(산들바람 강화)은 진선풍도 칸의 수치로 보인다 — 표식은 안 단다 (사용자 2026-09-16) */
   if(h.air) o.push(bd("o","공중에 뜸","","잠깐 공중에 떠 있습니다. 내려오면 사라집니다."));   /* 2026-09-29 */
+  if(h.mobile) g.push(bd("g","기동","","다른 기술을 쓴 뒤 한 칸 물러서고 에너지 보호막을 3 얻습니다. 겹치지 않습니다."));   /* 2026-09-30 */
   if(h.taunt) g.push(bd("g","도발","","적의 공격을 대신 받습니다"));
   if(h.armor) g.push(bd("g","갑피",h.armor,"한 번에 받는 피해를 이 수치까지로 잘라냅니다"));
   if(h.blessed) g.push(bd("g","축복","","축복"));
@@ -11207,6 +11208,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 610, "v": "0.5", "d": "2026-09-30", "t": "기동 차례·겹침", "big": 0},
  {"b": 609, "v": "0.5", "d": "2026-09-30", "t": "이동 잔상 발높이·속도", "big": 0},
  {"b": 608, "v": "0.5", "d": "2026-09-30", "t": "이테리오 이동·강조 손질", "big": 0},
  {"b": 607, "v": "0.5", "d": "2026-09-30", "t": "이테리오", "big": 0},
@@ -11817,7 +11819,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=609;
+const BUILD_NO=610;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -19889,10 +19891,18 @@ function doSkill(target){
     runEffect(h,i,s,target);
     if(s.read) addRead(h,s.read);
     if(h.mobile&&!s.jumpback){
-      const back=h.slot-1;
-      if(back>=1&&!occAt(back)) moveTo(h,back);
-      h.eshield=(h.eshield||0)+3;                 /* 노트 2026-09-30 — 물러서고 에너지 보호막 3 */
-      fx({side:"mine",slot:h.slot,ring:"#5fd8cf",txt:"에너지 보호막 +3",cls:"shd",gap:90});
+      /* 기술의 효과와 모션이 다 나온 뒤에 물러선다 (사용자 2026-09-30).
+         연출 줄의 맨 뒤에 세워 두면 앞의 것들이 다 흐른 다음에 돈다.
+         강조 자세(2.5초)를 쓰는 기술은 그 길이만큼 더 기다린다. */
+      { const sp=skillPose(h,s); const wait=(sp&&sp.big)?sp.ms:120;
+        fx({gap:wait});
+        fx({side:"mine",slot:h.slot,fn:()=>{
+          const back=h.slot-1;
+          if(back>=1&&!occAt(back)) moveTo(h,back);
+          h.eshield=(h.eshield||0)+3;             /* 노트 2026-09-30 — 물러서고 에너지 보호막 3 */
+          fx({side:"mine",slot:h.slot,ring:"#5fd8cf",txt:"에너지 보호막 +3",cls:"shd",gap:90});
+          render(); if(typeof flushFX==="function") flushFX();
+        },gap:0}); }
     }
     if(s.alt&&!s.altBy){
       const back=Object.assign({},s); const nx=Object.assign({},s.alt);
@@ -20297,9 +20307,10 @@ function runEffect(h,i,s,target){
   if(s.jumpback){
     const to=Math.max(1,Math.min(SLOTS,target||h.slot));
     if(to!==h.slot&&Math.abs(to-h.slot)<=2) moveTo(h,to);
-    h.mobile=1;
-    fx({side:"mine",slot:h.slot,ring:"#6aa8e0",txt:"기동",cls:"shd"});
-    say(`${h.name} 기동 상태 — 기술을 쓸 때마다 한 칸 물러섭니다.`);
+    if(h.mobile){ say(`${h.name}${jo(h.name,"eun")} 이미 기동 상태입니다 — 겹치지 않습니다.`,"t2") }
+    else { h.mobile=1;
+      fx({side:"mine",slot:h.slot,ring:"#6aa8e0",txt:"기동",cls:"shd"});
+      say(`${h.name} 기동 상태 — 기술을 쓸 때마다 한 칸 물러서고 에너지 보호막을 3 얻습니다.`); }
     return;
   }
   if(s.magnet){
