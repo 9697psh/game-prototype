@@ -1059,7 +1059,7 @@ body.vbattle .tornado{transform:scale(4.6);margin-top:14px}   /* 회오리도 �
 /* 카제 — 회오리가 찬 동안 검이 빛난다 (사용자 2026-09-16). 기본 자세의 검 자리(오른쪽 아래)에 청록 빛 + 그림 전체에 옅은 발광 */
 .slot .art.charged img.pxs{filter:drop-shadow(0 0 3px rgba(120,240,210,.55))}
 /* 검은 기본 그림(48×57, 1:1)에서 손잡이 (18,28) → 칼끝 (2,44). 가운데 (10,37) = .art 에서 left 50%-14px · top 42px, 기울기 -45° */
-.slot .art .swglow{position:absolute;left:calc(50% - 14px);top:42px;width:30px;height:30px;margin:-15px 0 0 -15px;pointer-events:none;z-index:3;
+.slot .art .swglow{position:absolute;left:calc(50% - 16px);top:68%;   /* 그림 크기를 따라가게 — px 로 박으면 큰 창에서 가슴께로 올라간다 (사용자 2026-09-30) */width:30px;height:30px;margin:-15px 0 0 -15px;pointer-events:none;z-index:3;
   background:radial-gradient(ellipse 52% 22% at 50% 50%,rgba(200,255,240,.9) 0,rgba(95,216,207,.6) 40%,rgba(95,216,207,0) 100%);
   transform:rotate(-45deg);animation:swglowA 1.4s ease-in-out infinite;mix-blend-mode:screen}
 .slot .art .swglow::after{content:"";position:absolute;left:50%;top:50%;width:26px;height:2px;margin:-1px 0 0 -13px;background:linear-gradient(90deg,transparent,rgba(235,255,250,1),transparent);
@@ -1068,11 +1068,11 @@ body.vbattle .tornado{transform:scale(4.6);margin-top:14px}   /* 회오리도 �
 @keyframes swglowB{0%,100%{opacity:.25;transform:scaleX(.6)}50%{opacity:1;transform:scaleX(1.15)}}
 .slot .art.land{animation:landA .18s ease-out} @keyframes landA{0%{transform:scaleY(.9) translateY(4px)}100%{transform:none}}
 /* 영혼 돌진 — 적의 공격 그림이 반투명하게 앞으로 내달린다 (사용자 2026-09-29). 회오리와 같은 길(--dx/--dy)을 쓴다 */
-.ghostrush{position:absolute;height:120px;width:auto;margin:-96px 0 0 -60px;image-rendering:pixelated;pointer-events:none;z-index:8;
-  opacity:.92;filter:drop-shadow(0 0 12px rgba(168,240,234,.95)) drop-shadow(0 0 28px rgba(120,200,255,.75)) brightness(1.15);
+.ghostrush{position:absolute;height:var(--gh,120px);width:auto;margin:calc(var(--gh,120px) * -0.8) 0 0 calc(var(--gh,120px) * -0.5);image-rendering:pixelated;pointer-events:none;z-index:8;
+  opacity:.95;filter:brightness(2.4) contrast(.55) saturate(.35)
+    drop-shadow(0 0 10px rgba(180,250,255,1)) drop-shadow(0 0 26px rgba(120,210,255,.9)) drop-shadow(0 0 48px rgba(90,180,255,.6));
   animation:tornadoMv var(--d,.62s) cubic-bezier(.25,.6,.4,1) forwards, rushFade var(--d,.62s) linear forwards}
 @keyframes rushFade{0%{opacity:0}12%{opacity:.95}70%{opacity:.9}100%{opacity:0}}
-body.vbattle .ghostrush{height:190px;margin:-150px 0 0 -95px}
 /* 카제 회오리 — 하나가 날아간다. 4칸 띠(tornado-sheet4)를 되풀이하며 --dx/--dy 만큼 미끄러지고, 끝에서 6칸 띠가 터진다 */
 .tornado{position:absolute;width:64px;height:64px;margin:-36px 0 0 -32px;background-size:256px 64px;background-repeat:no-repeat;
   image-rendering:pixelated;pointer-events:none;z-index:9;transform:scale(3.15);filter:drop-shadow(0 0 6px rgba(120,230,170,.5));   /* 2026-09-16 1.5배 */
@@ -4247,19 +4247,26 @@ function auraFX(side,slot){
 }
 /* 카제 회오리 — from 에서 to 까지 하나가 날아가고(4칸 반복) 도착하면 터진다(6칸 띠). ms 는 날아가는 시간 */
 /* 적의 공격 자세가 from → to 로 내달린다 (영혼 돌진) */
-function ghostRushFX(name,from,to,ms){
+function ghostRushFX(name,from,to,ms,gh){
   /* 자리를 미리 재어 두었으면 그것을 쓴다 — 죽은 칸은 이미 사라졌을 수 있다 (2026-09-29) */
   const a=(from&&from.x!=null)?from:ctrOf(from.side,from.slot);
   const b=(to&&to.x!=null)?to:ctrOf(to.side,to.slot);
   if(!a||!b) return;
-  const u=poseOf(name,"atk")||poseOf(name,"idle"); if(!u) return;
+  /* poseOf 는 {ph,u} 를 돌려준다 — u 를 꺼내야 한다 (2026-09-30: 이걸 놓쳐 그림이 안 떴다) */
+  const po=poseOf(name,"atk")||poseOf(name,"idle"); const u=po&&(po.u||po); if(!u) return;
   ms=ms||620;
-  const nd=spawn('<img class="ghostrush" alt="" draggable="false">'); if(!nd) return;
-  nd.src=u; at(nd,a);
-  nd.style.setProperty("--dx",(b.x-a.x)+"px");
-  nd.style.setProperty("--dy",(b.y-a.y)+"px");
-  nd.style.setProperty("--d",ms+"ms");
-  setTimeout(()=>nd.remove(),ms+60);
+  /* 앞선 하나와 잔상 둘 — 어두운 바닥에 묻히지 않게 (사용자 2026-09-30) */
+  [[0,1],[70,.5],[150,.28]].forEach(([wait,op])=>{
+    const nd=spawn('<img class="ghostrush" alt="" draggable="false">'); if(!nd) return;
+    nd.src=u; at(nd,a);
+    if(gh) nd.style.setProperty("--gh",gh+"px");
+    nd.style.setProperty("--dx",(b.x-a.x)+"px");
+    nd.style.setProperty("--dy",(b.y-a.y)+"px");
+    nd.style.setProperty("--d",ms+"ms");
+    nd.style.opacity=op;
+    if(wait) nd.style.animationDelay=wait+"ms, "+wait+"ms";
+    setTimeout(()=>nd.remove(),ms+wait+80);
+  });
 }
 function tornadoFX(from,to,ms){
   const a=ctrOf(from.side,from.slot), b=ctrOf(to.side,to.slot); if(!a||!b) return;
@@ -4322,7 +4329,7 @@ function playFX(o){
   /* 화살비는 칸 하나에 매인 연출이 아니다 — slot 을 보기 전에 처리한다 */
   if(o.rain){ arrowRainFX(o.side,o.rain); return }
   /* 영혼 돌진도 칸에 매이지 않는다 — 죽은 칸은 이미 사라지고 없다 (2026-09-29) */
-  if(o.rush){ ghostRushFX(o.rush.name,o.rush.from,o.rush.to,o.rush.ms);
+  if(o.rush){ ghostRushFX(o.rush.name,o.rush.from,o.rush.to,o.rush.ms,o.rush.h);
     const q=ctrOf(o.side,o.slot); if(q&&o.quake) quakeFX(q); return }
   const p=ctrOf(o.side,o.slot); if(!p) return;
   if(o.sweep){ const q=ctrOf(o.sweep.side,o.sweep.slot); if(q) sweepFX(q,p) }
@@ -11126,6 +11133,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 603, "v": "0.5", "d": "2026-09-30", "t": "영혼 돌진 보이게 · 카제 빛 자리", "big": 0},
  {"b": 602, "v": "0.5", "d": "2026-09-30", "t": "영혼 돌진 · 넓적한 적 · 날아다니는 적", "big": 0},
  {"b": 601, "v": "0.5", "d": "2026-09-29", "t": "정령샘 크기 맞춤 · 돌진 연출 · 대원 셋", "big": 0},
  {"b": 600, "v": "0.5", "d": "2026-09-29", "t": "기생 더 자주", "big": 0},
@@ -11729,7 +11737,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=602;
+const BUILD_NO=603;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -16696,11 +16704,13 @@ function foeDeath(f){
       const farA=L.reduce((a,b)=>a.slot<=b.slot?a:b);   /* 가장 먼 대원까지 가로지른다 */
       /* ★ 자리는 지금(아직 칸이 있을 때) 재어 둔다 — 달릴 때는 죽은 칸이 사라지고 없다 */
       const pA=ctrOf("foe",f.slot), pB=ctrOf("mine",farA.slot);
+      const im0=pA&&pA.e&&pA.e.querySelector(".art img.pxs");
+      const gh=im0?Math.round(im0.getBoundingClientRect().height*1.2):120;   /* 제 크기보다 조금만 크게 */
       fx({gap:520});                                   /* 처치 번쩍임이 걷히기를 기다린다 (2026-09-29) */
       fx({quake:1,s:"gust",
           rush:{name:f.name,
                 from:pA?{x:pA.x,y:pA.y}:{side:"foe",slot:f.slot},
-                to:  pB?{x:pB.x,y:pB.y}:{side:"mine",slot:farA.slot},ms:900},gap:640});
+                to:  pB?{x:pB.x,y:pB.y}:{side:"mine",slot:farA.slot},ms:900,h:gh},gap:640});
       say(`${d.n} — ${f.name}의 혼이 전장을 가로지릅니다.`,"t1");
       L.slice().sort((a,b)=>b.slot-a.slot).forEach(t=>{
         asSrc(f,()=>hurtAlly(f,t,foeDmg(f,d.v||10,"공격"),d.n,"공격"));
