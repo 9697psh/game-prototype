@@ -2748,7 +2748,7 @@ body.vbattle header #hBtns{position:absolute;right:16px;top:50%;transform:transl
 body.vbattle .bagbtn{bottom:auto;top:9px;right:auto;left:16px;padding:6px 10px;gap:6px;font-size:12px}   /* 가방은 왼쪽 위 (사용자 2026-09-19) */
 .bfback{position:fixed;inset:0;z-index:0;background:#0f0c0a var(--floor,none) center/280px repeat;image-rendering:pixelated;pointer-events:none}
 .bfback::after{content:"";position:absolute;inset:0;background:rgba(0,0,0,.45)}
-.bfstage{position:relative;z-index:1;width:min(100vw,calc((100vh - 58px)*832/468));box-shadow:0 0 60px rgba(0,0,0,.8);aspect-ratio:832/468;background:url("bg/battle.webp") center/100% 100% no-repeat;image-rendering:pixelated;margin:0 auto;border-radius:0;overflow:visible}
+.bfstage{position:relative;z-index:1;width:min(100vw,calc((100vh - 58px)*832/468));box-shadow:0 0 60px rgba(0,0,0,.8);aspect-ratio:832/468;background:var(--bfbg,url("bg/battle.webp")) center/100% 100% no-repeat;image-rendering:pixelated;margin:0 auto;border-radius:0;overflow:visible}
 .bfstage>*{image-rendering:auto}
 .bfstage .field{position:absolute;inset:0;display:block;padding:0;overflow:visible;gap:0}
 .bfstage .side{position:static;display:block} .bfstage .mid{display:none}
@@ -3988,6 +3988,9 @@ setTimeout(()=>{ const L=["펼침-1.png","펼침-2.png","펼침-3.png","펼침-4
   L.forEach(n=>{ const i=new Image(); i.src=mapPng(n); MAP_PRE.push(i) }) },0);
 /* 구역마다 다른 바닥 — 지금은 핏빛 감옥뿐. 없으면 어두운 바탕 */
 const MAP_FLOOR=["바닥-핏빛 감옥.png",null,null];
+/* 전장 그림 — 구역마다 (art/배경/전투/_원본/<번호>-*.png → bg/). 없으면 1구역 것 (사용자 2026-09-29) */
+const BATTLE_BG=["bg/battle.webp","bg/battle-2.webp",null];
+const battleBg=()=>(run&&BATTLE_BG[Math.min(run.field,BATTLE_BG.length-1)])||BATTLE_BG[0];
 /* 지도 테두리 — 양피지 무대를 두르는 철 틀 (사용자 2026-09-29) */
 const MAP_FRAME="테두리.png";
 const stageSty=floor=>{ const a=[]; if(floor) a.push(`--floor:url(${mapPng(floor)})`);
@@ -10821,6 +10824,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 590, "v": "0.5", "d": "2026-09-29", "t": "정령샘 전투 배경 · 죽음·메아리 아이콘", "big": 0},
  {"b": 589, "v": "0.5", "d": "2026-09-29", "t": "열쇠말 죽음·메아리 + 전용 아이콘(status-effects-v3) · 대포 고정 포대 글", "big": 0},
  {"b": 588, "v": "0.5", "d": "2026-09-29", "t": "지도 테두리 맞춤 · 경험치 +3", "big": 0},
  {"b": 587, "v": "0.5", "d": "2026-09-29", "t": "지도 테두리 자리 고침", "big": 0},
@@ -11411,7 +11415,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=589;
+const BUILD_NO=590;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -16834,7 +16838,7 @@ function drawBattle(app){
   /* 전장 무대 — 받은 그림 위에 (2026-09-19). 위 띠(턴·단추) · 왼쪽 위 기록 · 왼쪽 조합 · 오른쪽 위 퀘스트 · 칸들 */
   { const floor=MAP_FLOOR[Math.min(run.field,MAP_FLOOR.length-1)];   /* 무대 양옆 — 그 구역 지도의 바닥 그림 (사용자 2026-09-19) */
     app.appendChild(el(`<div class="bfback"${floor?` style="--floor:url(${mapPng(floor)})"`:""}></div>`)); }
-  const stage=el(`<div class="bfstage"><div class="bftop"></div><div class="bflog"></div><div class="bfsyn"></div><div class="bfq"></div></div>`);
+  const stage=el(`<div class="bfstage" style="--bfbg:url(${battleBg()})"><div class="bftop"></div><div class="bflog"></div><div class="bfsyn"></div><div class="bfq"></div></div>`);
   app.appendChild(stage);
   const head=el(`<div class="bfturn">
     <div class="title" style="font-size:17px">${B.turn}턴${(run&&run.sandbox)?"":" / 20"}</div>
