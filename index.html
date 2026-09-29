@@ -2664,6 +2664,11 @@ body.vmap header #hBtns button:hover{border-color:#f4d67c;color:#f4d67c}
 .map-r .qpanel{margin-top:10px}
 .movl{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px}
 .movp{max-width:720px;max-height:88vh;overflow:auto;background:var(--panel);border:1px solid var(--rule2);border-radius:10px;padding:16px 18px;box-shadow:0 20px 50px rgba(0,0,0,.7)}
+/* 지도 화면 뒷배경 — 구역 그림 한 장이 화면을 덮는다 (사용자 2026-09-29) */
+.mapback{position:fixed;inset:0;z-index:0;background:#0f0c0a center/cover no-repeat;pointer-events:none}
+.mapback::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 40%,rgba(0,0,0,.5) 100%)}
+body.vmap .wrap{position:relative;z-index:1}
+body.vmap .pstage{background-color:transparent}
 /* 지도 화면 크기 — 창(F11) 높이에 맞춰 스스로 커진다. --ms = 지도 한 변 (사용자 2026-09-29) */
 body.vmap .wrap{max-width:none;padding:6px 28px 10px;margin:0}
 .mapwrap.m3{--ms:min(calc(100vh - 152px),980px);--mp:min(calc(var(--ms)*0.78),620px,calc((100vh - 200px)*0.75));grid-template-columns:auto var(--ms) var(--mp);gap:26px;justify-content:center;margin-top:2px}
@@ -3979,6 +3984,9 @@ setTimeout(()=>{ const L=["펼침-1.png","펼침-2.png","펼침-3.png","펼침-4
   L.forEach(n=>{ const i=new Image(); i.src=mapPng(n); MAP_PRE.push(i) }) },0);
 /* 구역마다 다른 바닥 — 지금은 핏빛 감옥뿐. 없으면 어두운 바탕 */
 const MAP_FLOOR=["바닥-핏빛 감옥.png",null,null];
+/* 지도 화면 전체의 뒷배경 — 구역마다 한 장 (사용자 2026-09-29). 있으면 화면을 덮고, 무대의 바닥 무늬는 걷는다 */
+const MAP_WALL=["배경-핏빛 감옥.webp",null,null];
+const mapWall=()=>run?MAP_WALL[Math.min(run.field,MAP_WALL.length-1)]:null;
 /* 양피지 위 아이콘 — 잉크 판 v7 (art/아이콘/map-ink-v7, 사용자 2026-09-14). 주둔지는 v7 에 없어 금빛 그대로. v2(검은 잉크)는 ink_* 로 남아 있다 */
 /* 지도 아이콘 — 64px 잉크 판 map-pixel-ink-v11 (사용자 2026-09-15). 기믹 넷(첨탑·울타리·고문실·사형장)도 같은 판 */
 const INK_NODE={dungeon:"ink11_map_battle",elite:"ink11_map_elite",boss:"ink11_map_boss",shop:"ink11_map_shop",rest:"ink11_map_shelter",forge:"ink11_facility_forge",event:"ink11_map_unknown",camp:"ink11_map_garrison",
@@ -10067,20 +10075,20 @@ const PACKS=[
   fx:r=>{ r.gold+=12 }},
  {n:"버려진 조각",d:"무작위 파편 장신구을 얻습니다.",i:"item",
   fx:r=>{ equip(r.heroes[0],rnd(ITEMS.filter(x=>x.g==="파편"))) }},
- {n:"버려진 방패",d:"소형 방패 카드를 3장 얻습니다.",i:"card",
-  fx:r=>{ addCard(r,"소형 방패",3) }},
+ {n:"버려진 방패",d:"소형 방패 카드를 4장 얻습니다.",i:"card",
+  fx:r=>{ addCard(r,"소형 방패",4) }},
  {n:"금속 펜던트",d:"가장 처음 중급 보상을 얻을 때, 하나 더 얻습니다.",i:"charm",
   fx:r=>{ r.pendant=1 }},
  {n:"버려진 시계",d:"레벨을 3 얻습니다.",i:"clock",
   fx:r=>{ const h=r.heroes[0], q=[];
           for(let i=0;i<3;i++){ levelUp(h); q.push({hero:h,lv:h.lv,noRun:1}) }
           r.bonusLv=q }},
- {n:"건강 챙기기",d:"최대 체력을 6 얻습니다.",i:"life",
-  fx:r=>{ const h=r.heroes[0]; h.maxHp+=6; h.hp+=6 }},
+ {n:"건강 챙기기",d:"최대 체력을 8 얻습니다.",i:"life",
+  fx:r=>{ const h=r.heroes[0]; h.maxHp+=8; h.hp+=8 }},
  {n:"맞춤 갑옷",d:"다음 2번의 레벨업 보상이 전용 보상으로만 등장합니다.",i:"armor",
   fx:r=>{ r.ownOnly=(r.ownOnly||0)+2 }},
- {n:"소형 차원문",d:"[악마 하수인] 카드 2장을 얻습니다.",i:"portal",
-  fx:r=>{ addCard(r,"악마 하수인",2) }}
+ {n:"소형 차원문",d:"[악마 하수인] 카드 4장을 얻습니다.",i:"portal",
+  fx:r=>{ addCard(r,"악마 하수인",4) }}
 ];
 function packArt(i,name){
   /* 새로 받은 그림이 있으면 그것부터 */
@@ -10806,6 +10814,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 583, "v": "0.5", "d": "2026-09-29", "t": "핏빛 감옥 지도 뒷배경 · 선물 셋 강화", "big": 0},
  {"b": 582, "v": "0.5", "d": "2026-09-29", "t": "지도 좌우 맞바꿈 · 제련소 손질 · 날짜 5·6·7", "big": 0},
  {"b": 581, "v": "0.5", "d": "2026-09-29", "t": "적 강화 손잡이 · 갑주 유성 · 맞바람 되돌이 피해", "big": 0},
  {"b": 580, "v": "0.5", "d": "2026-09-29", "t": "적 사거리 표시 아래로 · 연습장 턴 제한 없음", "big": 0},
@@ -11389,7 +11398,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=582;
+const BUILD_NO=583;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -12612,6 +12621,9 @@ function migrateCells(){
 function drawMap(app){
   const f=FIELDS[run.field], S=run.size;
   migrateCells();
+  /* 구역 뒷배경 한 장 (사용자 2026-09-29) */
+  { const w=mapWall();
+    if(w) app.appendChild(el(`<div class="mapback" style="background-image:url(${mapPng(w)})"></div>`)); }
   const dLeft=Math.max(0,(f.days||7)-run.day+1);
   /* 위 띠 — 날짜 · 구역 이름 · 플레이 시간 */
   app.appendChild(el(`<div class="mtop">
@@ -12623,7 +12635,7 @@ function drawMap(app){
   const three=el(`<div class="mapwrap m3"><div class="map-l"></div><div class="map-m"><div class="msyn"></div><div class="mcards"></div></div><div class="map-r"><div class="mres"></div></div></div>`);
   const L=three.querySelector(".map-l"), M=three.querySelector(".map-m"), R=three.querySelector(".map-r");
   /* 양피지 무대 — 바닥(구역마다) 위에 왼손이 든 양피지, 그 위에 격자. 커서 대신 가리키는 오른손이 따라다닌다 (무대 안에서만) */
-  const floor=MAP_FLOOR[Math.min(run.field,MAP_FLOOR.length-1)];
+  const floor=mapWall()?null:MAP_FLOOR[Math.min(run.field,MAP_FLOOR.length-1)];
   const H=mapHands();
   const stage=el(`<div class="pstage${MAP_ENTER?" unfolding":""}"${floor?` style="--floor:url(${mapPng(floor)})"`:""}>
     <img class="pmapimg" src="${mapPng(H.held)}" alt="" draggable="false">
