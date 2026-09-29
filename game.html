@@ -11133,6 +11133,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 604, "v": "0.5", "d": "2026-09-30", "t": "영혼 돌진 속도·싱크", "big": 0},
  {"b": 603, "v": "0.5", "d": "2026-09-30", "t": "영혼 돌진 보이게 · 카제 빛 자리", "big": 0},
  {"b": 602, "v": "0.5", "d": "2026-09-30", "t": "영혼 돌진 · 넓적한 적 · 날아다니는 적", "big": 0},
  {"b": 601, "v": "0.5", "d": "2026-09-29", "t": "정령샘 크기 맞춤 · 돌진 연출 · 대원 셋", "big": 0},
@@ -11737,7 +11738,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=603;
+const BUILD_NO=604;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -16706,15 +16707,30 @@ function foeDeath(f){
       const pA=ctrOf("foe",f.slot), pB=ctrOf("mine",farA.slot);
       const im0=pA&&pA.e&&pA.e.querySelector(".art img.pxs");
       const gh=im0?Math.round(im0.getBoundingClientRect().height*1.2):120;   /* 제 크기보다 조금만 크게 */
-      fx({gap:520});                                   /* 처치 번쩍임이 걷히기를 기다린다 (2026-09-29) */
+      const MS=520;                                    /* 달리는 시간 — 빠르게 (사용자 2026-09-30) */
+      say(`${d.n} — ${f.name}의 혼이 전장을 가로지릅니다.`,"t1");
+      /* 혼이 지나가는 순간에 맞춰 하나씩 맞고 밀려난다 (사용자 2026-09-30).
+         대원마다 길 위의 자리를 재어 도착 때를 셈하고, 그만큼 연출 사이를 벌린다. */
+      const span=(pA&&pB)?(pB.x-pA.x):0;
+      const order=L.slice().map(t=>{
+        const p=ctrOf("mine",t.slot);
+        const fr=(span&&p)?Math.max(0,Math.min(1,(p.x-pA.x)/span)):0;
+        return {u:t,at:Math.round(MS*fr)};
+      }).sort((a,b)=>a.at-b.at);
+      fx({gap:420});                                   /* 처치 번쩍임이 걷히기를 기다린다 */
       fx({quake:1,s:"gust",
           rush:{name:f.name,
                 from:pA?{x:pA.x,y:pA.y}:{side:"foe",slot:f.slot},
-                to:  pB?{x:pB.x,y:pB.y}:{side:"mine",slot:farA.slot},ms:900,h:gh},gap:640});
-      say(`${d.n} — ${f.name}의 혼이 전장을 가로지릅니다.`,"t1");
-      L.slice().sort((a,b)=>b.slot-a.slot).forEach(t=>{
-        asSrc(f,()=>hurtAlly(f,t,foeDmg(f,d.v||10,"공격"),d.n,"공격"));
-        if(t.hp>0){ airborneAlly(f,t); pushBack(f,t) } });
+                to:  pB?{x:pB.x,y:pB.y}:{side:"mine",slot:farA.slot},ms:MS,h:gh},
+          gap:order.length?order[0].at:MS});
+      order.forEach((o,i)=>{
+        const t=o.u, nx=order[i+1];
+        fx({side:"mine",slot:t.slot,hit:1,gap:nx?Math.max(40,nx.at-o.at):260,
+            fn:()=>{ if(t.hp<=0) return;
+              asSrc(f,()=>hurtAlly(f,t,foeDmg(f,d.v||10,"공격"),d.n,"공격"));
+              if(t.hp>0){ airborneAlly(f,t); pushBack(f,t) }
+              render() }});
+      });
     }
     else if(d.kind==="summon"){               /* 기생 — 죽은 자리에 덩굴이 자란다 */
       let sl=f.slot; if(foeBlock(sl)){ sl=1; while(sl<=SLOTS&&foeBlock(sl)) sl++ }
