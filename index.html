@@ -758,6 +758,8 @@ button.dtl{padding:3px 10px;font-size:11.5px}
 .ccard .cc-art{height:74px;display:flex;align-items:center;justify-content:center;
   border:1px solid var(--rule);border-radius:7px;background:rgba(0,0,0,.28)}
 .ccard .cc-art img,.ccard .cc-art svg{width:64px;height:64px;image-rendering:pixelated;object-fit:contain}
+/* 대원 카드의 정면 얼굴 — 그림 칸 높이를 채운다 (사용자 2026-09-30) */
+.ccard.c-hero .cc-art img.pxs.face{width:auto;height:100%}
 .ccard .cc-n{font-size:12px;font-weight:700;text-align:center;word-break:keep-all}
 .ccard .cc-type{font-size:9.5px;color:var(--faint);text-align:center;
   border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:3px 0}
@@ -11468,6 +11470,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 635, "v": "0.5", "d": "2026-09-30", "t": "대원 카드 정면 얼굴", "big": 0},
  {"b": 634, "v": "0.5", "d": "2026-09-30", "t": "대원 소개 / 사라지던 것", "big": 0},
  {"b": 633, "v": "0.5", "d": "2026-09-30", "t": "숨쉬던 적 다섯도 새 대기 띠", "big": 0},
  {"b": 632, "v": "0.5", "d": "2026-09-30", "t": "나이코스 소개 글", "big": 0},
@@ -12103,7 +12106,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=634;
+const BUILD_NO=635;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -18168,7 +18171,7 @@ function drawBattle(app){
       if(!c.gone&&(CARD_META[key]||{}).gone) tags.push("소멸성");
       if(CARD_LIB[key]&&CARD_LIB[key].foe) tags.push("적 대상");
     }
-    const art=hero?figure(hero.name):(c.type==="summon"?figure(c.name):cardArt(c.name));
+    const art=hero?faceArt(hero.name):(c.type==="summon"?figure(c.name):cardArt(c.name));   /* 대원 카드는 정면 얼굴 (사용자 2026-09-30) */
     const type=hero?"대원":(c.type==="summon"?"소환물":esc(cardKind(c.name))+" 카드");
     const desc=hero||c.type==="summon"?"빈 칸에 배치하세요":rich(c.d);
     const st=hero
