@@ -4341,10 +4341,10 @@ function ffGlideFX(side,fromSlot,toSlot,flare){
     },Math.round(t*ms*0.85));
   }
 }
-function hopFX(side,toSlot,fromSlot){
+function hopFX(side,toSlot,fromSlot,upPx){
   const p=ctrOf(side,toSlot), q=ctrOf(side,fromSlot); if(!p||!q) return;
   const sp=p.e.querySelector(".art img.pxs, .art svg"); if(!sp||!sp.animate) return;
-  const dx=q.x-p.x, up=-34;
+  const dx=q.x-p.x, up=-(upPx||34);   /* upPx — 제자리바람은 살짝 (2026-09-30) */
   sp.animate([{translate:`${dx}px 0px`},{translate:`${dx*0.5}px ${up}px`,offset:.48},{translate:`0px -4px`,offset:.86},{translate:"0px 0px"}],
              {duration:520,easing:"cubic-bezier(.3,.6,.4,1)",fill:"none"});
   setTimeout(()=>{ const pp=ctrOf(side,toSlot); if(pp){ const a=pp.e.querySelector(".art"); if(a){ a.classList.add("land"); setTimeout(()=>a.classList.remove("land"),180) } } },520);
@@ -4494,7 +4494,7 @@ function playFX(o){
   if(o.airslash!=null) airSlashFX(o.side,o.slot,o.airslash);
   if(o.tornado) tornadoFX(o.tornado,{side:o.side,slot:o.slot},o.tornadoMs);
   if(o.aura) auraFX(o.side,o.slot);
-  if(o.hop!=null) hopFX(o.side,o.slot,o.hop);
+  if(o.hop!=null) hopFX(o.side,o.slot,o.hop,o.hopUp);
   if(o.soulg) soulGainFX(o.side,o.slot,o.soulg===2);
   if(o.sheet) sheetFX(o.sheet,o.side,o.slot,o.sheetOpt);
   if(o.flareShot) flareShotFX(o.side,o.slot,o.flareShot);
@@ -11566,6 +11566,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 653, "v": "0.5", "d": "2026-09-30", "t": "훈련장 보상 뒤 추진력 · 제자리바람 점프", "big": 0},
  {"b": 652, "v": "0.5", "d": "2026-09-30", "t": "카제 얼굴 교체", "big": 0},
  {"b": 651, "v": "0.5", "d": "2026-09-30", "t": "이테리오 보상 그림 손질", "big": 0},
  {"b": 650, "v": "0.5", "d": "2026-09-30", "t": "이테리오 보상 그림 채움", "big": 0},
@@ -12219,7 +12220,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=652;
+const BUILD_NO=653;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -12890,8 +12891,11 @@ function sandSkills(h){
 function sandRebuild(){
   const h=run.heroes[0], name=h.name, slot=h.slot;
   const fresh=makeHero(name);
+  /* 전투 중에만 쓰는 값(추진력·에너지 보호막·진선풍도 강화…)은 makeHero 에 없다 — 그대로 넘겨받는다.
+     전에는 통째로 지워져 추진력이 undefined → '+1' 이 NaN 이 되어 산들바람이 추진력을 못 올렸다 (사용자 2026-09-30) */
+  const keep={}; Object.keys(h).forEach(k=>{ if(!(k in fresh)) keep[k]=h[k] });
   Object.keys(h).forEach(k=>{ delete h[k] });
-  Object.assign(h,fresh);
+  Object.assign(h,fresh,keep);
   h.lv=20; h.maxHp=300; h.hp=300; h.maxMana=9; h.mana=9; h.slot=slot; h.summoned=1;
   run.cards=[]; B.hand=(B.hand||[]).filter(c=>!c.stock);
   const list=HERO_REWARDS[name]||[];
@@ -21356,7 +21360,9 @@ function runEffect(h,i,s,target){
         if(h.name==="카제"&&h.slot!==from) fx({side:"mine",slot:h.slot,pose:"jump",poseMs:560,hop:from,gap:0}) }   /* 도약 자세 + 뛰었다 착지 (사용자 2026-09-16) */
       else say("그쪽으로는 움직일 수 없습니다.","t2");
     } else if(h.tag.gustStay||h.name!=="카제"){
-      fx({side:"mine",slot:h.slot,s:"step",ring:"#5fd8cf",pose:h.name==="카제"?"jump":null,poseMs:560,gap:90});
+      /* 제자리바람 — 카제는 제자리에서 살짝 뛰었다 착지한다 (사용자 2026-09-30) */
+      fx({side:"mine",slot:h.slot,s:"step",ring:"#5fd8cf",pose:h.name==="카제"?"jump":null,poseMs:560,
+          hop:h.name==="카제"?h.slot:null,hopUp:20,gap:90});
       h.moveOk=1;   /* 제자리바람은 시전 자체가 성립 */
       say(`${h.name} 제자리에서 바람을 모읍니다.`);
     } else { say("이동할 칸을 골라야 합니다.","t2"); return }
