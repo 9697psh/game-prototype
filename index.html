@@ -2634,7 +2634,17 @@ body.vmap header #hBtns button:hover{border-color:#f4d67c;color:#f4d67c}
 .mchip>*{image-rendering:auto} .mchip img.ri{width:18px;height:18px;image-rendering:pixelated}
 .mchip b{font-variant-numeric:tabular-nums;color:#fff2cc} .mchip i{font-style:normal;color:#b9a888;font-size:11px}
 .mchip.warn b{color:#f0c060} .mchip.bad b{color:#e0705a}
-.mchip u{position:absolute;left:0;right:0;bottom:-4px;height:2px;background:#7fd39a;text-decoration:none;display:block;max-width:none;opacity:.8}
+/* 수치 게이지 (사용자 2026-10-01 — 초록 줄이 안 보이고 뜻을 모르겠다) : 바탕 줄 = 최대, 채운 몫 = 지금. 색은 수치마다, 위험하면 주황·빨강 */
+.mchip{--gc:#7fd39a}
+.mchip.taint{--gc:var(--r-taint)} .mchip.crystal{--gc:#6fd0f0} .mchip.act{--gc:var(--r-act)}
+.mchip.warn{--gc:#f0c060} .mchip.bad{--gc:#e0705a}
+.mchip:has(>u)::before{content:"";position:absolute;left:0;right:0;bottom:-7px;height:5px;border-radius:3px;
+  background:rgba(255,255,255,.10);box-shadow:0 0 0 1px rgba(0,0,0,.7),inset 0 1px 0 rgba(0,0,0,.5)}
+.mchip u{position:absolute;left:0;bottom:-7px;height:5px;border-radius:3px;background:var(--gc);text-decoration:none;display:block;max-width:100%;opacity:1;
+  box-shadow:0 0 6px var(--gc);transition:width .3s}
+.mchip.bad u{animation:gaugeWarn 1.1s ease-in-out infinite}
+.mchip.res.bad{animation:none;box-shadow:none}   /* 지도 칩은 네모 맥박 대신 게이지가 깜빡인다 */
+@keyframes gaugeWarn{50%{opacity:.45}}
 .mapwrap.m3{display:grid;grid-template-columns:560px 190px minmax(0,1fr);gap:20px;align-items:start;margin-top:4px}
 .m3 .pstage{margin:0;width:560px}
 .m3 .map-l{position:relative}
@@ -3547,7 +3557,7 @@ const KW_TAB=[
  {n:"잠금",c:"skill",d:"해당 기술을 일정 턴 동안 사용할 수 없음. 쓴 턴은 세지 않고 다음 턴부터 줄어듭니다 — 잠금(1)이면 다음 턴 하나를 통째로 쉽니다"},
  {n:"사용한도",c:"skill",d:"사용 한도의 횟수만큼 사용 시 그 라운드에서 기술이 사용 불가 상태가 됨"},
  {n:"보호막",c:"buff",d:"한 턴간 누적된 보호막만큼 피해를 막음. 턴이 끝나면 사라짐"},
- {n:"에너지 보호막",c:"buff",d:"한 턴간 누적된 보호막만큼 피해를 막음. 턴이 끝나도 사라지지 않음"},
+ {n:"에너지 보호막",c:"buff",d:"한 턴간 누적된 보호막만큼 피해를 막음. 턴이 끝나도 사라지지 않음. 라운드가 바뀌면 사라짐"},
  {n:"부정 보호막",c:"buff",d:"부정적인 효과를 1회 제거. 이미 적용된 효과 먼저 제거"},
  {n:"도발",c:"buff",d:"이 캐릭터의 뒤에 있는 대상들은 상대가 대상으로 지정할 수 없음"},
  {n:"회피",c:"buff",d:"다음 공격을 무시"},
@@ -11071,8 +11081,8 @@ function addTaint(v){
 }
 /* ═══ 푸른 수정 (정령숲 전체 기믹, 사용자 2026-10-01) ═══
    정령숲에서는 오염도와 따로 푸른 수정 5칸을 지킨다. 5로 시작해 0이 되면 끝.
-   오염도가 20 이상이 되면 20을 걷어 내고 수정 1칸을 잃는다. 이동할 때 오염도가 3 더 오른다(moveTaint). */
-const CRYSTAL_MAX=5, CRYSTAL_TAINT=20, SPIRIT_STEP=3;
+   오염도가 20 이상이 되면 20을 걷어 내고 수정 1칸을 잃는다. 이동할 때 오염도가 1 더 오른다(moveTaint — 사용자 2026-10-01, 처음엔 3). */
+const CRYSTAL_MAX=5, CRYSTAL_TAINT=20, SPIRIT_STEP=1;
 function spiritOn(){ return !!run&&run.field===1&&!run.sandbox }
 /* soft — 전투 도중(적 기술)에는 판을 끝내지 않는다. 0 은 남겨 두고 다음 오염도 셈에서 끝낸다 */
 function crystalDrain(soft){
@@ -11882,6 +11892,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 671, "v": "0.5", "d": "2026-10-01", "t": "기동 턴 넘어 유지 · 에너지 보호막 라운드마다 · 지도 게이지 강조 · 정령숲 이동 오염도 +1", "big": 0},
  {"b": 670, "v": "0.5", "d": "2026-10-01", "t": "시험판 — 머리줄에 2스테이지로 바로 (Lv15 · 레벨 보상 무작위)", "big": 0},
  {"b": 669, "v": "0.5", "d": "2026-10-01", "t": "마른숲 상점 오염도 값을 파편 환율로 · 고요한 우물 대기 움직임 뺌", "big": 0},
  {"b": 668, "v": "0.5", "d": "2026-10-01", "t": "정령숲 지도 기믹 넷 (고목 덩굴 · 반딧불 둥지 · 마른숲 상점 · 기력의 샘) + 푸른 수정", "big": 0},
@@ -12553,7 +12564,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=670;
+const BUILD_NO=671;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -13730,7 +13741,7 @@ const MOVE_TAINT=5;                 /* 한 칸 옮길 때 오르는 오염도 */
 function moveTaint(){
   let cut=0;
   (run&&run.heroes||[]).forEach(h=>{ cut=Math.max(cut,(h.tag&&h.tag.stepCut)||0) });
-  return Math.max(1,MOVE_TAINT-cut)+tagSum("rush")+(spiritOn()?SPIRIT_STEP:0);   /* 급한 걸음 · 정령숲 +3 (2026-10-01) */
+  return Math.max(1,MOVE_TAINT-cut)+tagSum("rush")+(spiritOn()?SPIRIT_STEP:0);   /* 급한 걸음 · 정령숲 +1 (2026-10-01) */
 }
 const near=(a,b)=>Math.abs(a.r-b.r)+Math.abs(a.c-b.c)===1;
 /* 지도 칸 판 — 지도 화면과 [지도 보기](M) 가 같은 것을 쓴다 (사용자 2026-09-16: 미리보기가 옛 그림으로 그려지던 것).
@@ -16832,6 +16843,7 @@ function startBattle(kind,pinned){
     h.shield=0; h.keepShield=0; h.slot=0; h.armor=0; h.deb={};
     h.hide=0; h.shadowAt=0; h.darkAt=0; h.stance=0; h.stanceTurn=0;
     h.leech=0; h.pierceNext=0; h.aimAt=null; h.headshotUsed=0; h.mobile=0;
+    h.eshield=0;                    /* 에너지 보호막 — 그 라운드에서만 (사용자 2026-10-01, 전에는 전투 내내) */
     h.freeBlock=0; h.freePush=0; h.cutUses=0; h.shotUses=0; h.guardStack=0;
     h.limitUsed={};                 /* 사용한도는 라운드마다 다시 찬다 */
     /* 처음은 날카롭게 · 활시위 당기기는 라운드마다 다시 선다
@@ -16849,7 +16861,7 @@ function startBattle(kind,pinned){
       h.negShield=itemBt(h,'negShield')+(h.tag.negShield||0);
       h.ammo=5; h.scale=0; h.scaleTurn=0; h.dark=0;
       h.tunes=[]; h.encore=0; h.venom=0; h.verdictUsed=0; h.tauntDefOn=0;
-      h.eshield=0; h.lastStandUsed=0;
+      h.lastStandUsed=0;
       h.windUses=0; h.first={};
       h.critAtkUsed=0; h.critMagUsed=0; h.soloOn=0;
       h.cutGrow=0; h.cutSum=0; h.endCount=0; h.deathSaveUsed=0; h.emptyDefOn=0;
@@ -22788,7 +22800,7 @@ function startMyTurn(){
     if(h.hp<=0) return;
     h.mana=Math.max(0,h.maxMana-(h.curse||0)); h.curse=0;
 
-    h.headshotUsed=0; h.mobile=0; h.mobileGo=0;
+    h.headshotUsed=0; h.mobileGo=0;   /* 기동(h.mobile)은 턴을 넘어 남는다 — 물러설 때만 풀린다 (사용자 2026-10-01) */
     h.spentTurn=0; h.magnetTurn=0;   /* 이테리오 — 아크 방전 셈 · 마이스너 변환 한 턴 한 번 */
     if(h.spareNext&&h.tag&&h.tag.spareBat){ const v=3*h.tag.spareBat; h.eshield=(h.eshield||0)+v; h.spareNext=0;
       say(`여분 전지 — ${h.name} 에너지 보호막 +${v}`,"t2") }
