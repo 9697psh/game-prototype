@@ -3227,6 +3227,33 @@ kbd{display:inline-block;min-width:20px;text-align:center;padding:1px 7px;font-s
   83.33%  {background-position:-240px 0}
 }
 .art .portal{left:50%;bottom:1px;transform:translateX(-50%)}
+/* ═══ 도감 — 책 (사용자 2026-09-30) ═══ 그림은 책 테두리 바로 바깥까지 자른 1472×920 (비 1.6).
+   페이지 : 왼 8.4%·39.1% · 오른 52.2%·39.4% · 위 5.1%·86.4% (원본 1536 에서 왼 160~735 · 오른 805~1385 · 위아래 85~880) */
+.dexbook{position:relative;width:min(96vw,calc((100vh - 190px)*1.6));aspect-ratio:1472/920;margin:6px auto 0;
+  background:url("ui/menu-codex-book.webp") center/100% 100% no-repeat;image-rendering:pixelated}
+.dbpage{position:absolute;top:6.2%;height:84%;display:flex;flex-direction:column;min-height:0}
+.dbl{left:9.6%;width:37.2%} .dbr{left:53.2%;width:37.6%}
+.dbhead{font-family:var(--serif);color:#4a2c18;font-size:clamp(14px,1.5vw,22px);text-align:center;letter-spacing:.25em;margin:2px 0 6px;flex:0 0 auto}
+.dblist{flex:1;min-height:0;overflow:auto;padding:0 4px 8px;display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start;
+  scrollbar-width:thin;scrollbar-color:#8a5a33 transparent}
+.dbsec{width:100%;font-size:12px;color:#6b4226;border-bottom:1px solid rgba(107,66,38,.35);margin:8px 0 3px;padding-bottom:2px;letter-spacing:.05em}
+.dbtile{width:74px;display:flex;flex-direction:column;align-items:center;padding:4px 2px 3px;border-radius:4px;cursor:pointer;border:1px solid transparent}
+.dbtile.wide{width:152px}
+.dbtile:hover{background:rgba(120,80,40,.13)}
+.dbtile.on{border-color:#8a5a33;background:rgba(120,80,40,.2)}
+.dbart{height:54px;width:100%;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;gap:1px}
+.dbart > div{display:flex;align-items:flex-end;justify-content:center;height:100%;width:100%;background:none!important;border:0!important;padding:0!important;margin:0!important}
+.dbart img{max-height:52px!important;max-width:100%!important;width:auto!important;height:auto!important;image-rendering:pixelated;object-fit:contain}
+.dbart img.pxs{height:52px!important}
+.dbtile.wide .dbart img.pxs{height:40px!important}
+.dbart svg{max-height:46px;max-width:100%}
+.dbname{font-size:10.5px;color:#3a2414;text-align:center;line-height:1.25;margin-top:3px;word-break:keep-all}
+.dbdetail{flex:1;min-height:0;overflow:auto;padding:2px 4px 8px;scrollbar-width:thin;scrollbar-color:#8a5a33 transparent}
+.dbdetail > *{width:100%!important;box-sizing:border-box;margin:0!important}
+.dbdetail .ic-full{display:block}
+.dbempty{color:#6b4226;text-align:center;margin-top:40%}
+.dbfoot{display:flex;justify-content:center;gap:10px;margin-top:6px}
+.dexsrc{display:none}
 /* 홀로그램 분신 (이테리오 보상 2026-09-30) — 비치는 푸른 그림, 가끔 일렁인다 */
 .slot .art.holo{opacity:.5;filter:grayscale(1) sepia(1) hue-rotate(150deg) saturate(3) brightness(1.3) drop-shadow(0 0 6px #6ad8ff);pointer-events:none}
 .slot .art.holo img{animation:holoFlick 2.2s steps(1) infinite}
@@ -11452,13 +11479,52 @@ function drawSaves(app){
 /* ═══════════ 도감 — 탭 하나로 (사용자 2026-09-17) ═══════════ */
 let DEX_TAB="itemdex";
 const DEX_TABS=[["itemdex","장신구"],["carddex","카드"],["evdex","이벤트"],["gimdex","전용 구역"],["foedex","적"],["encdex","조합"]];
+/* 도감 — 책 (사용자 2026-09-30). 칸마다 고른 항목 번호를 기억한다 */
+const DEX_SEL={};
 function drawDex(app){
   const bar=el(`<div class="dextabs">${DEX_TABS.map(([k,n])=>`<button class="dtab ${k===DEX_TAB?"on":""}" data-k="${k}">${esc(n)}</button>`).join("")}</div>`);
   bar.querySelectorAll(".dtab").forEach(b=>{ b.onclick=()=>{ DEX_TAB=b.dataset.k; render() } });
   app.appendChild(bar);
-  const body=el(`<div class="dexbody"></div>`); app.appendChild(body);
   const fn={itemdex:drawItemDex,carddex:drawCardDex,evdex:drawEventDex,gimdex:drawGimDex,foedex:drawFoeDex,encdex:drawEncDex}[DEX_TAB]||drawItemDex;
-  fn(body);
+  /* 칸의 원래 화면을 보이지 않는 그릇에 그린다 — 카드(자세한 것)는 거기서 꺼내 오른쪽 페이지로 옮긴다 */
+  const src=el(`<div class="dexsrc"></div>`);
+  fn(src);
+  const items=[];
+  src.querySelectorAll(".dexhd, .dexgrid, .dexcards, .evdx-grid").forEach(n=>{
+    if(n.classList.contains("dexhd")) items.push({hd:n.textContent.trim()});
+    else [...n.children].forEach(c=>{ const nm=c.querySelector(".ic-n,.cc-n,.evdx-name"); if(nm) items.push({el:c,n:nm.textContent.trim()}) });
+  });
+  const title=((src.querySelector(".title")||{}).textContent||"도감").trim();
+  const book=el(`<div class="dexbook">
+    <div class="dbpage dbl"><div class="dbhead">${esc(title)}</div><div class="dblist"></div></div>
+    <div class="dbpage dbr"><div class="dbdetail"></div></div></div>`);
+  const list=book.querySelector(".dblist"), detail=book.querySelector(".dbdetail");
+  const cards=items.filter(x=>x.el);
+  let sel=Math.min(DEX_SEL[DEX_TAB]||0,Math.max(0,cards.length-1));
+  const tiles=[];
+  const show=i=>{ sel=i; DEX_SEL[DEX_TAB]=i;
+    tiles.forEach((t,k)=>t.classList.toggle("on",k===i));
+    detail.innerHTML=""; if(cards[i]) detail.appendChild(cards[i].el); detail.scrollTop=0 };
+  items.forEach(it=>{
+    if(it.hd){ list.appendChild(el(`<div class="dbsec">${esc(it.hd)}</div>`)); return }
+    const k=cards.indexOf(it);
+    const art=it.el.querySelector(".ic-art,.cc-art,.evdx-art");
+    const t=el(`<div class="dbtile"><div class="dbart"></div><div class="dbname">${esc(it.n)}</div></div>`);
+    const box=t.querySelector(".dbart");
+    if(art&&art.classList.contains("encrow")){   /* 조합 — 칸의 적들을 한 줄로 작게 */
+      t.classList.add("wide"); [...art.querySelectorAll("img,svg")].forEach(im=>box.appendChild(im.cloneNode(true))) }
+    else if(art){ if(art.classList.contains("wide")) t.classList.add("wide"); box.appendChild(art.cloneNode(true)) }
+    t.onclick=()=>{ SFX.play("click"); show(k) };
+    tiles.push(t); list.appendChild(t);
+  });
+  if(!cards.length) detail.appendChild(el(`<div class="dbempty">아직 적힌 것이 없습니다.</div>`));
+  app.appendChild(book);
+  if(cards.length) show(sel);
+  /* 돌아가기 단추는 책 밑에 */
+  const foot=el(`<div class="dbfoot"></div>`);
+  src.querySelectorAll("button.go").forEach(b=>foot.appendChild(b));
+  app.appendChild(foot);
+  { const t=tiles[sel]; if(t) setTimeout(()=>{ try{ t.scrollIntoView({block:"nearest"}) }catch(e){} },0) }
 }
 
 /* ═══════════ 저장 ═══════════
@@ -11624,6 +11690,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 664, "v": "0.5", "d": "2026-09-30", "t": "도감을 책으로", "big": 0},
  {"b": 663, "v": "0.5", "d": "2026-09-30", "t": "정령숲 적 배치 구성", "big": 0},
  {"b": 662, "v": "0.5", "d": "2026-09-30", "t": "보상 겹침 점검 · 수확철 전투 밖 버그", "big": 0},
  {"b": 661, "v": "0.5", "d": "2026-09-30", "t": "이테리오 지도 손 79", "big": 0},
@@ -12288,7 +12355,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=663;
+const BUILD_NO=664;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
