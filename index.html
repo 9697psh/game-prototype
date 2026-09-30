@@ -2838,6 +2838,10 @@ body.vbattle .bagbtn{bottom:auto;top:9px;right:auto;left:16px;padding:6px 10px;g
 /* 적 — 체력 막대 밑에 이름, 그 밑에 특징 느낌표 줄 (사용자 2026-09-19) */
 .bfstage .slot.foe .ublw .bar{order:1} .bfstage .slot.foe .ublw .mini{order:2} .bfstage .slot.foe .ublw .nm{order:3;display:block;font-size:12.5px;letter-spacing:.04em;margin-top:1px} .bfstage .slot.foe .ublw .st.t{order:4}
 .bfstage .slot.foe .ublw .prog{order:5}
+/* 종족 한 줄 — 이름 바로 밑 (DOM 에서 이름 뒤라 같은 order 면 이름 다음에 선다) */
+.bfstage .slot.foe .ublw .frace{order:3;display:flex;align-items:center;gap:4px;font-size:11.5px;color:#d9c28a;
+  text-shadow:0 1px 0 #000,0 0 4px #000;letter-spacing:.04em;margin-top:-1px}
+.bfstage .slot.foe .ublw .frace img{width:16px;height:16px;image-rendering:pixelated}
 .bfstage .ublw .st.t{display:flex;position:static;flex-direction:row;align-items:center;justify-content:center;gap:6px;margin-top:2px;right:auto;pointer-events:auto;position:relative;z-index:6}
 .bfstage .ublw .st.t .bd{cursor:help;pointer-events:auto}
 .bfstage .ublw .st.t .bd em{display:none} .bfstage .ublw .st.t .bd img.ci,.bfstage .ublw .st.t .bd i.ci{width:28px;height:28px;flex:0 0 28px}   /* 죽음·메아리를 크게 (사용자 2026-09-29) */
@@ -11470,6 +11474,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 644, "v": "0.5", "d": "2026-09-30", "t": "적을 누르면 종족 한 줄", "big": 0},
  {"b": 643, "v": "0.5", "d": "2026-09-30", "t": "적 종족 채움 · 짐승→야수 · 망자 둘", "big": 0},
  {"b": 642, "v": "0.5", "d": "2026-09-30", "t": "전멸 판정 — 망자의 육체만 예외", "big": 0},
  {"b": 641, "v": "0.5", "d": "2026-09-30", "t": "나이코스 방어구 카드 그림 넷", "big": 0},
@@ -12114,7 +12119,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=643;
+const BUILD_NO=644;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -16580,6 +16585,14 @@ const FOE_RACE={
  /* 그밖 */
  "균열 벌레":"악마","얼음 정령":"정령","떠도는 불씨":"정령","술집 난동꾼":"인간","늑대치기":"인간","무시무시한 늑대":"야수",
  "고철 거인":"기계","서리 군주":"악마"};
+/* 전투에서 적을 한 번 눌렀을 때만 이름 아래에 종족 한 줄 (사용자 2026-09-30).
+   아이콘은 대원 조합 그림을 빌린다 — 야수는 아직 그림이 없어 글자만 */
+const RACE_ICON={"인간":"syn_human","악마":"syn_demon","기계":"syn_machine","망자":"syn_afterlife","정령":"syn_spirit_forest"};
+function raceLine(f){
+  const r=foeRace(f); if(!r) return "";
+  const k=RACE_ICON[r], u=k&&(typeof ICON_PNG!=="undefined")&&ICON_PNG[k];
+  return `<div class="frace">${u?`<img src="${u}" alt="" draggable="false">`:""}<span>${esc(r)}</span></div>`;
+}
 function foeRace(f){
   const nm=(f&&(f.of||f.name))||"";
   const D=FOE[nm]||{};
@@ -18009,7 +18022,7 @@ function drawBattle(app){
         <div class="intentbar">${intentHtml(f)}</div>
         <div class="art ${fsz}"${FOE_FLY[f.name]?` style="--fly:${FOE_FLY[f.name]}px"`:""}>${pfk}${figure(f.name,undefined,f)}${
           dying?killMark(sel.hero,preSkill,f,sel.count):""}</div>
-        <div class="nm">${esc(f.name)}</div>
+        <div class="nm">${esc(f.name)}</div>${(peekFoe&&peekFoe===f)?raceLine(f):""}
         <div class="bar" data-hpk="${hpKey(f)}" data-hpv="${Math.max(0,f.hp/f.maxHp*100)}" data-hpn="${f.hp}"
           data-shv="${(f.shield||0)+(f.eshield||0)}" data-esw="${fesW}" data-shw="${fshW}">
           <em class="gh" style="width:${Math.max(0,f.hp/f.maxHp*100)}%"></em><i style="width:${Math.max(0,f.hp/f.maxHp*100)}%"></i>
