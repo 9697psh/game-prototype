@@ -5371,6 +5371,8 @@ function punchIn(side,slot){
   p.e.classList.remove("punch"); void p.e.offsetWidth; p.e.classList.add("punch");
 }
 /* ═══════════ 체력바 연출 ═══════════
+   ★ 막대의 칸들(잔상·보호막)은 그릴 때부터 제 너비·자리를 적어 둔다 (2026-09-30).
+     비워 두면 render 마다 새로 생긴 칸이 0 에서 제자리로 미끄러져 — 기술을 누를 때마다 보호막 칸이 번쩍였다.
    체력이 달라졌으면 바가 깜박이면서 천천히 줄거나 찬다.
    잔상(em.gh)이 한 박자 늦게 따라와 얻어맞은 몫을 보여 준다. */
 let HKSEQ=0, HPMEM={}, SHMEM={}, SHWMEM={};
@@ -11461,6 +11463,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 631, "v": "0.5", "d": "2026-09-30", "t": "기술 누를 때 체력바 번쩍임 고침", "big": 0},
  {"b": 630, "v": "0.5", "d": "2026-09-30", "t": "띠 없던 적 일곱 대기 모션", "big": 0},
  {"b": 629, "v": "0.5", "d": "2026-09-30", "t": "시공간 폭탄 꼭대기에서 더 머묾", "big": 0},
  {"b": 628, "v": "0.5", "d": "2026-09-30", "t": "시공간 폭탄 던짐 — 천천히 올라 빠르게 떨어짐", "big": 0},
@@ -12092,7 +12095,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=630;
+const BUILD_NO=631;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -17899,10 +17902,10 @@ function drawBattle(app){
         <div class="nm">${esc(h.name)}</div>
         <div class="bar" data-hpk="${hpKey(h)}" data-hpv="${Math.max(0,h.hp/h.maxHp*100)}" data-hpn="${h.hp}"
           data-shv="${(h.shield||0)+(h.eshield||0)}" data-esw="${esW}" data-shw="${shW}">
-          <em class="gh"></em><i style="width:${Math.max(0,h.hp/h.maxHp*100)}%"></i>
-          <u class="shgh"></u>
-          <u class="es" data-w="${esW}"${h.eshield?` title="에너지 보호막 ${h.eshield}"`:""}></u>
-          <u class="sh" data-w="${shW}" data-r="${esW}"${h.shield?` title="보호막 ${h.shield}"`:""}></u></div>
+          <em class="gh" style="width:${Math.max(0,h.hp/h.maxHp*100)}%"></em><i style="width:${Math.max(0,h.hp/h.maxHp*100)}%"></i>
+          <u class="shgh" style="width:${esW+shW}%;right:0%"></u>
+          <u class="es" data-w="${esW}" style="width:${esW}%;right:0%"${h.eshield?` title="에너지 보호막 ${h.eshield}"`:""}></u>
+          <u class="sh" data-w="${shW}" data-r="${esW}" style="width:${shW}%;right:${esW}%"${h.shield?` title="보호막 ${h.shield}"`:""}></u></div>
         ${progHtml(h)}
         <div class="mini">${ic("hp")}${h.hp}/${h.maxHp}${
           h.eshield?` <span class="esh" title="에너지 보호막">◆${h.eshield}</span>`:""}${
@@ -17975,10 +17978,10 @@ function drawBattle(app){
         <div class="nm">${esc(f.name)}</div>
         <div class="bar" data-hpk="${hpKey(f)}" data-hpv="${Math.max(0,f.hp/f.maxHp*100)}" data-hpn="${f.hp}"
           data-shv="${(f.shield||0)+(f.eshield||0)}" data-esw="${fesW}" data-shw="${fshW}">
-          <em class="gh"></em><i style="width:${Math.max(0,f.hp/f.maxHp*100)}%"></i>
-          <u class="shgh"></u>
-          <u class="es" data-w="${fesW}"${f.eshield?` title="에너지 보호막 ${f.eshield}"`:""}></u>
-          <u class="sh" data-w="${fshW}" data-r="${fesW}"${f.shield?` title="보호막 ${f.shield}"`:""}></u></div>
+          <em class="gh" style="width:${Math.max(0,f.hp/f.maxHp*100)}%"></em><i style="width:${Math.max(0,f.hp/f.maxHp*100)}%"></i>
+          <u class="shgh" style="width:${fesW+fshW}%;right:0%"></u>
+          <u class="es" data-w="${fesW}" style="width:${fesW}%;right:0%"${f.eshield?` title="에너지 보호막 ${f.eshield}"`:""}></u>
+          <u class="sh" data-w="${fshW}" data-r="${fesW}" style="width:${fshW}%;right:${fesW}%"${f.shield?` title="보호막 ${f.shield}"`:""}></u></div>
         <div class="mini">${ic("hp")}${f.hp}/${f.maxHp}${f.shield?` <span class="shd">${ic("def")}${f.shield}</span>`:""}</div>
         ${foeStatusRows(f)}`;
       d.onclick=()=>{
