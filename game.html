@@ -5062,14 +5062,17 @@ function bombThrowFX(from,slots){
   const tx=ps.reduce((p,c)=>p+c.x,0)/ps.length, ty=Math.min(...ps.map(q=>q.top))-26;
   const sx=a.x+20, sy=a.y-24;
   const u=(typeof ICON_PNG!=="undefined")&&ICON_PNG.fx_it_bomb;
-  const ms=Math.round(620*SPD);
+  const ms=Math.round(780*SPD);
   if(u){
     const z=1.3, w=64*z;
     const nd=spawn('<div class="itfx"></div>');
     if(nd){ nd.style.backgroundImage="url("+u+")"; nd.style.width=w+"px"; nd.style.height=w+"px";
       nd.style.left=(-w/2)+"px"; nd.style.top=(-w/2)+"px";
-      const peak=Math.min(sy,ty)-150, K=14, fr=[];
-      for(let i=0;i<=K;i++){ const t=i/K;
+      /* 올라갈 때는 천천히(꼭대기에서 머뭇), 내려갈 때는 빠르게 (사용자 2026-09-30).
+         시간 u 의 앞 68% 로 길의 절반(꼭대기)까지 — 느려지며 오르고, 남은 32% 에 떨어진다 — 빨라지며 */
+      const peak=Math.min(sy,ty)-150, K=28, fr=[], UP=.68;
+      for(let i=0;i<=K;i++){ const u2=i/K;
+        const t=u2<UP?0.5*(1-Math.pow(1-u2/UP,2)):0.5+0.5*Math.pow((u2-UP)/(1-UP),2);
         const x=sx+(tx-sx)*t, y=(1-t)*(1-t)*sy+2*(1-t)*t*peak+t*t*ty;
         fr.push({transform:"translate("+x+"px,"+y+"px) rotate("+(t*400)+"deg)"}) }
       nd.animate(fr,{duration:ms,easing:"linear",fill:"forwards"});
@@ -11447,6 +11450,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 628, "v": "0.5", "d": "2026-09-30", "t": "시공간 폭탄 던짐 — 천천히 올라 빠르게 떨어짐", "big": 0},
  {"b": 627, "v": "0.5", "d": "2026-09-30", "t": "플레어와 플로우 이동 연출", "big": 0},
  {"b": 626, "v": "0.5", "d": "2026-09-30", "t": "적 속박이 안 풀리던 버그", "big": 0},
  {"b": 625, "v": "0.5", "d": "2026-09-30", "t": "자기장 변환 — 앞 적과 자리 바꿈", "big": 0},
@@ -12075,7 +12079,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=627;
+const BUILD_NO=628;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -20658,7 +20662,7 @@ function runEffect(h,i,s,target){
     /* 폭탄이 머리 위로 날아가 터지고, 그때 자리가 바뀐다 (사용자 2026-09-30).
        규칙의 자리는 지금 바꾸고 화면은 터질 때까지 옛 자리에 붙잡아 둔다 */
     holdFoes(alive.map(f=>f.id));
-    fx({side:"foe",bomb:{from:{side:"mine",slot:h.slot},slots:slots.slice()},gap:760});
+    fx({side:"foe",bomb:{from:{side:"mine",slot:h.slot},slots:slots.slice()},gap:920});   /* 던짐 780 + 터짐 틈 */
     for(let q=slots.length-1;q>0;q--){ const r2=Math.floor(Math.random()*(q+1));
       const t2=slots[q]; slots[q]=slots[r2]; slots[r2]=t2 }
     alive.forEach((f,i)=>{ f.slot=slots[i] });
