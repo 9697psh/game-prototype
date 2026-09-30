@@ -3229,13 +3229,13 @@ kbd{display:inline-block;min-width:20px;text-align:center;padding:1px 7px;font-s
 .art .portal{left:50%;bottom:1px;transform:translateX(-50%)}
 /* ═══ 도감 — 책 (사용자 2026-09-30) ═══ 그림은 책 테두리 바로 바깥까지 자른 1472×920 (비 1.6).
    페이지 : 왼 8.4%·39.1% · 오른 52.2%·39.4% · 위 5.1%·86.4% (원본 1536 에서 왼 160~735 · 오른 805~1385 · 위아래 85~880) */
-.dexbook{position:relative;width:min(96vw,calc((100vh - 190px)*1.6));aspect-ratio:1472/920;margin:6px auto 0;
+.dexbook{position:relative;width:min(96vw,calc((100vh - 190px)*1.531));aspect-ratio:1482/968;margin:6px auto 0;
   background:url("ui/menu-codex-book.webp") center/100% 100% no-repeat;image-rendering:pixelated}
-.dbpage{position:absolute;top:6.2%;height:84%;display:flex;flex-direction:column;min-height:0}
-.dbl{left:9.6%;width:37.2%} .dbr{left:53.2%;width:37.6%}
+/* v1 프레임 (2026-09-30) : 책 바깥이 투명한 1482×968 — 페이지 왼 8.9%·38.8% · 오른 52.4%·39.1% · 위 8.8%·82.1% */
+.dbpage{position:absolute;top:9.8%;height:79.5%;display:flex;flex-direction:column;min-height:0}
+.dbl{left:10%;width:37%} .dbr{left:53.4%;width:37.4%}
 .dbhead{font-family:var(--serif);color:#4a2c18;font-size:clamp(14px,1.5vw,22px);text-align:center;letter-spacing:.25em;margin:2px 0 6px;flex:0 0 auto}
-.dblist{flex:1;min-height:0;overflow:auto;padding:0 4px 8px;display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start;
-  scrollbar-width:thin;scrollbar-color:#8a5a33 transparent}
+.dblist{flex:1;min-height:0;overflow:hidden;padding:0 4px 4px;display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start;position:relative}
 .dbsec{width:100%;font-size:12px;color:#6b4226;border-bottom:1px solid rgba(107,66,38,.35);margin:8px 0 3px;padding-bottom:2px;letter-spacing:.05em}
 .dbtile{width:74px;display:flex;flex-direction:column;align-items:center;padding:4px 2px 3px;border-radius:4px;cursor:pointer;border:1px solid transparent}
 .dbtile.wide{width:152px}
@@ -3248,7 +3248,14 @@ kbd{display:inline-block;min-width:20px;text-align:center;padding:1px 7px;font-s
 .dbtile.wide .dbart img.pxs{height:40px!important}
 .dbart svg{max-height:46px;max-width:100%}
 .dbname{font-size:10.5px;color:#3a2414;text-align:center;line-height:1.25;margin-top:3px;word-break:keep-all}
-.dbdetail{flex:1;min-height:0;overflow:auto;padding:2px 4px 8px;scrollbar-width:thin;scrollbar-color:#8a5a33 transparent}
+.dbdetail{flex:1;min-height:0;overflow:auto;padding:2px 4px 8px;scrollbar-width:none}   /* 긴 카드는 휠로 — 막대는 숨김 (사용자 2026-09-30) */
+.dbdetail::-webkit-scrollbar{display:none}
+.dbnav{flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:14px;margin-top:4px;color:#5a3a20;font-size:12px;letter-spacing:.1em}
+.dbarr{background:none;border:1px solid rgba(107,66,38,.45);color:#5a3a20;border-radius:4px;width:30px;height:24px;cursor:pointer;font-size:12px;line-height:1;padding:0}
+.dbarr:hover:not(:disabled){background:rgba(120,80,40,.15)}
+.dbarr:disabled{opacity:.3;cursor:default}
+.dbturn{position:absolute;inset:0;width:100%;height:100%;display:none;pointer-events:none;image-rendering:pixelated;z-index:5}
+.dexbook.turning .dbpage{visibility:hidden}
 .dbdetail > *{width:100%!important;box-sizing:border-box;margin:0!important}
 .dbdetail .ic-full{display:block}
 .dbempty{color:#6b4226;text-align:center;margin-top:40%}
@@ -11479,8 +11486,19 @@ function drawSaves(app){
 /* ═══════════ 도감 — 탭 하나로 (사용자 2026-09-17) ═══════════ */
 let DEX_TAB="itemdex";
 const DEX_TABS=[["itemdex","장신구"],["carddex","카드"],["evdex","이벤트"],["gimdex","전용 구역"],["foedex","적"],["encdex","조합"]];
-/* 도감 — 책 (사용자 2026-09-30). 칸마다 고른 항목 번호를 기억한다 */
-const DEX_SEL={};
+/* 도감 — 책 (사용자 2026-09-30). 칸마다 고른 항목 번호 · 펼친 쪽을 기억한다 */
+const DEX_SEL={}, DEX_PAGE={};
+/* 쪽 넘김 프레임 — 미리 받아 둔다 (첫 넘김에 빈 그림이 끼지 않게) */
+const DEX_TURN={next:["rl1","rl2","rl3"],prev:["lr1","lr2","lr3"]};
+let DEX_PRE=null;
+function dexPreload(){ if(DEX_PRE||typeof Image==="undefined") return; DEX_PRE=[];
+  DEX_TURN.next.concat(DEX_TURN.prev).forEach(k=>{ const i=new Image(); i.src="ui/menu-codex-"+k+".webp"; DEX_PRE.push(i) }) }
+/* ←→ 로도 넘긴다 — 도감이 떠 있을 때만 */
+let DEX_TURNFN=null;
+if(typeof window!=="undefined"&&window.addEventListener) window.addEventListener("keydown",e=>{
+  if(view!=="dex"||!DEX_TURNFN) return;
+  if(e.key==="ArrowRight"){ DEX_TURNFN(1); e.preventDefault() }
+  else if(e.key==="ArrowLeft"){ DEX_TURNFN(-1); e.preventDefault() } });
 function drawDex(app){
   const bar=el(`<div class="dextabs">${DEX_TABS.map(([k,n])=>`<button class="dtab ${k===DEX_TAB?"on":""}" data-k="${k}">${esc(n)}</button>`).join("")}</div>`);
   bar.querySelectorAll(".dtab").forEach(b=>{ b.onclick=()=>{ DEX_TAB=b.dataset.k; render() } });
@@ -11495,9 +11513,12 @@ function drawDex(app){
     else [...n.children].forEach(c=>{ const nm=c.querySelector(".ic-n,.cc-n,.evdx-name"); if(nm) items.push({el:c,n:nm.textContent.trim()}) });
   });
   const title=((src.querySelector(".title")||{}).textContent||"도감").trim();
+  dexPreload();
   const book=el(`<div class="dexbook">
-    <div class="dbpage dbl"><div class="dbhead">${esc(title)}</div><div class="dblist"></div></div>
-    <div class="dbpage dbr"><div class="dbdetail"></div></div></div>`);
+    <div class="dbpage dbl"><div class="dbhead">${esc(title)}</div><div class="dblist"></div>
+      <div class="dbnav"><button class="dbarr" data-d="-1" title="앞 쪽 (←)">◀</button><span class="dbpn"></span><button class="dbarr" data-d="1" title="다음 쪽 (→)">▶</button></div></div>
+    <div class="dbpage dbr"><div class="dbdetail"></div></div>
+    <img class="dbturn" alt="" draggable="false"></div>`);
   const list=book.querySelector(".dblist"), detail=book.querySelector(".dbdetail");
   const cards=items.filter(x=>x.el);
   let sel=Math.min(DEX_SEL[DEX_TAB]||0,Math.max(0,cards.length-1));
@@ -11520,11 +11541,45 @@ function drawDex(app){
   if(!cards.length) detail.appendChild(el(`<div class="dbempty">아직 적힌 것이 없습니다.</div>`));
   app.appendChild(book);
   if(cards.length) show(sel);
+  /* ── 쪽 나누기 — 목록을 페이지 높이에 맞춰 자른다. 줄(같은 높이의 타일들) 단위로 끊고,
+        쪽 끝에 묶음 제목만 남으면 다음 쪽으로 넘긴다 ── */
+  let NP=1, cur=0, anim=0;
+  const pn=book.querySelector(".dbpn"), arr=[...book.querySelectorAll(".dbarr")], ov=book.querySelector(".dbturn");
+  const paginate=()=>{
+    const H=list.clientHeight; const kids=[...list.children]; if(!H||!kids.length) return false;
+    kids.forEach(n=>{ n.style.display="" });
+    const tp=kids.map(n=>[n.offsetTop,n.offsetTop+n.offsetHeight]);
+    let base=tp[0][0], pg=0;
+    kids.forEach((n,i)=>{
+      if(i>0&&tp[i][1]-base>H){ pg++; base=tp[i][0];
+        if(kids[i-1].classList.contains("dbsec")&&kids[i-1].dataset.pg==pg-1){ kids[i-1].dataset.pg=pg; base=tp[i-1][0] } }
+      n.dataset.pg=pg });
+    NP=pg+1; return true };
+  const showPage=p=>{ cur=Math.max(0,Math.min(NP-1,p)); DEX_PAGE[DEX_TAB]=cur;
+    [...list.children].forEach(n=>{ n.style.display=(+n.dataset.pg===cur)?"":"none" });
+    pn.textContent=`${cur+1} / ${NP}`;
+    arr[0].disabled=cur<=0; arr[1].disabled=cur>=NP-1;
+    book.querySelector(".dbnav").style.visibility=NP>1?"visible":"hidden" };
+  const turn=d=>{
+    if(anim||NP<=1) return; const np=cur+d; if(np<0||np>=NP) return;
+    anim=1; const fr=d>0?DEX_TURN.next:DEX_TURN.prev; let k=0;
+    if(sfxHas("책 넘김")) SFX.play("책 넘김"); else SFX.play("click");
+    book.classList.add("turning"); ov.style.display="block";
+    const step=()=>{
+      if(k<fr.length){ ov.src="ui/menu-codex-"+fr[k]+".webp"; k++; setTimeout(step,Math.round(85*SPD)) }
+      else { ov.style.display="none"; book.classList.remove("turning"); showPage(np); anim=0 } };
+    step() };
+  DEX_TURNFN=turn;
+  arr.forEach(b=>{ b.onclick=e=>{ e.stopPropagation(); turn(+b.dataset.d) } });
+  list.addEventListener("wheel",e=>{ if(Math.abs(e.deltaY)<8) return; e.preventDefault(); turn(e.deltaY>0?1:-1) },{passive:false});
+  const setup=()=>{ if(!paginate()) return false;
+    const selTile=tiles[sel]; const want=DEX_PAGE[DEX_TAB]!=null?DEX_PAGE[DEX_TAB]:(selTile?+selTile.dataset.pg:0);
+    showPage(want); return true };
+  if(!setup()) setTimeout(setup,0);
   /* 돌아가기 단추는 책 밑에 */
   const foot=el(`<div class="dbfoot"></div>`);
   src.querySelectorAll("button.go").forEach(b=>foot.appendChild(b));
   app.appendChild(foot);
-  { const t=tiles[sel]; if(t) setTimeout(()=>{ try{ t.scrollIntoView({block:"nearest"}) }catch(e){} },0) }
 }
 
 /* ═══════════ 저장 ═══════════
@@ -11690,6 +11745,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 665, "v": "0.5", "d": "2026-09-30", "t": "도감 책 쪽 넘김", "big": 0},
  {"b": 664, "v": "0.5", "d": "2026-09-30", "t": "도감을 책으로", "big": 0},
  {"b": 663, "v": "0.5", "d": "2026-09-30", "t": "정령숲 적 배치 구성", "big": 0},
  {"b": 662, "v": "0.5", "d": "2026-09-30", "t": "보상 겹침 점검 · 수확철 전투 밖 버그", "big": 0},
@@ -12355,7 +12411,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=664;
+const BUILD_NO=665;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
