@@ -7645,7 +7645,8 @@ const HERO_REWARDS={
   R("마이스너 변환","상급","자기장 변환이 더 이상 잠금되지 않지만, 한 턴에 1회만 사용할 수 있습니다. 대신 정밀 표식이 있는 모든 적에게 사용됩니다.",
     h=>{ h.tag.meissner=1; h.sk.forEach(k=>{ if(k&&k.n==="자기장 변환") k.lock=0 }) }),
   /* 분신은 소환물이 아니다 — 굴라 차원문처럼 칸에 남는 표식 (노트 메모) */
-  R("홀로그램 분신","상급","점프백이 원래 자리에 홀로그램 분신을 남깁니다. 이테리오가 분신이 있는 자리로 이동하면, 회피를 1 얻습니다. 분신은 최대 1개까지 존재할 수 있습니다.",h=>h.tag.holo=1),
+  R("홀로그램 분신","상급","점프백이 원래 자리에 홀로그램 분신을 남깁니다. 이테리오가 분신이 있는 자리로 이동하면, 회피를 2 얻습니다. 분신은 최대 1개까지 존재할 수 있습니다. 점프백의 비용이 1 증가합니다.",
+    h=>{ h.tag.holo=1; h.sk.forEach(k=>{ if(k&&k.n==="점프백") k.cost=(k.cost||0)+1 }) }),   /* 비용 +1 (사용자 2026-09-30) */
   R("반란군 결집","상급","대원 배치 후, 아군 기계 대원들에게 모든 추가 능력치를 4 부여합니다.",h=>h.tag.rebel=(h.tag.rebel||0)+1),
   R("정밀 공학","상급","이테리오의 치명타 피해가 2배에서 2.5배가 됩니다.",h=>h.tag.precise=1,0.5)
  ],
@@ -11550,6 +11551,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 646, "v": "0.5", "d": "2026-09-30", "t": "홀로그램 분신 — 점프백 비용 +1 · 회피 2", "big": 0},
  {"b": 645, "v": "0.5", "d": "2026-09-30", "t": "이테리오 보상 36 · 에너지 과부하 · 조합 아이콘 여섯", "big": 0},
  {"b": 644, "v": "0.5", "d": "2026-09-30", "t": "적을 누르면 종족 한 줄", "big": 0},
  {"b": 643, "v": "0.5", "d": "2026-09-30", "t": "적 종족 채움 · 짐승→야수 · 망자 둘", "big": 0},
@@ -12196,7 +12198,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=645;
+const BUILD_NO=646;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -17998,7 +18000,7 @@ function drawBattle(app){
     { const pe=B.portals&&B.portals.find(p=>p.side==="mine"&&p.slot===s);
       if(pe&&!pe.fresh&&!h&&!bodyAt(s)) d.innerHTML+=`<i class="portal" style="background-image:url(${ICON_PNG.portal_idle})"></i>`; }
     if(shOwner&&shOwner.shadowAt===s) d.innerHTML+=shMark(shOwner.darkAt===s);
-    if(B.holo&&B.holo.slot===s&&!h&&!bodyAt(s)){ d.classList.add("holoslot"); d.innerHTML+=`<div class="art holo" title="홀로그램 분신 — 이테리오가 이 칸으로 오면 회피 +1">${figure("이테리오")}</div>` }
+    if(B.holo&&B.holo.slot===s&&!h&&!bodyAt(s)){ d.classList.add("holoslot"); d.innerHTML+=`<div class="art holo" title="홀로그램 분신 — 이테리오가 이 칸으로 오면 회피 +2">${figure("이테리오")}</div>` }
     { const k=fixedMv.indexOf(s); if(k>=0) d.innerHTML+=mvArrow(k) }
     if(moveStep&&s!==sel.hero.slot&&Math.abs(s-sel.hero.slot)<=2){
       d.classList.add("pick"); d.onclick=()=>shadowGoTo(s);
@@ -20486,9 +20488,9 @@ function moveTo(h,to){
   if(h.name==="카제"&&h.tag.windStep){ h.acts=(h.acts||0)+h.tag.windStep }   /* 바람걸음 — 이동하면 회오리 장막 셈 +1 더 (노트 2026-09-17) */
   if(h.name==="카제"&&h.tag.moveHit){ const f=nearestFoe(h); if(f){ say(`싹쓸바람 — ${f.name}에게 피해 ${h.tag.moveHit+h.atk}`,"t2"); asSrc(h,()=>hurt(f,h.tag.moveHit+h.atk,"싹쓸바람","wind")); veilAct(h,1) } }   /* 싹쓸바람 (노트 2026-09-17) */
   if(h.name==="이테리오"&&B.holo&&B.holo.slot===to){   /* 홀로그램 분신 — 분신 자리로 오면 회피 +1, 분신은 사라진다 */
-    B.holo=null; h.evade=(h.evade||0)+1;
-    fx({side:"mine",slot:to,ring:"#6ad8ff",txt:"회피 +1",cls:"shd",gap:60});
-    say(`홀로그램 분신 — ${h.name} 회피 +1`,"t2") }
+    B.holo=null; h.evade=(h.evade||0)+2;   /* 1 → 2 (사용자 2026-09-30) */
+    fx({side:"mine",slot:to,ring:"#6ad8ff",txt:"회피 +2",cls:"shd",gap:60});
+    say(`홀로그램 분신 — ${h.name} 회피 +2`,"t2") }
   if(occ&&occ!==h){ occ.slot=from;
     say(`${h.name}${jo(h.name,"gwa")} ${occ.name}${jo(occ.name,"ig")} 자리를 바꿉니다.`);
     fx({side:"mine",slot:from,s:"step",ring:"#5fd8cf",gap:60});
