@@ -4457,6 +4457,7 @@ function playFX(o){
   if(o.bomb){ const pt=bombThrowFX(o.bomb.from,o.bomb.slots);
     setTimeout(()=>bombBurstFX(pt,o.bomb.slots),pt?pt.ms:0); return }
   if(o.release){ releaseHold(o.release.ids,o.release.how); return }
+  if(o.reslot){ reslotHold(o.reslot); return }
   /* 영혼 돌진도 칸에 매이지 않는다 — 죽은 칸은 이미 사라지고 없다 (2026-09-29) */
   if(o.trail){ trailFX(o.side,o.trail.name,o.trail.from,o.trail.to,o.trail.n); }
   if(o.ffglide){ ffGlideFX(o.side,o.ffglide.from,o.ffglide.to,o.ffglide.flare); }
@@ -5021,6 +5022,19 @@ function releaseHold(ids,how){
     if(how==="slide") im.animate([{translate:(olds[id]-b.x)+"px 0px"},{translate:"0px 0px"}],
       {duration:Math.round(380*SPD),easing:"cubic-bezier(.5,0,.3,1)"});
     else im.animate([{opacity:0,scale:"0.4 1.3",filter:"brightness(3)"},{opacity:1,scale:"1.15 .9",filter:"brightness(1.6)",offset:.5},
+      {opacity:1,scale:"1 1",filter:"brightness(1)"}],{duration:Math.round(420*SPD),easing:"ease-out"});
+  });
+}
+/* 붙잡아 둔 적의 '보이는 자리' 만 새로 — 여러 번 터지는 시공간 폭탄(특이점)이 터질 때마다 흩어 보인다 (2026-09-30).
+   규칙의 자리는 이미 마지막 자리다. 마지막 번은 releaseHold 가 놓는다 */
+function reslotHold(map){
+  if(!FOE_HOLD) return;
+  const ids=Object.keys(map).filter(id=>FOE_HOLD.map[id]!=null&&FOE_HOLD.map[id]!==map[id]);
+  Object.assign(FOE_HOLD.map,map); FOE_HOLD.until=Date.now()+8000;
+  render();
+  ids.forEach(id=>{
+    const b=ctrOf("foe",map[id]); const im=b&&b.e.querySelector(".art img.pxs, .art svg");
+    if(im&&im.animate) im.animate([{opacity:0,scale:"0.4 1.3",filter:"brightness(3)"},{opacity:1,scale:"1.15 .9",filter:"brightness(1.6)",offset:.5},
       {opacity:1,scale:"1 1",filter:"brightness(1)"}],{duration:Math.round(420*SPD),easing:"ease-out"});
   });
 }
@@ -11551,6 +11565,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 647, "v": "0.5", "d": "2026-09-30", "t": "특이점 — 폭탄마다 소리·흩어짐", "big": 0},
  {"b": 646, "v": "0.5", "d": "2026-09-30", "t": "홀로그램 분신 — 점프백 비용 +1 · 회피 2", "big": 0},
  {"b": 645, "v": "0.5", "d": "2026-09-30", "t": "이테리오 보상 36 · 에너지 과부하 · 조합 아이콘 여섯", "big": 0},
  {"b": 644, "v": "0.5", "d": "2026-09-30", "t": "적을 누르면 종족 한 줄", "big": 0},
@@ -12198,7 +12213,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=646;
+const BUILD_NO=647;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -20853,14 +20868,20 @@ function runEffect(h,i,s,target){
     const slots0=alive.map(f=>f.slot), moved=[];
     holdFoes(alive.map(f=>f.id));
     for(let r=0;r<reps;r++){
-      fx({side:"foe",bomb:{from:{side:"mine",slot:h.slot},slots:slots0.slice()},gap:1240});   /* 던짐 1100 + 터짐 틈 */
+      /* 특이점으로 다시 던질 때마다 효과음도 다시 (사용자 2026-09-30) — 첫 번째는 시전할 때 이미 울렸다 */
+      const before=alive.map(f=>f.slot), slots=before.slice();
+      /* 특이점으로 다시 던질 때마다 효과음도 다시 (사용자 2026-09-30) — 첫 번째는 시전할 때 이미 울렸다.
+         폭탄은 지금 보이는 자리(before) 위로 날아간다 */
+      fx({side:"foe",bomb:{from:{side:"mine",slot:h.slot},slots:before.slice()},
+          s:r>0?sfxOr("이테리오 시공간 폭탄",null):null,gap:1240});   /* 던짐 1100 + 터짐 틈 */
       alive.forEach(f=>{ f.mark=(f.mark||0)+mk });
       if(h.tag.warpDeb) alive.forEach(f=>itRandDeb(h,f,h.tag.warpDeb));
-      const before=alive.map(f=>f.slot), slots=before.slice();
       for(let q=slots.length-1;q>0;q--){ const r2=Math.floor(Math.random()*(q+1));
         const t2=slots[q]; slots[q]=slots[r2]; slots[r2]=t2 }
       alive.forEach((f,i)=>{ f.slot=slots[i]; if(slots[i]!==before[i]) moved.push(f) });
       if(r>0) say(`특이점 — 시공간 폭탄이 다시 터집니다. (${r+1}/${reps})`,"t1");
+      /* 터질 때마다 흩어 보인다 (사용자 2026-09-30) — 마지막 번은 아래 release 가 놓는다 */
+      if(r<reps-1){ const mp={}; alive.forEach((f,i)=>{ mp[String(f.id)]=slots[i] }); fx({reslot:mp,gap:260}) }
     }
     fx({release:{ids:alive.map(f=>String(f.id)),how:"blink"},gap:120});
     fx({side:"foe",slot:alive[0].slot,txt:"뒤섞임",cls:"mag",gap:60});
