@@ -9844,9 +9844,9 @@ const FOE={
    hit:"혀 채찍"},
  "타락한 드루이드":{hp:70,atk:5,def:6,rng:4,exp:25,elite:1,
    el:"마법",
-   pas:[{k:"info",n:"오염된 씨앗",d:"심은 씨앗은 2턴 뒤에 오염된 덩굴로 자랍니다."}],
+   pas:[{k:"info",n:"오염된 씨앗",d:"심은 씨앗은 2턴 뒤에 오염된 덩굴로 자랍니다. 대원 전장에 심긴 씨앗·덩굴은 잔해처럼 자리를 차지합니다."}],
    sk:[
-    {n:"오염된 창조",w:7,tg:"none",cd:1,cond:"fewSeeds",seed:{n:2,hp:40,turns:2},d:"빈 칸에 체력이 40인 오염된 씨앗을 둘 심습니다."},
+    {n:"오염된 창조",w:7,tg:"none",cd:1,cond:"fewSeeds",seed:{n:2,hp:40,turns:2},d:"적과 대원 전장의 빈 칸에 체력이 40인 오염된 씨앗을 둘 심습니다."},
     {n:"양분 흡수",w:3,tg:"none",lifeDrain:6,d:"모든 대상(적과 대원 모두)에게서 체력을 6씩 가져옵니다."},
     {n:"저주 내리기",w:3,tg:"all",deb:{bind:1,defDn:1,atkDn:1,magDn:1,chill:1,burn:1},d:"사거리 안 모든 대원에게 속박·보호약화·공격약화·마법약화·냉각·화상을 1씩 부여합니다."},
     {n:"집중 공격",w:5,tg:"any",dmg:5,hits:2,chase:1,d:"무작위 대원에게 마법 피해를 5씩 2번 줍니다."}],
@@ -9854,9 +9854,16 @@ const FOE={
  "오염된 씨앗":{hp:40,atk:0,def:4,rng:1,exp:0,noMove:1,still:1,
    el:"마법",
 },
- "오염된 덩굴":{hp:1,atk:8,def:0,rng:1,exp:0,noMove:1,still:1,wreck:1,
-   el:"마법",
-   pas:[{k:"vineTick",v:8,n:"휘감기",d:"적 턴이 끝날 때, 거리 1 안의 대원에게 마법 피해를 8 줍니다."}]},
+ /* 적 전장에서 자란 것 — 그림은 오염된 덩굴, 싸움은 살아있는 덩굴과 같다 (사용자 2026-10-01).
+    대원 전장에서 자란 것은 FOE 가 아니라 B.hz 의 잔해 — 휘감기는 그쪽(VINE_TICK)에만 */
+ "오염된 덩굴":{hp:25,atk:4,def:4,rng:3,exp:0,
+   el:"공격",
+   sk:[
+    {n:"기생",w:4,tg:"none",cd:1,cond:"canParasite",parasite:{who:"살아있는 덩굴"},d:"「죽음」이 없는 다른 적 하나에게 「죽음: 살아있는 덩굴을 소환합니다」를 부여합니다."},
+    {n:"숨기",w:3,tg:"self",hideUp:1,d:"은신을 1 얻습니다."},
+    {n:"가시돋힘",w:3,tg:"self",thorn:{v:8,turns:1},d:"1턴 동안 가시를 8 얻습니다."},
+    {n:"덩굴 공격",w:5,tg:"any",dmg:4,deb:{bind:1},chase:1,d:"무작위 대원에게 공격 피해를 4 주고 속박을 1 부여합니다."}],
+   hit:"덩굴 공격"},
  "얼음 정령":  {hp:26,atk:7,def:8,rng:4,exp:3,
    el:"마법",
    gim:{neg:2},
@@ -11858,7 +11865,7 @@ function saveGame(){
     let bat=null;
     if(B&&view==="battle"&&!B.over){
       bat=encRef({kind:B.kind,turn:B.turn,log:B.log.slice(-60),
-                  foes:B.foes,mins:B.mins||[],portals:B.portals||[],
+                  foes:B.foes,mins:B.mins||[],portals:B.portals||[],hz:B.hz||[],
                   corpseUsed:B.corpseUsed||0,hand:handPack()},hs);
     }
     localStorage.setItem(slotKey(SLOT),JSON.stringify({
@@ -11905,7 +11912,7 @@ function loadGame(i){
     if(s.B){
       const b=decRef(s.B,heroes);
       B={kind:b.kind,turn:b.turn,over:0,busy:0,log:b.log||[],hand:[],units:[],
-         foes:b.foes||[],mins:b.mins||[],portals:b.portals||[],
+         foes:b.foes||[],mins:b.mins||[],portals:b.portals||[],hz:b.hz||[],
          corpseUsed:b.corpseUsed||0,drag:null};
       B.hand=handUnpack(b.hand);
       /* fearSrc 는 uid() 로 만든 문자열이라 그대로 실려 온다.
@@ -11933,6 +11940,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 675, "v": "0.5", "d": "2026-10-01", "t": "타락한 드루이드 씨앗 — 내 전장에도 (잔해처럼) · 적 쪽 덩굴은 살아있는 덩굴처럼", "big": 0},
  {"b": 674, "v": "0.5", "d": "2026-10-01", "t": "정령샘 → 정령숲 · 정령숲 규칙 안내 창", "big": 0},
  {"b": 673, "v": "0.5", "d": "2026-10-01", "t": "정령숲 오염도 표시 한도 100", "big": 0},
  {"b": 672, "v": "0.5", "d": "2026-10-01", "t": "오염도 아이콘을 보라 돌(corruption)로", "big": 0},
@@ -12608,7 +12616,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=674;
+const BUILD_NO=675;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -17060,8 +17068,13 @@ const intentChases=(f,I)=>!!(I&&I.chase)||chases(f);
    자리는 slot 이 아니라 downSlot 에 들고 있다 — 전장에 선 대원을 세는 모든
    계산(탐욕·감염·턴 시작 효과·경험치)에서 몸이 끼지 않게 하기 위해서다. */
 const bodyAt=s=>run.heroes.find(h=>h.down&&h.downSlot===s);
-/* 칸이 비었는지 볼 때는 쓰러진 몸도 자리로 친다 */
-const occAt=s=>unitAt(s)||bodyAt(s);
+/* 대원 전장의 오염된 씨앗·덩굴 (2026-10-01) — 잔해처럼 칸만 차지한다. 겨눌 수도 부술 수도 없다 */
+const hzAt=s=>(B&&B.hz||[]).find(x=>x.slot===s);
+/* 대원이 들어설 수 없는 칸 — 쓰러진 몸이거나 씨앗·덩굴 */
+const blockAt=s=>bodyAt(s)||hzAt(s);
+const blockMsg=(b,s)=>b.isHz?`${b.name}${jo(b.name,"ig")} ${s}번 칸을 막고 있습니다.`:`${b.name}${jo(b.name,"ig")} 쓰러진 채 ${s}번 칸을 막고 있습니다.`;
+/* 칸이 비었는지 볼 때는 쓰러진 몸도, 씨앗·덩굴도 자리로 친다 */
+const occAt=s=>unitAt(s)||bodyAt(s)||hzAt(s);
 const liveMins=()=>(B.mins||[]).filter(m=>m.alive);
 /* 내려놓을 자리가 하나라도 남았는가 (쓰러진 몸이 막고 있으면 아니다) */
 const freeSlot=()=>{ for(let s=1;s<=SLOTS;s++) if(!occAt(s)) return true; return false };
@@ -17310,7 +17323,7 @@ const SK_COND={
   hurtMate:  f=>B.foes.some(x=>x.alive&&x!==f&&x.hp<x.maxHp),   /* 피해 받은 동료가 있을 때 */
   mateFull:  f=>!B.foes.some(x=>x.alive&&x!==f&&x.hp<x.maxHp),
   fewVines:  f=>B.foes.filter(x=>x.alive&&x.name==="살아있는 덩굴").length<=1,
-  fewSeeds:  f=>B.foes.filter(x=>x.alive&&x.name==="오염된 씨앗").length<=1,   /* 씨앗이 하나 이하일 때 (2026-09-29) */
+  fewSeeds:  f=>B.foes.filter(x=>x.alive&&x.name==="오염된 씨앗").length+(B.hz||[]).filter(x=>x.seedTurn).length<=1,   /* 씨앗이 하나 이하일 때 (2026-09-29) — 대원 전장 것까지 (10-01) */
   canParasite:f=>B.foes.some(x=>x.alive&&x!==f&&!x.dthTag),                    /* 아직 죽음이 없는 동료가 있을 때 (2026-09-29) */
   actAtk:    f=>B.lastAct==="공격",
   actMag:    f=>B.lastAct==="마법",
@@ -17414,8 +17427,9 @@ function skRoll(f,allies,inR,far){
 }
 /* 대원을 n칸 앞(적 쪽)으로 끌어온다 — 그 자리에 누가 있으면 자리를 바꾼다 (간수의 손 잡아 끌기) */
 function pullN(f,t,n){
-  const from=t.slot, to=Math.min(SLOTS,from+n);
-  if(to===from){ say(`${t.name}${jo(t.name,"eun")} 이미 가장 앞입니다.`,"t2"); return }
+  const from=t.slot; let to=from;
+  while(to<Math.min(SLOTS,from+n)&&!blockAt(to+1)) to++;   /* 몸·씨앗·덩굴 앞에서 멈춘다 */
+  if(to===from){ say(`${t.name}${jo(t.name,"eun")} ${from>=SLOTS?"이미 가장 앞입니다":"끌려갈 자리가 막혀 있습니다"}.`,"t2"); return }
   const occ=unitAt(to); t.slot=to; if(occ&&occ!==t) occ.slot=from;
   fx({side:"mine",slot:to,s:"step",ring:"#9c8d77",glow:1,txt:"당겨짐!",cls:"moved",gap:120});
   say(`${f.name}${jo(f.name,"ig")} ${t.name}${jo(t.name,"eul")} ${to-from}칸 잡아 끌어옵니다 → ${to}번${occ&&occ!==t?` (${occ.name}${jo(occ.name,"gwa")} 자리 바꿈)`:""}`,"t3");
@@ -17424,6 +17438,7 @@ function pullN(f,t,n){
 function pullFront(f,t){
   const front=allUnits().reduce((m,u)=>Math.max(m,u.slot),0);
   if(t.slot>=front){ say(`${t.name}${jo(t.name,"eun")} 이미 가장 앞입니다.`,"t2"); return }
+  if(blockAt(front)){ say(`${t.name}${jo(t.name,"eun")} 끌려갈 자리가 막혀 있습니다.`,"t2"); return }
   const occ=unitAt(front), from=t.slot;
   t.slot=front; if(occ&&occ!==t) occ.slot=from;
   fx({side:"mine",slot:front,s:"step",ring:"#9c8d77",glow:1,txt:"당겨짐!",cls:"moved",gap:120});
@@ -17431,7 +17446,7 @@ function pullFront(f,t){
 }
 function pushBack(f,t){
   const to=t.slot-1;
-  if(to<1){ say(`${t.name}${jo(t.name,"eun")} 더 물러설 곳이 없습니다.`,"t2"); return }
+  if(to<1||blockAt(to)){ say(`${t.name}${jo(t.name,"eun")} 더 물러설 곳이 없습니다.`,"t2"); return }
   const occ=unitAt(to), from=t.slot;
   t.slot=to; if(occ&&occ!==t) occ.slot=from;
   fx({side:"mine",slot:to,s:"step",ring:"#9c8d77",txt:"밀려남!",cls:"moved",gap:120});
@@ -17543,13 +17558,20 @@ function skExec(f,I){
       say(`${s.n} — ${f.name}${jo(f.name,"ig")} 늪 두꺼비를 삼킵니다. 체력 +${s.eatToad.heal||30} · 모든 능력치 +${s.eatToad.up||3}`,"t1") }
     else say(`${s.n} — 먹을 것이 없습니다.`,"t2");
   }
-  if(s.seed){                          /* 오염된 창조 — 빈 칸에 씨앗을 심는다 (굴라의 차원문처럼 칸에 놓인다) */
-    let n=0;
-    for(let i=0;i<(s.seed.n||2);i++){ let sl=1; while(sl<=SLOTS&&foeBlock(sl)) sl++; if(sl>SLOTS) break;
+  if(s.seed){                          /* 오염된 창조 — 적·대원 전장의 빈 칸에 씨앗을 심는다 (사용자 2026-10-01 — 내 전장에도) */
+    let n=0, mine=0; const turns=s.seed.turns||2;
+    for(let i=0;i<(s.seed.n||2);i++){
+      const C=[];
+      for(let sl=1;sl<=SLOTS;sl++){ if(!foeBlock(sl)) C.push(["foe",sl]); if(!occAt(sl)&&!(B.portals||[]).some(p=>p.side==="mine"&&p.slot===sl)) C.push(["mine",sl]) }
+      if(!C.length) break;
+      const [side,sl]=rnd(C);
+      if(side==="mine"){   /* 내 전장 — 잔해처럼 칸만 차지한다 */
+        (B.hz=B.hz||[]).push({name:"오염된 씨앗",slot:sl,isHz:1,seedTurn:(B.turn||1)+turns});
+        fx({side:"mine",slot:sl,s:"summon",ring:"#9640c8",txt:"씨앗",cls:"shd",gap:120}); n++; mine++; continue }
       const m=spawnFoeNamed("오염된 씨앗",sl,{summoned:1});
-      if(m){ m.maxHp=s.seed.hp||40; m.hp=m.maxHp; m.seedTurn=(B.turn||1)+(s.seed.turns||2); m.exp=0; n++;
+      if(m){ m.maxHp=s.seed.hp||40; m.hp=m.maxHp; m.seedTurn=(B.turn||1)+turns; m.exp=0; n++;
         fx({side:"foe",slot:sl,s:"summon",ring:"#9640c8",txt:"씨앗",cls:"shd",gap:120}) } }
-    say(n?`${s.n} — 오염된 씨앗 ${n}을 심습니다 (${s.seed.turns||2}턴 뒤에 자랍니다).`:`${s.n} — 심을 자리가 없습니다.`,"t3");
+    say(n?`${s.n} — 오염된 씨앗 ${n}을 심습니다${mine?` (대원 전장에 ${mine})`:""} — ${turns}턴 뒤에 자랍니다.`:`${s.n} — 심을 자리가 없습니다.`,"t3");
     if(n) rollIntents(true);
   }
   if(s.lifeDrain){                     /* 양분 흡수 — 적과 대원 모두에게서 */
@@ -17811,13 +17833,18 @@ function skTurnStart(){
       say(`${b.n} — 잔해가 터집니다! 모든 대원에게 공격 피해 ${b.v}`,"t1");
       allUnits().filter(u=>u.hp>0).forEach(t=>{ if(src) asSrc(src,()=>hurtAlly(src,t,foeDmg(src,b.v,"공격"),b.n,"공격")) }) });
   }
-  /* 오염된 씨앗 — 때가 되면 자란다 (2026-09-29). 대원 쪽 칸이면 오염된 덩굴, 적 쪽이면 살아있는 덩굴 */
+  /* 오염된 씨앗 — 때가 되면 자란다 (2026-09-29). 적 전장은 살아있는 덩굴처럼 싸우는 오염된 덩굴,
+     대원 전장은 잔해처럼 칸을 차지하며 옆 칸을 휘감는 오염된 덩굴 (사용자 2026-10-01) */
   B.foes.filter(x=>x.alive&&x.seedTurn&&x.seedTurn<=(B.turn||1)).forEach(x=>{
     const sl=x.slot; x.alive=0; x.expTaken=1;
     const m=spawnFoeNamed("오염된 덩굴",sl,{summoned:1});
     if(m){ fx({side:"foe",slot:sl,s:"summon",ring:"#9640c8",txt:"오염된 덩굴",cls:"crit",gap:180});
       say(`오염된 씨앗이 자라 오염된 덩굴이 되었습니다.`,"t3") }
   });
+  (B.hz||[]).filter(x=>x.seedTurn&&x.seedTurn<=(B.turn||1)).forEach(x=>{
+    x.name="오염된 덩굴"; x.vine=1; x.seedTurn=0;
+    fx({side:"mine",slot:x.slot,s:"summon",ring:"#9640c8",txt:"오염된 덩굴",cls:"crit",gap:180});
+    say(`대원 전장의 오염된 씨앗이 자라 오염된 덩굴이 되었습니다 — 옆 칸을 휘감습니다.`,"t3") });
   /* 삼킨 대원 — 때가 지났거나 많이 맞으면 뱉는다 (2026-09-29). 전장이 비면 바로 뱉는다 */
   B.foes.filter(x=>x.alive&&x.swallow).forEach(x=>{
     if(x.swallow.until<=(B.turn||1)) spitOut(x,"때가 되어") });
@@ -17864,15 +17891,16 @@ function foeOnHurt(f,d){
   if(foePas(f,"painBonus")){ f.painBonus=(f.painBonus||0)+2; fx({side:"foe",slot:f.slot,ring:"#e0705a",txt:"고통 감내 +"+f.painBonus,cls:"buf",gap:90}) }
   if(foePas(f,"retreat")&&!f.big){ if(foeStep(f,+1,1)){ fx({side:"foe",slot:f.slot,s:"step",ring:"#9c8d77",gap:100}); say(`물러남 — ${f.name}${jo(f.name,"ig")} 한 칸 물러섭니다 → ${foeNo(f.slot)}번`,"t2") } }
 }
-/* 적 턴이 끝날 때 — 오염된 덩굴이 둘레를 휘감는다 (사용자 2026-09-29) */
+/* 적 턴이 끝날 때 — 대원 전장의 오염된 덩굴이 옆 칸을 휘감는다 (사용자 2026-09-29 · 10-01 내 전장에서만) */
+const VINE_TICK={v:8,n:"휘감기",d:"적 턴이 끝날 때, 옆 칸(거리 1)의 대원에게 마법 피해를 8 줍니다."};
 function vineEndPassives(){
-  B.foes.filter(f=>f.alive&&foePas(f,"vineTick")).forEach(f=>{
-    const p=foePas(f,"vineTick");
-    const L=onField().filter(u=>dist(u.slot,f.slot)<=1);
+  (B.hz||[]).filter(x=>x.vine).forEach(x=>{
+    const L=allUnits().filter(u=>u.hp>0&&u.slot>0&&Math.abs(u.slot-x.slot)===1);
     if(!L.length) return;
-    say(`${p.n} — 덩굴이 ${L.map(u=>u.name).join("·")}을 휘감습니다.`,"t3");
+    say(`${VINE_TICK.n} — 덩굴이 ${L.map(u=>u.name).join("·")}을 휘감습니다.`,"t3");
+    const src={name:x.name,alive:0};
     L.forEach(u=>{ fx({side:"mine",slot:u.slot,s:"mag",ring:"#9640c8",gap:100});
-      asSrc(f,()=>hurtAlly(f,u,foeDmg(f,p.v,"마법"),p.n,"마법")) });
+      hurtAlly(src,u,VINE_TICK.v,VINE_TICK.n,"마법") });
   });
 }
 /* 적 턴이 끝날 때 — 감시관의 갑주: 사거리 밖 대원에게 마법 피해 */
@@ -18522,7 +18550,8 @@ function drawBattle(app){
   for(let s=1;s<=SLOTS;s++){
     const h=unitAt(s);
     const body=h?null:bodyAt(s);
-    const d=el(`<div class="slot ${h?"":(body?"body":"empty")}"><span class="no">${s}</span></div>`);
+    const hz=(h||body)?null:hzAt(s);
+    const d=el(`<div class="slot ${h?"":(body?"body":hz?"body hzslot":"empty")}"><span class="no">${s}</span></div>`);
     d.dataset.slot=s;
     /* 카드를 들고 있는 동안에도 칸 안은 평소대로 그린다.
        놓을 자리 표시와 누름만 마지막에 덧씌운다 */
@@ -18534,6 +18563,15 @@ function drawBattle(app){
         <div class="mini"><span class="chip on">쓰러짐</span></div>
         <div class="mini">${ic("hp")}0/${body.maxHp}</div>`;
       if(drop) d.onclick=()=>{ const k=B.pick; B.pick=null; playCard(k,s,"mine") };
+      my.appendChild(d); continue;
+    }
+    if(hz){   /* 오염된 씨앗·덩굴 — 잔해처럼. 휘감기 문구는 여기(대원 전장)에서만 */
+      const left=hz.seedTurn?Math.max(0,hz.seedTurn-(B.turn||1)):0;
+      d.innerHTML+=`<div class="art">${figure(hz.name)}</div>
+        <div class="nm">${esc(hz.name)}</div>
+        <div class="mini">${hz.vine
+          ?`<span class="chip on kw" data-kw="휘감기" data-tip="${esc(VINE_TICK.d)}">휘감기</span>`
+          :`<span class="chip kw" data-kw="오염된 씨앗" data-tip="${esc(`${left}턴 뒤 오염된 덩굴로 자랍니다. 잔해처럼 칸을 막고 있어 겨누거나 부술 수 없습니다.`)}">${left?left+"턴 뒤 자람":"곧 자람"}</span>`}</div>`;
       my.appendChild(d); continue;
     }
     if(peekFoe&&dist(s,peekFoe.slot)<=peekFoe.rng) d.classList.add("inrng");
@@ -19531,7 +19569,7 @@ function previewMove(h,s,n){
   let at=h.slot;
   for(let k=0;k<Math.max(1,n||1);k++){
     const to=at+step;
-    if(to<1||to>SLOTS||bodyAt(to)) break;
+    if(to<1||to>SLOTS||blockAt(to)) break;
     const occ=unitAt(to); if(occ&&occ!==h&&occ.noMove) break;
     out.push(to); at=to;
   }
@@ -20587,7 +20625,7 @@ function ffMove(h,from,to){
 /* 균형의 한 걸음 — 막히면(빗물·잿불·밀물·썰물) 보상이 돈다. 아군이 서 있으면 자리를 바꾼다(기운 옮기기) */
 function ffStep(h,to,blockedMsg){
   const T=h.tag||{};
-  const okSlot=to>=1&&to<=SLOTS&&!bodyAt(to);
+  const okSlot=to>=1&&to<=SLOTS&&!blockAt(to);
   const occ=okSlot?unitAt(to):null;
   const canGo=okSlot&&(!occ||(!occ.noMove&&occ!==h));
   if(canGo) moveTo(h,to);                               /* 속박이면 moveTo 가 까닭을 말하고 안 움직인다 */
@@ -20983,8 +21021,8 @@ function movePickRange(sk,h){
 /* 못 고르는 칸이면 그 이유를 돌려준다 */
 function moveBlock(h,sk,to){
   if(!isMoveSkill(sk)||to==null) return "";
-  { const b=bodyAt(to);
-    if(b) return `${b.name}${jo(b.name,"ig")} 쓰러진 채 ${to}번 칸을 막고 있습니다.` }
+  { const b=blockAt(to);
+    if(b) return blockMsg(b,to) }
   if(to===h.slot&&!moveStayOk(h,sk))
     return `${sk.n}${jo(sk.n,"eun")} 지금 서 있는 칸으로는 갈 수 없습니다. 다른 칸을 고르세요.`;
   const r=movePickRange(sk,h);
@@ -20995,8 +21033,8 @@ function moveBlock(h,sk,to){
 function shadowGoTo(slot){
   if(!sel||sel.step!==5) return;
   const h=sel.hero;
-  { const b=bodyAt(slot);
-    if(b){ say(`${b.name}${jo(b.name,"ig")} 쓰러진 채 ${slot}번 칸을 막고 있습니다.`,"t2"); return } }
+  { const b=blockAt(slot);
+    if(b){ say(blockMsg(b,slot),"t2"); return } }
   if(slot===h.slot){ say("그림자를 남기려면 자리를 떠야 합니다. 다른 칸을 고르세요.","t2"); return }
   if(Math.abs(slot-h.slot)>2){ say("최대 2칸까지만 움직일 수 있습니다.","t2"); return }
   sel.moveTo=slot; sel.step=4; SFX.play("click");
@@ -21029,8 +21067,8 @@ function giveArmor(h,nm){
 }
 function moveTo(h,to){
   if(deb(h,"bind")){ say(`${h.name}${jo(h.name,"eun")} 속박되어 움직일 수 없습니다.`,"t3"); return }
-  { const b=bodyAt(to);
-    if(b){ say(`${b.name}${jo(b.name,"ig")} 쓰러진 채 ${to}번 칸을 막고 있습니다.`,"t2"); return } }
+  { const b=blockAt(to);
+    if(b){ say(blockMsg(b,to),"t2"); return } }
   const from=h.slot, occ=unitAt(to);
   if(occ&&occ!==h&&occ.noMove){ say(`${occ.name}${jo(occ.name,"eun")} 움직일 수 없습니다.`,"t2"); return }
   h.slot=to; h.moveOk=1;
