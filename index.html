@@ -11940,6 +11940,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 676, "v": "0.5", "d": "2026-10-01", "t": "적 전장에 소환물만 남으면 승리", "big": 0},
  {"b": 675, "v": "0.5", "d": "2026-10-01", "t": "타락한 드루이드 씨앗 — 내 전장에도 (잔해처럼) · 적 쪽 덩굴은 살아있는 덩굴처럼", "big": 0},
  {"b": 674, "v": "0.5", "d": "2026-10-01", "t": "정령샘 → 정령숲 · 정령숲 규칙 안내 창", "big": 0},
  {"b": 673, "v": "0.5", "d": "2026-10-01", "t": "정령숲 오염도 표시 한도 100", "big": 0},
@@ -12616,7 +12617,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=675;
+const BUILD_NO=676;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -22986,16 +22987,24 @@ function startMyTurn(){
     if(B&&!B.over&&!B.busy&&view==="battle") turnBanner();
   },banner);
 }
+/* 적 전장의 '진짜' 적 — 소환물(적 기술이 부른 것)과 환영은 빼고 센다 (사용자 2026-10-01) */
+const foeReal=f=>f.alive&&!f.summoned&&!f.isPhantom;
 function checkEnd(){
   if(run&&run.sandbox) return;
   if(B.over) return;
   /* 죄수 호송 마차 — 경비병이 다 쓰러지면 죄수는 풀려난다(전투 끝) */
   if(run.dun&&run.dun.cell&&run.dun.cell.wagon){
     const pr=B.foes.find(f=>f.name==="억울한 죄수");
-    if(pr&&pr.alive&&!B.foes.some(f=>f.alive&&f!==pr)){ pr.alive=0; pr.hp=0; pr.freed=1; run.dun.rescued=1; pr.exp=0;
+    if(pr&&pr.alive&&!B.foes.some(f=>foeReal(f)&&f!==pr)){ pr.alive=0; pr.hp=0; pr.freed=1; run.dun.rescued=1; pr.exp=0;
       fx({side:"foe",slot:pr.slot,txt:"풀려남",cls:"heal",gap:120}); say("억울한 죄수가 수갑을 벗고 달아납니다.","t1") }
   }
-  if(!B.foes.some(f=>f.alive)){
+  if(!B.foes.some(foeReal)){
+    /* 소환물만 남았다 — 주인을 잃은 것들이 흩어진다 */
+    const left=B.foes.filter(f=>f.alive);
+    if(left.length){
+      left.forEach(f=>{ f.alive=0; f.hp=0; if(f.summoned) f.exp=0;
+        fx({side:"foe",slot:f.slot,ring:"#9c8d77",txt:"흩어짐",cls:"miss",gap:60}) });
+      say(`적 전장에 소환물만 남았습니다 — ${left.map(f=>f.name).join("·")}${jo(left[left.length-1].name,"ig")} 흩어집니다.`,"t1") }
     B.over=1;
     const taken=B.foes.reduce((a,f)=>a+(f.expTaken||0),0);
     const exp=B.foes.reduce((a,f)=>a+f.exp,0)-taken;        /* 처치자가 먼저 가져간 몫은 뺀다 */
