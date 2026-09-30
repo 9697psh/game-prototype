@@ -1074,6 +1074,8 @@ body.vbattle .tornado{transform:scale(4.6);margin-top:14px}   /* 회오리도 �
 @keyframes swglowB{0%,100%{opacity:.25;transform:scaleX(.6)}50%{opacity:1;transform:scaleX(1.15)}}
 .slot .art.land{animation:landA .18s ease-out} @keyframes landA{0%{transform:scaleY(.9) translateY(4px)}100%{transform:none}}
 /* 이동 잔상 — 지나온 자리에 그림이 잠깐 남았다 스러진다 (사용자 2026-09-30, 이테리오) */
+/* 플레어와 플로우 이동의 불씨·물방울 (사용자 2026-09-30) — 네모난 도트 */
+.ffmote{position:absolute;margin:-3px 0 0 -3px;pointer-events:none;z-index:7;image-rendering:pixelated}
 .afterimg{position:absolute;height:var(--ah,120px);width:auto;margin:calc(var(--ah,120px) * -1) 0 0 calc(var(--ah,120px) * -0.5);   /* 발끝을 바닥선에 (사용자 2026-09-30) */
   image-rendering:pixelated;pointer-events:none;z-index:7;
   filter:brightness(1.5) saturate(.5) drop-shadow(0 0 8px rgba(120,200,255,.8));
@@ -4292,6 +4294,37 @@ function trailFX(side,name,fromSlot,toSlot,n){
     setTimeout(()=>nd.remove(),980+i*150);
   }
 }
+/* 플레어와 플로우 이동 (사용자 2026-09-30) — 살짝 떠올라 흘러가듯 미끄러져 오고, 길에 불씨·물방울이 흩날린다 */
+function ffGlideFX(side,fromSlot,toSlot,flare){
+  const a=ctrOf(side,fromSlot), b=ctrOf(side,toSlot); if(!a||!b) return;
+  const im=b.e&&b.e.querySelector(".art img.pxs, .art svg"); if(!im) return;
+  const dx=a.x-b.x, dir=dx<0?1:-1, ms=Math.round(640*SPD);
+  if(im.animate) im.animate([
+      {translate:dx+"px 0px",rotate:"0deg"},
+      {translate:(dx*0.62)+"px -9px",rotate:(dir*3)+"deg",offset:.35},
+      {translate:(dx*0.18)+"px -6px",rotate:(dir*1.5)+"deg",offset:.7},
+      {translate:"0px 0px",rotate:"0deg"}],
+    {duration:ms,easing:"cubic-bezier(.45,.05,.35,1)",fill:"none"});
+  /* 흩날리는 도트 — 몸 가운데 높이에서, 그림이 지나가는 자리를 따라 조금씩 늦게 */
+  const r=im.getBoundingClientRect();
+  const y0=r.height?r.top+r.height*0.55:b.y, hh=r.height||110;
+  const C=flare?["#ffd27a","#ff8a3a","#e0472a"]:["#bfe9ff","#5fb4f0","#2f6fd0"];
+  const N=20;
+  for(let i=0;i<N;i++){
+    const t=i/(N-1);
+    setTimeout(()=>{
+      const nd=spawn('<i class="ffmote"></i>'); if(!nd) return;
+      const e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;              /* 그림과 같은 느낌으로 들어가고 멎는다 */
+      const x=a.x+(b.x-a.x)*e+(Math.random()*16-8), y=y0+(Math.random()*hh*0.5-hh*0.25);
+      at(nd,{x:x,y:y});
+      const c=C[Math.floor(Math.random()*C.length)], z=Math.random()<.35?8:6;
+      nd.style.width=nd.style.height=z+"px"; nd.style.background=c; nd.style.boxShadow="0 0 8px "+c+", 0 0 2px "+c;
+      const up=flare?-(14+Math.random()*16):(6+Math.random()*10);   /* 불씨는 오르고, 물방울은 떨어진다 */
+      if(nd.animate) nd.animate([{opacity:0,transform:"translate(0,0) scale(.6)"},{opacity:1,transform:"translate(0,-2px) scale(1)",offset:.2},
+        {opacity:0,transform:"translate("+(dir*-8)+"px,"+up+"px) scale(.5)"}],{duration:Math.round((560+Math.random()*260)*SPD),easing:"ease-out",fill:"forwards"});
+    },Math.round(t*ms*0.85));
+  }
+}
 function hopFX(side,toSlot,fromSlot){
   const p=ctrOf(side,toSlot), q=ctrOf(side,fromSlot); if(!p||!q) return;
   const sp=p.e.querySelector(".art img.pxs, .art svg"); if(!sp||!sp.animate) return;
@@ -4410,6 +4443,7 @@ function playFX(o){
   if(o.release){ releaseHold(o.release.ids,o.release.how); return }
   /* 영혼 돌진도 칸에 매이지 않는다 — 죽은 칸은 이미 사라지고 없다 (2026-09-29) */
   if(o.trail){ trailFX(o.side,o.trail.name,o.trail.from,o.trail.to,o.trail.n); }
+  if(o.ffglide){ ffGlideFX(o.side,o.ffglide.from,o.ffglide.to,o.ffglide.flare); }
   if(o.rush){ ghostRushFX(o.rush.name,o.rush.from,o.rush.to,o.rush.ms,o.rush.h);
     const q=ctrOf(o.side,o.slot); if(q&&o.quake) quakeFX(q); return }
   const p=ctrOf(o.side,o.slot); if(!p) return;
@@ -11413,6 +11447,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 627, "v": "0.5", "d": "2026-09-30", "t": "플레어와 플로우 이동 연출", "big": 0},
  {"b": 626, "v": "0.5", "d": "2026-09-30", "t": "적 속박이 안 풀리던 버그", "big": 0},
  {"b": 625, "v": "0.5", "d": "2026-09-30", "t": "자기장 변환 — 앞 적과 자리 바꿈", "big": 0},
  {"b": 624, "v": "0.5", "d": "2026-09-30", "t": "기동 오오라 뒤로 · 기동 표식 뺌", "big": 0},
@@ -12040,7 +12075,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=626;
+const BUILD_NO=627;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -20272,6 +20307,8 @@ function moveTo(h,to){
   } else say(`${h.name} ${from}번 → ${to}번`);
   /* 이테리오 — 시공간을 접듯 잔상을 남기며 옮겨 간다 (사용자 2026-09-30) */
   if(h.name==="이테리오"&&from!==to) fx({side:"mine",slot:to,trail:{name:h.name,from:from,to:to},gap:0});
+  /* 플레어와 플로우 — 흘러가듯 (사용자 2026-09-30) */
+  if(isFF(h)&&from!==to) fx({side:"mine",slot:to,ffglide:{from:from,to:to,flare:ffFlare(h)},gap:0});
   fx({side:"mine",slot:to,s:"step",ring:"#5fd8cf",glow:1,gap:90});
   /* '이동할 때마다 추진력 +1' 은 물과 불의 글이다 — 그 기술이 열리기 전(7레벨)에는 안 오른다 */
   if(isFF(h)&&h.lv>=UNLOCK[2]){ h.mom=(h.mom||0)+1; say(`물과 불 — 추진력 +1 (${h.mom})`,"t2") }
