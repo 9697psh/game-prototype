@@ -11413,6 +11413,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 626, "v": "0.5", "d": "2026-09-30", "t": "적 속박이 안 풀리던 버그", "big": 0},
  {"b": 625, "v": "0.5", "d": "2026-09-30", "t": "자기장 변환 — 앞 적과 자리 바꿈", "big": 0},
  {"b": 624, "v": "0.5", "d": "2026-09-30", "t": "기동 오오라 뒤로 · 기동 표식 뺌", "big": 0},
  {"b": 623, "v": "0.5", "d": "2026-09-30", "t": "기동 오오라 작게", "big": 0},
@@ -12039,7 +12040,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=625;
+const BUILD_NO=626;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -16625,8 +16626,10 @@ function skTargets(f,s,allies){
   return [rnd(inR)];
 }
 /* 사거리 안에 닿을 때까지 한 번에 — 빈 칸이 이어지는 만큼. 갈 곳이 없으면 null (사용자 2026-09-15: 한 칸씩 말고 한 번에) */
+const foeBound=f=>!!(f&&f.deb&&f.deb.bind>0);   /* 속박 — 스스로 움직이지 못한다 (2026-09-30) */
 function moveIntent(f,allies){
   if(FOE[f.name]&&FOE[f.name].noMove) return null;   /* 고요한 우물 — 제자리 (2026-09-29) */
+  if(foeBound(f)) return null;
   if(f.big||f.slot<=1||foeBlock(f.slot-1)) return null;   /* 두 칸짜리는 움직이지 않는다 */
   const front=allies.length?Math.max(...allies.map(a=>a.slot)):0;
   const goal=Math.max(1,(f.rng||1)-(SLOTS-front));        /* 이 칸이면 가장 앞 대원이 사거리 안 */
@@ -16713,6 +16716,7 @@ function pushBack(f,t){
 }
 function foeStep(f,dir,n){
   let moved=0;
+  if(foeBound(f)) return 0;
   for(let q=0;q<(n||1);q++){
     const to=f.slot+dir;
     if(to<1||to>SLOTS||foeBlock(to)) break;
@@ -21778,7 +21782,10 @@ function foePhase(){
       fx({side:"foe",slot:f.slot,txt:"기절",cls:"miss",gap:130});
       say(`${f.name} 기절 — 움직이지 못합니다.`,"t2"); return }
     f.lastAct=Object.assign({},f.intent);      /* 망자들의 통솔자가 따라 할 '직전 턴의 실제 행동' */
-    if(f.intent.t==="move"){
+    if(f.intent.t==="move"&&foeBound(f)){
+      fx({side:"foe",slot:f.slot,txt:"속박",cls:"miss",gap:130});
+      say(`${f.name}${jo(f.name,"eun")} 속박되어 움직이지 못합니다.`,"t2");
+    }else if(f.intent.t==="move"){
       /* 정한 칸까지 한 번에 — 그 사이 누가 끼어들었으면 갈 수 있는 데까지 */
       let to=f.intent.to!=null?f.intent.to:f.slot-1, cur=f.slot;
       while(cur>1&&cur>to&&!foeBlock(cur-1)) cur--;
@@ -22006,6 +22013,8 @@ function startMyTurn(){
     if(f.tauntTurn>0&&--f.tauntTurn<=0){ f.taunt=0;
       say(`${f.name}의 도발이 풀립니다.`,"t2") }
     if(f.deb){ ["atkDn","magDn","defDn"].forEach(k=>{ if(f.deb[k]>0) f.deb[k]-- });
+      /* 속박도 턴마다 1 — 빠져 있어 끌려온 적의 속박이 영영 남았다 (사용자 2026-09-30). 묶인 마귀의 99 는 제 규칙이 푼다 */
+      if(f.deb.bind>0&&f.deb.bind<99) f.deb.bind--;
       if(!f.deb.fear){ f.fearSrc=null; f.fearName=null } }
     if(f.burn){                       /* 노트 : 턴 종료시 중첩 1 감소 */
       if(f.alive){
