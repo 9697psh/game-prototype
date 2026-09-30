@@ -449,9 +449,13 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .sk .skv .v-lock{color:#e0a86a;border-color:#7a5a3a;background:rgba(224,168,106,.12)}
 /* 선택지 목록은 오른쪽 칸에 붙지만 카드 폭을 다 쓴다 (그림 칸 60 + 사이 9) */
 .opts{display:flex;flex-direction:column;gap:6px;margin-top:8px}
-.sk .skR .opts{margin-left:-69px}
+.sk .skR .opts{margin-left:-61px;margin-right:0}   /* 카드 안쪽에 딱 맞게 (사용자 2026-09-30) */
 .opt .ogo{margin-top:6px;align-self:flex-start}
 .opt{background:#221d16;border:1px solid var(--rule2);border-radius:5px;padding:8px 10px;cursor:pointer}
+/* 갈래 번호 — 숫자판으로 고를 수 있음을 알린다 (사용자 2026-09-30) */
+.opt .onum{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;margin-right:6px;
+  border:1px solid var(--rule2);border-radius:3px;font-size:10.5px;color:var(--faint);vertical-align:1px}
+.opt.on .onum{border-color:var(--brass);color:var(--brass)}
 .opt:hover{border-color:var(--brass);background:var(--raise)}
 .opt.on{border-color:var(--brass)}
 .opt b{font-size:12px}
@@ -11213,6 +11217,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 612, "v": "0.5", "d": "2026-09-30", "t": "선택 기술 숫자판", "big": 0},
  {"b": 611, "v": "0.5", "d": "2026-09-30", "t": "이테리오 효과음", "big": 0},
  {"b": 610, "v": "0.5", "d": "2026-09-30", "t": "기동 차례·겹침", "big": 0},
  {"b": 609, "v": "0.5", "d": "2026-09-30", "t": "이동 잔상 발높이·속도", "big": 0},
@@ -11825,7 +11830,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=611;
+const BUILD_NO=612;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -18334,7 +18339,6 @@ function skillPanel(h){
         <div class="skico">${ico||`<span class="noico">${esc(s.el||"")}</span>`}<span class="k">${i+1}</span></div>
         <b>${esc(nm)}</b>
         ${xN?`<span class="xn">×${xN}</span>`:""}
-        ${s.opts?`<span class="chip pk">선택 · ${esc(s.n)}</span>`:""}
         ${hot.map(x=>`<span class="chip hotc">${esc(x)}</span>`).join("")}
       </div>
       <div class="skR">
@@ -18345,7 +18349,7 @@ function skillPanel(h){
           ${locked?`<span class="v-lock" title="${UNLOCK[i]}레벨에 열립니다">${lockSvg()}<b>${UNLOCK[i]}</b></span>`:""}
           ${lk?`<span class="v-lock" title="잠금 ${lk}턴">${Array.from({length:Math.min(lk,5)},()=>`<i class="dm"></i>`).join("")}</span>`:""}
         </div>
-        ${skUpsHtml(h,s.n,s)}<small>${lv.html}${canMore?` <a class="skmore" title="${open?"설명을 접습니다":"설명을 다 보여 줍니다"}">${open?"접기 ▴":"자세히 ▸"}</a>`:""}</small>
+        ${(s.opts&&sel.optOpen===i)?"":skUpsHtml(h,s.n,s)}${(s.opts&&sel.optOpen===i)?"":`<small>${lv.html}${canMore?` <a class="skmore" title="${open?"설명을 접습니다":"설명을 다 보여 줍니다"}">${open?"접기 ▴":"자세히 ▸"}</a>`:""}</small>`}
         ${s.alt?`<div class="fullx"><span>전환 · ${esc(s.alt.n)}</span>${rich(SKILL_FULL[s.alt.n]||s.alt.d||"")}</div>`:""}
       </div></div>`);
     { const mo=e.querySelector(".skmore");
@@ -18368,7 +18372,7 @@ function skillPanel(h){
           const cur=(o.n===s.n);
           const on=cur&&armed;
           const oc=el(`<div class="opt ${cur?"on":""}">
-            <b>${esc(o.n)}</b>${(on&&sel.count>1)?`<span class="xn">×${sel.count}</span>`:""}
+            <span class="onum">${oi+1}</span><b>${esc(o.n)}</b>${(on&&sel.count>1)?`<span class="xn">×${sel.count}</span>`:""}
             <span>${o.costType==="mom"?ic("move"):o.costType==="scale"?"비늘 ":ic("mana")}${o.cost} · ${esc(o.el)}</span>
             ${on?`<span class="chip pk">한 번 더 누르면 ×${(sel.count||1)+1}</span>`:""}
             <small>${richLive(h,o,SKILL_FULL[o.n]||o.d||"").html}</small>
@@ -18509,6 +18513,17 @@ function keepSel(){
 function pickUnit(s){
   if(B.over) return; const h=unitAt(s); if(!h) return;
   sel={hero:h,slot:s,step:2,skill:null,count:1}; render();
+}
+/* 선택 기술의 갈래를 숫자로 고른다 (사용자 2026-09-30).
+   oi 번째 갈래로 갈아타고, 이미 그 갈래가 걸려 있으면 횟수를 하나 더 쌓는다. */
+function pickOpt(i,oi){
+  const h=sel.hero, s=h.sk[i], opts=s&&s.opts; if(!opts||!opts[oi]) return false;
+  const o=opts[oi];
+  if(sel.skill===i&&sel.step===4&&s.n===o.n){ pickSkill(i,null); return true }   /* 같은 갈래 → 횟수 +1 */
+  h.sk[i]=Object.assign({},o,{opts:opts,pick:s.pick});
+  sel.skill=i; sel.count=1; sel.step=2; sel.optOpen=i;
+  pickSkill(i,1);
+  return true;
 }
 function pickSkill(i,count){
   if(B.busy) return;          /* 턴 종료 효과가 흐르는 동안에는 손대지 못한다 */
@@ -18787,7 +18802,10 @@ document.addEventListener("keydown",e=>{
 });
 document.addEventListener("keydown",e=>{
   if(view!=="battle") return;
-  if(e.key==="Escape"){ if(B) B.pick=null; sel=null; render(); return }
+  if(e.key==="Escape"){
+    /* 갈래 목록이 열려 있으면 그것부터 닫는다 (사용자 2026-09-30) */
+    if(sel&&sel.optOpen!=null){ sel.optOpen=null; render(); return }
+    if(B) B.pick=null; sel=null; render(); return }
   /* Enter 는 2026-09-16 뺌 (사용자) — 턴 종료는 스페이스바만 */
   if(e.key===" "){ e.preventDefault(); endTurn(); return }   /* 스페이스바 = 턴 종료 (사용자 2026-09-16). 버튼에 초점이 있어도 두 번 눌리지 않게 */
   /* 칸이 1~10 이 되었으니 0 을 10번 칸으로 읽는다 */
@@ -18802,11 +18820,22 @@ document.addEventListener("keydown",e=>{
   /* 1~4 는 기술 카드를 누른 것과 같다 (사용자 2026-09-13) — 한 번이면 횟수 1 로 대상 고르기,
      같은 키를 또 누르면 횟수 +1, 다른 키면 그 기술로 갈아탄다. 대상은 6~0(적) 이나 마우스.
      그래서 대상 고르는 동안 1~4 로 아군 칸을 고르는 길은 없어졌다 — 아군·자기 대상은 5번 칸이나 마우스로 */
-  if(sel.step===2){ if(n<=4) pickSkill(n-1,1); return }
+  /* 갈래 목록이 열려 있으면 1~N 은 갈래 고르기 (사용자 2026-09-30) */
+  { const oi=sel.optOpen;
+    if(oi!=null&&sel.hero&&sel.hero.sk[oi]&&sel.hero.sk[oi].opts){
+      const k=sel.hero.sk[oi].opts.length;
+      if(n<=k){ if(pickOpt(oi,n-1)) return }
+      else if(n<=4){ sel.optOpen=null }        /* 갈래 수를 넘는 번호는 다른 기술로 */
+    } }
+  if(sel.step===2){ if(n<=4){ const s0=sel.hero.sk[n-1];
+      if(s0&&s0.opts){ sel.skill=n-1; sel.step=2; sel.count=1; sel.optOpen=n-1; SFX.play("skillclick"); render(); return }
+      pickSkill(n-1,1) } return }
   if(sel.step===3){ if(n<=9) pickCount(n); return }
   if(sel.step===4){
     const tg=sel.hero.sk[sel.skill].tg;
-    if(n<=4){ pickSkill(n-1,(n-1===sel.skill)?null:1); return }
+    if(n<=4){ const s0=sel.hero.sk[n-1];
+      if(s0&&s0.opts&&sel.optOpen!==n-1){ sel.skill=n-1; sel.step=2; sel.count=1; sel.optOpen=n-1; SFX.play("skillclick"); render(); return }
+      pickSkill(n-1,(n-1===sel.skill)?null:1); return }
     if(n>SLOTS){ if(tg==="foe"||tg==="any") doSkill(n-SLOTS) }
     else if(tg==="ally") doSkill(n);
     else if(tg==="any") doSkill(-n);
