@@ -11109,7 +11109,7 @@ function taintHot(tn){ return spiritOn()?(Math.floor(tn/CRYSTAL_TAINT)>0):tn>=80
 function taintChip(extra){
   if(!spiritOn()) return `<span class="res taint ${extra||""} ${run.taint>=70?"bad":run.taint>=45?"warn":""}" title="오염도 — 100이 되면 그 자리에서 끝납니다. 전투에 이기면 20 내려갑니다.">${resIcon("taint")}<b>${run.taint}</b><i>/100</i><u style="width:${Math.min(100,run.taint)}%"></u></span>`;
   const cr=run.crystal==null?CRYSTAL_MAX:run.crystal;
-  return `<span class="res taint ${extra||""} ${run.taint>=15?"bad":run.taint>=10?"warn":""}" title="오염도 — 정령숲에서는 ${CRYSTAL_TAINT}이 되면 ${CRYSTAL_TAINT}을 걷어 내고 푸른 수정 1칸을 잃습니다. 이동할 때 ${SPIRIT_STEP} 더 오릅니다. 전투에 이기면 20 내려갑니다.">${resIcon("taint")}<b>${run.taint}</b><i>/${CRYSTAL_TAINT}</i><u style="width:${run.taint/CRYSTAL_TAINT*100}%"></u></span>`
+  return `<span class="res taint ${extra||""} ${run.taint>=CRYSTAL_TAINT-5?"warn":""}" title="오염도 (한도 100) — 정령숲에서는 ${CRYSTAL_TAINT} 이상 찰 때마다 ${CRYSTAL_TAINT}을 걷어 내고 푸른 수정 1칸을 잃습니다. 이동할 때 ${SPIRIT_STEP} 더 오릅니다. 전투에 이기면 20 내려갑니다.">${resIcon("taint")}<b>${run.taint}</b><i>/100</i><u style="width:${Math.min(100,run.taint)}%"></u></span>`
     +`<span class="res crystal ${extra||""} ${cr<=1?"bad":cr<=2?"warn":""}" title="푸른 수정 — 0이 되면 그 자리에서 끝납니다. 오염도가 ${CRYSTAL_TAINT}에 닿을 때마다 1칸 흐려집니다. 기력의 샘 · 마른숲 상점의 파편으로 충전합니다.">${iconImg("item_spirit_blue_crystal")?`<span class="ri">${iconImg("item_spirit_blue_crystal")}</span>`:""}<b>${cr}</b><i>/${CRYSTAL_MAX}</i><u style="width:${cr/CRYSTAL_MAX*100}%"></u></span>`;
 }
 function nextDay(){
@@ -11892,6 +11892,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 673, "v": "0.5", "d": "2026-10-01", "t": "정령숲 오염도 표시 한도 100", "big": 0},
  {"b": 672, "v": "0.5", "d": "2026-10-01", "t": "오염도 아이콘을 보라 돌(corruption)로", "big": 0},
  {"b": 671, "v": "0.5", "d": "2026-10-01", "t": "기동 턴 넘어 유지 · 에너지 보호막 라운드마다 · 지도 게이지 강조 · 정령숲 이동 오염도 +1", "big": 0},
  {"b": 670, "v": "0.5", "d": "2026-10-01", "t": "시험판 — 머리줄에 2스테이지로 바로 (Lv15 · 레벨 보상 무작위)", "big": 0},
@@ -12565,7 +12566,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=672;
+const BUILD_NO=673;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -15592,7 +15593,7 @@ function drawShop(app){
     <div class="shopnpc"><div class="npcface${iconImg(face)?" pic":""}">${iconImg(face)||figure("도미니코")}</div>
       <b>${esc(sh.npc)}</b>
       <p>"${rich(line)}"</p>
-      <p class="gold">${resIcon("gold")} ${run.gold}${sh.dry?` · ${resIcon("taint")} ${run.taint}${spiritOn()?`/${CRYSTAL_TAINT} · 수정 ${run.crystal==null?CRYSTAL_MAX:run.crystal}/${CRYSTAL_MAX}`:""}`:""}</p>
+      <p class="gold">${resIcon("gold")} ${run.gold}${sh.dry?` · ${resIcon("taint")} ${run.taint}${spiritOn()?`/100 · 수정 ${run.crystal==null?CRYSTAL_MAX:run.crystal}/${CRYSTAL_MAX}`:""}`:""}</p>
       ${sh.dry?`<p class="drylim">오염도로 사는 물건 ${Math.min(sh.bought,sh.limit)}/${sh.limit}개</p>`:""}</div>
     <div class="sellwrap">
       <button class="go sellbtn">${run.sellOpen?"진열대로 돌아가기":"판매하기"}</button>
