@@ -3223,10 +3223,11 @@ kbd{display:inline-block;min-width:20px;text-align:center;padding:1px 7px;font-s
    무대 그림(124px)을 감싸도록 186px 로 키우고, 띠의 바닥을 발밑에 맞춘다.
    v2 (2026-09-30) 는 바닥이 117 — 128-117=11 → 186/128 배라 16px 내림 (v1 은 106 이라 32px 였다).
    너무 크다 (사용자 2026-09-30) → 140px, 11×140/128 = 12px 내림.
-   그림 앞에 뜬다 — 가운데가 비어 있어 몸을 가리지 않는다 */
+   그림 뒤에 깔린다 (앞에 뒀다가 사용자 2026-09-30 되돌림) */
 .art .mobaura{position:absolute;left:50%;bottom:-12px;width:140px;height:140px;margin-left:-70px;
-  background-size:600% 100%;background-repeat:no-repeat;image-rendering:pixelated;pointer-events:none;z-index:3;
-  animation:mobAura .54s steps(6) infinite}   /* 그림 앞에 (사용자 2026-09-30) */
+  background-size:600% 100%;background-repeat:no-repeat;image-rendering:pixelated;pointer-events:none;z-index:-1;
+  animation:mobAura .54s steps(6) infinite}   /* 다시 그림 뒤로 (사용자 2026-09-30) */
+.art:has(>.mobaura){isolation:isolate}   /* 오오라를 그림 뒤로 — 칸 밖(무대 바닥)까지 내려가지 않게 */
 @keyframes mobAura{from{background-position:0% 0}to{background-position:120% 0}}
 /* 빈 칸에는 발밑이 없다 — 칸 한가운데에서 10px 올린 자리에 눕힌다.
    여는 띠(.ptlfx)가 .art 를 못 찾으면 칸 한가운데를 짚고, 거기서 구멍이
@@ -10054,7 +10055,7 @@ function heroStatusRows(h){
   /* 추진력은 버프 줄에 안 적는다 — 자원 줄(res)에 이미 있다 (사용자 2026-09-15) */
   /* 바람(산들바람 강화)은 진선풍도 칸의 수치로 보인다 — 표식은 안 단다 (사용자 2026-09-16) */
   if(h.air) o.push(bd("o","공중에 뜸","","잠깐 공중에 떠 있습니다. 내려오면 사라집니다."));   /* 2026-09-29 */
-  if(h.mobile) g.push(bd("g","기동","","다음 기술을 쓴 뒤 한 칸 물러서고 에너지 보호막을 3 얻습니다. 그러면 기동은 풀립니다."));   /* 2026-09-30 */
+  /* 기동 표식은 뺐다 — 오오라가 대신 알린다 (사용자 2026-09-30) */
   if(h.taunt) g.push(bd("g","도발","","적의 공격을 대신 받습니다"));
   if(h.armor) g.push(bd("g","갑피",h.armor,"한 번에 받는 피해를 이 수치까지로 잘라냅니다"));
   if(h.blessed) g.push(bd("g","축복","","축복"));
@@ -11412,6 +11413,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 624, "v": "0.5", "d": "2026-09-30", "t": "기동 오오라 뒤로 · 기동 표식 뺌", "big": 0},
  {"b": 623, "v": "0.5", "d": "2026-09-30", "t": "기동 오오라 작게", "big": 0},
  {"b": 622, "v": "0.5", "d": "2026-09-30", "t": "기동 — 여러 번 써도 한 번만 물러서게", "big": 0},
  {"b": 621, "v": "0.5", "d": "2026-09-30", "t": "턴 단위 마법력이 전투 뒤에 남던 버그", "big": 0},
@@ -12036,7 +12038,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=623;
+const BUILD_NO=624;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
