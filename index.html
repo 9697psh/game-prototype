@@ -1740,6 +1740,7 @@ header{align-items:center}
   text-decoration:none;transition:width .25s}
 .res.act{color:var(--r-act)} .res.taint{color:var(--r-taint)}
 .res.gold{color:var(--r-gold)} .res.stone{color:var(--r-stone)}
+#hBtns button.skip2{color:#9fd8ff;border-color:rgba(111,208,240,.55)}   /* 시험판 — 2스테이지로 (2026-10-01) */
 .res.crystal{color:#6fd0f0} .res.crystal .ri{width:17px;height:17px;flex:0 0 17px} .res.crystal .ri img{width:17px;height:17px;image-rendering:pixelated;display:block}   /* 푸른 수정 (정령숲, 2026-10-01) */
 .pmap .cell.ffly{background-color:rgba(240,230,120,.26);box-shadow:0 0 0 1px rgba(220,210,90,.7) inset,0 0 10px rgba(250,240,140,.45) inset}   /* 반딧불 둥지 둘레 — 밤에도 습격 없음 */
 .pmap .cell.ffly:not(.adj):not(.here):not(.onroute){opacity:1}
@@ -11271,6 +11272,36 @@ function nextField(){
   view="map"; render();
 }
 
+/* ═══ 시험판 — 2스테이지로 바로 (사용자 2026-10-01) ═══
+   지금 대원 그대로 Lv.15 까지 올리며, 레벨마다 그 레벨의 등급(LV_GRADE) 보상을 보상 화면과 같은 풀에서 하나씩 무작위로 받는다 */
+const SKIP2_LV=15, SKIP2_GOLD=40, SKIP2_STONE=5;
+function autoLvReward(h,grade){
+  const own=(HERO_REWARDS[h.name]||[]).filter(r=>r.g===grade&&rewardOk(h,r)).map(r=>Object.assign({},r,{w:(r.w==null?1:r.w)*OWN_W}));
+  const com=COMMON.filter(r=>r.g===grade&&rewardOk(h,r));
+  const r=pickWeighted(own.concat(com),1)[0]; if(!r) return null;
+  r.fx(h,r.n);
+  h.tag.taken=(h.tag.taken||[]).concat(r.n);
+  h.tag.tk=(h.tag.tk||[]).concat(rwKey(r));
+  return r.n;
+}
+function skipToStage2(){
+  if(!run||run.field!==0) return;
+  if(!confirm(`시험용 — 1스테이지를 건너뛰고 정령숲으로 갑니다.\n대원 Lv.${SKIP2_LV} · 레벨 보상 무작위 · 금화 ${SKIP2_GOLD} · 제련석 ${SKIP2_STONE} · 일반 장신구 1`)) return;
+  const got=[];
+  run.heroes.forEach(h=>{ h.down=0; if(h.hp<1) h.hp=1;
+    let n=0; while(h.lv<SKIP2_LV){ levelUp(h); if(autoLvReward(h,LV_GRADE[h.lv]||"하급")) n++ }
+    h.exp=0;
+    if((h.items||[]).length<3){ const it=rnd(ITEMS.filter(i=>i.g==="일반")); if(it) equip(h,Object.assign({},it)) }
+    got.push(`${h.name} 보상 ${n}`) });
+  run.pendingLv=null; run.after=[];
+  run.gold+=SKIP2_GOLD; run.stone=(run.stone||0)+SKIP2_STONE;
+  run.skipped=1;
+  nextField();
+  run.heroes.forEach(h=>{ h.hp=h.maxHp });   /* 시험판 — 온 체력으로 */
+  toast(`시험판 — 정령숲으로 건너뜁니다. ${got.join(" · ")}`);
+  saveGame(); render();
+}
+
 /* ═══════════ 화면 ═══════════ */
 let _lastView=null, MAP_ENTER=0, MAP_UNF_TOK=0, MAP_BO_UNTIL=0;   /* MAP_BO_UNTIL — 날이 바뀌는 암전이 걷히는 때. 지도 펼침은 그 뒤에 */
 function render(){
@@ -11412,6 +11443,10 @@ function render0(){
     sb.onclick=ev=>{ ev.stopPropagation(); volPanel(sb) }; hb.appendChild(sb); }
   { const qb=el(`<button title="단축키와 요령 (? 키)">도움말</button>`);
     qb.onclick=()=>{ HELP_ON=!HELP_ON; drawHelp() }; hb.appendChild(qb); }
+  if(run&&view==="map"&&run.field===0&&!run.sandbox&&!TUT.on){   /* 시험판 — 2스테이지로 바로 (사용자 2026-10-01) */
+    const sk=el(`<button class="skip2" title="시험용 — 대원 Lv.${SKIP2_LV} · 레벨 보상 무작위 · 금화 ${SKIP2_GOLD} · 제련석 ${SKIP2_STONE} · 일반 장신구 1 로 정령숲에 들어갑니다">2스테이지로 ▶</button>`);
+    sk.onclick=()=>skipToStage2(); hb.appendChild(sk);
+  }
   if(run&&(view==="map"||view==="battle"||view==="wavegap")){   /* 메인화면 — 판은 저장돼 있으니 시작 화면으로 (2026-09-18, 전투도 2026-09-19) */
     const hb2=el(`<button title="시작 화면으로 — 판은 저장되어 있습니다">메인화면</button>`);
     hb2.onclick=()=>{ saveGame(); run=null; B=null; view="title"; render() }; hb.appendChild(hb2);
@@ -11847,6 +11882,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 670, "v": "0.5", "d": "2026-10-01", "t": "시험판 — 머리줄에 2스테이지로 바로 (Lv15 · 레벨 보상 무작위)", "big": 0},
  {"b": 669, "v": "0.5", "d": "2026-10-01", "t": "마른숲 상점 오염도 값을 파편 환율로 · 고요한 우물 대기 움직임 뺌", "big": 0},
  {"b": 668, "v": "0.5", "d": "2026-10-01", "t": "정령숲 지도 기믹 넷 (고목 덩굴 · 반딧불 둥지 · 마른숲 상점 · 기력의 샘) + 푸른 수정", "big": 0},
  {"b": 667, "v": "0.5", "d": "2026-10-01", "t": "정령숲 이벤트 버려진 벌목도 · 특수 장신구 벌목도 · 뿌리모체의 심장", "big": 0},
@@ -12517,7 +12553,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=669;
+const BUILD_NO=670;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
