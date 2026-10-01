@@ -4180,6 +4180,7 @@ const mapPng=n=>MAP_DIR+encodeURIComponent(n);
    held 양피지+왼손 한 장 · point 가리킴 · press 누름 (몸통만 잘라 둔 그림). w/h 는 256 기준 크기, tip 은 검지 끝 (그림 안 좌표).
    새 대원 손이 오면 여기 한 줄 — art/지도/ 에 그림 넣고 build */
 const MAP_HANDS={
+ "타락한 나이코스":{held:"양피지-손-타락한 나이코스.png",scale:.34,point:{f:"손-가리킴-타락한 나이코스.png",w:230,h:243,tip:[12,1]},press:{f:"손-누름-타락한 나이코스.png",w:254,h:248,tip:[2,84]}},   /* 외형 손 (사용자 2026-10-01) — 그림이 커서 .34 */
  "나이코스":{held:"양피지-손.png",scale:.55,point:{f:"손-가리킴.png",w:134,h:142,tip:[3,0]},press:{f:"손-누름.png",w:187,h:136,tip:[0,46]}},   /* 철 장갑 손 (사용자 2026-10-01) */
  "쿠렘타이":{held:"양피지-손-쿠렘타이.png",scale:.7,point:{f:"손-가리킴-쿠렘타이.png",w:79,h:120,tip:[3,0]},press:{f:"손-누름-쿠렘타이.png",w:85,h:104,tip:[1,9]}},
  "트리스탄":{held:"양피지-손-트리스탄.png",scale:.68,point:{f:"손-가리킴-트리스탄.png",w:96,h:116,tip:[4,0]},press:{f:"손-누름-트리스탄.png",w:102,h:110,tip:[0,11]}},
@@ -4189,7 +4190,9 @@ const MAP_HANDS={
  ,"플레어와 플로우":{held:"양피지-손-플레어와 플로우.png",scale:.42,point:{f:"손-가리킴-플레어와 플로우.png",w:173,h:188,tip:[3,2]},press:{f:"손-누름-플레어와 플로우.png",w:175,h:167,tip:[3,22]}}   /* 왼손은 플레어(불), 오른손은 플로우(물) */
 };   /* scale — 오른손을 왼손과 비슷한 크기로 (사용자 2026-09-14). 그림 자체가 큰 쿠렘타이는 더 줄인다 */
 document.addEventListener("pointerup",()=>{ const st=document.querySelector(".pstage"); if(st&&st._up) st._up() });
-function mapHands(){ const n=run&&run.heroes&&run.heroes[0]&&run.heroes[0].name; return MAP_HANDS[n]||MAP_HANDS["나이코스"] }
+function mapHands(){ const n=(run&&run.heroes&&run.heroes[0]&&run.heroes[0].name)||"나이코스";   /* 판 밖(도감 등)은 나이코스 손 */
+  const k=(typeof skinOn==="function")&&n&&skinOn(n);   /* 외형을 착용했으면 그 외형의 손 (2026-10-01) */
+  return (k&&MAP_HANDS[k.n])||MAP_HANDS[n]||MAP_HANDS["나이코스"] }
 /* ═══ 손 커서 (사용자 2026-10-01) ═══ 전투 밖 모든 화면 — 맨 앞 대원의 오른손(가리킴 · 누름)이 마우스를 따라간다.
    크기는 그림 1px 당 GHAND_K × 대원별 scale (지도 손보다 작게). 지도 무대 안에서는 지도 손에 넘긴다 */
 const GHAND_K=1.25;
@@ -12523,6 +12526,7 @@ const GAME_VER="0.6";   /* 0.6 — 2스테이지 구역(정령숲) 추가 · 여
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 735, "v": "0.6", "d": "2026-10-01", "t": "타락한 나이코스 지도 손", "big": 0},
  {"b": 734, "v": "0.6", "d": "2026-10-01", "t": "설명수정 합침, 타락한 나이코스 대사", "big": 0},
  {"b": 733, "v": "0.6", "d": "2026-10-01", "t": "외형마다 대사를 따로, 문구 수정에서 고침", "big": 0},
  {"b": 732, "v": "0.6", "d": "2026-10-01", "t": "외형을 바꿔도 정면 얼굴은 그대로", "big": 0},
@@ -13258,7 +13262,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=734;
+const BUILD_NO=735;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
