@@ -1297,6 +1297,19 @@ body.vbattle .tornado{transform:scale(4.6);margin-top:14px}   /* 회오리도 �
 .skc.on{border-color:var(--brass);background:#221c14;box-shadow:0 0 0 1px var(--brass) inset;cursor:default} .skc.on span{color:var(--brass)}
 .skc.lock{cursor:default;opacity:.75} .skc.lock .ska img{filter:brightness(0) drop-shadow(0 0 1px rgba(160,140,120,.6))} .skc.lock:hover{border-color:var(--rule)}
 @media (max-width:1500px){ .cxskin{position:static;width:auto;max-width:900px;margin:24px auto 0;max-height:none} .cxskin .skl{flex-direction:row;justify-content:center} .skc{width:150px} }
+/* 외형 획득 창 */
+.skinget{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;animation:sgIn .25s ease-out}
+@keyframes sgIn{from{opacity:0}to{opacity:1}}
+.sgp{min-width:340px;max-width:min(680px,92vw);border:1px solid var(--brass);border-radius:8px;background:rgba(20,16,12,.97);padding:18px 22px;text-align:center;
+  box-shadow:0 0 0 1px rgba(240,200,120,.25) inset,0 12px 40px rgba(0,0,0,.6);animation:sgPop .35s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes sgPop{from{transform:scale(.85)}to{transform:scale(1)}}
+.sgt{font-family:var(--serif);font-size:20px;color:var(--brass);letter-spacing:2px} .sgs{font-size:12px;color:var(--faint);margin-top:4px}
+.sgl{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin:16px 0 14px}
+.sgc{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 16px;border:1px solid var(--rule);border-radius:6px;background:rgba(0,0,0,.3)}
+.sgc img{height:150px;width:auto;image-rendering:pixelated;filter:drop-shadow(0 0 10px rgba(170,90,220,.55));animation:sgGlow 1.8s ease-in-out infinite}
+@keyframes sgGlow{50%{filter:drop-shadow(0 0 18px rgba(200,110,255,.8))}}
+.sgc b{font-size:14px;color:var(--fg)} .sgc span{font-size:11px;color:var(--faint)}
+.sgf{display:flex;flex-direction:column;align-items:center;gap:6px} .sgf small{font-size:11px;color:var(--faint)}
 /* 조합 판 — 화면 오른쪽에 붙는다 (사용자 2026-10-01) */
 .cxside{position:fixed;right:16px;top:64px;width:320px;max-height:calc(100vh - 80px);overflow:auto;z-index:20;
   border:1px solid var(--rule2);border-radius:8px;background:rgba(18,15,12,.94);padding:4px 14px 14px;box-shadow:0 8px 24px rgba(0,0,0,.5);text-align:center}
@@ -7079,6 +7092,7 @@ const SKINS={
    fx:{slash:"fx_cnk_slash",ult:"fx_cnk_ult"}}]   /* fx — 그 스킨의 기술 이펙트 (베기 · 승리의 일격) */
 };
 const SKIN_KEY="kyunyeol.skins.v1";
+let SKIN_UNLOCKED_ALL=0;
 let SKIN_ST=(()=>{ try{ return JSON.parse(localStorage.getItem(SKIN_KEY)||"null")||{own:{},use:{}} }catch(e){ return {own:{},use:{}} } })();
 function skinSave(){ try{ localStorage.setItem(SKIN_KEY,JSON.stringify(SKIN_ST)) }catch(e){} }
 const skinOwned=(hero,id)=>!!(SKIN_ST.own||{})[hero+":"+id];
@@ -7086,15 +7100,37 @@ function skinUse(hero,id){ SKIN_ST.use=SKIN_ST.use||{}; if(id) SKIN_ST.use[hero]
 /* 지금 입은 스킨 — 없거나 아직 못 얻었으면 null */
 function skinOn(hero){ const id=(SKIN_ST.use||{})[hero]; if(!id||!skinOwned(hero,id)) return null;
   return (SKINS[hero]||[]).find(x=>x.id===id)||null }
+/* 이 브라우저(PC)에서만 조건 없이 모두 해금 — 주소 끝에 ?skins=all 을 붙여 한 번 열면 된다 (사용자 2026-10-01).
+   기록은 이 브라우저의 SKIN_KEY 에만 남는다 — 다른 PC·브라우저는 그대로 조건대로 */
+try{ if(typeof location!=="undefined"&&/[?&]skins=all(&|$)/.test(location.search)){
+  SKIN_ST.own=SKIN_ST.own||{}; Object.keys(SKINS).forEach(h=>SKINS[h].forEach(k=>{ SKIN_ST.own[h+":"+k.id]=SKIN_ST.own[h+":"+k.id]||Date.now() }));
+  skinSave(); SKIN_UNLOCKED_ALL=1;
+  try{ history.replaceState(null,"",location.pathname+location.hash) }catch(e){} } }catch(e){}
 /* 그림 묶음 이름 — 스킨을 입었으면 그 묶음 */
 function skinSprite(name){ const k=skinOn(name); return (k&&PNG_SPRITE[k.sp])?k.sp:name }
 /* 적을 처치했을 때 — 그 적이 조건인 스킨을 얻는다 */
+setTimeout(()=>{ if(SKIN_UNLOCKED_ALL) try{ skinGetShow(Object.keys(SKINS).flatMap(h=>SKINS[h].map(k=>[h,k])),"이 브라우저에서 모든 외형을 해금했습니다.") }catch(e){} },1500);
+/* 외형 획득 창 (사용자 2026-10-01) — 얻은 외형의 그림과 이름, 어디서 착용하는지. list : [[대원, 외형]] */
+function skinGetShow(list,sub){
+  if(!list||!list.length||typeof document==="undefined") return;
+  document.querySelectorAll(".skinget").forEach(x=>x.remove());
+  const cards=list.map(([h,k])=>{ const set=PNG_SPRITE[k.sp], u=set&&set.idle&&set.idle.u;
+    return `<div class="sgc">${u?`<img class="pxs" src="${u}" alt="" draggable="false">`:""}<b>${esc(k.n)}</b><span>${esc(h)}의 외형</span></div>` }).join("");
+  const ov=el(`<div class="skinget"><div class="sgp">
+    <div class="sgt">새로운 외형 획득</div>${sub?`<div class="sgs">${esc(sub)}</div>`:""}
+    <div class="sgl">${cards}</div>
+    <div class="sgf"><button class="go">확인</button><small>훈련장의 대원 도감에서 착용할 수 있습니다</small></div></div></div>`);
+  const close=()=>ov.remove();
+  ov.querySelector("button").onclick=()=>{ SFX.play("click"); close() };
+  ov.onclick=e=>{ if(e.target===ov) close() };
+  document.body.appendChild(ov); try{ SFX.play("unlock") }catch(e){}
+}
 function skinKillCheck(foeName){
   Object.keys(SKINS).forEach(hero=>SKINS[hero].forEach(k=>{
     if(k.kill!==foeName||skinOwned(hero,k.id)) return;
     SKIN_ST.own=SKIN_ST.own||{}; SKIN_ST.own[hero+":"+k.id]=Date.now(); skinSave();
-    try{ toast(`새 스킨 — 「${k.n}」을 얻었습니다. 훈련장의 영웅 도감에서 갈아입을 수 있습니다.`); SFX.play("unlock") }catch(e){}
-    if(typeof say==="function") say(`새 스킨 — ${k.n} (훈련장에서 갈아입기)`,"t1");
+    setTimeout(()=>{ try{ skinGetShow([[hero,k]],`${k.cond} 달성`) }catch(e){} },Math.round(1400*SPD));   /* 처치 연출이 끝난 뒤 */
+    if(typeof say==="function") say(`새로운 외형: ${k.n} (훈련장에서 착용)`,"t1");
   }));
 }
 /* 그림 스프라이트를 가진 캐릭터의 자세 하나. 없는 자세는 기본으로 돌아간다 */
@@ -12479,6 +12515,7 @@ const GAME_VER="0.6";   /* 0.6 — 2스테이지 구역(정령숲) 추가 · 여
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 730, "v": "0.6", "d": "2026-10-01", "t": "외형 획득 창, 대원 도감, 착용 중", "big": 0},
  {"b": 729, "v": "0.6", "d": "2026-10-01", "t": "타락한 나이코스 검기 이펙트", "big": 0},
  {"b": 728, "v": "0.6", "d": "2026-10-01", "t": "타락한 나이코스 공격 자세 둘 무작위", "big": 0},
  {"b": 727, "v": "0.6", "d": "2026-10-01", "t": "스킨 — 타락한 나이코스 (간수장 처치)", "big": 0},
@@ -13209,7 +13246,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=729;
+const BUILD_NO=730;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -13806,7 +13843,7 @@ function drawCodex(app){
   const COM="__common__";   /* 공용 보상 탭 (사용자 2026-09-16) */
   const isCom=CODEX.pick===COM;
   const name=isCom?null:((CODEX.pick&&POOL.indexOf(CODEX.pick)>=0)?CODEX.pick:POOL[0]), d=name?HEROES[name]:null;
-  app.appendChild(el(`<div class="center"><div class="title" style="font-size:22px">영 웅 도 감</div>
+  app.appendChild(el(`<div class="center"><div class="title" style="font-size:22px">대 원 도 감</div>
     <div class="sub">대원을 고르고, 연습장에서 기술을 마음껏 써 볼 수 있습니다</div></div>`));
   const wrap=app.querySelector(".center");
   const list=el(`<div class="codexrow"></div>`);
@@ -13879,7 +13916,7 @@ function drawCodex(app){
 
   /* 스킨 (사용자 2026-10-01) — 왼쪽 판. 고른 대원의 기본 모습과 스킨들 · 얻은 것만 입을 수 있다 */
   { const L=SKINS[name]||[], cur=(skinOn(name)||{}).id||null;
-    const side=el(`<div class="cxskin"><div class="cxsec">스킨 · ${esc(name)}</div></div>`); app.appendChild(side);
+    const side=el(`<div class="cxskin"><div class="cxsec">외형: ${esc(name)}</div></div>`); app.appendChild(side);
     const opts=[{id:null,n:"기본",own:1}].concat(L.map(k=>({id:k.id,n:k.n,own:skinOwned(name,k.id),cond:k.cond,sp:k.sp})));
     const box=el(`<div class="skl"></div>`);
     opts.forEach(o=>{
@@ -13889,11 +13926,11 @@ function drawCodex(app){
       const c=el(`<div class="skc${on?" on":""}${o.own?"":" lock"}">
         <div class="ska">${u?`<img class="pxs hero" src="${u}" alt="" draggable="false">`:""}</div>
         <b>${esc(o.n)}</b>
-        <span>${on?"입고 있음":o.own?"눌러서 입기":`잠김 — ${esc(o.cond||"")}`}</span></div>`);
+        <span>${on?"착용 중":o.own?"눌러서 착용":`잠김: ${esc(o.cond||"")}`}</span></div>`);
       if(o.own&&!on) c.onclick=()=>{ skinUse(name,o.id); SFX.play("click"); render() };
       box.appendChild(c) });
     side.appendChild(box);
-    if(!L.length) side.appendChild(el(`<p class="hint">이 대원은 아직 스킨이 없습니다.</p>`));
+    if(!L.length) side.appendChild(el(`<p class="hint">이 대원은 아직 다른 외형이 없습니다.</p>`));
   }
   /* 조합 짜 보기 (사용자 2026-10-01) — 최대 PARTY_MAX 명. 조합 효과를 미리 보고, 그대로 연습장에 세운다 */
   /* 오른쪽 판에 (사용자 2026-10-01 — 맨 밑이 아니라). 좁은 화면에서는 아래로 내려온다 */
