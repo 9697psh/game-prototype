@@ -1741,7 +1741,13 @@ header{align-items:center}
 .res.act{color:var(--r-act)} .res.taint{color:var(--r-taint)}
 .res.gold{color:var(--r-gold)} .res.stone{color:var(--r-stone)}
 #hBtns button.skip2{color:#9fd8ff;border-color:rgba(111,208,240,.55)}   /* 시험판 — 2스테이지로 (2026-10-01) */
-.res.crystal{color:#6fd0f0} .res.crystal .ri{width:17px;height:17px;flex:0 0 17px} .res.crystal .ri img{width:17px;height:17px;image-rendering:pixelated;display:block}   /* 푸른 수정 (정령숲, 2026-10-01) */
+.res.crystal{color:#6fd0f0}
+.res.crystal.use{cursor:pointer!important;transition:filter .15s} .res.crystal.use:hover{filter:brightness(1.3)}
+.res.crystal .cruse{font-style:normal;font-size:10.5px;margin-left:4px;padding:0 5px;border:1px solid rgba(111,208,240,.55);border-radius:4px;color:#9fe4ff}
+.res.crystal .crarm{font-style:normal;font-size:10.5px;margin-left:4px;color:#fff;background:#2f7fa8;border-radius:4px;padding:0 5px;animation:gaugeWarn .8s ease-in-out infinite}
+.res.crystal.empty{opacity:.6} .res.crystal.empty .cruse{display:none}
+.pmap .cell.k-spring{background-color:rgba(90,180,240,.26);box-shadow:0 0 0 1px rgba(110,200,250,.75) inset,0 0 12px rgba(120,210,255,.5) inset}   /* 기력의 샘 — 푸르게 빛남 (사용자 2026-10-01) */
+.pmap .cell.k-spring:not(.adj):not(.here):not(.onroute){opacity:1} .res.crystal .ri{width:17px;height:17px;flex:0 0 17px} .res.crystal .ri img{width:17px;height:17px;image-rendering:pixelated;display:block}   /* 푸른 수정 (정령숲, 2026-10-01) */
 .pmap .cell.ffly{background-color:rgba(240,230,120,.26);box-shadow:0 0 0 1px rgba(220,210,90,.7) inset,0 0 10px rgba(250,240,140,.45) inset}   /* 반딧불 둥지 둘레 — 밤에도 습격 없음 */
 .pmap .cell.ffly:not(.adj):not(.here):not(.onroute){opacity:1}
 .res.night{color:var(--r-night);border-color:var(--r-night)}
@@ -1756,7 +1762,7 @@ header{align-items:center}
    무대(.pstage)는 정사각. 256px 그림을 3배(768)까지 키우고, 좁으면 기둥 폭을 따른다.
    격자는 양피지의 크림색 안쪽(256 기준 24~232)에 맞춰 9.375% 안쪽 · 81.25% 크기 — 그림이 커져도 비율로 따라간다 */
 .pstage{--pline:transparent;position:relative;width:min(768px,100%);aspect-ratio:1;margin:8px auto 0;cursor:none;border-radius:6px;overflow:hidden;
-  background:#0f0c0a var(--floor,none) center/50% repeat;image-rendering:pixelated}
+  background:#0f0c0a var(--floor,none) center/var(--floorsz,50%) repeat;image-rendering:pixelated}
 .pstage>img{position:absolute;image-rendering:pixelated;pointer-events:none;user-select:none}
 /* 테두리 — 격자 위, 손·말풍선 아래. 칸은 그대로 눌린다 (사용자 2026-09-29) */
 .pstage{border-radius:0}   /* 틀이 모서리까지 곧게 닿게 (2026-09-29) */
@@ -4118,7 +4124,9 @@ const BATTLE_BG=["bg/battle.webp","bg/battle-2.webp",null];
 const battleBg=()=>(run&&BATTLE_BG[Math.min(run.field,BATTLE_BG.length-1)])||BATTLE_BG[0];
 /* 지도 테두리 — 양피지 무대를 두르는 철 틀 (사용자 2026-09-29) */
 const MAP_FRAME="테두리.png";
-const stageSty=floor=>{ const a=[]; if(floor) a.push(`--floor:url(${mapPng(floor)})`);
+/* 한 장짜리 구도(네 귀퉁이에 뿌리)인 바닥은 반복하지 않고 무대 전체로 키운다 (사용자 2026-10-01). 돌바닥처럼 이어지는 것은 그대로 반복 */
+const MAP_FLOOR_WHOLE={"바닥-정령숲.png":1};
+const stageSty=floor=>{ const a=[]; if(floor){ a.push(`--floor:url(${mapPng(floor)})`); if(MAP_FLOOR_WHOLE[floor]) a.push("--floorsz:100% 100%") }
   if(MAP_FRAME) a.push(`--frame:url(${mapPng(MAP_FRAME)})`);
   return a.length?` style="${a.join(";")}"`:"" };
 /* 양피지 위 아이콘 — 잉크 판 v7 (art/아이콘/map-ink-v7, 사용자 2026-09-14). 주둔지는 v7 에 없어 금빛 그대로. v2(검은 잉크)는 ink_* 로 남아 있다 */
@@ -8794,8 +8802,8 @@ const GIM_DEX=[
      {t:"조심히 지나가기",d:"주변 무작위 둥지를 제외한 1칸 이내 구역으로 밀려납니다."}],
   fight:"빛무리 ×3"},
  {n:"마른숲 상점",icon:"ink_sp_dryshop",field:"정령숲",odds:"상점과 같게",cells:"1 (상점 수만큼)",refresh:"상점과 같게",camp:1,
-  t:"정령 상인이 금화 대신 오염도를 받습니다. 값은 그 상점의 파편 값을 환율로 셉니다 — 금화 값 × (20 ÷ 파편 값) + 3~6. 대신 1~2개만 살 수 있고, 상급 보상은 없습니다.",
-  o:[{t:"푸른 수정 파편",d:"푸른 수정 충전 1 — 금화 10~15, 수량 1~2."}]},
+  t:"정령 상인이 금화 대신 오염도를 받습니다. 값은 그 상점의 파편 값을 환율로 셉니다 — 금화 값 × (30 ÷ 파편 값) + 3~6. 대신 1~2개만 살 수 있고, 상급 보상은 없습니다.",
+  o:[{t:"푸른 수정 파편",d:"푸른 수정 충전 1 (쓰면 오염도 -30) — 금화 10~15, 수량 1~2."}]},
  {n:"기력의 샘",icon:"ink_sp_spring",field:"정령숲",odds:"지도마다 4",cells:"1",refresh:"미지의 구역처럼 새로고침",camp:1,
   t:"방문 후 없어집니다.",
   o:[{t:"기력 충전",d:"푸른 수정을 1회 충전합니다."}]}
@@ -11097,41 +11105,42 @@ function spend(hours,act){
 }
 function addTaint(v){
   run.taint=Math.max(0,Math.min(100,run.taint+v));
-  if(spiritOn()){ crystalDrain(); return }   /* 정령숲 — 100 대신 푸른 수정이 닳는다 */
   if(run.taint>=100) lose("균열의 오염이 100에 달했습니다. 세상이 갈라집니다.");
 }
-/* ═══ 푸른 수정 (정령숲 전체 기믹, 사용자 2026-10-01) ═══
-   정령숲에서는 오염도와 따로 푸른 수정 5칸을 지킨다. 5로 시작해 0이 되면 끝.
-   오염도가 20 이상이 되면 20을 걷어 내고 수정 1칸을 잃는다. 이동할 때 오염도가 1 더 오른다(moveTaint — 사용자 2026-10-01, 처음엔 3). */
-const CRYSTAL_MAX=5, CRYSTAL_TAINT=20, SPIRIT_STEP=1;
+/* ═══ 푸른 수정 (정령숲, 사용자 2026-10-01 — 두 번째 판) ═══
+   오염도 옆의 수치. 눌러서 쓰면 수정 1칸으로 오염도를 30 걷어 낸다. 5칸으로 시작하고 0칸이어도 판은 안 끝난다.
+   기력의 샘 · 마른숲 상점의 파편으로 다시 채운다. 정령숲에서는 전투에 이겨도 오염도가 줄지 않는다 (dungeonCleared) */
+const CRYSTAL_MAX=5, CRYSTAL_CURE=30;
 function spiritOn(){ return !!run&&run.field===1&&!run.sandbox }
-/* soft — 전투 도중(적 기술)에는 판을 끝내지 않는다. 0 은 남겨 두고 다음 오염도 셈에서 끝낸다 */
-function crystalDrain(soft){
-  if(!spiritOn()) return;
-  if(run.crystal==null) run.crystal=CRYSTAL_MAX;
-  let lost=0;
-  while(run.taint>=CRYSTAL_TAINT&&run.crystal>0){ run.taint-=CRYSTAL_TAINT; run.crystal--; lost++ }
-  if(lost){ if(sfxHas("danger")) SFX.play("danger");
-    toast(`오염도가 ${CRYSTAL_TAINT}에 닿아 푸른 수정이 ${lost}칸 흐려졌습니다. (남은 ${run.crystal}/${CRYSTAL_MAX})`) }
-  if(run.crystal<=0&&!soft&&!run.lost) lose("푸른 수정의 빛이 모두 꺼졌습니다. 정령숲이 대원들을 삼킵니다.");
-}
 function crystalUp(n){
   if(run.crystal==null) run.crystal=CRYSTAL_MAX;
   const b=run.crystal; run.crystal=Math.min(CRYSTAL_MAX,run.crystal+(n||1)); return run.crystal-b;
 }
-/* 길 미리보기 — 정령숲에서는 20을 넘길 때마다 수정이 준다 */
-function taintArrow(tn){
-  if(!spiritOn()) return `${resIcon("taint")}${run.taint} → ${Math.min(100,tn)}`;
-  const lost=Math.floor(tn/CRYSTAL_TAINT);
-  return `${resIcon("taint")}${run.taint} → ${tn%CRYSTAL_TAINT}${lost?` <b class="mt-red">수정 -${lost}</b>`:""}`;
+/* 수정 쓰기 — 잘못 누르는 일이 없게 두 번 눌러야 쓴다 (팔기와 같은 손버릇) */
+let CR_ARM=0;
+function crystalClick(){
+  if(!spiritOn()||!run||run.lost) return;
+  const cr=run.crystal==null?CRYSTAL_MAX:run.crystal;
+  if(cr<=0){ CR_ARM=0; toast("푸른 수정이 비었습니다 — 기력의 샘이나 마른숲 상점에서 채우세요."); render(); return }
+  if(run.taint<=0){ CR_ARM=0; toast("걷어 낼 오염도가 없습니다."); render(); return }
+  if(!CR_ARM||Date.now()-CR_ARM>2500){ CR_ARM=Date.now(); SFX.play("click"); render();
+    setTimeout(()=>{ if(CR_ARM&&Date.now()-CR_ARM>=2500){ CR_ARM=0; if(run) render() } },2600); return }
+  CR_ARM=0;
+  const t0=run.taint; run.crystal=cr-1; addTaint(-CRYSTAL_CURE);
+  SFX.play("heal");
+  toast(`푸른 수정을 썼습니다 — 오염도 ${t0} → ${run.taint} (남은 수정 ${run.crystal}/${CRYSTAL_MAX})`);
+  render();
 }
-function taintHot(tn){ return spiritOn()?(Math.floor(tn/CRYSTAL_TAINT)>0):tn>=80 }
+if(typeof document!=="undefined"&&document.addEventListener) document.addEventListener("click",e=>{
+  const c=e.target&&e.target.closest&&e.target.closest(".res.crystal"); if(c){ e.stopPropagation(); crystalClick() } });
+function taintArrow(tn){ return `${resIcon("taint")}${run.taint} → ${Math.min(100,tn)}` }
+function taintHot(tn){ return tn>=80 }
 /* 머리줄의 오염도 · 푸른 수정 */
 function taintChip(extra){
-  if(!spiritOn()) return `<span class="res taint ${extra||""} ${run.taint>=70?"bad":run.taint>=45?"warn":""}" title="오염도 — 100이 되면 그 자리에서 끝납니다. 전투에 이기면 20 내려갑니다.">${resIcon("taint")}<b>${run.taint}</b><i>/100</i><u style="width:${Math.min(100,run.taint)}%"></u></span>`;
-  const cr=run.crystal==null?CRYSTAL_MAX:run.crystal;
-  return `<span class="res taint ${extra||""} ${run.taint>=CRYSTAL_TAINT-5?"warn":""}" title="오염도 (한도 100) — 정령숲에서는 ${CRYSTAL_TAINT} 이상 찰 때마다 ${CRYSTAL_TAINT}을 걷어 내고 푸른 수정 1칸을 잃습니다. 이동할 때 ${SPIRIT_STEP} 더 오릅니다. 전투에 이기면 20 내려갑니다.">${resIcon("taint")}<b>${run.taint}</b><i>/100</i><u style="width:${Math.min(100,run.taint)}%"></u></span>`
-    +`<span class="res crystal ${extra||""} ${cr<=1?"bad":cr<=2?"warn":""}" title="푸른 수정 — 0이 되면 그 자리에서 끝납니다. 오염도가 ${CRYSTAL_TAINT}에 닿을 때마다 1칸 흐려집니다. 기력의 샘 · 마른숲 상점의 파편으로 충전합니다.">${iconImg("item_spirit_blue_crystal")?`<span class="ri">${iconImg("item_spirit_blue_crystal")}</span>`:""}<b>${cr}</b><i>/${CRYSTAL_MAX}</i><u style="width:${cr/CRYSTAL_MAX*100}%"></u></span>`;
+  const tc=`<span class="res taint ${extra||""} ${run.taint>=70?"bad":run.taint>=45?"warn":""}" title="오염도 — 100이 되면 그 자리에서 끝납니다. ${spiritOn()?"정령숲에서는 전투에 이겨도 줄지 않습니다 — 푸른 수정을 눌러 30 걷어 냅니다.":"전투에 이기면 20 내려갑니다."}">${resIcon("taint")}<b>${run.taint}</b><i>/100</i><u style="width:${Math.min(100,run.taint)}%"></u></span>`;
+  if(!spiritOn()) return tc;
+  const cr=run.crystal==null?CRYSTAL_MAX:run.crystal, arm=CR_ARM&&Date.now()-CR_ARM<2500;
+  return tc+`<span class="res crystal use ${extra||""} ${arm?"arm":""} ${cr<=0?"empty":""}" role="button" title="푸른 수정 — 누르면 수정 1칸으로 오염도를 ${CRYSTAL_CURE} 걷어 냅니다 (두 번 눌러 씀). 기력의 샘 · 마른숲 상점의 파편으로 채웁니다.">${iconImg("item_spirit_blue_crystal")?`<span class="ri">${iconImg("item_spirit_blue_crystal")}</span>`:""}<b>${cr}</b><i>/${CRYSTAL_MAX}</i>${arm?`<em class="crarm">한 번 더 — 오염도 -${CRYSTAL_CURE}</em>`:`<em class="cruse">사용</em>`}<u style="width:${cr/CRYSTAL_MAX*100}%"></u></span>`;
 }
 function nextDay(){
   leaveVisited();
@@ -11338,9 +11347,8 @@ function skipToStage2(){
    [아이콘 id, 굵은 머리, 글]. 설명이 바뀌면 여기만 고친다 */
 const FIELD_RULES={
  1:{t:"정 령 숲",sub:"이 구역에서는 규칙이 달라집니다",rows:[
-   ["item_spirit_blue_crystal","푸른 수정","오염도 옆에 푸른 수정 5칸이 생깁니다. 0칸이 되면 그 자리에서 원정이 끝납니다."],
-   ["corruption","오염도","20 이상 찰 때마다 오염도 20을 걷어 내고 푸른 수정 1칸을 잃습니다."],
-   ["","이동","한 칸 옮길 때 오염도가 1 더 오릅니다 (한 칸 6)."],
+   ["corruption","오염도","정령숲에서는 전투에 이겨도 오염도가 줄지 않습니다."],
+   ["item_spirit_blue_crystal","푸른 수정","오염도 옆의 푸른 수정을 눌러 쓰면 수정 1칸으로 오염도를 30 걷어 냅니다. 5칸으로 시작합니다."],
    ["ink_sp_spring","기력의 샘","들르면 푸른 수정을 1 충전합니다. 지도에 넷, 날이 바뀌면 다시 생깁니다."],
    ["ink_sp_dryshop","마른숲 상점","금화 대신 오염도로 값을 치릅니다. 푸른 수정 파편만은 금화로 삽니다."],
    ["ink_sp_thicket","고목 덩굴","덩굴 수풀은 벌목도로 헤치거나 돌아가야 합니다. 안쪽 울창한 수목에는 뿌리모체가 있습니다."],
@@ -11353,7 +11361,7 @@ function showFieldRules(){
   const ov=el(`<div class="frules"><div class="frp">
     <div class="frt">${esc(R.t)}</div><div class="frs">${esc(R.sub)}</div>
     <div class="frl">${R.rows.map(([ic2,h,d])=>`<div class="frr"><i>${ic2?(iconImg(ic2)||""):resIcon("act")}</i><div><b>${esc(h)}</b><span>${rich(d)}</span></div></div>`).join("")}</div>
-    <div class="frf"><button class="go">알겠습니다</button><small>오른쪽 위 푸른 수정을 누르면 다시 볼 수 있습니다</small></div></div></div>`);
+    <div class="frf"><button class="go">알겠습니다</button><small>지도 위 구역 이름을 누르면 다시 볼 수 있습니다</small></div></div></div>`);
   const close=()=>{ ov.remove(); if(run) run.fieldRules=0 };
   ov.querySelector("button").onclick=()=>{ SFX.play("click"); close() };
   ov.onclick=e=>{ if(e.target===ov) close() };
@@ -11940,6 +11948,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 677, "v": "0.5", "d": "2026-10-01", "t": "정령숲 — 푸른 수정 눌러 쓰기(오염도 -30) · 전투 승리 오염도 감소 없음 · 샘 푸른 빛 · 지도 바닥 한 장", "big": 0},
  {"b": 676, "v": "0.5", "d": "2026-10-01", "t": "적 전장에 소환물만 남으면 승리", "big": 0},
  {"b": 675, "v": "0.5", "d": "2026-10-01", "t": "타락한 드루이드 씨앗 — 내 전장에도 (잔해처럼) · 적 쪽 덩굴은 살아있는 덩굴처럼", "big": 0},
  {"b": 674, "v": "0.5", "d": "2026-10-01", "t": "정령샘 → 정령숲 · 정령숲 규칙 안내 창", "big": 0},
@@ -12617,7 +12626,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=676;
+const BUILD_NO=677;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -13794,7 +13803,7 @@ const MOVE_TAINT=5;                 /* 한 칸 옮길 때 오르는 오염도 */
 function moveTaint(){
   let cut=0;
   (run&&run.heroes||[]).forEach(h=>{ cut=Math.max(cut,(h.tag&&h.tag.stepCut)||0) });
-  return Math.max(1,MOVE_TAINT-cut)+tagSum("rush")+(spiritOn()?SPIRIT_STEP:0);   /* 급한 걸음 · 정령숲 +1 (2026-10-01) */
+  return Math.max(1,MOVE_TAINT-cut)+tagSum("rush");   /* 급한 걸음 (정령숲 +1 은 2026-10-01 뺐다) */
 }
 const near=(a,b)=>Math.abs(a.r-b.r)+Math.abs(a.c-b.c)===1;
 /* 지도 칸 판 — 지도 화면과 [지도 보기](M) 가 같은 것을 쓴다 (사용자 2026-09-16: 미리보기가 옛 그림으로 그려지던 것).
@@ -13916,8 +13925,8 @@ function drawMap(app){
     rs.appendChild(el(`<span class="res stone mchip" title="제련석 — 주둔지 제련소에서 장신구 두 개를 합칠 때 씁니다.">${resIcon("stone")}<b>${run.stone||0}</b></span>`)); }
   R.appendChild(mapInspector());
   app.appendChild(three);
-  /* 구역 규칙 안내 — 들어선 직후 한 번, 그 뒤엔 푸른 수정 칩을 누르면 */
-  { const cr=R.querySelector(".mres .res.crystal"); if(cr&&FIELD_RULES[run.field]){ cr.style.cursor="pointer"; cr.onclick=()=>showFieldRules() } }
+  /* 구역 규칙 안내 — 들어선 직후 한 번, 그 뒤엔 지도 위 구역 이름을 누르면 (푸른 수정은 이제 쓰는 단추) */
+  { const fn=app.querySelector(".mfield"); if(fn&&FIELD_RULES[run.field]){ fn.style.cursor="pointer"; fn.title="이 구역의 규칙 보기"; fn.onclick=()=>showFieldRules() } }
   if(run.fieldRules&&!document.querySelector(".frules")&&!FR_WAIT){
     FR_WAIT=1; setTimeout(()=>{ FR_WAIT=0; if(run&&run.fieldRules&&view==="map") showFieldRules() },Math.max(0,MAP_BO_UNTIL-Date.now())+1400) }
   /* 대원 상세 — 카드를 누르면 떠 있는 판으로 */
@@ -13973,7 +13982,7 @@ function mapInspector(at){
   /* 획득 보상 */
   if(battle&&!cell.done){
     const gm=(cell.bounty?1.5:1)*(wellNear(r,c)&&kind!=="well"?1.5:1);
-    b.appendChild(el(`<div class="misec"><div class="mil">획득 보상</div><div class="mit">${cell.loot?`<div>${rich(cell.loot)}</div>`:""}<div>${resIcon("gold")} 금화${gm>1?` <b class="mt-gold">×${gm}</b>`:""} · ${ic("exp")} 경험치 · ${resIcon("taint")} 오염도 <b>-20</b></div>${kind==="boss"?`<div>구역을 넘어갑니다</div>`:""}</div></div>`));   /* el() 은 첫 요소만 — 하나로 싼다 */
+    b.appendChild(el(`<div class="misec"><div class="mil">획득 보상</div><div class="mit">${cell.loot?`<div>${rich(cell.loot)}</div>`:""}<div>${resIcon("gold")} 금화${gm>1?` <b class="mt-gold">×${gm}</b>`:""} · ${ic("exp")} 경험치 · ${spiritOn()?"":`${resIcon("taint")} 오염도 <b>-20</b>`}</div>${kind==="boss"?`<div>구역을 넘어갑니다</div>`:""}</div></div>`));   /* el() 은 첫 요소만 — 하나로 싼다 */
   }
   /* 특이사항 — 그림 + 짧은 글, 그림에 커서를 올리면 풀이 */
   { const N=[];
@@ -15120,7 +15129,7 @@ function dungeonCleared(){
   if(d.kind!=="ambush"&&d.r!=null&&run.grid[d.r]&&run.grid[d.r][d.c]&&!d.cell.fence)
     run.grid[d.r][d.c]={t:"empty"};
   if(d.r!=null&&wellNear(d.r,d.c)) run.wellGold=1;   /* 감옥의 우물 둘레 — 상자 금화 +50% */
-  addTaint(d.kind==="ambush"?-10:-20);
+  if(!spiritOn()) addTaint(d.kind==="ambush"?-10:-20);   /* 정령숲에서는 전투가 끝나도 오염도가 줄지 않는다 (사용자 2026-10-01) */
   if(d.kind==="ambush"){ const b=tagSum("bounty"); if(b){ run.gold+=b; toast(`현상금 사냥 — 금화 +${b}`) } }
   { /* 오염 구역 정화 */
     const c=Math.max(0,...run.heroes.map(h=>(h.tag&&h.tag.clearTaint)||0));
@@ -15562,7 +15571,7 @@ function makeShop(){
 const DRY_EXTRA=[3,6], DRY_LIMIT=[1,2], DRY_SHARD={p:[10,15],q:[1,2]}, DRY_NO=["taint","상급"];
 function dryShop(sh){
   sh.npc="정령 상인"; sh.dry=1; sh.limit=rr(DRY_LIMIT); sh.bought=0;
-  const fc=rr(DRY_SHARD.p), rate=CRYSTAL_TAINT/fc;
+  const fc=rr(DRY_SHARD.p), rate=CRYSTAL_CURE/fc;   /* 파편 하나 = 오염도 30 (2026-10-01 두 번째 판) */
   sh.rate=rate;
   sh.goods=sh.goods.filter(g=>DRY_NO.indexOf(g.k)<0);
   sh.goods.forEach(g=>{ const e=rr(DRY_EXTRA); g.pay="taint"; g.gold=g.cost;
@@ -15571,11 +15580,7 @@ function dryShop(sh){
   sh.goods.unshift({n:"푸른 수정 파편",d:"푸른 수정을 1 충전합니다.",k:"crystal",cost:fc,left:q,qty:q});
 }
 /* 오염도로 치를 때 — 수정이 모두 꺼지는 값이면 못 산다 */
-function dryCostKills(c){
-  if(!spiritOn()) return run.taint+c>=100;
-  const cr=run.crystal==null?CRYSTAL_MAX:run.crystal;
-  return Math.floor((run.taint+c)/CRYSTAL_TAINT)>=cr;
-}
+function dryCostKills(c){ return run.taint+c>=100 }   /* 오염도 100 에 닿는 값은 못 산다 */
 function shopIcon(k){
   /* 새로 받은 그림이 있으면 그것부터 */
   { const id=(typeof SHOP_ICON!=="undefined")&&SHOP_ICON[k];
@@ -15692,7 +15697,7 @@ function drawShop(app){
         <div class="gi">${g.card?cardArt(g.card):(g.item?itemIcon(g.item):shopIcon(g.k))}</div>
         <div class="gn">${esc(g.n)}</div>
         <div class="gp${tp?" tp":""}">${resIcon(tp?"taint":"gold")} ${g.haggled?`<s style="color:var(--faint);margin-right:4px">${g.cost0}</s>`:""}${g.cost}${
-          tp?(g.left>0?(capped?`<em class="short">더 살 수 없음</em>`:kills?`<em class="short">수정이 꺼집니다</em>`:(spiritOn()&&Math.floor((run.taint+g.cost)/CRYSTAL_TAINT)>0?`<em class="short">수정 -${Math.floor((run.taint+g.cost)/CRYSTAL_TAINT)}</em>`:"")):"")
+          tp?(g.left>0?(capped?`<em class="short">더 살 수 없음</em>`:kills?`<em class="short">오염도 100</em>`:""):"")
             :(run.gold<g.cost&&g.left>0?`<em class="short">${g.cost-run.gold} 모자람</em>`:"")}</div>
         <div class="gq">${g.left<=0?"품절":`수량 ${g.left}/${g.qty||g.left}`}</div>
         ${g.card?"":`<div class="gd"><p>${rich(g.d)}</p>${g.item?recipeHtml(g.item):""}</div>`}
@@ -17622,7 +17627,7 @@ function skExec(f,I){
   if(s.healPct){ const v=Math.round(f.maxHp*s.healPct); healUp(f,v);
     fx({side:"foe",slot:f.slot,s:"heal",ring:"#7fd39a",txt:"+"+v,cls:"heal",gap:160}); say(`${f.name} 체력 +${v}`,"t2") }
   if(s.hideUp){ f.hide=1; fx({side:"foe",slot:f.slot,ring:"#8b7fd8",txt:"은신",cls:"shd",gap:120}); say(`${f.name}${jo(f.name,"ig")} 몸을 숨깁니다.`,"t3") }
-  if(s.taint&&run){ run.taint=Math.min(100,(run.taint||0)+s.taint); crystalDrain(1);   /* 정령숲 — 수정이 닳되 전투 중엔 끝내지 않는다 */
+  if(s.taint&&run){ run.taint=Math.min(100,(run.taint||0)+s.taint);
     fx({side:"foe",slot:f.slot,ring:"#c98ae0",txt:"오염 +"+s.taint,cls:"shd",gap:120}); say(`${s.n} — 오염도 +${s.taint}`,"t3") }
   if(s.parasite){                      /* 기생 — 다른 적에게 '죽음' 을 심는다 */
     const L=B.foes.filter(x=>x.alive&&x!==f&&!x.dthTag);
