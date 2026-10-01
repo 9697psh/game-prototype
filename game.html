@@ -1222,6 +1222,18 @@ body.vbattle .tornado{transform:scale(4.6);margin-top:14px}   /* 회오리도 �
 .cxh .art{width:46px;height:46px}
 .cxh b{font-size:12.5px}
 .cxh span{font-size:10.5px;color:var(--faint)}
+/* 조합 짜 보기 (2026-10-01) */
+.cxh{position:relative} .cxpn{position:absolute;top:4px;right:5px;font-style:normal;font-size:10.5px;min-width:16px;height:16px;line-height:16px;
+  border-radius:8px;background:var(--brass);color:#17130f;font-weight:700}
+.cxparty{display:flex;gap:10px;justify-content:center;margin-top:10px}
+.cxps{width:110px;padding:8px 6px;border:1px dashed var(--rule);border-radius:6px;background:rgba(0,0,0,.25);display:flex;flex-direction:column;align-items:center;gap:3px}
+.cxps .no{font-size:10.5px;color:var(--faint)} .cxps .art{width:46px;height:46px} .cxps .art img.pxs{height:100%}
+.cxps b{font-size:12.5px;color:var(--faint)} .cxps i{font-style:normal;font-size:10.5px;color:var(--faint);opacity:0}
+.cxps.on{border-style:solid;border-color:var(--brass);background:var(--panel);cursor:pointer} .cxps.on b{color:var(--fg)} .cxps.on:hover i{opacity:1;color:#e58a7a}
+.cxsyn{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}
+.cxsy{border:1px solid var(--rule);border-radius:6px;padding:6px 10px;background:rgba(0,0,0,.25);display:flex;flex-direction:column;gap:2px;max-width:300px;text-align:left;font-size:12px;opacity:.65}
+.cxsy b{color:var(--fg);font-size:12.5px} .cxsy .k{font-size:10.5px;color:var(--faint)} .cxsy .nx{color:var(--faint);font-size:11px}
+.cxsy.on{opacity:1;border-color:var(--brass);box-shadow:0 0 10px rgba(244,214,124,.18)} .cxsy.on b{color:var(--brass)}
 .cxinfo{margin-top:22px;border:1px solid var(--rule);border-radius:7px;background:var(--panel);padding:16px}
 .cxtop{display:flex;gap:16px;align-items:flex-start;text-align:left}
 .cxtop .art{width:74px;height:74px;flex:0 0 74px}
@@ -4180,7 +4192,8 @@ setTimeout(()=>{ const L=["펼침-1.png","펼침-2.png","펼침-3.png","펼침-4
 const MAP_FLOOR=["바닥-핏빛 감옥.png","바닥-정령숲.png",null];
 /* 전장 그림 — 구역마다 (art/배경/전투/_원본/<번호>-*.png → bg/). 없으면 1구역 것 (사용자 2026-09-29) */
 const BATTLE_BG=["bg/battle.webp","bg/battle-2.webp",null];
-const battleBg=()=>(run&&BATTLE_BG[Math.min(run.field,BATTLE_BG.length-1)])||BATTLE_BG[0];
+const battleBg=()=>(run&&run.sandbox)?"bg/battle-train.webp"   /* 연습장 — 훈련장 마당 (사용자 2026-10-01) */
+  :(run&&BATTLE_BG[Math.min(run.field,BATTLE_BG.length-1)])||BATTLE_BG[0];
 /* 지도 테두리 — 양피지 무대를 두르는 철 틀 (사용자 2026-09-29) */
 const MAP_FRAME="테두리.png";
 /* 한 장짜리 구도(네 귀퉁이에 뿌리)인 바닥은 반복하지 않고 무대 전체로 키운다 (사용자 2026-10-01). 돌바닥처럼 이어지는 것은 그대로 반복 */
@@ -7500,6 +7513,14 @@ const SYNERGY=[
  {n:"망자",    k:"종족",t:[]},{n:"정령",k:"종족",t:[]},{n:"야수",k:"종족",t:[]}
 ];
 function synCount(t){ return run?run.heroes.filter(h=>!h.down&&hasTag(h,t)).length:0 }
+/* 이름 줄로 셈한 조합 — 훈련장의 조합 짜 보기 (2026-10-01). 붙는 것(c 가 1 이상)만 */
+function synPreview(names){
+  const hs=(names||[]).map(n=>({name:n}));
+  return SYNERGY.map(sy=>{ const c=hs.filter(h=>hasTag(h,sy.n)).length; if(!c) return null;
+    let best=null; sy.t.forEach(x=>{ if(c>=x.c&&(!best||x.c>best.c)) best=x });
+    return {n:sy.n,k:sy.k,c:c,on:best,next:sy.t.find(x=>x.c>c)||null} }).filter(Boolean)
+    .sort((a,b)=>(b.on?1:0)-(a.on?1:0)||b.c-a.c);
+}
 /* 지금 켜져 있는 조합 — [{n,k,c,need,d}] */
 function synActive(){
   const out=[];
@@ -12282,6 +12303,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 705, "v": "0.5", "d": "2026-10-01", "t": "훈련장 조합 짜 보기 · 연습장 배경", "big": 0},
  {"b": 704, "v": "0.5", "d": "2026-10-01", "t": "튜토리얼 손질 — 바뀐 화면에 맞게", "big": 0},
  {"b": 703, "v": "0.5", "d": "2026-10-01", "t": "쿠렘타이 이펙트 v3 · 대사 키워드 밑줄 없앰", "big": 0},
  {"b": 702, "v": "0.5", "d": "2026-10-01", "t": "마른숲 상점 인사말", "big": 0},
@@ -12987,7 +13009,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=704;
+const BUILD_NO=705;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -13588,9 +13610,11 @@ function drawCodex(app){
     <div class="sub">대원을 고르고, 연습장에서 기술을 마음껏 써 볼 수 있습니다</div></div>`));
   const wrap=app.querySelector(".center");
   const list=el(`<div class="codexrow"></div>`);
+  CODEX.party=(CODEX.party||[]).filter(n=>POOL.indexOf(n)>=0);
   POOL.forEach(n=>{
+    const pi=CODEX.party.indexOf(n);
     const c=el(`<div class="cxh ${n===name?"on":""}"><div class="art">${faceArt(n)}</div>
-      <b>${esc(n)}</b><span>${esc(HEROES[n].title)}</span></div>`);
+      <b>${esc(n)}</b><span>${esc(HEROES[n].title)}</span>${pi>=0?`<em class="cxpn" title="조합 — ${5-pi}번 칸">${5-pi}</em>`:""}</div>`);
     c.onclick=()=>{ CODEX.pick=n; render() };
     list.appendChild(c);
   });
@@ -13653,22 +13677,51 @@ function drawCodex(app){
       });
     } }
 
+  /* 조합 짜 보기 (사용자 2026-10-01) — 최대 PARTY_MAX 명. 조합 효과를 미리 보고, 그대로 연습장에 세운다 */
+  { const PT=CODEX.party, inP=PT.indexOf(name)>=0;
+    wrap.appendChild(el(`<div class="cxsec">조합 짜 보기</div>`));
+    wrap.appendChild(el(`<p class="hint">대원을 골라 넣으면 켜지는 조합 효과가 보입니다. 넣은 차례대로 연습장의 5 · 4 · 3번 칸에 섭니다.</p>`));
+    const box=el(`<div class="cxparty"></div>`);
+    for(let i=0;i<PARTY_MAX;i++){ const n=PT[i];
+      const c=el(n?`<div class="cxps on" title="눌러서 빼기"><span class="no">${5-i}번 칸</span><div class="art">${faceArt(n)}</div><b>${esc(n)}</b><i>빼기</i></div>`
+                 :`<div class="cxps"><span class="no">${5-i}번 칸</span><div class="art"></div><b>빈 자리</b></div>`);
+      if(n) c.onclick=()=>{ CODEX.party=PT.filter(x=>x!==n); render() };
+      box.appendChild(c) }
+    wrap.appendChild(box);
+    const A=synPreview(PT);
+    const sy=el(`<div class="cxsyn">${A.length?A.map(x=>`<div class="cxsy${x.on?" on":""}"><b>${esc(x.n)}</b><span class="k">${esc(x.k)} ${x.c}명</span>${
+        x.on?`<span>${rich(x.on.d)}</span>`:""}${x.next?`<span class="nx">${x.next.c}명이면 — ${rich(x.next.d)}</span>`:""}</div>`).join("")
+      :`<p class="hint">아직 넣은 대원이 없습니다.</p>`}</div>`);
+    wrap.appendChild(sy);
+    const pb=el(`<div style="margin-top:14px;display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap">
+      <button>${inP?`${esc(name)} 빼기`:`${esc(name)} 넣기`}</button>
+      <button class="go"${PT.length?"":" disabled"}>이 조합으로 연습장 (${PT.length}명)</button>
+      ${PT.length?`<button>비우기</button>`:""}</div>`);
+    const [b1,b2,b3]=pb.querySelectorAll("button");
+    if(!inP&&PT.length>=PARTY_MAX) { b1.disabled=true; b1.title=`대원은 최대 ${PARTY_MAX}명입니다.` }
+    b1.onclick=()=>{ CODEX.party=inP?PT.filter(x=>x!==name):PT.concat([name]).slice(0,PARTY_MAX); SFX.play("click"); render() };
+    if(PT.length) b2.onclick=()=>startSandbox(PT.slice());
+    if(b3) b3.onclick=()=>{ CODEX.party=[]; render() };
+    wrap.appendChild(pb); }
+
   const go=el(`<div style="margin-top:24px">
-    <button class="go" style="font-size:15px;padding:11px 28px">연습장에서 써 보기</button>
+    <button class="go" style="font-size:15px;padding:11px 28px">${esc(name)} 혼자 연습장에서 써 보기</button>
     <button style="margin-left:8px">타이틀로</button></div>`);
   go.querySelectorAll("button")[0].onclick=()=>startSandbox(name);
   go.querySelectorAll("button")[1].onclick=()=>{ view="title"; render() };
   wrap.appendChild(go);
 }
 /* 연습장 — 죽지 않는 허수아비를 두고 기술만 시험한다 */
+/* name 은 이름 하나 또는 이름 줄(조합 짜 보기, 2026-10-01). 고른 차례대로 5·4·3번 칸에 선다 */
 function startSandbox(name){
+  const names=(Array.isArray(name)?name:[name]).filter(n=>HEROES[n]).slice(0,PARTY_MAX);
+  if(!names.length) return;
   const f=FIELDS[0], S=f.size, mid=Math.floor(S/2);
-  run={heroes:[makeHero(name)], gold:99, stone:99, cards:[], bag:[],
+  run={heroes:names.map(makeHero), gold:99, stone:99, cards:[], bag:[],
        field:0, size:S, grid:buildGrid(0), mapUnfold:1, pos:{r:S-1,c:mid},
        day:1, time:6, act:99, actMax:99, taint:0, night:0, campDone:0,
-       remapUsed:0, bonusLv:null, sandbox:1, souls:200};
-  const h=run.heroes[0];
-  h.lv=20; h.maxHp=300; h.hp=300; h.maxMana=9;
+       remapUsed:0, bonusLv:null, sandbox:1, souls:200, sandFocus:names[0], sandRwOf:{}};
+  run.heroes.forEach(h=>{ h.lv=20; h.maxHp=300; h.hp=300; h.maxMana=9 });
   run.dun={cell:{},r:null,c:null,wave:1,waves:1,kind:"battle",bgm:pickBattleBgm()};
   startBattle("battle");
   /* 허수아비 셋 — 배율은 손잡이(적 강화)가 쥔다. 처음은 +0% (제 값).
@@ -13679,10 +13732,11 @@ function startSandbox(name){
     const f=spawnFoeNamed(n,i+1); if(f) f.exp=0;
   });
   sandRescaleFoes();   /* 체력은 9999 (진짜 체력을 켜면 제 값) */
-  /* 바로 세워 준다 */
-  h.slot=5; B.hand=B.hand.filter(x=>x.type!=="hero");
-  onSummon(h); wanderCheck();
-  h.mana=h.maxMana;
+  /* 바로 세워 준다 — 고른 차례대로 앞(5번)부터 */
+  run.heroes.forEach((h,i)=>{ h.slot=5-i });
+  B.hand=B.hand.filter(x=>x.type!=="hero");
+  run.heroes.forEach(h=>onSummon(h)); wanderCheck();
+  run.heroes.forEach(h=>{ h.mana=h.maxMana });
   say("연습장 — 턴을 넘기면 허수아비도 움직입니다. 체력·마나·잠금은 턴마다 되돌아옵니다.","t1");
   rollIntents(); sel=null; view="battle"; render();
 }
@@ -13726,8 +13780,20 @@ function sandSkills(h){
 /* 연습장 — 고른 보상(run.sandRw)을 대원에게 처음부터 다시 입힌다.
    보상 효과는 되돌릴 수 없는 것이 많아(능력치·카드·기술 값) 끄고 켤 때마다 새로 만든다.
    같은 물건(h)을 속만 갈아 끼운다 — 손패·sel 이 그 물건을 쥐고 있다. */
+/* 연습장 — 손볼 대원 (조합일 때) · 대원마다 고른 보상 */
+function sandHero(){ return (run&&run.heroes.find(h=>h.name===run.sandFocus))||run.heroes[0] }
+function sandRwOf(h){ run.sandRwOf=run.sandRwOf||{}; return run.sandRwOf[h.name]=run.sandRwOf[h.name]||[] }
+/* 보유 카드(run.cards)를 판 전체가 나눠 쓰므로 대원 모두를 한꺼번에 다시 입힌다 */
 function sandRebuild(){
-  const h=run.heroes[0], name=h.name, slot=h.slot;
+  run.cards=[]; B.hand=(B.hand||[]).filter(c=>!c.stock);
+  run.heroes.forEach(sandRebuild1);
+  /* 보유 카드가 생겼으면(임프 무리 등) 손에도 한 장 — 전투 시작 때와 같은 꼴 */
+  (run.cards||[]).forEach(cd=>{ if(SUMMONS[cd.n]&&!B.hand.some(c=>c.stock===cd.n))
+    B.hand.push({type:"summon",name:cd.n,stock:cd.n}) });
+  sandboxTick(); sel=null;
+}
+function sandRebuild1(h){
+  const name=h.name, slot=h.slot;
   const fresh=makeHero(name);
   /* 전투 중에만 쓰는 값(추진력·에너지 보호막·진선풍도 강화…)은 makeHero 에 없다 — 그대로 넘겨받는다.
      전에는 통째로 지워져 추진력이 undefined → '+1' 이 NaN 이 되어 산들바람이 추진력을 못 올렸다 (사용자 2026-09-30) */
@@ -13735,19 +13801,14 @@ function sandRebuild(){
   Object.keys(h).forEach(k=>{ delete h[k] });
   Object.assign(h,fresh,keep);
   h.lv=20; h.maxHp=300; h.hp=300; h.maxMana=9; h.mana=9; h.slot=slot; h.summoned=1;
-  run.cards=[]; B.hand=(B.hand||[]).filter(c=>!c.stock);
   const list=HERO_REWARDS[name]||[];
-  (run.sandRw||[]).forEach(n=>{ const r=list.find(x=>x.n===n); if(!r) return;
+  sandRwOf(h).forEach(n=>{ const r=list.find(x=>x.n===n); if(!r) return;
     r.fx(h,r.n); (h.tag.taken=h.tag.taken||[]).push(r.n); (h.tag.tk=h.tag.tk||[]).push(rwKey(r)) });
-  /* 보유 카드가 생겼으면(임프 무리 등) 손에도 한 장 — 전투 시작 때와 같은 꼴 */
-  (run.cards||[]).forEach(cd=>{ if(SUMMONS[cd.n]&&!B.hand.some(c=>c.stock===cd.n))
-    B.hand.push({type:"summon",name:cd.n,stock:cd.n}) });
-  sandboxTick(); sel=null;
 }
 function sandboxTick(){
-  const h=run.heroes[0];
-  h.hp=h.maxHp; h.mana=h.maxMana; h.lock={}; h.lockNew={}; h.limitUsed={};
-  h.verdictUsed=0; h.free=0; h.deb={};
+  run.heroes.forEach(h=>{
+    h.hp=h.maxHp; h.mana=h.maxMana; h.lock={}; h.lockNew={}; h.limitUsed={};
+    h.verdictUsed=0; h.free=0; h.deb={}; h.down=0 });
   run.souls=200;
   B.foes.forEach(f=>{ f.alive=1; f.hp=f.maxHp; f.shield=0; f.stun=0;
     f.deb={}; f.thorn=0; f.thornTurn=0; f.evade=0; f.hide=0; f.taunt=0; f.intent={t:"wait"} });
@@ -19329,7 +19390,7 @@ function drawBattle(app){
   }
 
   if(run.sandbox){
-    const h0=run.heroes[0];
+    const h0=sandHero();
     const sb=el(`<div class="sandbar">
       <b>연습장</b><span>턴을 넘기면 허수아비도 공격합니다 · 판은 「판 되돌리기」로 손수 되돌립니다</span>
       <span class="grow"></span><button>도감으로</button></div>`);
@@ -19350,15 +19411,21 @@ function drawBattle(app){
       p.onclick=e=>{ e.stopPropagation(); set(e.shiftKey?10:1) };
       kb.appendChild(w);
     };
+    /* 조합이면 손볼 대원을 고른다 — 아래 손잡이·보상은 그 대원 것 (2026-10-01) */
+    if(run.heroes.length>1){
+      const fr=el(`<div class="knob" style="border-color:var(--brass)"><span>손볼 대원</span></div>`);
+      run.heroes.forEach(h=>{ const b=el(`<button class="mini${h===h0?" on":""}">${esc(h.name)}</button>`);
+        b.onclick=e=>{ e.stopPropagation(); run.sandFocus=h.name; render() }; fr.appendChild(b) });
+      kb.appendChild(fr) }
     KN.forEach(([k,label,lo,hi])=>knob(k,label,lo,hi,0));
     /* 그 대원에게만 있는 것 — 테를 달아 공용과 갈라 보인다 */
     (SAND_OWN[h0.name]||[]).forEach(([k,label,lo,hi])=>knob(k,label,lo,hi,1));
     /* 전용 보상 — 등급마다 한 줄. 누르면 붙고, 다시 누르면 뗀다 (대원을 새로 만들어 다시 입힌다).
        ★ 보상을 바꾸면 위 손잡이 값은 처음(레벨 20 · 체력 300 · 마나 9)으로 돌아간다. */
     { const list=HERO_REWARDS[h0.name]||[];
-      run.sandRw=run.sandRw||[];
-      const has=n=>run.sandRw.indexOf(n)>=0;
-      const flip=n=>{ if(has(n)) run.sandRw=run.sandRw.filter(x=>x!==n); else run.sandRw.push(n);
+      const RW=sandRwOf(h0);
+      const has=n=>RW.indexOf(n)>=0;
+      const flip=n=>{ if(has(n)) RW.splice(RW.indexOf(n),1); else RW.push(n);
         sandRebuild(); render() };
       [["하급","하급 보상"],["중급","중급 보상"],["상급","상급 보상"]].forEach(([g,label])=>{
         const rs=list.filter(r=>r.g===g); if(!rs.length) return;
@@ -19370,9 +19437,9 @@ function drawBattle(app){
         });
         kb.appendChild(row);
       });
-      if(run.sandRw.length){
-        const row=el(`<div class="knob own"><span>보상 ${run.sandRw.length}</span><button class="mini">모두 떼기</button></div>`);
-        row.querySelector("button").onclick=e=>{ e.stopPropagation(); run.sandRw=[]; sandRebuild(); render() };
+      if(RW.length){
+        const row=el(`<div class="knob own"><span>보상 ${RW.length}</span><button class="mini">모두 떼기</button></div>`);
+        row.querySelector("button").onclick=e=>{ e.stopPropagation(); RW.length=0; sandRebuild(); render() };
         kb.appendChild(row);
       } }
     const fb=el(`<div class="knob" style="border-color:var(--brass)">
