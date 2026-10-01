@@ -340,6 +340,22 @@ img.pxs.face{image-rendering:pixelated;width:auto;filter:drop-shadow(0 2px 0 rgb
 .st.g{background:rgba(143,212,106,.13)}
 .st.o{background:rgba(240,161,58,.13)}
 .bd{display:inline-flex;align-items:center;gap:2px;font-size:10px;line-height:1;color:var(--fg);cursor:default;white-space:nowrap}
+/* 벌목도로 메아리 끊기 (2026-10-01) */
+.bd.echocut{animation:ecShake .22s linear 2;filter:drop-shadow(0 0 4px #ffd27a)}
+@keyframes ecShake{25%{transform:translateX(-2px) rotate(-6deg)}75%{transform:translateX(2px) rotate(6deg)}}
+.ecaxe{position:fixed;z-index:80;pointer-events:none;transform:translate(-50%,-50%);animation:ecSwing .5s cubic-bezier(.5,0,.7,1) forwards}
+.ecaxe img{width:100%;height:100%;image-rendering:pixelated;filter:drop-shadow(0 2px 0 #000) drop-shadow(0 0 6px rgba(255,220,150,.6))}
+@keyframes ecSwing{0%{opacity:0;transform:translate(10%,-140%) rotate(-70deg) scale(.8)}25%{opacity:1}55%{transform:translate(-50%,-50%) rotate(35deg) scale(1.05)}
+  100%{opacity:0;transform:translate(-90%,-10%) rotate(60deg) scale(1)}}
+.ecslash{position:fixed;z-index:81;pointer-events:none;height:3px;transform:translate(-50%,-50%) rotate(-35deg) scaleX(0);
+  background:linear-gradient(90deg,transparent,#fff6d8 30%,#ffd27a 50%,#fff6d8 70%,transparent);box-shadow:0 0 8px #ffd27a;animation:ecSlash .5s ease-out forwards}
+@keyframes ecSlash{0%{transform:translate(-50%,-50%) rotate(-35deg) scaleX(0);opacity:1}35%{transform:translate(-50%,-50%) rotate(-35deg) scaleX(1);opacity:1}100%{transform:translate(-50%,-50%) rotate(-35deg) scaleX(1.1);opacity:0}}
+.ecpiece{position:fixed;z-index:79;pointer-events:none;display:flex;align-items:center;justify-content:center}
+.ecpiece>.bd{animation:none!important}
+.ecpiece.top{clip-path:polygon(0 0,100% 0,100% 30%,0 70%);animation:ecTop .85s cubic-bezier(.3,0,.8,1) forwards}
+.ecpiece.bot{clip-path:polygon(0 70%,100% 30%,100% 100%,0 100%);animation:ecBot .85s cubic-bezier(.3,0,.8,1) forwards}
+@keyframes ecTop{0%{transform:none;opacity:1}100%{transform:translate(-10px,14px) rotate(-18deg);opacity:0}}
+@keyframes ecBot{0%{transform:none;opacity:1}100%{transform:translate(8px,22px) rotate(14deg);opacity:0}}
 .bd em{font-style:normal;font-weight:700}
 .bd i.ci{width:12px;height:12px;border-radius:50%;flex:0 0 12px}
 .bd img.ci{width:14px;height:14px;flex:0 0 14px;display:block}
@@ -4334,6 +4350,40 @@ document.addEventListener("visibilitychange",()=>{
 /* ═══════ 이펙트 ═══════ */
 const FXQ=[];
 const fx=o=>{ FXQ.push(o) };
+/* 벌목도로 메아리 끊기 (사용자 2026-10-01) — 메아리 표식 위로 벌목도가 휘둘러 내려와 베고, 표식이 두 쪽으로 갈라져 떨어진다.
+   표식은 f.echoCutAt 부터 ECHO_CUT_MS 동안 남아 있다가 다시 그릴 때 걷힌다 */
+const ECHO_CUT_MS=1500;
+function echoCutFX(side,slot,fid){
+  const box=document.getElementById(side==="foe"?"foeSide":"mySide"); if(!box) return;
+  const sl=box.querySelector('.slot[data-slot="'+slot+'"]');
+  const badge=sl&&(sl.querySelector('.bd.echocut')||sl.querySelector('.bd[data-kw="메아리"]'));
+  const tgt=badge||sl; if(!tgt) return;
+  const r=tgt.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2, sz=Math.max(34,r.height*2.2);
+  const u=(typeof ICON_PNG!=="undefined")&&ICON_PNG.item_special_felling_blade;
+  /* 벌목도 — 오른쪽 위에서 휘둘러 내려온다 */
+  const ax=document.createElement("div"); ax.className="ecaxe";
+  ax.style.cssText=`left:${cx}px;top:${cy}px;width:${sz}px;height:${sz}px;--sz:${sz}px`;
+  ax.innerHTML=u?`<img src="${u}" alt="">`:"🪓";
+  document.body.appendChild(ax);
+  /* 벤 자국 — 대각선 한 줄 */
+  setTimeout(()=>{ const sk=document.createElement("div"); sk.className="ecslash";
+    sk.style.cssText=`left:${cx}px;top:${cy}px;width:${sz*1.6}px`;
+    document.body.appendChild(sk); setTimeout(()=>sk.remove(),520);
+    if(sfxHas("베기")) SFX.play("베기"); else SFX.play("slash");
+    if(badge){
+      /* 표식을 두 쪽으로 — 같은 그림을 위·아래 반씩 잘라 떨어뜨린다 */
+      const im=badge.querySelector("img"), br=(im||badge).getBoundingClientRect();
+      const html=im?`<img src="${im.src}" style="width:100%;height:100%;image-rendering:pixelated" alt="">`:badge.outerHTML;   /* 아이콘 그림 그대로 — 판 밖에선 표식 꾸밈이 안 먹는다 */
+      ["top","bot"].forEach(k=>{ const p=document.createElement("div"); p.className="ecpiece "+k;
+        p.style.cssText=`left:${br.left}px;top:${br.top}px;width:${br.width}px;height:${br.height}px`;
+        p.innerHTML=html; document.body.appendChild(p); setTimeout(()=>p.remove(),900) });
+      badge.style.visibility="hidden";
+    }
+  },230);
+  setTimeout(()=>ax.remove(),700);
+  /* 연출이 끝나면 표식을 걷어 다시 그린다 */
+  setTimeout(()=>{ if(B&&!B.over&&view==="battle") render() },ECHO_CUT_MS+60);
+}
 function ctrOf(side,slot){
   const box=document.getElementById(side==="foe"?"foeSide":"mySide");
   if(!box) return null;
@@ -4532,6 +4582,7 @@ function playFX(o){
   if(o.bomb){ const pt=bombThrowFX(o.bomb.from,o.bomb.slots);
     setTimeout(()=>bombBurstFX(pt,o.bomb.slots),pt?pt.ms:0); return }
   if(o.release){ releaseHold(o.release.ids,o.release.how); return }
+  if(o.echoCut!=null){ echoCutFX(o.side,o.slot,o.echoCut); return }
   if(o.reslot){ reslotHold(o.reslot); return }
   /* 영혼 돌진도 칸에 매이지 않는다 — 죽은 칸은 이미 사라지고 없다 (2026-09-29) */
   if(o.trail){ trailFX(o.side,o.trail.name,o.trail.from,o.trail.to,o.trail.n); }
@@ -6167,9 +6218,13 @@ const PNG_SPRITE={
 };
 const SND={
  "block":{v:0.22,f:"block.wav"},
+ "boom":{v:0.166,f:"boom.wav"},
  "click":{v:0.12,f:"click.wav"},
+ "die":{v:0.216,f:"die.wav"},
  "equip":{v:0.218,f:"equip.wav"},
  "eshbreak":{v:0.09,f:"eshbreak.wav"},
+ "fire":{v:0.154,f:"fire.wav"},
+ "heal":{v:0.219,f:"heal.wav"},
  "level":{v:0.139,f:"level.wav"},
  "shbreak":{v:0.15,f:"shbreak.wav"},
  "shield":{v:0.11,f:"shield.wav"},
@@ -6178,6 +6233,7 @@ const SND={
  "tock":{v:0.239,f:"tock.wav"},
  "unlock 1":{v:0.178,f:"unlock 1.wav"},
  "unlock 2":{v:0.219,f:"unlock 2.wav"},
+ "unlock":{v:0.207,f:"unlock.wav"},
  "공중 띄움":{v:0.237,f:"공중 띄움.wav"},
  "관중의 함성 1":{v:0.09,f:"관중의 함성 1.wav"},
  "관중의 함성 2":{v:0.09,f:"관중의 함성 2.wav"},
@@ -10409,8 +10465,11 @@ function debBadges(u){
 function foeStatusRows(f){
   const D=FOE[f.name]||{};
   const g=[], o=[], t=[];
-  (D.pas||[]).forEach(x=>{ if(x.k==="echo"&&f.echoUsed) return;   /* 메아리는 한 번 울리고 나면 표식도 걷는다 (사용자 2026-09-29) */
-    t.push(bd("t",x.kw||x.n,x.n,x.d,x.n)) });
+  (D.pas||[]).forEach(x=>{
+    const cutting=x.k==="echo"&&f.echoCutAt&&Date.now()-f.echoCutAt<ECHO_CUT_MS;   /* 벌목도가 끊는 중 — 연출이 끝날 때까지 표식을 둔다 */
+    if(x.k==="echo"&&f.echoUsed&&!cutting) return;   /* 메아리는 한 번 울리고 나면 표식도 걷는다 (사용자 2026-09-29) */
+    const h=bd("t",x.kw||x.n,x.n,x.d,x.n);
+    t.push(cutting?h.replace('class="bd ','class="bd echocut '):h) });
   /* 기생으로 심긴 죽음 — 붙어 있는 동안 보인다 (사용자 2026-09-29) */
   if(f.dthTag) t.push(bd("t","죽음",f.dthTag.n||"기생",
     `죽음: ${f.dthTag.who||""}${f.dthTag.who?jo(f.dthTag.who,"eul"):""} 소환합니다. 살아있는 덩굴이 심어 둔 것입니다.`,
@@ -12096,6 +12155,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 681, "v": "0.5", "d": "2026-10-01", "t": "벌목도 — 메아리 표식을 베는 연출", "big": 0},
  {"b": 680, "v": "0.5", "d": "2026-10-01", "t": "정령숲 기믹 넷 (고독의 동굴 · 균열 군체 · 거대한 기계의 잔해 · 안개 지대) + 정예 균열 군체", "big": 0},
  {"b": 679, "v": "0.5", "d": "2026-10-01", "t": "푸른 수정 한 번 눌러 사용", "big": 0},
  {"b": 678, "v": "0.5", "d": "2026-10-01", "t": "정령 상인 그림 새로", "big": 0},
@@ -12777,7 +12837,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=680;
+const BUILD_NO=681;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -20272,7 +20332,8 @@ function onSummon(h){
   /* 벌목도 (특수 장신구, 2026-10-01) — 배치 후 무작위 적 하나의 메아리를 걷는다 (메아리를 이미 쓴 것처럼) */
   { const fb=itemBt(h,"echoCut");
     for(let k=0;k<fb;k++){ const L=B.foes.filter(f=>f.alive&&foePas(f,"echo")&&!f.echoUsed); if(!L.length) break;
-      const f=rnd(L); f.echoUsed=1;
+      const f=rnd(L); f.echoUsed=1; f.echoCutAt=Date.now();
+      fx({side:"foe",slot:f.slot,echoCut:f.id,gap:420});   /* 표식 위에서 벌목도가 벤다 (사용자 2026-10-01) */
       fx({side:"foe",slot:f.slot,ring:"#9c8d77",txt:"메아리 끊김",cls:"miss",gap:80});
       say(`벌목도 — ${f.name}의 메아리를 끊어 냅니다.`,"t1") } }
   run.heroes.forEach(soloCheck);
