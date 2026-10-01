@@ -792,19 +792,18 @@ button.dtl{padding:3px 10px;font-size:11.5px}
   background:var(--cardframe) center/100% 100% no-repeat;image-rendering:pixelated;box-shadow:none;color:#2a1c12;
   filter:drop-shadow(0 6px 10px rgba(0,0,0,.55))}
 .ccard.cf > *{position:absolute;margin:0;box-sizing:border-box}
-.ccard.cf .cc-n{left:11.5%;top:5.1%;width:55.2%;height:4.9%;display:flex;align-items:center;justify-content:center;
+.ccard.cf .cc-n{left:12.5%;top:48%;width:75%;height:4.9%;display:flex;align-items:center;justify-content:center;
   font-size:10.5px;line-height:1;color:#2a1c12;white-space:nowrap;overflow:hidden;letter-spacing:-.2px}
 .ccard.cf .cc-top{left:9.4%;top:5.1%;width:81.2%;height:auto;min-height:0;display:block;pointer-events:none}
 .ccard.cf .cc-top:empty{display:none}
 .ccard.cf .cc-own{position:absolute;left:79.5%;top:0;width:19.2%;height:11px;margin:0;padding:0;border:none;border-radius:0;
   display:flex;align-items:center;justify-content:center;font-size:9.5px;line-height:1;color:#3d5a2c;background:none;pointer-events:auto}
-.ccard.cf .cc-tag{position:relative;top:22px;display:inline-block;margin:0 3px 0 4px;font-size:9px;line-height:1.4;
-  color:#e7c9f0;background:rgba(20,12,8,.72);border:1px solid rgba(197,143,208,.55)}
+.ccard.cf .cc-tag{display:inline;margin:0;padding:0;border:none;border-radius:0;background:none;font-size:inherit;color:#6b2d73}
 .ccard.cf .cc-art{left:9.4%;top:11.7%;width:81.2%;height:34.4%;border:none;border-radius:0;background:none}
 .ccard.cf .cc-art img,.ccard.cf .cc-art svg{width:68px;height:68px}
 .ccard.cf.c-hero .cc-art img.pxs.face{height:92%}
-.ccard.cf .cc-type{left:12.5%;top:48%;width:75%;height:4.9%;border:none;padding:0;display:flex;align-items:center;justify-content:center;
-  font-size:9px;line-height:1;color:#5a3f28}
+.ccard.cf .cc-type{left:11.5%;top:5.1%;width:55.2%;height:4.9%;border:none;padding:0;display:flex;align-items:center;justify-content:center;
+  font-size:8.5px;line-height:1;color:#5a3f28;white-space:pre;overflow:hidden;letter-spacing:-.3px}
 .ccard.cf .cc-d{left:11.5%;top:55.6%;width:77%;height:25.6%;display:flex;flex-direction:column;align-items:center;justify-content:center;
   font-size:9.5px;line-height:1.32;color:#2f2117;overflow:hidden;text-align:center;word-break:keep-all}
 .ccard.cf .cc-d.long{font-size:8.5px;line-height:1.25}
@@ -8905,6 +8904,10 @@ function cardKind(nm){
 }
 /* 카드 틀의 양피지는 좁다 — 긴 설명은 글씨를 한 단 줄인다 (2026-10-01) */
 const cfLong=t=>String(t||"").replace(/<[^>]+>/g,"").length>56;
+/* 머리 왼쪽 — 종류 · 꼬리표 (사용자 2026-10-01 그림). 꼬리표가 붙으면 좁으니 '카드' 를 뗀다 */
+function cfType(type,tags){
+  const t=String(type||""), L=tags||[];
+  return (L.length?t.replace(/ 카드$/,""):t)+L.map(x=>` · <span class="cc-tag">${esc(x)}</span>`).join("") }
 function cardCard(nm,have){
   const L={d:cardDesc(nm),foe:!!(CARD_LIB[nm]&&CARD_LIB[nm].foe)},
         M=CARD_META[nm]||{}, S=SUMMONS[nm];
@@ -8912,11 +8915,10 @@ function cardCard(nm,have){
   if(M.gone) tags.push("소멸성");
   if(L.foe) tags.push("적 대상");
   return `<div class="ccard cf">
-    <div class="cc-top">${tags.map(t=>`<span class="cc-tag">${esc(t)}</span>`).join("")}
-      ${have!=null?`<span class="cc-own">${have}/10</span>`:""}</div>
+    <div class="cc-top">${have!=null?`<span class="cc-own">${have}/10</span>`:""}</div>
     <div class="cc-art">${cardArt(nm)}</div>
     <div class="cc-n">${esc(nm)}</div>
-    <div class="cc-type">${esc(cardKind(nm))} 카드</div>
+    <div class="cc-type">${cfType(cardKind(nm)+" 카드",tags)}</div>
     <div class="cc-d${cfLong(L.d)?" long":""}"><div class="cc-di">${rich(L.d||"")}</div></div>
     ${S?`<div class="cc-st"><span class="hp">${ic("hp")} ${S.hp}</span>
       <span class="mn">${ic("mana")} ${S.mana}</span></div>`:""}
@@ -12346,6 +12348,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 707, "v": "0.5", "d": "2026-10-01", "t": "카드 틀 배치 — 종류는 위, 이름은 그림 밑", "big": 0},
  {"b": 706, "v": "0.5", "d": "2026-10-01", "t": "카드 틀", "big": 0},
  {"b": 705, "v": "0.5", "d": "2026-10-01", "t": "훈련장 조합 짜 보기 · 연습장 배경", "big": 0},
  {"b": 704, "v": "0.5", "d": "2026-10-01", "t": "튜토리얼 손질 — 바뀐 화면에 맞게", "big": 0},
@@ -13053,7 +13056,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=706;
+const BUILD_NO=707;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -19615,12 +19618,12 @@ function drawBattle(app){
          따로 만들면 다음에 고칠 때 반드시 한쪽을 빠뜨린다 */
     const stk=c.stock?((run.cards||[]).find(x=>x.n===c.stock)||{}).c||0:0;
     const card=el(`<div class="card ccard cf ${kind} ${B.pick===i?"picked":""}" data-i="${i}">
-      <div class="cc-top">${tags.map(t=>`<span class="cc-tag">${esc(t)}</span>`).join("")}${
+      <div class="cc-top">${
         c.stock?`<span class="cc-own" title="가진 수 — 다 쓰면 손패에서 사라집니다">${stk}/10</span>`
         :(c.n>1?`<span class="cc-own" title="쌓인 장수 — 한 번에 한 장씩 씁니다">×${c.n}</span>`:"")}</div>
       <div class="cc-art">${art}</div>
       <div class="cc-n">${esc(nm)}</div>
-      <div class="cc-type">${type}</div>
+      <div class="cc-type">${cfType(type,tags)}</div>
       <div class="cc-d${cfLong(c.d)&&!hero&&c.type!=="summon"?" long":""}"><div class="cc-di">${desc}</div></div>
       ${st?`<div class="cc-st">${st}</div>`:""}
     </div>`);
