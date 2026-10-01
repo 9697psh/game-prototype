@@ -572,7 +572,15 @@ button.dtl{padding:3px 10px;font-size:11.5px}
 .knob.sandrw{flex-wrap:wrap;max-width:100%}
 .knob.sandrw .mini{font-size:10.5px;padding:2px 7px}
 .knob .mini.on{background:var(--brass);color:#17130f;border-color:var(--brass)}
-.ghost{position:fixed;z-index:999;pointer-events:none;opacity:.9;transform:translate(-50%,-50%)}
+.ghost{position:fixed;z-index:999;pointer-events:none;transform:translate(-50%,-50%);perspective:700px}
+/* 들린 카드 — 기울기는 .gtilt 가, 그림자는 들린 높이·기운 쪽을 따라 (2026-10-01) */
+.ghost .gtilt{transform-style:preserve-3d;will-change:transform;
+  filter:drop-shadow(var(--sx,0px) var(--sy,12px) 14px rgba(0,0,0,.6))}
+.ghost .card.ccard.cf{filter:none;margin:0}
+/* 윤 — 카드 위를 흐르는 빛. 들렸을 때와 손패에서 커서를 올렸을 때 */
+.ccard.cf::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .2s;
+  background:radial-gradient(circle at var(--gx,50%) var(--gy,40%),rgba(255,240,200,.32),rgba(255,240,200,0) 45%);mix-blend-mode:screen}
+.ghost .ccard.cf::after,body.vbattle .hand .card.ccard.cf:hover::after{opacity:1}
 
 .prompt{margin-top:14px;background:var(--panel);border:1px solid var(--rule);border-radius:5px;
   padding:9px 13px;font-size:13px;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
@@ -3037,7 +3045,7 @@ body.vbattle .prompt{display:none}
 body.vbattle .hand{position:fixed;left:0;right:0;bottom:0;margin:0;justify-content:center;flex-wrap:nowrap;gap:0;padding:0 0 8px;z-index:30;min-height:0;align-items:flex-end;pointer-events:none}
 body.vbattle .hand .card{pointer-events:auto}
 body.vbattle .hand .card.ccard{width:150px;margin:0 -14px;transform:rotate(var(--rot,0deg)) translateY(var(--dy,0px));transform-origin:50% 120%;transition:transform .15s,z-index 0s;box-shadow:0 8px 20px rgba(0,0,0,.7)}
-body.vbattle .hand .card.ccard:hover,body.vbattle .hand .card.ccard.picked{transform:rotate(0deg) translateY(-26px) scale(1.06);z-index:40!important}
+body.vbattle .hand .card.ccard:hover,body.vbattle .hand .card.ccard.picked{transform:perspective(700px) rotate(0deg) translateY(-26px) scale(1.06) rotateX(var(--hrx,0deg)) rotateY(var(--hry,0deg));z-index:40!important}
 body.vbattle .hand:empty{min-height:40px}
 /* 기술 창 — 손패 자리 */
 body.vbattle .skwrap{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:min(1240px,96vw);max-height:46vh;overflow:auto;margin:0;z-index:30;background:rgba(14,12,14,.94);border-radius:6px 6px 0 0}
@@ -12388,6 +12396,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 712, "v": "0.5", "d": "2026-10-01", "t": "카드 끌기 — 기울기·들림·돌아감", "big": 0},
  {"b": 711, "v": "0.5", "d": "2026-10-01", "t": "적 추가 능력치 보기 · 쿠렘타이 이펙트 강조", "big": 0},
  {"b": 710, "v": "0.5", "d": "2026-10-01", "t": "적 특징 풀이 · 균열 군체 대기 빠르게", "big": 0},
  {"b": 709, "v": "0.5", "d": "2026-10-01", "t": "연습장 정령숲 조합 · 이벤트 도감 구역별 · 굶주린 자/균열 군체 크기", "big": 0},
@@ -13100,7 +13109,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=711;
+const BUILD_NO=712;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -19686,6 +19695,12 @@ function drawBattle(app){
       ${st?`<div class="cc-st">${st}</div>`:""}
     </div>`);
     startDrag(card,i);
+    /* 손패 — 커서 쪽으로 살짝 기울고 윤이 따라 흐른다 (2026-10-01) */
+    card.addEventListener("pointermove",ev=>{ const r=card.getBoundingClientRect(); if(!r.width) return;
+      const u=(ev.clientX-r.left)/r.width-0.5, v=(ev.clientY-r.top)/r.height-0.5;
+      card.style.setProperty("--hry",(u*16).toFixed(1)+"deg"); card.style.setProperty("--hrx",(-v*16).toFixed(1)+"deg");
+      card.style.setProperty("--gx",((u+0.5)*100).toFixed(0)+"%"); card.style.setProperty("--gy",((v+0.5)*100).toFixed(0)+"%") });
+    card.addEventListener("pointerleave",()=>{ card.style.setProperty("--hry","0deg"); card.style.setProperty("--hrx","0deg") });
     hand.appendChild(card);
   });
   { const n=B.hand.length, mid=(n-1)/2;   /* 부채꼴 — 가운데를 두고 살짝 기울고 내려간다 (2026-09-19) */
@@ -20645,11 +20660,34 @@ function startDrag(card,i){
     if(B.over) return;
     e.preventDefault();
     const x0=e.clientX, y0=e.clientY; let moved=0;
-    const c=B.hand[i]; const g=el(`<div class="ghost">${card.outerHTML}</div>`);
-    document.body.appendChild(g); card.style.opacity=".35";
+    const c=B.hand[i]; const g=el(`<div class="ghost"><div class="gtilt">${card.outerHTML}</div></div>`);
+    const gt=g.firstElementChild, gc=gt.firstElementChild;
+    gc.classList.remove("picked"); gc.style.transform=""; gc.style.margin="0";
+    document.body.appendChild(g); card.style.opacity=".22";
+    /* 카드의 몸 — 보이는 자리(px,py)가 커서(tx,ty)를 조금 늦게 따라가고, 속도만큼 기운다 (하스스톤, 2026-10-01) */
+    const r0=card.getBoundingClientRect();
+    const home={x:r0.left+r0.width/2, y:r0.top+r0.height/2};
+    let px=home.x, py=home.y, tx=e.clientX, ty=e.clientY, lx=tx, ly=ty, lt=performance.now();
+    let vx=0, vy=0, rx=0, ry=0, rz=0, lift=0, alive=1;
+    const cl=(v,a)=>Math.max(-a,Math.min(a,v));
+    const paint=()=>{ g.style.left=px+"px"; g.style.top=py+"px";
+      gt.style.transform=`rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) rotateZ(${rz.toFixed(2)}deg) scale(${(1+0.1*lift).toFixed(3)})`;
+      gt.style.setProperty("--sx",(-ry*0.9).toFixed(1)+"px"); gt.style.setProperty("--sy",(10+14*lift+rx*0.6).toFixed(1)+"px");
+      gt.style.setProperty("--gx",(50+ry*2.2).toFixed(1)+"%"); gt.style.setProperty("--gy",(40-rx*2.2).toFixed(1)+"%") };
+    const loop=()=>{ if(!alive) return;
+      const now=performance.now(), dt=Math.max(8,now-lt); lt=now;
+      const ivx=(tx-lx)/dt*16, ivy=(ty-ly)/dt*16; lx=tx; ly=ty;
+      vx+=(ivx-vx)*0.3; vy+=(ivy-vy)*0.3;
+      px+=(tx-px)*0.32; py+=(ty-py)*0.32;
+      lift+=(1-lift)*0.18;
+      ry+=(cl(vx*1.5,26)-ry)*0.22;          /* 오른쪽으로 끌면 오른쪽 가장자리가 멀어진다 */
+      rx+=(cl(-vy*1.5,26)-rx)*0.22;         /* 위로 끌면 윗가장자리가 멀어진다 */
+      rz+=(cl(vx*0.45,9)-rz)*0.2;           /* 진자처럼 윗머리가 움직이는 쪽으로 */
+      paint(); requestAnimationFrame(loop) };
+    paint(); requestAnimationFrame(loop);
     const move=ev=>{
       if(Math.abs(ev.clientX-x0)>5||Math.abs(ev.clientY-y0)>5) moved=1;
-      g.style.left=ev.clientX+"px"; g.style.top=ev.clientY+"px";
+      tx=ev.clientX; ty=ev.clientY;
       document.querySelectorAll("#mySide .slot").forEach(s=>{
         const r=s.getBoundingClientRect();
         s.classList.toggle("drop", ev.clientX>=r.left&&ev.clientX<=r.right&&ev.clientY>=r.top&&ev.clientY<=r.bottom);
@@ -20658,15 +20696,25 @@ function startDrag(card,i){
     const up=ev=>{
       document.removeEventListener("pointermove",move);
       document.removeEventListener("pointerup",up);
-      g.remove(); card.style.opacity="";
-      let hit=null, side="mine";
+      alive=0;
+      let hit=null, side="mine", hitR=null;
       document.querySelectorAll("#mySide .slot,#foeSide .slot").forEach(s=>{
         const r=s.getBoundingClientRect();
         if(ev.clientX>=r.left&&ev.clientX<=r.right&&ev.clientY>=r.top&&ev.clientY<=r.bottom){
-          hit=+s.dataset.slot; side=s.closest("#foeSide")?"foe":"mine";
+          hit=+s.dataset.slot; side=s.closest("#foeSide")?"foe":"mine"; hitR=r;
         }
         s.classList.remove("drop");
       });
+      /* 놓은 뒤 — 칸으로 빨려 들거나(놓임), 손패로 날아 돌아간다(못 놓음). 그동안 손패의 카드는 비어 보인다 */
+      const fly=(x,y,sc,op,ms,done)=>{ g.style.transition=`left ${ms}ms cubic-bezier(.2,.8,.3,1),top ${ms}ms cubic-bezier(.2,.8,.3,1),opacity ${ms}ms`;
+        gt.style.transition=`transform ${ms}ms cubic-bezier(.2,.8,.3,1)`;
+        requestAnimationFrame(()=>{ g.style.left=x+"px"; g.style.top=y+"px"; g.style.opacity=op;
+          gt.style.transform=`rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(${sc})` });
+        setTimeout(()=>{ g.remove(); if(done) done() },ms+20) };
+      const hand=document.querySelector(`#hand .card[data-i="${i}"]`)||card;
+      if(hit&&moved) fly(hitR.left+hitR.width/2,hitR.top+hitR.height/2,0.35,0,170,null);
+      else if(moved){ const r=hand.getBoundingClientRect(); fly(r.left+r.width/2,r.top+r.height/2,1,1,240,()=>{ hand.style.opacity=""; card.style.opacity="" }) }
+      else { g.remove(); card.style.opacity="" }
       /* 끌지 않고 그냥 눌렀으면 '이 카드를 골랐다'로 친다.
          고른 뒤 칸을 누르면 거기에 놓인다 — 드래그가 어려운 환경을 위해. */
       if(!moved&&!hit){
