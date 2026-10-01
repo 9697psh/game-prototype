@@ -12162,6 +12162,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 687, "v": "0.5", "d": "2026-10-01", "t": "미리보기 = 실제 (줄 피해 · 기술 칸 · 받을 피해) · sim/audit5", "big": 0},
  {"b": 686, "v": "0.5", "d": "2026-10-01", "t": "정령숲 전투 배경 v7", "big": 0},
  {"b": 685, "v": "0.5", "d": "2026-10-01", "t": "심장 부활 이펙트 아래로", "big": 0},
  {"b": 684, "v": "0.5", "d": "2026-10-01", "t": "뿌리모체의 심장 부활 이펙트", "big": 0},
@@ -12849,7 +12850,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=686;
+const BUILD_NO=687;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -17778,7 +17779,7 @@ function skRoll(f,allies,inR,far){
   const s=pick.s, t=pick.T[0]||null;
   return {t:"sk",i:pick.i,n:s.n,tg:s.tg||"near",
           to:t?t.slot:0,toId:t?uid(t):null,chase:!!s.chase,
-          v:s.dmg?skDmg(f,s):0,hits:Math.max(1,s.hits||1),el:s.el||D.el||"공격",far:0};
+          v:s.dmg?skDmg(f,s)+(s.buff||0):0,hits:Math.max(1,s.hits||1),el:s.el||D.el||"공격",far:0};   /* 스스로 강해진 뒤 때린다 (바라보기·갈증) — 의도 숫자에 그 몫 (2026-10-01) */
 }
 /* 대원을 n칸 앞(적 쪽)으로 끌어온다 — 그 자리에 누가 있으면 자리를 바꾼다 (간수의 손 잡아 끌기) */
 function pullN(f,t,n){
@@ -19334,6 +19335,12 @@ function extraParts(h,sk,key){
   if(key==="dmg"){
     if(h.name==="카제"&&(sk.n==="진선풍도"||sk.n==="회오리")&&h.windDmg)
       out.push({n:"산들바람",v:h.windDmg});
+    if(h.name==="카제"&&(sk.n==="진선풍도"||sk.n==="회오리")&&t.firstWind&&fst.wind!==1)
+      out.push({n:"날카로운 칼끝",v:t.firstWind});   /* 첫 번째 바람 (2026-10-01 — 기술 칸에 빠져 있었다) */
+    if(sk.harmony&&h.def) out.push({n:"추가 보호력",v:h.def});   /* 조화 — 마법력 + 보호력 */
+    /* 이테리오 — 이번에 쓰는 마나만큼 마법력이 오른 뒤에 때린다 (마나 중독자 · 마나 도약). 에너지 중첩이면 공격 기술도 */
+    { const v=itManaNow(h,sk);
+      if(v&&!skillFlat(sk)&&(sk.el==="마법"||(sk.el==="공격"&&t.overlap))) out.push({n:"마나 중독자 (이번 마나)",v:v}) }
     if(h.name==="나이코스"&&sk.n==="베기"){
       if(h.cutGrow) out.push({n:"늘어가는 실력",v:h.cutGrow});
       if(t.firstCut&&fst.cut!==1) out.push({n:"처음은 날카롭게",v:t.firstCut+h.atk});
@@ -19348,6 +19355,11 @@ function extraParts(h,sk,key){
   /* 플레어와 플로우 — 적절한 균형은 배치 뒤 첫 균형 한 번 (h.balFirst 가 남아 있는 동안) */
   if(sk.balance&&h.balFirst&&(key==="dmg"||key==="shield")) out.push({n:"적절한 균형",v:h.balFirst});
   return out;
+}
+/* 이테리오가 이 기술을 쓰며 낼 마나만큼 얻는 마법력 — runEffect 앞의 값 치르기와 같은 셈 */
+function itManaNow(h,sk){
+  if(!h||!sk||h.name!=="이테리오"||!sk.cost||sk.costType==="mom"||sk.costType==="scale") return 0;
+  return sk.cost+2*((h.tag&&h.tag.manaLeap)||0);
 }
 /* 보호약화는 보호막과 회복을 절반으로 깎는다. 마지막에 걸린다. */
 function weakCut(h,key,total){
@@ -20595,8 +20607,8 @@ function predictDmg(h,s,tgt){
   if(!h||!s||!tgt||!B||!B.foes) return null;
   for(let q=0;q<PRED_OFF.length;q++) if(s[PRED_OFF[q]]) return null;
   /* 이테리오 — 마나를 내는 순간 마법력이 그만큼 오른다 */
-  const magB=(h.name==="이테리오"&&s.cost&&s.costType!=="mom"&&s.costType!=="scale")?s.cost+2*((h.tag&&h.tag.manaLeap)||0):0;   /* 마나 도약 */
-  const MAG=(h.mag||0)+magB; let ATK=h.atk||0;
+  const magB=itManaNow(h,s);   /* 마나 중독자 · 마나 도약 */
+  const MAG=(h.mag||0)+magB; let ATK=(h.atk||0)+((h.tag&&h.tag.overlap)?magB:0);   /* 에너지 중첩 — 공격력도 같이 (2026-10-01) */
   /* 물량 공세 — 차원문 위에 선 악마 하수인 (runEffect 와 같은 셈) */
   if(h.isMin&&/^악마 (하수인|장군)$/.test(h.name)){
     const ow=run.heroes.find(x=>x.name==="굴라");
@@ -20616,7 +20628,11 @@ function predictDmg(h,s,tgt){
   else if(s.thrust)      dmg=(h.cutSum||0)*3;
   else if(s.dump)        dmg=h.ammo||0;
   else if(s.scaleBoom)   dmg=h.scale||0;
-  else if(s.phantomPain) dmg=MAG;
+  else if(s.phantomPain){   /* phantomPain() 과 같은 셈 (2026-10-01 — 보상 몫이 예고에 빠져 있었다) */
+    const T=h.tag||{}; dmg=MAG+(T.painPlus||0); if(!dmg) return null;
+    if(T.painX2) dmg*=2;
+    if(T.painNear){ if(near0&&tgt!==near0) return null; dmg*=3 }
+    if(T.painCrit){ dmg*=2; crit=1 } }
   else if(s.verdict){ if(tgt.boss) return null; dmg=tgt.hp+(tgt.shield||0); tail="즉사" }
   else if(s.burst)       dmg=3+MAG+((tgt.infect||0)*(h.tag.burstX||2));
   else if(s.seed){ if(!topHp||tgt!==topHp) return null; dmg=bs("dmg")+MAG*2 }
@@ -20669,6 +20685,8 @@ function predictDmg(h,s,tgt){
     if(s.el==="마법"&&deb(h,"magDn")) dmg=Math.ceil(dmg*0.5);
     else if(s.el!=="마법"&&deb(h,"atkDn")) dmg=Math.ceil(dmg*0.5);
     if(h.name==="이테리오"&&itCritEl(h,s)&&(tgt.mark||0)>0){ dmg=Math.round(dmg*itCritX(h)); crit=1 }
+    { const key=(s.el==="마법")?"critMag":"critAtk", done=(s.el==="마법")?"critMagUsed":"critAtkUsed";   /* 치명적인 공격 · 마법 — 그 전투의 첫 한 방 (2026-10-01) */
+      if(h.tag&&h.tag[key]&&!h[done]){ dmg*=2; crit=1 } }
     if(h.name==="그슨대"&&h.hide&&s.el==="공격"){ dmg*=2; crit=1 }
     if(h.name==="데린저"){
       if(h.aimAt!=null){ if(tgt.id===h.aimAt){ dmg*=2; crit=1 } else dmg=0 }
@@ -20676,6 +20694,11 @@ function predictDmg(h,s,tgt){
         const add=8+ATK;
         dmg=(h.aimAt!=null&&tgt.id===h.aimAt)?Math.round((dmg/2+add)*3):dmg+add;
       }
+    }
+    if(h.name==="굴라"&&s.n==="씹어먹기"){   /* 혀 내밀기 · 음미(데펴먹기) — runEffect 와 같게 (2026-10-01) */
+      const T=h.tag||{};
+      if(T.tongue&&dist(h.slot,tgt.slot)>=3) dmg+=T.tongue;
+      if(T.portalCrit&&!crit&&(B.portals||[]).some(p=>p.side==="foe"&&p.slot===tgt.slot)){ dmg*=2; crit=1 }
     }
     if(h.name==="나이코스"&&s.n==="베기"){
       if(h.tag.nearHit&&dist(h.slot,tgt.slot)===1) dmg+=h.tag.nearHit;
@@ -20688,6 +20711,14 @@ function predictDmg(h,s,tgt){
   }
   if(dmg==null) return null;
   dmg=Math.max(0,Math.round(dmg));
+  /* 기술 밖에서 같은 적에게 덧붙는 피해 — 꼬리 글로 (2026-10-01, sim/audit5.js) */
+  { const T=h.tag||{}, add=[];
+    if(s.magnet&&T.tracker&&(tgt.mark||0)>0){   /* 추적 장치 — 끌려오면(움직이면) */
+      const stuck=u=>!!u&&(u.big||u.noMove||(FOE[u.name]&&FOE[u.name].noMove)||((u.deb&&u.deb.bind)||0)>0);
+      const front=tgt.slot>1?foeAt(tgt.slot-1):null;
+      if(tgt.slot>1&&!stuck(tgt)&&!(front&&stuck(front))) add.push("추적 "+T.tracker) }
+    if(h.name==="굴라"&&s.n==="씹어먹기"&&T.gas&&dist(h.slot,tgt.slot)<=2) add.push("가스 "+T.gas);   /* 가스 방출 */
+    if(add.length) tail=(tail?tail+" ":"")+"+ "+add.join(" · ") }
   /* 보호막을 얼마나 뚫고 체력까지 닿는지 */
   let PR=0;
   if(s.pierce===true) PR=100;
@@ -20716,17 +20747,40 @@ function predictSelf(h,s){
 /* ── 다음 적 차례에 누가 얼마나 맞는가 ─────────────────────────────────────
    foePhase 의 공격 갈래를 그대로 따라간다. 아무것도 바꾸지 않는다.
    칸 번호로 모으는 이유 : 아군과 소환물이 한 칸에 하나씩만 서기 때문. */
+/* 내 턴이 끝날 때 붙을 보호막 — endPhase 와 같은 셈 (받을 피해 예고가 미리 얹는다, 2026-10-01) */
+function endShieldAhead(){
+  const add={}, put=(u,k,v)=>{ if(!u||!v) return; const o=add[uid(u)]||(add[uid(u)]={s:0,e:0}); o[k]+=v };
+  onField().forEach(h=>{
+    const rounds=1+(((h.tag&&h.tag.endTwice)||itemBt(h,"endTwice"))?1:0);
+    let mom=h.mom||0, mu=h.manaUsed||0, sct=h.scaleTurn||0;
+    for(let r=0;r<rounds;r++){
+      const es=itemBt(h,"endShield"); if(es) put(h,"s",es+(itemBt(h,"endShieldDef")?h.def:0));
+      const ms=itemBt(h,"manaShield"); if(ms&&mu){ put(h,"s",mu*ms); mu=0 }
+      const qs=itemBt(h,"momShield"); if(qs&&mom>0){ const use=Math.min(6,mom); mom-=use; put(h,"s",use*qs) }
+      if(h.name==="보아"){ put(h,"s",1+h.def+sct); sct=0 }
+      if(h.tag&&h.tag.dashMul&&mom>0){ const use=Math.min(h.tag.dashMax||3,mom); mom-=use; put(h,"e",use*h.tag.dashMul) }
+      if(h.name==="헥토"){ const v=(h.tag.allyShield||2)+h.def; allUnits().forEach(a=>{ if(a!==h) put(a,h.tag.allyEsh?"e":"s",v) }) }
+    }
+  });
+  (B.portals||[]).forEach(p=>{ if(p.side!=="mine") return; const a=unitAt(p.slot); if(!a) return;
+    const by=run.heroes.find(x=>x.name===p.by); put(a,"s",p.shield+((by&&by.tag&&by.tag.portalShieldPlus)||0)) });
+  return add;
+}
 function incoming(){
   const map={};
   if(!B||B.over||!B.foes||!B.foes.length) return map;
   const list=allUnits();
+  const ahead=B.foeAct?{}:endShieldAhead();   /* 적 차례 도중에는 이미 붙어 있다 */
   const get=u=>map[u.slot]||(map[u.slot]={raw:0,hp:0,ev:0,
-      _e:u.eshield||0,_s:u.shield||0,_v:u.evade||0});
-  const hitOn=(u,v)=>{
+      _e:(u.eshield||0)+((ahead[uid(u)]||{}).e||0),_s:(u.shield||0)+((ahead[uid(u)]||{}).s||0),_v:u.evade||0});
+  const hitOn=(u,v,f)=>{
     if(!u||u.hp<=0) return;
     const m=get(u);
     let raw=v;
     { const pg=portalGuardOf(u); if(pg&&raw>0) raw=Math.max(0,raw-pg) }   /* 감소의 문 */
+    if(isFF(u)&&!ffFlare(u)&&raw>0){ const T=u.tag||{};   /* 플로우 — 피해 흘리기 · 파도 보호막 (hurtAlly 와 같게, 2026-10-01) */
+      if(T.flowGuard) raw=Math.max(0,raw-T.flowGuard);
+      if(T.waveGuard&&f&&foeAil(f)>0) raw=Math.max(0,raw-T.waveGuard) }
     if(u.armor>0&&raw>u.armor) raw=u.armor;   /* 갑피는 한 방을 잘라낸다 */
     if(m._v>0){ m._v--; m.ev++; return }      /* 회피는 한 방을 통째로 흘린다 */
     m.raw+=raw;
@@ -20735,28 +20789,45 @@ function incoming(){
     const sh=Math.min(m._s,d); m._s-=sh; d-=sh;
     m.hp+=d;
   };
+  const mate={};   /* 단체 잠복 — 먼저 움직인 동료가 걸어 준 공격력 (foePhase 와 같은 차례, 2026-10-01) */
+  const up=f=>mate[f.id]||0;
+  /* 자리 바뀜을 따라간다 — vs 적, hv 대원 (실제 자리는 건드리지 않는다) */
+  const vs={}, hv={};
+  const fsl=f=>vs[f.id]!=null?vs[f.id]:f.slot;
+  const hsl=u=>hv[uid(u)]!=null?hv[uid(u)]:u.slot;
+  const foeAtV=sl=>B.foes.find(x=>x.alive&&fsl(x)===sl)||null;
+  const foeBlockV=sl=>foeAtV(sl)||wreckAt(sl);
+  const unitAtV=sl=>list.find(u=>u.hp>0&&hsl(u)===sl)||null;
+  const shove=(t,to)=>{ const fr=hsl(t), occ=unitAtV(to); hv[uid(t)]=to; if(occ&&occ!==t) hv[uid(occ)]=fr };
   B.foes.forEach(f=>{
     if(!f.alive||!f.intent) return;
     const stunned=(f.stun||0)>0||deb(f,"stun")>0;
     const purging=f.boss&&f.intent.t==="purge"&&f.intent.k!=="ward";
     if(stunned&&!purging) return;
+    /* 적의 걸음 — 뒤의 적들이 잴 거리가 바뀐다 */
+    if(f.intent.t==="move"){ if(foeBound(f)) return;
+      let to=f.intent.to!=null?f.intent.to:fsl(f)-1, cur=fsl(f);
+      while(cur>1&&cur>to&&!foeBlockV(cur-1)) cur--;
+      vs[f.id]=cur; return }
+    if(f.intent.t==="push"){ const fr=foeAtV(fsl(f)-1); if(fr){ const a=fsl(f); vs[f.id]=fsl(fr); vs[fr.id]=a } return }
+    if(f.intent.t==="back"){ if(fsl(f)<SLOTS&&!foeAtV(fsl(f)+1)) vs[f.id]=fsl(f)+1; return }
     if(f.intent.t==="atk"){
       let t=(intentChases(f,f.intent)&&f.intent.toId)
         ? (list.find(x=>uid(x)===f.intent.toId&&x.hp>0)||null)
-        : (unitAt(f.intent.to)||null);
+        : (unitAtV(f.intent.to)||null);
       if(!t&&!intentChases(f,f.intent)) return;               /* 빈 칸을 치는 수 — 아무도 안 맞는다 */
       if(!t) t=list.filter(canAim)[0]||list[0];
       const wall=t&&tauntWall(t);
       if(wall) t=wall;
       if(!t) return;
-      if(!f.intent.far&&dist(t.slot,f.slot)>f.rng) return;   /* 거리 밖이면 헛손질 */
-      const one=foeDmg(f,f.intent.v,f.intent.el)+(f.painBonus||0);   /* 고통 감내 몫도 예고에 (2026-09-20) */
+      if(!f.intent.far&&dist(hsl(t),fsl(f))>f.rng) return;   /* 거리 밖이면 헛손질 */
+      const one=foeDmg(f,f.intent.v+up(f),f.intent.el)+(f.painBonus||0);   /* 고통 감내 몫도 예고에 (2026-09-20) */
       const hits=Math.max(1,f.intent.hits||1);
-      for(let q=0;q<hits;q++) hitOn(t,one);
+      for(let q=0;q<hits;q++) hitOn(t,one,f);
     }
     else if(f.intent.t==="volley"){
-      const v=foeDmg(f,f.intent.v,f.intent.el)+(f.painBonus||0);
-      list.forEach(a=>hitOn(a,v));
+      const v=foeDmg(f,f.intent.v+up(f),f.intent.el)+(f.painBonus||0);
+      list.forEach(a=>hitOn(a,v,f));
     }
     else if(f.intent.t==="sk"&&!f.intent.viaFire){
       const I=f.intent, D=FOE[f.name], s=D&&D.sk&&D.sk[I.i];
@@ -20765,19 +20836,25 @@ function incoming(){
           const gs=(FOE["대포"].sk||[]).find(x=>x.fireOnly); if(!gs) return;
           let t=skTargets(g,gs,list.filter(canAim))[0]; if(!t) return;
           const wall=tauntWall(t); if(wall) t=wall;
-          hitOn(t,foeDmg(g,skDmg(g,gs),"공격")); });
+          hitOn(t,foeDmg(g,skDmg(g,gs),"공격"),g); });
       }
+      if(s&&s.mateBuff&&s.mateBuff.atk) B.foes.forEach(x=>{ if(x.alive&&x!==f&&x.name===f.name) mate[x.id]=(mate[x.id]||0)+s.mateBuff.atk });
+      if(s&&s.riot) B.foes.forEach(x=>{ if(x.alive&&x!==f&&x.name===f.name) mate[x.id]=(mate[x.id]||0)+1 });   /* 폭동 */
       if(!I.v) return;
       let T=[];
-      if(I.tg==="all") T=list.filter(u=>dist(u.slot,f.slot)<=f.rng);
+      if(I.tg==="all") T=list.filter(u=>dist(hsl(u),fsl(f))<=f.rng);
       else{
-        let t=(I.toId&&list.find(x=>uid(x)===I.toId&&x.hp>0))||unitAt(I.to)||null;
+        let t=(I.toId&&list.find(x=>uid(x)===I.toId&&x.hp>0))||unitAtV(I.to)||null;
         if(!t&&I.chase) t=list.filter(canAim)[0]||list[0];
         if(t){ const wall=tauntWall(t); if(wall) t=wall }
-        if(t&&dist(t.slot,f.slot)<=f.rng) T=[t];
+        if(t&&dist(hsl(t),fsl(f))<=f.rng) T=[t];
       }
-      T.forEach(t=>{ let one=foeDmg(f,I.v,I.el)+(f.painBonus||0); if(s&&s.burnCrit&&deb(t,"burn")>0) one*=2;   /* 고통 감내 몫도 예고에 (2026-09-20) */
-        for(let q=0;q<Math.max(1,I.hits||1);q++) hitOn(t,one) });
+      T.forEach(t=>{ let one=foeDmg(f,I.v+up(f),I.el)+(f.painBonus||0); if(s&&s.burnCrit&&deb(t,"burn")>0) one*=2;   /* 고통 감내 몫도 예고에 (2026-09-20) */
+        for(let q=0;q<Math.max(1,I.hits||1);q++) hitOn(t,one,f);
+        /* 맞은 대원이 밀리거나 끌려온다 — 다음 적은 바뀐 자리를 잰다 (pushBack · pullFront · pullN 과 같은 셈) */
+        if(s&&s.push){ const to=hsl(t)-1; if(to>=1&&!blockAt(to)) shove(t,to) }
+        if(s&&s.pull){ const front=list.reduce((m,u)=>Math.max(m,hsl(u)),0); if(hsl(t)<front&&!blockAt(front)) shove(t,front) }
+        if(s&&s.pullN){ let to=hsl(t); while(to<Math.min(SLOTS,hsl(t)+s.pullN)&&!blockAt(to+1)) to++; if(to!==hsl(t)) shove(t,to) } });
     }
   });
   return map;
