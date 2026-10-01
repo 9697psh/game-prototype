@@ -9941,8 +9941,8 @@ const FOE={
    pas:[{k:"echo",n:"메아리",kw:"메아리",d:"죽으면 절반의 생명력으로 1회 부활합니다."},
 ],
    sk:[
-    {n:"기생",w:1,tg:"none",cd:3,cond:"canParasite",parasite:{who:"살아있는 덩굴"},d:"「죽음」이 없는 다른 적 하나에게 「죽음: 살아있는 덩굴을 소환합니다」를 부여합니다."},
-    {n:"숨기",w:3,tg:"self",hideUp:1,d:"은신을 1 얻습니다."},
+    {n:"기생",w:1,tg:"none",cd:3,cond:"canParasite",parasite:{who:"살아있는 덩굴"},d:"「죽음」이 없는 다른 적 하나에게 「죽음: 살아있는 덩굴을 소환합니다」를 부여합니다. (그렇게 자란 덩굴은 메아리가 없습니다)"},
+    {n:"숨기",w:3,tg:"self",hideUp:1,d:"1턴 동안 은신합니다."},
     {n:"가시돋힘",w:3,tg:"self",thorn:{v:8,turns:1},d:"1턴 동안 가시를 8 얻습니다."},
     {n:"덩굴 공격",w:5,tg:"any",dmg:4,deb:{bind:1},chase:1,d:"무작위 대원에게 공격 피해를 4 주고 속박을 1 부여합니다."}],
    hit:"덩굴 공격"},
@@ -10033,8 +10033,8 @@ const FOE={
  "오염된 덩굴":{hp:25,atk:4,def:4,rng:3,exp:0,
    el:"공격",
    sk:[
-    {n:"기생",w:1,tg:"none",cd:3,cond:"canParasite",parasite:{who:"살아있는 덩굴"},d:"「죽음」이 없는 다른 적 하나에게 「죽음: 살아있는 덩굴을 소환합니다」를 부여합니다."},
-    {n:"숨기",w:3,tg:"self",hideUp:1,d:"은신을 1 얻습니다."},
+    {n:"기생",w:1,tg:"none",cd:3,cond:"canParasite",parasite:{who:"살아있는 덩굴"},d:"「죽음」이 없는 다른 적 하나에게 「죽음: 살아있는 덩굴을 소환합니다」를 부여합니다. (그렇게 자란 덩굴은 메아리가 없습니다)"},
+    {n:"숨기",w:3,tg:"self",hideUp:1,d:"1턴 동안 은신합니다."},
     {n:"가시돋힘",w:3,tg:"self",thorn:{v:8,turns:1},d:"1턴 동안 가시를 8 얻습니다."},
     {n:"덩굴 공격",w:5,tg:"any",dmg:4,deb:{bind:1},chase:1,d:"무작위 대원에게 공격 피해를 4 주고 속박을 1 부여합니다."}],
    hit:"덩굴 공격"},
@@ -12206,6 +12206,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 696, "v": "0.5", "d": "2026-10-01", "t": "덩굴 은신 1턴 · 기생 덩굴 메아리 없음", "big": 0},
  {"b": 695, "v": "0.5", "d": "2026-10-01", "t": "살아있는 덩굴 기생 빈도 줄임", "big": 0},
  {"b": 694, "v": "0.5", "d": "2026-10-01", "t": "내 전장 덩굴 — 휘감기 느낌표 표식", "big": 0},
  {"b": 693, "v": "0.5", "d": "2026-10-01", "t": "버려진 벌목도 재등장 확률 낮춤", "big": 0},
@@ -12902,7 +12903,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=695;
+const BUILD_NO=696;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -18033,7 +18034,7 @@ function skExec(f,I){
   }
   if(s.healPct){ const v=Math.round(f.maxHp*s.healPct); healUp(f,v);
     fx({side:"foe",slot:f.slot,s:"heal",ring:"#7fd39a",txt:"+"+v,cls:"heal",gap:160}); say(`${f.name} 체력 +${v}`,"t2") }
-  if(s.hideUp){ f.hide=1; fx({side:"foe",slot:f.slot,ring:"#8b7fd8",txt:"은신",cls:"shd",gap:120}); say(`${f.name}${jo(f.name,"ig")} 몸을 숨깁니다.`,"t3") }
+  if(s.hideUp){ f.hide=1; f.hideAt=B.turn||1; fx({side:"foe",slot:f.slot,ring:"#8b7fd8",txt:"은신",cls:"shd",gap:120}); say(`${f.name}${jo(f.name,"ig")} 몸을 숨깁니다.`,"t3") }
   if(s.taint&&run){ run.taint=Math.min(100,(run.taint||0)+s.taint);
     fx({side:"foe",slot:f.slot,ring:"#c98ae0",txt:"오염 +"+s.taint,cls:"shd",gap:120}); say(`${s.n} — 오염도 +${s.taint}`,"t3") }
   if(s.parasite){                      /* 기생 — 다른 적에게 '죽음' 을 심는다 */
@@ -18240,6 +18241,7 @@ function foeDeath(f){
     else if(d.kind==="summon"){               /* 기생 — 죽은 자리에 덩굴이 자란다 */
       let sl=f.slot; if(foeBlock(sl)){ sl=1; while(sl<=SLOTS&&foeBlock(sl)) sl++ }
       if(sl<=SLOTS){ const m=spawnFoeNamed(d.who,sl,{summoned:1});
+        if(m) m.echoUsed=1;   /* 기생으로 자란 덩굴은 메아리가 없다 — 되살아나지 않고 표식도 안 단다 (사용자 2026-10-01) */
         if(m){ fx({side:"foe",slot:sl,s:"summon",ring:"#9640c8",txt:d.who,cls:"crit",gap:140});
           say(`${d.n} — ${d.who}${jo(d.who,"ig")} 자라납니다.`,"t3"); rollIntents(true) } }
     }
@@ -23226,6 +23228,9 @@ function foePhase(){
       else if(pr.taunt){ pr.taunt=0; say("죄수가 뒤로 물러납니다.","t2") } } }
   fx({s:"turn",gap:220});
   B.foes.forEach(f=>{ f.shield=0 });   /* 지난 턴에 얻은 보호막은 여기서 사라진다 */
+  /* 숨기(덩굴)의 은신은 1턴 — 내 턴 하나를 숨어 넘기고, 다음 적 차례가 열리면 풀린다 (사용자 2026-10-01) */
+  B.foes.forEach(f=>{ if(f.alive&&f.hide&&f.hideAt!=null&&f.hideAt<(B.turn||1)){ f.hide=0; f.hideAt=null;
+    say(`${f.name}${jo(f.name,"ig")} 모습을 드러냅니다.`,"t2") } });
   skTurnStart();                        /* 지속 기술(도발 따위) · 재사용 대기 */
   B.foes.forEach(f=>{
     if(!f.alive||!f.intent) return;
