@@ -12206,6 +12206,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 699, "v": "0.5", "d": "2026-10-01", "t": "제련소 — 머물며 여러 번 · 장비 정리", "big": 0},
  {"b": 698, "v": "0.5", "d": "2026-10-01", "t": "울리는 메아리 — 느낌표 표식", "big": 0},
  {"b": 697, "v": "0.5", "d": "2026-10-01", "t": "메아리 정령 · 균열 벌레 조금 크게", "big": 0},
  {"b": 696, "v": "0.5", "d": "2026-10-01", "t": "덩굴 은신 1턴 · 기생 덩굴 메아리 없음", "big": 0},
@@ -12905,7 +12906,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=698;
+const BUILD_NO=699;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -14599,7 +14600,7 @@ function enterCell0(r,c){
       if(v){ run.heroes.forEach(h=>{ if(!h.down) healUp(h,v) });
         toast(`반가운 휴식 — 대원들이 체력을 ${v} 회복했습니다.`) }
     }
-    else if(cell.t==="forge"){ run.forgePick=[]; view="forge"; run.smithMood=null; smithVoice("enter");
+    else if(cell.t==="forge"){ run.forgePick=[]; run.forgeMade=0; view="forge"; run.smithMood=null; smithVoice("enter");
       setTimeout(()=>stepBanner("제 련 소","장신구 두 개를 합칩니다"),40);
     }
     else {
@@ -14608,7 +14609,7 @@ function enterCell0(r,c){
       const k=unknownKind();
       if(k==="shop"){ run.shopKind=null; makeShop(); view="shop"; shopVoice("enter");
         setTimeout(()=>stepBanner("뜻 밖 의 상 점","길가에 좌판이 펼쳐져 있습니다"),40) }
-      else if(k==="forge"){ run.forgePick=[]; view="forge"; run.smithMood=null; smithVoice("enter");
+      else if(k==="forge"){ run.forgePick=[]; run.forgeMade=0; view="forge"; run.smithMood=null; smithVoice("enter");
         setTimeout(()=>stepBanner("버 려 진 제 련 소","불씨가 아직 살아 있습니다"),40) }
       else { run.ev=pickEvent(); run.evMsg=null; view="relic";
         setTimeout(()=>stepBanner("미 지 의 구 역","무슨 일이 기다리고 있을까요"),40) }
@@ -14996,7 +14997,7 @@ function drawCamp(app){
      ()=>{ giveExp(trainExp(),run.heroes.filter(h=>!h.down),true) }),
    campAct("forge","제련소",`재료 두 개를 조합법대로 합칩니다. 제련석이 필요합니다. (보유 ${run.stone||0})`,
      shards>=2&&(run.stone||0)>=5,
-     ()=>{ run.smithMood=null; smithVoice("enter"); view="forge"; render(); return 1 })
+     ()=>{ run.smithMood=null; run.forgeMade=0; smithVoice("enter"); view="forge"; render(); return 1 })
   ];
   const lay=el(`<div class="camp"></div>`);
 
@@ -15153,7 +15154,7 @@ function drawGear(app){
   dropTo(bag,p=>gearMove(p,{bag:1}));
   wrap.appendChild(bag);
   const back=el(`<div style="margin-top:24px"><button class="go">정리를 마친다</button></div>`);
-  back.querySelector("button").onclick=()=>{ run.gearPick=null; view="camp"; render() };
+  back.querySelector("button").onclick=()=>{ run.gearPick=null; view=run.gearBack||"camp"; run.gearBack=null; render() };   /* 제련소에서 열었으면 제련소로 (2026-10-01) */
   wrap.appendChild(back);
 }
 /* 제련 — 두 재료가 양쪽으로 튕겼다가 부딪쳐 하나가 된다.
@@ -15406,7 +15407,10 @@ function drawForge(app){
   /* 단추 둘은 브란 옆에 (사용자 2026-09-13 — 맨 아래에 있으면 재료가 많을 때 너무 멀다) */
   const sbtn=el(`<div class="sbtn"></div>`); sbox.appendChild(sbtn);
   const go=el(`<div><button class="go">제련한다</button></div>`);
-  go.querySelector("button").disabled=!ok;
+  /* 지도의 제련소는 여러 번 · 주둔지 제련소는 하루 한 시설이라 한 번 (사용자 2026-10-01) */
+  const campOnce=!run.here&&run.forgeMade;
+  go.querySelector("button").disabled=!ok||campOnce;
+  if(campOnce) go.appendChild(el(`<div class="hint" style="margin-top:6px">주둔지 제련소에서는 하루에 한 번 제련합니다. 지도의 제련소는 여러 번 할 수 있습니다.</div>`));
   go.querySelector("button").onclick=()=>{
     const matA=picked[0].it, matB=picked[1].it;
     run.stone-=made.cost;
@@ -15419,18 +15423,24 @@ function drawForge(app){
     /* 두들기는 것을 다 본 뒤에 건네받는다 */
     forgeFX(matA,matB,made,()=>{
       toast(`${made.n}${jo(made.n,"eul")} 제련했습니다.`);
-      pending={stage:"hero",list:[],item:made,hero:owner,back:"map"};
-      if(run.here) run.here=null;              /* 지도의 제련소는 여기서 볼일이 끝난다 */
+      pending={stage:"hero",list:[],item:made,hero:owner,back:"forge"};   /* 만든 뒤에도 제련소에 머문다 (사용자 2026-10-01) */
+      run.forgeMade=1;                         /* 주둔지 제련소 — 만들었으면 '그만둔다' 가 오늘 방문을 되돌려 주지 않는다 */
       if(owner.items.length>=ITEM_MAX){ pending.stage="swap" }
       else { equip(owner,made); itemDone(); return }
       view="item"; render();
     });
   };
   sbtn.appendChild(go);
-  const back=el(`<div><button>그만둔다</button></div>`);
+  /* 장비 정리 — 제련소에서도 대원에게 장신구를 채우고 벗긴다. 닫으면 제련소로 (사용자 2026-10-01) */
+  const gear=el(`<div><button>장비 정리</button></div>`);
+  gear.querySelector("button").onclick=()=>{ run.forgePick=[]; run.gearPick=null; run.gearBack="forge"; view="gear"; render() };
+  sbtn.appendChild(gear);
+  const back=el(`<div><button>${run.forgeMade?"나간다":"그만둔다"}</button></div>`);
   back.querySelector("button").onclick=()=>{ run.forgePick=[];
+    const made=run.forgeMade; run.forgeMade=0;
     if(run.here){ leaveNode(); return }        /* 지도의 제련소에서 왔다 */
-    run.campDone=0; view="camp"; render() };
+    if(!made) run.campDone=0;                  /* 아무것도 안 만들고 그만두면 오늘 방문을 돌려준다 */
+    view="camp"; render() };
   sbtn.appendChild(back);
   app.appendChild(recipeBook());
   if(run.smithLaughAt) setTimeout(smithLaughRun,0);
@@ -23707,6 +23717,7 @@ function drawReward(app){
 
 function itemDone(){
   const back=pending.back;
+  if(back==="forge"){ pending=null; view="forge"; render(); return }   /* 제련소로 돌아간다 (2026-10-01) */
   if(back==="shop"&&(run.after||[]).length){ run.afterBack="shop"; afterChest(); return }
   if(back==="shop"){ view="shop"; render(); return }
   afterChest();
