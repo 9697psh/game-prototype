@@ -1262,6 +1262,8 @@ body.vbattle .tornado{transform:scale(4.6);margin-top:14px}   /* 회오리도 �
 /* 조합 짜 보기 (2026-10-01) */
 .cxh{position:relative} .cxpn{position:absolute;top:4px;right:5px;font-style:normal;font-size:10.5px;min-width:16px;height:16px;line-height:16px;
   border-radius:8px;background:var(--brass);color:#17130f;font-weight:700}
+.fstats{display:flex;gap:8px;justify-content:center;font-size:11px} .fstats span{display:inline-flex;align-items:center;gap:2px}
+.fup{font-style:normal;color:#7fd39a} .fdn{font-style:normal;color:#e58a7a}
 .cxparty{display:flex;gap:10px;justify-content:center;margin-top:10px}
 /* 조합 판 — 화면 오른쪽에 붙는다 (사용자 2026-10-01) */
 .cxside{position:fixed;right:16px;top:64px;width:320px;max-height:calc(100vh - 80px);overflow:auto;z-index:20;
@@ -5446,9 +5448,11 @@ function burnFX(side,slot){
    fxDimFoe 는 부르지 않는다 — 적을 때리는 내 기술이라 흐려지면 안 된다. */
 /* ═══ 쿠렘타이 v3 (사용자 2026-10-01) ═══ 48px 원본을 2배로 키운 그림들 — 이테리오 이펙트와 같은 밀도.
    KUREM_Z 는 그림 1px 당 화면 px. 맞는 자리(터지는 점)는 그림 안의 좌표로 적어 둔다 */
-const KUREM_Z=1.5;
-const KUREM_SEQ={fx_kurem_harvest:{w:96,h:128,hit:[48,96],ms:[100,100,80,100,120,160]},   /* 수확 — 구체 낙하 → 룬빛 → 파열 → 잔광 */
-                 fx_kurem_verdict:{w:96,h:128,hit:[48,120],ms:[120,120,120,120,120,120]}}; /* 사형 선고 — 비석 낙하 → 충돌 → 영혼이 빠져나감 */
+const KUREM_Z=2.2;
+/* 테두리 빛 — 그림이 가늘어 어두운 바닥에 묻힌다 (사용자 2026-10-01 : 더 강조) */
+const KGLOW=" drop-shadow(0 0 4px rgba(160,130,255,.95)) drop-shadow(0 0 12px rgba(90,170,255,.65))";   /* 1.5 → 2.2 (사용자 2026-10-01 : 작고 빨리 지나간다 — 더 크게·길게) */
+const KUREM_SEQ={fx_kurem_harvest:{w:96,h:128,hit:[48,96],ms:[150,150,120,160,190,260]},   /* 수확 — 구체 낙하 → 룬빛 → 파열 → 잔광 */
+                 fx_kurem_verdict:{w:96,h:128,hit:[48,120],ms:[170,170,190,170,170,240]}}; /* 사형 선고 — 비석 낙하 → 충돌 → 영혼이 빠져나감 */
 /* 맞는 자리 — 몸 한가운데와 발밑의 사이 (떨어져 바닥 가까이에서 터지는 그림이라) */
 function kuremHitPt(side,slot){
   const b=bodyPoint(side,slot), f=feetOf(side,slot); if(!b||!f) return b||f;
@@ -5460,7 +5464,7 @@ function kuremSeq(key,p,z){
   const nd=spawn('<div class="itfx"></div>'); if(!nd) return false;
   const n=S.ms.length, w=S.w*z, hh=S.h*z;
   nd.style.backgroundImage="url("+u+")"; nd.style.backgroundSize=(n*100)+"% 100%"; nd.style.backgroundPosition="0% 0";
-  nd.style.width=w+"px"; nd.style.height=hh+"px";
+  nd.style.width=w+"px"; nd.style.height=hh+"px"; nd.style.filter=KGLOW.trim();
   nd.style.left=(p.x-S.hit[0]*z)+"px"; nd.style.top=(p.y-S.hit[1]*z)+"px";
   let t=0;
   S.ms.forEach((m,i)=>{ if(i) setTimeout(()=>{ nd.style.backgroundPosition=(i/(n-1)*100)+"% 0" },Math.round(t*SPD)); t+=m });
@@ -5471,21 +5475,21 @@ function kuremSeq(key,p,z){
 function kuremExploitFX(side,slot){
   const p=kuremHitPt(side,slot); if(!p) return false;
   const z=KUREM_Z, nd=itPop("fx_kurem_exploit",p.x-(40-48)*z,p.y-(76-48)*z,z,[
-    {opacity:0,translate:"0 -26px",filter:"brightness(1)"},
-    {opacity:1,translate:"0 0",filter:"brightness(1)",offset:.38},
-    {opacity:1,translate:"0 0",filter:"brightness(2.2)",offset:.5},
-    {opacity:1,translate:"0 0",filter:"brightness(1.2)",offset:.72},
-    {opacity:0,translate:"0 0",filter:"brightness(1)"}],520);
+    {opacity:0,translate:"0 -26px",filter:"brightness(1)"+KGLOW},
+    {opacity:1,translate:"0 0",filter:"brightness(1)"+KGLOW,offset:.38},
+    {opacity:1,translate:"0 0",filter:"brightness(2.2)"+KGLOW,offset:.5},
+    {opacity:1,translate:"0 0",filter:"brightness(1.4)"+KGLOW,offset:.82},
+    {opacity:0,translate:"0 0",filter:"brightness(1)"+KGLOW}],820);
   return !!nd;
 }
 /* 환상통 — 대상 자리에서 작고 날카롭게 번지는 파열 (한 장, 96×96 · 가운데 (46,50)) */
 function kuremBurstFX(side,slot){
   const p=bodyPoint(side,slot)||ctrOf(side,slot); if(!p) return false;
   const z=KUREM_Z, nd=itPop("fx_kurem_burst",p.x+2*z,p.y-2*z,z,[
-    {opacity:0,transform:"scale(.45) rotate(-12deg)",filter:"brightness(2.4)"},
-    {opacity:1,transform:"scale(1.08) rotate(0deg)",filter:"brightness(1.6)",offset:.28},
-    {opacity:1,transform:"scale(1) rotate(3deg)",filter:"brightness(1)",offset:.6},
-    {opacity:0,transform:"scale(1.15) rotate(6deg)",filter:"brightness(1)"}],480);
+    {opacity:0,transform:"scale(.45) rotate(-12deg)",filter:"brightness(2.4)"+KGLOW},
+    {opacity:1,transform:"scale(1.08) rotate(0deg)",filter:"brightness(1.6)"+KGLOW,offset:.28},
+    {opacity:1,transform:"scale(1) rotate(3deg)",filter:"brightness(1)"+KGLOW,offset:.6},
+    {opacity:0,transform:"scale(1.15) rotate(6deg)",filter:"brightness(1)"+KGLOW}],760);
   return !!nd;
 }
 /* 영혼 분리 — 대상 쪽의 청록 영혼과, 쿠렘타이 쪽으로 당겨지는 검보랏빛 선 (128×64).
@@ -5502,12 +5506,12 @@ function kuremPullFX(from,side,slot){
   nd.style.left=(x0-4*sx)+"px"; nd.style.top=(a.y-31*sy)+"px";
   nd.style.transformOrigin=(4*sx)+"px "+(31*sy)+"px";
   nd.style.transform="rotate("+(Math.atan2(b.y-a.y,b.x-x0)*180/Math.PI)+"deg)";
-  const ms=Math.round(760*SPD);
+  const ms=Math.round(1100*SPD);
   if(nd.animate) nd.animate([
-    {clipPath:"inset(0 0 0 88%)",opacity:1,filter:"brightness(2)"},
-    {clipPath:"inset(0 0 0 0%)",opacity:1,filter:"brightness(1.4)",offset:.4},
-    {clipPath:"inset(0 0 0 0%)",opacity:1,filter:"brightness(1)",offset:.7},
-    {clipPath:"inset(0 0 0 0%)",opacity:0,filter:"brightness(1)"}],{duration:ms,easing:"ease-out",fill:"forwards"});
+    {clipPath:"inset(0 0 0 88%)",opacity:1,filter:"brightness(2)"+KGLOW},
+    {clipPath:"inset(0 0 0 0%)",opacity:1,filter:"brightness(1.4)"+KGLOW,offset:.4},
+    {clipPath:"inset(0 0 0 0%)",opacity:1,filter:"brightness(1)"+KGLOW,offset:.7},
+    {clipPath:"inset(0 0 0 0%)",opacity:0,filter:"brightness(1)"+KGLOW}],{duration:ms,easing:"ease-out",fill:"forwards"});
   setTimeout(()=>nd.remove(),ms+40);
   return true;
 }
@@ -5515,7 +5519,10 @@ function kuremPullFX(from,side,slot){
 function kuremVerdictFX(side,slot){ return kuremSeq("fx_kurem_verdict",feetOf(side,slot),KUREM_Z) }
 function drainFX(side,slot,max){
   /* v3 — 보통은 한 장 착취, 영혼 200 이면 여섯 칸 수확. 그림이 없으면 옛 띠로 */
-  if(max?kuremSeq("fx_kurem_harvest",kuremHitPt(side,slot),KUREM_Z):kuremExploitFX(side,slot)) return;
+  /* 보통도 수확 띠로 — 한 장(exploit)은 가늘어 묻혔다 (사용자 2026-10-01 : 더 강조). 영혼 200 이면 더 크게 + 십자 번쩍 */
+  if(kuremSeq("fx_kurem_harvest",kuremHitPt(side,slot),KUREM_Z*(max?1.25:1))){
+    if(max) setTimeout(()=>kuremExploitFX(side,slot),Math.round(300*SPD));
+    return }
   /* 영혼 200 이면 세 갈래로 내리꽂히는 그림으로 갈아 낀다.
      크기와 마디는 같아야 같은 기술로 읽힌다 */
   const u=(typeof ICON_PNG!=="undefined")&&
@@ -12381,6 +12388,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 711, "v": "0.5", "d": "2026-10-01", "t": "적 추가 능력치 보기 · 쿠렘타이 이펙트 강조", "big": 0},
  {"b": 710, "v": "0.5", "d": "2026-10-01", "t": "적 특징 풀이 · 균열 군체 대기 빠르게", "big": 0},
  {"b": 709, "v": "0.5", "d": "2026-10-01", "t": "연습장 정령숲 조합 · 이벤트 도감 구역별 · 굶주린 자/균열 군체 크기", "big": 0},
  {"b": 708, "v": "0.5", "d": "2026-10-01", "t": "카드 틀 둘째 판 · 도감 카드 비율 · 조합 판 오른쪽", "big": 0},
@@ -13092,7 +13100,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=710;
+const BUILD_NO=711;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -17948,6 +17956,13 @@ function foeRace(f){
   const D=FOE[nm]||{};
   return D.race||FOE_RACE[nm]||(D.demon||(f&&f.demon)?"악마":"");
 }
+/* 적의 능력치 — 살펴볼 때 (사용자 2026-10-01 : 추가 능력치가 보이게). 전투 중 얻은 몫(atkUp·defUp)은 (+n) 으로 */
+function foeStatLine(f){
+  const D=FOE[f.name]||{}, mg=(D.el==="마법");
+  const up=v=>v>0?` <em class="fup">(+${v})</em>`:v<0?` <em class="fdn">(${v})</em>`:"";
+  return `<div class="stats fstats"><span title="${mg?"마법력":"공격력"}${f.atkUp?` — 전투 중 +${f.atkUp}`:""}">${ic(mg?"mag":"atk")}${f.atk}${up(f.atkUp||0)}</span>`
+    +`<span title="보호력${f.defUp?` — 전투 중 +${f.defUp}`:""}">${ic("def")}${defVal(f)}${up(f.defUp||0)}</span></div>`;
+}
 function foePeekHtml(f){
   const D=FOE[f.name]||{};
   /* '일반 !' 은 일반 중에서도 강한 적 (사용자 2026-09-15) */
@@ -17975,7 +17990,7 @@ function foePeekHtml(f){
       <span class="pft">${esc(tier)}</span>
       <b>${esc(f.name)}</b>${race?`<span class="pft" title="종족">${esc(race)}</span>`:""}
       <span class="hint">${ic("hp")}${Math.max(0,f.hp)}/${f.maxHp} ·
-        ${ic("atk")}${f.atk} · ${ic("def")}${defVal(f)} · 사거리 ${f.rng} · ${esc(D.el||"공격")}</span>
+        ${ic(D.el==="마법"?"mag":"atk")}${f.atk}${f.atkUp?` <em class="fup">(추가 +${f.atkUp})</em>`:""} · ${ic("def")}${defVal(f)}${f.defUp?` <em class="fup">(추가 +${f.defUp})</em>`:""} · 사거리 ${f.rng} · ${esc(D.el||"공격")}</span>
       ${f.role?`<span class="hint rolel" title="${esc(f.roleD||"")}">${esc(f.role)}</span>`:""}
       <span class="hint rngline">${(()=>{
         /* 이 적이 지금 닿는 칸 — 빈 칸까지 포함해 보여 준다.
@@ -19455,6 +19470,7 @@ function drawBattle(app){
           <u class="es" data-w="${fesW}" style="width:${fesW}%;right:0%"${f.eshield?` title="에너지 보호막 ${f.eshield}"`:""}></u>
           <u class="sh" data-w="${fshW}" data-r="${fesW}" style="width:${fshW}%;right:${fesW}%"${f.shield?` title="보호막 ${f.shield}"`:""}></u></div>
         <div class="mini">${ic("hp")}${f.hp}/${f.maxHp}${f.shield?` <span class="shd">${ic("def")}${f.shield}</span>`:""}</div>
+        ${(peekFoe&&peekFoe===f)?foeStatLine(f):""}
         ${foeStatusRows(f)}`;
       d.onclick=()=>{
         if(sel&&sel.step===4&&selfFoe){ doSkill(null); return }
