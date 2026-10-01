@@ -1172,6 +1172,14 @@ body.vbattle .tornado{transform:scale(4.6);margin-top:14px}   /* 회오리도 �
   image-rendering:pixelated;pointer-events:none;z-index:7;transform:scale(1.6);transform-origin:50% 100%;
   animation:auraFr 1s steps(4) forwards, auraFade 1.15s ease-in forwards}
 @keyframes auraFr{from{background-position:0 0}to{background-position:-256px 0}}
+/* 대원 칸 안의 각성 오라 — 발밑(.art 바닥)에서 솟는다. 뒤 장 · 앞 장(발밑만, 스크린 합성) */
+.art .kaura{position:absolute;left:50%;bottom:0;width:64px;height:128px;margin-left:-32px;background-size:256px 128px;background-repeat:no-repeat;
+  image-rendering:pixelated;pointer-events:none;transform:scale(1.6);transform-origin:50% 100%;
+  animation:auraFr 1s steps(4) forwards, auraFade 1.15s ease-in forwards}
+.art .kaura.back{z-index:-1}
+.art .kaura.front{z-index:2;mix-blend-mode:screen;
+  -webkit-mask-image:linear-gradient(to top,#000 0,#000 28%,transparent 48%);mask-image:linear-gradient(to top,#000 0,#000 28%,transparent 48%)}
+.art:has(>.kaura){isolation:isolate}
 @keyframes auraFade{0%{opacity:0}12%{opacity:1}80%{opacity:1}100%{opacity:0}}
 @keyframes tornadoMv{from{translate:0 0}to{translate:var(--dx,0px) var(--dy,0px)}}
 .lift{position:absolute;transform:translate(-50%,-50%);width:70px;height:110px;border-radius:50%;
@@ -4639,12 +4647,24 @@ function hopFX(side,toSlot,fromSlot,upPx){
   setTimeout(()=>{ const pp=ctrOf(side,toSlot); if(pp){ const a=pp.e.querySelector(".art"); if(a){ a.classList.add("land"); setTimeout(()=>a.classList.remove("land"),180) } } },520);
 }
 /* 카제 각성 오라 — 잠재력 활성 때 발치에서 1.15초 */
+/* 카제 각성 오라 — 대원 칸 안에 앞뒤 두 장 (사용자 2026-10-02 : 기동 오오라처럼 가리지 않게).
+   뒤 장은 그림 뒤에 그대로, 앞 장은 발밑만 남겨 스크린 합성. 시작 시각을 대원에 적어 두어
+   그 사이에 화면을 다시 그려도(render) 같은 자리에서 이어 돈다 — auraHtml */
 function auraFX(side,slot){
   const u=(typeof ICON_PNG!=="undefined")&&ICON_PNG.fx_kaze_aura; if(!u) return;
-  const p=feetOf(side,slot); if(!p) return;   /* 발밑에 — 칸 한가운데를 잡으면 무대에서 떠 보였다 (사용자 2026-10-01) */
-  const nd=spawn('<div class="aura"></div>'); if(!nd) return;
-  at(nd,{x:p.x,y:p.y-12}); nd.style.backgroundImage="url("+u+")";
-  setTimeout(()=>nd.remove(),1200);
+  const who=side==="mine"?unitAt(slot):foeAt(slot); if(who) who.auraAt=Date.now();
+  const p=ctrOf(side,slot), art=p&&p.e&&p.e.querySelector(".art"); if(!art) return;
+  art.querySelectorAll(".kaura").forEach(x=>x.remove());
+  const img=art.querySelector("img.pxs,svg");
+  art.insertAdjacentHTML("afterbegin",auraLayer(u,0,"back"));
+  if(img) img.insertAdjacentHTML("afterend",auraLayer(u,0,"front")); else art.insertAdjacentHTML("beforeend",auraLayer(u,0,"front"));
+}
+const auraLayer=(u,el,k)=>`<i class="kaura ${k}" style="background-image:url(${u});animation-delay:-${el}ms,-${el}ms"></i>`;
+/* render 가 대원 칸을 그릴 때 — 각성 오라가 아직 도는 중이면 [뒤 장, 앞 장] */
+function auraHtml(u){
+  const t=u&&u.auraAt?Date.now()-u.auraAt:1e9; const img=(typeof ICON_PNG!=="undefined")&&ICON_PNG.fx_kaze_aura;
+  if(!img||t>1150) return ["",""];   /* 띠 길이(1.15s)는 연출 빠르기와 무관 */
+  return [auraLayer(img,t,"back"),auraLayer(img,t,"front")];
 }
 /* 카제 회오리 — from 에서 to 까지 하나가 날아가고(4칸 반복) 도착하면 터진다(6칸 띠). ms 는 날아가는 시간 */
 /* 적의 공격 자세가 from → to 로 내달린다 (영혼 돌진) */
@@ -12590,6 +12610,7 @@ const GAME_VER="0.6";   /* 0.6 — 2스테이지 구역(정령숲) 추가 · 여
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 742, "v": "0.6", "d": "2026-10-02", "t": "카제 각성 오라도 대원을 가리지 않게", "big": 0},
  {"b": 741, "v": "0.6", "d": "2026-10-02", "t": "기동 오오라 앞뒤 두 장, 대원을 가리지 않게", "big": 0},
  {"b": 740, "v": "0.6", "d": "2026-10-02", "t": "프로토타입-08 효과음, 낮고 기계답게", "big": 0},
  {"b": 739, "v": "0.6", "d": "2026-10-02", "t": "이테리오 외형 프로토타입-08, 나이코스 공격 강조 줄임", "big": 0},
@@ -13332,7 +13353,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=741;
+const BUILD_NO=742;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -19656,7 +19677,7 @@ function drawBattle(app){
       if(h.isMin&&h.mimic&&h.mimic.act) d.innerHTML+=`<div class="intentbar">${mimicHtml(h)}</div>`;
       d.innerHTML+=`<div class="res">${manaPips(h)}${heroRes(h)}${
           h.mom?`<span class="rr">${ic("move")}${h.mom}</span>`:""}</div>${h.isMin?"":gearRow(h)}
-        <div class="art${(h.name==="카제"&&h.hp>0&&h.sk[0]&&h.sk[0].n==="회오리")?" charged":""}">${pmk}${(h.mobile&&h.hp>0&&skinIcon("fx_it_aura"))?`<i class="mobaura" style="background-image:url(${skinIcon("fx_it_aura")})" title="기동 상태"></i>`:""}${figure(h.name,poseNow(h),h)}${(h.mobile&&h.hp>0&&skinIcon("fx_it_aura"))?`<i class="mobaura front" style="background-image:url(${skinIcon("fx_it_aura")})"></i>`:""}${(h.name==="카제"&&h.hp>0&&h.sk[0]&&h.sk[0].n==="회오리")?`<i class="swglow" title="회오리가 찼습니다"></i>`:""}</div>
+        <div class="art${(h.name==="카제"&&h.hp>0&&h.sk[0]&&h.sk[0].n==="회오리")?" charged":""}">${pmk}${auraHtml(h)[0]}${(h.mobile&&h.hp>0&&skinIcon("fx_it_aura"))?`<i class="mobaura" style="background-image:url(${skinIcon("fx_it_aura")})" title="기동 상태"></i>`:""}${figure(h.name,poseNow(h),h)}${(h.mobile&&h.hp>0&&skinIcon("fx_it_aura"))?`<i class="mobaura front" style="background-image:url(${skinIcon("fx_it_aura")})"></i>`:""}${auraHtml(h)[1]}${(h.name==="카제"&&h.hp>0&&h.sk[0]&&h.sk[0].n==="회오리")?`<i class="swglow" title="회오리가 찼습니다"></i>`:""}</div>
         <div class="nm">${esc(h.name)}</div>
         <div class="bar" data-hpk="${hpKey(h)}" data-hpv="${Math.max(0,h.hp/h.maxHp*100)}" data-hpn="${h.hp}"
           data-shv="${(h.shield||0)+(h.eshield||0)}" data-esw="${esW}" data-shw="${shW}">
