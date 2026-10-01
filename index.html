@@ -12404,6 +12404,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 716, "v": "0.5", "d": "2026-10-01", "t": "안 쓰인 카드는 손패로 날아 돌아감", "big": 0},
  {"b": 715, "v": "0.5", "d": "2026-10-01", "t": "카드 보유량 N/10 · 굵고 밝게", "big": 0},
  {"b": 714, "v": "0.5", "d": "2026-10-01", "t": "기술 창 위 작은 손패 · 대상 위 작아짐 · 몸으로 빨려 듦", "big": 0},
  {"b": 713, "v": "0.5", "d": "2026-10-01", "t": "카드 틀 투명 테두리 없앰", "big": 0},
@@ -13120,7 +13121,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=715;
+const BUILD_NO=716;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -20735,18 +20736,23 @@ function startDrag(card,i){
         requestAnimationFrame(()=>{ g.style.left=x+"px"; g.style.top=y+"px"; g.style.opacity=op;
           gt.style.transform=`rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(${sc})` });
         setTimeout(()=>{ g.remove(); if(done) done() },ms+20) };
+      /* 칸에 놓았어도 쓰이지 않았으면(빈 칸·적에게 방어구 따위) 빈 곳에 놓았을 때처럼 손패로 날아 돌아간다 (사용자 2026-10-01).
+         쓰였는지는 손패·보유 카드·소환물·대원 자리가 바뀌었는지로 잰다 */
+      let used=false;
+      if(hit&&moved){ const fp=()=>JSON.stringify([B.hand.map(x=>[x.name||x.type,x.n||1,x.d||""]),(run.cards||[]).map(x=>x.c),(B.mins||[]).length,run.heroes.map(h=>h.slot)]);
+        const f0=fp(); playCard(i,hit,side); used=(B&&fp()!==f0) }
       const hand=document.querySelector(`#hand .card[data-i="${i}"]`)||card;
-      if(hit&&moved){ const P=hitBody||{x:hitR.left+hitR.width/2,y:hitR.top+hitR.height/2};
+      if(hit&&moved&&used){ const P=hitBody||{x:hitR.left+hitR.width/2,y:hitR.top+hitR.height/2};
         gc.style.transition="filter .26s"; gc.style.filter="brightness(1.8) saturate(1.3)";
         fly(P.x,P.y,0.06,0.2,260,()=>{ try{ at(spawn('<div class="soulring" style="border-color:#f0d890"></div>'),P); sparks(P,"#f0d890",9) }catch(e){} }) }
-      else if(moved){ const r=hand.getBoundingClientRect(); fly(r.left+r.width/2,r.top+r.height/2,1,1,240,()=>{ hand.style.opacity=""; card.style.opacity="" }) }
+      else if(moved){ hand.style.opacity="0"; const r=hand.getBoundingClientRect(); fly(r.left+r.width/2,r.top+r.height/2,1,1,240,()=>{ hand.style.opacity=""; card.style.opacity="" }) }
       else { g.remove(); card.style.opacity="" }
       /* 끌지 않고 그냥 눌렀으면 '이 카드를 골랐다'로 친다.
          고른 뒤 칸을 누르면 거기에 놓인다 — 드래그가 어려운 환경을 위해. */
       if(!moved&&!hit){
         B.pick=(B.pick===i)?null:i; sel=null; render(); return;
       }
-      if(hit) playCard(i,hit,side);
+      if(hit&&!moved) playCard(i,hit,side);   /* 끌어서 놓은 것은 위에서 이미 썼다 */
     };
     document.addEventListener("pointermove",move);
     document.addEventListener("pointerup",up);
