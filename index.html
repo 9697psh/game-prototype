@@ -5081,6 +5081,7 @@ function sheetFX(key,side,slot,o){
   const ms=o.ms||450;
   nd.style.setProperty("--d",ms+"ms");
   nd.style.transform="scale("+((o.flip?-1:1)*(o.z||1.6))+","+(o.z||1.6)+")";
+  if(o.dy) nd.style.marginTop=`calc(${o.feet?(o.cell===96?-96:-64):(o.cell===96?-48:-32)}px + ${Math.round(o.dy*(o.z||1.6))}px)`;   /* dy — 그림 픽셀로 아래로 (2026-10-01) */
   setTimeout(()=>nd.remove(),ms+60);
 }
 /* 이테리오 수축 공격 — 융합봉의 푸른 찌르기가 대상까지 뻗는다 (사용자 2026-09-30).
@@ -12161,6 +12162,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 685, "v": "0.5", "d": "2026-10-01", "t": "심장 부활 이펙트 아래로", "big": 0},
  {"b": 684, "v": "0.5", "d": "2026-10-01", "t": "뿌리모체의 심장 부활 이펙트", "big": 0},
  {"b": 683, "v": "0.5", "d": "2026-10-01", "t": "벌목도 소리 · 네코럽티콘 대원 배치 후", "big": 0},
  {"b": 682, "v": "0.5", "d": "2026-10-01", "t": "벌목도 소리 자리", "big": 0},
@@ -12846,7 +12848,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=684;
+const BUILD_NO=685;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -22908,7 +22910,7 @@ function unitDown(t){
   /* 뿌리모체의 심장 (특수 장신구, 2026-10-01) — 쓰러진 뒤 절반의 체력으로 일어서고, 장신구는 부서진다 */
   { const k=(t.items||[]).findIndex(x=>x&&x.bt&&x.bt.rootHeart);
     if(k>=0){ t.items.splice(k,1); t.hp=Math.max(1,Math.ceil(t.maxHp/2));
-      fx({side:"mine",slot:t.slot,s:"heal",sheet:"fx_heart_revive",sheetOpt:{cell:96,feet:1,z:document.querySelector(".bfstage")?2.2:1.2,ms:780},gap:260});   /* 심장의 뿌리가 감아 올린다 (사용자 2026-10-01) */
+      fx({side:"mine",slot:t.slot,s:"heal",sheet:"fx_heart_revive",sheetOpt:{cell:96,feet:1,dy:16,z:document.querySelector(".bfstage")?2.2:1.2,ms:780},gap:260});   /* 심장의 뿌리가 감아 올린다 (사용자 2026-10-01) */
       fx({side:"mine",slot:t.slot,ring:"#e08a3a",glow:1,txt:"부활",cls:"heal",gap:140});
       say(`뿌리모체의 심장 — ${t.name}${jo(t.name,"ig")} 절반의 체력으로 일어섭니다. 심장이 부서집니다.`,"t1");
       return } }
