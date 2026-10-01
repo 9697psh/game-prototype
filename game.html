@@ -5955,7 +5955,8 @@ function setPose(side,slot,pose,ms){
   const p=ctrOf(side,slot); if(!p) return;
   const img=p.e.querySelector("img.pxs[data-nm]"); if(!img) return;
   /* 두 번째 공격 자세(atk2)가 있으면 공격 때마다 반반 — 타락한 나이코스 (사용자 2026-10-01) */
-  if(pose==="atk"){ const set=PNG_SPRITE[skinSprite(img.dataset.nm)]; if(set&&set.atk2&&Math.random()<0.5) pose="atk2" }
+  if(pose==="atk"){ const set=PNG_SPRITE[skinSprite(img.dataset.nm)];
+    if(set&&set.atk2){ const pk=ATK_PICK[img.dataset.nm]; pose=pk?pk:(Math.random()<0.5?"atk2":"atk") } }   /* 대원은 시전마다 고른 것(doSkill), 그 밖은 그때그때 */
   const now=poseOf(img.dataset.nm,pose);
   if(!now||now===poseOf(img.dataset.nm,img.dataset.pose)) return;
   if(img._pt) clearTimeout(img._pt);
@@ -5984,6 +5985,7 @@ function nudge(side,slot,dir){
 /* 대원 강조 공격 (사용자 2026-10-01 : 나이코스 공격이 짧고 빨리 지나간다) —
    뒤로 살짝 젖혔다가(back) → 크게 파고들며 번쩍(lunge, zoom) → 공격 자세로 버팀(ms) → 천천히 제자리.
    wind 동안은 기본 자세, 파고드는 순간 공격 자세로 바꾼다. 효과(베기 이펙트)는 fx 의 gap(=wind)만큼 늦게 */
+const ATK_PICK={};   /* 그림 묶음 이름 → 이번 시전의 공격 자세 (atk·atk2) */
 const HERO_STRIKE={"나이코스":{wind:130,back:12,lunge:30,zoom:1.08,ms:900}};
 function strikeFX(side,slot,c){
   const p=ctrOf(side,slot); if(!p||!p.e) return;
@@ -12549,6 +12551,7 @@ const GAME_VER="0.6";   /* 0.6 — 2스테이지 구역(정령숲) 추가 · 여
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 738, "v": "0.6", "d": "2026-10-02", "t": "여러 번 시전 때 공격 자세 하나로", "big": 0},
  {"b": 737, "v": "0.6", "d": "2026-10-01", "t": "나이코스 공격 모션 길고 강하게", "big": 0},
  {"b": 736, "v": "0.6", "d": "2026-10-01", "t": "타락한 나이코스 베기 효과음", "big": 0},
  {"b": 735, "v": "0.6", "d": "2026-10-01", "t": "타락한 나이코스 지도 손", "big": 0},
@@ -13287,7 +13290,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=737;
+const BUILD_NO=738;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -21980,6 +21983,8 @@ function airborne(h,f){
 function doSkill(target){
   if(B.busy) return;
   const h=sel.hero,i=sel.skill,n=sel.count,s0=h.sk[i];
+  /* 공격 자세가 둘(atk·atk2)이면 이번 시전에서 하나만 고른다 — 여러 번 쌓아 한 번에 쓸 때 자세가 마구 바뀌지 않게 (사용자 2026-10-02) */
+  ATK_PICK[skinSprite(h.name)]=Math.random()<0.5?"atk2":"atk";
   if(s0&&s0.magnet&&h.tag&&h.tag.meissner&&h.magnetTurn){   /* 마이스너 변환 — 한 턴에 한 번 */
     say("마이스너 변환 — 자기장 변환은 한 턴에 한 번만 쓸 수 있습니다.","t2"); render(); return }
   if(isMoveSkill(s0)){
