@@ -4243,7 +4243,7 @@ let MAP_BUBBLE=null, MAP_FROM=null;
 /* 그 대원의 대사만 — 공용 대사는 없다 (사용자 2026-09-14 : 있는 대원이 공용 대사를 너무 자주 쳤다). 칸이 비면 조용 */
 function mapSayLines(key){
   const n=run&&run.heroes&&run.heroes[0]&&run.heroes[0].name;
-  const T=(n&&MAP_SAY[n])||{};
+  const T=(n&&skinTable(MAP_SAY,n))||{};   /* 외형 말풍선 (2026-10-01) */
   return (T[key]&&T[key].length)?T[key]:[];
 }
 function mapSay(key,force){
@@ -7106,6 +7106,14 @@ try{ if(typeof location!=="undefined"&&/[?&]skins=all(&|$)/.test(location.search
   SKIN_ST.own=SKIN_ST.own||{}; Object.keys(SKINS).forEach(h=>SKINS[h].forEach(k=>{ SKIN_ST.own[h+":"+k.id]=SKIN_ST.own[h+":"+k.id]||Date.now() }));
   skinSave(); SKIN_UNLOCKED_ALL=1;
   try{ history.replaceState(null,"",location.pathname+location.hash) }catch(e){} } }catch(e){}
+/* 대사 표 — 외형을 착용했으면 그 외형의 대사(BARK[외형 이름])를 원래 대원 것 위에 겹친다. 빈 갈래는 원래 대사 (사용자 2026-10-01) */
+function skinTable(T,name){
+  const k=skinOn(name); if(!k) return T[name];
+  const base=T[name]||{}, own=T[k.n]; if(!own) return base;
+  const out=Object.assign({},base);
+  Object.keys(own).forEach(c=>{ if(own[c]&&own[c].length) out[c]=own[c] });
+  return out;
+}
 /* 그림 묶음 이름 — 스킨을 입었으면 그 묶음 */
 function skinSprite(name){ const k=skinOn(name); return (k&&PNG_SPRITE[k.sp])?k.sp:name }
 /* 적을 처치했을 때 — 그 적이 조건인 스킨을 얻는다 */
@@ -12515,6 +12523,7 @@ const GAME_VER="0.6";   /* 0.6 — 2스테이지 구역(정령숲) 추가 · 여
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 733, "v": "0.6", "d": "2026-10-01", "t": "외형마다 대사를 따로, 문구 수정에서 고침", "big": 0},
  {"b": 732, "v": "0.6", "d": "2026-10-01", "t": "외형을 바꿔도 정면 얼굴은 그대로", "big": 0},
  {"b": 731, "v": "0.6", "d": "2026-10-01", "t": "게임 문구의 가운뎃점을 쉼표, 쌍점 등으로 바꿈", "big": 0},
  {"b": 730, "v": "0.6", "d": "2026-10-01", "t": "외형 획득 창, 대원 도감, 착용 중", "big": 0},
@@ -13248,7 +13257,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=732;
+const BUILD_NO=733;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -13315,9 +13324,10 @@ function txtEntries(){
   const barkWho=[]
     .concat(Object.keys(HEROES).map(n=>[n,"대원"]))
     .concat(Object.keys(FOE).map(n=>[n,"적"]))
-    .concat(Object.keys(BARK).filter(n=>!HEROES[n]&&!FOE[n]).map(n=>[n,"그 밖"]));
+    .concat(Object.keys(SKINS).flatMap(h=>SKINS[h].map(k=>[k.n,"외형",h])))   /* 외형 — 원래 대원의 기술 칸을 그대로 (2026-10-01) */
+    .concat(Object.keys(BARK).filter(n=>!HEROES[n]&&!FOE[n]&&!Object.keys(SKINS).some(h=>SKINS[h].some(k=>k.n===n))).map(n=>[n,"그 밖"]));
   const barkSeen={};
-  barkWho.forEach(([n,who])=>{
+  barkWho.forEach(([n,who,base])=>{
     if(barkSeen[n]) return; barkSeen[n]=1;
     const putBark=(k,label)=>add("대사","bark:"+n+":"+k,who+" "+n+" ▸ "+label,
         ()=>((BARK[n]||{})[k]||[]).join("\n"),
@@ -13326,9 +13336,10 @@ function txtEntries(){
     BCAT.forEach(([k,label])=>putBark(k,label));
     /* 기술별 · 사건별 — 대원의 기술마다 한 칸, 그리고 표에 이미 있는 갈래(:적 · :카드 · event: · kill:) */
     const keys=[];
-    if(HEROES[n]){ (HEROES[n].skills||[]).forEach(sk=>{ keys.push("skill:"+sk.n); if(sk.alt) keys.push("skill:"+sk.alt.n); (sk.opts||[]).forEach(o=>keys.push("skill:"+o.n)) });
-      if(typeof PASSIVE_INFO!=="undefined") (PASSIVE_INFO[n]||[]).forEach(p=>keys.push("skill:"+p.n));
-      (HERO_REWARDS[n]||[]).filter(r=>/^\[전투 기술\]/.test(r.d||"")).forEach(r=>keys.push("skill:"+r.n)) }
+    const hb=base||n;   /* 외형이면 원래 대원의 기술로 */
+    if(HEROES[hb]){ (HEROES[hb].skills||[]).forEach(sk=>{ keys.push("skill:"+sk.n); if(sk.alt) keys.push("skill:"+sk.alt.n); (sk.opts||[]).forEach(o=>keys.push("skill:"+o.n)) });
+      if(typeof PASSIVE_INFO!=="undefined") (PASSIVE_INFO[hb]||[]).forEach(p=>keys.push("skill:"+p.n));
+      (HERO_REWARDS[hb]||[]).filter(r=>/^\[전투 기술\]/.test(r.d||"")).forEach(r=>keys.push("skill:"+r.n)) }
     Object.keys(BARK[n]||{}).forEach(k=>{ if(/^(skill|event|kill):/.test(k)) keys.push(k) });
     [...new Set(keys)].forEach(k=>{
       const [kind,nm,sub]=k.split(":");
@@ -13349,7 +13360,7 @@ function txtEntries(){
       v=>{ SMITH_SAY[k]=String(v).split("\n").map(x=>x.trim()).filter(Boolean) },true));
 
   /* 지도 말풍선 — 뽑을 수 있는 대원마다. 한 줄이 대사 하나. 비우면 그 상황엔 조용 */
-  playableHeroes().forEach(hn=>MAP_SAY_KEYS.forEach(([k,label])=>
+  playableHeroes().concat(Object.keys(SKINS).flatMap(h=>SKINS[h].map(k=>k.n))).forEach(hn=>MAP_SAY_KEYS.forEach(([k,label])=>   /* 외형 말풍선도 */
     add("대사","mapsay:"+hn+":"+k,"지도 말풍선, "+hn+" ▸ "+label,
       ()=>((MAP_SAY[hn]||{})[k]||[]).join("\n"),
       v=>{ (MAP_SAY[hn]=MAP_SAY[hn]||{})[k]=String(v).split("\n").map(x=>x.trim()).filter(Boolean) },true)));
@@ -17449,7 +17460,7 @@ function drawRecruit(app){
       <h3>${esc(n)}</h3><div class="rctitle">${esc(d.title)}</div>
       ${tagRow(n)||`<div class="role">${esc(d.role)}</div>`}
       <p>${richFocus(d.focus)}</p>
-      ${(()=>{ const L=(BARK[n]||{}).in; return (L&&L.length)?`<div class="evsay rcsay">${talk(rnd(L))}</div>`:"" })()}</div>`);
+      ${(()=>{ const L=(skinTable(BARK,n)||{}).in; return (L&&L.length)?`<div class="evsay rcsay">${talk(rnd(L))}</div>`:"" })()}</div>`);
     c.onclick=()=>{ run.heroes.push(makeHero(n));
       toast(`${n}${jo(n,"ig")} 대원에 합류했습니다.`); afterChest() };
     row.appendChild(c);
@@ -19328,7 +19339,7 @@ function bark(u,cat,force){
   if(!u||!B||B.over) return;
   const now=Date.now();
   if(!force&&now-BARK_AT<1800) return;          /* 너무 자주 떠들지 않게 */
-  const P=(BARK[u.of||u.name]||{})[cat]||(u.isMin?null:BARK_ANY[cat]);
+  const P=(skinTable(BARK,u.of||u.name)||{})[cat]||(u.isMin?null:BARK_ANY[cat]);
   if(!P||!P.length) return;
   const rate={in:0.42,atk:0.13,hurt:0.16,kill:0.3,down:0.85,awake:1}[cat]||0.12;
   if(!force&&Math.random()>rate) return;
@@ -19392,7 +19403,7 @@ function barkPick(u,cats,force){
   if(!u||!B||B.over) return;
   const now=Date.now();
   if(!force&&now-BARK_AT<1800) return;
-  const T=BARK[u.of||u.name]||{};
+  const T=skinTable(BARK,u.of||u.name)||{};
   let pool=[], own=0;
   cats.forEach((c,i)=>{ const L=T[c]; if(L&&L.length){ pool=pool.concat(L); if(i<cats.length-1) own=1 } });
   if(!pool.length&&!u.isMin){ const L=BARK_ANY[cats[cats.length-1]]; if(L) pool=L.slice() }
