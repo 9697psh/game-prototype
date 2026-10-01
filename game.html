@@ -11116,16 +11116,12 @@ function crystalUp(n){
   if(run.crystal==null) run.crystal=CRYSTAL_MAX;
   const b=run.crystal; run.crystal=Math.min(CRYSTAL_MAX,run.crystal+(n||1)); return run.crystal-b;
 }
-/* 수정 쓰기 — 잘못 누르는 일이 없게 두 번 눌러야 쓴다 (팔기와 같은 손버릇) */
-let CR_ARM=0;
+/* 수정 쓰기 — 한 번 누르면 바로 (사용자 2026-10-01) */
 function crystalClick(){
   if(!spiritOn()||!run||run.lost) return;
   const cr=run.crystal==null?CRYSTAL_MAX:run.crystal;
-  if(cr<=0){ CR_ARM=0; toast("푸른 수정이 비었습니다 — 기력의 샘이나 마른숲 상점에서 채우세요."); render(); return }
-  if(run.taint<=0){ CR_ARM=0; toast("걷어 낼 오염도가 없습니다."); render(); return }
-  if(!CR_ARM||Date.now()-CR_ARM>2500){ CR_ARM=Date.now(); SFX.play("click"); render();
-    setTimeout(()=>{ if(CR_ARM&&Date.now()-CR_ARM>=2500){ CR_ARM=0; if(run) render() } },2600); return }
-  CR_ARM=0;
+  if(cr<=0){ toast("푸른 수정이 비었습니다 — 기력의 샘이나 마른숲 상점에서 채우세요."); render(); return }
+  if(run.taint<=0){ toast("걷어 낼 오염도가 없습니다."); render(); return }
   const t0=run.taint; run.crystal=cr-1; addTaint(-CRYSTAL_CURE);
   SFX.play("heal");
   toast(`푸른 수정을 썼습니다 — 오염도 ${t0} → ${run.taint} (남은 수정 ${run.crystal}/${CRYSTAL_MAX})`);
@@ -11139,8 +11135,8 @@ function taintHot(tn){ return tn>=80 }
 function taintChip(extra){
   const tc=`<span class="res taint ${extra||""} ${run.taint>=70?"bad":run.taint>=45?"warn":""}" title="오염도 — 100이 되면 그 자리에서 끝납니다. ${spiritOn()?"정령숲에서는 전투에 이겨도 줄지 않습니다 — 푸른 수정을 눌러 30 걷어 냅니다.":"전투에 이기면 20 내려갑니다."}">${resIcon("taint")}<b>${run.taint}</b><i>/100</i><u style="width:${Math.min(100,run.taint)}%"></u></span>`;
   if(!spiritOn()) return tc;
-  const cr=run.crystal==null?CRYSTAL_MAX:run.crystal, arm=CR_ARM&&Date.now()-CR_ARM<2500;
-  return tc+`<span class="res crystal use ${extra||""} ${arm?"arm":""} ${cr<=0?"empty":""}" role="button" title="푸른 수정 — 누르면 수정 1칸으로 오염도를 ${CRYSTAL_CURE} 걷어 냅니다 (두 번 눌러 씀). 기력의 샘 · 마른숲 상점의 파편으로 채웁니다.">${iconImg("item_spirit_blue_crystal")?`<span class="ri">${iconImg("item_spirit_blue_crystal")}</span>`:""}<b>${cr}</b><i>/${CRYSTAL_MAX}</i>${arm?`<em class="crarm">한 번 더 — 오염도 -${CRYSTAL_CURE}</em>`:`<em class="cruse">사용</em>`}<u style="width:${cr/CRYSTAL_MAX*100}%"></u></span>`;
+  const cr=run.crystal==null?CRYSTAL_MAX:run.crystal;
+  return tc+`<span class="res crystal use ${extra||""} ${cr<=0?"empty":""}" role="button" title="푸른 수정 — 누르면 수정 1칸으로 오염도를 ${CRYSTAL_CURE} 걷어 냅니다. 기력의 샘 · 마른숲 상점의 파편으로 채웁니다.">${iconImg("item_spirit_blue_crystal")?`<span class="ri">${iconImg("item_spirit_blue_crystal")}</span>`:""}<b>${cr}</b><i>/${CRYSTAL_MAX}</i><em class="cruse">사용</em><u style="width:${cr/CRYSTAL_MAX*100}%"></u></span>`;
 }
 function nextDay(){
   leaveVisited();
@@ -11948,6 +11944,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 679, "v": "0.5", "d": "2026-10-01", "t": "푸른 수정 한 번 눌러 사용", "big": 0},
  {"b": 678, "v": "0.5", "d": "2026-10-01", "t": "정령 상인 그림 새로", "big": 0},
  {"b": 677, "v": "0.5", "d": "2026-10-01", "t": "정령숲 — 푸른 수정 눌러 쓰기(오염도 -30) · 전투 승리 오염도 감소 없음 · 샘 푸른 빛 · 지도 바닥 한 장", "big": 0},
  {"b": 676, "v": "0.5", "d": "2026-10-01", "t": "적 전장에 소환물만 남으면 승리", "big": 0},
@@ -12627,7 +12624,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=678;
+const BUILD_NO=679;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
