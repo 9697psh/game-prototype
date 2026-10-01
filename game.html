@@ -3050,7 +3050,13 @@ body.vbattle .hand .card.ccard:hover,body.vbattle .hand .card.ccard.picked{trans
 body.vbattle .hand:empty{min-height:40px}
 /* 기술 창 — 손패 자리 */
 body.vbattle .skwrap{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:min(1240px,96vw);max-height:46vh;overflow:auto;margin:0;z-index:30;background:rgba(14,12,14,.94);border-radius:6px 6px 0 0}
-body.vbattle .skwrap+.hand{display:none}
+/* 기술 창 위에 작게 뜬 손패 (사용자 2026-10-01) — 올리면 크게 */
+body.vbattle .skwrap+.hand{bottom:calc(var(--skh,180px) - 48px);padding-bottom:0;transform:scale(.55);transform-origin:50% 100%;z-index:29}
+body.vbattle .skwrap+.hand .card.ccard:hover,body.vbattle .skwrap+.hand .card.ccard.picked{transform:perspective(700px) translateY(-34px) scale(1.55) rotateX(var(--hrx,0deg)) rotateY(var(--hry,0deg))}
+body.vbattle .hand.tomini{animation:handMini .3s cubic-bezier(.2,.8,.3,1)}
+body.vbattle .hand.tofull{animation:handFull .3s cubic-bezier(.2,.8,.3,1)}
+@keyframes handMini{from{transform:translateY(calc(var(--skh,180px) - 48px)) scale(1)}to{transform:scale(.55)}}
+@keyframes handFull{from{transform:translateY(calc(48px - var(--skh,180px))) scale(.55)}to{transform:none}}
 body.vbattle .prompt,body.vbattle .pickbar{margin:0;background:rgba(10,9,10,.6);border-color:rgba(240,212,136,.25);padding:2px 10px;font-size:11px;max-width:760px;justify-content:center}
 body.vbattle .prompt>.hint:last-child{display:none}
 body.vbattle .prompt .step{font-size:10.5px}
@@ -12397,6 +12403,7 @@ const GAME_VER="0.5";   /* 0.5 — 받은 그림으로 화면 전부 새로: 시
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 714, "v": "0.5", "d": "2026-10-01", "t": "기술 창 위 작은 손패 · 대상 위 작아짐 · 몸으로 빨려 듦", "big": 0},
  {"b": 713, "v": "0.5", "d": "2026-10-01", "t": "카드 틀 투명 테두리 없앰", "big": 0},
  {"b": 712, "v": "0.5", "d": "2026-10-01", "t": "카드 끌기 — 기울기·들림·돌아감", "big": 0},
  {"b": 711, "v": "0.5", "d": "2026-10-01", "t": "적 추가 능력치 보기 · 쿠렘타이 이펙트 강조", "big": 0},
@@ -13111,7 +13118,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵 · 시간/일차/오염도 · 주둔지 · 상점/미지의 구역 UI · 보상 36종 · 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=713;
+const BUILD_NO=714;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -19708,6 +19715,12 @@ function drawBattle(app){
   { const n=B.hand.length, mid=(n-1)/2;   /* 부채꼴 — 가운데를 두고 살짝 기울고 내려간다 (2026-09-19) */
     [...hand.children].forEach((c,i)=>{ const k=i-mid; c.style.setProperty("--rot",(k*4)+"deg"); c.style.setProperty("--dy",(Math.abs(k)*7)+"px"); c.style.zIndex=10+i }) }
   app.appendChild(hand);
+  /* 기술 창이 떠도 손패는 그 위에 작게 (사용자 2026-10-01 — 예전엔 가려졌다). 바뀌는 순간에는 줄어들며 올라가고 / 커지며 내려온다 */
+  { const sk=hand.previousElementSibling, mini=!!(sk&&sk.classList.contains("skwrap"));
+    const setH=()=>{ if(mini&&sk.offsetHeight) HAND_SKH=sk.offsetHeight+8; hand.style.setProperty("--skh",HAND_SKH+"px") };
+    setH(); if(mini&&!sk.offsetHeight) requestAnimationFrame(setH);
+    if(HAND_MINI!=null&&mini!==HAND_MINI) hand.classList.add(mini?"tomini":"tofull");
+    HAND_MINI=mini; }
 
   if(B.pick!=null&&B.hand[B.pick]){
     const c=B.hand[B.pick];
@@ -20109,13 +20122,14 @@ function shortDesc(t){
 }
 const hourglassSvg=()=>'<svg class="hg" viewBox="0 0 16 20"><path d="M3 1h10v3l-4 6 4 6v3H3v-3l4-6-4-6z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5 17h6l-3-4z" fill="currentColor"/></svg>';
 const lockSvg=()=>'<svg class="lk" viewBox="0 0 16 20"><rect x="2" y="9" width="12" height="9" rx="1.5" fill="currentColor"/><path d="M5 9V6a3 3 0 0 1 6 0v3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>';
+let HAND_MINI=null, HAND_SKH=180;   /* 손패가 기술 창 위에 작게 떠 있었는지 · 기술 창 높이 */
 function skillPanel(h){
   const p=el(`<div class="skwrap"></div>`);
   p.appendChild(el(`<div class="skhead">
     <b>${esc(h.name)}</b>
     <span class="hint">${ic("hp")}${h.hp}/${h.maxHp}${h.eshield?` · <span class="esh">◆${h.eshield}</span>`:""}${h.shield?` · <span class="shd">${ic("def")}${h.shield}</span>`:""} · ${ic("mana")}${Math.min(h.mana,h.maxMana)}/${h.maxMana}${h.mana>h.maxMana?`<em class="exm">+${h.mana-h.maxMana}</em>`:""}${h.mom?` · ${ic("move")}${h.mom}`:""}</span>
     <span class="grow"></span>
-    <button class="mini skhand" title="Esc">손패 보기</button>
+    <button class="mini skhand" title="Esc">기술 창 닫기</button>
     </div>`));
   p.querySelector(".skhand").onclick=()=>{ sel=null; hintSlots([]); render() };
   const ph=passHtml(h);
@@ -20670,10 +20684,11 @@ function startDrag(card,i){
     const r0=card.getBoundingClientRect();
     const home={x:r0.left+r0.width/2, y:r0.top+r0.height/2};
     let px=home.x, py=home.y, tx=e.clientX, ty=e.clientY, lx=tx, ly=ty, lt=performance.now();
-    let vx=0, vy=0, rx=0, ry=0, rz=0, lift=0, alive=1;
+    let vx=0, vy=0, rx=0, ry=0, rz=0, lift=0, alive=1, over=0, sc=1;   /* over — 칸(대상) 위에 있으면 작아져 그 칸이 보이게 (사용자 2026-10-01) */
     const cl=(v,a)=>Math.max(-a,Math.min(a,v));
     const paint=()=>{ g.style.left=px+"px"; g.style.top=py+"px";
-      gt.style.transform=`rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) rotateZ(${rz.toFixed(2)}deg) scale(${(1+0.1*lift).toFixed(3)})`;
+      gt.style.transform=`rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) rotateZ(${rz.toFixed(2)}deg) scale(${sc.toFixed(3)})`;
+      gt.style.opacity=(1-0.15*(1.1-sc)/0.7).toFixed(3);
       gt.style.setProperty("--sx",(-ry*0.9).toFixed(1)+"px"); gt.style.setProperty("--sy",(10+14*lift+rx*0.6).toFixed(1)+"px");
       gt.style.setProperty("--gx",(50+ry*2.2).toFixed(1)+"%"); gt.style.setProperty("--gy",(40-rx*2.2).toFixed(1)+"%") };
     const loop=()=>{ if(!alive) return;
@@ -20682,6 +20697,7 @@ function startDrag(card,i){
       vx+=(ivx-vx)*0.3; vy+=(ivy-vy)*0.3;
       px+=(tx-px)*0.32; py+=(ty-py)*0.32;
       lift+=(1-lift)*0.18;
+      sc+=((over?0.4:1+0.1*lift)-sc)*0.25;
       ry+=(cl(vx*1.5,26)-ry)*0.22;          /* 오른쪽으로 끌면 오른쪽 가장자리가 멀어진다 */
       rx+=(cl(-vy*1.5,26)-rx)*0.22;         /* 위로 끌면 윗가장자리가 멀어진다 */
       rz+=(cl(vx*0.45,9)-rz)*0.2;           /* 진자처럼 윗머리가 움직이는 쪽으로 */
@@ -20690,6 +20706,8 @@ function startDrag(card,i){
     const move=ev=>{
       if(Math.abs(ev.clientX-x0)>5||Math.abs(ev.clientY-y0)>5) moved=1;
       tx=ev.clientX; ty=ev.clientY;
+      over=[...document.querySelectorAll("#mySide .slot,#foeSide .slot")].some(s=>{ const r=s.getBoundingClientRect();
+        return ev.clientX>=r.left&&ev.clientX<=r.right&&ev.clientY>=r.top&&ev.clientY<=r.bottom })?1:0;
       document.querySelectorAll("#mySide .slot").forEach(s=>{
         const r=s.getBoundingClientRect();
         s.classList.toggle("drop", ev.clientX>=r.left&&ev.clientX<=r.right&&ev.clientY>=r.top&&ev.clientY<=r.bottom);
@@ -20699,11 +20717,13 @@ function startDrag(card,i){
       document.removeEventListener("pointermove",move);
       document.removeEventListener("pointerup",up);
       alive=0;
-      let hit=null, side="mine", hitR=null;
+      let hit=null, side="mine", hitR=null, hitBody=null;
       document.querySelectorAll("#mySide .slot,#foeSide .slot").forEach(s=>{
         const r=s.getBoundingClientRect();
         if(ev.clientX>=r.left&&ev.clientX<=r.right&&ev.clientY>=r.top&&ev.clientY<=r.bottom){
           hit=+s.dataset.slot; side=s.closest("#foeSide")?"foe":"mine"; hitR=r;
+          const im=s.querySelector("img.pxs"), ir=im&&im.getBoundingClientRect();
+          hitBody=(ir&&ir.width)?{x:ir.left+ir.width/2,y:ir.top+ir.height*0.55}:null;
         }
         s.classList.remove("drop");
       });
@@ -20714,7 +20734,9 @@ function startDrag(card,i){
           gt.style.transform=`rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(${sc})` });
         setTimeout(()=>{ g.remove(); if(done) done() },ms+20) };
       const hand=document.querySelector(`#hand .card[data-i="${i}"]`)||card;
-      if(hit&&moved) fly(hitR.left+hitR.width/2,hitR.top+hitR.height/2,0.35,0,170,null);
+      if(hit&&moved){ const P=hitBody||{x:hitR.left+hitR.width/2,y:hitR.top+hitR.height/2};
+        gc.style.transition="filter .26s"; gc.style.filter="brightness(1.8) saturate(1.3)";
+        fly(P.x,P.y,0.06,0.2,260,()=>{ try{ at(spawn('<div class="soulring" style="border-color:#f0d890"></div>'),P); sparks(P,"#f0d890",9) }catch(e){} }) }
       else if(moved){ const r=hand.getBoundingClientRect(); fly(r.left+r.width/2,r.top+r.height/2,1,1,240,()=>{ hand.style.opacity=""; card.style.opacity="" }) }
       else { g.remove(); card.style.opacity="" }
       /* 끌지 않고 그냥 눌렀으면 '이 카드를 골랐다'로 친다.
