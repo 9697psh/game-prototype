@@ -422,6 +422,29 @@ img.pxs.face{image-rendering:pixelated;width:auto;filter:drop-shadow(0 2px 0 rgb
 .cxvn i{width:6px;height:6px;border-radius:50%;background:rgba(201,162,39,.3)} .cxvn i.on{background:var(--brass)}
 .cxvn span{margin-left:4px}
 .slot.formwait .art,.slot.formwait .ublw,.slot.formwait .intentbar,.slot.formwait .tier{visibility:hidden}   /* 영혼 분리 — 맺히기 전 */
+/* 트리스탄 — 강한 화살 (2026-10-03) */
+.arrowfly.pow{--z:2;animation-duration:.22s;z-index:9;filter:brightness(1.4) drop-shadow(0 0 6px rgba(170,240,255,.9))}
+.arrowfly.pow.snipe{--z:2.6;animation-duration:.2s;filter:brightness(1.6) drop-shadow(0 0 8px rgba(255,230,150,.95))}
+.arrowfly.pow.thru{animation-duration:.36s;animation-timing-function:ease-in;opacity:.8}
+.aimmark{position:absolute;width:120px;height:120px;margin:-60px 0 0 -60px;pointer-events:none;z-index:9}
+.aimmark::before,.aimmark::after,.aimmark i{content:"";position:absolute;inset:0;border:2px solid rgba(255,220,120,.95);border-radius:50%;
+  box-shadow:0 0 10px rgba(255,200,80,.7);animation:aimIn var(--d,600ms) cubic-bezier(.2,.8,.3,1) forwards}
+.aimmark::after{inset:42%;border-radius:0;border:0;background:rgba(255,230,150,.95);box-shadow:0 0 8px #ffd070}
+.aimmark i{border-width:0;background:linear-gradient(rgba(255,220,120,.95),rgba(255,220,120,.95)) 50% 0/2px 30% no-repeat,
+  linear-gradient(rgba(255,220,120,.95),rgba(255,220,120,.95)) 50% 100%/2px 30% no-repeat,
+  linear-gradient(90deg,rgba(255,220,120,.95),rgba(255,220,120,.95)) 0 50%/30% 2px no-repeat,
+  linear-gradient(90deg,rgba(255,220,120,.95),rgba(255,220,120,.95)) 100% 50%/30% 2px no-repeat;box-shadow:none;border-radius:0}
+@keyframes aimIn{0%{transform:scale(2.2) rotate(-40deg);opacity:0}35%{opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
+/* 굴라 — 응축 폭발을 기다리는 몸, 터짐 */
+.slot.bombing .art img.pxs{animation:bombPulse 1.1s ease-in-out infinite;transform-origin:50% 100%}
+.slot.bombing.bomb1 .art img.pxs{animation-duration:.55s}
+@keyframes bombPulse{0%,100%{filter:none;scale:1}50%{filter:drop-shadow(0 0 8px rgba(255,90,50,.95)) drop-shadow(0 0 18px rgba(255,60,30,.6)) brightness(1.25);scale:1.05}}
+.blastdim{position:fixed;inset:0;z-index:850;pointer-events:none;background:radial-gradient(ellipse at 30% 55%,rgba(0,0,0,.25),rgba(0,0,0,.75) 70%);animation:blastDim .9s ease-out forwards}
+@keyframes blastDim{0%{opacity:0}25%{opacity:1}100%{opacity:0}}
+.shockring{position:absolute;width:80px;height:80px;margin:-40px 0 0 -40px;border-radius:50%;pointer-events:none;z-index:9;
+  border:6px solid rgba(255,200,140,.95);box-shadow:0 0 30px rgba(255,120,60,.9),inset 0 0 20px rgba(255,160,80,.7);
+  animation:shockOut var(--d,700ms) cubic-bezier(.15,.7,.3,1) forwards}
+@keyframes shockOut{0%{transform:scale(.3);opacity:1}100%{transform:scale(16);opacity:0;border-width:1px}}
 .sk .skmore{color:var(--brass);font-size:10.5px;cursor:pointer;white-space:nowrap;margin-left:4px;text-decoration:none;border-bottom:1px dotted var(--brass)}
 .sk .skmore:hover{color:#ffe08a}
 .skhead{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
@@ -4722,12 +4745,16 @@ function ghostRushFX(name,from,to,ms,gh){
    CSS 로는 .bfstage 쪽 규칙에 밀려서, 그림에 곧장 animate 를 건다 */
 const BIG_GLOW={
   blue:"drop-shadow(0 0 9px rgba(160,225,255,.95)) drop-shadow(0 0 22px rgba(110,180,255,.75)) brightness(1.2)",
-  purple:"drop-shadow(0 0 9px rgba(200,150,255,.95)) drop-shadow(0 0 24px rgba(130,70,230,.8)) brightness(1.2)"};
+  purple:"drop-shadow(0 0 9px rgba(200,150,255,.95)) drop-shadow(0 0 24px rgba(130,70,230,.8)) brightness(1.2)",
+  red:"drop-shadow(0 0 10px rgba(255,190,90,.95)) drop-shadow(0 0 26px rgba(255,90,30,.85)) brightness(1.3)",   /* 굴라는 몸이 붉어 주황 불빛으로 */
+  cyan:"drop-shadow(0 0 9px rgba(170,240,255,.95)) drop-shadow(0 0 22px rgba(80,200,240,.75)) brightness(1.2)",
+  gold:"drop-shadow(0 0 9px rgba(255,230,150,.95)) drop-shadow(0 0 24px rgba(230,170,40,.8)) brightness(1.25)"};
+const BIG_EDGE={purple:"rgba(140,80,220,.32)",red:"rgba(220,60,40,.32)",cyan:"rgba(80,200,240,.26)",gold:"rgba(230,180,60,.3)"};
 function bigPoseFX(p,ms,glow){
   const im=p&&p.e&&p.e.querySelector(".art img.pxs, .art svg"); if(!im||!im.animate) return;
   const d=Math.round((ms||1000)*SPD);
   const GLOW=BIG_GLOW[glow]||BIG_GLOW.blue;
-  if(glow==="purple") edgeGlow("rgba(140,80,220,.32)");
+  if(BIG_EDGE[glow]) edgeGlow(BIG_EDGE[glow]);
   im.style.transformOrigin="50% 100%";
   im.animate([{scale:1,filter:"none"},
               {scale:1.2,filter:GLOW,offset:.08},
@@ -5231,6 +5258,7 @@ function chompFX(side,slot){
   const z=FX_SCALE.chomp, sx=(Math.random()<0.5?-z:z);
   nd.style.transform="scale("+sx+","+z+")";
   fxDimFoe(nd,side);
+  if(side==="foe"){ quakeFX(p); veil("radial-gradient(circle,rgba(220,60,40,.22),transparent 70%)") }   /* 무는 순간 (2026-10-03) */
   setTimeout(()=>nd.remove(),420);
 }
 /* 응축 — 몸이 조여들었다 부풀어 팽팽하게 버틴다.
@@ -5732,6 +5760,36 @@ function formReveal(side,slot){
   if(im&&im.animate) im.animate([{scale:"0.5",opacity:0,filter:"brightness(3)"+KGLOW},{scale:"1.12",opacity:1,filter:"brightness(1.8)"+KGLOW,offset:.45},{scale:"1",opacity:1,filter:"none"}],
     {duration:Math.round(560*SPD),easing:"cubic-bezier(.2,.9,.3,1.2)"});
 }
+/* 그림이 날아가는 것 — mode "suck" 이면 줄어들며 빨려 든다 (굴라 융합) */
+function ghostSnap(side,slot){
+  const a=ctrOf(side,slot), im0=a&&a.e&&a.e.querySelector(".art img.pxs, .art svg"); if(!im0) return null;
+  const r=im0.getBoundingClientRect();
+  return {node:im0.cloneNode(true),rect:{left:r.left,top:r.top,width:r.width,height:r.height},x:a.x,y:a.y};
+}
+function ghostFlyFX(from,to,ms,mode){
+  const sn=(from&&from.node)?from:(from?ghostSnap(from.side,from.slot):null);
+  const b=ctrOf(to.side,to.slot); if(!sn||!b) return;
+  const a={x:sn.x,y:sn.y}, r=sn.rect;
+  const g=spawn('<div class="ghostfly"></div>'); if(!g) return;
+  sn.node.style.width="100%"; sn.node.style.height="100%"; g.appendChild(sn.node);
+  Object.assign(g.style,{position:"absolute",left:r.left+"px",top:r.top+"px",width:r.width+"px",height:r.height+"px",pointerEvents:"none",zIndex:8});
+  const dx=b.x-a.x, dy=b.y-a.y, d=Math.round((ms||500)*SPD);
+  if(g.animate) g.animate([{translate:"0 0",scale:"1",opacity:1,filter:"brightness(1.4) drop-shadow(0 0 8px #e0503a)"},
+    {translate:(dx*0.4)+"px "+(dy*0.4-24)+"px",scale:"0.8 1.15",opacity:.9,offset:.4},
+    {translate:dx+"px "+dy+"px",scale:mode==="suck"?"0.15":"1",opacity:mode==="suck"?0:.9,filter:"brightness(2.2) drop-shadow(0 0 12px #ff6040)"}],
+    {duration:d,easing:"cubic-bezier(.5,0,.75,0)",fill:"forwards"});
+  setTimeout(()=>g.remove(),d+40);
+}
+/* 응축 폭발 — 판이 어두워졌다 하얗게 번쩍, 굴라에서 충격파가 적 쪽으로 퍼진다 */
+function bombBlastFX(slot){
+  const p=ctrOf("mine",slot); if(!p) return;
+  const k=SPD<1?0.8:SPD;
+  const dim=el('<div class="blastdim"></div>'); document.body.appendChild(dim); setTimeout(()=>dim.remove(),Math.round(900*k));
+  const ring=spawn('<div class="shockring"></div>'); if(ring){ at(ring,p); ring.style.setProperty("--d",Math.round(700*k)+"ms") }
+  veil("radial-gradient(circle,rgba(255,240,220,.7),rgba(255,120,60,.25) 45%,transparent 75%)");
+  document.body.classList.remove("shakeall"); void document.body.offsetWidth; document.body.classList.add("shakeall");
+  setTimeout(()=>document.body.classList.remove("shakeall"),620);
+}
 function soulTearFX(from,to,ms){
   const a=ctrOf(from.side,from.slot), b=ctrOf(to.side,to.slot); if(!a||!b) return;
   const im0=a.e&&a.e.querySelector(".art img.pxs"); if(!im0) return;
@@ -5794,8 +5852,9 @@ function arrowFX(side,slot,from){
   const p=bodyPoint(side,slot)||ctrOf(side,slot); if(!p) return;
   const q=from&&(bowPoint(from.side,from.slot,from.who)||ctrOf(from.side,from.slot));
   let wait=0;
+  const pow=from&&from.pow;          /* 꿰뚫는 화살(pierce) · 명중(snipe) — 크고 무겁게 (사용자 2026-10-03) */
   if(fly&&q){
-    const nd=spawn('<div class="arrowfly"></div>');
+    const nd=spawn('<div class="arrowfly'+(pow?" pow "+pow:"")+'"></div>');
     if(nd){
       at(nd,q);
       nd.style.backgroundImage="url("+fly+")";
@@ -5803,19 +5862,38 @@ function arrowFX(side,slot,from){
       nd.style.setProperty("--dy",(p.y-q.y)+"px");
       nd.style.setProperty("--rot",
         (Math.atan2(p.y-q.y,p.x-q.x)*180/Math.PI)+"deg");
-      setTimeout(()=>nd.remove(),210);
-      wait=150;                      /* 날아가는 시간만큼 터지는 걸 미룬다 */
+      setTimeout(()=>nd.remove(),pow?300:210);
+      wait=pow?200:150;              /* 날아가는 시간만큼 터지는 걸 미룬다 */
     }
+    if(pow&&typeof streakFX==="function"){ const a=ctrOf(from.side,from.slot), b=ctrOf(side,slot); if(a&&b) streakFX(a,b) }
   }
+  if(pow) setTimeout(()=>{
+    const c=ctrOf(side,slot); if(c) quakeFX(c);
+    if(pow==="snipe"){ veil("radial-gradient(circle,rgba(255,240,200,.45),transparent 70%)"); document.body.classList.remove("shakeall"); void document.body.offsetWidth;
+      document.body.classList.add("shakeall"); setTimeout(()=>document.body.classList.remove("shakeall"),620) }
+    if(pow==="pierce"&&fly&&q){   /* 꿰뚫고 지나가 화면 밖으로 */
+      const g=spawn('<div class="arrowfly pow thru"></div>');
+      if(g){ at(g,p); g.style.backgroundImage="url("+fly+")";
+        const ang=Math.atan2(p.y-q.y,p.x-q.x), L=700;
+        g.style.setProperty("--dx",(Math.cos(ang)*L)+"px"); g.style.setProperty("--dy",(Math.sin(ang)*L)+"px");
+        g.style.setProperty("--rot",(ang*180/Math.PI)+"deg"); setTimeout(()=>g.remove(),380) } }
+  },wait);
   if(!hit) return;
   setTimeout(()=>{
     const nd=spawn('<div class="arrowfx"></div>'); if(!nd) return;
     at(nd,p);
     nd.style.backgroundImage="url("+hit+")";
     /* 그림은 오른쪽을 향해 있다. 매번 조금씩 기울여 되풀이되는 티를 줄인다. */
-    nd.style.transform="scale(1.3) rotate("+(-11+Math.random()*22)+"deg)";
+    nd.style.transform="scale("+(pow==="snipe"?2.8:pow?2.2:1.3)+") rotate("+(-11+Math.random()*22)+"deg)";
     setTimeout(()=>nd.remove(),420);
   },wait);
+}
+/* 명중 — 겨누는 동안 대상 위에 조준선이 조여든다 (2026-10-03) */
+function aimMarkFX(side,slot,ms){
+  const p=bodyPoint(side,slot)||ctrOf(side,slot); if(!p) return;
+  const nd=spawn('<div class="aimmark"><i></i></div>'); if(!nd) return;
+  at(nd,p); nd.style.setProperty("--d",Math.round((ms||600)*SPD)+"ms");
+  setTimeout(()=>nd.remove(),Math.round((ms||600)*SPD)+160);
 }
 /* 화살비 — 왼쪽 위 하늘에서 화살이 쏟아진다.
    적 하나에 두 발씩, 자리와 때를 조금씩 어긋내 '비' 로 보이게 한다.
@@ -6018,6 +6096,14 @@ const SKILL_POSE={
  "쿠렘타이|영혼 분리":{p:"atk",ms:1700,big:1,glow:"purple"},
  "쿠렘타이|환상통":{p:"atk",ms:1800,big:1,glow:"purple"},
  "쿠렘타이|사형 선고":{p:"atk",ms:2200,big:1,glow:"purple"},
+ /* 굴라 — 붉은 빛 (사용자 2026-10-03). 응축 폭발은 몸을 웅크린 막기 자세 */
+ "굴라|씹어먹기":{p:"atk",ms:1200,big:1,glow:"red"},
+ "굴라|균열 차원문":{p:"atk",ms:1500,big:1,glow:"red"},
+ "굴라|응축 폭발":{p:"guard",ms:1600,big:1,glow:"red"},
+ "굴라|융합":{p:"atk",ms:1600,big:1,glow:"red"},
+ /* 트리스탄 — 시위를 당겨 겨누는 동안(wind) 빛나고, 그 뒤에 화살이 나간다. 명중은 조준선(aim)을 먼저 */
+ "트리스탄|꿰뚫는 화살":{p:"atk",ms:1300,big:1,glow:"cyan",wind:330},
+ "트리스탄|명중":{p:"atk",ms:1800,big:1,glow:"gold",wind:620,aim:1},
 };
 const skillPose=(h,s)=>(h&&s)?SKILL_POSE[h.name+"|"+s.n]:null;
 /* 캐릭터 전용 공격 효과음 — art/소리/ 의 파일 이름을 그대로 적는다.
@@ -12732,6 +12818,7 @@ const GAME_VER="0.6";   /* 0.6 — 2스테이지 구역(정령숲) 추가 · 여
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 765, "v": "0.6", "d": "2026-10-03", "t": "굴라 네 기술과 트리스탄 꿰뚫는 화살, 명중 연출 강조", "big": 0},
  {"b": 764, "v": "0.6", "d": "2026-10-03", "t": "쿠렘타이 영혼 분리, 환상통, 사형 선고 연출 강조", "big": 0},
  {"b": 763, "v": "0.6", "d": "2026-10-03", "t": "도감 기술 카드 안내를 전환 기술 보기로", "big": 0},
  {"b": 762, "v": "0.6", "d": "2026-10-03", "t": "대원 도감에서 갈래 기술 카드를 누르면 다른 갈래를 보여 줌", "big": 0},
@@ -13497,7 +13584,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=764;
+const BUILD_NO=765;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -20204,6 +20291,8 @@ function drawBattle(app){
     w.querySelectorAll(".st.g,.st.o").forEach(x=>d.insertBefore(x,a)) });
   if(PHFOCUS) setTimeout(phFocusApply,0);   /* 단계 전환 암전 — 다시 그려도 이어지게 */
   formWaitApply();                          /* 영혼 분리 — 맺히기 전의 환영은 숨긴다 */
+  if(B&&run) run.heroes.forEach(h=>{ if(h.bomb>0&&h.slot>0&&h.hp>0){ const c=ctrOf("mine",h.slot);   /* 응축 폭발을 기다리는 동안 (2026-10-03) */
+    if(c&&c.e){ c.e.classList.add("bombing"); if(h.bomb===1) c.e.classList.add("bomb1") } } });
   { const tr=el(`<div class="turnrow"></div>`);
     const eb=el(`<button class="go" id="turnend"${B.busy?" disabled":""}>${
       B.busy?"턴 종료 효과…":"턴 종료 <i>(Space)</i>"}</button>`);
@@ -22510,7 +22599,10 @@ function doSkill(target){
     { const sp=skillPose(h,s);
       if(h.slot>0&&sp)
         fx({side:"mine",slot:h.slot,pose:sp.p,poseMs:sp.ms,big:sp.big?sp.ms:0,bigGlow:sp.glow,
-            s:own||ATK_SFX[h.name],lunge:sp.big?0:1,gap:0});   /* 강조 자세라도 이펙트는 바로 (사용자 2026-09-30) */
+            s:sp.wind?null:(own||ATK_SFX[h.name]),lunge:sp.big?0:1,
+            fn:(sp.aim&&target>0)?(()=>aimMarkFX("foe",target,sp.wind)):null,
+            gap:sp.wind||0});   /* 강조 자세라도 이펙트는 바로 (사용자 2026-09-30). wind 가 있으면 겨누는 만큼 뒤에 (트리스탄, 2026-10-03) */
+      if(h.slot>0&&sp&&sp.wind&&(own||ATK_SFX[h.name])) fx({s:own||ATK_SFX[h.name],gap:0});   /* 시위를 놓는 순간의 소리 */
       else if(h.slot>0&&hitsFoe(s,target)&&HERO_STRIKE[h.name])   /* 강조 공격 — 젖혔다 파고드는 순간에 이펙트·피해 (gap = wind) */
         fx({side:"mine",slot:h.slot,strike:HERO_STRIKE[h.name],s:own||ATK_SFX[h.name],gap:HERO_STRIKE[h.name].wind});
       else if(h.slot>0&&hitsFoe(s,target))
@@ -23592,12 +23684,13 @@ function runEffect(h,i,s,target){
       /* 새로 그릴 것이 없다. 씹어먹기 띠가 바로 이 그림이고,
          같은 그림이라야 "굴라가 물어 삼켰다" 로 읽힌다.
          소리도 같아야 한다 — 그림만 씹어먹기고 소리가 딴것이면 따로 논다 */
+      { const sn=ghostSnap("mine",m.slot); fx({side:"mine",slot:m.slot,fn:()=>ghostFlyFX(sn,{side:"mine",slot:h.slot},520,"suck"),gap:0}) }   /* 빨려 든다 (2026-10-03) — 판을 다시 그리면 소환물이 사라지므로 지금 그림을 떠 둔다 */
       fx({side:"mine",slot:m.slot,art:"chomp",s:sfxOr("굴라 씹어먹기","blunt"),
           txt:"흡수",cls:"heal",gap:90});
       m.alive=0; m.slot=0;
     });
     bumpTmp(h,"atk",per*g); bumpTmp(h,"mag",per*g); bumpTmp(h,"def",per*g);
-    fx({side:"mine",slot:h.slot,fuse:1,s:"summon",glow:1,txt:"융합",cls:"crit"});
+    fx({side:"mine",slot:h.slot,fuse:1,s:"summon",glow:1,txt:"융합",cls:"crit",quake:1,big:900,bigGlow:"red",gap:300});
     say(`융합 — 소환물 ${g}을 ${mercy?"공명시켜":"삼켜"} 이번 전투 동안 능력치가 ${per*g} 오릅니다.`,"t1");
     if(!mercy&&h.tag.digest){ h.maxHp+=h.tag.digest; h.hp+=h.tag.digest;
       say(`소화 — ${h.name} 최대 체력 +${h.tag.digest}`,"t1") }
@@ -23624,6 +23717,7 @@ function runEffect(h,i,s,target){
       /* fresh 가 서 있는 동안은 바닥 표시를 안 그린다 — 띠가 다 돌 때까지.
          내리는 것은 portalFX() 가 손수 한다 */
       B.portals.push({side:side,slot:slot,dmg:s.dmg+mod(s,"dmg")+h.mag,shield:3+h.def,fresh:1,by:h.name});
+      fx({side:side,slot:slot,quake:1,gap:0});   /* 바닥이 갈라지며 (2026-10-03) */
       if(side==="foe"&&h.tag.portalFear){ const f0=foeAt(slot);
         if(f0){ addDeb(f0,"fear",h.tag.portalFear,h); say(`공포스러운 차원문 — ${f0.name} 공포 ${h.tag.portalFear}`,"t2") } }
       /* ring 을 뺐다 — 바닥에 눕는 구멍 위로 서 있는 동그라미가 겹치면
@@ -23794,7 +23888,7 @@ function runEffect(h,i,s,target){
       if(h.name==="나이코스"&&i===3) fx({side:"foe",slot:tgt.slot,ult:1,gap:0});
       /* 트리스탄은 활잡이다 — 적을 때리는 기술마다 화살이 날아간다 */
       if(isArcher(h))
-        fx({side:"foe",slot:tgt.slot,arrow:{side:"mine",slot:h.slot,who:h.name},gap:0});
+        fx({side:"foe",slot:tgt.slot,arrow:{side:"mine",slot:h.slot,who:h.name,pow:h.name==="트리스탄"?(s.markKill?"snipe":s.pierce?"pierce":null):null},gap:0});
       /* 이테리오 수축 공격 — 푸른 찌르기 (사용자 2026-09-30) */
       const itThrust=h.name==="이테리오"&&s.n==="수축 공격";
       if(itThrust) fx({side:"foe",slot:tgt.slot,thrust:{side:"mine",slot:h.slot},gap:120});
@@ -24524,6 +24618,8 @@ function startMyTurn(){
       h.thornTmp=0;
       say("응축 폭발 — 압축된 힘이 터집니다.","t1");
       barkPick(h,["event:응축 폭발","atk"],1);
+      /* 터지기 직전 — 한 번 더 부풀고, 화면이 어두워졌다 하얗게 터진다 (2026-10-03) */
+      fx({side:"mine",slot:h.slot,big:700,bigGlow:"red",fn:()=>setTimeout(()=>bombBlastFX(h.slot),Math.round(420*SPD)),gap:560});
       fx({side:"mine",slot:h.slot,quake:1,s:sfxOr("굴라 응축 폭발","quake"),gap:260});
       /* 터지는 그림은 **맞는 쪽**에 뜬다. 피해를 받는 것이 적들이니 그림도 거기 있어야 한다.
          굴라 쪽에는 흔들림(quake)과 소리만 남는다 */
