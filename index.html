@@ -421,6 +421,7 @@ img.pxs.face{image-rendering:pixelated;width:auto;filter:drop-shadow(0 2px 0 rgb
 .cxvn{display:flex;align-items:center;justify-content:center;gap:4px;margin-top:6px;font-size:10px;color:var(--brass)}
 .cxvn i{width:6px;height:6px;border-radius:50%;background:rgba(201,162,39,.3)} .cxvn i.on{background:var(--brass)}
 .cxvn span{margin-left:4px}
+.slot.formwait .art,.slot.formwait .ublw,.slot.formwait .intentbar,.slot.formwait .tier{visibility:hidden}   /* 영혼 분리 — 맺히기 전 */
 .sk .skmore{color:var(--brass);font-size:10.5px;cursor:pointer;white-space:nowrap;margin-left:4px;text-decoration:none;border-bottom:1px dotted var(--brass)}
 .sk .skmore:hover{color:#ffe08a}
 .skhead{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
@@ -4719,10 +4720,14 @@ function ghostRushFX(name,from,to,ms,gh){
 }
 /* 강조 자세 — 기술 그림이 조금 커지며 빛나고 머문다 (사용자 2026-09-30: 모션이 너무 빨리 지나가서).
    CSS 로는 .bfstage 쪽 규칙에 밀려서, 그림에 곧장 animate 를 건다 */
-function bigPoseFX(p,ms){
+const BIG_GLOW={
+  blue:"drop-shadow(0 0 9px rgba(160,225,255,.95)) drop-shadow(0 0 22px rgba(110,180,255,.75)) brightness(1.2)",
+  purple:"drop-shadow(0 0 9px rgba(200,150,255,.95)) drop-shadow(0 0 24px rgba(130,70,230,.8)) brightness(1.2)"};
+function bigPoseFX(p,ms,glow){
   const im=p&&p.e&&p.e.querySelector(".art img.pxs, .art svg"); if(!im||!im.animate) return;
   const d=Math.round((ms||1000)*SPD);
-  const GLOW="drop-shadow(0 0 9px rgba(160,225,255,.95)) drop-shadow(0 0 22px rgba(110,180,255,.75)) brightness(1.2)";
+  const GLOW=BIG_GLOW[glow]||BIG_GLOW.blue;
+  if(glow==="purple") edgeGlow("rgba(140,80,220,.32)");
   im.style.transformOrigin="50% 100%";
   im.animate([{scale:1,filter:"none"},
               {scale:1.2,filter:GLOW,offset:.08},
@@ -4825,10 +4830,10 @@ function playFX(o){
     else        p.e.classList.add("shake","flashd");
   }
   if(o.pose) setPose(o.side,o.slot,o.pose,o.poseMs);
-  if(o.big){ bigPoseFX(p,o.big);    /* 강조 자세 — 조금 커지고 빛난다 (사용자 2026-09-30) */
+  if(o.big){ bigPoseFX(p,o.big,o.bigGlow);    /* 강조 자세 — 조금 커지고 빛난다 (사용자 2026-09-30) */
     /* 기술이 판을 다시 그리면(시공간 폭탄) 그림이 새것으로 갈려 움직임이 끊긴다 — 한 번 더 건다 */
     const sd=o.side, sl=o.slot, e0=p.e;
-    setTimeout(()=>{ const q=ctrOf(sd,sl); if(q&&q.e!==e0) bigPoseFX(q,Math.round(o.big*0.8)) },140) }
+    setTimeout(()=>{ const q=ctrOf(sd,sl); if(q&&q.e!==e0) bigPoseFX(q,Math.round(o.big*0.8),o.bigGlow) },140) }
   if(o.strike) strikeFX(o.side,o.slot,o.strike);   /* 대원 강조 공격 */
   if(o.lunge)  nudge(o.side,o.slot, 1);
   if(o.recoil) nudge(o.side,o.slot,-1);
@@ -5131,7 +5136,7 @@ const FOE_FX_SAT=0.45;
 /* 그림이 64px 한 칸짜리라 대원 몸집에 견주면 작다. 칸마다 배율을 따로 둔다 —
    눈에 안 들어오면 여기 숫자만 만지면 된다. */
 const FX_SCALE={block:2.5, evade:2.4, heal:2.1, claw:1.8, drain:2.0, pain:1.7,
-                rip:1.9, form:1.9, ult:2.4, thrust:2.2, mhit:1.8, exp:2.6,
+                rip:2.9, form:2.9,   /* 1.9 → 2.9 (사용자 2026-10-03: 영혼 분리 임팩트) */ ult:2.4, thrust:2.2, mhit:1.8, exp:2.6,
                 burn:1.5, chomp:2.0, portal:1.0, rift:3.0, riftCard:2.8, soul:1.7,   /* rift 1.6→3.0 · riftCard 0.9→2.8 (사용자 2026-10-01 : 균열 차원문 하수인 틈 더 크게) */
                 swell:1.7, blowup:2.2, fuse:2.2};
 /* burn 만 유독 작다 — 매 턴 도는 연출이라 크면 화면이 시끄럽다 */
@@ -5706,7 +5711,48 @@ function phFX(side,slot,key,cls,z){
   at(nd,p);
   nd.style.backgroundImage="url("+u+")";
   nd.style.transform="scale("+z+")";
-  setTimeout(()=>nd.remove(),420);
+  nd.style.animationDuration=Math.round(600*SPD)+"ms"; nd.style.filter="brightness(1.25)"+KGLOW;   /* 천천히 (2026-10-03) */
+  setTimeout(()=>nd.remove(),Math.round(660*SPD));
+}
+/* 영혼 분리 — 적의 몸에서 보랏빛 혼이 뜯겨 나와 떨다가 새 칸으로 날아가 맺힌다 (사용자 2026-10-03: 임팩트가 없다).
+   적 그림을 베낀 반투명 그림이 날아간다. 맺히는 순간은 formFX 가 받는다 */
+/* 맺힘 — 숨겨 둔 환영을 드러낸다 (formWait 를 풀고 작게 → 크게 · 번쩍) */
+const FORM_WAIT_MS=4000;
+function formWaitApply(){
+  if(!B) return; const now=Date.now();
+  (B.mins||[]).forEach(m=>{ if(m.alive&&m.formWait&&now-m.formWait<FORM_WAIT_MS){ const c=ctrOf("mine",m.slot); if(c&&c.e) c.e.classList.add("formwait") } });
+  (B.foes||[]).forEach(f=>{ if(f.alive&&f.formWait&&now-f.formWait<FORM_WAIT_MS){ const c=ctrOf("foe",f.slot); if(c&&c.e) c.e.classList.add("formwait") } });
+}
+function formReveal(side,slot){
+  const u=side==="mine"?(B.mins||[]).find(m=>m.alive&&m.slot===slot):(B.foes||[]).find(f=>f.alive&&f.slot===slot);
+  if(u) u.formWait=0;
+  const c=ctrOf(side,slot); if(!c||!c.e) return;
+  c.e.classList.remove("formwait");
+  const im=c.e.querySelector(".art img.pxs, .art svg");
+  if(im&&im.animate) im.animate([{scale:"0.5",opacity:0,filter:"brightness(3)"+KGLOW},{scale:"1.12",opacity:1,filter:"brightness(1.8)"+KGLOW,offset:.45},{scale:"1",opacity:1,filter:"none"}],
+    {duration:Math.round(560*SPD),easing:"cubic-bezier(.2,.9,.3,1.2)"});
+}
+function soulTearFX(from,to,ms){
+  const a=ctrOf(from.side,from.slot), b=ctrOf(to.side,to.slot); if(!a||!b) return;
+  const im0=a.e&&a.e.querySelector(".art img.pxs"); if(!im0) return;
+  const r=im0.getBoundingClientRect();
+  const g=spawn('<img class="soultear" alt="">'); if(!g) return;
+  g.src=im0.currentSrc||im0.src;
+  if(from.side==="foe"&&getComputedStyle(im0).transform!=="none") g.style.transform=getComputedStyle(im0).transform;
+  Object.assign(g.style,{position:"absolute",left:r.left+"px",top:r.top+"px",width:r.width+"px",height:r.height+"px",
+    imageRendering:"pixelated",pointerEvents:"none",zIndex:8});
+  const dx=b.x-a.x, dy=b.y-a.y, d=Math.round((ms||1000)*SPD);
+  const F="grayscale(1) brightness(1.6) sepia(1) hue-rotate(220deg) saturate(3)"+KGLOW;
+  if(g.animate) g.animate([
+    {translate:"0 0",opacity:0,filter:F,scale:"1"},
+    {translate:"-4px 0",opacity:.85,filter:F,scale:"1.04",offset:.12},
+    {translate:"5px -3px",opacity:.85,offset:.2},
+    {translate:"-6px 2px",opacity:.9,offset:.28},
+    {translate:"4px -2px",opacity:.9,scale:"1.08",offset:.36},
+    {translate:(dx*0.55)+"px "+(dy*0.55-40)+"px",opacity:.75,scale:"0.9 1.2",offset:.62},
+    {translate:dx+"px "+dy+"px",opacity:.9,scale:"1",offset:.86},
+    {translate:dx+"px "+dy+"px",opacity:0,scale:"1.15",filter:"brightness(3)"+KGLOW}],{duration:d,easing:"cubic-bezier(.45,.05,.35,1)",fill:"forwards"});
+  setTimeout(()=>g.remove(),d+40);
 }
 /* 트리스탄 화살 — 쏜 자리에서 날아가 적 위에서 터진다.
    참격과 달리 '날아가는 칸' 이 따로 있어 두 그림을 이어 쓴다. */
@@ -5968,6 +6014,10 @@ const SKILL_POSE={
  "이테리오|시공간 폭탄":{p:"bomb",ms:2500,big:1},
  "이테리오|자기장 변환":{p:"magnet",ms:2500,big:1},
  "이테리오|에너지 과부하":{p:"overload",ms:2500,big:1},   /* 과부하 자세 (사용자 2026-09-30) */
+ /* 쿠렘타이 — 이테리오처럼 강조 (사용자 2026-10-03). 따로 그린 자세가 없어 공격 자세로, 빛은 보랏빛 */
+ "쿠렘타이|영혼 분리":{p:"atk",ms:1700,big:1,glow:"purple"},
+ "쿠렘타이|환상통":{p:"atk",ms:1800,big:1,glow:"purple"},
+ "쿠렘타이|사형 선고":{p:"atk",ms:2200,big:1,glow:"purple"},
 };
 const skillPose=(h,s)=>(h&&s)?SKILL_POSE[h.name+"|"+s.n]:null;
 /* 캐릭터 전용 공격 효과음 — art/소리/ 의 파일 이름을 그대로 적는다.
@@ -12682,6 +12732,7 @@ const GAME_VER="0.6";   /* 0.6 — 2스테이지 구역(정령숲) 추가 · 여
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 764, "v": "0.6", "d": "2026-10-03", "t": "쿠렘타이 영혼 분리, 환상통, 사형 선고 연출 강조", "big": 0},
  {"b": 763, "v": "0.6", "d": "2026-10-03", "t": "도감 기술 카드 안내를 전환 기술 보기로", "big": 0},
  {"b": 762, "v": "0.6", "d": "2026-10-03", "t": "대원 도감에서 갈래 기술 카드를 누르면 다른 갈래를 보여 줌", "big": 0},
  {"b": 761, "v": "0.6", "d": "2026-10-03", "t": "이테리오 마나 중독자를 마나 과충전으로", "big": 0},
@@ -13446,7 +13497,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=763;
+const BUILD_NO=764;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -20152,6 +20203,7 @@ function drawBattle(app){
     /* 버프·디버프 줄은 그림 위로 — 발밑에 두면 옆 칸 그림에 가려 커서가 안 닿는다 (2026-09-29) */
     w.querySelectorAll(".st.g,.st.o").forEach(x=>d.insertBefore(x,a)) });
   if(PHFOCUS) setTimeout(phFocusApply,0);   /* 단계 전환 암전 — 다시 그려도 이어지게 */
+  formWaitApply();                          /* 영혼 분리 — 맺히기 전의 환영은 숨긴다 */
   { const tr=el(`<div class="turnrow"></div>`);
     const eb=el(`<button class="go" id="turnend"${B.busy?" disabled":""}>${
       B.busy?"턴 종료 효과…":"턴 종료 <i>(Space)</i>"}</button>`);
@@ -22457,7 +22509,7 @@ function doSkill(target){
        '적을 치는가' 는 hitsFoe() 가 FOE_HIT 표로 이미 정확히 답한다. */
     { const sp=skillPose(h,s);
       if(h.slot>0&&sp)
-        fx({side:"mine",slot:h.slot,pose:sp.p,poseMs:sp.ms,big:sp.big?sp.ms:0,
+        fx({side:"mine",slot:h.slot,pose:sp.p,poseMs:sp.ms,big:sp.big?sp.ms:0,bigGlow:sp.glow,
             s:own||ATK_SFX[h.name],lunge:sp.big?0:1,gap:0});   /* 강조 자세라도 이펙트는 바로 (사용자 2026-09-30) */
       else if(h.slot>0&&hitsFoe(s,target)&&HERO_STRIKE[h.name])   /* 강조 공격 — 젖혔다 파고드는 순간에 이펙트·피해 (gap = wind) */
         fx({side:"mine",slot:h.slot,strike:HERO_STRIKE[h.name],s:own||ATK_SFX[h.name],gap:HERO_STRIKE[h.name].wind});
@@ -22667,6 +22719,7 @@ function phantomPain(h,s,label){
   let list=B.foes.filter(f=>f.alive);
   if(T.painNear&&list.length) list=[list.reduce((a,b)=>dist(h.slot,a.slot)<=dist(h.slot,b.slot)?a:b)];
   pulseFX("mine",h.slot,"#8f5fd0",3);
+  if(!label) veil("radial-gradient(circle,rgba(110,60,200,.38),transparent 75%)");   /* 강조 (2026-10-03) */
   if(label) say(`${label} — 환상통`,"t1");
   let dealt=0;
   list.forEach(f=>{
@@ -22812,22 +22865,27 @@ function runEffect(h,i,s,target){
       m.maxHp=src.hp; m.hp=src.hp; m.owner=h.name; m.phantomOf=src.id; m.backlash=back;
       m.of=src.name; m.name=src.name+"의 환영";
       m.taunt=1; m.perma=1;                 /* 내 전장의 환영은 도발한다 */
+      m.formWait=Date.now();                /* 혼이 날아와 맺힐 때까지 숨긴다 (2026-10-03) */
       B.mins.push(m);
     }else{
       if(foeAt(slot)){ say("그 칸에는 이미 적이 있습니다.","t2"); return }
       B.foes.push({name:src.name+"의 환영",of:src.name,slot:slot,maxHp:src.hp,hp:src.hp,atk:0,def:0,rng:0,exp:1,
         demon:0,boss:0,shield:0,air:0,alive:1,id:B.foes.length+100,infect:0,stun:0,weak:0,
-        isPhantom:1,phantomOf:src.id,backlash:back});
+        isPhantom:1,phantomOf:src.id,backlash:back,formWait:Date.now()});
     }
     /* 뽑힘 → (soulFX 가 알갱이를 흘려보내는 동안) → 맺힘.
        gap 은 '그 뒤의 것을 미루는 값' 이라 380ms 사이에 알갱이가 건너간다.
        맺히는 그림은 새 줄이 아니라 이미 있던 '환영' 줄에 얹는다 —
        그림과 글자가 같은 순간에 나와야 한다. */
-    fx({side:"foe",slot:src.slot,rip:1,kfrom:{side:"mine",slot:h.slot},gap:380});
-    soulFX({side:"foe",slot:src.slot},{side:mine?"mine":"foe",slot:slot},"#9ecbf5",7);
+    /* 강조 (사용자 2026-10-03) — 당기는 선 + 뜯김, 적은 움찔하며 떨고, 혼이 날아가(soulTearFX) 새 칸에서 크게 맺힌다 */
+    { const dst={side:mine?"mine":"foe",slot:slot};
+      fx({side:"foe",slot:src.slot,rip:1,kfrom:{side:"mine",slot:h.slot},pose:"hurt",poseMs:900,quake:1,
+          fn:()=>{ veil("radial-gradient(circle,rgba(140,80,220,.32),transparent 70%)"); soulTearFX({side:"foe",slot:src.slot},dst,1000) },gap:880}); }
+    soulFX({side:"foe",slot:src.slot},{side:mine?"mine":"foe",slot:slot},"#b89cff",10);
     /* art 는 빼 둔다 — 맺힘 그림이 있는데 옛 파란 마름모까지 뜨면 두 겹이 된다.
        소리(s)와 글자 색(cls)은 art 와 무관하므로 그대로 산다. */
-    fx({side:mine?"mine":"foe",slot:slot,form:1,s:"summon",txt:"환영",cls:"mag",gap:420});
+    fx({side:mine?"mine":"foe",slot:slot,form:1,s:"summon",txt:"환영",cls:"mag",quake:1,glow:1,
+        fn:()=>{ pulseFX(mine?"mine":"foe",slot,"#b89cff",3); formReveal(mine?"mine":"foe",slot) },gap:520});
     say(`${src.name}의 환영이 ${mine?"아군":"적"} ${mine?slot:foeNo(slot)}번 칸에 나타납니다.${
       mine?" 도발합니다.":""}`,"t1");
     /* 정신 분리 — 뜯긴 적에게 보호약화 */
