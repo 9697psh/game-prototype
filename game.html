@@ -402,6 +402,8 @@ img.pxs.face{image-rendering:pixelated;width:auto;filter:drop-shadow(0 2px 0 rgb
 #foeSide .slot.dying .intentbar{visibility:hidden}
 #foeSide .slot.dying.fall .art{transition:opacity .42s ease-in,filter .42s ease-in,translate .42s ease-in;opacity:0;filter:grayscale(1) brightness(.45);translate:0 10px}
 #foeSide .slot.dying.fall .bar,#foeSide .slot.dying.fall .mini,#foeSide .slot.dying.fall .nm,#foeSide .slot.dying.fall .tier{transition:opacity .3s;opacity:0}
+.sub.pendantx{display:flex;align-items:center;justify-content:center;gap:6px;color:#f0d488;font-weight:700;margin-top:6px}
+.sub.pendantx img{width:24px;height:24px;image-rendering:pixelated}
 .sk .skmore{color:var(--brass);font-size:10.5px;cursor:pointer;white-space:nowrap;margin-left:4px;text-decoration:none;border-bottom:1px dotted var(--brass)}
 .sk .skmore:hover{color:#ffe08a}
 .skhead{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
@@ -1267,8 +1269,11 @@ body.vbattle .tornado{transform:scale(4.6);margin-top:14px}   /* 회오리도 �
   25%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}
   45%{transform:translate(-50%,-50%) scale(1)}
   75%{opacity:1}100%{opacity:0;transform:translate(-50%,-160%) scale(1.05)}}
-.cell .cbounty{position:absolute;right:2px;top:2px;width:16px;height:16px;z-index:3;filter:drop-shadow(0 1px 0 rgba(0,0,0,.8))}
-.cell .cbounty img{width:16px;height:16px;image-rendering:pixelated;display:block}
+/* 현상금 — 좌상단에 크게 (사용자 2026-10-03, 우상단 16px 은 라운드 수와 겹쳐 안 보였다) */
+.cell .cbounty{position:absolute;left:0;top:0;width:28px;height:28px;z-index:3;
+  filter:drop-shadow(0 1px 0 rgba(0,0,0,.9)) drop-shadow(0 0 4px rgba(255,200,80,.55))}
+.cell .cbounty img{width:28px;height:28px;image-rendering:pixelated;display:block}
+.cell:has(.cbounty) .crisk{left:auto;right:3px;top:16px}
 /* 도감 — 전용 보상 목록 */
 .cxsec{margin:26px 0 4px;font-family:var(--serif);font-size:15px;color:var(--brass);
   letter-spacing:.1em;border-bottom:1px solid var(--rule);padding-bottom:6px}
@@ -12649,6 +12654,7 @@ const GAME_VER="0.6";   /* 0.6 — 2스테이지 구역(정령숲) 추가 · 여
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 750, "v": "0.6", "d": "2026-10-03", "t": "금속 펜던트 작동, 아크 방전 라운드 버그, 에메랄드 수정 이동 추진력, 현상금 표식 좌상단, 감옥의 우물 보상 낮춤", "big": 0},
  {"b": 749, "v": "0.6", "d": "2026-10-03", "t": "여러 번 때려 쓰러뜨릴 때 타격마다 체력이 깎이고 마지막 타격 뒤에 쓰러짐", "big": 0},
  {"b": 748, "v": "0.6", "d": "2026-10-03", "t": "간수장 단계 그림: 2단계부터 갑옷 파손, 3단계 각성 자세", "big": 0},
  {"b": 747, "v": "0.6", "d": "2026-10-03", "t": "간수장 세 단계 패턴: 체력 300, 2단계 졸개 호출, 3단계 규율과 감금", "big": 0},
@@ -13399,7 +13405,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=749;
+const BUILD_NO=750;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -15456,16 +15462,16 @@ const GIM_EV={
     o:[{t:"물 마시기",d:"물을 마십니다. 무작위 대원이 체력을 2~4 회복합니다.",end:1,
         f:()=>{ const up=run.heroes.filter(h=>!h.down), h=up.length?rnd(up):null; const v=h?healUp(h,rr([2,4])):0; SFX.play("heal"); run.grid[r][c]={t:"empty"};
           return h?`${h.name}${jo(h.name,"ig")} 물을 마셨습니다. 체력 +${v}.`:"물을 마실 사람이 없습니다." }},
-       {t:"소원 빌기",d:"금화를 3~6개 던져 소원을 빕니다. 확률로 무작위 보상을 얻습니다.",end:1,
+       {t:"소원 빌기",d:"금화를 3~6개 던져 소원을 빕니다. 하급 보상 15%, 제련석 12%, 파편 장신구 10%, 중급 보상 3%, 꽝 60%.",end:1,
         when:()=>run.gold>=3,
         f:()=>{ const g=Math.min(run.gold,rr([3,6])); run.gold-=g; run.grid[r][c]={t:"empty"}; if(sfxHas("금화 쓰기")) SFX.play("금화 쓰기");
           const x=Math.random();
-          if(x<0.05){ (run.after=run.after||[]).push({grade:"중급"}); return `금화 ${g}이 물에 잠깁니다… 우물이 환히 빛납니다. 중급 보상!` }
-          if(x<0.20){ (run.after=run.after||[]).push({grade:"하급"}); return `금화 ${g}이 물에 잠깁니다. 하급 보상이 떠오릅니다.` }
-          if(x<0.32){ (run.after=run.after||[]).push({item:rnd(ITEMS.filter(i=>i.g==="파편"))}); return `금화 ${g}이 물에 잠깁니다. 파편 장신구가 떠오릅니다.` }
-          if(x<0.44){ const st=rr([2,4]); run.stone=(run.stone||0)+st; return `금화 ${g}이 물에 잠깁니다. 제련석 ${st}개가 떠오릅니다.` }
-          if(x<0.50){ (run.after=run.after||[]).push({item:rnd(ITEMS.filter(i=>i.g==="일반"))}); return `금화 ${g}이 물에 잠깁니다. 일반 장신구가 떠오릅니다.` }
-          return `금화 ${g}이 물에 잠깁니다… 아무 일도 일어나지 않습니다.` }},
+          /* 보상이 너무 좋았다 (사용자 2026-10-03) — 꽝 50→60%, 중급 5→3%, 일반 장신구 6% 빼고, 제련석 2~4 → 2~3 */
+          if(x<0.03){ (run.after=run.after||[]).push({grade:"중급"}); return `금화 ${g}이 물에 잠깁니다… 우물이 환히 빛납니다. 중급 보상!` }
+          if(x<0.18){ (run.after=run.after||[]).push({grade:"하급"}); return `금화 ${g}이 물에 잠깁니다. 하급 보상이 떠오릅니다.` }
+          if(x<0.28){ (run.after=run.after||[]).push({item:rnd(ITEMS.filter(i=>i.g==="파편"))}); return `금화 ${g}이 물에 잠깁니다. 파편 장신구가 떠오릅니다.` }
+          if(x<0.40){ const st=rr([2,3]); run.stone=(run.stone||0)+st; return `금화 ${g}이 물에 잠깁니다. 제련석 ${st}개가 떠오릅니다.` }
+          return `금화 ${g}이 물에 잠깁니다… 꽝. 아무 일도 일어나지 않습니다.` }},
        {t:"나가기",d:"지도로 돌아갑니다.",leave:1,f:()=>""}]}),
   fence:(cell,r,c)=>({n:"울타리",art:"foe_fence_wood",face:"부서진 파수병",gim:1,   /* 나무색 울타리 스프라이트 (사용자 2026-09-15) */
     t:"첨탑을 두른 울타리가 길을 막고 있습니다. 첨탑 관리자의 눈이 닿는 자리입니다.",
@@ -18021,6 +18027,7 @@ function startBattle(kind,pinned){
     h.first=h.first||{}; h.first.cut=0; h.first.shot=0;
     h.shotFree=0; h.thornTmp=0;
     h.windBuff=0; h.windDmg=0; h.potential=0; h.lock={}; h.lockNew={}; h.airUp=0; h.manaUsed=0;
+    h.spentTurn=0; h.magnetTurn=0;   /* 아크 방전 셈 — 지난 라운드·전투 마지막 턴에 쓴 마나가 남아 첫 턴에 마나 없이 팽창 공격이 나갔다 (사용자 2026-10-03) */
     h.portal=null; h.bomb=0; h.minions=[];
     h.mana=h.maxMana;
     if(fresh){
@@ -22498,6 +22505,9 @@ function moveTo(h,to){
       if(ffFlare(h)){ const f=nearestFoe(h); if(f){ say(`재빠른 이동 — ${f.name}에게 피해 1`,"t2"); ffHit(h,f,1,"재빠른 이동") } }
       else { h.shield+=1; say("재빠른 이동 — 보호막 +1","t2") } } }
   { const ms=itemBt(h,"moveShield")+((h.tag&&h.tag.moveShield)||0); if(ms) h.shield+=ms;
+    /* 에메랄드 수정 따위 — 「내 턴에 이동시 추진력」. 산들바람 안에만 있어서 점프백 같은 다른 이동에서는 안 올랐다 (사용자 2026-10-03) */
+    const mm=(B&&!B.foeAct&&from!==to)?itemBt(h,"moveMom"):0;
+    if(mm){ h.mom=(h.mom||0)+mm; fx({side:"mine",slot:to,ring:"#7fd39a",txt:"추진력 +"+mm,cls:"buf",gap:60}); say(`${h.name} 추진력 +${mm} (장신구)`,"t2") }
     const mb=itemBt(h,"moveBlast");
     if(mb) asSrc(h,()=>B.foes.filter(f=>f.alive).forEach(f=>hurt(f,mb,"질주","wind")));
     (h.items||[]).forEach(it=>{ const k=it.bt&&it.bt.moveStat;
@@ -23335,7 +23345,7 @@ function runEffect(h,i,s,target){
       h.moveOk=1;   /* 제자리바람은 시전 자체가 성립 */
       say(`${h.name} 제자리에서 바람을 모읍니다.`);
     } else { say("이동할 칸을 골라야 합니다.","t2"); return }
-    h.mom+=itemBt(h,"moveMom");
+    if(h.slot===h.gustFrom) h.mom+=itemBt(h,"moveMom");   /* 제자리바람만 — 실제로 옮겨 갔으면 moveTo 가 이미 얹었다 */
     const m=1+(h.tag.momPlus||0);
     h.mom+=m; h.windBuff+=1; h.windDmg=(h.windDmg||0)+1+(h.tag.gustPlus||0);   /* 강화는 피해만 올린다 (사용자 2026-09-16) */
     say(`${h.name} 추진력 +${m} 다음 진선풍도의 거리 +1, 피해량 +${1+(h.tag.gustPlus||0)}`);
@@ -25128,6 +25138,7 @@ function offerCards(app,hero,grade,done,lvUp){
     picks=pickWeighted(pool,3);
     if(pending){ pending.pickKey=pkey; pending.picks=picks.map(rwKey) }
   }
+  if(pending&&pending.pendantShow) app.querySelector(".center").appendChild(el(`<div class="sub pendantx">${(PACK_ICON["금속 펜던트"]&&typeof ICON_PNG!=="undefined"&&ICON_PNG[PACK_ICON["금속 펜던트"]])?`<img src="${ICON_PNG[PACK_ICON["금속 펜던트"]]}" alt="">`:""}금속 펜던트: 중급 보상을 하나 더 고릅니다</div>`));
   const row=el(`<div class="rewards"></div>`);
   picks.forEach(r=>{
     const mine=!!r.own;
@@ -25153,6 +25164,15 @@ function offerCards(app,hero,grade,done,lvUp){
         const want=Math.floor(run.treasure/5);
         if((d.treaAtk||0)<want){ const add=want-(d.treaAtk||0); d.treaAtk=want; d.atk+=add;
           toast(`보물 사냥꾼 — ${d.name}의 공격력이 ${add} 올랐습니다.`) }
+      }
+      /* 금속 펜던트 — 가장 처음 얻는 중급 보상이면 같은 대원에게 하나 더. 새 셋을 뽑아 같은 화면을 다시 그린다
+         (건너뛰면 얻은 것이 아니므로 펜던트는 남는다) */
+      if(pending&&pending.pendantShow) pending.pendantShow=0;
+      else if(grade==="중급"&&run&&run.pendant&&pending){
+        run.pendant=0; pending.pendantShow=1; pending.picks=null; pending.pickKey=null;
+        if(pending.free&&!pending.hero) pending.hero=hero;
+        setTimeout(()=>{ toast("금속 펜던트 — 중급 보상을 하나 더 얻습니다."); render() },600);
+        return;
       }
       setTimeout(done,grade==="상급"?820:grade==="중급"?600:460);
     };
