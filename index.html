@@ -4337,6 +4337,30 @@ const MAP_SAY={
   "back:battle":["영혼이 늘었다.","…흡족하군."]}
 };
 let MAP_BUBBLE=null, MAP_FROM=null;
+/* 전투 대기 대사 (사용자 2026-10-03) — 내 턴에 한동안 아무것도 안 하면 전장의 대원 하나가 가끔 한마디.
+   대사는 일단 지도의 「바닥 누를 때」(floor · outside) 것을 그대로 쓴다 (외형이면 외형 대사가 먼저). 문구 수정 「대사」에서 고친다 */
+const IDLE_SAY={after:[12000,20000],gap:[18000,30000]};   /* 손을 놓고 12~20초 뒤 첫마디, 그 뒤로는 18~30초에 한 번 */
+let IDLE_IN=Date.now(), IDLE_NEXT=0;
+const idleRand=r=>r[0]+Math.random()*(r[1]-r[0]);
+["pointerdown","keydown","wheel"].forEach(ev=>document.addEventListener(ev,()=>{ IDLE_IN=Date.now(); IDLE_NEXT=0 },true));
+setInterval(()=>{
+  if(view!=="battle"||!B||B.over||B.busy||B.foeAct||(typeof TUT!=="undefined"&&TUT.on)||!run) return;
+  if(document.querySelector(".skinget,.dragging,.bark")) return;
+  const now=Date.now(); if(!IDLE_NEXT) IDLE_NEXT=IDLE_IN+idleRand(IDLE_SAY.after);
+  if(now<IDLE_NEXT) return;
+  IDLE_NEXT=now+idleRand(IDLE_SAY.gap);
+  const L=onField().filter(h=>h.hp>0&&!h.isMin&&run.heroes.indexOf(h)>=0).map(h=>{ const T=skinTable(MAP_SAY,h.name)||{};
+    return [h,[].concat(T.floor||[],T.outside||[])] }).filter(x=>x[1].length||idleMotionOf(x[0]));
+  if(!L.length) return;
+  const [h,lines]=rnd(L);
+  idleMotion(h);                              /* 희귀 외형의 특수 대기 모션 — 대사와 같은 순간, 같은 빈도 (사용자 2026-10-03) */
+  if(lines.length) barkShow(h,rnd(lines),now);
+},1000);
+/* 특수 대기 모션 — 외형 표의 idleMotion:{pose:"자세 열쇠", ms:길이}. 그 자세 그림(예: 「대기특수.png」 → art-build POSE)이 있어야 나온다.
+   그림이 아직 없으면 조용히 넘어간다 (집행관은 그림을 받으면 한 줄) */
+function idleMotionOf(h){ const k=skinOn(h.name), m=k&&k.idleMotion; return (m&&poseOf(skinSprite(h.name),m.pose))?m:null }
+function idleMotion(h){ const m=idleMotionOf(h); if(!m||!h.slot) return;
+  setPose("mine",h.slot,m.pose,Math.round((m.ms||1200)/SPD)) }
 /* 그 대원의 대사만 — 공용 대사는 없다 (사용자 2026-09-14 : 있는 대원이 공용 대사를 너무 자주 쳤다). 칸이 비면 조용 */
 function mapSayLines(key){
   const n=run&&run.heroes&&run.heroes[0]&&run.heroes[0].name;
@@ -12965,6 +12989,7 @@ const GAME_VER="0.6";   /* 0.6 — 2스테이지 구역(정령숲) 추가 · 여
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 776, "v": "0.6", "d": "2026-10-03", "t": "전투 대기 대사, 희귀 외형 특수 대기 모션 자리", "big": 0},
  {"b": 775, "v": "0.6", "d": "2026-10-03", "t": "누군가의 영혼 둥실 대기 모션, 집행관 환영 명부에 묶인 잔영", "big": 0},
  {"b": 774, "v": "0.6", "d": "2026-10-03", "t": "집행관 소리 반음 2개 더 높임, 영혼 얻기 소리도 집행관판", "big": 0},
  {"b": 773, "v": "0.6", "d": "2026-10-03", "t": "외형 정보창 그림 넘침과 새 공격 자세, 집행관 소리 피치만, 환상통 파열 강조", "big": 0},
@@ -13741,7 +13766,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=775;
+const BUILD_NO=776;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
