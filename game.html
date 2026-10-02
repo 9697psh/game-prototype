@@ -10482,10 +10482,28 @@ const FOE={
       늑대가 서로를 돌보고 저주를 건다. 돌보는 것은 늑대치기 몫이다. */
    ai:{open:"back",back:10,weak:5,near:4,twin:4,any:2,chase:1,debs:["bind"]},
    hit:"목덜미 물어뜯기"},
- "간수장":    {hp:46,atk:8,def:10,rng:4,exp:8,boss:1,
+ /* 세 단계 (사용자 2026-10-03) — 체력 300, 공격력 8 은 배율을 안 받는다(fixHp). 기술 숫자가 적은 그대로 들어간다.
+    보호력만 여느 우두머리처럼 오른다 (맞는 쪽). 200 아래 2단계, 100 아래 3단계 — 단계를 넘으면 그 단계의 「전환」부터.
+    배율을 곱해 보니(철퇴 25, 연타 12×3) 예전 간수장보다 훨씬 어려웠다 (sim, 4명 lv9 42% → 10%) */
+ "간수장":    {hp:300,fixHp:1,phases:[200,100],atk:8,def:10,rng:4,exp:8,boss:1,
    el:"공격",
-   gim:{taunt:1},
-   ai:{open:"thorn",near:10,weak:6,thorn:3,combo:5,buff:3,back:2,any:2,volley:2,def:1,debs:["bind","stun"]},
+   pas:[{k:"info",n:"세 단계",d:"체력 200 이하에서 2단계, 100 이하에서 3단계로 넘어갑니다. 단계마다 쓰는 패턴이 바뀝니다."},
+        {k:"discipline",v:5,n:"규율",d:"(3단계) 한 대원이 한 턴에 기술을 3번 사용할 때마다, 그 대원에게 피해를 5 줍니다."}],
+   sk:[
+    {n:"쇠사슬 끌기",ph:1,w:3,open:1,tg:"far",pull:1,deb:{bind:2},cd:2,chase:1,d:"(1단계) 가장 먼 대원을 맨 앞으로 끌어오고 속박을 2 부여합니다."},
+    {n:"철퇴 내려찍기",ph:1,w:5,tg:"near",dmg:8,deb:{defDn:1},chase:1,d:"(1단계) 가장 가까운 대원에게 공격 피해를 8 주고 보호약화를 1 부여합니다."},
+    {n:"발구르기",ph:1,w:4,tg:"within",max:2,dmg:4,hits:2,d:"(1단계) 거리 2 안의 모든 대원에게 공격 피해를 4씩 2번 줍니다."},
+    {n:"전환",ph:1,w:2,tg:"self",negUp:3,shield:12,cd:2,d:"(1단계) 부정 보호막을 3, 보호막을 12 얻습니다."},
+    {n:"철퇴 내려찍기",ph:2,w:5,tg:"near",dmg:10,deb:{defDn:1},chase:1,d:"(2단계) 가장 가까운 대원에게 공격 피해를 10 주고 보호약화를 1 부여합니다."},
+    {n:"발구르기",ph:2,w:4,tg:"within",max:2,dmg:5,hits:2,d:"(2단계) 거리 2 안의 모든 대원에게 공격 피해를 5씩 2번 줍니다."},
+    {n:"호출",ph:2,w:3,tg:"none",cond:"room",summon:{pool:["작은 죄수","사슬 광인","사슬 간수"],min:1,max:2,kind:"battle"},cd:2,d:"(2단계) 작은 죄수, 사슬 광인, 사슬 간수 중에서 1~2마리를 소환합니다."},
+    {n:"경비 호출",ph:2,w:3,tg:"none",cond:"room",summon:{pool:["감옥 경비병","경비견"],min:2,max:3,kind:"battle"},cd:3,d:"(2단계) 감옥 경비병과 경비견 중에서 2~3마리를 소환합니다."},
+    {n:"점호",ph:2,w:3,tg:"none",cond:"hasSummon",rollcall:{atk:2,shield:5},cd:1,d:"(2단계) 소환물들에게 공격력을 2, 보호막을 5 부여합니다."},
+    {n:"전환",ph:2,w:2,tg:"self",enter:1,negUp:4,shield:15,cd:2,d:"(2단계) 부정 보호막을 4, 보호막을 15 얻습니다."},
+    {n:"감금",ph:3,w:3,tg:"none",jail:1,cd:1,d:"(3단계) 무작위 대원의 기술 하나를 이번 턴 동안 잠급니다."},
+    {n:"철퇴 연타",ph:3,w:5,tg:"near",dmg:4,hits:3,chase:1,d:"(3단계) 가장 가까운 대원에게 공격 피해를 4씩 3번 줍니다."},
+    {n:"전환",ph:3,w:2,tg:"self",enter:1,negUp:5,shield:20,cd:2,d:"(3단계) 부정 보호막을 5, 보호막을 20 얻습니다."},
+    {n:"발구르기",ph:3,w:4,tg:"within",max:2,dmg:6,hits:2,d:"(3단계) 거리 2 안의 모든 대원에게 공격 피해를 6씩 2번 줍니다."}],
    hit:"철퇴 내려찍기"},
  "고철 거인":  {hp:70,atk:10,def:14,rng:3,exp:12,boss:1,
    el:"공격",
@@ -12611,6 +12629,7 @@ const GAME_VER="0.6";   /* 0.6 — 2스테이지 구역(정령숲) 추가 · 여
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 747, "v": "0.6", "d": "2026-10-03", "t": "간수장 세 단계 패턴: 체력 300, 2단계 졸개 호출, 3단계 규율과 감금", "big": 0},
  {"b": 746, "v": "0.6", "d": "2026-10-03", "t": "오염된 씨앗 원래 크기로", "big": 0},
  {"b": 745, "v": "0.6", "d": "2026-10-03", "t": "오염된 씨앗과 덩굴을 살아있는 덩굴 크기로", "big": 0},
  {"b": 744, "v": "0.6", "d": "2026-10-02", "t": "일반 적 크기를 사슬 광인 기준으로", "big": 0},
@@ -13358,7 +13377,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=746;
+const BUILD_NO=747;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -15507,10 +15526,47 @@ function gimFenceBattle(){
   startBattle("battle");
   say("울타리 — 3턴 안에 부수지 못하면 경비병이 옵니다.","t3");
 }
+/* 숫자를 못 박은 적 (간수장, 2026-10-03) — 체력과 공격력은 표 그대로. 보호력은 여느 적처럼 오르되
+   기술의 보호막 숫자에는 그 몫을 안 얹는다 (def0, skShield) */
+function foeFix(f,keepHp){
+  const D=FOE[f.name]; if(!D||!D.fixHp) return f;
+  if(!keepHp){ f.maxHp=D.hp; f.hp=D.hp }
+  f.atk=D.atk; f.def0=f.def; f.ph=1;
+  return f;
+}
+/* 단계 — phases:[200,100] 이면 체력 200 이하 2단계, 100 이하 3단계. 체력을 바꿔 둔 판(연습장 허수아비)은 비율로 */
+function foePhaseOf(f){
+  const D=FOE[f.name]; if(!D||!D.phases) return 1;
+  const k=f.maxHp/(D.hp||f.maxHp); let p=1;
+  D.phases.forEach(th=>{ if(f.hp<=th*k) p++ });
+  return p;
+}
+const PHASE_SAY={"간수장":{2:["경비! 놈들을 잡아라!","2 단 계","간수장이 경비를 부릅니다"],3:["이제 형을 집행한다.","3 단 계","규율이 시작됩니다"]}};
+/* 단계를 넘었으면 — 알리고, 그 단계의 「전환」을 다음 수로 세운다. quiet 면 세우기만 (rollIntents 가 곧 고른다) */
+function foePhaseCheck(f,quiet){
+  const D=FOE[f.name]; if(!B||!D||!D.phases||!f.alive) return;
+  const p=foePhaseOf(f), was=f.ph||1; if(p<=was) return;
+  f.ph=p;
+  const i=(D.sk||[]).findIndex(x=>x.ph===p&&x.enter);
+  if(i>=0){ f.nextMust=i; f.skCd=f.skCd||{}; f.skCd[i]=0 }
+  const S=(PHASE_SAY[f.name]||{})[p];
+  fx({side:"foe",slot:f.slot,quake:1,ring:"#e0705a",glow:1,txt:p+"단계",cls:"crit",gap:200});
+  say(`${f.name} — ${p}단계로 넘어갑니다.`,"t1");
+  if(S){ const u=f;   /* 배너가 먼저, 대사는 배너가 걷힌 뒤 — 겹치면 대사가 가려진다 */
+    setTimeout(()=>{ try{ stepBanner(S[1],S[2]) }catch(e){} },60);
+    setTimeout(()=>{ try{ if(B&&!B.over&&u.alive) barkShow(u,S[0],Date.now(),1) }catch(e){} },1600) }
+  if(!quiet&&!B.foeAct){
+    let allies=allUnits(); const seen=allies.filter(a=>!a.hide); if(seen.length) allies=seen;
+    const op=allies.filter(canAim); if(op.length) allies=op;
+    if(allies.length){ const inR=allies.filter(a=>dist(a.slot,f.slot)<=f.rng);
+      const si=skRoll(f,allies,inR,!inR.length); if(si) f.intent=si }
+    render();
+  }
+}
 function spawnFoeNamed(n,slot,opt){
   const d=FOE[n]; if(!d||!B) return null;
   if(foeBlock(slot)) return null;
-  const sc=foeScale(B.kind), hp=Math.round(d.hp*sc.m*sc.hpP)+sc.hpAdd;
+  const sc=foeScale((opt&&opt.kind)||B.kind), hp=Math.round(d.hp*sc.m*sc.hpP)+sc.hpAdd;   /* kind — 우두머리가 부른 졸개는 여느 전투 세기로 (2026-10-03) */
   const f={name:n,slot:slot,isFoe:1,maxHp:hp,hp:hp,
     atk:Math.max(1,Math.round(d.atk*foeAtkMult()*(1+(sc.m-1)*0.5)*sc.atkP))+sc.atkAdd,
     def:Math.round(d.def*(1+(sc.m-1)*0.55)*sc.defP)+sc.defAdd,
@@ -15518,6 +15574,7 @@ function spawnFoeNamed(n,slot,opt){
     shield:0,air:0,alive:1,id:B.foes.length,infect:0,stun:0,weak:0,taunt:0,thorn:0,evade:0,negShield:(d.gim&&d.gim.neg)||0,hide:0,deb:{},ai:null,role:null};
   if(f.big&&(slot>=SLOTS||foeBlock(slot+1))) return null;   /* 두 칸짜리는 뒤 칸도 비어야 */
   if(opt&&opt.summoned){ f.summoned=1; f.exp=0 }   /* 적 기술이 부른 것은 소환물 — 경험치도 처치 수도 없다 (사용자 2026-09-16) */
+  foeFix(f);
   B.foes.push(f); return f;
 }
 /* 연습장 — 서 있는 적을 지금 배율(foeScale)로 다시 셈한다 (사용자 2026-09-29).
@@ -15530,7 +15587,8 @@ function sandRescaleFoes(){
     const hp=Math.round(d.hp*sc.m*sc.hpP)+sc.hpAdd;
     f.maxHp=run.sandFoeReal?hp:9999; f.hp=f.maxHp;
     f.atk=Math.max(1,Math.round(d.atk*foeAtkMult()*(1+(sc.m-1)*0.5)*sc.atkP))+sc.atkAdd;
-    f.def=Math.round(d.def*(1+(sc.m-1)*0.55)*sc.defP)+sc.defAdd });
+    f.def=Math.round(d.def*(1+(sc.m-1)*0.55)*sc.defP)+sc.defAdd;
+    foeFix(f,!run.sandFoeReal) });
 }
 /* 전투가 끝났을 때 — 기믹 칸 정리 (dungeonCleared 가 부른다) */
 function gimBattleWon(d){
@@ -17977,6 +18035,7 @@ function startBattle(kind,pinned){
       shield:0,air:0,alive:1,id:i,infect:0,stun:0,weak:0,
       taunt:0,thorn:0,evade:0,negShield:0,hide:0,deb:{}});
   });
+  B.foes.forEach(f=>foeFix(f));   /* 체력을 못 박은 우두머리 (간수장 300) */
   /* 사슬에 묶인 마귀 — 묶여 있는 동안은 속박 99 (사용자 2026-09-29). 사슬 간수가 다 죽어 각성하면 boundCheck 가 푼다 */
   B.foes.forEach(f=>{ if(foePas(f,"bound")&&!f.awake){ f.deb=f.deb||{}; f.deb.bind=99 } });
   /* 현상 수배 걸기 — 수배된 적을 만나면 체력 1 (한 번만). 사용자 2026-09-16 */
@@ -18353,6 +18412,8 @@ const SK_COND={
   fewVines:  f=>B.foes.filter(x=>x.alive&&x.name==="살아있는 덩굴").length<=1,
   fewSeeds:  f=>B.foes.filter(x=>x.alive&&x.name==="오염된 씨앗").length+(B.hz||[]).filter(x=>x.seedTurn).length<=1,   /* 씨앗이 하나 이하일 때 (2026-09-29) — 대원 전장 것까지 (10-01) */
   canParasite:f=>B.foes.some(x=>x.alive&&x!==f&&!x.dthTag),                    /* 아직 죽음이 없는 동료가 있을 때 (2026-09-29) */
+  room:      f=>{ for(let sl=1;sl<=SLOTS;sl++) if(!foeBlock(sl)) return true; return false },   /* 부를 자리가 있을 때 (간수장 호출) */
+  hasSummon: f=>B.foes.some(x=>x.alive&&x.summoned),                                         /* 소환물이 있을 때 (간수장 점호) */
   actAtk:    f=>B.lastAct==="공격",
   actMag:    f=>B.lastAct==="마법",
   actShield: f=>B.lastAct==="보호",
@@ -18368,13 +18429,16 @@ function passChips(f){
 function skDmg(f,s){ const D=FOE[f.name]||{}; let v=(s.dmg||0)+(f.atk-(D.atk||f.atk));
   { const w=foePas(f,"watchAtk"); if(w&&B&&B.hand){ const n=B.hand.filter(c=>c.name==="감시").length; if(n) v+=w.v*n } }   /* 멀리 보기 — 손패의 감시 1장당 +2 */
   return Math.max(1,v) }
-function skShield(f,v){ const D=FOE[f.name]||{}; return Math.max(1,v+(f.def-(D.def||f.def))) }
+function skShield(f,v){ const D=FOE[f.name]||{};
+  if(D.fixHp&&f.def0) return Math.max(1,v+(f.def-f.def0));   /* 적은 그대로 + 싸우며 얻은 보호력 */
+  return Math.max(1,v+(f.def-(D.def||f.def))) }
 /* 이 기술이 지금 겨눌 수 있는 대원들. 첫째가 대표 대상이다 */
 function skTargets(f,s,allies){
   const inR=allies.filter(a=>dist(a.slot,f.slot)<=f.rng);
   const tg=s.tg||"near";
   if(tg==="self"||tg==="none") return [];
   if(tg==="all") return inR;
+  if(tg==="within") return inR.filter(a=>dist(a.slot,f.slot)<=(s.max||2));   /* 거리 N 안의 대원 전원 (간수장 발구르기) */
   if(tg==="dist"){
     const L=allies.filter(a=>{ const d=dist(a.slot,f.slot);
       return d<=f.rng&&(s.min==null||d>=s.min)&&(s.max==null||d<=s.max) });
@@ -18431,6 +18495,7 @@ function skRoll(f,allies,inR,far){
     if((f.skCd[i]||0)>0) return;
     if(s.once&&f.skUsed[i]) return;
     if(s.cond&&SK_COND[s.cond]&&!SK_COND[s.cond](f)) return;
+    if(s.ph&&s.ph!==(f.ph||1)) return;                  /* 단계 — 지금 단계의 패턴만 (간수장) */
     const T=skTargets(f,s,allies);
     const needT=!(s.tg==="self"||s.tg==="none");
     if(needT&&!T.length) return;
@@ -18687,9 +18752,27 @@ function skExec(f,I){
   if(s.nextMust!=null) f.nextMust=s.nextMust;
   if(s.giveCard&&CARD_LIB[s.giveCard]){ B.hand.push({type:"item",name:s.giveCard,d:CARD_LIB[s.giveCard].d,use:CARD_LIB[s.giveCard].use,gone:1});
     fx({side:"foe",slot:f.slot,ring:"#a06ae0",txt:s.giveCard,cls:"shd",gap:140}); say(`${f.name} — 손패에 [${s.giveCard}] 카드가 끼어듭니다.`,"t3") }
-  if(s.summon){ const k=rr([s.summon.min,s.summon.max]); let n=0;
-    for(let i=0;i<k;i++){ let sl=1; while(sl<=SLOTS&&foeBlock(sl)) sl++; if(sl>SLOTS) break; const m=spawnFoeNamed(s.summon.n,sl,{summoned:1}); if(m){ n++; fx({side:"foe",slot:sl,s:"summon",ring:"#a06ae0",txt:"소환",cls:"shd",gap:120}) } }
-    say(`${f.name} — ${s.summon.n} ${n}마리를 부릅니다.`,"t3"); if(n) rollIntents(true) }
+  if(s.summon){ const k=rr([s.summon.min,s.summon.max]); let n=0; const got=[];
+    for(let i=0;i<k;i++){ let sl=1; while(sl<=SLOTS&&foeBlock(sl)) sl++; if(sl>SLOTS) break;
+      const nm=s.summon.pool?rnd(s.summon.pool):s.summon.n;   /* 풀에서 하나씩 (간수장 호출, 2026-10-03) */
+      const m=spawnFoeNamed(nm,sl,{summoned:1,kind:s.summon.kind}); if(m){ n++; got.push(nm); fx({side:"foe",slot:sl,s:"summon",ring:"#a06ae0",txt:"소환",cls:"shd",gap:120}) } }
+    say(s.summon.pool?(n?`${s.n} — ${got.join(", ")}${jo(got[got.length-1],"ig")} 달려옵니다.`:`${s.n} — 부를 자리가 없습니다.`)
+                     :`${f.name} — ${s.summon.n} ${n}마리를 부릅니다.`,"t3"); if(n) rollIntents(true) }
+  if(s.rollcall){   /* 점호 — 소환물 모두에게 공격력과 보호막 */
+    const L=B.foes.filter(x=>x.alive&&x.summoned);
+    L.forEach(m=>{ m.atk+=s.rollcall.atk; m.atkUp=(m.atkUp||0)+s.rollcall.atk; m.shield+=s.rollcall.shield;
+      fx({side:"foe",slot:m.slot,s:"buffup",ring:"#e0705a",txt:"공격력 +"+s.rollcall.atk,cls:"buf",gap:90}) });
+    say(L.length?`${s.n} — 소환물 ${L.length}의 공격력 +${s.rollcall.atk}, 보호막 +${s.rollcall.shield}`:`${s.n} — 대답할 졸개가 없습니다.`,"t3") }
+  if(s.negUp){ f.negShield=(f.negShield||0)+s.negUp;
+    fx({side:"foe",slot:f.slot,ring:"#c9a227",txt:"부정 보호막 +"+s.negUp,cls:"shd",gap:120}); say(`${f.name} 부정 보호막 +${s.negUp}`,"t2") }
+  if(s.jail){   /* 감금 — 무작위 대원의 기술 하나를 이번 턴 동안 (내 턴 하나). 걸린 턴은 세지 않으므로 lockNew */
+    const hs=onField().filter(h=>h.hp>0&&h.sk&&h.sk.some((x,i)=>x&&!h.lock[i]));
+    const h=hs.length?rnd(hs):null;
+    if(h){ const idx=h.sk.map((x,i)=>i).filter(i=>h.sk[i]&&!h.lock[i]); const i=rnd(idx);
+      h.lock[i]=1; (h.lockNew=h.lockNew||{})[i]=1;
+      fx({side:"mine",slot:h.slot,ring:"#9c8d77",txt:"감금",cls:"miss",gap:140});
+      say(`${s.n} — ${h.name}의 ${h.sk[i].n}${jo(h.sk[i].n,"ig")} 이번 턴 동안 잠깁니다.`,"t3") }
+    else say(`${s.n} — 잠글 기술이 없습니다.`,"t2") }
   if(s.gate){   /* 차원문 생성 — 잔해가 있으면 다시 세우고, 없으면 빈 칸에 새로 (2026-10-01) */
     const W=B.foes.filter(x=>!x.alive&&x.wreck&&x.name==="악마 차원문"&&!foeAt(x.slot));
     if(W.length){ W.forEach(x=>{ x.alive=1; x.wreck=0; x.hp=x.maxHp; x.shield=0; x.deb={}; x.intent=null;
@@ -18727,7 +18810,7 @@ function skExec(f,I){
   const tg=I.tg||s.tg||"near";
   let T=[];
   if(tg==="all") T=allUnits().filter(u=>u.hp>0&&dist(u.slot,f.slot)<=f.rng);
-  else if(tg==="near2"||tg==="distAll") T=skTargets(f,s,allUnits().filter(u=>u.hp>0));
+  else if(tg==="near2"||tg==="distAll"||tg==="within") T=skTargets(f,s,allUnits().filter(u=>u.hp>0));
   else if(tg!=="self"&&tg!=="none"){
     let t=(I.toId&&allUnits().find(x=>uid(x)===I.toId&&x.hp>0))||unitAt(I.to)||null;
     if(!t&&!I.chase){ say(`${f.name}${jo(f.name,"ig")} 빈 ${I.to}번 칸을 칩니다 — 빗나감.`,"t2");
@@ -19023,7 +19106,10 @@ function skEffectHtml(s){
   if(s.riot) P.push(`폭도 ${ic("atk")}+1`);
   if(s.fire) P.push("대포 발사");
   if(s.giveCard) P.push(`[${s.giveCard}] 1장`);
-  if(s.summon) P.push(`${s.summon.n} 소환`);
+  if(s.summon) P.push(s.summon.pool?`소환 ${s.summon.min}~${s.summon.max}`:`${s.summon.n} 소환`);
+  if(s.rollcall) P.push(`소환물 ${ic("atk")}+${s.rollcall.atk} ${ic("def")}${s.rollcall.shield}`);
+  if(s.negUp) P.push(`<span class="ideb" title="부정 보호막">${bdIcon("g","부정 보호막","부정 보호막")}${s.negUp}</span>`);
+  if(s.jail) P.push("기술 잠금");
   if(s.maxUp) P.push(`최대${ic("hp")}+${s.maxUp}`);
   if(s.evade) P.push(`회피${s.evade}`);
   if(s.absorbNext) P.push("흡수");
@@ -19038,6 +19124,7 @@ function skIntentHtml(f,I){
   const D=FOE[f.name], s=D&&D.sk&&D.sk[I.i]; const tip=esc((s&&s.d)||I.n);
   let who="";
   if(I.tg==="all") who=`<span class="tgt" title="사거리 안 대원 전원">→ 전원</span>`;
+  else if(I.tg==="within") who=`<span class="tgt" title="거리 ${(s&&s.max)||2} 안 대원 전원">→ 거리 ${(s&&s.max)||2} 안</span>`;
   else if(I.tg!=="self"&&I.tg!=="none"&&I.to){
     const p=I.toId&&allUnits().find(x=>uid(x)===I.toId&&x.hp>0);
     who=(I.chase&&p)?`<span class="tgt chase" title="자리를 옮겨도 쫓아옵니다">↝ ${esc(p.name)}</span>`
@@ -19092,7 +19179,7 @@ function rollIntents(onlyIdle){
     const inR=allies.filter(a=>dist(a.slot,f.slot)<=f.rng);
     const far=!inR.length;
     /* 고유 기술을 가진 적은 그 표로 고른다 (사용자 2026-09-15). 못 고르면 예전처럼 */
-    if(foeSK(f)){ const si=skRoll(f,allies,inR,far); if(si){ f.intent=si; return } }
+    if(foeSK(f)){ foePhaseCheck(f,1); const si=skRoll(f,allies,inR,far); if(si){ f.intent=si; return } }
     if(far){
       /* 먼저 거리를 좁혀 본다 */
       if(Math.random()<0.55){ const mv=moveIntent(f,allies); if(mv){ f.intent=mv; return } }
@@ -21760,6 +21847,7 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
     } }
   if(f.hp>0&&d>0) bark(f,"hurt",f.name==="억울한 죄수");   /* 억울한 죄수는 맞을 때마다 */
   if(f.hp>0&&d>0&&f.isFoe) foeOnHurt(f,d);                  /* 고통 감내 · 물러남 (정예, 2026-09-16) */
+  if(f.hp>0&&d>0&&f.isFoe) foePhaseCheck(f);                /* 단계 (간수장, 2026-10-03) */
   if(f.swallow&&d>0){ f.swallow.dmg+=d;                     /* 삼켜진 대원 — 30 을 맞히면 뱉는다 (2026-09-29) */
     if(f.swallow.dmg>=30) spitOut(f,"배를 얻어맞아") }
   if(f.hp<=0&&f.swallow) spitOut(f,"쓰러지며")
@@ -22213,6 +22301,7 @@ function doSkill(target){
       else if(own) fx({side:"mine",slot:h.slot,s:own,gap:0}); }
     /* 자기나 아군에게 거는 기술은 자세를 잡지 않는다 — 소리만 (위 갈래에서 함께 다룬다) */
     runEffect(h,i,s,target);
+    disciplineTick(h);
     if(s.read) addRead(h,s.read);
     /* mobileGo — 물러서기를 이미 줄에 세웠다. 횟수를 쌓아 여러 번 쓰면 이 자리를 여러 번 지나는데,
        기동은 물러서는 연출(fn) 안에서야 풀리므로 그 전에 또 세워 두 번 물러섰다 (사용자 2026-09-30 버그) */
@@ -24126,8 +24215,21 @@ function foePhase(){
     return; }
 }
 /* 마당 ③ — 내 턴. 남은 보호막은 바로 여기, 턴이 열리기 직전에 걷힌다. */
+/* 규율 (간수장 3단계, 2026-10-03) — 한 대원이 한 턴에 기술을 3번 쓸 때마다 그 대원에게 피해. 셈은 startMyTurn 이 비운다 */
+function disciplineTick(h){
+  if(!B||B.over||!h) return;
+  const k=uid(h); B.disc=B.disc||{}; B.disc[k]=(B.disc[k]||0)+1;
+  if(B.disc[k]%3||h.hp<=0) return;
+  const w=B.foes.find(f=>f.alive&&foePas(f,"discipline")&&(f.ph||1)>=3); if(!w) return;
+  const p=foePas(w,"discipline");
+  const v=foeDmg(w,p.v,"공격");
+  fx({side:"foe",slot:w.slot,ring:"#e0705a",txt:"규율",cls:"crit",gap:80});
+  say(`규율 — ${h.name}${jo(h.name,"ig")} 이번 턴 ${B.disc[k]}번째 기술을 썼습니다. 피해 ${v}`,"t1");
+  asSrc(w,()=>hurtAlly(w,h,v,"규율","공격"));
+}
 function startMyTurn(){
   if(!B||B.over) return;
+  B.disc={};
   try{ foeEndPassives() }catch(e){ console.error(e) }   /* 적 턴이 끝난 뒤 — 감시관의 갑주 */
   try{ vineEndPassives() }catch(e){ console.error(e) }   /* 오염된 덩굴 (2026-09-29) */
   B.foeAct=0;   /* 여기부터 내 턴 (바람처럼 사라져라 — 2026-09-30) */
