@@ -453,6 +453,22 @@ img.pxs.face{image-rendering:pixelated;width:auto;filter:drop-shadow(0 2px 0 rgb
 @keyframes ksAura{from{background-position:0% 0}to{background-position:120% 0}}
 .art .ksaura.front{z-index:2;mix-blend-mode:screen;opacity:calc(var(--ksop,1)*.9);
   -webkit-mask-image:linear-gradient(to top,#000 0,#000 22%,transparent 42%);mask-image:linear-gradient(to top,#000 0,#000 22%,transparent 42%)}
+/* 외형 등급 칩 · 정보 단추 · 정보창 (2026-10-03) */
+.skgr{display:inline-block;font-size:10px;font-weight:700;line-height:1.5;padding:0 6px;border-radius:3px;color:var(--gc);
+  border:1px solid var(--gc);background:color-mix(in srgb,var(--gc) 14%,transparent);white-space:nowrap}
+.skc{position:relative}
+.skc>.skgr{position:absolute;left:6px;top:6px;z-index:2}
+.skc .skinfo-b{position:absolute;right:6px;top:6px;z-index:2;font-size:10px;padding:1px 6px;line-height:1.4;cursor:pointer}
+.sgc>.skgr{margin-bottom:4px}
+.skinfo .sgp{max-width:440px}
+.ski-poses{display:flex;gap:10px;justify-content:center;align-items:flex-end;margin:12px 0 6px}
+.ski-poses img{height:96px;width:auto;image-rendering:pixelated}
+.ski-sec{font-size:11px;color:var(--brass);margin:10px 0 4px;letter-spacing:.08em}
+.ski-feat{margin:0;padding:0 0 0 2px;list-style:none;text-align:left}
+.ski-feat li{font-size:12.5px;line-height:1.7;color:var(--fg)}
+.ski-feat li::before{content:"✓";color:#7fd39a;margin-right:6px;font-weight:700}
+.ski-feat.sm li{font-size:10.5px;line-height:1.5;color:var(--dim)}
+.ski-cond{margin:0;font-size:12px;color:var(--dim)}
 .sk .skmore{color:var(--brass);font-size:10.5px;cursor:pointer;white-space:nowrap;margin-left:4px;text-decoration:none;border-bottom:1px dotted var(--brass)}
 .sk .skmore:hover{color:#ffe08a}
 .skhead{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
@@ -4725,6 +4741,16 @@ const auraLayer=(u,el,k)=>`<i class="kaura ${k}" style="background-image:url(${u
    띠 6칸(128px) — 몸은 쿠렘타이 그림(128 원본, 발끝 125)과 같은 판에 그려져 있다. 무대 그림 128px ≈ 원본 124px 이라 132px.
    KSOUL_AURA — 프레임 길이(ms)와 투명도(op). 뒤 장 + 발밑만 남긴 앞 장(스크린 합성), 기동 오오라와 같은 꼴 */
 const KSOUL_TIERS=[80,120,160,200,300];
+const KSOUL_NAME={80:"영혼 잔광",120:"영혼 응집",160:"영혼 고리",200:"영혼 기둥",300:"영혼 군주"};   /* 받은 그림의 단계 이름 */
+/* 문턱을 넘는 순간 한 번 번쩍 (사용자 2026-10-03) — 새 단계 오오라가 하얗게 타올랐다 가라앉고, 이름이 뜬다 */
+function ksoulTierUpFX(h,t){
+  const c=ctrOf("mine",h.slot); if(!c) return;
+  pulseFX("mine",h.slot,"#7fe8ff",3); edgeGlow("rgba(110,90,230,.34)");
+  c.e.querySelectorAll(".ksaura").forEach(a=>{ if(a.animate) a.animate([{opacity:1,filter:"brightness(2.6) saturate(1.4)"},{opacity:1,filter:"brightness(1.6)",offset:.35},{opacity:KSOUL_AURA.op,filter:"none"}],
+    {duration:Math.round(1100*(SPD<1?0.8:SPD)),easing:"ease-out"}) });
+  const im=c.e.querySelector(".art img.pxs");
+  if(im&&im.animate) im.animate([{filter:"brightness(1.9) drop-shadow(0 0 10px #8fe0ff)"},{filter:"none"}],{duration:Math.round(800*(SPD<1?0.8:SPD)),easing:"ease-out"});
+}
 const KSOUL_AURA={ms:200,op:0.55};   /* 사용자 2026-10-03 — 느리게 + 반투명 (D) */
 function ksoulTier(){ const n=(run&&run.souls)||0; let t=0; KSOUL_TIERS.forEach(x=>{ if(n>=x) t=x }); return t }
 function ksoulAuraHtml(h,front){
@@ -7373,11 +7399,39 @@ function poseNow(u){
    얻은 것 · 입은 것은 판을 넘어 남는다 — SKIN_KEY. 입은 스킨은 그 대원이 그려지는 모든 곳(전투·지도·도감·손패)에 */
 const SKINS={
  "이테리오":[{id:"proto08",n:"프로토타입-08",sp:"이테리오 (프로토타입-08)",cond:"정령숲에서 거대한 기계의 잔해 발견",ev:"mwreck",
+   grade:"일반",feats:["battle","skillfx","maphand","lines"],
    icons:{fx_it_thrust:"fx_p08_thrust",fx_it_cleave:"fx_p08_cleave",fx_it_link:"fx_p08_link",fx_it_bomb:"fx_p08_bomb",fx_it_implode:"fx_p08_implode",fx_it_aura:"fx_p08_aura"},
    link:{x0:4,len:248}, overload:"fx_p08_overload"}],   /* 사용자 2026-10-02 — 외형 전용 이펙트 (같은 규격) */
  "나이코스":[{id:"corrupt",n:"타락한 나이코스",sp:"나이코스 (타락)",cond:"간수장 1회 처치",kill:"간수장",
+   grade:"일반",feats:["battle","skillfx","maphand","lines"],
    fx:{slash:"fx_cnk_slash",ult:"fx_cnk_ult"}}]   /* fx — 그 스킨의 기술 이펙트 (베기 · 승리의 일격) */
 };
+/* 외형 등급 (사용자 2026-10-03) — 일반 / 희귀 / 특수. 색은 장신구 등급과 같게 */
+const SKIN_GRADE={"일반":{c:"#7fd39a"},"희귀":{c:"#e0a86a"},"특수":{c:"#a06ae0"}};
+/* 외형이 바꾸는 것 — 정보창에 줄마다 적는다. 일반 등급은 대개 이 셋 */
+const SKIN_FEAT={battle:"전투 단계 캐릭터 외형",skillfx:"새로운 기술 효과, 자세, 음향",maphand:"지도 화면 손 외형",lines:"새로운 대사"};
+function skinGradeChip(k){ const g=(k&&k.grade)||"일반", G=SKIN_GRADE[g]||SKIN_GRADE["일반"];
+  return `<span class="skgr" style="--gc:${G.c}">${esc(g)}</span>` }
+/* 외형 정보창 — 무엇이 바뀌는지 (사용자 2026-10-03) */
+function skinInfo(hero,id){
+  const k=(SKINS[hero]||[]).find(x=>x.id===id); if(!k||typeof document==="undefined") return;
+  document.querySelectorAll(".skinget").forEach(x=>x.remove());
+  const own=skinOwned(hero,k.id), on=((skinOn(hero)||{}).id||null)===k.id;
+  const set=PNG_SPRITE[k.sp]||{}, poses=["idle","atk","hurt","guard"].map(p=>set[p]&&set[p].u).filter(Boolean);
+  const feats=(k.feats||[]).map(f=>`<li>${esc(SKIN_FEAT[f]||f)}</li>`).join("");
+  const ov=el(`<div class="skinget skinfo"><div class="sgp">
+    <div class="sgt">${esc(k.n)}</div>
+    <div class="sgs">${skinGradeChip(k)} ${esc(hero)}의 외형</div>
+    <div class="ski-poses">${poses.map(u=>`<img class="pxs" src="${u}" alt="" draggable="false">`).join("")}</div>
+    <div class="ski-sec">바뀌는 것</div><ul class="ski-feat">${feats}</ul>
+    <div class="ski-sec">얻는 법</div><p class="ski-cond">${own?"획득함":esc(k.cond||"")}</p>
+    <div class="sgf">${own&&!on?`<button class="go wear">착용</button>`:""}<button class="${own&&!on?"":"go "}close">${on?"착용 중, 닫기":"닫기"}</button></div></div></div>`);
+  const close=()=>ov.remove();
+  ov.querySelector(".close").onclick=()=>{ SFX.play("click"); close() };
+  const w=ov.querySelector(".wear"); if(w) w.onclick=()=>{ skinUse(hero,k.id); SFX.play("click"); close(); render() };
+  ov.onclick=e=>{ if(e.target===ov) close() };
+  document.body.appendChild(ov);
+}
 const SKIN_KEY="kyunyeol.skins.v1";
 let SKIN_UNLOCKED_ALL=0;
 let SKIN_ST=(()=>{ try{ return JSON.parse(localStorage.getItem(SKIN_KEY)||"null")||{own:{},use:{}} }catch(e){ return {own:{},use:{}} } })();
@@ -7410,7 +7464,8 @@ function skinGetShow(list,sub){
   if(!list||!list.length||typeof document==="undefined") return;
   document.querySelectorAll(".skinget").forEach(x=>x.remove());
   const cards=list.map(([h,k])=>{ const set=PNG_SPRITE[k.sp], u=set&&set.idle&&set.idle.u;
-    return `<div class="sgc">${u?`<img class="pxs" src="${u}" alt="" draggable="false">`:""}<b>${esc(k.n)}</b><span>${esc(h)}의 외형</span></div>` }).join("");
+    return `<div class="sgc">${skinGradeChip(k)}${u?`<img class="pxs" src="${u}" alt="" draggable="false">`:""}<b>${esc(k.n)}</b><span>${esc(h)}의 외형</span>${
+      (k.feats||[]).length?`<ul class="ski-feat sm">${k.feats.map(f=>`<li>${esc(SKIN_FEAT[f]||f)}</li>`).join("")}</ul>`:""}</div>` }).join("");
   const ov=el(`<div class="skinget"><div class="sgp">
     <div class="sgt">새로운 외형 획득</div>${sub?`<div class="sgs">${esc(sub)}</div>`:""}
     <div class="sgl">${cards}</div>
@@ -12839,6 +12894,7 @@ const GAME_VER="0.6";   /* 0.6 — 2스테이지 구역(정령숲) 추가 · 여
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 768, "v": "0.6", "d": "2026-10-03", "t": "외형 등급과 외형 정보창, 쿠렘타이 오오라 단계가 오를 때 번쩍", "big": 0},
  {"b": 767, "v": "0.6", "d": "2026-10-03", "t": "쿠렘타이 영혼 수에 따라 오오라 (느리게, 반투명)", "big": 0},
  {"b": 766, "v": "0.6", "d": "2026-10-03", "t": "쿠렘타이 새 기본 외형, 환상통 전용 자세", "big": 0},
  {"b": 765, "v": "0.6", "d": "2026-10-03", "t": "굴라 네 기술과 트리스탄 꿰뚫는 화살, 명중 연출 강조", "big": 0},
@@ -13607,7 +13663,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=767;
+const BUILD_NO=768;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -14316,17 +14372,19 @@ function drawCodex(app){
   /* 스킨 (사용자 2026-10-01) — 왼쪽 판. 고른 대원의 기본 모습과 스킨들 · 얻은 것만 입을 수 있다 */
   { const L=SKINS[name]||[], cur=(skinOn(name)||{}).id||null;
     const side=el(`<div class="cxskin"><div class="cxsec">외형: ${esc(name)}</div></div>`); app.appendChild(side);
-    const opts=[{id:null,n:"기본",own:1}].concat(L.map(k=>({id:k.id,n:k.n,own:skinOwned(name,k.id),cond:k.cond,sp:k.sp})));
+    const opts=[{id:null,n:"기본",own:1}].concat(L.map(k=>({id:k.id,n:k.n,own:skinOwned(name,k.id),cond:k.cond,sp:k.sp,k:k})));
     const box=el(`<div class="skl"></div>`);
     opts.forEach(o=>{
       const on=(o.id||null)===cur;
       /* 그림은 묶음에서 바로 — pxFigure 는 입은 스킨으로 바꿔 끼우므로 '기본' 칸이 스킨으로 보인다 */
       const set=PNG_SPRITE[o.sp||name], u=set&&set.idle&&set.idle.u;
       const c=el(`<div class="skc${on?" on":""}${o.own?"":" lock"}">
+        ${o.k?skinGradeChip(o.k):""}${o.k?`<button class="skinfo-b" title="외형 정보">정보</button>`:""}
         <div class="ska">${u?`<img class="pxs hero" src="${u}" alt="" draggable="false">`:""}</div>
         <b>${esc(o.n)}</b>
         <span>${on?"착용 중":o.own?"눌러서 착용":`잠김: ${esc(o.cond||"")}`}</span></div>`);
       if(o.own&&!on) c.onclick=()=>{ skinUse(name,o.id); SFX.play("click"); render() };
+      { const ib=c.querySelector(".skinfo-b"); if(ib) ib.onclick=e=>{ e.stopPropagation(); SFX.play("click"); skinInfo(name,o.id) } }
       box.appendChild(c) });
     side.appendChild(box);
     if(!L.length) side.appendChild(el(`<p class="hint">이 대원은 아직 다른 외형이 없습니다.</p>`));
@@ -22350,6 +22408,7 @@ function ffSet(h,stance,quiet){
 /* 영혼을 n 얻는다 — 40개마다 마법력이 오르는 셈까지 여기서 한다 */
 function gainSouls(n,label){
   if(!n) return;
+  const t0=ksoulTier();
   run.souls=(run.souls||0)+n;
   if(label) say(`${label} — 영혼 +${n} (영혼 ${run.souls})`,"t2");
   const k=run.heroes.find(h=>h.name==="쿠렘타이");
@@ -22360,6 +22419,9 @@ function gainSouls(n,label){
   /* 그림과 소리 — 전장에 선 쿠렘타이 위에. 40개째는 큰 판(여섯 유령) */
   if(k&&B&&!B.over&&k.slot>0&&k.hp>0)
     fx({side:"mine",slot:k.slot,soulg:rose?2:1,s:sfxOr("영혼 얻기",null),gap:120});   /* 글자는 착취 쪽 popText 가 이미 띄운다 */
+  { const t1=ksoulTier();   /* 오오라 문턱을 넘었다 */
+    if(k&&t1>t0){ say(`영혼 수확 — 영혼 ${t1}, 「${KSOUL_NAME[t1]||""}」`,"t1");
+      if(B&&!B.over&&k.slot>0&&k.hp>0) fx({side:"mine",slot:k.slot,txt:KSOUL_NAME[t1]||"",cls:"mag",s:"unlock",fn:()=>ksoulTierUpFX(k,t1),gap:260}) } }
 }
 /* 탐욕의 악마 — 전투당 얻을 수 있는 최대 체력. 노트 2 · 강화로 +1 · 무한한 식욕이면 끝없이 */
 function greedCapOf(h){ return (h&&h.tag&&h.tag.greedNoCap)?999:(2+((h&&h.tag&&h.tag.greedPlus)||0)) }
