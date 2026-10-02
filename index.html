@@ -397,6 +397,11 @@ img.pxs.face{image-rendering:pixelated;width:auto;filter:drop-shadow(0 2px 0 rgb
 .skup{font-size:9.5px;line-height:1.3;padding:1px 6px;border-radius:999px;color:#ffd98a;
   background:rgba(201,162,39,.12);border:1px solid rgba(201,162,39,.45);cursor:help;white-space:nowrap}
 .hp-sk .skups{clear:both}
+/* 쓰러지는 중인 적 — 마지막 타격 전까지는 여느 적처럼, 쓰러질 때 흐려지며 가라앉는다 (2026-10-03) */
+#foeSide .slot.dying{pointer-events:none}
+#foeSide .slot.dying .intentbar{visibility:hidden}
+#foeSide .slot.dying.fall .art{transition:opacity .42s ease-in,filter .42s ease-in,translate .42s ease-in;opacity:0;filter:grayscale(1) brightness(.45);translate:0 10px}
+#foeSide .slot.dying.fall .bar,#foeSide .slot.dying.fall .mini,#foeSide .slot.dying.fall .nm,#foeSide .slot.dying.fall .tier{transition:opacity .3s;opacity:0}
 .sk .skmore{color:var(--brass);font-size:10.5px;cursor:pointer;white-space:nowrap;margin-left:4px;text-decoration:none;border-bottom:1px dotted var(--brass)}
 .sk .skmore:hover{color:#ffe08a}
 .skhead{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
@@ -4769,6 +4774,10 @@ function playFX(o){
   if(o.release){ releaseHold(o.release.ids,o.release.how); return }
   if(o.echoCut!=null){ echoCutFX(o.side,o.slot,o.echoCut); return }
   if(o.reslot){ reslotHold(o.reslot); return }
+  if(o.dieDone){ const f=o.dieDone, c=ctrOf("foe",o.slot);   /* 쓰러짐 — 흐려지며 칸에서 빠진다 */
+    if(c&&c.e) c.e.classList.add("fall");
+    setTimeout(()=>{ if(f.dieHold){ f.dieHold=0; f.hpShow=null; if(B&&!B.over) render() } },Math.round(460*SPD));
+    return }
   /* 영혼 돌진도 칸에 매이지 않는다 — 죽은 칸은 이미 사라지고 없다 (2026-09-29) */
   if(o.trail){ trailFX(o.side,o.trail.name,o.trail.from,o.trail.to,o.trail.n); }
   if(o.ffglide){ ffGlideFX(o.side,o.ffglide.from,o.ffglide.to,o.ffglide.flare); }
@@ -4782,6 +4791,7 @@ function playFX(o){
   if(o.mpull) magPullFX(o.side,o.slot);
   if(o.quake) quakeFX(p);
   if(o.leap){ p.e.classList.remove("leap"); void p.e.offsetWidth; p.e.classList.add("leap") }
+  if(o.hpU){ const u=o.hpU; u.hpShow=(o.hpV===Math.max(0,u.hp))?null:o.hpV; u.hpShowT=Date.now(); hpShowSync(u) }   /* 이 타격만큼 체력을 깎아 보인다 */
   if(o.hit){
     /* 막아 낸 한 방은 쇠빛으로 짧게, 실제로 닳았을 때만 붉게 */
     p.e.classList.remove("shake","flashd","flashb","soft"); void p.e.offsetWidth;
@@ -5915,12 +5925,14 @@ const gapOf=o=>Math.round((o.gap==null?110:o.gap)*SPD);
 /* 지금 줄 서 있는 연출이 다 흐르는 데 걸리는 시간 */
 function fxDuration(){ return FXQ.reduce((a,o)=>a+gapOf(o),0) }
 function flushFX(){
-  let t=0;
+  let t=0, any=0;
   while(FXQ.length){
     const o=FXQ.shift();
+    if(o.hpU) any=1;
     setTimeout(()=>playFX(o),t);
     t+=gapOf(o);
   }
+  if(any) setTimeout(()=>{ if(!B||!B.foes) return; B.foes.forEach(f=>{ if(f.hpShow!=null&&(f.alive||!f.dieHold)){ f.hpShow=null; hpShowSync(f) } }) },t+120);
 }
 /* 자세 — 잠깐 다른 그림으로 갈아 끼웠다가 원래 자세로 되돌린다.
    그림 스프라이트가 없는 캐릭터에서는 아무 일도 일어나지 않는다. */
@@ -12637,6 +12649,7 @@ const GAME_VER="0.6";   /* 0.6 — 2스테이지 구역(정령숲) 추가 · 여
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 749, "v": "0.6", "d": "2026-10-03", "t": "여러 번 때려 쓰러뜨릴 때 타격마다 체력이 깎이고 마지막 타격 뒤에 쓰러짐", "big": 0},
  {"b": 748, "v": "0.6", "d": "2026-10-03", "t": "간수장 단계 그림: 2단계부터 갑옷 파손, 3단계 각성 자세", "big": 0},
  {"b": 747, "v": "0.6", "d": "2026-10-03", "t": "간수장 세 단계 패턴: 체력 300, 2단계 졸개 호출, 3단계 규율과 감금", "big": 0},
  {"b": 746, "v": "0.6", "d": "2026-10-03", "t": "오염된 씨앗 원래 크기로", "big": 0},
@@ -13386,7 +13399,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=748;
+const BUILD_NO=749;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -18152,7 +18165,21 @@ const foeAt=s=>B.foes.find(f=>f.alive&&(f.slot===s||(f.big&&f.slot+1===s)));   /
    {map:{적id:보이는 자리}, until} — 연출이 끊겨도 until 이 지나면 저절로 풀린다 */
 let FOE_HOLD=null;
 const heldSlot=f=>(FOE_HOLD&&Date.now()<FOE_HOLD.until&&FOE_HOLD.map[f.id]!=null)?FOE_HOLD.map[f.id]:f.slot;
-const foeShownAt=s=>(!FOE_HOLD)?foeAt(s):B.foes.find(f=>{ if(!f.alive) return false; const k=heldSlot(f); return k===s||(f.big&&k+1===s) });
+const foeShownAt=s=>((!FOE_HOLD)?foeAt(s):B.foes.find(f=>{ if(!f.alive) return false; const k=heldSlot(f); return k===s||(f.big&&k+1===s) }))||dyingAt(s);
+/* 쓰러지는 중 (사용자 2026-10-03) — 셈은 끝났어도 그 타격 연출이 아직이면 칸에 남겨 둔다.
+   쓰러짐 연출(dieDone)이 풀어 준다. 연출이 끊겨도 영영 남지 않게 6초가 지나면 무시한다 */
+const DIE_HOLD_MS=6000;
+const dyingAt=s=>B.foes.find(f=>!f.alive&&f.dieHold&&Date.now()-f.dieHold<DIE_HOLD_MS&&(f.slot===s||(f.big&&f.slot+1===s)));
+/* 보이는 체력 — 타격 연출이 하나씩 흐르며 깎는다 (hpV). 셈은 이미 끝나 있다 */
+const shownHp=f=>(f.hpShow!=null&&Date.now()-(f.hpShowT||0)<DIE_HOLD_MS)?f.hpShow:f.hp;
+function hpShowSync(f){
+  const bar=document.querySelector(`.bar[data-hpk="${hpKey(f)}"]`); if(!bar) return;
+  const v=Math.max(0,shownHp(f));
+  bar.dataset.hpv=Math.max(0,v/f.maxHp*100); bar.dataset.hpn=v;
+  const mini=bar.parentNode&&bar.parentNode.querySelector(".mini");
+  if(mini){ const t=[...mini.childNodes].find(n=>n.nodeType===3&&/\d+\/\d+/.test(n.textContent)); if(t) t.textContent=`${v}/${f.maxHp}` }
+  hpAnim();
+}
 function holdFoes(ids){ const m=(FOE_HOLD&&Date.now()<FOE_HOLD.until)?FOE_HOLD.map:{};
   B.foes.forEach(f=>{ if(f.alive&&ids.includes(f.id)&&m[f.id]==null) m[f.id]=f.slot });
   FOE_HOLD={map:m,until:Date.now()+8000} }
@@ -19846,6 +19873,7 @@ function drawBattle(app){
       if(pe&&!pe.fresh&&!f) d.innerHTML+=`<i class="portal" style="background-image:url(${ICON_PNG.portal_idle})"></i>`; }
     if(f){
       d.classList.add("foe");
+      if(!f.alive) d.classList.add("dying");   /* 쓰러지는 중 — 마지막 타격을 기다린다 */
       const canHit = tgMode!=="foe"&&tgMode!=="any" ? false
                    : validTarget(sel.hero,sel.hero.sk[sel.skill],s);
       if(tgMode==="foe"||tgMode==="any"){ d.classList.add(canHit?"pick":"far") }
@@ -19867,13 +19895,13 @@ function drawBattle(app){
         <div class="art ${fsz}"${FOE_FLY[f.name]?` style="--fly:${FOE_FLY[f.name]}px"`:""}>${pfk}${figure(f.name,undefined,f)}${
           dying?killMark(sel.hero,preSkill,f,sel.count):""}</div>
         <div class="nm">${esc(f.name)}</div>${(peekFoe&&peekFoe===f)?raceLine(f):""}
-        <div class="bar" data-hpk="${hpKey(f)}" data-hpv="${Math.max(0,f.hp/f.maxHp*100)}" data-hpn="${f.hp}"
+        <div class="bar" data-hpk="${hpKey(f)}" data-hpv="${Math.max(0,shownHp(f)/f.maxHp*100)}" data-hpn="${Math.max(0,shownHp(f))}"
           data-shv="${(f.shield||0)+(f.eshield||0)}" data-esw="${fesW}" data-shw="${fshW}">
-          <em class="gh" style="width:${Math.max(0,f.hp/f.maxHp*100)}%"></em><i style="width:${Math.max(0,f.hp/f.maxHp*100)}%"></i>
+          <em class="gh" style="width:${Math.max(0,shownHp(f)/f.maxHp*100)}%"></em><i style="width:${Math.max(0,shownHp(f)/f.maxHp*100)}%"></i>
           <u class="shgh" style="width:${fesW+fshW}%;right:0%"></u>
           <u class="es" data-w="${fesW}" style="width:${fesW}%;right:0%"${f.eshield?` title="에너지 보호막 ${f.eshield}"`:""}></u>
           <u class="sh" data-w="${fshW}" data-r="${fesW}" style="width:${fshW}%;right:${fesW}%"${f.shield?` title="보호막 ${f.shield}"`:""}></u></div>
-        <div class="mini">${ic("hp")}${f.hp}/${f.maxHp}${f.shield?` <span class="shd">${ic("def")}${f.shield}</span>`:""}</div>
+        <div class="mini">${ic("hp")}${Math.max(0,shownHp(f))}/${f.maxHp}${f.shield?` <span class="shd">${ic("def")}${f.shield}</span>`:""}</div>
         ${(peekFoe&&peekFoe===f)?foeStatLine(f):""}
         ${foeStatusRows(f)}`;
       d.onclick=()=>{
@@ -21834,6 +21862,7 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
   if(f.evade>0){ f.evade--; d=0; s=0;
     fx({side:"foe",slot:f.slot,s:"miss",txt:"회피",cls:"miss",gap:60,evade:1});
     say(`${f.name}${jo(f.name,"ig")} ${tag}${jo(tag,"eul")} 피했습니다.`,"t2"); return }
+  if(d>0&&f.isFoe){ if(f.hpShow==null||Date.now()-(f.hpShowT||0)>=DIE_HOLD_MS) f.hpShow=f.hp; f.hpShowT=Date.now() }   /* 보이는 체력은 타격 연출이 깎는다 */
   f.hp-=d;
   if(d>0&&f.hp>0&&foePas(f,"shift")) setTimeout(()=>shiftIntent(f),0);   /* 균열 군체 — 변화 (2026-10-01) */
   if(crit){
@@ -21845,7 +21874,8 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
       say(`치명적인 보호 — ${it.name} 보호막 +${it.tag.critShield}`,"t2") }
   }
   const fBlock=(d<=0&&s>0&&!crit);
-  fx({side:"foe",slot:f.slot,hit:1,block:fBlock?1:0,
+  f._hitAt=FXQ.length;   /* 처치 조명은 이 타격 바로 앞에 끼운다 (onKill) */
+  fx({side:"foe",slot:f.slot,hit:1,block:fBlock?1:0,hpU:d>0?f:null,hpV:Math.max(0,f.hp),
       art:(fBlock||ownFx)?null:(art||"slash"),txt:(fBlock?"막음 ":"-")+amt,
       cls:crit?"critbig":(fBlock?"shd":(art==="mag"?"mag":(amt>=15?"crit":"dmg"))),
       gap:crit?170:undefined, recoil:1, pose:(d>0?"hurt":(s>0?"guard":null)),
@@ -21886,7 +21916,9 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
       const lg=tagSum("luckGold"); if(lg&&Math.random()<(0.05+0.10*(lg-1))){ run.gold+=1;
         fx({side:"foe",slot:f.slot,txt:"금화 +1",cls:"crit",gap:90}); say(`행운의 금화 — 금화 +1 (${5+10*(lg-1)}%)`,"t2") } }
     /* f.exp 는 전투가 끝날 때 더해지는 바로 그 값이다 — 지금까지 안 보여 줬을 뿐이다. 소환물은 없다 */
+    f.dieHold=Date.now();   /* 마지막 타격 연출까지 칸에 남는다 */
     fx(f.summoned?{side:"foe",slot:f.slot,s:"die",gap:170}:{side:"foe",slot:f.slot,s:"die",txt:"경험치 +"+f.exp,cls:"crit",gap:170,expgain:1});
+    fx({side:"foe",slot:f.slot,dieDone:f,gap:0});
     say(`${f.name} 처치.`,"t1");
     /* 우두머리는 무너지는 순간을 크게 보여 준다 */
     if(f.boss&&!f.isPhantom){
@@ -21942,7 +21974,9 @@ function onKill(by,f,tag){
   if(!by.isMin&&by.slot>0&&f&&!f.isPhantom){
     const cats=["kill:"+tag].concat(foeRace(f)==="악마"?["kill:악마"]:[]).concat(["kill"]);   /* 종족으로 센다 (2026-09-30) */
     /* 줄 맨 앞에 — 타격·쓰러짐 연출보다 먼저 켜져서 그 위로 맞는 장면이 흐른다. 기다리는 몫(gap)은 안 둔다 */
-    FXQ.unshift({side:"mine",slot:by.slot,spot:f.slot,foeName:f.name,barkU:by,barkLine:barkLine(by,cats),gap:0});
+    /* 줄 맨 앞에 두면 여러 번 때린 기술의 첫 타보다 먼저 쓰러지는 장면이 켜졌다 (사용자 2026-10-03) — 죽인 타격 바로 앞으로 */
+    const at=(f._hitAt!=null&&f._hitAt<=FXQ.length)?f._hitAt:0;
+    FXQ.splice(at,0,{side:"mine",slot:by.slot,spot:f.slot,foeName:f.name,barkU:by,barkLine:barkLine(by,cats),gap:0});
   }
   if(by.name==="굴라"&&tag==="씹어먹기"&&by.tag.chompKillHeal&&by.hp>0){
     const got=healUp(by,by.tag.chompKillHeal);
