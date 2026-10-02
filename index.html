@@ -6157,7 +6157,7 @@ const SKILL_POSE={
  "이테리오|에너지 과부하":{p:"overload",ms:2500,big:1},   /* 과부하 자세 (사용자 2026-09-30) */
  /* 쿠렘타이 — 이테리오처럼 강조 (사용자 2026-10-03). 따로 그린 자세가 없어 공격 자세로, 빛은 보랏빛 */
  "쿠렘타이|영혼 분리":{p:"atk",ms:1700,big:1,glow:"purple"},
- "쿠렘타이|환상통":{p:"pain",ms:1800,big:1,glow:"purple"},   /* 환상통 자세 (초상화 정합 v2, 2026-10-03) */
+ "쿠렘타이|환상통":{p:"pain",ms:900},   /* 환상통 자세 (초상화 정합 v2). 강조(커짐·빛·가장자리)는 뺐다 — 받은 그림만 (사용자 2026-10-03) */
  "쿠렘타이|사형 선고":{p:"verdict",ms:2200,big:1,glow:"purple"},   /* 집행관은 전용 시전 자세, 기본은 공격 자세 (POSE_FALL) */
  "쿠렘타이|착취":{p:"exploit",ms:620},
  /* 굴라 — 붉은 빛 (사용자 2026-10-03). 응축 폭발은 몸을 웅크린 막기 자세 */
@@ -12947,6 +12947,7 @@ const GAME_VER="0.6";   /* 0.6 — 2스테이지 구역(정령숲) 추가 · 여
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 771, "v": "0.6", "d": "2026-10-03", "t": "환상통 연출을 받은 그림만으로", "big": 0},
  {"b": 770, "v": "0.6", "d": "2026-10-03", "t": "쿠렘타이 희귀 외형 명부의 집행관 (사형 선고로 10번 처치)", "big": 0},
  {"b": 769, "v": "0.6", "d": "2026-10-03", "t": "외형 등급 색을 장신구와 같게 (실버, 골드, 보라)", "big": 0},
  {"b": 768, "v": "0.6", "d": "2026-10-03", "t": "외형 등급과 외형 정보창, 쿠렘타이 오오라 단계가 오를 때 번쩍", "big": 0},
@@ -13718,7 +13719,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=770;
+const BUILD_NO=771;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -22950,12 +22951,10 @@ function phantomPain(h,s,label){
   const crit=!!T.painCrit; if(crit) v*=2;
   let list=B.foes.filter(f=>f.alive);
   if(T.painNear&&list.length) list=[list.reduce((a,b)=>dist(h.slot,a.slot)<=dist(h.slot,b.slot)?a:b)];
-  pulseFX("mine",h.slot,"#8f5fd0",3);
-  if(!label) veil("radial-gradient(circle,rgba(110,60,200,.38),transparent 75%)");   /* 강조 (2026-10-03) */
+  /* 퍼지는 고리 · 보랏빛 암전은 뺐다 — 받은 그림(환상통 파열)만 (사용자 2026-10-03) */
   if(label) say(`${label} — 환상통`,"t1");
   let dealt=0;
   list.forEach(f=>{
-    pulseFX("foe",f.slot,"#8f5fd0",2);
     fx({side:"foe",slot:f.slot,pain:1,gap:0});
     const hp0=f.hp+(f.shield||0);
     hurt(f,v,"환상통","mag",0,crit?1:0,1);      /* 제 그림이 생겼으니 옛 마름모는 겹치지 않는다 */
