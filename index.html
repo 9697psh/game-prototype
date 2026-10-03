@@ -263,6 +263,7 @@ img.pxs.face{image-rendering:pixelated;width:auto;filter:drop-shadow(0 2px 0 rgb
 .slot.t-boss::after{content:"";position:absolute;inset:2px;border-radius:6px;pointer-events:none;
   border:1px solid rgba(224,112,90,.3)}
 .slot.t-boss .bar{height:11px}
+.stats span.pup{color:#ff9a7a}   /* 물량 공세 — 차원문 위에서 오른 공격력 */
 /* 밤의 습격 */
 .slot.t-ambush{border-color:#6a5f9c;box-shadow:0 0 0 1px rgba(106,95,156,.35)}
 .slot.t-ambush .tier{color:#9c8fd0}
@@ -13150,6 +13151,7 @@ const GAME_VER="0.6";   /* 0.6 — 2스테이지 구역(정령숲) 추가 · 여
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 794, "v": "0.6", "d": "2026-10-03", "t": "물량 공세 — 하수인 칸 공격력, 기술 설명, 장군 예고에 반영", "big": 0},
  {"b": 793, "v": "0.6", "d": "2026-10-03", "t": "영혼 분리 환영 체력 최대 30, 환영 성장, 응축 폭발 피해 숫자 보이기", "big": 0},
  {"b": 792, "v": "0.6", "d": "2026-10-03", "t": "치명적인 마법 — 겹쳐 고르면 그 수만큼, 모든 마법 기술에", "big": 0},
  {"b": 791, "v": "0.6", "d": "2026-10-03", "t": "균열 벌레 군체 — 의도 숫자 갱신, 광역으로 한꺼번에 쓰러뜨리면 서로 안 살림", "big": 0},
@@ -13944,7 +13946,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=793;
+const BUILD_NO=794;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -20466,7 +20468,7 @@ function drawBattle(app){
           h.eshield?` <span class="esh" title="에너지 보호막">◆${h.eshield}</span>`:""}${
           h.shield?` <span class="shd">${ic("def")}${h.shield}</span>`:""}</div>
         <div class="stats">
-          ${h.atk?`<span>${ic("atk")}${h.atk}</span>`:""}
+          ${(()=>{ const pa=portalImpAtk(h), a=(h.atk||0)+pa; return a?`<span${pa?` class="pup" title="물량 공세 — 차원문 위 +${pa}"`:""}>${ic("atk")}${a}</span>`:"" })()}
           ${h.mag?`<span>${ic("mag")}${h.mag}</span>`:""}
           ${h.def?`<span>${ic("def")}${h.def}</span>`:""}
         </div>
@@ -20831,6 +20833,7 @@ function extraParts(h,sk,key){
   if(!h||!sk) return out;
   const t=h.tag||{}, fst=h.first||{};
   if(key==="dmg"){
+    { const pa=portalImpAtk(h); if(pa) out.push({n:"물량 공세",v:pa}) }   /* 차원문 위 악마 하수인 (2026-10-03) */
     if(h.name==="카제"&&(sk.n==="진선풍도"||sk.n==="회오리")&&h.windDmg)
       out.push({n:"산들바람",v:h.windDmg});
     if(h.name==="카제"&&(sk.n==="진선풍도"||sk.n==="회오리")&&t.firstWind&&fst.wind!==1)
@@ -20951,6 +20954,8 @@ function richLive(h,sk,txt){
   if(h&&sk&&sk.bomb&&h.tag&&h.maxHp){   /* 응축 폭발 — 지금 체력으로 터지면 얼마인지 (2026-10-03). startMyTurn 의 셈과 같다 */
     const bp=h.tag.bombPct||0, pct=20+bp, v=bombDmg(h);
     txt0=txt0.replace(/현재 체력의 20%만큼의 피해/,`현재 체력의 ${pct}%만큼의 피해 `+NUM_A+v+NUM_B+`현재 체력 ${Math.max(0,h.hp)}의 ${pct}%`+(bp?` / 폭발력 강화 +${bp}%`:"")+NUM_C) }
+  if(h&&sk&&skillFlat(sk)&&portalImpAtk(h))   /* 상급 찌르기 — 숫자 표시가 없어도 물량 공세 몫은 붙는다 */
+    txt0=txt0.replace(/피해를 (\d+)/,(m,n)=>"피해를 "+NUM_A+(+n+portalImpAtk(h))+NUM_B+"물량 공세 +"+portalImpAtk(h)+NUM_C);
   if(h&&sk&&sk.n==="영혼 분리"&&h.tag&&h.tag.phantomHp)   /* 환영 성장 — 상한을 산 숫자로 (2026-10-03) */
     txt0=txt0.replace("(최대 30)",`(최대 ${phantomHpCap(h)}, 환영 성장 +${h.tag.phantomHp})`);
   if(/\*\( \)\*/.test(txt0)){
@@ -22195,11 +22200,6 @@ function predictDmg(h,s,tgt){
   /* 이테리오 — 마나를 내는 순간 마법력이 그만큼 오른다 */
   const magB=itManaNow(h,s);   /* 마나 과충전 · 마나 도약 */
   const MAG=(h.mag||0)+magB; let ATK=(h.atk||0)+((h.tag&&h.tag.overlap)?magB:0);   /* 에너지 중첩 — 공격력도 같이 (2026-10-01) */
-  /* 물량 공세 — 차원문 위에 선 악마 하수인 (runEffect 와 같은 셈) */
-  if(h.isMin&&/^악마 (하수인|장군)$/.test(h.name)){
-    const ow=run.heroes.find(x=>x.name==="굴라");
-    if(ow&&ow.tag.portalImpAtk&&(B.portals||[]).some(p=>p.side==="mine"&&p.slot===h.slot)) ATK+=ow.tag.portalImpAtk;
-  }
   const bs=k=>(s[k]||0)+mod(s,k);
   const alive=B.foes.filter(x=>x.alive);
   const far=alive.length?alive.reduce((a,b)=>dist(h.slot,a.slot)>=dist(h.slot,b.slot)?a:b):null;
@@ -22294,6 +22294,7 @@ function predictDmg(h,s,tgt){
       if(h.tag.bloodBlade&&((h.cutUses||0)+1)%4===0){ dmg*=2; crit=1 }
       if(s.twice) times=2;
     }
+    dmg+=portalImpAtk(h);   /* 물량 공세 — runEffect 와 같은 자리 */
   }
   if(dmg==null) return null;
   dmg=Math.max(0,Math.round(dmg));
@@ -23238,6 +23239,12 @@ const PHANTOM_HP=30;
 function phantomHpCap(h){ return PHANTOM_HP+((h&&h.tag&&h.tag.phantomHp)||0) }
 /* 응축 폭발 피해 — 굴라의 현재 체력 × (20% + 폭발력 강화) */
 function bombDmg(h){ return Math.floor(Math.max(0,h.hp||0)*(20+((h.tag&&h.tag.bombPct)||0))/100) }
+/* 물량 공세 — 균열 차원문 위에 선 악마 하수인 · 장군의 공격력 덧몫 (실제 · 예고 · 칸 · 설명이 다 이것을 본다) */
+function portalImpAtk(h){
+  if(!h||!h.isMin||!/^악마 (하수인|장군)$/.test(h.name)||!B||!run) return 0;
+  const ow=run.heroes.find(x=>x.name==="굴라");
+  return (ow&&ow.tag&&ow.tag.portalImpAtk&&(B.portals||[]).some(p=>p.side==="mine"&&p.slot===h.slot))?ow.tag.portalImpAtk:0;
+}
 function phantomCap(h){ return 1+((h&&h.tag&&h.tag.phantomPlus)||0) }
 function phantomFullMsg(h){ const c=phantomCap(h);
   return c<=1?"환영은 전장에 하나만 세울 수 있습니다.":`환영은 전장에 ${c}개까지만 세울 수 있습니다.` }
@@ -24276,10 +24283,7 @@ function runEffect0(h,i,s,target){
       if(T.chompLeech) h.leech=Math.max(h.leech||0,T.chompLeech);
     }
     /* 물량 공세 — 차원문 위에 선 악마 하수인은 더 세게 찌른다 */
-    if(h.isMin&&/^악마 (하수인|장군)$/.test(h.name)){
-      const ow=run.heroes.find(x=>x.name==="굴라");
-      if(ow&&ow.tag.portalImpAtk&&(B.portals||[]).some(p=>p.side==="mine"&&p.slot===h.slot)) dmg+=ow.tag.portalImpAtk;
-    }
+    dmg+=portalImpAtk(h);
     if(!dmg){ say(`${tgt.name}${jo(tgt.name,"eun")} 조준 밖이라 상처 하나 없습니다.`,"t2"); return }
     /* 육중한 밀치기 — 맞은 적을 한 칸 뒤로. 밀려날 데가 없으면 기절 */
     const heave=t=>{
