@@ -422,6 +422,17 @@ img.pxs.face{image-rendering:pixelated;width:auto;filter:drop-shadow(0 2px 0 rgb
 .cxvn i{width:6px;height:6px;border-radius:50%;background:rgba(201,162,39,.3)} .cxvn i.on{background:var(--brass)}
 .cxvn span{margin-left:4px}
 .slot.formwait .art,.slot.formwait .ublw,.slot.formwait .intentbar,.slot.formwait .tier{visibility:hidden}   /* 영혼 분리 — 맺히기 전 */
+/* 영혼 분리 — 고른 환영과 본체 (2026-10-03) */
+.phlink{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:30}
+.phlink path{fill:none;stroke-linecap:round}
+.phlink .glow{stroke:rgba(184,156,255,.35);stroke-width:7}
+.phlink .ln{stroke:#c9b4ff;stroke-width:2.2;stroke-dasharray:7 6;animation:phdash .9s linear infinite}
+.phlink circle{fill:#d9c8ff;stroke:#6b3fb0;stroke-width:1.5}
+@keyframes phdash{to{stroke-dashoffset:-26}}
+.bfstage .slot.phsrc .art,.bfstage .slot.phme .art{filter:drop-shadow(0 0 6px rgba(184,156,255,.95)) drop-shadow(0 0 14px rgba(140,90,230,.6));animation:phpulse 1.2s ease-in-out infinite}
+@keyframes phpulse{50%{filter:drop-shadow(0 0 3px rgba(184,156,255,.6)) drop-shadow(0 0 8px rgba(140,90,230,.35))}}
+.bfstage .slot .phtag{position:absolute;left:50%;top:-30px;transform:translateX(-50%);white-space:nowrap;z-index:6;pointer-events:none;
+  font-size:12px;font-weight:700;color:#e4d8ff;background:rgba(40,20,70,.88);border:1px solid #9a7ae0;border-radius:3px;padding:1px 7px;text-shadow:0 1px 0 #000}
 /* 트리스탄 — 강한 화살 (2026-10-03) */
 .arrowfly.pow{--z:2;animation-duration:.22s;z-index:9;filter:brightness(1.4) drop-shadow(0 0 6px rgba(170,240,255,.9))}
 .arrowfly.pow.snipe{--z:2.6;animation-duration:.2s;filter:brightness(1.6) drop-shadow(0 0 8px rgba(255,230,150,.95))}
@@ -2351,6 +2362,24 @@ body.ghand, body.ghand *{cursor:none!important}
 .smith .say::after{content:"";position:absolute;left:-5px;top:50%;margin-top:-5px;
   border:5px solid transparent;border-right-color:#171310}
 .smith .nm{font-size:10.5px;letter-spacing:.12em;color:var(--faint);margin-bottom:3px}
+/* 죄수 호송 마차 — 살려 낸 죄수가 보상을 건넨다 (2026-10-03) */
+.wfree{position:relative;display:flex;align-items:flex-end;justify-content:center;gap:48px;margin-top:6px}
+.wfree .rewards{margin:0}
+.wf-pr{position:relative;display:flex;flex-direction:column;align-items:center;opacity:0;transform:translateX(70px);transition:opacity .45s,transform .45s ease-out}
+.wf-pr.in{opacity:1;transform:none}
+.wf-pr.out{opacity:0;transform:translateX(150px) scaleX(-1);transition:opacity .7s ease-in,transform .8s ease-in}
+.wf-fig{height:150px;display:flex;align-items:flex-end;animation:wfbob 1.1s ease-in-out infinite}
+.wf-fig img.pxs{position:static;height:150px;width:auto;transform:none;image-rendering:pixelated;filter:drop-shadow(0 3px 0 rgba(0,0,0,.55))}
+@keyframes wfbob{50%{transform:translateY(-3px)}}
+.wf-bub{position:absolute;bottom:100%;margin-bottom:8px;left:10px;white-space:nowrap;background:#171310;border:1px solid var(--rule2);border-radius:9px;
+  padding:7px 12px;font-size:13px;color:var(--fg);opacity:0;transform:translateY(6px);pointer-events:none}
+.wf-bub::after{content:"";position:absolute;left:22px;top:100%;border:6px solid transparent;border-top-color:var(--rule2)}
+.wf-bub.on{opacity:1;transform:none;transition:opacity .25s,transform .25s}
+.wf-fly{position:absolute;z-index:5;pointer-events:none;width:56px;height:56px;display:flex;align-items:center;justify-content:center}
+.wf-fly svg,.wf-fly img{width:48px;height:48px;image-rendering:pixelated}
+.rw.wf-wait{opacity:0;transform:scale(.7)}
+.rw.wf-land{animation:wfland .42s cubic-bezier(.3,1.6,.5,1)}
+@keyframes wfland{0%{opacity:.3;transform:scale(.6)}100%{opacity:1;transform:scale(1)}}
 /* 등급 머리줄 */
 .fgh{width:100%;margin:16px 0 6px;font-size:10.5px;letter-spacing:.14em;
   color:var(--faint);display:flex;align-items:center;gap:9px}
@@ -4311,7 +4340,7 @@ function holdFrame(){
   let t=0; for(let i=0;i<H.tap;i++){ t+=H.tapMs[i]; if(dt<t) return {H:H,f:mapPng(H.pre+"-두드리기-"+(i+1)+".png")} }
   return null;
 }
-let GHOLD_TICK=0, MAP_HOLD_SKIP=0;
+let GHOLD_TICK=0, HOLD_EAT=0;   /* HOLD_EAT — 돌리다 손을 뗀 때. 곧이어 오는 클릭 하나를 먹는다 */
 function holdPreload(H){ for(let i=1;i<=H.spin;i++) new Image().src=mapPng(H.pre+"-봉돌리기-"+i+".png");
   for(let i=1;i<=H.tap;i++) new Image().src=mapPng(H.pre+"-두드리기-"+i+".png") }
 function holdSound(){ const H=holdHand(); if(!H||!GHOLD||GHOLD.phase==="wait") return;
@@ -4325,7 +4354,7 @@ function holdTick(){ if(GHOLD_TICK) return; GHOLD_TICK=setInterval(()=>{
   try{ gHandDraw() }catch(e){}
   try{ if(window.__mapHoldDraw&&document.querySelector(".pstage")) window.__mapHoldDraw() }catch(e){}   /* 지도 무대 손 */
   if(!GHOLD||GHOLD.phase==="wait"){ clearInterval(GHOLD_TICK); GHOLD_TICK=0 } },30) }
-const HOLD_SKIP="button,a,input,select,textarea,label,.ccard,.card,.cell,.slot,.sk,.rw,.pick,.skc,.hcard,.choice,.kw,.dtab,.cxh,.picks,.rewards";
+const HOLD_SKIP="button,a,input,select,textarea,label,.ccard,.card,.sk,.rw,.pick,.drop,.skc,.hcard,.choice,.kw,.dtab,.cxh,.picks,.rewards,.cbtn,.cfac";   /* 빈 칸 · 대원 · 적 위에서도 된다 (2026-10-03 — .slot 이 빠져 있어 전투 바닥 절반에서 안 됐다) */
 let GHAND=null, GHAND_MODE="point", GHAND_XY=null, GHAND_SRC="", GHAND_IN_STAGE=false, GHAND_HIDE=0;   /* GHAND_HIDE — 카드를 들고 있는 동안 (카드가 곧 손에 든 것) */
 const gHandFine=()=>typeof window!=="undefined"&&window.matchMedia&&window.matchMedia("(pointer:fine)").matches;
 function gHandOn(){ return gHandFine()&&view!=="text"&&view!=="title"&&view!=="saves" }   /* 메인화면(시작·이어하기)은 뺀다 · 전투도 손 (사용자 2026-10-01) */
@@ -4351,15 +4380,17 @@ if(typeof window!=="undefined"&&window.addEventListener){
   window.addEventListener("pointerdown",e=>{ if(e.pointerType==="mouse"){ GHAND_MODE="press"; gHandDraw();
       /* 꾹 누르기 — 빈 곳에서만, 카드를 들거나 연출이 도는 중이 아니면 */
       const H=holdHand();
-      if(H&&e.button===0&&!GHAND_HIDE&&!GHAND_IN_STAGE&&gHandOn()&&!(B&&B.busy)&&!(e.target&&e.target.closest&&e.target.closest(HOLD_SKIP))){
+      if(H&&e.button===0&&!GHAND_HIDE&&!GHAND_IN_STAGE&&gHandOn()&&!(e.target&&e.target.closest&&e.target.closest(HOLD_SKIP))){   /* 적 차례 연출 중에도 (2026-10-03) */
         const g={phase:"wait",t0:Date.now(),x:e.clientX,y:e.clientY}; GHOLD=g;
         for(let i=1;i<=H.spin;i++) new Image().src=mapPng(H.pre+"-봉돌리기-"+i+".png");
         for(let i=1;i<=H.tap;i++) new Image().src=mapPng(H.pre+"-두드리기-"+i+".png");
         setTimeout(()=>{ if(GHOLD===g&&g.phase==="wait"){ g.phase="spin"; g.t0=Date.now(); holdTick() } },400) } } },{passive:true});
-  window.addEventListener("pointermove",e=>{ if(GHOLD&&GHOLD.phase==="wait"&&Math.hypot(e.clientX-GHOLD.x,e.clientY-GHOLD.y)>10) GHOLD=null },{passive:true});
+  window.addEventListener("pointermove",e=>{ if(GHOLD&&GHOLD.phase==="wait"&&Math.hypot(e.clientX-GHOLD.x,e.clientY-GHOLD.y)>18) GHOLD=null },{passive:true});   /* 10 → 18px — 누르는 동안 손이 조금 흔들려도 */
   window.addEventListener("pointerup",()=>{
-    if(GHOLD&&GHOLD.phase==="spin"){ GHOLD.phase="tap"; GHOLD.t0=Date.now(); holdTick() } else if(GHOLD&&GHOLD.phase==="wait") GHOLD=null;
+    if(GHOLD&&GHOLD.phase==="spin"){ GHOLD.phase="tap"; GHOLD.t0=Date.now(); HOLD_EAT=Date.now(); holdTick() } else if(GHOLD&&GHOLD.phase==="wait") GHOLD=null;
     if(GHAND_MODE!=="point"){ GHAND_MODE="point"; gHandDraw() } },{passive:true});
+  /* 돌린 뒤 손을 떼며 생기는 클릭 — 칸으로 가거나 대원을 고르거나 바닥을 누른 것이 아니다. 뗀 직후의 것 하나만 (안 오면 그대로 잊는다) */
+  window.addEventListener("click",e=>{ if(HOLD_EAT&&Date.now()-HOLD_EAT<500){ HOLD_EAT=0; e.stopPropagation(); e.preventDefault() } else HOLD_EAT=0 },true);
   document.addEventListener("mouseleave",()=>{ GHAND_XY=null; gHandDraw() });
   window.addEventListener("blur",()=>{ GHAND_MODE="point"; gHandDraw() });
 }
@@ -5906,6 +5937,23 @@ function phFX(side,slot,key,cls,z){
    적 그림을 베낀 반투명 그림이 날아간다. 맺히는 순간은 formFX 가 받는다 */
 /* 맺힘 — 숨겨 둔 환영을 드러낸다 (formWait 를 풀고 작게 → 크게 · 번쩍) */
 const FORM_WAIT_MS=4000;
+/* 영혼 분리 — 고른 환영과 그 본체를 보랏빛 실로 잇는다 (사용자 2026-10-03: 이름이 같은 적이면 헷갈린다).
+   render 가 PHLINK 를 정하고, 다 그린 뒤 두 칸의 그림 가운데를 재서 위로 휘는 선을 긋는다 */
+let PHLINK=null;
+function phLinkApply(field){
+  if(!PHLINK||!field) return;
+  requestAnimationFrame(()=>{ if(!field.isConnected) return;
+    const a=ctrOf(PHLINK.from.side,PHLINK.from.slot), b=ctrOf(PHLINK.to.side,PHLINK.to.slot);
+    const ae=a&&a.e&&a.e.querySelector(".art"), be=b&&b.e&&b.e.querySelector(".art"); if(!ae||!be) return;
+    const fr=field.getBoundingClientRect(), k=field.offsetWidth/(fr.width||1);
+    const pt=e=>{ const r=e.getBoundingClientRect(); return [(r.left+r.width/2-fr.left)*k,(r.top+r.height*0.45-fr.top)*k] };
+    const [x1,y1]=pt(ae), [x2,y2]=pt(be), lift=Math.max(60,Math.abs(x2-x1)*0.28);
+    const mx=(x1+x2)/2, my=Math.min(y1,y2)-lift;
+    const sv=document.createElementNS("http://www.w3.org/2000/svg","svg"); sv.setAttribute("class","phlink");
+    sv.innerHTML=`<path class="glow" d="M${x1},${y1} Q${mx},${my} ${x2},${y2}"/><path class="ln" d="M${x1},${y1} Q${mx},${my} ${x2},${y2}"/>`
+      +`<circle cx="${x1}" cy="${y1}" r="5"/><circle cx="${x2}" cy="${y2}" r="5"/>`;
+    field.appendChild(sv) });
+}
 function formWaitApply(){
   if(!B) return; const now=Date.now();
   (B.mins||[]).forEach(m=>{ if(m.alive&&m.formWait&&now-m.formWait<FORM_WAIT_MS){ const c=ctrOf("mine",m.slot); if(c&&c.e) c.e.classList.add("formwait") } });
@@ -8868,8 +8916,8 @@ const HERO_REWARDS={
   R("사형 선고 강화","하급","사형 선고가 아군을 부활시킬 때의 체력이 5% 증가합니다. 적을 부활시킬 때의 체력이 5% 감소합니다.\n*[사형 선고] 기술이 없을 때 등장하지 않음",
     h=>{ h.tag.verdictAllyPct=(h.tag.verdictAllyPct||0)+5; h.tag.verdictFoePct=(h.tag.verdictFoePct||0)+5 }),
   R("수확자","하급","전투 시작 후, 영혼을 1 얻습니다. 금화를 4개 얻습니다.",h=>h.tag.reaper=1),
-  R("강한 영혼 수확","하급","영혼 수확이 정예 적으로부터 영혼을 2개 더 가져옵니다.",
-    h=>h.tag.eliteSouls=(h.tag.eliteSouls||0)+2),
+  R("강한 영혼 수확","하급","영혼 수확이 정예 적으로부터 영혼을 4개 더 가져옵니다.",   /* +2 → +4 (사용자 2026-10-03) */
+    h=>h.tag.eliteSouls=(h.tag.eliteSouls||0)+4),
   R("영혼 흡수","하급","영혼을 2개 소모하여 최대 체력을 8 얻습니다.",
     h=>{ run.souls=Math.max(0,(run.souls||0)-2); h.maxHp+=8; h.hp+=8 }),
   R("경험 흡수","하급","영혼을 2개 소모하여 경험치를 14 얻습니다.",
@@ -10039,9 +10087,11 @@ function drawGimRes(app){
   const wrap=app.querySelector(".center");
   if(R.msg) wrap.appendChild(el(`<div class="gimres-msg">${evRich(evSent(R.msg))}</div>`));
   const row=el(`<div class="rewards"></div>`);
+  const wg=R.wagon&&!R.wagonDone;   /* 살려 낸 죄수가 건넨다 — 한 번만 (다시 그려지면 끝난 모습) */
   if(!R.tiles.length) row.appendChild(el(`<div class="rw ro"><div class="rwi">${chestIcon("경험치")}</div><b>받은 것이 없습니다</b></div>`));
   R.tiles.forEach(x=>row.appendChild(el(`<div class="rw ro${gcls(x.t)}"><div class="rwi">${chestIcon(x.t)}</div><b>${esc(x.label)}</b></div>`)));
-  wrap.appendChild(row);
+  if(R.wagon){ const sc=el(`<div class="wfree"></div>`); sc.appendChild(row); wrap.appendChild(sc); if(wg) wagonGive(sc,row,R) }
+  else wrap.appendChild(row);
   const b=el(`<div style="margin-top:24px"><button class="go">${R.tiles.length?"전부 챙긴다":"계속"}</button></div>`);
   b.querySelector("button").onclick=()=>{
     const nx=R.next; run.gimRes=null; SFX.play("summon");
@@ -10051,6 +10101,33 @@ function drawGimRes(app){
     backToMap();
   };
   wrap.appendChild(b);
+}
+/* 죄수 호송 마차 — 살려 낸 죄수가 다가와 고맙다 하고, 꾸러미를 던져 건네고, 돌아서 달아난다 (사용자 2026-10-03).
+   그림은 억울한 죄수의 것(기본 · 공격 = 던지는 손짓). 말은 BARK["억울한 죄수"].thanks · bye */
+function wagonGive(sc,row,R){
+  R.wagonDone=1;
+  const tiles=[...row.querySelectorAll(".rw")]; tiles.forEach(t=>t.classList.add("wf-wait"));
+  const pr=el(`<div class="wf-pr"><div class="wf-bub"></div><div class="wf-fig">${figure("억울한 죄수")}</div></div>`);
+  sc.appendChild(pr);
+  const fig=pr.querySelector(".wf-fig"), bub=pr.querySelector(".wf-bub");
+  const T=(BARK["억울한 죄수"]||{}), line=k=>{ const L=T[k]||[]; return L.length?rnd(L):"" };
+  const sayB=t=>{ if(!t) return; bub.textContent=t; bub.classList.remove("on"); void bub.offsetWidth; bub.classList.add("on") };
+  const alive=()=>sc.isConnected;
+  requestAnimationFrame(()=>pr.classList.add("in"));
+  setTimeout(()=>{ if(alive()) sayB(line("thanks")) },520);
+  setTimeout(()=>{ if(!alive()) return;
+    fig.innerHTML=figure("억울한 죄수","atk");   /* 던지는 손짓 */
+    tiles.forEach((t,i)=>setTimeout(()=>{ if(!alive()) return;
+      const a=fig.getBoundingClientRect(), b=t.querySelector(".rwi").getBoundingClientRect(), s0=sc.getBoundingClientRect();
+      const fly=el(`<div class="wf-fly">${t.querySelector(".rwi").innerHTML}</div>`); sc.appendChild(fly);
+      const x0=a.left+a.width*0.3-s0.left, y0=a.top+a.height*0.35-s0.top, x1=b.left+b.width/2-s0.left, y1=b.top+b.height/2-s0.top;
+      fly.animate([0,.25,.5,.75,1].map(p=>({left:(x0+(x1-x0)*p)+"px",top:(y0+(y1-y0)*p-Math.sin(p*Math.PI)*70)+"px",transform:`translate(-50%,-50%) rotate(${-p*360}deg)`})),
+        {duration:620,easing:"linear",fill:"forwards"});
+      setTimeout(()=>{ fly.remove(); if(!alive()) return; t.classList.remove("wf-wait"); t.classList.add("wf-land"); SFX.play("equip") },620);
+    },i*220));
+  },1700);
+  setTimeout(()=>{ if(!alive()) return; fig.innerHTML=figure("억울한 죄수"); sayB(line("bye")) },2700);
+  setTimeout(()=>{ if(alive()) pr.classList.add("out") },3700);
 }
 function findRecipe(a,b){
   const key=[a,b].sort().join("|");
@@ -11432,6 +11509,9 @@ function tickDebEnd(u){
     fx({side:"mine",slot:u.slot,hit:1,burn:1,txt:"-"+v,cls:"dmg",gap:80});
     say(`${u.name} 화상 피해 ${v}`,"t3");
     u.deb.burn--;
+    /* 화상으로 체력이 다하면 쓰러진다 — 예전에는 깎기만 해서 소환물(환영)이 -1 로 서 있었다 (2026-10-03).
+       환영이면 unitDown 이 반동까지 낸다 */
+    if(u.hp<=0&&!u.down&&(u.isMin?u.alive:true)){ if(!u.isMin&&run){ u.downBy="화상"; run.lastKiller="화상"; run.lastKillerBy="화상" } unitDown(u) }
   }
   ["atkDn","magDn","defDn","bind"].forEach(k=>{ if(u.deb[k]>0) u.deb[k]-- });
   u.deb.shock=0; u.deb.chill=0; u.deb.stun=0; u.deb.fear=0;
@@ -13065,6 +13145,7 @@ const GAME_VER="0.6";   /* 0.6 — 2스테이지 구역(정령숲) 추가 · 여
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 786, "v": "0.6", "d": "2026-10-03", "t": "환영 본체 표시, 강한 영혼 수확 4개, 꾹 누르기 어디서나, 화상 쓰러짐, 호송 마차 죄수 연출", "big": 0},
  {"b": 785, "v": "0.6", "d": "2026-10-03", "t": "지도 화면에서도 꾹 눌러 봉 돌리기", "big": 0},
  {"b": 784, "v": "0.6", "d": "2026-10-03", "t": "대기 대사와 특수 대기 행동은 그 대원이 기술을 안 쓸 때만", "big": 0},
  {"b": 783, "v": "0.6", "d": "2026-10-03", "t": "집행관 꾹 누르기 손 위치를 평소 손에 맞춤", "big": 0},
@@ -13851,7 +13932,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=785;
+const BUILD_NO=786;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -15299,15 +15380,15 @@ function drawMap(app){
       if(hand.dataset.hold){ delete hand.dataset.hold; const m=mode||"point"; mode=null; set(m) } };
     window.__mapHoldDraw=mapHoldDraw;
     stage.onmouseleave=()=>{ hand.style.display="none"; last=null };
-    stage.addEventListener("click",e=>{ if(MAP_HOLD_SKIP){ MAP_HOLD_SKIP=0; return }   /* 꾹 눌러 봉을 돌린 뒤의 클릭은 바닥 누름이 아니다 */
+    stage.addEventListener("click",e=>{   /* 꾹 눌러 봉을 돌린 뒤의 클릭은 바닥 누름이 아니다 — 창 전체의 HOLD_EAT 가 먼저 먹는다 */
       if(e.target.closest(".cell")||e.target.closest(".mclock")||e.target.closest(".mbag")||e.target.closest(".mquest")) return;
       tapDust(stage,e.clientX,e.clientY); if(sfxHas("지도 바닥")) SFX.play("지도 바닥"); mapSay("outside");
       if(run.route||run.mapSel){ run.route=null; run.mapSel=null; render() } });   /* 고른 길·칸은 바닥을 누르면 풀린다 */
     stage.addEventListener("pointerdown",e=>{ last=[e.clientX,e.clientY]; set("press");
       const Hh=holdHand();
-      if(Hh&&e.button===0&&!(e.target.closest&&e.target.closest(".cell,.clock,.mclock,.mbag,.mquest"))){
+      if(Hh&&e.button===0&&!(e.target.closest&&e.target.closest(".clock,.mclock,.mbag,.mquest,.kw"))){   /* 격자 칸 위에서도 (2026-10-03 — 양피지 절반이 칸이라 자주 안 됐다) */
         const g={phase:"wait",t0:Date.now(),x:e.clientX,y:e.clientY,stage:1}; GHOLD=g; holdPreload(Hh);
-        setTimeout(()=>{ if(GHOLD===g&&g.phase==="wait"){ g.phase="spin"; g.t0=Date.now(); MAP_HOLD_SKIP=1; holdTick() } },400) } });
+        setTimeout(()=>{ if(GHOLD===g&&g.phase==="wait"){ g.phase="spin"; g.t0=Date.now(); holdTick() } },400) } });
     const up=()=>{ if(mode==="press") set("point") };
     stage.addEventListener("pointerup",up); stage.addEventListener("pointercancel",up);
     stage._up=up; }
@@ -16176,7 +16257,7 @@ function gimBattleWon(d){
     if(d.rescued){ (run.after=run.after||[]).push({grade:"중급"}); sub="죄수를 살렸습니다"; msg="억울한 죄수가 수갑을 벗고 달아나며 무언가를 남깁니다." }
     else { sub="모두 죽였습니다"; msg="죄수까지 쓰러졌습니다. 마차에 남은 것은 경비병의 것뿐입니다." } }
   if(title){ const tiles=gimResTiles((run.after||[]).slice(before),extra);
-    run.gimRes={title:title,sub:sub,msg:msg,tiles:tiles,next:(d.cell.wagon&&d.rescued)?"after":"chest"} }
+    run.gimRes={title:title,sub:sub,msg:msg,tiles:tiles,next:(d.cell.wagon&&d.rescued)?"after":"chest",wagon:(d.cell.wagon&&d.rescued)?1:0} }
 }
 
 /* ═══════════ 주둔지 ═══════════ */
@@ -20000,6 +20081,8 @@ const BARK={
   down:["다시… 사슬로…"]},
  "억울한 죄수":{
   in:["저는 아무 짓도 안 했어요…","제발… 저를 보지 마세요."],
+  thanks:["살려 주셔서 고마워요… 이거라도 받아 주세요.","은혜는 잊지 않을게요. 숨겨 둔 거예요."],   /* 호송 마차 보상을 건넬 때 (2026-10-03) */
+  bye:["그럼… 이만!","잡히기 전에 가 볼게요!"],
   hurt:["안돼요 살려주세요!","절 살려주시면 후회 안할거에요"],
   down:["…억울해요…"]},
  "부서진 파수병":{
@@ -20277,6 +20360,11 @@ function drawBattle(app){
   const INC = incoming();
   /* 적을 눌러 두면 그 적이 닿는 칸을 밝게 보여 준다 — 어디로 피할지 알 수 있다 */
   const peekFoe = (B.peek!=null) ? B.foes.find(x=>x.id===B.peek&&x.alive) : null;
+  /* 영혼 분리 환영을 눌러 두면 어느 적에게서 뜯어냈는지 짚어 준다 — 이름이 같은 적이 여럿일 때 (사용자 2026-10-03) */
+  const phSel = (sel&&sel.hero&&sel.hero.isMin&&sel.hero.phantomOf!=null&&sel.hero.alive) ? sel.hero
+              : (peekFoe&&peekFoe.isPhantom) ? peekFoe : null;
+  const phSrc = phSel ? B.foes.find(x=>x.id===phSel.phantomOf&&x.alive&&!x.isPhantom) : null;
+  PHLINK = (phSel&&phSrc) ? {from:{side:phSel.isMin?"mine":"foe",slot:phSel.slot},to:{side:"foe",slot:phSrc.slot}} : null;
   const shOwner = allUnits().find(x=>x.shadowAt);
   const shMark = dk=>`<svg class="shmark" viewBox="0 0 24 24">`
       +`<ellipse cx="12" cy="18" rx="8" ry="3.5" fill="${dk?"#7a4ab0":"#4a3a5e"}" opacity=".85"/>`
@@ -20322,6 +20410,7 @@ function drawBattle(app){
       d.innerHTML+=mvArrow();
     }
     else if(h){
+      if(phSel&&phSel===h) d.classList.add("phme");
       if(sel&&sel.hero===h) d.classList.add("selh");   /* 고른 대원 — 비용(마나 알·자원)이 보인다 (2026-09-19) */
       if(sel&&sel.hero===h&&sel.step===2) d.classList.add("pick");
       if(tgMode==="self"&&sel.hero===h) d.classList.add("pick");
@@ -20412,7 +20501,9 @@ function drawBattle(app){
       const tier=foeTier(f);
       d.classList.add("t-"+tier);
       const fsz=tier==="boss"?"boss":ELITE_NAMES[f.name]?"lead":"";   /* 정예 적만 크게 — 정예 전투의 1번 자리라고 키우면 소환된 작은 죄수까지 커진다 (사용자 2026-09-29) */
-      if(peekFoe&&peekFoe===f){ d.classList.add("peeked"); d.innerHTML+=`<span class="reach frng">사거리 ${f.rng||1}</span>` }   /* 살펴보는 적 — 능력치·표식·사거리 (2026-09-19/20) */
+      if(peekFoe&&peekFoe===f){ d.classList.add("peeked"); d.innerHTML+=`<span class="reach frng">사거리 ${f.rng||1}</span>` }
+      if(phSrc&&phSrc===f){ d.classList.add("phsrc"); d.innerHTML+=`<span class="phtag">환영의 본체</span>` }
+      if(phSel&&phSel===f) d.classList.add("phme");   /* 살펴보는 적 — 능력치·표식·사거리 (2026-09-19/20) */
       d.innerHTML+=`${TIER_LABEL[tier]?`<div class="tier">${
           tier==="boss"?tierCrown():tier==="elite"?tierStar():tierMoon()}${TIER_LABEL[tier]}</div>`:""}
         <div class="intentbar">${intentHtml(f)}</div>
@@ -20580,6 +20671,7 @@ function drawBattle(app){
     w.querySelectorAll(".st.g,.st.o").forEach(x=>d.insertBefore(x,a)) });
   if(PHFOCUS) setTimeout(phFocusApply,0);   /* 단계 전환 암전 — 다시 그려도 이어지게 */
   formWaitApply();                          /* 영혼 분리 — 맺히기 전의 환영은 숨긴다 */
+  phLinkApply(field);                       /* 영혼 분리 — 고른 환영과 본체를 잇는 선 */
   if(B&&run) run.heroes.forEach(h=>{ if(h.bomb>0&&h.slot>0&&h.hp>0){ const c=ctrOf("mine",h.slot);   /* 응축 폭발을 기다리는 동안 (2026-10-03) */
     if(c&&c.e){ c.e.classList.add("bombing"); if(h.bomb===1) c.e.classList.add("bomb1") } } });
   { const tr=el(`<div class="turnrow"></div>`);
@@ -22642,7 +22734,7 @@ function onDeath(kind,who){
     else if(kind==="min") g=1;
     else if(kind==="ally") g=3;
     if(who&&(who.isPhantom||who.of)) g=1;
-    /* 강한 영혼 수확 — 정예에게서 3개 더 */
+    /* 강한 영혼 수확 — 정예에게서 더 (가진 만큼, 하나에 4개) */
     { const k=run.heroes.find(h=>h.name==="쿠렘타이");
       if(k&&k.tag&&k.tag.eliteSouls&&kind==="foe"&&g===3&&B&&B.kind==="elite") g+=k.tag.eliteSouls }
     if(g) gainSouls(g);
