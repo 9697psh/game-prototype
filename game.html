@@ -13170,6 +13170,7 @@ const GAME_VER="0.6";   /* 0.6 — 2스테이지 구역(정령숲) 추가 · 여
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 799, "v": "0.6", "d": "2026-10-03", "t": "인도 — 영혼 300 이상이면 착취를 누르는 즉시 모든 적에게", "big": 0},
  {"b": 798, "v": "0.6", "d": "2026-10-03", "t": "환영 체력 상한 — 내 전장에 소환될 때만", "big": 0},
  {"b": 797, "v": "0.6", "d": "2026-10-03", "t": "보상 받기 — 빈 전장 한가운데, 보호막에서 에너지 보호막으로 바뀌는 연출", "big": 0},
  {"b": 796, "v": "0.6", "d": "2026-10-03", "t": "사형 선고 배치 잠금 라운드마다", "big": 0},
@@ -13969,7 +13970,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=798;
+const BUILD_NO=799;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -21470,7 +21471,10 @@ function pickSkill(i,count){
    자기에게 거는 것(막기·환상통·갑옷 장착·피부 강화·화살비·응축 폭발·융합)과
    대상을 스스로 정하는 것(페일노트 — 가장 먼 적). 막기는 사용자 2026-09-12 — 또 누르면 한 번 더 나간다 */
 const AUTO_SK={"에너지 과부하":1,"막기":1,"환상통":1,"갑옷 장착":1,"페일노트":1,"피부 강화":1,"화살비":1,"응축 폭발":1,"융합":1,"기류 흘리기":1,"잠재력 활성":1,   /* 카제 둘 (사용자 2026-09-16) */
-  "변환":1,"물과 불":1,"균형":h=>!ffFlare(h)};   /* 균형은 플로우일 때만 (플레어면 적을 겨눈다) */
+  "변환":1,"물과 불":1,"균형":h=>!ffFlare(h),
+  "착취":h=>guideOn(h)};   /* 인도 — 영혼 300 부터 모든 적이라 고를 것이 없다 (사용자 2026-10-03) */
+/* 인도가 켜졌는가 — 쿠렘타이 상급, 영혼 300 이상 */
+function guideOn(h){ return !!(h&&h.tag&&h.tag.guideAll&&(run&&run.souls||0)>=300) }   /* 균형은 플로우일 때만 (플레어면 적을 겨눈다) */
 /* 기술이 지금 닿을 칸들 — 기술 칸에 커서를 올렸을 때 밝힌다. 셈만 하고 아무것도 바꾸지 않는다.
    새 기술에 '정해진 대상' 규칙이 생기면 여기에 한 줄 더한다 (겨누는 기술은 validTarget 이 알아서 받는다) */
 function previewTargets(h,s){
@@ -21484,6 +21488,7 @@ function previewTargets(h,s){
   if(s.harmony){ foes.filter(f=>validTarget(h,s,f.slot)).forEach(F); return out }
   if(s.burst||s.phantomPain||s.scaleBoom||s.warp||s.allHit||s.tune==="edge"){ foes.forEach(F); return out }
   if(s.shackle||s.nearest){ const f=nearestFoe(h); if(f) F(f); return out }
+  if(s.drain&&guideOn(h)){ foes.forEach(F); return out }   /* 인도 — 모든 적 */
   if(s.farshot){ const f=pinnedFoe(h,s); if(f) F(f); return out }
   if(s.tg==="foe"||s.tg==="any"){ foes.filter(f=>validTarget(h,s,f.slot)).forEach(F); return out }
   if(s.tg==="ally"&&!isMoveSkill(s)){ run.heroes.filter(a=>a.slot>0&&!a.down&&inReach(h,s,a.slot)).forEach(a=>out.push({side:"mine",slot:a.slot})); return out }
@@ -21535,6 +21540,8 @@ function autoTarget(h,s){
   if(s.balance&&!ffFlare(h)) return null;
   if(s.tg==="self") return null;
   if(s.farshot){ const f=(h.tag&&h.tag.nearShot)?nearestFoe(h):farthestFoe(h); return f?f.slot:undefined }
+  if(s.drain&&guideOn(h)){   /* 인도 — 모두에게 가니 겨눌 수 있는 앞쪽 적 하나를 대표로 */
+    const L=B.foes.filter(f=>f.alive), f=L.find(x=>validTarget(h,s,x.slot))||nearestFoe(h); return f?f.slot:undefined }
   return undefined;
 }
 function pickCount(n){
@@ -23405,7 +23412,7 @@ function runEffect0(h,i,s,target){
     if(so>=80){ const b=foeAt(target+1); if(b) list.push(b) }
     if(so>=120){ const f2=foeAt(target-1); if(f2) list.push(f2) }
     /* 인도 — 영혼 300 부터는 모든 적에게 */
-    if(h.tag.guideAll&&so>=300) list=B.foes.filter(f=>f.alive);
+    if(guideOn(h)) list=B.foes.filter(f=>f.alive);
     const times=so>=200?2:1;
     const dmg=s.dmg+mod(s,"dmg")+h.mag;
     /* 환영 착취 — 적 전장의 환영을 겨누면 보호막 3 */
