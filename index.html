@@ -4413,7 +4413,10 @@ function idleMotion(h){ const m=idleMotionOf(h); if(!m||!h.slot) return;
   const A=rnd(m.anims), c=ctrOf("mine",h.slot), im=c&&c.e&&c.e.querySelector(".art img.pxs"); if(!im) return;
   const back=im.getAttribute("src"), bph=im.style.getPropertyValue("--ph");
   im.style.setProperty("--ph",A.ph); let t=0;
-  A.keys.forEach((k,i)=>{ setTimeout(()=>{ if(im.isConnected&&ICON_PNG[k]){ im.src=ICON_PNG[k]; if(A.sfx&&A.sfx[i]&&sfxHas(A.sfx[i])) SFX.play(A.sfx[i]) } },t); t+=A.ms[i]||110 });   /* 받은 칸 길이 그대로 · 봉이 닿는 칸에 소리 */
+  /* times · speed — 집행봉 두드리기는 빠르게 두 번 (사용자 2026-10-03). 두 모션은 따로 — 한 번에 하나만 */
+  for(let r=0;r<(A.times||1);r++)
+    A.keys.forEach((k,i)=>{ setTimeout(()=>{ if(im.isConnected&&ICON_PNG[k]){ im.src=ICON_PNG[k]; if(A.sfx&&A.sfx[i]&&sfxHas(A.sfx[i])) SFX.play(A.sfx[i]) } },t);
+      t+=Math.round((A.ms[i]||110)*(A.speed||1)) });   /* 봉이 닿는 칸에 소리 */
   setTimeout(()=>{ if(im.isConnected){ im.src=back; im.style.setProperty("--ph",bph) } },t);
 }
 /* 그 대원의 대사만 — 공용 대사는 없다 (사용자 2026-09-14 : 있는 대원이 공용 대사를 너무 자주 쳤다). 칸이 비면 조용 */
@@ -7541,8 +7544,8 @@ const SKINS={
    cardFrame:"ui_card_frame_executor",
    kill:{tone:"gold",pose:"verdict",sheet:"fx_kex_judg"},   /* 전용 처치 연출 — ① 금빛 ② 사형선고 자세 ③ 처치 대사(BARK["집행관"].kill) ④ 판결 띠 */   /* 손패의 대원 카드 틀 (흰 바탕 금테) */
    idleMotion:{anims:[   /* 특수 대기 모션 — 대기 대사와 같은 박자, 둘 중 하나 (받은 128 칸을 기본 몸 키에 맞춤, tools/executor-prep.py) */
-     {sfx:{4:"집행관 봉 내리치기"},keys:[1,2,3,4,5,6,7,8].map(i=>"fx_kexi_gavel_"+i),ph:1.054,ms:[100, 100, 90, 110, 70, 130, 100, 160]},   /* 집행봉 두드리기 */
-     {keys:[1,2,3,4,5,6,7,8].map(i=>"fx_kexi_scale_"+i),ph:1.036,ms:[110, 100, 100, 120, 120, 120, 110, 160]}]},   /* 저울 검토 */   /* 영혼 분리 환영 — 금빛 사슬과 판결 인장의 잔영 */   /* 착취 — 원래는 여섯 칸 띠, 집행관은 한 장 (구체가 사슬을 따라 떨어져 인장에 부딪는다) */
+     {sfx:{4:"집행관 봉 내리치기"},times:2,speed:0.65,keys:[1,2,3,4,5,6,7,8].map(i=>"fx_kexi_gavel_"+i),ph:1.054,ms:[100, 100, 90, 110, 70, 130, 100, 160]},   /* 집행봉 두드리기 */
+     {keys:[1,2,3,4,5,6,7,8].map(i=>"fx_kexi_scale_"+i),ph:1.036,ms:[110,110,120,380,650,300,340,380]}]},   /* 저울 검토 — 저울을 든 채 잠깐 멈췄다가(4·5칸) 천천히 내려놓는다 (사용자 2026-10-03) */   /* 영혼 분리 환영 — 금빛 사슬과 판결 인장의 잔영 */   /* 착취 — 원래는 여섯 칸 띠, 집행관은 한 장 (구체가 사슬을 따라 떨어져 인장에 부딪는다) */
    glow:" drop-shadow(0 0 4px rgba(255,225,150,.95)) drop-shadow(0 0 12px rgba(170,220,255,.6))",   /* 금빛 + 옅은 백청 영혼광 */
    bigGlow:"gold",
    soulNames:{80:"판결의 미광",120:"저울의 기척",160:"판결의 고리",200:"집행 기둥",300:"명부의 집행"}}],
@@ -13052,6 +13055,7 @@ const GAME_VER="0.6";   /* 0.6 — 2스테이지 구역(정령숲) 추가 · 여
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 779, "v": "0.6", "d": "2026-10-03", "t": "집행관 대기 모션: 두드리기 빠르게 두 번, 저울은 멈췄다 천천히", "big": 0},
  {"b": 778, "v": "0.6", "d": "2026-10-03", "t": "집행관 봉 소리, 전용 처치 연출, 대기 모션 v3, 외형 정보 목록 정리", "big": 0},
  {"b": 777, "v": "0.6", "d": "2026-10-03", "t": "집행관 오른손 꾹 누르기, 특수 대기 모션, 대원 카드 틀", "big": 0},
  {"b": 776, "v": "0.6", "d": "2026-10-03", "t": "전투 대기 대사, 희귀 외형 특수 대기 모션 자리", "big": 0},
@@ -13831,7 +13835,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=778;
+const BUILD_NO=779;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
