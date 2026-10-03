@@ -1182,6 +1182,7 @@ body.vbattle .hand .card.ccard.cf{width:160px;height:224px;margin:0 -14px}
   border-radius:50%;position:relative;z-index:1}
 .rw .rwi svg{width:58px;height:58px}
 .rw .rwi img.npx{width:64px;height:64px}
+.rw .rwi img.gchest,.wf-fly img.gchest{image-rendering:pixelated}
 .rw b{font-size:14px;font-family:var(--serif);letter-spacing:.02em;position:relative;z-index:1}
 .rw p{color:var(--dim);font-size:11.5px;margin:8px 0 0;line-height:1.6;word-break:keep-all;
   position:relative;z-index:1}
@@ -1313,6 +1314,9 @@ body.vbattle .tornado{transform:scale(4.6);margin-top:14px}   /* 회오리도 �
 .bark::before{content:"";position:absolute;left:50%;bottom:-5px;transform:translateX(-50%);
   border:4px solid transparent;border-top-color:#efe6d2;z-index:1}
 .bark.f{background:#2a1416;color:#f0cfc6;border-color:#0a0809}
+.bark.ph{background:none;border:0;box-shadow:none;padding:0;color:rgba(170,166,180,.62);font-size:10.5px;font-weight:400;font-style:italic;
+  letter-spacing:.04em;max-width:220px;text-shadow:0 1px 2px rgba(0,0,0,.8)}
+.bark.ph::before,.bark.ph::after{display:none}
 .bark.f::before{border-top-color:#2a1416}
 @keyframes barkA{0%{opacity:0;transform:translate(-50%,-70%) scale(.7)}
   12%{opacity:1;transform:translate(-50%,-100%) scale(1.06)}
@@ -2367,7 +2371,6 @@ body.ghand, body.ghand *{cursor:none!important}
 .wfree .rewards{margin:0}
 .wf-pr{position:relative;display:flex;flex-direction:column;align-items:center;opacity:0;transform:translateX(70px);transition:opacity .45s,transform .45s ease-out}
 .wf-pr.in{opacity:1;transform:none}
-.wf-pr.out{opacity:0;transform:translateX(150px) scaleX(-1);transition:opacity .7s ease-in,transform .8s ease-in}
 .wf-fig{height:150px;display:flex;align-items:flex-end;animation:wfbob 1.1s ease-in-out infinite}
 .wf-fig img.pxs{position:static;height:150px;width:auto;transform:none;image-rendering:pixelated;filter:drop-shadow(0 3px 0 rgba(0,0,0,.55))}
 @keyframes wfbob{50%{transform:translateY(-3px)}}
@@ -10090,7 +10093,8 @@ function drawGimRes(app){
   const wg=R.wagon&&!R.wagonDone;   /* 살려 낸 죄수가 건넨다 — 한 번만 (다시 그려지면 끝난 모습) */
   if(!R.tiles.length) row.appendChild(el(`<div class="rw ro"><div class="rwi">${chestIcon("경험치")}</div><b>받은 것이 없습니다</b></div>`));
   R.tiles.forEach(x=>row.appendChild(el(`<div class="rw ro${gcls(x.t)}"><div class="rwi">${chestIcon(x.t)}</div><b>${esc(x.label)}</b></div>`)));
-  if(R.wagon){ const sc=el(`<div class="wfree"></div>`); sc.appendChild(row); wrap.appendChild(sc); if(wg) wagonGive(sc,row,R) }
+  if(R.wagon){ const sc=el(`<div class="wfree"></div>`); sc.appendChild(row); wrap.appendChild(sc);
+    if(wg) wagonGive(sc,row,R); else sc.appendChild(el(`<div class="wf-pr in"><div class="wf-bub"></div><div class="wf-fig">${figure("억울한 죄수")}</div></div>`)) }
   else wrap.appendChild(row);
   const b=el(`<div style="margin-top:24px"><button class="go">${R.tiles.length?"전부 챙긴다":"계속"}</button></div>`);
   b.querySelector("button").onclick=()=>{
@@ -10102,8 +10106,8 @@ function drawGimRes(app){
   };
   wrap.appendChild(b);
 }
-/* 죄수 호송 마차 — 살려 낸 죄수가 다가와 고맙다 하고, 꾸러미를 던져 건네고, 돌아서 달아난다 (사용자 2026-10-03).
-   그림은 억울한 죄수의 것(기본 · 공격 = 던지는 손짓). 말은 BARK["억울한 죄수"].thanks · bye */
+/* 죄수 호송 마차 — 살려 낸 죄수가 다가와 고맙다 하고, 꾸러미를 던져 건네고, 그 자리에 남는다 (사용자 2026-10-03 — 달아나지 않게).
+   그림은 억울한 죄수의 것(기본 · 공격 = 던지는 손짓). 말은 BARK["억울한 죄수"].thanks */
 function wagonGive(sc,row,R){
   R.wagonDone=1;
   const tiles=[...row.querySelectorAll(".rw")]; tiles.forEach(t=>t.classList.add("wf-wait"));
@@ -10126,8 +10130,7 @@ function wagonGive(sc,row,R){
       setTimeout(()=>{ fly.remove(); if(!alive()) return; t.classList.remove("wf-wait"); t.classList.add("wf-land"); SFX.play("equip") },620);
     },i*220));
   },1700);
-  setTimeout(()=>{ if(!alive()) return; fig.innerHTML=figure("억울한 죄수"); sayB(line("bye")) },2700);
-  setTimeout(()=>{ if(alive()) pr.classList.add("out") },3700);
+  setTimeout(()=>{ if(alive()) fig.innerHTML=figure("억울한 죄수") },2700);
 }
 function findRecipe(a,b){
   const key=[a,b].sort().join("|");
@@ -13145,6 +13148,7 @@ const GAME_VER="0.6";   /* 0.6 — 2스테이지 구역(정령숲) 추가 · 여
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 787, "v": "0.6", "d": "2026-10-03", "t": "등급 보상 상자 그림, 죄수는 그 자리에, 환영 대사 물결", "big": 0},
  {"b": 786, "v": "0.6", "d": "2026-10-03", "t": "환영 본체 표시, 강한 영혼 수확 4개, 꾹 누르기 어디서나, 화상 쓰러짐, 호송 마차 죄수 연출", "big": 0},
  {"b": 785, "v": "0.6", "d": "2026-10-03", "t": "지도 화면에서도 꾹 눌러 봉 돌리기", "big": 0},
  {"b": 784, "v": "0.6", "d": "2026-10-03", "t": "대기 대사와 특수 대기 행동은 그 대원이 기술을 안 쓸 때만", "big": 0},
@@ -13932,7 +13936,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=786;
+const BUILD_NO=787;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -16254,7 +16258,7 @@ function gimBattleWon(d){
     title="간수 초소"; sub="초소를 무너뜨렸습니다"; msg="둘레의 감시가 걷힙니다. 초소에 쌓여 있던 것들입니다." }
   else if(d.cell.wagon){ if(run.grid[d.r]&&run.grid[d.r][d.c]) run.grid[d.r][d.c]={t:"empty"};
     title="죄수 호송 마차";
-    if(d.rescued){ (run.after=run.after||[]).push({grade:"중급"}); sub="죄수를 살렸습니다"; msg="억울한 죄수가 수갑을 벗고 달아나며 무언가를 남깁니다." }
+    if(d.rescued){ (run.after=run.after||[]).push({grade:"중급"}); sub="죄수를 살렸습니다"; msg="억울한 죄수가 수갑을 벗고, 숨겨 두었던 것을 꺼내 건넵니다." }
     else { sub="모두 죽였습니다"; msg="죄수까지 쓰러졌습니다. 마차에 남은 것은 경비병의 것뿐입니다." } }
   if(title){ const tiles=gimResTiles((run.after||[]).slice(before),extra);
     run.gimRes={title:title,sub:sub,msg:msg,tiles:tiles,next:(d.cell.wagon&&d.rescued)?"after":"chest",wagon:(d.cell.wagon&&d.rescued)?1:0} }
@@ -16885,6 +16889,8 @@ function openChest(kind){
 function chestIcon(t){
   const c={"금화":"#c9a227","경험치":"#7fd39a","파편":"#6aa8e0","일반":"#6aa8e0",
            "하급":"#9c8d77","중급":"#e0a86a","상급":"#e0705a","동료":"#5fd8cf","회복":"#7fd39a","제련석":"#9c8d77","없음":"#6a6058"}[t]||"#c9a227";
+  { const id={"하급":"chest_bronze","중급":"chest_silver","상급":"chest_gold"}[t], u=id&&(typeof ICON_PNG!=="undefined")&&ICON_PNG[id];   /* 등급 상자 그림 (사용자 2026-10-03) */
+    if(u) return '<img class="npx gchest" src="'+u+'" alt="" draggable="false">'; }
   if(t==="회복") return '<svg viewBox="0 0 64 64"><path d="M32 54 C10 38 10 20 22 18 C28 17 32 22 32 24 C32 22 36 17 42 18 C54 20 54 38 32 54Z" fill="'+c+'"/></svg>';
   if(t==="제련석") return '<svg viewBox="0 0 64 64"><path d="M20 14 L44 14 L54 32 L44 50 L20 50 L10 32 Z" fill="none" stroke="'+c+'" stroke-width="5"/></svg>';
   const g=(t==="금화")?'<circle cx="32" cy="34" r="17" fill="none" stroke="@" stroke-width="5"/><path d="M32 24v20M26 30h12" stroke="@" stroke-width="4"/>'
@@ -20082,7 +20088,7 @@ const BARK={
  "억울한 죄수":{
   in:["저는 아무 짓도 안 했어요…","제발… 저를 보지 마세요."],
   thanks:["살려 주셔서 고마워요… 이거라도 받아 주세요.","은혜는 잊지 않을게요. 숨겨 둔 거예요."],   /* 호송 마차 보상을 건넬 때 (2026-10-03) */
-  bye:["그럼… 이만!","잡히기 전에 가 볼게요!"],
+
   hurt:["안돼요 살려주세요!","절 살려주시면 후회 안할거에요"],
   down:["…억울해요…"]},
  "부서진 파수병":{
@@ -20245,7 +20251,9 @@ function barkShow(u,line,now,big){
   const foe=!!u.isFoe||B.foes.indexOf(u)>=0;
   const p=ctrOf(foe?"foe":"mine",u.slot);
   if(!p) return;
-  const nd=spawn('<div class="bark'+(foe?" f":"")+(big?" big":"")+'">'+talk(line)+'</div>');
+  const ph=u.isPhantom||u.phantomOf!=null;   /* 영혼 분리 환영 — 주인의 말이 메아리처럼 (사용자 2026-10-03) */
+  const nd=spawn(ph?'<div class="bark ph">~ '+talk(line)+' ~</div>'
+                   :'<div class="bark'+(foe?" f":"")+(big?" big":"")+'">'+talk(line)+'</div>');
   if(!nd) return;
   nd.style.left=p.x+"px";
   nd.style.top=(p.y-58)+"px";
