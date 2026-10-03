@@ -7775,6 +7775,13 @@ function skinInfo(hero,id){
   const pi=ov.querySelectorAll(".ski-poses img");
   /* 소환물 — 대기 띠가 있으면 돈다 */
   if(sumSet&&sumSet.idleA&&sumSet.idleA.length&&pi[2]){ let j=0; const t=setInterval(()=>{ if(!ov.isConnected){ clearInterval(t); return } pi[2].src=sumSet.idleA[j++%sumSet.idleA.length] },140) }
+  /* 희귀 외형 — 둘째 칸은 전투 대기 특수 행동을 번갈아 (사용자 2026-10-04). 받은 칸 길이 · 횟수 · 빠르기 그대로, 사이에 기본 자세로 잠깐 */
+  const IM=k.idleMotion&&k.idleMotion.anims;
+  if(IM&&IM.length&&pi[1]&&set.idle){ const st=[];
+    IM.forEach(A=>{ for(let r=0;r<(A.times||1);r++) A.keys.forEach((kk,i)=>{ if(ICON_PNG[kk]) st.push({u:ICON_PNG[kk],ms:Math.round((A.ms[i]||110)*(A.speed||1))}) });
+      st.push({u:set.idle.u,ms:800}) });
+    pi[1].src=set.idle.u; let j=0;
+    const tk=()=>{ if(!ov.isConnected||!st.length) return; const x=st[j++%st.length]; pi[1].src=x.u; setTimeout(tk,x.ms) }; setTimeout(tk,600) }
   if(!HH&&MH&&MH.point&&pi[3]){ pi[3].classList.add("ski-hold"); let on=0;   /* 일반 외형의 손 — 가리킴 1.2초 · 누름 0.3초 */
     if(MH.press) new Image().src=mapPng(MH.press.f);
     const tick=()=>{ if(!ov.isConnected) return; on=!on; pi[3].src=mapPng(on||!MH.press?MH.point.f:MH.press.f); setTimeout(tick,on?1200:300) }; tick() }
@@ -13313,6 +13320,7 @@ const GAME_VER="0.6";   /* 0.6 — 2스테이지 구역(정령숲) 추가 · 여
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 824, "v": "0.6", "d": "2026-10-04", "t": "희귀 외형 정보창 둘째 칸 대기 특수 행동", "big": 0},
  {"b": 823, "v": "0.6", "d": "2026-10-04", "t": "외형 정보창 셋째 칸 궁극기 자세", "big": 0},
  {"b": 822, "v": "0.6", "d": "2026-10-04", "t": "일반 외형 정보창 넷째 칸 오른손", "big": 0},
  {"b": 821, "v": "0.6", "d": "2026-10-04", "t": "외형 정보창 오른손 뽐내기", "big": 0},
@@ -14137,7 +14145,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=823;
+const BUILD_NO=824;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
