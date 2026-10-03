@@ -13170,6 +13170,7 @@ const GAME_VER="0.6";   /* 0.6 — 2스테이지 구역(정령숲) 추가 · 여
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 800, "v": "0.6", "d": "2026-10-03", "t": "기술 자세가 공격 자세로 덮이던 것 — 팽창_2, 집행관 착취 환상통 자세", "big": 0},
  {"b": 799, "v": "0.6", "d": "2026-10-03", "t": "인도 — 영혼 300 이상이면 착취를 누르는 즉시 모든 적에게", "big": 0},
  {"b": 798, "v": "0.6", "d": "2026-10-03", "t": "환영 체력 상한 — 내 전장에 소환될 때만", "big": 0},
  {"b": 797, "v": "0.6", "d": "2026-10-03", "t": "보상 받기 — 빈 전장 한가운데, 보호막에서 에너지 보호막으로 바뀌는 연출", "big": 0},
@@ -13970,7 +13971,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=799;
+const BUILD_NO=800;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -23077,7 +23078,8 @@ function doSkill(target){
             s:sp.wind?null:(own||ATK_SFX[h.name]),lunge:sp.big?0:1,
             fn:(sp.aim&&target>0)?(()=>aimMarkFX("foe",target,sp.wind)):null,
             gap:sp.wind||0});   /* 강조 자세라도 이펙트는 바로 (사용자 2026-09-30). wind 가 있으면 겨누는 만큼 뒤에 (트리스탄, 2026-10-03) */
-      if(h.slot>0&&sp&&sp.wind&&(own||ATK_SFX[h.name])) fx({s:own||ATK_SFX[h.name],gap:0});   /* 시위를 놓는 순간의 소리 */
+      if(h.slot>0&&sp){ if(sp.wind&&(own||ATK_SFX[h.name])) fx({s:own||ATK_SFX[h.name],gap:0}) }   /* 시위를 놓는 순간의 소리.
+         ★ 기술 자세가 있으면 아래 '공격 자세' 갈래로 내려가지 않는다 — 내려가면 같은 순간 atk 가 그 자세를 덮는다 (2026-10-03) */
       else if(h.slot>0&&hitsFoe(s,target)&&HERO_STRIKE[h.name])   /* 강조 공격 — 젖혔다 파고드는 순간에 이펙트·피해 (gap = wind) */
         fx({side:"mine",slot:h.slot,strike:HERO_STRIKE[h.name],s:own||ATK_SFX[h.name],gap:HERO_STRIKE[h.name].wind});
       else if(h.slot>0&&hitsFoe(s,target))
