@@ -9442,7 +9442,7 @@ function bump(h,name,key,v,label){ addMod(h,name,key,v,label||"강화") }
               내 턴 종료시 보호막 / 대원 배치 시 부정 보호막 / 내 턴에 이동시 추진력 */
 const ITEM_ORDER=["maxMana","firstMana","maxHp","atk","mag","def","endShield","negShield","moveMom"];
 const ITEM_LINE={
- maxMana:v=>`최대 마나 +${v}`, firstMana:v=>`첫 턴의 최대 마나 +${v}`,
+ maxMana:v=>`최대 마나 +${v}`, firstMana:v=>`각 라운드 첫 턴에 추가 마나 +${v}`,   /* 노트 문장 (2026-10-03) */
  maxHp:v=>`최대 체력 +${v}`, atk:v=>`공격력 +${v}`, mag:v=>`마법력 +${v}`, def:v=>`보호력 +${v}`,
  endShield:v=>`내 턴 종료시 보호막 +${v}`, negShield:v=>`대원 배치 시 부정 보호막 +${v}`,
  moveMom:v=>`내 턴에 이동시 추진력 +${v}`
@@ -13148,6 +13148,7 @@ const GAME_VER="0.6";   /* 0.6 — 2스테이지 구역(정령숲) 추가 · 여
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 789, "v": "0.6", "d": "2026-10-03", "t": "감시관의 갑주 받을 피해 예고, 사파이어 파편 각 라운드 첫 턴", "big": 0},
  {"b": 788, "v": "0.6", "d": "2026-10-03", "t": "환영의 반동 노트대로 (영혼 40개마다, 처치될 때 셈, 기술 칸 실제 몫)", "big": 0},
  {"b": 787, "v": "0.6", "d": "2026-10-03", "t": "등급 보상 상자 그림, 죄수는 그 자리에, 환영 대사 물결", "big": 0},
  {"b": 786, "v": "0.6", "d": "2026-10-03", "t": "환영 본체 표시, 강한 영혼 수확 4개, 꾹 누르기 어디서나, 화상 쓰러짐, 호송 마차 죄수 연출", "big": 0},
@@ -13937,7 +13938,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=788;
+const BUILD_NO=789;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -18628,7 +18629,7 @@ function startBattle(kind,pinned){
     windReset(h);                    /* 진선풍도 중첩도 라운드마다, 회오리로 바뀐 칸은 진선풍도로 */
     h.spentTurn=0; h.magnetTurn=0;   /* 아크 방전 셈 — 지난 라운드·전투 마지막 턴에 쓴 마나가 남아 첫 턴에 마나 없이 팽창 공격이 나갔다 (사용자 2026-10-03) */
     h.portal=null; h.bomb=0; h.minions=[];
-    h.mana=h.maxMana;
+    h.mana=h.maxMana+itemBt(h,"firstMana")+(h.tag.firstMana||0);   /* 사파이어 파편 — 각 라운드 첫 턴 (사용자 2026-10-03, 전에는 전투 첫 라운드만) */
     if(fresh){
       /* ── 전투 하나에 한 번만 ── */
       h.summoned=0;
@@ -18643,7 +18644,6 @@ function startBattle(kind,pinned){
       h.cutGrow=0; h.cutSum=0; h.endCount=0; h.deathSaveUsed=0; h.emptyDefOn=0;
       h.shotBonus=0;
       const hpl=itemBt(h,'hpPerLv'); if(hpl){ h.hp+=hpl*h.lv }
-      h.mana=h.maxMana+itemBt(h,"firstMana")+(h.tag.firstMana||0);
       /* 사형 선고의 배치 잠금은 여기서 안 건다 — onSummon 이 배치할 때 건다 (손패에 있는 동안 줄어들면 안 된다) */
     }
     if(!h.down) B.hand.push({type:"hero",hero:h});
@@ -21848,7 +21848,7 @@ function onSummon(h){
     if(ex>0){
       fx({side:"mine",slot:h.slot,s:"pick",ring:"#7fd8ff",glow:1,
           txt:"추가 마나 +"+ex,cls:"mag",gap:150});
-      say(`${h.name} — 첫 턴 추가 마나 +${ex} (마나 ${h.mana})`,"t2");
+      say(`${h.name} — 라운드 첫 턴 추가 마나 +${ex} (마나 ${h.mana})`,"t2");
     } }
   /* ── 대원을 배치할 때마다 (라운드마다 다시) ── */
   if(t.startStorm){ say("폭풍 — 회오리가 전장을 훑고 모든 적이 떠오릅니다.","t1");
@@ -22419,6 +22419,9 @@ function incoming(){
         if(s&&s.pullN){ let to=hsl(t); while(to<Math.min(SLOTS,hsl(t)+s.pullN)&&!blockAt(to+1)) to++; if(to!==hsl(t)) shove(t,to) } });
     }
   });
+  /* 적 턴이 끝날 때 — 감시관의 갑주: 사거리 밖 대원에게 마법 피해 (사용자 2026-10-03: 머리 위에도) */
+  B.foes.forEach(f=>{ const p=f.alive&&foePas(f,"outRangeDmg"); if(!p) return;
+    list.filter(u=>u.hp>0&&!u.isMin&&dist(hsl(u),fsl(f))>f.rng).forEach(u=>hitOn(u,foeDmg(f,p.v,"마법"),f)) });
   return map;
 }
 /* 그 칸에 서 있는 아군 머리 위에 붙일 쪽지 */
