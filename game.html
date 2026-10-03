@@ -276,6 +276,11 @@ img.pxs.face{image-rendering:pixelated;width:auto;filter:drop-shadow(0 2px 0 rgb
 .turnrow .hand-btn{display:inline-flex;align-items:center;gap:5px}
 .turnrow .hand-btn .ic{width:15px;height:15px}
 .turnrow .hand-btn b{color:var(--brass);font-weight:800}
+.whograde{display:inline-flex;align-items:center;gap:10px;margin:4px auto 4px;padding:6px 18px 6px 10px;border:1px solid var(--gc);border-radius:6px;
+  background:rgba(0,0,0,.35);color:var(--gc);font-size:20px;letter-spacing:.06em}   /* 제목 자리 */
+.whograde .wgi img,.whograde .wgi svg{width:36px;height:36px;image-rendering:pixelated;display:block}
+.turnrow #turnend.claim{animation:claimPulse 1.4s ease-in-out infinite}
+@keyframes claimPulse{50%{box-shadow:0 0 0 3px rgba(255,214,110,.35),0 0 26px rgba(255,214,110,.55)}}
 .turnrow #turnend:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.45)}
 .syn{font-size:11.5px;padding:3px 10px}
 .bar::after{content:"";position:absolute;inset:0;pointer-events:none;
@@ -13130,7 +13135,8 @@ function loadGame(i){
          객체로 되살리면 uid(x)===f.fearSrc 비교가 깨지므로 손대지 않는다. */
       view="battle";
       say("저장해 둔 자리에서 이어갑니다.","t2");
-    } else if(view==="battle") view="map";
+    } else if(view==="battle"){ view="map";
+      if(run&&run.claim&&run.dun){ render(); claimReward(); return true } }   /* [보상 받기] 를 누르기 전에 껐다 (2026-10-03) */
     render();
     return true;
   }catch(e){ return false }
@@ -13151,6 +13157,7 @@ const GAME_VER="0.6";   /* 0.6 — 2스테이지 구역(정령숲) 추가 · 여
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 795, "v": "0.6", "d": "2026-10-03", "t": "전투 뒤 보상 받기 단추, 보상 대원 고르기에 등급", "big": 0},
  {"b": 794, "v": "0.6", "d": "2026-10-03", "t": "물량 공세 — 하수인 칸 공격력, 기술 설명, 장군 예고에 반영", "big": 0},
  {"b": 793, "v": "0.6", "d": "2026-10-03", "t": "영혼 분리 환영 체력 최대 30, 환영 성장, 응축 폭발 피해 숫자 보이기", "big": 0},
  {"b": 792, "v": "0.6", "d": "2026-10-03", "t": "치명적인 마법 — 겹쳐 고르면 그 수만큼, 모든 마법 기술에", "big": 0},
@@ -13946,7 +13953,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=794;
+const BUILD_NO=795;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -20701,12 +20708,14 @@ function drawBattle(app){
   if(B&&run) run.heroes.forEach(h=>{ if(h.bomb>0&&h.slot>0&&h.hp>0){ const c=ctrOf("mine",h.slot);   /* 응축 폭발을 기다리는 동안 (2026-10-03) */
     if(c&&c.e){ c.e.classList.add("bombing"); if(h.bomb===1) c.e.classList.add("bomb1") } } });
   { const tr=el(`<div class="turnrow"></div>`);
-    const eb=el(`<button class="go" id="turnend"${B.busy?" disabled":""}>${
+    const eb=B.claim
+      ? el(`<button class="go claim" id="turnend">보상 받기 <i>(Space)</i></button>`)   /* 전투가 끝났다 (사용자 2026-10-03) */
+      : el(`<button class="go" id="turnend"${B.busy?" disabled":""}>${
       B.busy?"턴 종료 효과…":"턴 종료 <i>(Space)</i>"}</button>`);
-    eb.onclick=endTurn; tr.appendChild(eb);
+    eb.onclick=B.claim?claimReward:endTurn; tr.appendChild(eb);
     /* '손패 보기' 단추는 뺐다 — 손패가 오른쪽 단에 늘 보인다 (Esc 로 기술 창을 닫는 것은 그대로) */
     const rb=el(`<button class="mini" id="battlereset" title="이 전투를 시작 시점으로 되감습니다. 적 구성, 능력치, 행동 패턴은 그대로입니다.">전투 초기화</button>`);
-    rb.onclick=resetBattle; tr.appendChild(rb);
+    rb.onclick=resetBattle; if(!B.claim) tr.appendChild(rb);   /* 이긴 뒤에는 되감기 없음 */
     if(liveMins().some(m=>/^악마 (하수인|장군)$/.test(m.name))||run.autoImp){
       const ab=el(`<button class="mini ${run.autoImp?"on":""}" title="켜면 턴 종료를 누를 때 마나가 남은 악마 하수인, 장군이 가장 가까운 적을 제 기술로 공격합니다.">${
         run.autoImp?"하수인 자동공격 ● 켬":"하수인 자동공격 ○ 끔"}</button>`);
@@ -21705,7 +21714,7 @@ document.addEventListener("keydown",e=>{
     if(sel&&sel.optOpen!=null){ sel.optOpen=null; render(); return }
     if(B) B.pick=null; sel=null; render(); return }
   /* Enter 는 2026-09-16 뺌 (사용자) — 턴 종료는 스페이스바만 */
-  if(e.key===" "){ e.preventDefault(); endTurn(); return }   /* 스페이스바 = 턴 종료 (사용자 2026-09-16). 버튼에 초점이 있어도 두 번 눌리지 않게 */
+  if(e.key===" "){ e.preventDefault(); if(B&&B.claim) claimReward(); else endTurn(); return }   /* 스페이스바 = 턴 종료 (사용자 2026-09-16). 버튼에 초점이 있어도 두 번 눌리지 않게 */
   /* 칸이 1~10 이 되었으니 0 을 10번 칸으로 읽는다 */
   const n=(e.key==="0")?10:parseInt(e.key,10);
   if(isNaN(n)||n<1||n>10) return;
@@ -25225,6 +25234,14 @@ function afterWave(){
   const d=run.dun;
   if(!d){ battleWon(); backToMap(); return }
   if(d.wave<d.waves){ view="wavegap"; render(); return }
+  /* 전투가 끝났다 — 바로 넘기지 않고 전장에서 [보상 받기] 를 기다린다 (사용자 2026-10-03).
+     run.claim 은 저장에 실린다: 그 사이에 껐다 켜면 불러올 때 곧장 보상으로 */
+  if(typeof CLAIM_WAIT!=="undefined"&&CLAIM_WAIT&&view==="battle"&&B){ B.claim=1; run.claim=1; render(); return }
+  claimReward();
+}
+let CLAIM_WAIT=true;   /* 시뮬레이터는 끈다 (sim/harness) */
+function claimReward(){
+  if(B) B.claim=0; if(run) run.claim=0;
   battleWon();
   dungeonCleared();
 }
@@ -25277,7 +25294,8 @@ function afterListPanel(){
 function drawReward(app){
   if(pending.free){
     if(!pending.hero && run.heroes.length>1){
-      app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">누가 받을까요</div>
+      const gc={"하급":"#c9a27a","중급":"#d9dde6","상급":"#f0c040"}[pending.grade]||"#e7dcc8";   /* 청동 · 은 · 금 상자와 같은 결 */
+      app.appendChild(el(`<div class="center"><div class="whograde" style="--gc:${gc}"><span class="wgi">${chestIcon(pending.grade)}</span><b>${esc(pending.grade)} 보상</b></div>
         <div class="sub">대원을 고르세요</div></div>`));
       const row=el(`<div class="picks"></div>`);
       /* 쓰러진 대원은 못 받는다 — 서 있는 이가 하나도 없을 때만 누구든 */
