@@ -3094,6 +3094,7 @@ body.vbattle .bagbtn{bottom:auto;top:9px;right:auto;left:16px;padding:6px 10px;g
 .bfstage .field{position:absolute;inset:0;display:block;padding:0;overflow:visible;gap:0}
 .bfstage .side{position:static;display:block} .bfstage .mid{display:none}
 /* 칸 — 판 자리에. 가운데 표적을 두고 아군 5→1 이 왼쪽으로, 적 1→5 가 오른쪽으로 */
+#mySide .slot.heroslot{z-index:2}   /* 대원은 늘 소환물 위에 — 칸 차례로는 앞 칸(적 쪽)이 위에 그려졌다 (사용자 2026-10-04) */
 .bfstage .slot{position:absolute;width:11%;bottom:44.5%;top:auto;height:auto;min-height:140px;transform:translateX(-50%);   /* 빈 칸도 누를 수 있게 min-height (2026-09-29: height auto 로 바꾼 뒤 빈 칸이 0 이 돼 카드를 못 놓았다) */border:0;background:none;box-shadow:none;padding:0;gap:3px;justify-content:flex-end;align-items:center;border-radius:0;overflow:visible}
 .bfstage .slot.big{width:19%}
 .bfstage .slot.bigshadow{display:none}
@@ -4350,7 +4351,7 @@ const MAP_HANDS={
  "트리스탄":{held:"양피지-손-트리스탄.png",scale:.68,point:{f:"손-가리킴-트리스탄.png",w:96,h:116,tip:[4,0]},press:{f:"손-누름-트리스탄.png",w:102,h:110,tip:[0,11]}},
  "굴라":{held:"양피지-손-굴라.png",scale:.48,point:{f:"손-가리킴-굴라.png",w:198,h:203,tip:[3,3]},press:{f:"손-누름-굴라.png",w:191,h:185,tip:[0,41]}}   /* 굴라는 다른 대원보다 크게 (사용자 2026-09-14) */
  ,"탐욕의 군주":{held:"양피지-손-탐욕의 군주.png",scale:.50,point:{f:"손-가리킴-탐욕의 군주.png",w:236,h:235,tip:[85, 86]},press:{f:"손-누름-탐욕의 군주.png",w:236,h:174,tip:[100, 89]}}   /* 굴라 희귀 외형 (2026-10-03) — .42 → .50 다른 대원보다 조금 크게 (사용자) */
- ,"무패의 장군":{held:"양피지-손-무패의 장군.png",scale:.36,point:{f:"손-가리킴-무패의 장군.png",w:231,h:172,tip:[112, 41]},press:{f:"손-누름-무패의 장군.png",w:212,h:172,tip:[94, 82]}}   /* 트리스탄 희귀 외형 (2026-10-04) — 금장 완갑 */
+ ,"무패의 장군":{held:"양피지-손-무패의 장군.png",scale:.40,point:{f:"손-가리킴-무패의 장군.png",w:231,h:172,tip:[112, 41]},press:{f:"손-누름-무패의 장군.png",w:212,h:172,tip:[94, 82]}}   /* 트리스탄 희귀 외형 (2026-10-04) — 금장 완갑 */
  ,"카제":{held:"양피지-손-카제.png",scale:.40,point:{f:"손-가리킴-카제.png",w:248,h:209,tip:[54,4]},press:{f:"손-누름-카제.png",w:188,h:246,tip:[3,60]}}   /* 2026-09-16 — 굴라처럼 큰 그림이라 .40 */
  ,"이테리오":{held:"양피지-손-이테리오.png",scale:.74,point:{f:"손-가리킴-이테리오.png",w:117,h:107,tip:[2,1]},press:{f:"손-누름-이테리오.png",w:132,h:87,tip:[1,45]}}   /* 기계 손 (사용자 2026-09-30) — 손 그림이 작게 잘려 .74 (가리킴 높이 79 — 트리스탄·플레어와 플로우와 같게, 사용자 2026-09-30) */
  ,"플레어와 플로우":{held:"양피지-손-플레어와 플로우.png",scale:.42,point:{f:"손-가리킴-플레어와 플로우.png",w:173,h:188,tip:[3,2]},press:{f:"손-누름-플레어와 플로우.png",w:175,h:167,tip:[3,22]}}   /* 왼손은 플레어(불), 오른손은 플로우(물) */
@@ -4367,7 +4368,7 @@ const GHAND_K=1.25;
    tip — 커서가 찍히는 점 = 내려칠 때 봉 머리가 닿는 점. 짧은 클릭은 여느 클릭 */
 const HOLD_HANDS={"집행관":{pre:"집행관",w:216,h:322,tip:[36,120],   /* tip — 소맷자락 끝이 평소 손(가리킴)의 소맷자락 끝과 같은 자리에 오게 (사용자 2026-10-03: 위로 튀어 끊겨 보였다) */spin:7,tap:6,scale:.58,   /* .45 → .58 — 평소 손(.40)과 소맷자락 폭이 같게 (2026-10-03) */
   spinMs:70,tapMs:[90,80,140,80,140,170],hit:[2,4],sfxSpin:"집행관 봉 돌리기",sfxHit:"집행관 봉 내리치기"},
- "무패의 장군":{pre:"무패의 장군",loopF:"돌리기",endF:"내리꽂기",w:164.5,h:352.4,tip:[30,188],spin:8,tap:9,scale:.36,   /* 화살을 펜처럼 돌리다 → 떼면 멈춰 쥐고 내리꽂아 꽂힌 화살이 떨리며 남는다 (사용자 2026-10-04) */
+ "무패의 장군":{pre:"무패의 장군",loopF:"돌리기",endF:"내리꽂기",w:164.5,h:352.4,tip:[30,188],spin:8,tap:9,scale:.40,   /* 화살을 펜처럼 돌리다 → 떼면 멈춰 쥐고 내리꽂아 꽂힌 화살이 떨리며 남는다 (사용자 2026-10-04) */
   spinMs:70,sfxSpin:"무패의 장군 화살 돌리기",spinEvery:1,
   /* 마무리 칸 차례 (사용자 2026-10-04) — 화살을 쥔 채 힘을 모아 떨다가(3번째 칸 0.48초) 빠르게 내리꽂고(4 · 5 칸 45 · 35ms),
      꽂힌 화살이 좌우로 흔들리다(7 ↔ 8 세 번, 점점 느리게) 가만히 선 화살(9 — 6번째 칸에서 손만 뗀 것)이 잔상으로 남는다 */
@@ -4376,10 +4377,10 @@ const HOLD_HANDS={"집행관":{pre:"집행관",w:216,h:322,tip:[36,120],   /* ti
   linger:{hold:700,fade:1200,still:1},view:[0.0, 0.184, 1.0, 0.891],
   /* 둘째 뽐내기 — 동전 던지기 (사용자 2026-10-04). 누르는 동안 동전을 튕겨 받기를 되풀이, 떼면 주먹을 펴 앞면(별) 또는 뒷면(왕관).
      펼친 동전이 빛나는 5 · 6번째 칸에서 밝게 번쩍이며 잠깐 멈춘다. 누를 때마다 둘 중 하나 */
-  alt:[{pre:"무패의 장군",loopF:"동전",endPick:["동전앞","동전뒤"],w:166.8,h:347.5,tip:[24,213],spin:8,tap:8,scale:.36,
+  alt:[{pre:"무패의 장군",loopF:"동전",endPick:["동전앞","동전뒤"],follow:1,w:166.8,h:347.5,tip:[24,213],spin:8,tap:8,scale:.40,
     spinMs:85,sfxSpin:"무패의 장군 동전 튕기기",spinEvery:1,
     tapSeq:[1,2,3,4,5,6,7,8],tapMs:[70,70,70,80,110,650,90,380],tapGlow:[4,5],tapZ:[1,1,1,1,1.04,1.08,1.03,1],
-    tapSfx:{4:"무패의 장군 동전 빛남"},view:[0.0, 0.112, 1.0, 0.938]}]},
+    tapSfx:{4:"무패의 장군 $"},   /* $ = 뗄 때 고른 띠 — 「무패의 장군 동전앞」(결과1) · 「무패의 장군 동전뒤」(결과2, 꼬리가 긴 반짝임) */view:[0.0, 0.112, 1.0, 0.938]}]},
  "탐욕의 군주":{pre:"탐욕의 군주",loopF:"주먹",endF:"할퀴기",w:163.2,h:339.0,tip:[32,213],spin:8,tap:8,scale:.50,   /* 주먹 쥐고 떨며 가시 · 열기 → 떼면 치켜들어 ↙ 할퀴고 발톱 자국 (사용자 2026-10-03). 팔뚝 자른 면(굵기 · 가운데)을 누름 손의 것에 맞춤 — tools/gula-lord-prep.py */
   seq:[1,2,3,4,5,6,7,7,7,7,7,7,7,7,6,5,4,3,2,1],shakeAt:[7,8,9,10,11,12,13],   /* 가시가 가장 많이 돋은 7번째 칸에서 멈춰 부들부들 떨다가(0.56초) 다시 내려간다 (사용자 2026-10-03). 전에는 1~8 → 8~1 — 가시가 솟았다 들어간다 (사용자 2026-10-03) */
   spinMs:80,tapMs:[75,75,75,75,75,75,75,75],sfxSpin:"탐욕의 군주 주먹",spinEvery:1,   /* 주먹 떨기 110 → 80ms (사용자), 소리는 한 바퀴(1.6초)마다 — 쥘 때 */
@@ -4399,6 +4400,9 @@ function holdTaps(H,ef){ ef=ef||H.endF||(H.endPick&&H.endPick[0])||"두드리기
     sh:!!(H.tapShake&&H.tapShake.indexOf(i)>=0),glow:!!(H.tapGlow&&H.tapGlow.indexOf(i)>=0)})) }
 function holdTapEnd(H,ef){ const T=holdTaps(H,ef), n=H.tapSeq?T.length:(H.linger&&H.linger.frame?H.linger.frame:T.length);
   return T.slice(0,n).reduce((a,x)=>a+x.ms,0) }
+function handFadeIn(e,ms){ if(!e) return; e.style.transition="none"; e.style.opacity="0"; void e.offsetWidth;
+  e.style.transition="opacity "+(ms||350)+"ms ease-out"; e.style.opacity="1";
+  clearTimeout(e._fadeT); e._fadeT=setTimeout(()=>{ e.style.transition="" },(ms||350)+40) }   /* 뽐내기 뒤 평소 손 — 서서히 나타난다 (사용자 2026-10-04) */
 const HOLD_GLOW="brightness(1.5) drop-shadow(0 0 7px rgba(255,214,110,.95))";   /* 동전이 번쩍이는 칸 */
 function holdFrame(){
   const H=holdHand(); if(!H||!GHOLD||GHOLD.phase==="wait") return null;
@@ -4434,7 +4438,7 @@ function holdSound(){ const H=holdHand(); if(!H||!GHOLD||GHOLD.phase==="wait") r
   if(GHOLD.phase==="spin"){ const r=Math.floor(dt/(H.spinMs*(H.seq?H.seq.length:H.spin)*(H.spinEvery||1))); if(r!==GHOLD.rot){ GHOLD.rot=r; if(sfxHas(H.sfxSpin)) SFX.play(H.sfxSpin) } return }
   const T=holdTaps(H,GHOLD.endF); let t=0, i=0; for(;i<T.length;i++){ t+=T[i].ms; if(dt<t) break }
   if(i!==GHOLD.fr){ GHOLD.fr=i; if((H.hit||[]).indexOf(i)>=0&&sfxHas(H.sfxHit)) SFX.play(H.sfxHit);
-    if(H.tapSfx&&H.tapSfx[i]&&sfxHas(H.tapSfx[i])) SFX.play(H.tapSfx[i]) } }   /* tapSfx — 칸마다 다른 소리 (무패의 장군 내리꽂기 · 꽂힘) */
+    if(H.tapSfx&&H.tapSfx[i]){ const k=H.tapSfx[i].replace("$",GHOLD.endF||""); if(sfxHas(k)) SFX.play(k) } } }   /* tapSfx — 칸마다 다른 소리 (무패의 장군 내리꽂기 · 꽂힘) */
 function holdTick(){ if(GHOLD_TICK) return; GHOLD_TICK=setInterval(()=>{
   try{ holdSound() }catch(e){}
   if(GHOLD&&GHOLD.phase==="tap"){ const H=holdHand(), L=H&&H.linger;
@@ -4454,10 +4458,11 @@ function gHandDraw(){
   if(!on){ GHAND.style.display="none"; return }
   const hf=holdFrame();
   GHAND.style.filter=hf&&hf.glow?HOLD_GLOW:"";
+  { const was=GHAND._hold; GHAND._hold=!!hf; if(was&&!hf) handFadeIn(GHAND) }
   if(hf){ const k=GHAND_K*hf.H.scale*(hf.z||1); if(GHAND_SRC!==hf.f){ GHAND.src=hf.f; GHAND_SRC=hf.f }
     GHAND.style.width=Math.round(hf.H.w*k)+"px";
     const jx=hf.shake?(Math.random()*4-2):0, jy=hf.shake?(Math.random()*4-2):0;   /* 부들부들 (tick 30ms 마다 새로) */
-    const PA=(GHOLD&&GHOLD.phase==="tap"&&GHOLD.anc)||GHAND_XY;
+    const PA=(GHOLD&&GHOLD.phase==="tap"&&!hf.H.follow&&GHOLD.anc)||GHAND_XY;   /* follow — 마무리도 커서를 따라간다 (동전) */
     GHAND.style.transform=`translate(${Math.round(PA[0]-hf.H.tip[0]*k+jx)}px,${Math.round(PA[1]-hf.H.tip[1]*k+jy)}px)`;
     GHAND.style.display="block"; return }
   const H=mapHands(), v=H[GHAND_MODE]||H.point, k=GHAND_K*(H.scale||1), src=mapPng(v.f);
@@ -6495,11 +6500,22 @@ function skillSfx(h,s){
 /* 그 이름의 녹음이 등록돼 있는가.
    번호를 붙여 여럿 둔 것(악마 하수인 배치 1·2·3)도 있다 — SFX.pick 이 그중
    하나를 고른다. 그래서 맨 이름만 보면 없다고 답해 버린다. 1번도 같이 본다 */
+/* 맞는 소리 — 기술에 녹음이 있으면(B._ownSnd) 녹음이 아닌 합성음은 내지 않는다 (사용자 2026-10-04) */
+function hitSnd(k){ return (k&&typeof B!=="undefined"&&B&&B._ownSnd&&!sfxHas(k))?null:k }
 function sfxHas(k){ return typeof SND!=="undefined"&&!!(SND[k]||SND[k+" 1"]) }
 /* 외형 소리 — 착용한 외형의 「<외형 이름> <소리>」 녹음이 있으면 그것, 없으면 원래 소리 (없으면 null) */
 /* 이 소환물의 모습을 바꾸는 외형 (minionSp) — 입고 있을 때만 */
 function minionSkin(name){ if(typeof SKINS==="undefined") return null;
   for(const hero in SKINS){ const kk=skinOn(hero); if(kk&&kk.minionSp&&kk.minionSp[name]) return kk } return null }
+/* 소환물이 설 때의 녹음 — 외형이 바꾼 소환물이면 「<외형> <소환물> 배치」 가 먼저 (탐욕의 군주 악마 하수인, 사용자 2026-10-04), 없으면 「<소환물> 배치」 */
+function minionPlaceSnd(name){ const mk=minionSkin(name), k=mk&&(mk.n+" "+name+" 배치");
+  return (k&&sfxHas(k))?k:(sfxHas(name+" 배치")?name+" 배치":null) }
+/* 자세를 잡은 채 부들부들 — 그림 칸(.art)을 40ms 마다 ±2px (무패의 장군 명중, 2026-10-04). 끝나면 제자리 */
+function poseShake(side,slot,ms){ const c=ctrOf(side,slot), a=c&&c.e&&c.e.querySelector(".art"); if(!a) return;
+  const end=Date.now()+ms, k=()=>{ if(!a.isConnected) return;
+    if(Date.now()>=end){ a.style.translate=""; return }
+    const m=Math.min(1,(end-Date.now())/ms*1.6);   /* 끝으로 갈수록 세게 — 쏘기 직전이 가장 떨린다 */
+    const A=2+3*(1-m); a.style.translate=((Math.random()*2-1)*A).toFixed(1)+"px "+((Math.random()*2-1)*A*0.6).toFixed(1)+"px"; setTimeout(k,40) }; k() }
 function skinSfxOr(hero,k){ const sk=(typeof skinOn==="function")&&skinOn(hero); const ks=sk&&(sk.n+" "+k); return (ks&&sfxHas(ks))?ks:(sfxHas(k)?k:null) }
 /* 녹음이 있으면 그것을, 없으면 합성음을 — 소리를 손으로 걸 때 쓴다 */
 function sfxOr(k,alt){ return sfxHas(k)?k:alt }
@@ -7216,6 +7232,9 @@ const SND={
  "무패의 장군 꽂힘":{v:0.237,f:"무패의 장군 꽂힘.wav"},
  "무패의 장군 꿰뚫는 화살":{v:0.16,f:"무패의 장군 꿰뚫는 화살.wav"},
  "무패의 장군 내리꽂기":{v:0.16,f:"무패의 장군 내리꽂기.wav"},
+ "무패의 장군 동전 튕기기":{v:0.181,f:"무패의 장군 동전 튕기기.wav"},
+ "무패의 장군 동전뒤":{v:0.231,f:"무패의 장군 동전뒤.wav"},
+ "무패의 장군 동전앞":{v:0.237,f:"무패의 장군 동전앞.wav"},
  "무패의 장군 명중":{v:0.22,f:"무패의 장군 명중.wav"},
  "무패의 장군 소환":{v:0.232,f:"무패의 장군 소환.wav"},
  "무패의 장군 페일노트":{v:0.24,f:"무패의 장군 페일노트.wav"},
@@ -7275,6 +7294,8 @@ const SND={
  "타락한 나이코스 베기":{v:0.165,f:"타락한 나이코스 베기.wav"},
  "탐욕의 군주 균열 차원문":{v:0.05,f:"탐욕의 군주 균열 차원문.wav"},
  "탐욕의 군주 씹어먹기":{v:0.24,f:"탐욕의 군주 씹어먹기.wav"},
+ "탐욕의 군주 악마 하수인 배치 1":{v:0.142,f:"탐욕의 군주 악마 하수인 배치 1.wav"},
+ "탐욕의 군주 악마 하수인 배치 2":{v:0.12,f:"탐욕의 군주 악마 하수인 배치 2.wav"},
  "탐욕의 군주 융합":{v:0.24,f:"탐욕의 군주 융합.wav"},
  "탐욕의 군주 응축 폭발":{v:0.24,f:"탐욕의 군주 응축 폭발.wav"},
  "탐욕의 군주 응축":{v:0.11,f:"탐욕의 군주 응축.wav"},
@@ -7820,7 +7841,7 @@ const SKINS={
    icons:{fx_it_thrust:"fx_p08_thrust",fx_it_cleave:"fx_p08_cleave",fx_it_link:"fx_p08_link",fx_it_bomb:"fx_p08_bomb",fx_it_implode:"fx_p08_implode",fx_it_aura:"fx_p08_aura"},
    link:{x0:4,len:248}, overload:"fx_p08_overload"}],   /* 사용자 2026-10-02 — 외형 전용 이펙트 (같은 규격) */
  "쿠렘타이":[{id:"executor",n:"집행관",sp:"쿠렘타이 (집행관)",grade:"희귀",   /* 사용자 2026-10-03 — 흰 법복, 금속 가면, 집행봉 */
-   cond:"사형 선고로 적을 누적 10번 처치",prog:{k:"verdictKill",need:10},feats:["battle","skillfx","maphand","lines","phantom","idle","hold","card","kill"],   /* 처음 넷은 일반과 같게 (사용자 2026-10-03) */
+   cond:"사형 선고로 쿠렘타이 부활 30회",prog:{k:"verdictSelf",need:30},   /* 전에는 사형 선고로 적 10번 처치 (사용자 2026-10-04) */feats:["battle","skillfx","maphand","lines","phantom","idle","hold","card","kill"],   /* 처음 넷은 일반과 같게 (사용자 2026-10-03) */
    icons:{fx_kurem_exploit:"fx_kex_exploit",fx_kurem_pull:"fx_kex_pull",fx_kurem_burst:"fx_kex_burst",fx_kurem_verdict:"fx_kex_verdict",
           fx_ksoul_80:"fx_kex_aura_80",fx_ksoul_120:"fx_kex_aura_120",fx_ksoul_160:"fx_kex_aura_160",fx_ksoul_200:"fx_kex_aura_200",fx_ksoul_300:"fx_kex_aura_300"},
    harvestOne:"fx_kex_harvest",
@@ -7845,7 +7866,7 @@ const SKINS={
      {times:2,keys:[1,2,3,4,5,6,7,8].map(i=>"fx_gli_arm_"+i),ph:1.071,ms:[100, 90, 90, 100, 100, 110, 100, 160]},   /* 오른팔 돌리기 — 두 번 (사용자 2026-10-03) */
      {keys:[1,2,3,4,5,6,7,8].map(i=>"fx_gli_roar_"+i),ph:1.054,ms:[120, 100, 100, 130, 170, 140, 110, 170],sfx:{3:"탐욕의 군주 포효"},shake:4}]}}],   /* 무성 포효 — 입이 벌어지는 칸에 소리, 가장 크게 벌린 칸에 굴라와 전장이 흔들린다 (사용자 2026-10-03) */
  "트리스탄":[{id:"general",n:"무패의 장군",sp:"트리스탄 (무패의 장군)",grade:"희귀",   /* 사용자 2026-10-04 — 망자가 되기 전, 한 번도 지지 않은 장군. 백은 판금 · 남색 망토 · 백궁 */
-   cond:"트리스탄과 함께, 원정 내내 대원이 한 번도 쓰러지지 않고 우두머리 처치",undefeated:1,
+   cond:"트리스탄의 중급 보상을 한 번씩 모두 획득",collect:{hero:"트리스탄",g:"중급"},   /* 전에는 원정 내내 쓰러짐 없이 우두머리 처치 (사용자 2026-10-04) */
    feats:["battle","skillfx","maphand","lines","phantom","hold","card","kill"],
    minionSp:{"망자의 육체":"망자의 육체 (무패의 장군)"},   /* 소환물 「불패의 군기」 — 망자의 육체 대신 왕실 군기와 근위의 잔영 (사용자 2026-10-04) */
    bowAt:{"망자의 육체":{x:0.86,y:0.37}},   /* 군기의 화살은 깃발 문양에서 나간다 */
@@ -7855,7 +7876,7 @@ const SKINS={
    poseOv:{"꿰뚫는 화살":{p:"pierceP"},   /* 무릎 사격 자세 */
            "페일노트":{seq:["shot1","shot2","shot3","shot4","shot5","shot6"],seqMs:[120,110,110,140,80,180],wind:480},
            "망자의 육체|조각난 페일노트":{seq:["shot1","shot2","shot3","shot4","shot5","shot6"],seqMs:[150,130,150,180,90,190],wind:610},   /* 군기 공격 여섯 칸 — 대기 · 손 들어 올림 · 문양 점등 · 화살 형성 · 발사 · 복귀 */   /* 기본 공격 여섯 칸 — 준비 · 장전 · 반당김 · 완전 조준 · 발사 · 수습, 발사 칸(5번째)에 화살 (사용자 2026-10-04) */
-           "명중":{seq:["snipe1","snipe2","snipe3","snipe4","snipe5","snipe6"],seqMs:[180,170,170,220,110,220],wind:740}},   /* 여섯 칸 시전 — 쏘는 칸(5번째)에 맞춰 화살이 난다 */
+           "명중":{seq:["snipe1","snipe2","snipe3","snipe4","snipe5","snipe6"],seqMs:[180,170,170,620,110,220],seqShake:[3],wind:1140}},   /* 4번째 칸(완전히 당김) 220 → 620ms 멈춰 떨기, 화살은 그만큼 늦게 (사용자 2026-10-04) */   /* 여섯 칸 시전 — 쏘는 칸(5번째)에 맞춰 화살이 난다 */
    cardFrame:"ui_card_frame_tg"}],
  "나이코스":[{id:"corrupt",n:"타락한 나이코스",sp:"나이코스 (타락)",cond:"간수장 1회 처치",kill:"간수장",
    grade:"일반",feats:["battle","skillfx","maphand","lines"],
@@ -7959,8 +7980,8 @@ try{ if(typeof location!=="undefined"&&/[?&]skins=reset(&|$)/.test(location.sear
   try{ history.replaceState(null,"",location.pathname+location.hash) }catch(e){} } }catch(e){}
 /* 대사 표 — 외형을 착용했으면 그 외형의 대사(BARK[외형 이름])를 원래 대원 것 위에 겹친다. 빈 갈래는 원래 대사 (사용자 2026-10-01) */
 function skinTable(T,name){
-  const k=skinOn(name); if(!k) return T[name];
-  const base=T[name]||{}, own=T[k.n]; if(!own) return base;
+  const k0=skinOn(name), km=!k0&&minionSkin(name), k=k0||km; if(!k) return T[name];
+  const base=T[name]||{}, own=T[km?km.minionSp[name]:k.n]; if(!own) return base;   /* 소환물은 바뀐 그림 이름으로 (불패의 군기 = 망자의 육체 (무패의 장군)) */
   const out=Object.assign({},base);
   Object.keys(own).forEach(c=>{ if(own[c]&&own[c].length) out[c]=own[c] });
   return out;
@@ -8000,8 +8021,19 @@ function skinProg(key,n){
   SKIN_ST.prog=SKIN_ST.prog||{}; SKIN_ST.prog[key]=(SKIN_ST.prog[key]||0)+(n||1); skinSave();
   skinGrantIf(k=>k.prog&&k.prog.k===key&&SKIN_ST.prog[key]>=k.prog.need);
 }
+/* 모으기 해금 — 대원의 한 등급 전용 보상을 한 번씩 다 받기 (무패의 장군 = 트리스탄 중급). 원정을 넘어 SKIN_ST.got 에 이름을 모은다 */
+function skinCollectNeed(k){ return (HERO_REWARDS[k.collect.hero]||[]).filter(x=>x.g===k.collect.g).length }
+function skinCollectN(k){ const L=((SKIN_ST.got||{})[k.collect.hero+":"+k.collect.g])||[];
+  return (HERO_REWARDS[k.collect.hero]||[]).filter(x=>x.g===k.collect.g&&L.indexOf(x.n)>=0).length }
+function skinRewardGot(h,r){
+  if(!run||run.sandbox||!h||!r||!(HERO_REWARDS[h.name]||[]).some(x=>x.n===r.n&&x.g===r.g)) return;
+  SKIN_ST.got=SKIN_ST.got||{}; const L=SKIN_ST.got[h.name+":"+r.g]=SKIN_ST.got[h.name+":"+r.g]||[];
+  if(L.indexOf(r.n)<0){ L.push(r.n); skinSave() }
+  skinGrantIf(k=>k.collect&&k.collect.hero===h.name&&k.collect.g===r.g&&skinCollectN(k)>=skinCollectNeed(k));
+}
 function skinCondText(hero,k){
   if(skinOwned(hero,k.id)) return "획득함";
+  if(k.collect) return (k.cond||"")+` (${skinCollectN(k)}/${skinCollectNeed(k)})`;
   const n=k.prog?Math.min(k.prog.need,((SKIN_ST.prog||{})[k.prog.k]||0)):null;
   return (k.cond||"")+(k.prog?` (${n}/${k.prog.need})`:"");
 }
@@ -12825,6 +12857,7 @@ function autoLvReward(h,grade){
   const com=COMMON.filter(r=>r.g===grade&&rewardOk(h,r));
   const r=pickWeighted(own.concat(com),1)[0]; if(!r) return null;
   r.fx(h,r.n);
+  try{ skinRewardGot(h,r) }catch(e){}
   h.tag.taken=(h.tag.taken||[]).concat(r.n);
   h.tag.tk=(h.tag.tk||[]).concat(rwKey(r));
   return r.n;
@@ -13454,6 +13487,7 @@ const GAME_VER="0.6";   /* 0.6 — 2스테이지 구역(정령숲) 추가 · 여
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 830, "v": "0.6", "d": "2026-10-04", "t": "무패의 장군 처치 깃발 적 위, 동전 소리, 해금 조건, 명중 떨림 / 합성음 줄이기, 대원이 소환물 위", "big": 0},
  {"b": 829, "v": "0.6", "d": "2026-10-04", "t": "무패의 장군 동전 뽐내기, 처치 깃발, 불패의 군기, 페일노트 여섯 칸 / 탐욕의 군주 속도", "big": 0},
  {"b": 828, "v": "0.6", "d": "2026-10-04", "t": "트리스탄 희귀 외형 무패의 장군", "big": 0},
  {"b": 827, "v": "0.6", "d": "2026-10-04", "t": "희귀 외형 대기 행동 — 따로 무작위, 대원 누를 때도", "big": 0},
@@ -14284,7 +14318,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=829;
+const BUILD_NO=830;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -15729,10 +15763,10 @@ function drawMap(app){
         hand.style.filter=hf.glow?HOLD_GLOW:"";
         hand.style.width=(hf.H.w/256*100*hf.H.scale*(hf.z||1))+"%";
         const jx=hf.shake?(Math.random()*5-2.5):0, jy=hf.shake?(Math.random()*5-2.5):0;   /* 부들부들 */
-        const PA=(GHOLD.phase==="tap"&&GHOLD.anc)||last;   /* 마무리는 뗀 자리에서 */
+        const PA=(GHOLD.phase==="tap"&&!hf.H.follow&&GHOLD.anc)||last;   /* 마무리는 뗀 자리에서 — follow(동전)는 커서를 따라 */
         hand.style.left=(PA[0]-b.left-hf.H.tip[0]*k+jx)+"px"; hand.style.top=(PA[1]-b.top-hf.H.tip[1]*k+jy)+"px";
         hand.style.display="block"; hand.dataset.hold="1"; return }
-      if(hand.dataset.hold){ delete hand.dataset.hold; hand.style.filter=""; const m=mode||"point"; mode=null; set(m) } };
+      if(hand.dataset.hold){ delete hand.dataset.hold; hand.style.filter=""; const m=mode||"point"; mode=null; set(m); handFadeIn(hand) } };
     window.__mapHoldDraw=mapHoldDraw;
     stage.onmouseleave=()=>{ hand.style.display="none"; last=null };
     stage.addEventListener("click",e=>{   /* 꾹 눌러 봉을 돌린 뒤의 클릭은 바닥 누름이 아니다 — 창 전체의 HOLD_EAT 가 먼저 먹는다 */
@@ -20560,17 +20594,23 @@ BARK["탐욕의 군주"]={
   "skill:융합":["내게 돌아와라.","너희는 원래 내 것이다.","(봉합이 뜯기는 소리)"],
   "skill:전투식량":["내게 돌아와라.","너희는 원래 내 것이다."]};
 /* 무패의 장군 — 지휘관 말투. 지금 트리스탄의 「…」 끊어 말하기 대신 또렷하게 (주문서 8장, 2026-10-04) */
-BARK["무패의 장군"]={
-  in:["궁수대, 위치로!","오늘도 지지 않는다.","깃발을 올려라."],
-  atk:["겨눠라.","쏴라!","한 발이면 충분하다."],
-  hurt:["이 정도로 물러설 것 같으냐.","대열을 유지하라!"],
-  kill:["적장 하나.","다음 목표.","전과를 기록해 둬라."],
-  down:["패배라니... 이것이..."],
-  "skill:페일노트":["멀리 있다고 안전할 줄 알았나.","가장 먼 놈부터."],
-  "skill:피부 강화":["방패를 세워라!","버텨라, 지금은 버틸 때다."],
-  "skill:꿰뚫는 화살":["한 줄로 꿰뚫는다.","대열째 무너뜨려라!"],
-  "skill:명중":["왕국을 위하여!","놓치지 않는다."],
-  "kill:악마":["균열로 돌아가라!","이 땅에 발 들이지 마라."]};
+BARK["무패의 장군"]={   /* 늘림 (사용자 2026-10-04 — 집행관 · 탐욕의 군주처럼 지어 넣기) */
+  in:["궁수대, 위치로!","오늘도 지지 않는다.","깃발을 올려라.","전열, 정렬!","왕국의 이름으로 선다."],
+  atk:["겨눠라.","쏴라!","한 발이면 충분하다.","바람을 읽어라.","시위를 놓아라!"],
+  hurt:["이 정도로 물러설 것 같으냐.","대열을 유지하라!","갑옷이 받아냈다.","흔들리지 마라!"],
+  kill:["적장 하나.","다음 목표.","전과를 기록해 둬라.","쓰러뜨렸다. 진격!"],
+  down:["패배라니... 이것이...","깃발을... 지켜라..."],
+  "skill:페일노트":["멀리 있다고 안전할 줄 알았나.","가장 먼 놈부터.","숨을 곳은 없다."],
+  "skill:피부 강화":["방패를 세워라!","버텨라, 지금은 버틸 때다.","갑주를 조여라."],
+  "skill:꿰뚫는 화살":["한 줄로 꿰뚫는다.","대열째 무너뜨려라!","줄 선 놈들부터."],
+  "skill:명중":["왕국을 위하여!","놓치지 않는다.","숨을 멈춰라... 지금!"],
+  "skill:화살비":["일제 사격!","하늘을 덮어라, 궁수대!"],
+  "kill:악마":["균열로 돌아가라!","이 땅에 발 들이지 마라.","왕국의 땅이다. 꺼져라!"]};
+/* 불패의 군기 — 무패의 장군의 소환물. 군기를 든 근위의 잔영이 장군을 부른다 */
+BARK["망자의 육체 (무패의 장군)"]={
+  in:["군기가 섰다!","장군의 깃발 아래로!","깃발이 서 있는 한, 지지 않는다."],
+  atk:["장군의 명이다!","문양이여, 빛나라!"],
+  down:["깃발이... 꺾인다...","장군님... 일어나십시오..."]};
 MAP_SAY["무패의 장군"]={
   "move:dungeon":["진격한다.","전열을 갖춰라."],
   "move:elite":["적장이다. 긴장을 늦추지 마라."],
@@ -20582,7 +20622,7 @@ MAP_SAY["무패의 장군"]={
   "back:battle":["승전보를 올려라.","또 이겼다."],
   "back:camp":["다시 출정한다!"],
   "long":["행군이 길어지는군."],
-  "floor":["바람이 바뀌었군.","전령은 아직인가.","(활시위를 튕겨 본다)"]};
+  "floor":["바람이 바뀌었군.","전령은 아직인가.","(활시위를 튕겨 본다)","서두르지 마라. 때를 기다려라.","(화살 깃을 손끝으로 고른다)","적의 진형이 보이는군."]};
 /* 지도 말풍선 · 전투 대기 대사(floor · outside 를 쓴다) */
 MAP_SAY["집행관"]={
   "move:dungeon":["죄인의 냄새가 나는군...","재판정을 연다."],
@@ -20666,8 +20706,8 @@ function spotFX(slot,foeSlot,foeName,barkU,barkLine){
     const fl=el(`<div class="kflash${tone}"></div>`), bu=el(`<div class="kburst${tone}" style="left:${x}px;top:${y}px"></div>`), sl=el(`<div class="kslash${tone}" style="left:${x}px;top:${y}px"></div>`);
     stage.appendChild(fl); stage.appendChild(bu); if(!(KL&&KL.sheet)) stage.appendChild(sl);   /* 외형 띠가 있으면 하얀 베기 대신 그 띠 */
     if(KL&&KL.sheet){ const rr=b.e.getBoundingClientRect(); kuremSeq(KL.sheet,{x:rr.left+rr.width/2,y:rr.bottom-rr.height*0.1},KUREM_Z*1.6) }
-    if(KL&&KL.banner&&a.e){ const ar=(a.e.querySelector(".art")||a.e).getBoundingClientRect();   /* 승전 깃발 — 대원 등 뒤(왼쪽)에, 발 높이에 꽂힌다 */
-      stripFX(KL.banner,{x:ar.left+ar.width*0.08,y:ar.bottom-ar.height*0.03},96,128,[90,70,70,150,250,600],{feet:true,z:ar.height/128*1.1,zi:3}) }
+    if(KL&&KL.banner&&a.e){ const ar=(a.e.querySelector(".art")||a.e).getBoundingClientRect(), rr=b.e.getBoundingClientRect();   /* 승전 깃발 — 쓰러진 적 자리에 떨어져 꽂힌다 (사용자 2026-10-04: 대원 위가 아니라 적 위). 크기는 대원 키에 맞춘다 */
+      stripFX(KL.banner,{x:rr.left+rr.width/2,y:rr.bottom-rr.height*0.08},96,128,[90,70,70,150,250,600],{feet:true,z:ar.height/128*1.1,zi:3}) }
     setTimeout(()=>{ fl.remove(); bu.remove(); sl.remove() },700*k) },360*k);
   /* 처치 대사 — 크게 */
   if(barkLine&&barkU) setTimeout(()=>barkShow(barkU,barkLine,Date.now(),1),400*k);
@@ -20818,7 +20858,7 @@ function drawBattle(app){
     const h=unitAt(s);
     const body=h?null:bodyAt(s);
     const hz=(h||body)?null:hzAt(s);
-    const d=el(`<div class="slot ${h?"":(body?"body":hz?"body hzslot":"empty")}"><span class="no">${s}</span></div>`);
+    const d=el(`<div class="slot ${h?(h.isMin?"":"heroslot"):(body?"body":hz?"body hzslot":"empty")}"><span class="no">${s}</span></div>`);
     d.dataset.slot=s;
     /* 카드를 들고 있는 동안에도 칸 안은 평소대로 그린다.
        놓을 자리 표시와 누름만 마지막에 덧씌운다 */
@@ -22570,7 +22610,7 @@ function playCard(i,slot,side){
     /* 소리는 카드가 아니라 **선 놈** 의 이름으로 찾는다 — 하수인 카드가 장군으로
        서면 "악마 장군 배치" 가 운다. 그 녹음이 없으면 카드 이름으로, 그것도 없으면 합성음 */
     const mk=minionSkin(m.name), mks=mk&&sfxHas(mk.n+" 소환")?mk.n+" 소환":null;   /* 외형 소환물 — 그 외형의 소환 소리 (무패의 장군 소환, 사용자 2026-10-04) */
-    fx({side:"mine",slot:slot,s:mks||sfxOr(m.name+" 배치",sfxOr(c.name+" 배치","summon")),
+    fx({side:"mine",slot:slot,s:mks||minionPlaceSnd(m.name)||sfxOr(c.name+" 배치","summon"),
         ring:mks?"#e8c060":"#a06ae0",glow:1,txt:"소환",cls:"shd",gap:60});
     say(`${c.name}${jo(c.name,"ig")} ${slot}번 칸에 소환됩니다.`,"t1");
     setTimeout(()=>bark(m,"in"),80);
@@ -22986,7 +23026,7 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
       art:(fBlock||ownFx)?null:(art||"slash"),txt:(fBlock?"막음 ":"-")+amt,
       cls:crit?"critbig":(fBlock?"shd":(art==="mag"?"mag":(amt>=15?"crit":"dmg"))),
       gap:crit?170:undefined, recoil:1, pose:(d>0?"hurt":(s>0?"guard":null)),
-      s:crit?null:(fBlock?"block":
+      s:crit?null:hitSnd(fBlock?"block":
                    pr>=50?"pierce":art==="wind"?((B&&B.lastAttacker&&B.lastAttacker.name==="카제")?null:"gust"):art==="mag"?"mag":   /* 카제의 바람 공격은 녹음(진선풍도·회오리)만 — 피해 소리는 안 겹친다 (사용자 2026-09-16) */
                    art==="boom"?"boom":
                    /* 씹어먹기는 녹음(굴라 씹어먹기)이 물고 씹는 것까지 다 낸다.
@@ -23019,7 +23059,6 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
     if(FOE[f.name]&&FOE[f.name].wreck){ f.wreck=1; say(`${f.name}${jo(f.name,"ig")} 부서졌습니다 — 잔해가 자리에 남습니다.`,"t2") }
     if(run&&!f.isPhantom&&!f.summoned&&!run.sandbox){ run.kills=(run.kills||0)+1; if(f.boss) run.bossKills=(run.bossKills||0)+1;
       try{ skinKillCheck(f.name) }catch(e){}   /* 스킨 — 간수장 처치 따위 (2026-10-01) */
-      try{ if(f.boss&&!run.anyDown&&run.heroes.some(x=>x.name==="트리스탄")) skinGrantIf(k=>k.undefeated) }catch(e){}   /* 무패의 장군 (2026-10-04) */
       /* 행운의 금화 — 5% + 고른 수마다 10% 누적 (2026-09-16) */
       const lg=tagSum("luckGold"); if(lg&&Math.random()<(0.05+0.10*(lg-1))){ run.gold+=1;
         fx({side:"foe",slot:f.slot,txt:"금화 +1",cls:"crit",gap:90}); say(`행운의 금화 — 금화 +1 (${5+10*(lg-1)}%)`,"t2") } }
@@ -23453,6 +23492,7 @@ function doSkill(target){
       continue }
     /* 적을 때리는 기술이면 어느 갈래로 가든 여기서 공격 자세를 잡는다 */
     let own=skillSfx(h,s);
+    if(h.name==="굴라"&&s.n==="균열 차원문") own=null;   /* 차원문 녹음은 시전 때가 아니라 문이 열릴 때 (아래 portal fx) — 두 번 울리지 않게 */
     h.moveOk=0;   /* 이동 기술이 정말 움직였는지 — moveTo·제자리바람이 1로 세운다 */
     /* 보통 진선풍도는 녹음 둘을 겹친다 — 「카제 진선풍도」+「카제 진선풍도2」 (사용자 2026-09-16) */
     if(own==="카제 진선풍도"&&sfxHas("카제 진선풍도2")) fx({s:"카제 진선풍도2",gap:0});
@@ -23473,7 +23513,9 @@ function doSkill(target){
         fx({side:"mine",slot:h.slot,pose:sp.seq?null:sp.p,poseMs:sp.ms,big:sp.big?sp.ms:0,bigGlow:((skinOn(h.name)||{}).bigGlow)||sp.glow,
             s:sp.wind?null:(own||ATK_SFX[h.name]),lunge:sp.big?0:1,
             fn:(()=>{ if(sp.aim&&target>0) aimMarkFX("foe",target,sp.wind);
-              if(sp.seq){ const sl=h.slot; let t=0; sp.seq.forEach((p,i)=>{ const d=Math.round(sp.seqMs[i]*SPD); setTimeout(()=>setPose("mine",sl,p,d+60),t); t+=d }) } }),   /* 시전 여러 칸 (무패의 장군 명중) */
+              if(sp.seq){ const sl=h.slot; let t=0; sp.seq.forEach((p,i)=>{ const d=Math.round(sp.seqMs[i]*SPD); setTimeout(()=>setPose("mine",sl,p,d+60),t);
+                  if(sp.seqShake&&sp.seqShake.indexOf(i)>=0) setTimeout(()=>poseShake("mine",sl,d),t);   /* 시위를 당긴 채 떨기 */
+                  t+=d }) } }),   /* 시전 여러 칸 (무패의 장군 명중) */
             gap:sp.wind||0});   /* 강조 자세라도 이펙트는 바로 (사용자 2026-09-30). wind 가 있으면 겨누는 만큼 뒤에 (트리스탄, 2026-10-03) */
       if(h.slot>0&&sp){ if(sp.wind&&(own||ATK_SFX[h.name])) fx({s:own||ATK_SFX[h.name],gap:0}) }   /* 시위를 놓는 순간의 소리.
          ★ 기술 자세가 있으면 아래 '공격 자세' 갈래로 내려가지 않는다 — 내려가면 같은 순간 atk 가 그 자세를 덮는다 (2026-10-03) */
@@ -23483,7 +23525,8 @@ function doSkill(target){
         fx({side:"mine",slot:h.slot,pose:"atk",s:own||ATK_SFX[h.name],lunge:1,gap:0});
       else if(own) fx({side:"mine",slot:h.slot,s:own,gap:0}); }
     /* 자기나 아군에게 거는 기술은 자세를 잡지 않는다 — 소리만 (위 갈래에서 함께 다룬다) */
-    runEffect(h,i,s,target);
+    B._ownSnd=!!(own||ATK_SFX[h.name]);   /* 이 기술에 녹음이 있다 — hurt 의 합성 타격음을 뺀다 */
+    try{ runEffect(h,i,s,target) } finally { B._ownSnd=0 }
     disciplineTick(h);
     idleSkillUsed(h);   /* 대기 대사 · 특수 대기 행동 — 이 대원만 처음부터 */
     if(s.read) addRead(h,s.read);
@@ -23906,6 +23949,7 @@ function runEffect0(h,i,s,target){
       fx({side:"mine",slot:a.slot,art:"mag",s:"summon",txt:"선고",cls:"crit",gap:260});
       say(`사형 선고 — ${a.name}${jo(a.name,"eul")} 한 번 죽였다가 되살립니다. (체력 ${pct}%) 마법력 +2`,"t1");
       /* 사후로부터의 지시 — 제 몸에 선고를 내려 되살아났을 때 */
+      if(a===h) skinProg("verdictSelf",1);   /* 집행관 해금 셈 — 제 몸에 선고를 내려 되살아난 횟수 (사용자 2026-10-04) */
       if(a===h&&T.afterlife){ bumpTmp(h,"mag",T.afterlife);
         say(`사후로부터의 지시 — ${h.name} 이번 전투 마법력 +${T.afterlife}`,"t1") }
       return;
@@ -23917,7 +23961,6 @@ function runEffect0(h,i,s,target){
        제일 나쁜 가림이라, 그동안 합성음을 물러서게 한다. 녹음은 안 눌린다. */
     SFX.duck(900,0.3);
     h.verdictUsed=(h.verdictUsed||0)+1;
-    skinProg("verdictKill",1);   /* 집행관 해금 셈 */
     const pctF=Math.max(1,50-(T.verdictFoePct||0));  /* 사형 선고 강화 : 적 −5% 씩 */
     if(!kuremVerdictFX("foe",f.slot)) pillarFX("foe",f.slot,"rgba(160,106,224,.9)");   /* v3 — 비석 (2026-10-01) */
     veil("radial-gradient(circle,rgba(160,106,224,.3),transparent 70%)");
@@ -24607,7 +24650,7 @@ function runEffect0(h,i,s,target){
       B.portals.splice(B.portals.indexOf(ex),1);
       B.hand.push({type:"summon",name:cn,gone:1});
       /* 칸에 놓을 때와 같은 소리 — 틈에서 나오는 놈이나 칸에 서는 놈이나 같은 놈이다 */
-      fx({side:side,slot:slot,art:"rift",s:sfxOr("악마 하수인 배치","summon"),
+      fx({side:side,slot:slot,art:"rift",s:minionPlaceSnd(cn)||sfxOr("악마 하수인 배치","summon"),   /* 나오는 놈의 소리 — 장군은 예전 그대로 (사용자 2026-10-04) */
           txt:"하수인",cls:"crit"});
       /* 방금 손에 들어온 카드 위에도 같은 틈을 띄운다.
          둘을 이어서 보면 "저기서 나온 것이 이 카드가 되었다" 로 읽힌다.
@@ -24626,7 +24669,7 @@ function runEffect0(h,i,s,target){
          원근이 어긋나 보인다 */
       { const su=((skinOn(h.name)||{}).portalFx||{}).summon;   /* 탐욕의 군주 — 문이 생기기 전 금붉은 문양 · 발톱 · 돌조각 */
         if(su&&ICON_PNG[su]) fx({side:side,slot:slot,fn:()=>sheetFX(su,side,slot,{feet:1,z:document.querySelector(".bfstage")?2.6:1.4,ms:540}),gap:440}) }
-      fx({side:side,slot:slot,art:"ptl",s:"mag",txt:"차원문",cls:"mag"});
+      fx({side:side,slot:slot,art:"ptl",s:sfxHas(gulaSnd("균열 차원문"))?gulaSnd("균열 차원문"):null,txt:"차원문",cls:"mag"});   /* 열리는 소리 = 균열 차원문 녹음 (합성음 mag 를 쓰지 않는다, 사용자 2026-10-04) */
       say(`${side==="mine"?"아군":"적"} ${side==="mine"?slot:foeNo(slot)}번 칸에 차원문이 열립니다.`,"t1");
       barkPick(h,(side==="foe"&&foeAt(slot))?["skill:균열 차원문:적","skill:균열 차원문","atk"]:["skill:균열 차원문","atk"]);
     }
@@ -26336,6 +26379,7 @@ function offerCards(app,hero,grade,done,lvUp){
       if(ownOnly) run.ownOnly=Math.max(0,(run.ownOnly||0)-1);
       row.querySelectorAll(".rw").forEach(x=>{ if(x!==c) x.classList.add("faded") });
       r.fx(hero,r.n);
+      try{ skinRewardGot(hero,r) }catch(e){}   /* 무패의 장군 해금 셈 */
       hero.tag.taken=(hero.tag.taken||[]).concat(r.n);
       hero.tag.tk=(hero.tag.tk||[]).concat(rwKey(r));
       const pts={"하급":1,"중급":3,"상급":5}[r.g]||0;
