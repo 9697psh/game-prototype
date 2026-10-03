@@ -279,7 +279,10 @@ img.pxs.face{image-rendering:pixelated;width:auto;filter:drop-shadow(0 2px 0 rgb
 .whograde{display:inline-flex;align-items:center;gap:10px;margin:4px auto 4px;padding:6px 18px 6px 10px;border:1px solid var(--gc);border-radius:6px;
   background:rgba(0,0,0,.35);color:var(--gc);font-size:20px;letter-spacing:.06em}   /* 제목 자리 */
 .whograde .wgi img,.whograde .wgi svg{width:36px;height:36px;image-rendering:pixelated;display:block}
-.turnrow #turnend.claim{animation:claimPulse 1.4s ease-in-out infinite}
+.claimbox{position:absolute;left:50%;top:30%;transform:translate(-50%,-50%);z-index:55;animation:claimIn .45s ease-out both}
+.claimbox button.claim{font-size:22px;padding:14px 46px;letter-spacing:.06em;animation:claimPulse 1.4s ease-in-out infinite}
+.claimbox button.claim i{font-style:normal;font-size:12px;opacity:.6;margin-left:6px}
+@keyframes claimIn{from{opacity:0;transform:translate(-50%,-38%)}to{opacity:1;transform:translate(-50%,-50%)}}
 @keyframes claimPulse{50%{box-shadow:0 0 0 3px rgba(255,214,110,.35),0 0 26px rgba(255,214,110,.55)}}
 .turnrow #turnend:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.45)}
 .syn{font-size:11.5px;padding:3px 10px}
@@ -1913,7 +1916,7 @@ body:has(.rwq) .hpanel{top:auto;bottom:16px;max-height:min(52vh,calc(100vh - 100
 .pop{position:absolute;transform:translate(-50%,-50%);font-family:var(--serif);font-weight:700;
   font-size:21px;text-shadow:0 2px 4px #000,0 0 10px #000;animation:pop .95s ease-out forwards}
 .pop.dmg{color:var(--atk)} .pop.mag{color:var(--mag)} .pop.heal{color:var(--hp)}
-.pop.shd{color:var(--def)} .pop.miss{color:var(--dim);font-size:16px}
+.pop.shd{color:var(--def)} .pop.shd.esh{color:#ff9a3c} .pop.miss{color:var(--dim);font-size:16px}
 .pop.crit{color:#ffd45e;font-size:27px}
 .pop.moved{color:#ff6a55;font-size:25px;font-weight:900;letter-spacing:.06em;   /* 밀려남·당겨짐 (사용자 2026-09-29) */
   text-shadow:0 2px 0 #000,0 0 12px rgba(224,60,40,.95),0 0 22px rgba(224,60,40,.6)}
@@ -1929,6 +1932,16 @@ body:has(.rwq) .hpanel{top:auto;bottom:16px;max-height:min(52vh,calc(100vh - 100
 @keyframes swirlA{0%{opacity:0;transform:translate(-50%,-50%) rotate(0) scale(.5)}
   30%{opacity:.95}
   100%{opacity:0;transform:translate(-50%,-50%) rotate(340deg) scale(1.5)}}
+/* 보호막 → 에너지 보호막 (shieldShiftFX) — 떠올라 반 바퀴 뒤집히며 바뀐다 */
+.shshift{position:absolute;transform:translate(-50%,-50%);pointer-events:none;z-index:60;perspective:240px}
+.shshift img{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;backface-visibility:hidden}
+.shshift .a{animation:shsA 1.05s ease-out forwards;filter:drop-shadow(0 0 6px rgba(143,162,201,.8))}
+.shshift .b{opacity:0;animation:shsB 1.05s ease-out forwards}
+@keyframes shsA{0%{opacity:0;transform:translateY(14px) scale(.6)}22%{opacity:1;transform:translateY(0) scale(1)}
+  40%{opacity:1;transform:rotateY(90deg) scale(1.05)}41%,100%{opacity:0;transform:rotateY(90deg)}}
+@keyframes shsB{0%,40%{opacity:0;transform:rotateY(-90deg) scale(1.05)}
+  58%{opacity:1;transform:rotateY(0) scale(1.3);filter:drop-shadow(0 0 12px #ff9a3c) brightness(1.4)}
+  80%{opacity:1;transform:scale(1.05);filter:drop-shadow(0 0 6px #e07b28)}100%{opacity:0;transform:translateY(-14px) scale(1)}}
 .ring{position:absolute;transform:translate(-50%,-50%);border-radius:50%;border:2px solid;
   width:22px;height:22px;animation:ringA .55s ease-out forwards}
 @keyframes ringA{0%{opacity:.95;width:22px;height:22px}100%{opacity:0;width:128px;height:128px}}
@@ -13157,6 +13170,7 @@ const GAME_VER="0.6";   /* 0.6 — 2스테이지 구역(정령숲) 추가 · 여
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 797, "v": "0.6", "d": "2026-10-03", "t": "보상 받기 — 빈 전장 한가운데, 보호막에서 에너지 보호막으로 바뀌는 연출", "big": 0},
  {"b": 796, "v": "0.6", "d": "2026-10-03", "t": "사형 선고 배치 잠금 라운드마다", "big": 0},
  {"b": 795, "v": "0.6", "d": "2026-10-03", "t": "전투 뒤 보상 받기 단추, 보상 대원 고르기에 등급", "big": 0},
  {"b": 794, "v": "0.6", "d": "2026-10-03", "t": "물량 공세 — 하수인 칸 공격력, 기술 설명, 장군 예고에 반영", "big": 0},
@@ -13954,7 +13968,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=796;
+const BUILD_NO=797;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -20706,14 +20720,14 @@ function drawBattle(app){
   if(PHFOCUS) setTimeout(phFocusApply,0);   /* 단계 전환 암전 — 다시 그려도 이어지게 */
   formWaitApply();                          /* 영혼 분리 — 맺히기 전의 환영은 숨긴다 */
   phLinkApply(field);                       /* 영혼 분리 — 고른 환영과 본체를 잇는 선 */
+  if(B.claim){ const cb=el(`<div class="claimbox"><button class="go claim">보상 받기 <i>(Space)</i></button></div>`);   /* 빈 전장 한가운데 (사용자 2026-10-03) */
+    cb.querySelector("button").onclick=claimReward; field.appendChild(cb) }
   if(B&&run) run.heroes.forEach(h=>{ if(h.bomb>0&&h.slot>0&&h.hp>0){ const c=ctrOf("mine",h.slot);   /* 응축 폭발을 기다리는 동안 (2026-10-03) */
     if(c&&c.e){ c.e.classList.add("bombing"); if(h.bomb===1) c.e.classList.add("bomb1") } } });
   { const tr=el(`<div class="turnrow"></div>`);
-    const eb=B.claim
-      ? el(`<button class="go claim" id="turnend">보상 받기 <i>(Space)</i></button>`)   /* 전투가 끝났다 (사용자 2026-10-03) */
-      : el(`<button class="go" id="turnend"${B.busy?" disabled":""}>${
+    const eb=el(`<button class="go" id="turnend"${B.busy?" disabled":""}>${
       B.busy?"턴 종료 효과…":"턴 종료 <i>(Space)</i>"}</button>`);
-    eb.onclick=B.claim?claimReward:endTurn; tr.appendChild(eb);
+    eb.onclick=endTurn; if(!B.claim) tr.appendChild(eb);   /* 전투가 끝나면 단추는 전장 한가운데 [보상 받기] (2026-10-03) */
     /* '손패 보기' 단추는 뺐다 — 손패가 오른쪽 단에 늘 보인다 (Esc 로 기술 창을 닫는 것은 그대로) */
     const rb=el(`<button class="mini" id="battlereset" title="이 전투를 시작 시점으로 되감습니다. 적 구성, 능력치, 행동 패턴은 그대로입니다.">전투 초기화</button>`);
     rb.onclick=resetBattle; if(!B.claim) tr.appendChild(rb);   /* 이긴 뒤에는 되감기 없음 */
@@ -22063,6 +22077,15 @@ function singTune(h,t){
     asSrc(h,()=>B.foes.filter(f=>f.alive).forEach(f=>hurt(f,v,"날카로운 음율","mag"))) }
   if(t==="shock"){ const f=nearestFoe(h);
     if(f){ addDeb(f,"stun",1); say(`충격의 음율 — ${f.name} 기절`) } }
+}
+/* 보호막이 에너지 보호막으로 바뀌는 연출 (오토의 여분손 · 오토 돌봄, 사용자 2026-10-03) */
+function shieldShiftFX(slot,n){
+  const p=ctrOf("mine",slot); if(!p||typeof ICON_PNG==="undefined"||!ICON_PNG.shield||!ICON_PNG.status_energy_shield) return;
+  const big=!!document.querySelector(".bfstage"), sz=big?64:40, pos={x:p.x,y:p.y-(big?70:44)};
+  const nd=spawn(`<div class="shshift" style="width:${sz}px;height:${sz}px"><img class="a" src="${ICON_PNG.shield}" alt=""><img class="b" src="${ICON_PNG.status_energy_shield}" alt=""></div>`);
+  at(nd,pos);
+  setTimeout(()=>{ at(spawn('<div class="ring" style="border-color:#e07b28"></div>'),pos); sparks(pos,"#ffb070",6);
+    popText({x:pos.x,y:pos.y-sz*0.4},"shd esh","에너지 보호막 +"+n) },400);
 }
 /* 막이 깨지는 연출 — 아군이든 적이든 같은 규칙 */
 function breakFX(u,kind){
@@ -24773,13 +24796,13 @@ function endPhase(){
       say(`추진력 방벽 — ${h.name} 보호막 +${v}`,"t2") }
     if(h.name==="오토"){ const conv=Math.min(5,h.shield);
       if(conv){ h.shield-=conv; h.eshield=(h.eshield||0)+conv; bump();
-        fx({side:"mine",slot:h.slot,s:"pulse",gap:170});
+        { const sl=h.slot, n=conv; fx({side:"mine",slot:h.slot,s:"pulse",fn:()=>shieldShiftFX(sl,n),gap:520}) }   /* 바뀌는 모습 (2026-10-03) */
         say(`돌봄 — ${h.name} 보호막 ${conv}을 에너지 보호막으로 바꿉니다.`) } }
     /* 오토의 여분손 — 표에는 있었는데 아무 데서도 읽지 않아 아무 일도 안 하던 효과 */
     { const st=itemBt(h,"shieldToEsh");
       if(st){ const conv=Math.min(st,h.shield);
         if(conv){ h.shield-=conv; h.eshield=(h.eshield||0)+conv; bump();
-          fx({side:"mine",slot:h.slot,s:"pulse",gap:170});
+          { const sl=h.slot, n=conv; fx({side:"mine",slot:h.slot,s:"pulse",fn:()=>shieldShiftFX(sl,n),gap:520}) }   /* 바뀌는 모습 (2026-10-03) */
           say(`오토의 여분손 — ${h.name} 보호막 ${conv}을 에너지 보호막으로 바꿉니다.`,"t2") } } }
     if(h.name==="보아"){ const sc=h.scaleTurn||0, v=1+h.def+sc;
       endShield(h,v); h.scaleTurn=0; bump();
@@ -25238,7 +25261,14 @@ function afterWave(){
   if(d.wave<d.waves){ view="wavegap"; render(); return }
   /* 전투가 끝났다 — 바로 넘기지 않고 전장에서 [보상 받기] 를 기다린다 (사용자 2026-10-03).
      run.claim 은 저장에 실린다: 그 사이에 껐다 켜면 불러올 때 곧장 보상으로 */
-  if(typeof CLAIM_WAIT!=="undefined"&&CLAIM_WAIT&&view==="battle"&&B){ B.claim=1; run.claim=1; render(); return }
+  if(typeof CLAIM_WAIT!=="undefined"&&CLAIM_WAIT&&view==="battle"&&B){
+    const t0=Date.now();
+    const go=()=>{ if(!B||view!=="battle") return;
+      /* 쓰러지는 연출(dieHold)이 아직이면 조금 더 기다린다 — 끝나면 칸을 비운다 (전에는 체력 0 으로 남았다) */
+      if(B.foes.some(f=>!f.alive&&f.dieHold&&Date.now()-f.dieHold<DIE_HOLD_MS)&&Date.now()-t0<4000){ setTimeout(go,150); return }
+      B.foes.forEach(f=>{ if(!f.alive){ f.dieHold=0; f.hpShow=null } });
+      B.claim=1; run.claim=1; sel=null; render() };
+    go(); return }
   claimReward();
 }
 let CLAIM_WAIT=true;   /* 시뮬레이터는 끈다 (sim/harness) */
