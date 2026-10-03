@@ -6384,7 +6384,9 @@ const ATK_SFX={"나이코스":"나이코스 공격"};
 /* 시전 소리를 딴 이름으로 두는 기술 — 기술 이름과 같은 녹음이 딴 순간의 것일 때 쓴다.
    [응축 폭발] 은 시전(굴라 응축 — 몸이 부푼다)과 2턴 뒤 터짐(굴라 응축 폭발)이 따로다.
    이 표가 없으면 시전할 때 터지는 소리가 나 버린다. */
-const SFX_CAST={"굴라 응축 폭발":"굴라 응축"};
+const SFX_CAST={"굴라 응축 폭발":"굴라 응축","탐욕의 군주 응축 폭발":"탐욕의 군주 응축"};
+/* 굴라 소리 — 탐욕의 군주를 입었으면 그 판(피치 -4 반음, 사용자 2026-10-03). 기술 밖에서 손으로 거는 자리(융합 · 터짐 · 먹기)가 쓴다 */
+function gulaSnd(k){ const sk=(typeof skinOn==="function")&&skinOn("굴라"), ks=sk&&(sk.n+" "+k); return (ks&&sfxHas(ks))?ks:("굴라 "+k) }
 function skillSfx(h,s){
   if(typeof SND==="undefined"||!h||!s) return null;
   /* 플레어와 플로우 — 자세마다 다른 녹음 (「… 불」「… 물」). 변환은 바뀐 뒤의 자세로 */
@@ -6394,7 +6396,7 @@ function skillSfx(h,s){
     if(SND[k2]) return k2;
   }
   /* 외형 — 「<외형 이름> <기술>」 녹음이 있으면 그것 (타락한 나이코스 베기, 사용자 2026-10-01). 없으면 원래 대원 소리 */
-  { const sk=(typeof skinOn==="function")&&skinOn(h.name); const ks=sk&&(sk.n+" "+s.n); if(ks&&SND[ks]) return ks }
+  { const sk=(typeof skinOn==="function")&&skinOn(h.name); const ks=sk&&(SFX_CAST[sk.n+" "+s.n]||(sk.n+" "+s.n)); if(ks&&SND[ks]) return ks }
   const k=SFX_CAST[h.name+" "+s.n]||(h.name+" "+s.n);
   return SND[k]?k:null;
 }
@@ -7137,6 +7139,11 @@ const SND={
  "쿠렘타이 착취":{v:0.26,f:"쿠렘타이 착취.wav"},
  "쿠렘타이 환상통":{v:0.21,f:"쿠렘타이 환상통.wav"},
  "타락한 나이코스 베기":{v:0.165,f:"타락한 나이코스 베기.wav"},
+ "탐욕의 군주 균열 차원문":{v:0.05,f:"탐욕의 군주 균열 차원문.wav"},
+ "탐욕의 군주 씹어먹기":{v:0.24,f:"탐욕의 군주 씹어먹기.wav"},
+ "탐욕의 군주 융합":{v:0.24,f:"탐욕의 군주 융합.wav"},
+ "탐욕의 군주 응축 폭발":{v:0.24,f:"탐욕의 군주 응축 폭발.wav"},
+ "탐욕의 군주 응축":{v:0.11,f:"탐욕의 군주 응축.wav"},
  "탐욕의 군주 주먹 1":{v:0.138,f:"탐욕의 군주 주먹 1.wav"},
  "탐욕의 군주 주먹 2":{v:0.125,f:"탐욕의 군주 주먹 2.wav"},
  "탐욕의 군주 포효":{v:0.09,f:"탐욕의 군주 포효.wav"},
@@ -13246,6 +13253,7 @@ const GAME_VER="0.6";   /* 0.6 — 2스테이지 구역(정령숲) 추가 · 여
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 813, "v": "0.6", "d": "2026-10-03", "t": "탐욕의 군주 기술 소리 피치 낮춤", "big": 0},
  {"b": 812, "v": "0.6", "d": "2026-10-03", "t": "탐욕의 군주 주먹 빠르게, 할퀴기 커지며 강조", "big": 0},
  {"b": 811, "v": "0.6", "d": "2026-10-03", "t": "탐욕의 군주 주먹 떨기 1~8~1 되풀이", "big": 0},
  {"b": 810, "v": "0.6", "d": "2026-10-03", "t": "탐욕의 군주 씹어먹기 턱 한 번 천천히 강조", "big": 0},
@@ -14059,7 +14067,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=812;
+const BUILD_NO=813;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -22014,7 +22022,7 @@ function onSummon(h){
   if(t.appetite){ const f=nearestFoe(h);
     if(f){ const v=Math.max(1,Math.round(h.maxHp*t.appetite/100));
       say(`식욕을 참을 수 없어 — ${h.name}${jo(h.name,"ig")} ${f.name}${jo(f.name,"eul")} 덥석 뭅니다.`,"t1");
-      fx({side:"foe",slot:f.slot,s:sfxOr("굴라 씹어먹기","blunt"),gap:0});
+      fx({side:"foe",slot:f.slot,s:sfxOr(gulaSnd("씹어먹기"),"blunt"),gap:0});
       asSrc(h,()=>hurt(f,v,"식욕을 참을 수 없어","chomp",0,0,0)) } }
   if(t.majesty){ say("망자의 위엄 — 죽음의 기운이 전장을 덮습니다.","t1");
     asSrc(h,()=>B.foes.filter(f=>f.alive&&!f.boss).forEach(f=>{
@@ -22684,7 +22692,7 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
                    art==="boom"?"boom":
                    /* 씹어먹기는 녹음(굴라 씹어먹기)이 물고 씹는 것까지 다 낸다.
                       여기서 또 때리면 물고 나서 쿵 하고 한 번 더 친다 */
-                   art==="chomp"?(sfxHas("굴라 씹어먹기")?null:"blunt"):
+                   art==="chomp"?(sfxHas(gulaSnd("씹어먹기"))?null:"blunt"):
                    art==="claw"?"slash2":amt>=12?"blunt":"slash")});
   say(`${tag} → ${f.name}(${foeNo(f.slot)}번) ${crit?"치명타 ":""}피해 ${amt}${
     pr?` (관통 ${pr}%${pr<100?`, 체력 ${thru}`:""})`:""}${s?` (보호막 ${s})`:""} 남은 ${Math.max(0,f.hp)}`,crit?"t1":undefined);
@@ -24098,10 +24106,10 @@ function runEffect0(h,i,s,target){
     const m=target<0?minAt(-target):null;
     if(!m||m.owner!==h.name||!/^악마 (하수인|장군)$/.test(m.name)){ say("잡아먹을 내 악마 하수인이 선 칸을 고르세요.","t2"); return }
     const v=10;
-    fx({side:"mine",slot:m.slot,art:"chomp",s:sfxOr("굴라 씹어먹기","blunt"),txt:"꿀꺽",cls:"heal",gap:420});
+    fx({side:"mine",slot:m.slot,art:"chomp",s:sfxOr(gulaSnd("씹어먹기"),"blunt"),txt:"꿀꺽",cls:"heal",gap:420});
     m.alive=0; m.slot=0;
     const got=healUp(h,v);
-    fx({side:"mine",slot:h.slot,s:sfxOr("굴라 융합","summon"),ring:"#7fd39a",glow:1,txt:"+"+got,cls:"heal",gap:120});
+    fx({side:"mine",slot:h.slot,s:sfxOr(gulaSnd("융합"),"summon"),ring:"#7fd39a",glow:1,txt:"+"+got,cls:"heal",gap:120});
     say(`전투식량 — ${m.name}${jo(m.name,"eul")} 잡아먹고 체력 +${got}`,"t1");
     return;
   }
@@ -24275,7 +24283,7 @@ function runEffect0(h,i,s,target){
          같은 그림이라야 "굴라가 물어 삼켰다" 로 읽힌다.
          소리도 같아야 한다 — 그림만 씹어먹기고 소리가 딴것이면 따로 논다 */
       { const sn=ghostSnap("mine",m.slot); fx({side:"mine",slot:m.slot,fn:()=>ghostFlyFX(sn,{side:"mine",slot:h.slot},520,"suck"),gap:0}) }   /* 빨려 든다 (2026-10-03) — 판을 다시 그리면 소환물이 사라지므로 지금 그림을 떠 둔다 */
-      fx({side:"mine",slot:m.slot,art:"chomp",s:sfxOr("굴라 씹어먹기","blunt"),
+      fx({side:"mine",slot:m.slot,art:"chomp",s:sfxOr(gulaSnd("씹어먹기"),"blunt"),
           txt:"흡수",cls:"heal",gap:90});
       m.alive=0; m.slot=0;
     });
@@ -25215,7 +25223,7 @@ function startMyTurn(){
       barkPick(h,["event:응축 폭발","atk"],1);
       /* 터지기 직전 — 한 번 더 부풀고, 화면이 어두워졌다 하얗게 터진다 (2026-10-03) */
       fx({side:"mine",slot:h.slot,big:700,bigGlow:"red",fn:()=>setTimeout(()=>bombBlastFX(h.slot),Math.round(420*SPD)),gap:560});
-      fx({side:"mine",slot:h.slot,quake:1,s:sfxOr("굴라 응축 폭발","quake"),gap:260});
+      fx({side:"mine",slot:h.slot,quake:1,s:sfxOr(gulaSnd("응축 폭발"),"quake"),gap:260});
       /* 터지는 그림은 **맞는 쪽**에 뜬다. 피해를 받는 것이 적들이니 그림도 거기 있어야 한다.
          굴라 쪽에는 흔들림(quake)과 소리만 남는다 */
       B.foes.filter(f=>f.alive).forEach(f=>{
