@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;font:14px system-ui;color-scheme:light}img{max-width:100%}</style></head><body>
+<title>균열 화풍 시안집</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600&display=swap">
+<style>
+:root{
+  --ink:#e8dfd2; --dim:#a0968a; --faint:#6f665c;
+  --ground:#100e0c; --panel:#191512; --panel2:#211b17; --rule:#332a24;
+  --brass:#c9a227; --blood:#8e2b2b; --moon:#8f86c9; --bone:#d8cdba;
+  --serif:'Gowun Batang',Batang,serif;
+  --sans:'IBM Plex Sans KR','Malgun Gothic',system-ui,sans-serif;
+}
+:root:not([data-theme="light"]){}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --ink:#1d1713; --dim:#5b5148; --faint:#8b8177;
+    --ground:#efe9df; --panel:#f7f2e9; --panel2:#ede5d8; --rule:#d5c9b7;
+  }
+}
+:root[data-theme="light"]{
+  --ink:#1d1713; --dim:#5b5148; --faint:#8b8177;
+  --ground:#efe9df; --panel:#f7f2e9; --panel2:#ede5d8; --rule:#d5c9b7;
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-weight:300;
+  line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1320px;margin:0 auto;padding:0 20px 90px}
+
+/* ── 머리 ── */
+header.top{padding:46px 0 22px;border-bottom:1px solid var(--rule);margin-bottom:0}
+.eyebrow{font-size:11px;letter-spacing:.34em;color:var(--brass);text-transform:uppercase;
+  font-weight:500;margin-bottom:14px}
+h1{font-family:var(--serif);font-weight:700;font-size:clamp(32px,5.4vw,54px);margin:0 0 10px;
+  letter-spacing:.14em;text-wrap:balance}
+.lede{max-width:62ch;color:var(--dim);font-size:15px;margin:0}
+.lede b{color:var(--ink);font-weight:500}
+
+/* ── 조작대 ── */
+.bar{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--ground) 92%,transparent);
+  backdrop-filter:blur(9px);border-bottom:1px solid var(--rule);
+  padding:11px 0;margin-bottom:26px}
+.bar .in{max-width:1320px;margin:0 auto;padding:0 20px;
+  display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.grp{display:flex;gap:0;border:1px solid var(--rule);border-radius:3px;overflow:hidden}
+.grp button{font:inherit;font-size:12px;padding:6px 12px;background:transparent;color:var(--dim);
+  border:0;border-right:1px solid var(--rule);cursor:pointer;transition:.14s}
+.grp button:last-child{border-right:0}
+.grp button:hover{color:var(--ink);background:var(--panel2)}
+.grp button.on{background:var(--brass);color:#17120a;font-weight:600}
+.lbl{font-size:11px;letter-spacing:.18em;color:var(--faint);text-transform:uppercase;margin-right:2px}
+input[type=range]{width:118px;accent-color:var(--brass)}
+.count{margin-left:auto;font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
+
+/* ── 격자 ── */
+.gal{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(238px,1fr))}
+.card{border:1px solid var(--rule);background:var(--panel);border-radius:4px;overflow:hidden;
+  display:flex;flex-direction:column;cursor:pointer;transition:border-color .16s,transform .16s;position:relative}
+.card:hover{border-color:var(--brass);transform:translateY(-2px)}
+.card.picked{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass) inset}
+.card.picked .no::after{content:"★";position:absolute;right:9px;top:7px;color:var(--brass);font-size:14px}
+.stage{position:relative;min-height:206px;display:flex;align-items:flex-end;justify-content:center;
+  gap:6px;padding:14px 8px 12px;overflow:hidden}
+.stage canvas{image-rendering:pixelated;display:block}
+.stage .floor{position:absolute;left:0;right:0;bottom:0;height:34%;pointer-events:none}
+.no{padding:10px 12px 12px;border-top:1px solid var(--rule);background:var(--panel2);position:relative}
+.no h3{font-family:var(--serif);font-size:16.5px;font-weight:700;margin:0 0 3px;letter-spacing:.03em}
+.no .meta{font-size:10.5px;letter-spacing:.1em;color:var(--brass);text-transform:uppercase;margin-bottom:5px;
+  font-variant-numeric:tabular-nums}
+.no p{margin:0;font-size:12.2px;color:var(--dim);line-height:1.55}
+.chips{display:flex;gap:4px;flex-wrap:wrap;margin-top:7px}
+.chip{font-size:10px;padding:2px 6px;border:1px solid var(--rule);border-radius:2px;color:var(--faint);
+  letter-spacing:.04em}
+
+/* ── 고른 것 ── */
+.tray{position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--panel);
+  border-top:1px solid var(--brass);padding:12px 20px;display:none}
+.tray.on{display:block}
+.tray .in{max-width:1320px;margin:0 auto;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.tray b{font-family:var(--serif);font-size:14px;letter-spacing:.06em}
+.tray .list{flex:1;font-size:12.5px;color:var(--dim);min-width:200px}
+.tray button{font:inherit;font-size:12px;padding:7px 15px;background:var(--brass);color:#17120a;
+  border:0;border-radius:3px;cursor:pointer;font-weight:600}
+.tray button.ghost{background:transparent;color:var(--dim);border:1px solid var(--rule)}
+
+section.note{margin-top:44px;border-top:1px solid var(--rule);padding-top:26px}
+section.note h2{font-family:var(--serif);font-size:21px;letter-spacing:.09em;margin:0 0 12px}
+section.note p{color:var(--dim);font-size:13.5px;max-width:74ch;margin:0 0 9px}
+.axes{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));margin-top:16px}
+.ax{border:1px solid var(--rule);padding:11px 13px;border-radius:3px;background:var(--panel)}
+.ax b{display:block;font-family:var(--serif);font-size:13.5px;margin-bottom:4px;letter-spacing:.05em}
+.ax span{font-size:12px;color:var(--dim)}
+@media (prefers-reduced-motion: reduce){.card{transition:none}}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">균열 · 시안집</div>
+  <h1>화 풍 시 안 집</h1>
+  <p class="lede">같은 영웅과 같은 적을 <b>32가지 도트 화풍</b>으로 다시 그렸습니다. 비율·해상도·명암 단계·윤곽선·팔레트를 각각 다르게 잡았습니다. 마음에 드는 칸을 눌러 후보로 담고, 아래 <b>목록 복사</b>로 가져가세요.</p>
+</header>
+</div>
+
+<div class="bar"><div class="in">
+  <span class="lbl">배율</span><input type="range" id="sc" min="2" max="6" step="1" value="4">
+  <span class="lbl">바탕</span>
+  <div class="grp" id="bg">
+    <button data-v="dark" class="on">어둠</button><button data-v="field">전장</button>
+    <button data-v="grid">격자</button><button data-v="flat">단색</button>
+  </div>
+  <span class="lbl">대상</span>
+  <div class="grp" id="who">
+    <button data-v="both" class="on">둘 다</button><button data-v="hero">영웅</button><button data-v="foe">적</button>
+  </div>
+  <span class="lbl">추리기</span>
+  <div class="grp" id="filt">
+    <button data-v="all" class="on">전체</button><button data-v="lo">저해상</button>
+    <button data-v="hi">고해상</button><button data-v="tall">길쭉</button>
+    <button data-v="stark">고대비</button><button data-v="soft">부드럽게</button>
+    <button data-v="pick">담은 것</button>
+  </div>
+  <span class="count" id="cnt"></span>
+</div></div>
+
+<div class="wrap">
+  <div class="gal" id="gal"></div>
+
+  <section class="note">
+    <h2>고를 때 보는 축</h2>
+    <p>화풍은 취향이 아니라 <b>제작 비용과 가독성의 교환</b>입니다. 아래 다섯 축이 실제로 작업량과 전투 화면의 읽힘을 가릅니다.</p>
+    <div class="axes">
+      <div class="ax"><b>해상도</b><span>16px은 한 캐릭터를 30분에, 48px은 서너 시간에 그립니다. 대신 48px은 표정과 장비가 읽힙니다. 균열은 칸이 작으니 24~32px이 무난합니다.</span></div>
+      <div class="ax"><b>두신 비율</b><span>2.5등신은 귀엽고 실루엣이 뭉툭합니다. 6~7등신은 어둡고 위압적이지만 작은 칸에서 뭉갭니다. 적을 크게 그릴 계획이면 영웅은 5등신 근처가 안전합니다.</span></div>
+      <div class="ax"><b>명암 단계</b><span>2단계는 판화처럼 딱 떨어지고, 4단계는 입체가 살지만 팔레트를 네 배로 관리해야 합니다.</span></div>
+      <div class="ax"><b>윤곽선</b><span>검은 테두리는 어떤 배경에서도 읽히지만 만화 같아집니다. 자기 색을 어둡게 깐 선(selective)은 다크한 분위기에 어울리나 어두운 배경에서 형태를 잃기 쉽습니다.</span></div>
+      <div class="ax"><b>팔레트 폭</b><span>단색 + 강조색 하나는 통일감이 압도적이고 적·아군 구분을 색이 아닌 형태로 하게 만듭니다. 반대로 다색은 정보를 색으로 전달할 수 있습니다.</span></div>
+    </div>
+  </section>
+</div>
+
+<div class="tray" id="tray"><div class="in">
+  <b>담은 후보</b>
+  <span class="list" id="tlist"></span>
+  <button id="copy">목록 복사</button>
+  <button class="ghost" id="clear">비우기</button>
+</div></div>
+
+<script>
+/* ═══════════════ 도트 생성기 ═══════════════
+   같은 뼈대를 화풍 값에 따라 다시 그린다. 손으로 찍은 게 아니라
+   비율·명암·윤곽 규칙을 바꿔가며 굽는 방식이라, 축이 무엇인지가 눈에 보인다. */
+
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+function hex2rgb(h){h=h.replace('#','');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]}
+function rgb2hex(r,g,b){const f=n=>clamp(Math.round(n),0,255).toString(16).padStart(2,'0');return '#'+f(r)+f(g)+f(b)}
+function shade(h,k){const [r,g,b]=hex2rgb(h);return rgb2hex(r*k,g*k,b*k)}
+function mix(a,b,t){const A=hex2rgb(a),B=hex2rgb(b);return rgb2hex(A[0]+(B[0]-A[0])*t,A[1]+(B[1]-A[1])*t,A[2]+(B[2]-A[2])*t)}
+/* 팔레트 한 색에서 명암 계단을 만든다 */
+function ramp(base,tones,lift,drop){
+  const out=[];
+  for(let i=0;i<tones;i++){
+    const t=tones===1?0.5:i/(tones-1);
+    out.push(mix(shade(base,drop),mix(base,'#ffffff',lift*0.55),t));
+  }
+  return out; /* 0=가장 어두움 … n-1=가장 밝음 */
+}
+
+/* ── 뼈대 ──
+   0 빈칸 · 1 살갗 · 2 옷 · 3 어두운 천(망토·후드·장화) · 4 쇠 · 5 강조 · 6 눈 */
+function skeleton(N,S,kind){
+  const foe=kind==='foe';
+  const g=[]; for(let y=0;y<N;y++) g.push(new Array(N).fill(0));
+  const put=(x,y,v)=>{x=Math.round(x);y=Math.round(y);if(x>=0&&x<N&&y>=0&&y<N&&v)g[y][x]=v};
+  const ell=(ox,oy,rx,ry,v)=>{for(let y=Math.floor(oy-ry);y<=Math.ceil(oy+ry);y++)
+    for(let x=Math.floor(ox-rx);x<=Math.ceil(ox+rx);x++){
+      const dx=(x-ox)/Math.max(.5,rx),dy=(y-oy)/Math.max(.5,ry);
+      if(dx*dx+dy*dy<=1.04) put(x,y,v)}};
+
+  const heads=foe?S.heads*(S.foeHeads||0.92):S.heads;
+  const H=N*0.96, top=N-H-N*0.008, cx=(N-1)/2;
+  const hh=H/heads;
+  const hw=hh*0.44*(S.headW||1)*(foe?1.04:1);
+  const bw=N*0.30*(S.build||1)*(foe?1.20:1);
+  const ww=bw*(S.waist||0.72);
+  const headC=top+hh*0.50;
+  const lean=foe?Math.max(0,N*0.02):0;              /* 적은 앞으로 웅크린다 */
+
+  const trap=(y0,y1,w0,w1,v,ox)=>{const h=Math.max(1,y1-y0);
+    for(let y=Math.round(y0);y<=Math.round(y1);y++){const t=(y-y0)/h,w=w0+(w1-w0)*t;
+      const c=cx+(ox||0)*(1-t);
+      for(let x=Math.round(c-w/2);x<=Math.round(c+w/2);x++) put(x,y,v)}};
+  /* 기울어진 사지 */
+  const limb=(x0,y0,x1,y1,w,v)=>{const n=Math.max(2,Math.round(Math.abs(y1-y0)*2));
+    for(let i=0;i<=n;i++){const t=i/n,x=x0+(x1-x0)*t,y=y0+(y1-y0)*t;
+      for(let k=-w/2;k<=w/2;k+=0.5) put(x+k,y,v)}};
+
+  const tTop=top+hh*(S.neck==null?1.02:S.neck);
+  const tBot=top+H*(foe?0.58:0.585);
+  const legTop=tBot-Math.max(1,N*0.01);
+  const legBot=N-Math.max(1,Math.round(N*0.025));
+  const lw=Math.max(1,N*0.078*(S.limb||1));
+  const aw=Math.max(1,N*0.068*(S.limb||1));
+  const aTop=tTop+Math.max(1,N*0.025);
+  const aBot=top+H*(foe?0.66:0.585);
+
+  /* 1. 망토 — 몸 뒤 */
+  if(S.cape) trap(top+hh*0.82, top+H*(foe?0.88:0.82), bw*1.30, bw*(foe?1.70:1.12), 3, -lean*0.6);
+
+  /* 2. 다리와 장화 */
+  const bootTop=legBot-Math.max(1,Math.round((legBot-legTop)*0.26));
+  const spread=foe?0.42:0.27;
+  [-1,1].forEach(sd=>{
+    limb(cx+ww*spread*sd*0.75, legTop, cx+ww*spread*sd, bootTop, lw, 2);
+    limb(cx+ww*spread*sd, bootTop, cx+ww*spread*sd, legBot, lw*1.12, 3);
+    /* 발끝 */
+    for(let x=0;x<Math.max(1,Math.round(N*0.055));x++)
+      put(cx+ww*spread*sd + (sd>0?1:-1)*(lw*0.5+x), legBot, 3);
+  });
+
+  /* 3. 치마·로브 */
+  if(S.skirt) trap(top+H*0.50, top+H*(foe?0.90:0.84), ww*1.04, bw*1.52, 2, -lean*0.4);
+
+  /* 4. 몸통 */
+  trap(tTop,tBot,bw,ww,2,-lean);
+  /* 가슴판 */
+  if(S.plate) trap(tTop+(tBot-tTop)*0.08, tTop+(tBot-tTop)*0.55, bw*0.78, ww*0.94, 4, -lean*0.8);
+  /* 허리띠 */
+  if(S.belt){ const by=Math.round(tBot-(tBot-tTop)*0.10);
+    for(let x=Math.round(cx-ww*0.60);x<=Math.round(cx+ww*0.60);x++){put(x,by,5);
+      if(N>=32) put(x,by+1,5)} }
+
+  /* 5. 팔 — 한쪽은 앞으로, 한쪽은 뒤로 */
+  limb(cx-bw*0.52-lean, aTop, cx-bw*(foe?0.72:0.60)-lean, aBot, aw, 2);
+  limb(cx+bw*0.52-lean, aTop, cx+bw*(foe?0.70:0.58), aBot-(foe?0:N*0.02), aw, 2);
+  /* 어깨 갑 */
+  if(S.plate){ ell(cx-bw*0.52-lean, aTop, aw*1.15, aw*0.85, 4);
+               ell(cx+bw*0.52-lean, aTop, aw*1.15, aw*0.85, 4) }
+  else if(foe){ /* 가시 어깨 */
+    for(let k=0;k<Math.max(2,Math.round(N*0.06));k++){
+      put(cx-bw*0.60-lean-k*0.5, aTop-k*0.8, 4);
+      put(cx+bw*0.60-lean+k*0.5, aTop-k*0.8, 4) } }
+  /* 손 */
+  const hx=cx+bw*(foe?0.70:0.58), hy=aBot-(foe?0:N*0.02);
+  ell(cx-bw*(foe?0.72:0.60)-lean, aBot, aw*0.68, aw*0.68, 1);
+  ell(hx, hy, aw*0.68, aw*0.68, 1);
+
+  /* 6. 목 */
+  for(let y=Math.round(top+hh*0.86);y<=Math.round(tTop);y++)
+    for(let x=Math.round(cx-N*0.045-lean);x<=Math.round(cx+N*0.045-lean);x++) put(x,y,1);
+
+  /* 7. 머리 — 턱을 깎아 준다 */
+  ell(cx-lean,headC,hw,hh*0.50,1);
+  for(let x=Math.round(cx-lean-hw);x<=Math.round(cx-lean+hw);x++){
+    const d=Math.abs(x-(cx-lean))/Math.max(.5,hw);
+    if(d>0.55){ put(x,Math.round(headC+hh*0.42),0); if(d>0.78) put(x,Math.round(headC+hh*0.30),0) }
+  }
+  /* 머리 장식 */
+  if(S.hood){ for(let y=Math.round(headC-hh*0.58);y<=Math.round(headC+hh*0.16);y++)
+      for(let x=Math.round(cx-lean-hw-1.2);x<=Math.round(cx-lean+hw+1.2);x++){
+        const dx=(x-(cx-lean))/(hw+1.2),dy=(y-headC)/(hh*0.64);
+        if(dx*dx+dy*dy<=1.04&&y<headC+hh*0.10) put(x,y,3) }
+      /* 얼굴 그늘 */
+      for(let x=Math.round(cx-lean-hw*0.7);x<=Math.round(cx-lean+hw*0.7);x++)
+        for(let y=Math.round(headC-hh*0.10);y<=Math.round(headC+hh*0.22);y++) put(x,y,3);
+  }
+  else if(S.helm){ for(let y=Math.round(headC-hh*0.54);y<=Math.round(headC-hh*0.04);y++)
+      for(let x=Math.round(cx-lean-hw);x<=Math.round(cx-lean+hw);x++){
+        const dx=(x-(cx-lean))/hw,dy=(y-headC)/(hh*0.54); if(dx*dx+dy*dy<=1.04) put(x,y,4) }
+      /* 볏 */
+      if(N>=32) for(let y=Math.round(headC-hh*0.72);y<Math.round(headC-hh*0.44);y++) put(cx-lean,y,5);
+  }
+  /* 뿔 */
+  if(foe&&S.horn!==false){
+    const n=Math.max(2,Math.round(hh*0.85));
+    for(let i=0;i<n;i++){
+      put(cx-lean-hw*0.86-i*0.46, headC-hh*0.36-i*0.66, 4);
+      put(cx-lean+hw*0.86+i*0.46, headC-hh*0.36-i*0.66, 4);
+    }
+  }
+  /* 눈 */
+  const ey=Math.round(headC+hh*(S.hood?0.06:0.04));
+  const ex=Math.max(1,Math.round(hw*0.46));
+  const ew=S.bigEye?Math.max(1,Math.round(hw*0.36)):(N>=40?2:1);
+  for(let k=0;k<ew;k++){ put(cx-lean-ex-k*0.9,ey,6); put(cx-lean+ex+k*0.9,ey,6) }
+  if(S.bigEye||N>=44) for(let k=0;k<ew;k++){ put(cx-lean-ex-k*0.9,ey+1,6); put(cx-lean+ex+k*0.9,ey+1,6) }
+
+  /* 8. 무기 */
+  const W=foe?(S.foeWeapon||'claw'):(S.weapon||'sword');
+  if(W==='sword'){
+    const len=H*0.40;
+    for(let y=hy-1;y>=hy-len;y--){ put(hx,y,4); if(N>=24) put(hx+1,y,4); if(N>=44) put(hx+2,y,4) }
+    for(let x=hx-Math.max(1,N*0.05);x<=hx+Math.max(1,N*0.05)+1;x++) put(x,hy-1,5);
+    put(hx,hy-len-1,5);
+  }
+  else if(W==='axe'){
+    const len=H*0.30;
+    for(let y=hy;y>=hy-len;y--){ put(hx,y,3); if(N>=24) put(hx+1,y,3) }
+    ell(hx+Math.max(1.5,N*0.055), hy-len*0.86, Math.max(1.5,N*0.055), Math.max(2,N*0.085), 4);
+  }
+  else if(W==='staff'){
+    const len=H*0.44;
+    for(let y=hy+N*0.06;y>=hy-len;y--) put(hx+(N>=32?1:0),y,3);
+    ell(hx+(N>=32?1:0), hy-len-Math.max(1,N*0.03), Math.max(1.2,N*0.05), Math.max(1.2,N*0.05), 5);
+  }
+  else if(W==='claw'){
+    for(let k=0;k<3;k++) for(let d=0;d<Math.max(2,N*0.13);d++)
+      put(hx+0.7+k*1.0+d*0.30, hy+d*0.82, 4);
+    for(let k=0;k<3;k++) for(let d=0;d<Math.max(2,N*0.11);d++)
+      put(cx-bw*0.72-lean-0.7-k*1.0-d*0.30, aBot+d*0.82, 4);
+  }
+  else if(W==='chain'){
+    for(let d=0;d<Math.max(4,N*0.30);d++) if(d%2===0||N<24) put(hx+d*0.52, hy+d*0.30, 4);
+    ell(hx+Math.max(3,N*0.16), hy+Math.max(2,N*0.09), Math.max(1.2,N*0.05), Math.max(1.2,N*0.05), 4);
+  }
+  return g;
+}
+
+/* ── 굽기 ── */
+function bake(S,kind){
+  const N=S.res, g=skeleton(N,S,kind);
+  const T=S.tones;
+  const P=S.pal, foe=kind==='foe';
+  const base={
+    1: foe?(P.foeSkin||shade(P.skin,0.62)):P.skin,
+    2: foe?(P.foeCloth||shade(P.cloth,0.72)):P.cloth,
+    3: foe?shade(P.cloth,0.45):shade(P.cloth,0.62),
+    4: P.metal, 5: P.acc, 6: foe?(P.foeEye||P.eye):P.eye
+  };
+  const ramps={};
+  for(const k in base) ramps[k]=ramp(base[k],T,S.lift==null?0.55:S.lift,S.drop==null?0.5:S.drop);
+
+  /* 행마다 좌우 끝을 재서 빛을 준다 */
+  const out=[]; for(let y=0;y<N;y++) out.push(new Array(N).fill(null));
+  for(let y=0;y<N;y++){
+    let l=-1,r=-1;
+    for(let x=0;x<N;x++) if(g[y][x]){ if(l<0) l=x; r=x }
+    if(l<0) continue;
+    const w=Math.max(1,r-l);
+    for(let x=l;x<=r;x++){
+      const v=g[y][x]; if(!v) continue;
+      if(v===6){ out[y][x]=base[6]; continue }
+      let t=1-(x-l)/w;                       /* 왼쪽이 밝다 */
+      t=t*0.72 + (1-(y/N))*0.28;             /* 위쪽도 조금 밝다 */
+      let lv=Math.round(t*(T-1));
+      if(S.dither && T>1){
+        const edge=Math.abs(t*(T-1)-lv);
+        if(edge>0.22) lv=clamp(lv+(((x+y)&1)?1:-1)*0,0,T-1);
+        if(((x+y)&1)&&edge>0.18) lv=clamp(lv-1,0,T-1);
+      }
+      out[y][x]=ramps[v][clamp(lv,0,T-1)];
+    }
+  }
+  /* 윤곽 */
+  if(S.outline&&S.outline!=='none'){
+    const cp=out.map(r=>r.slice());
+    for(let y=0;y<N;y++) for(let x=0;x<N;x++){
+      if(!cp[y][x]) continue;
+      const nb=[[1,0],[-1,0],[0,1],[0,-1]];
+      let edge=false;
+      for(const [dx,dy] of nb){ const nx=x+dx,ny=y+dy;
+        if(nx<0||nx>=N||ny<0||ny>=N||!cp[ny][nx]){edge=true;break} }
+      if(!edge) continue;
+      if(g[y][x]===6) continue;
+      out[y][x]= S.outline==='self'? shade(cp[y][x],0.34)
+               : S.outline==='acc' ? mix(shade(cp[y][x],0.4),P.acc,0.45)
+               : S.outline==='light'? mix(cp[y][x],'#ffffff',0.55)
+               : S.outline;
+    }
+  }
+  return out;
+}
+
+const CACHE={};
+function draw(cv,S,kind,scale,both){
+  const key=S.id+kind;
+  const grid=CACHE[key]||(CACHE[key]=bake(S,kind));
+  const N=S.res;
+  cv.width=N; cv.height=N;
+  /* 해상도와 무관하게 화면에서 같은 크기로 세운다 — 그래야 해상도 값어치가 보인다 */
+  const box=(both?100:180)*(scale/4);
+  cv.style.width=Math.round(box)+'px';
+  cv.style.height=cv.style.width;
+  const c=cv.getContext('2d');
+  c.clearRect(0,0,N,N);
+  for(let y=0;y<N;y++) for(let x=0;x<N;x++){
+    const v=grid[y][x]; if(!v) continue;
+    c.fillStyle=v; c.fillRect(x,y,1,1);
+  }
+}
+
+/* ═══════════════ 화풍 목록 ═══════════════ */
+const PAL={
+  ash   :{skin:'#a3907c',cloth:'#5c5348',metal:'#8b8378',acc:'#c9a227',eye:'#f0e2b0',foeEye:'#ff6a4d'},
+  blood :{skin:'#b08871',cloth:'#7e2b2b',metal:'#9a8f80',acc:'#e0b34a',eye:'#ffe9b0',foeEye:'#ff4a34'},
+  moon  :{skin:'#b9c6d8',cloth:'#3f4a72',metal:'#8894ad',acc:'#9c8fd0',eye:'#dff0ff',foeEye:'#b98cff'},
+  candle:{skin:'#d6b183',cloth:'#7a5a2f',metal:'#b09055',acc:'#f0c95a',eye:'#fff2c0',foeEye:'#ff8a3d'},
+  bone  :{skin:'#d8cdba',cloth:'#4a463f',metal:'#a09789',acc:'#cfc3a8',eye:'#ffffff',foeEye:'#e04a3a'},
+  rust  :{skin:'#a08670',cloth:'#8a4a24',metal:'#7d766c',acc:'#e07b28',eye:'#ffd9a0',foeEye:'#ff7a2a'},
+  frost :{skin:'#cfe0ea',cloth:'#3f6f8f',metal:'#93a8b8',acc:'#8fd8f0',eye:'#eaffff',foeEye:'#6ad8ff'},
+  miasma:{skin:'#9db08a',cloth:'#4a5f3a',metal:'#7e8a72',acc:'#a8e05a',eye:'#e6ffc0',foeEye:'#b6ff3a'},
+  mono  :{skin:'#c8c8c8',cloth:'#6e6e6e',metal:'#9a9a9a',acc:'#ffffff',eye:'#ffffff',foeEye:'#ffffff'},
+  ink   :{skin:'#8f8b84',cloth:'#3a3835',metal:'#6e6a64',acc:'#d9d2c4',eye:'#f4f0e6',foeEye:'#ff5c3c'},
+  bronze:{skin:'#b39070',cloth:'#6b5230',metal:'#a8763c',acc:'#63b39a',eye:'#ffe6b0',foeEye:'#ff8f4a'},
+  royal :{skin:'#c8a482',cloth:'#5a2f7a',metal:'#9a8fb0',acc:'#e0c85a',eye:'#f6e6ff',foeEye:'#ff5ad0'},
+  ember :{skin:'#8a6a58',cloth:'#3a2420',metal:'#7a5040',acc:'#ff7a2a',eye:'#ffb45a',foeEye:'#ff4010'},
+  sea   :{skin:'#b0c4b4',cloth:'#2f5a52',metal:'#7f9a92',acc:'#4fd0b8',eye:'#dcfff4',foeEye:'#2affc0'},
+  paper :{skin:'#e6d9c2',cloth:'#b09a7a',metal:'#cbbfa8',acc:'#8e2b2b',eye:'#3a332b',foeEye:'#8e2b2b'},
+  neon  :{skin:'#4a4a5a',cloth:'#26263a',metal:'#54546a',acc:'#48f0d0',eye:'#48f0d0',foeEye:'#ff3a8a'}
+};
+
+const STYLES=[
+ {id:'s01',name:'무쇠 판화',tag:'32px · 2단계 · 검은 윤곽',res:32,heads:5.0,tones:2,outline:'#0a0809',
+  pal:PAL.ink,build:1,limb:1,cape:0,plate:1,belt:1,helm:1,weapon:'sword',
+  d:'명암을 둘로만 나누고 새까만 테두리로 잘라낸 판화. 어떤 배경에서도 형태가 살고, 작업 속도가 가장 빠릅니다.'},
+ {id:'s02',name:'잿빛 유물',tag:'32px · 3단계 · 자기색 윤곽',res:32,heads:5.4,tones:3,outline:'self',
+  pal:PAL.ash,build:1,limb:1,cape:1,plate:1,belt:1,helm:1,weapon:'sword',
+  d:'채도를 걷어내고 자기 색을 어둡게 깐 선으로 마감. 지금 게임에 가장 가까우면서 한 단계 정돈된 얼굴입니다.'},
+ {id:'s03',name:'핏빛 세밀화',tag:'48px · 4단계 · 윤곽 없음',res:48,heads:5.8,tones:4,outline:'none',
+  pal:PAL.blood,build:1,limb:1,cape:1,plate:1,belt:1,helm:1,weapon:'sword',
+  d:'윤곽선 없이 명암만으로 형태를 세우는 고해상 방식. 장비와 표정이 읽히지만 한 장에 드는 시간이 가장 깁니다.'},
+ {id:'s04',name:'촛불 사본',tag:'32px · 3단계 · 단색 계열',res:32,heads:5.2,tones:3,outline:'self',
+  pal:PAL.candle,build:1,limb:1,cape:1,plate:0,belt:1,hood:1,weapon:'staff',
+  d:'양초 밑에서 베낀 낡은 사본 같은 호박색 단색조. 통일감이 강해 화면이 조용해집니다.'},
+ {id:'s05',name:'달빛 냉각',tag:'32px · 3단계 · 푸른 한기',res:32,heads:5.6,tones:3,outline:'self',
+  pal:PAL.moon,build:0.95,limb:0.95,cape:1,plate:0,belt:1,hood:1,weapon:'staff',
+  d:'차가운 청보라 한 벌. 밤 구역·습격 화면과 특히 잘 붙습니다.'},
+ {id:'s06',name:'굵은 도트',tag:'16px · 2단계 · 3등신',res:16,heads:3.0,tones:2,outline:'#0a0809',
+  pal:PAL.ash,build:1.25,limb:1.5,headW:1.25,bigEye:1,plate:0,belt:0,weapon:'sword',
+  d:'한 픽셀이 크게 보이는 저해상 뭉툭 체형. 아이콘·미니맵·카드 그림에 쓰기 좋습니다.'},
+ {id:'s07',name:'길쭉한 그림자',tag:'48px · 3단계 · 7등신',res:48,heads:7.0,tones:3,outline:'self',
+  pal:PAL.ink,build:0.82,limb:0.7,waist:0.62,cape:1,hood:1,weapon:'sword',
+  d:'다크 던전 특유의 길고 마른 비율. 위압적이지만 작은 칸에서는 뭉개질 위험이 있습니다.'},
+ {id:'s08',name:'금박 세공',tag:'32px · 4단계 · 강조색 윤곽',res:32,heads:5.2,tones:4,outline:'acc',
+  pal:PAL.candle,build:1.05,limb:1,cape:1,plate:1,belt:1,helm:1,weapon:'sword',
+  d:'윤곽선에 놋쇠빛을 섞어 테두리가 스스로 빛나는 느낌. 보상·상점 화면의 격을 올립니다.'},
+ {id:'s09',name:'뼈와 재',tag:'24px · 2단계 · 뼛빛',res:24,heads:5.0,tones:2,outline:'self',
+  pal:PAL.bone,build:1,limb:1,cape:0,plate:1,belt:0,helm:1,weapon:'axe',
+  d:'숯 위에 얹은 뼛조각 같은 명도 대비. 색이 거의 없어 상태 이상 색이 아주 잘 보입니다.'},
+ {id:'s10',name:'녹슨 기계',tag:'32px · 3단계 · 쇳녹',res:32,heads:4.6,tones:3,outline:'#120a06',
+  pal:PAL.rust,build:1.2,limb:1.25,waist:0.85,plate:1,belt:1,helm:1,weapon:'axe',
+  d:'철과 녹의 두 색으로만 미는 육중한 체형. 고철 거인 계열 적과 결이 맞습니다.'},
+ {id:'s11',name:'심연 실루엣',tag:'32px · 2단계 · 눈만 남기고',res:32,heads:5.6,tones:2,outline:'none',
+  pal:{skin:'#2a2630',cloth:'#1a1720',metal:'#332e3c',acc:'#a06ae0',eye:'#c9a227',foeEye:'#ff4a34'},
+  build:1,limb:0.9,cape:1,hood:1,weapon:'staff',
+  d:'몸을 거의 어둠에 묻고 눈빛과 강조색만 남깁니다. 실루엣 설계가 전부라 형태가 좋아야 삽니다.'},
+ {id:'s12',name:'스테인드글라스',tag:'32px · 1단계 · 납선 윤곽',res:32,heads:5.0,tones:1,outline:'#0d0a12',
+  pal:PAL.royal,build:1.05,limb:1.05,cape:1,plate:1,belt:1,helm:1,weapon:'sword',
+  d:'명암 없이 색면만 두고 굵은 납선으로 나눕니다. 가장 평평하지만 색이 강렬합니다.'},
+ {id:'s13',name:'습작 스케치',tag:'32px · 3단계 · 디더링',res:32,heads:5.3,tones:3,outline:'self',dither:1,
+  pal:PAL.ash,build:1,limb:1,cape:1,plate:0,belt:1,weapon:'sword',
+  d:'중간 톤을 격자로 흩어 연필 자국처럼 만든 마감. 색 수를 늘리지 않고 계조를 늘립니다.'},
+ {id:'s14',name:'독기',tag:'32px · 3단계 · 병든 초록',res:32,heads:5.4,tones:3,outline:'self',post:'glow',
+  pal:PAL.miasma,build:0.95,limb:0.95,cape:1,hood:1,weapon:'staff',
+  d:'감염·독 기믹이 많은 판에 어울리는 병든 색. 은은한 발광을 얹었습니다.'},
+ {id:'s15',name:'서리 금속',tag:'32px · 4단계 · 창백한 청',res:32,heads:5.2,tones:4,outline:'self',
+  pal:PAL.frost,build:1.05,limb:1,plate:1,belt:1,helm:1,weapon:'sword',
+  d:'서리 군주가 있는 3구역 전용으로 쓰기 좋은 창백한 금속색.'},
+ {id:'s16',name:'진홍 판금',tag:'32px · 4단계 · 검붉음',res:32,heads:5.0,tones:4,outline:'self',
+  pal:PAL.blood,build:1.15,limb:1.1,waist:0.82,plate:1,belt:1,helm:1,weapon:'sword',
+  d:'피와 금의 대비를 앞세운 정공법. 균열의 지금 색감을 가장 정면으로 밀어붙인 안입니다.'},
+ {id:'s17',name:'흑백 목판',tag:'24px · 2단계 · 완전 흑백',res:24,heads:5.0,tones:2,outline:'#000000',
+  pal:PAL.mono,build:1,limb:1,cape:1,plate:1,belt:0,helm:1,weapon:'sword',
+  d:'색을 아예 버린 안. 색은 오직 상태 이상과 피해 숫자에만 씁니다. 규율이 필요하지만 인상은 가장 셉니다.'},
+ {id:'s18',name:'낡은 필름',tag:'32px · 3단계 · 세피아 · 주사선',res:32,heads:5.4,tones:3,outline:'self',post:'scan',
+  pal:PAL.candle,build:1,limb:1,cape:1,hood:1,belt:1,weapon:'sword',
+  d:'세피아 위에 가로 주사선을 얹어 오래된 화면처럼. 분위기는 좋으나 작은 글자와 겹치면 지저분해집니다.'},
+ {id:'s19',name:'야광 윤곽',tag:'32px · 2단계 · 빛나는 테',res:32,heads:5.5,tones:2,outline:'light',post:'glow',
+  pal:PAL.neon,build:0.95,limb:0.95,cape:1,hood:1,weapon:'staff',
+  d:'몸은 어둠에 두고 테두리에만 빛을 올립니다. 어두운 전장에서 대상 지정이 아주 잘 읽힙니다.'},
+ {id:'s20',name:'두꺼운 붓',tag:'24px · 2단계 · 굵은 사지',res:24,heads:4.0,tones:2,outline:'self',
+  pal:PAL.rust,build:1.3,limb:1.6,waist:0.9,plate:1,belt:1,weapon:'axe',
+  d:'사지를 두껍게 잡아 멀리서도 뭉개지지 않게 한 안. 전투 칸이 작을 때 가장 안전합니다.'},
+ {id:'s21',name:'유약 도자',tag:'48px · 4단계 · 윤곽 없음',res:48,heads:5.4,tones:4,outline:'none',
+  pal:PAL.sea,build:1,limb:1,cape:1,plate:1,belt:1,weapon:'staff',
+  d:'매끈한 계조로 굽는 부드러운 마감. 다크한 맛은 덜하지만 정령샘 같은 구역과 맞습니다.'},
+ {id:'s22',name:'그을린 청동',tag:'32px · 3단계 · 청동과 녹청',res:32,heads:5.0,tones:3,outline:'self',
+  pal:PAL.bronze,build:1.1,limb:1.1,plate:1,belt:1,helm:1,weapon:'axe',
+  d:'청동에 낀 녹청을 강조색으로 씁니다. 오래된 유적 분위기.'},
+ {id:'s23',name:'종이 인형',tag:'24px · 1단계 · 흰 테두리',res:24,heads:4.6,tones:1,outline:'light',
+  pal:PAL.paper,build:1.1,limb:1.2,cape:1,belt:1,weapon:'sword',
+  d:'부위마다 단색을 채우고 흰 테로 오려낸 종이 인형. 가장 가볍고, 배경 위에서 확실히 떠 보입니다.'},
+ {id:'s24',name:'잉걸불',tag:'32px · 3단계 · 속에서 타는 빛',res:32,heads:5.2,tones:3,outline:'self',post:'glow',
+  pal:PAL.ember,build:1.05,limb:1.05,cape:1,hood:1,belt:1,weapon:'sword',
+  d:'거의 검은 몸에 잉걸불 색만 남깁니다. 균열에 먹혀가는 대원이라는 설정과 잘 붙습니다.'},
+ {id:'s25',name:'단단한 4등신',tag:'24px · 3단계 · 4등신',res:24,heads:4.0,tones:3,outline:'#0a0809',
+  pal:PAL.ash,build:1.15,limb:1.3,headW:1.12,plate:1,belt:1,helm:1,weapon:'sword',
+  d:'귀여움과 위압 사이. 대부분의 도트 로그라이크가 앉는 자리이자 가장 실패 확률이 낮은 선택입니다.'},
+ {id:'s26',name:'가는 6등신',tag:'32px · 3단계 · 6등신',res:32,heads:6.2,tones:3,outline:'self',
+  pal:PAL.moon,build:0.85,limb:0.72,waist:0.66,cape:1,hood:1,weapon:'staff',
+  d:'마르고 긴 몸. 마법사·암살자 계열이 살고 중장갑은 죽습니다.'},
+ {id:'s27',name:'중장 5등신',tag:'32px · 4단계 · 넓은 어깨',res:32,heads:5.0,tones:4,outline:'self',
+  pal:PAL.frost,build:1.28,limb:1.3,waist:0.92,plate:1,belt:1,helm:1,weapon:'axe',
+  d:'어깨를 크게 벌린 중장갑 체형. 헥토·굴라처럼 앞에 서는 대원에게 어울립니다.'},
+ {id:'s28',name:'저해상 실루엣',tag:'16px · 1단계 · 색면',res:16,heads:3.6,tones:1,outline:'none',
+  pal:PAL.ink,build:1.2,limb:1.4,headW:1.15,weapon:'sword',
+  d:'16px 단색면. 형태만으로 누가 누구인지 알게 만드는 훈련용 안이자, 그대로 아이콘으로 씁니다.'},
+ {id:'s29',name:'피와 놋쇠',tag:'48px · 4단계 · 자기색 윤곽',res:48,heads:5.6,tones:4,outline:'self',
+  pal:PAL.blood,build:1.05,limb:1,cape:1,plate:1,belt:1,helm:1,weapon:'sword',
+  d:'지금 게임 색을 고해상으로 그대로 확장한 안. 바꾸는 폭이 가장 작으면서 화질만 올라갑니다.'},
+ {id:'s30',name:'검은 미사',tag:'32px · 2단계 · 보라 강조',res:32,heads:5.8,tones:2,outline:'none',
+  pal:{skin:'#4a3a52',cloth:'#241a2e',metal:'#3e3348',acc:'#c05ae0',eye:'#e0a8ff',foeEye:'#ff3ad0'},
+  build:0.95,limb:0.9,cape:1,skirt:1,hood:1,weapon:'staff',
+  d:'제의복 같은 긴 로브와 보랏빛 강조. 균열·환영·영혼 계열 기믹에 어울립니다.'},
+ {id:'s31',name:'모래 유적',tag:'32px · 3단계 · 모래와 흑요석',res:32,heads:5.2,tones:3,outline:'self',
+  pal:{skin:'#c8a878',cloth:'#8a7448',metal:'#b09a68',acc:'#2e4a5a',eye:'#fff0c0',foeEye:'#ff7a3a'},
+  build:1.08,limb:1.05,cape:1,belt:1,helm:1,weapon:'sword',
+  d:'마른 모래빛 바탕에 흑요석 파랑을 강조로. 새 구역을 늘릴 때 쓸 별개의 색 계열입니다.'},
+ {id:'s32',name:'철창 감옥',tag:'24px · 2단계 · 회청과 피',res:24,heads:4.8,tones:2,outline:'#0a0809',
+  pal:{skin:'#9a8878',cloth:'#4a5460',metal:'#7d8894',acc:'#a83b32',eye:'#e8e0d0',foeEye:'#ff4a34'},
+  build:1.12,limb:1.2,plate:1,belt:1,helm:1,weapon:'chain',
+  d:'차가운 회청에 피 한 방울. 3구역 핏빛 감옥의 톤을 화풍 전체로 밀어붙인 안입니다.'}
+];
+
+/* ── 화면 ── */
+const gal=document.getElementById('gal');
+const st={scale:4,bg:'dark',who:'both',filt:'all'};
+let PICKED=[];
+try{ PICKED=JSON.parse(localStorage.getItem('gyunyeol_style_pick')||'[]') }catch(e){ PICKED=[] }
+
+function bgCss(S){
+  if(st.bg==='flat')  return 'background:'+mix(S.pal.cloth,'#000000',0.72);
+  if(st.bg==='grid')  return 'background:'+mix(S.pal.cloth,'#000000',0.80)+
+    ';background-image:repeating-linear-gradient(0deg,transparent 0 7px,rgba(255,255,255,.045) 7px 8px),'+
+    'repeating-linear-gradient(90deg,transparent 0 7px,rgba(255,255,255,.045) 7px 8px)';
+  if(st.bg==='field') return 'background:radial-gradient(120% 78% at 50% 118%,'+
+    mix(S.pal.acc,'#000000',0.72)+','+mix(S.pal.cloth,'#000000',0.88)+' 62%,#08070a)';
+  return 'background:linear-gradient(180deg,#14110f,#0a0809 66%)';
+}
+function postCss(S){
+  if(S.post==='glow') return 'filter:drop-shadow(0 0 6px '+S.pal.acc+'88)';
+  if(S.post==='scan') return 'filter:contrast(1.06) sepia(.18)';
+  return '';
+}
+
+function build(){
+  gal.innerHTML='';
+  const list=STYLES.filter(S=>{
+    if(st.filt==='lo')   return S.res<=24;
+    if(st.filt==='hi')   return S.res>=48;
+    if(st.filt==='tall') return S.heads>=5.8;
+    if(st.filt==='stark')return S.tones<=2;
+    if(st.filt==='soft') return S.tones>=4;
+    if(st.filt==='pick') return PICKED.includes(S.id);
+    return true;
+  });
+  document.getElementById('cnt').textContent=list.length+' / '+STYLES.length+'가지'+
+    (PICKED.length?' · 담은 것 '+PICKED.length:'');
+  list.forEach((S,i)=>{
+    const card=document.createElement('div');
+    card.className='card'+(PICKED.includes(S.id)?' picked':'');
+    const stg=document.createElement('div');
+    stg.className='stage'; stg.setAttribute('style',bgCss(S));
+    if(st.who!=='foe'){ const c=document.createElement('canvas'); c.setAttribute('style',postCss(S));
+      stg.appendChild(c); draw(c,S,'hero',st.scale,st.who==='both') }
+    if(st.who!=='hero'){ const c=document.createElement('canvas'); c.setAttribute('style',postCss(S));
+      stg.appendChild(c); draw(c,S,'foe',st.scale,st.who==='both') }
+    if(S.post==='scan'){ const ov=document.createElement('div');
+      ov.className='floor';
+      ov.setAttribute('style','position:absolute;inset:0;height:100%;background:repeating-linear-gradient(0deg,rgba(0,0,0,.30) 0 1px,transparent 1px 3px)');
+      stg.appendChild(ov) }
+    card.appendChild(stg);
+    const no=document.createElement('div');
+    no.className='no';
+    no.innerHTML='<h3>'+(STYLES.indexOf(S)+1)+'. '+S.name+'</h3>'+
+      '<div class="meta">'+S.tag+'</div><p>'+S.d+'</p>'+
+      '<div class="chips"><span class="chip">'+S.heads.toFixed(1)+'등신</span>'+
+      '<span class="chip">'+S.res+'px</span>'+
+      '<span class="chip">명암 '+S.tones+'</span>'+
+      '<span class="chip">윤곽 '+({none:'없음',self:'자기색',acc:'강조색',light:'밝게'}[S.outline]||'검정')+'</span>'+
+      (S.dither?'<span class="chip">디더링</span>':'')+
+      (S.post?'<span class="chip">'+({glow:'발광',scan:'주사선'}[S.post])+'</span>':'')+'</div>';
+    card.appendChild(no);
+    card.onclick=()=>{
+      const k=PICKED.indexOf(S.id);
+      if(k<0) PICKED.push(S.id); else PICKED.splice(k,1);
+      try{ localStorage.setItem('gyunyeol_style_pick',JSON.stringify(PICKED)) }catch(e){}
+      build(); tray();
+    };
+    gal.appendChild(card);
+  });
+}
+function tray(){
+  const t=document.getElementById('tray');
+  t.classList.toggle('on',PICKED.length>0);
+  document.getElementById('tlist').textContent=
+    PICKED.map(id=>{const S=STYLES.find(x=>x.id===id);return (STYLES.indexOf(S)+1)+'. '+S.name}).join(' · ');
+}
+document.getElementById('copy').onclick=()=>{
+  const txt=PICKED.map(id=>{const S=STYLES.find(x=>x.id===id);
+    return '• '+S.name+' — '+S.tag+' / '+S.heads.toFixed(1)+'등신 · 윤곽 '+
+      ({none:'없음',self:'자기색',acc:'강조색',light:'밝게'}[S.outline]||'검정')}).join('\n');
+  const ta=document.createElement('textarea'); ta.value='균열 화풍 후보\n'+txt;
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy') }catch(e){}
+  ta.remove();
+  const b=document.getElementById('copy'); const o=b.textContent;
+  b.textContent='복사됨'; setTimeout(()=>b.textContent=o,1200);
+};
+document.getElementById('clear').onclick=()=>{ PICKED=[];
+  try{ localStorage.removeItem('gyunyeol_style_pick') }catch(e){}
+  build(); tray(); };
+document.getElementById('sc').oninput=e=>{ st.scale=+e.target.value; build() };
+['bg','who','filt'].forEach(k=>{
+  const box=document.getElementById(k);
+  box.onclick=e=>{ const b=e.target.closest('button'); if(!b) return;
+    box.querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); st[k]=b.dataset.v; build(); };
+});
+build(); tray();
+</script>
+
+</body></html>
