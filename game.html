@@ -4975,7 +4975,7 @@ const KW_TAB=[
  {n:"전환",c:"plain",d:"전환 기술을 사용한 후 특정 기술로 변경됨"},
  {n:"소환물",c:"plain",d:"기술이나 카드에 의해 소환된 대상"},
  {n:"되감기",c:"buff",d:"다음 사용 기술이 한 번 더 발동합니다. (적의 경우에는 한 번 더 행동합니다)\n중첩 가능"},
- {n:"정지",c:"debuff",d:"잔해처럼 선택할 수도, 피해를 받을 수도 없는 상태. 그동안 아무것도 하지 못하지만 칸은 그대로 막습니다"},
+ {n:"정지",c:"debuff",d:"행동할 수도, 대상으로 선택될 수도 없는 상태가 됩니다."},
  {n:"연계",c:"plain",d:"이전에 해당 속성 기술을 사용했다면 발동"},
  {n:"이동",c:"plain",d:"위치를 변경\n해당 자리에 이미 대상이 존재한다면, 서로 위치를 변경\n(직접 이동하지 않은 경우, 이동으로 인한 효과를 받을 수 없음)"},
  {n:"잠금",c:"skill",d:"해당 기술을 일정 턴 동안 사용할 수 없음. 쓴 턴은 세지 않고 다음 턴부터 줄어듭니다 — 잠금(1)이면 다음 턴 하나를 통째로 쉽니다"},
@@ -10394,21 +10394,21 @@ const SYN_FX={};
    ★ 새 세계핵은 CORES 에 **한 줄**만 더하면 된다 : 해금은 need(통산 처치 수), 효과는 fx 의 열쇠 하나.
      효과를 꺼내 쓰는 자리는 coreFx() **한 곳**이다 — 기능마다 따로 박아 넣지 말 것. */
 const CORES=[
- {id:"real",  n:"현실의 세계핵", cond:"적 30회 처치",                need:{k:"kills",  n:30},
+ {id:"real",  n:"현실의 세계핵", cond:"적 100회 처치",               need:{k:"kills",  n:100},
   d:"이번 원정동안 날이 밝을 때 얻는 활동량이 1 증가합니다. 대신 주둔지나 쉼터에서 숙면하면 9시에 깨어납니다.",
-  fx:{dayAct:1, wakeAt:9}},
+  fx:{dayAct:1, wakeAt:9}, icon:"world_core_reality"},
  {id:"rift",  n:"균열 세계핵",   cond:"오염도 누적 5000 획득",        need:{k:"taint",  n:5000},
-  d:"이번 원정동안 지도에서 이동할 때 얻는 오염도가 5 증가합니다. 반복 퀘스트: 오염도를 누적 100 얻을 때마다 무작위 보상을 얻습니다.",
-  fx:{moveTaint:5}},
+  d:"이번 원정동안 지도에서 이동할 때 얻는 오염도가 5 증가합니다.\n반복 퀘스트: 오염도를 누적 100 얻을 때마다 무작위 보상을 얻습니다.",
+  fx:{moveTaint:5}, quest:{k:"taint",   n:100, do:"riftGift"}, icon:"world_core_rift"},
  {id:"storm", n:"폭풍 세계핵",   cond:"미지의 구역 100회 방문",       need:{k:"unknown",n:100},
-  d:"이번 원정동안 날이 밝을 때 지도의 빈 구역에 미지의 구역을 하나 추가합니다. 반복 퀘스트: 미지의 구역을 2번 방문할 때마다 지도의 빈 구역에 미지의 구역을 하나 추가합니다.",
-  fx:{dayUnknown:1}},
+  d:"이번 원정동안 날이 밝을 때 지도의 빈 구역에 미지의 구역을 하나 추가합니다.\n반복 퀘스트: 미지의 구역을 2번 방문할 때마다 지도의 빈 구역에 미지의 구역을 하나 추가합니다.",
+  fx:{dayUnknown:1}, quest:{k:"unknown", n:2,   do:"stormZone"}, icon:"world_core_storm"},
  {id:"cruel", n:"잔혹한 세계핵", cond:"핏빛 감옥 정예 전투 20회 승리", need:{k:"elite1", n:20},
   d:"이번 원정동안 쉼터에서 휴식할 수 없습니다. 대신 단련하기가 보상을 1개 더 줍니다.",
-  fx:{noRest:1, trainMore:1}},
+  fx:{noRest:1, trainMore:1}, icon:"world_core_cruel"},
  {id:"life",  n:"생명의 세계핵", cond:"주둔지를 제외한 쉼터 60회 방문", need:{k:"rest",   n:60},
   d:"이번 원정동안 전투에서 승리하면 모든 대원의 최대 체력이 1 증가합니다. 대신 날이 밝을 때 얻는 활동량이 1 감소합니다.",
-  fx:{dayAct:-1, winMaxHp:1}},
+  fx:{dayAct:-1, winMaxHp:1}, icon:"world_core_purification"},
 ];
 /* 해금에 쓰는 통산 집계 — 원정을 넘어 쌓인다. 세는 자리는 coreTally(열쇠,수) 한 곳이다 */
 const CORE_TALLY={kills:"적 처치", taint:"오염도 누적", unknown:"미지의 구역 방문",
@@ -10437,8 +10437,50 @@ function corePick(id){ if(typeof run==="undefined"||!run) return null;
   run.core=(id&&coreOwned(id))?id:null; run.coreQ=0; return run.core }
 /* 도감 — 전부. 가졌는지 · 해금 조건 글 · 진행도까지 */
 function coreCodex(){ return CORES.map(c=>{ const k=(c.need||{}).k, nd=(c.need||{}).n||0, hv=k?Math.min(nd,coreHave(k)):0;
-  return {id:c.id, n:c.n, d:c.d, own:coreOwned(c.id), cond:c.cond||"", need:nd, have:hv,
+  return {id:c.id, n:c.n, d:c.d, icon:c.icon||"", own:coreOwned(c.id), cond:c.cond||"", need:nd, have:hv,
           condText:coreOwned(c.id)?"획득함":(c.cond||"")+(nd?` (${hv}/${nd})`:"")} }) }
+
+/* ── 반복 퀘스트 — 원정 동안 「n 마다 한 번」 되풀이로 준다 (균열 · 폭풍이 같이 쓴다) ──
+   세는 열쇠는 통산 집계와 같다 (coreTally 한 곳에서 같이 센다). 진행도 run.coreQ 는 원정마다 0 에서 시작한다.
+   새 반복 퀘스트는 CORES 에 quest:{k,n,do} 한 줄 + CORE_GIFT 에 함수 하나다 */
+const CORE_GIFT={
+  /* 균열 세계핵 — 오염도 100 마다 무작위 보상 하나. 구역이 오를수록 값이 커진다.
+     ⚠️ 총괄이 짠 안이다 — 사용자 확인을 받을 것 (2026-10-09) */
+  riftGift(){
+    const T=RIFT_GIFT[Math.min(run.field||0,RIFT_GIFT.length-1)];
+    const k=rnd(["gold","stone","grade","hp","item"]);
+    if(k==="gold"){ run.gold+=T.gold; toast(`균열 세계핵 — 금화 +${T.gold}`) }
+    else if(k==="stone"){ run.stone=(run.stone||0)+T.stone; toast(`균열 세계핵 — 제련석 +${T.stone}`) }
+    else if(k==="grade"){ (run.after=run.after||[]).push({grade:T.grade}); toast(`균열 세계핵 — ${T.grade} 보상`) }
+    else if(k==="hp"){ run.heroes.forEach(h=>{ h.maxHp+=T.hp; if(!h.down) h.hp+=T.hp });
+      toast(`균열 세계핵 — 모든 대원 최대 체력 +${T.hp}`) }
+    else { const it=rnd(ITEMS.filter(i=>i.g===T.item));
+      if(it){ (run.after=run.after||[]).push({item:it}); toast(`균열 세계핵 — ${T.item} 장신구`) }
+      else { run.gold+=T.gold; toast(`균열 세계핵 — 금화 +${T.gold}`) } }
+  },
+  /* 폭풍 세계핵 — 미지의 구역 둘마다 지도의 빈 구역에 하나 더 */
+  stormZone(){
+    const put=sprinkleCell("event",1);
+    if(put) toast("폭풍 세계핵 — 지도에 미지의 구역이 하나 나타납니다.");
+  }
+};
+const RIFT_GIFT=[
+ {gold:12, stone:2, grade:"하급", hp:3, item:"파편"},   /* 1 핏빛 감옥 */
+ {gold:22, stone:3, grade:"중급", hp:5, item:"일반"},   /* 2 정령의 숲 */
+ {gold:35, stone:4, grade:"상급", hp:8, item:"희귀"},   /* 3 마력의 탑 */
+];
+/* 지금 원정의 반복 퀘스트 — 화면이 진행도를 보일 때 (없으면 null) */
+function coreQuestNow(){ const c=coreNow(), q=c&&c.quest;
+  return q?{k:q.k, n:q.n, have:Math.min(q.n,(run&&run.coreQ)||0), label:CORE_TALLY[q.k]||q.k}:null }
+function coreQuestTick(k,n){
+  const c=coreNow(), q=c&&c.quest;
+  if(!q||q.k!==k||typeof run==="undefined"||!run) return 0;
+  run.coreQ=((run.coreQ)||0)+n;
+  let fired=0;
+  while(run.coreQ>=q.n&&fired<50){ run.coreQ-=q.n; fired++;
+    try{ CORE_GIFT[q.do]() }catch(e){ console.error(e) } }
+  return fired;
+}
 
 /* ── 효과를 꺼내는 자리는 여기 하나 ──────────────────────────────────── */
 function coreFx(key){ const c=coreNow(); return (c&&c.fx&&c.fx[key])||0 }
@@ -10453,7 +10495,8 @@ function coreTally(k,n){
   n=(n==null?1:n); if(!k||n<=0) return;
   if(typeof run==="undefined"||!run||run.sandbox) return;
   CORE_PEND[k]=(CORE_PEND[k]||0)+n;
-  if(typeof B!=="undefined"&&B&&!B.over) return;   /* 전투 중이면 전투가 끝날 때 */
+  coreQuestTick(k,n);                              /* 반복 퀘스트는 전투 중이어도 바로 센다 (보상은 run.after 로 쌓인다) */
+  if(typeof B!=="undefined"&&B&&!B.over) return;   /* 해금은 전투가 끝날 때 */
   coreFlush();
 }
 function coreFlush(){
@@ -11064,7 +11107,7 @@ const HERO_REWARDS={
   R("죄수의 일기","상급","영광의 족쇄의 비용이 1 감소합니다. 의지 약화가 기절한 모든 적에게 시전됩니다.\n*[영광의 족쇄] 기술이 없을 때 등장하지 않음\n*획득시 보상에서 다시 등장하지 않음",
     h=>{ h.tag.prisonDiary=1; const k=h.sk.find(x=>x&&x.shackle); if(k) k.cost=Math.max(0,(k.cost||2)-1) },0.5),
   R("금단의 고서에 손을 대다","상급","도미니코가 악마로 타락합니다.\n*획득시 보상에서 다시 등장하지 않음",h=>domCorrupt(h),0.5),
-  R("절실한 신앙","상급","퀘스트: 참회의 기류를 20번 사용해야 합니다. \n보상: 이번 게임에서 참회의 기류를 사용한 후, 추가로 2번 더 사용됩니다.\n*획득시 보상에서 다시 등장하지 않음\n*[참회의 기류] 기술이 없을 때 등장하지 않음",
+  R("절실한 신앙","상급","퀘스트: 참회의 기류를 20번 사용해야 합니다. \n보상: 이번 원정에서 참회의 기류를 사용한 후, 추가로 2번 더 사용됩니다.\n*획득시 보상에서 다시 등장하지 않음\n*[참회의 기류] 기술이 없을 때 등장하지 않음",
     h=>{ if(!questHas("절실한 신앙")) questAccept("절실한 신앙","도미니코") },0.5)
  ],
  "굴라":[
@@ -13676,10 +13719,10 @@ const FOE={
     {n:"내려찍기",w:6,tg:"near",heroOnly:1,dmg:9,deb:{stun:1},chase:1,d:"가장 가까운 대원에게 공격 피해를 9 주고 기절을 1 부여합니다."},
     {n:"문 닫기",w:4,tg:"self",toFront:1,taunt:2,cd:3,d:"가장 앞으로 이동해서 2턴 동안 도발을 얻습니다. (3턴 동안 이 행동은 사용하지 않습니다)"},
     {n:"시간의 틈",w:3,tg:"none",swapEnds:1,cond:"twoHeroes",d:"가장 앞 대원과 가장 뒤 대원의 위치를 바꿉니다."},
-    {n:"문턱 지키기",w:4,tg:"none",shieldMate:{v:10,rng:9,self:0},defUp:5,d:"다른 적들에게 보호막을 10 줍니다. 보호력을 5 얻습니다."},
-    {n:"선고",w:6,tg:"none",chg:1,cond:"chgIdle",d:"3턴 동안 충전 상태가 됩니다. 충전이 끝나면 자신을 뺀 모든 대상(아군도 적군도)을 3턴 동안 정지 상태로 만듭니다."},
-    {n:"선고",w:3,tg:"none",chg:1,cond:"charging",must:1,d:"3턴 동안 충전 상태가 됩니다. 충전이 끝나면 자신을 뺀 모든 대상(아군도 적군도)을 3턴 동안 정지 상태로 만듭니다."},
-    {n:"선고",w:3,tg:"none",cond:"charged",must:1,spend:1,stopAll:3,d:"충전이 끝났습니다. 자신을 뺀 모든 대상(아군도 적군도)을 3턴 동안 정지 상태로 만듭니다."}],
+    {n:"문턱 지키기",w:4,tg:"none",shieldMate:{v:10,rng:9,self:0},defUp:5,cond:"notAlone",cd:3,d:"다른 적들에게 보호막을 10 줍니다. 보호력을 5 얻습니다. (3턴 동안 이 행동은 사용하지 않습니다)"},
+    {n:"선고",w:6,tg:"none",chg:1,cond:"chgIdle",d:"3턴 동안 충전 상태가 됩니다. 충전이 끝나면 자신을 제외한 모든 대상을 3턴 동안 정지 상태로 만듭니다."},
+    {n:"선고",w:3,tg:"none",chg:1,cond:"charging",must:1,d:"3턴 동안 충전 상태가 됩니다. 충전이 끝나면 자신을 제외한 모든 대상을 3턴 동안 정지 상태로 만듭니다."},
+    {n:"선고",w:3,tg:"none",cond:"charged",must:1,spend:1,stopAll:3,d:"충전이 끝났습니다. 자신을 제외한 모든 대상을 3턴 동안 정지 상태로 만듭니다."}],
    hit:"내려찍기"},
  /* 정령이 연보라 수정에 갇혀 있다. 쓰러지면 갇혀 있던 샘의 잔영이 풀려난다 (소환물이 아니다) */
  "결정에 갇힌 잔영":{hp:40,atk:4,def:6,rng:7,exp:8,
@@ -14539,7 +14582,7 @@ function foeStatusRows(f){
   if(f.rew>0) g.push(bd("g","되감기",f.rew,"쌓인 만큼 이번 턴에 한 번 더 행동합니다"));
   if(f.armor>0) g.push(bd("g","갑피",f.armor,"한 번에 받는 피해를 이 수치까지로 잘라냅니다"));
   if(foePas(f,"memory")&&(f.mem||0)>0) g.push(bd("g","기억",`${f.mem}/3`,memEmp(f)?"기억이 가득 찼습니다 — 다음 행동이 강화됩니다":"행동할 때마다 쌓입니다. 3번 쌓인 뒤의 행동이 강화됩니다"));
-  if(f.stop>0) o.push(bd("o","정지",`${Math.max(1,f.stop-1)}턴`,"겨눌 수도, 피해를 줄 수도 없습니다. 그동안 아무것도 하지 않습니다"));
+  if(f.stop>0) o.push(bd("o","정지",`${Math.max(1,f.stop-(B&&B.foeAct?1:0))}턴`,"겨눌 수도, 피해를 줄 수도 없습니다. 그동안 아무것도 하지 않습니다"));
   /* 충전 — 콜로서스는 제 아이콘(빔 광선 충전)이 따로 있다 (사용자 2026-10-07) */
   if(f.chg>0&&f.name!=="콜로서스") g.push(bd("g","충전",`${f.chg}/${chgMax(f)}`,"충전을 다 채우면 큰 수가 나갑니다"));
   if(f.negShield) g.push(bd("g","부정 보호막",f.negShield,"부정적인 효과를 그만큼 걷어냅니다 (얻을 때는 이미 걸린 것부터)"));
@@ -14579,7 +14622,7 @@ function heroStatusRows(h){
   if(h.echo) t.push(bd("t","메아리","","메아리: 쓰러질 때 한 번, 절반의 체력으로 다시 일어섭니다.","메아리"));   /* 생명의 메아리 */
   if(h.evade) g.push(bd("g","회피",h.evade,"다음 공격 한 번을 통째로 흘립니다"));
   if(h.rew>0) g.push(bd("g","되감기",h.rew,"다음에 쓰는 기술이 쌓인 만큼 한 번 더 발동합니다"));
-  if(h.stop>0) o.push(bd("o","정지",`${Math.max(1,h.stop-1)}턴`,"겨눌 수도, 피해를 받을 수도 없습니다. 그동안 아무것도 하지 못합니다"));
+  if(h.stop>0) o.push(bd("o","정지",`${Math.max(1,h.stop-(B&&B.foeAct?1:0))}턴`,"겨눌 수도, 피해를 받을 수도 없습니다. 그동안 아무것도 하지 못합니다"));
   if(h.leech){ const lp=leechPct(h); g.push(bd("g","흡수",lp+"%",`다음 기술로 보호막에 막히지 않은 피해의 ${lp}%만큼 체력을 회복합니다 (최소 1). 겹쳐 받으면 더해집니다`)) }
   /* 추진력은 버프 줄에 안 적는다 — 자원 줄(res)에 이미 있다 (사용자 2026-09-15) */
   /* 바람(산들바람 강화)은 진선풍도 칸의 수치로 보인다 — 표식은 안 단다 (사용자 2026-09-16) */
@@ -15913,6 +15956,11 @@ document.addEventListener("keydown",e=>{
 const NEW_UI=["chest","reward","questpick","questdone","item","shop","relic","rest","recruit","pickhero","clear","wavegap","forge","gear","over","runs","bag","camp","gimres"];
 function render0(){
   const app=document.getElementById("app");
+  /* 연습장 띠는 body 에 붙어 있어 화면을 갈아도 저절로 사라지지 않는다 — 여기서 걷고,
+     필요하면 drawBattle 이 다시 세운다. ⚠️ 치우는 자리를 drawBattle 안에 두면
+     연습장에서 나갈 때 그 함수가 안 불려 띠가 남는다 (2026-10-08 에 한 번 잡았다 8f61c7ac,
+     그때는 if 문 밖으로만 꺼내서 같은 화면 안에서만 풀렸다. 2026-10-09 에 여기로 옮겼다) */
+  document.getElementById("_sandbarf")?.remove();
   document.body.classList.toggle("vtitle",view==="title"||view==="saves"||view==="heropick"||view==="corepick");   /* 머리줄 없는 화면 */
   document.body.classList.toggle("vmap",view==="map");
   document.body.classList.toggle("ghand",gHandOn()); try{ gHandDraw() }catch(e){}   /* 손 커서 — 전투 밖 (2026-10-01) */   /* 지도 — 머리줄 대신 제 띠를 그린다 (2026-09-18) */
@@ -15936,7 +15984,7 @@ function render0(){
       <span class="fname">${esc(FIELDS[run.field].n)}</span>
       <span class="res rday ${dLeft<=1?"bad":dLeft<=2?"warn":""}" title="일차 — ${run.day}일차 / ${FIELDS[run.field].days}일. 오늘까지 세어 ${dLeft}일 남았습니다. 다 쓰면 그 자리에서 끝납니다.">
         ${resIcon("day")}<b>${run.day}</b><i>/${FIELDS[run.field].days}일</i></span>
-      <span class="res act" title="활동량 — 구역에 들어갈 때 씁니다. 날이 밝으면 +5 쌓입니다.">
+      <span class="res act" title="활동량 — 구역에 들어갈 때 씁니다. 날이 밝으면 기본 +6 쌓입니다.">
         ${resIcon("act")}<b>${Math.max(0,run.act)}</b></span>
       ${taintChip()}
       <span class="res" title="이 판을 붙잡고 있은 시간. 창을 덮어 둔 동안은 세지 않습니다."><b id="ptv">${playTime(run.playMs)}</b></span>
@@ -16399,6 +16447,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 9, "v": "0.7", "d": "2026-10-09", "t": "세계핵 다섯 · 반복 퀘스트 · 활동량 글 바로잡기 · 문지기 정지 3턴", "big": 0},
  {"b": 8, "v": "0.7", "d": "2026-10-09", "t": "데이터를 따로 내려받게 바꾼 뒤 시작 화면에서 나던 오류 수정", "big": 0},
  {"b": 7, "v": "0.7", "d": "2026-10-09", "t": "활동량 규칙 개편, 새 시스템 세계핵, 기술창 카드 아트", "big": 1},
  {"b": 6, "v": "0.7", "d": "2026-10-08", "t": "UI — 활동량 비용 아이콘, 보상 카드 틀, 지도 테두리", "big": 0},
@@ -17599,7 +17648,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=8;
+const BUILD_NO=9;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -17789,7 +17838,7 @@ const TXT_FIX={
  "tut:pack:d": "이곳은 처음이시니 파수꾼의 선물을 <b>모두</b> 챙길 수 있게 해 드리겠습니다.\n다음부터는 단 <b>한 개만</b> 고르실 수 있습니다.",
  "tut:hudTime:d": "지금 몇 시인지 알려 줍니다. 지도에서 한 칸을 움직일 때마다 <b>1시간</b>이 흐르고, <b>18시</b>가 지나면 밤이 됩니다.",
  "tut:hudDay:d": "이 구역에 머무를 수 있는 날입니다. 정해진 날 안에 <b>우두머리</b>를 넘지 못하면 원정에 실패합니다.",
- "tut:hudAct:d": "한 칸 옮길 때마다 <b>1</b>씩 감소합니다. 0이 되어도 움직일 수는 있지만, 시간이 <b>두 배</b>로 빠르게 지나가는 것을 조심하세요. 날이 밝으면 다시 얻을 수 있습니다.",
+ "tut:hudAct:d": "구역에 <b>들어갈 때</b> 1 씁니다. 없으면 입장할 수 없습니다. 날이 밝으면 기본 <b>+6</b> 쌓이고 최대치 없이 계속 쌓입니다.",
  "tut:hudTaint:d": "균열의 기운입니다. 움직일 때마다 증가하고, <b>100</b>이 되면 모두가 오염되어 원정에 실패합니다.\n전투에서 이기면 20 감소하고, 주둔지에서 <b>숙면</b>하면 오염도를 크게 감소시킬 수 있습니다.",
  "tut:hudGold:d": "상점에서 물건을 사고팔 때 사용됩니다. ",
  "tut:hudStone:d": "<b>제련소</b>에서 얻은 장신구 둘을 하나로 합칠 때 씁니다. 장신구는 영웅의 능력치를 높여줄 수 있는 중요한 요소이니, 참고하세요.",
@@ -17821,7 +17870,7 @@ const TXT_FIX={
  "tut:mapHover:t": "적을 미리 봅니다",
  "tut:mapHover:d": "전투, 정예 칸에 커서를 올리면 <b>어떤 무리인지</b>, 무엇을 주는지, 적이 얼마나 강해졌는지를 볼 수 있습니다. 들어가기 전에 꼭 확인하세요.",
  "tut:mapNight:d": "18시가 지나면 밤입니다. 밤에는 <b>빈 칸</b>을 지날 때도 강한 적이 튀어나옵니다.\n상점, 쉼터, 미지의 구역, 전투 칸에서는 습격당하지 않습니다. 밤이 깊을수록 적을 만날 확률이 증가합니다. 혹시 망토가 없다면, 밤을 조심하세요.",
- "tut:mapRoute:d": "멀리 있는 칸을 누르면 <b>경로</b>를 먼저 보여 줍니다. 오른쪽 판에서 활동량, 시간, 오염도를 확인하고 <b>[이동]</b>을 누르거나 그 칸을 <b>두 번</b> 누르면 한 번에 갈 수 있습니다.\n\n가장 가까운 <b>미지의 구역</b>으로 가 보세요.",
+ "tut:mapRoute:d": "멀리 있는 칸을 누르면 <b>경로</b>를 먼저 보여 줍니다. 옆에 뜨는 판에서 시간과 오염도를 확인하고 <b>[이동]</b>을 누르거나 그 칸을 <b>두 번</b> 누르면 한 번에 갈 수 있습니다.\n\n가장 가까운 <b>미지의 구역</b>으로 가 보세요.",
  "tut:end:t": "이제 준비가 끝났습니다.",
  "tut:end:d": "남은 것은 직접 해보며 익히는 편이 빠릅니다.\n헷갈리는 키워드는 설명에서 <b>점선 밑줄</b>이 그어진 곳에 커서를 올리면 의미를 알 수 있습니다.\n<b>가방</b>(B 키)를 눌러 보유한 전리품을, <b>도감</b>에서 모든 장신구와 카드를 볼 수 있습니다.\n\n이대로 계속 하시겠습니까?",
  "bark:술집 난동꾼:in": "한 잔 더 하고 시작하자!\n누가 내 술 엎었어?\n여긴 내 자리야!",
@@ -18465,7 +18514,7 @@ const TUT_TXT={
    +"그 자리에서 끝납니다."},
  hudAct:{t:"활동량",
   d:"구역에 <b>들어갈 때</b> 1 씁니다. 없으면 입장할 수 없습니다. "
-   +"날이 밝으면 <b>+5</b> 쌓이고 최대치 없이 계속 쌓입니다."},
+   +"날이 밝으면 기본 <b>+6</b> 쌓이고 최대치 없이 계속 쌓입니다."},
  hudTaint:{t:"오염도",
   d:"균열의 기운입니다. 움직일 때마다 오르고 <b>100</b>이 되면 그 자리에서 끝납니다.\n"
    +"전투에 이기면 20 내려가고, 주둔지에서 <b>숙면</b>하면 크게 씻어냅니다."},
@@ -18568,7 +18617,7 @@ const TUT_TXT={
   d:"18시가 지나면 밤입니다. 밤에는 <b>빈 칸</b>을 지날 때도 강한 적이 튀어나옵니다.\n"
    +"상점, 쉼터, 미지의 구역, 전투 칸에서는 습격당하지 않습니다. 밤이 깊을수록 확률이 오릅니다."},
  mapRoute:{t:"먼 칸으로 한 번에",
-  d:"멀리 있는 칸을 누르면 <b>경로</b>를 먼저 보여 줍니다. 오른쪽 판에서 활동량, 시간, 오염도를 확인하고 "
+  d:"멀리 있는 칸을 누르면 <b>경로</b>를 먼저 보여 줍니다. 옆에 뜨는 판에서 시간과 오염도를 확인하고 "
    +"<b>[이동]</b>을 누르거나 그 칸을 <b>두 번</b> 누르면 한 번에 갑니다. 격자 밖을 누르면 취소됩니다.\n\n"
    +"가장 가까운 <b>미지의 구역</b>으로 가 보세요."},
 
@@ -19241,7 +19290,7 @@ function drawMap(app){
   /* 오른쪽 — 자원 넷 · 살펴보기 판 · 퀘스트 */
   { const rs=app.querySelector(".mtop .mres");
     { const t=el(`<span>${taintChip("mchip")}</span>`); [...t.children].forEach(x=>rs.appendChild(x)) }
-    rs.appendChild(el(`<span class="res act mchip" title="활동량 — 구역에 들어갈 때 씁니다. 날이 밝으면 +5 쌓입니다.">${resIcon("act")}<b>${Math.max(0,run.act)}</b></span>`));
+    rs.appendChild(el(`<span class="res act mchip" title="활동량 — 구역에 들어갈 때 씁니다. 날이 밝으면 기본 +6 쌓입니다.">${resIcon("act")}<b>${Math.max(0,run.act)}</b></span>`));
     { const cc=coreChip("mcore"); if(cc) rs.appendChild(cc) }
     rs.appendChild(el(`<span class="res gold mchip" title="금화 — 상점에서 물건을 사고 팔 때 씁니다.">${resIcon("gold")}<b>${run.gold}</b></span>`));
     rs.appendChild(el(`<span class="res stone mchip" title="제련석 — 주둔지 제련소에서 장신구 두 개를 합칠 때 씁니다.">${resIcon("stone")}<b>${run.stone||0}</b></span>`)); }
@@ -21879,9 +21928,9 @@ const EVENTS=[
  {n:"채석장",art:"ore", face:"작은 죄수",
   when:()=>run.field===0,
   t:"감옥의 채석장에 도착합니다.\n뭔지 모를 바닥에서 솟아난 보랏빛 기둥이 보입니다.\n저게 뭘까요?",
-  o:[{t:"기둥 채석",d:"기둥을 채석합니다. 활동량을 2 잃고 균열석 파편을 얻습니다.",
+  o:[{t:"기둥 채석",d:"기둥을 채석합니다. 활동량을 1 잃고 균열석 파편을 얻습니다.",
       f:()=>{ run.act=Math.max(0,run.act-1); run.after=[{item:itemDef("균열석 파편")}]; return "곡괭이가 보랏빛 기둥을 파고듭니다. 활동량을 1 잃고 균열석 파편을 얻었습니다." }},
-     {t:"금덩어리 채석",d:"금덩어리를 채석합니다. 활동량을 2 잃고 금덩어리 파편을 얻습니다.",
+     {t:"금덩어리 채석",d:"금덩어리를 채석합니다. 활동량을 1 잃고 금덩어리 파편을 얻습니다.",
       f:()=>{ run.act=Math.max(0,run.act-1); run.after=[{item:itemDef("금덩어리 파편")}]; return "돌무더기에서 금빛 조각을 캐냅니다. 활동량을 1 잃고 금덩어리 파편을 얻었습니다." }}]},
  {n:"거렁뱅이의 부탁",art:"card_bread", face:"작은 죄수",
   t:"어디선가 시큼한 냄새가 납니다. 돌아보니 넝마를 걸친 자가 손을 내밀고 있습니다.",
@@ -22733,7 +22782,7 @@ const QUESTS={
   /* 대원 조합 「고철의 무덤」 2 — 켜지면 저절로 걸리고, 깨면 다시 걸린다 (노트 2026-10-04) */
   /* 도미니코 상급 보상 (노트 2026-10-06) — 깨면 이번 게임 동안 참회의 기류가 두 번 더 */
   "절실한 신앙":{kind:"penance",need:20,who:"hero",
-    d:"참회의 기류를 {n}번 사용",rd:"이번 게임에서 참회의 기류를 사용한 후, 추가로 2번 더 사용됩니다.",reward:{faith:2}},
+    d:"참회의 기류를 {n}번 사용",rd:"이번 원정에서 참회의 기류를 사용한 후, 추가로 2번 더 사용됩니다.",reward:{faith:2}},
   "고철 수거":{kind:"scrapKill",need:12,who:"all",repeat:1,syn:"고철의 무덤",
     d:"고철의 무덤 대원이 적 {n}명 처치",rd:"무작위 보상 (구역이 깊을수록 더 좋다)",reward:{scrap:1}}
 };
@@ -26338,7 +26387,6 @@ function drawBattle(app){
     fs.appendChild(d);
   }
 
-  document.getElementById("_sandbarf")?.remove();
   if(run.sandbox){
     const h0=sandHero();
     const sb=el(`<div class="sandbar">
