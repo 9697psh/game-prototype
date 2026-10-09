@@ -16580,6 +16580,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 12, "v": "0.7", "d": "2026-10-09", "t": "대원 고르는 화면 단추를 세계핵 선택으로", "big": 0},
  {"b": 11, "v": "0.7", "d": "2026-10-09", "t": "전투 BGM 열하나, 세계핵 화면 소리와 배경, 반복 퀘스트 보상 바로 받기, 보상 소리 고침", "big": 0},
  {"b": 10, "v": "0.7", "d": "2026-10-09", "t": "세계핵 등장 연출, 전투 BGM 열하나, 피신 움직임, 번지는 기술 표시, 화면 손질", "big": 1},
  {"b": 9, "v": "0.7", "d": "2026-10-09", "t": "세계핵 다섯 · 반복 퀘스트 · 활동량 글 바로잡기 · 문지기 정지 3턴", "big": 0},
@@ -17783,7 +17784,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=11;
+const BUILD_NO=12;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -19176,7 +19177,9 @@ function drawStart(app){
   if(!TUT.on){
     /* 원정 시작 — 대원과 선물을 다 골랐을 때만 (두 번 누르기 말고도, 사용자 2026-09-18) */
     const ready=!!pendingHero&&PICK_PACK!=null&&!!startPacks[PICK_PACK];
-    const go=el(`<button class="tlink pkgo ${ready?"go":"dim"}">원정 시작</button>`);
+    /* 다음이 세계핵 고르는 화면이면 글도 그렇게 — goCorePick 과 같은 조건 (사용자 2026-10-09) */
+    const toCore=!TUT.on&&(typeof coresOwned==="function")&&coresOwned().length>0;
+    const go=el(`<button class="tlink pkgo ${ready?"go":"dim"}">${toCore?"세계핵 선택":"원정 시작"}</button>`);
     go.onclick=()=>{ if(!pendingHero){ toast("먼저 제단 위의 대원을 눌러 고르세요."); return } if(!ready){ toast("파수꾼의 선물을 하나 고르세요."); return } goCorePick(startPacks[PICK_PACK]) };
     g.querySelector(".pkfoot").appendChild(go);
     const rr=el(`<button class="tlink small">새로 시작</button>`);
