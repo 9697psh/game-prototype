@@ -79,6 +79,8 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .slot.hint{border-color:#e0c85a;box-shadow:0 0 0 1px #e0c85a inset,0 0 16px -2px rgba(224,200,90,.75);
   animation:slotHint .9s ease-in-out infinite alternate}
 .slot.hint .no{color:#e0c85a;border-color:#e0c85a}
+/* 번지는 칸 — 겨눈 칸보다 옅게. 같은 빛이면 어디를 겨누는지 헷갈린다 (사용자 2026-10-09) */
+.slot.hint.hintsp{border-color:rgba(224,200,90,.42);box-shadow:0 0 0 1px rgba(224,200,90,.38) inset;animation:none}
 @keyframes slotHint{from{box-shadow:0 0 0 1px #e0c85a inset,0 0 10px -3px rgba(224,200,90,.5)}
   to{box-shadow:0 0 0 2px #e0c85a inset,0 0 20px -2px rgba(224,200,90,.9)}}
 @media (prefers-reduced-motion:reduce){ .slot.hint{animation:none} }
@@ -182,7 +184,8 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
 .intent.t-def b{color:var(--def);font-size:15px;font-weight:800}
 .intent.t-heal b{color:var(--hp);font-size:15px;font-weight:800}
 .intent.t-deb b{color:currentColor;font-size:15px;font-weight:800}
-.intent .tgt img.pxs.face{height:16px;width:auto;vertical-align:middle}
+.intent .tgt img.pxs{height:18px;width:auto;vertical-align:middle}   /* 얼굴 그림이 없는 것(소환물 등)은 figure() 의 전신이 온다 — 세로로 길어 얼굴보다 조금 크게 */
+.intent .tgt img.pxs.face{height:16px}
 .pop.wkn{color:#c9a8ef;text-shadow:0 0 9px rgba(143,95,208,.9),0 1px 0 rgba(0,0,0,.8);font-weight:800}
 .art{height:auto;display:flex;align-items:flex-end;justify-content:center;position:relative}
 .art svg{filter:drop-shadow(0 2px 0 rgba(0,0,0,.55))}
@@ -2324,12 +2327,12 @@ header{align-items:center}
 /* ── 양피지 지도 (사용자 2026-09-14) ──
    무대(.pstage)는 정사각. 256px 그림을 3배(768)까지 키우고, 좁으면 기둥 폭을 따른다.
    격자는 양피지의 크림색 안쪽(256 기준 24~232)에 맞춰 9.375% 안쪽 · 81.25% 크기 — 그림이 커져도 비율로 따라간다 */
-.pstage{--pline:transparent;position:relative;width:min(768px,100%);aspect-ratio:1;margin:8px auto 0;cursor:none;border-radius:6px;overflow:hidden;
+.pstage{--pline:transparent;position:relative;width:min(768px,100%);aspect-ratio:1;margin:8px auto 0;cursor:none;border-radius:6px;overflow:visible;
   background:#0f0c0a var(--floor,none) center/var(--floorsz,50%) repeat;image-rendering:pixelated}
 .pstage>img{position:absolute;image-rendering:pixelated;pointer-events:none;user-select:none}
 /* 테두리 — 격자 위, 손·말풍선 아래. 칸은 그대로 눌린다 (사용자 2026-09-29) */
 .pstage{border-radius:0}   /* 틀이 모서리까지 곧게 닿게 (2026-09-29) */
-.pstage::after{content:"";position:absolute;inset:0;box-sizing:border-box;border-style:solid;border-color:transparent;border-width:36px 48px 60px 48px;border-image-source:var(--frame,none);border-image-slice:36 48 60 48;border-image-width:auto;border-image-repeat:round;image-rendering:pixelated;pointer-events:none;z-index:7}
+.pstage::after{content:"";position:absolute;inset:0;box-sizing:border-box;border-style:solid;border-color:transparent;border-width:36px 48px 60px 48px;border-image-source:var(--frame,none);border-image-outset:3px 19px 35px 20px;border-image-slice:36 48 60 48;border-image-width:auto;border-image-repeat:round;image-rendering:pixelated;pointer-events:none;z-index:7}
 .pstage.unfolding::after{display:none}
 .pstage .pmapimg{inset:0;width:100%;height:100%}
 .pstage .unf{inset:0;width:100%;height:100%;display:none}
@@ -3222,10 +3225,29 @@ body.vtitle header #hBtns button:hover{border-color:#f4d67c;color:#f4d67c}
 .cpi{width:92px;height:92px;margin:0 auto 16px}
 .cpi img{width:100%;height:100%;image-rendering:pixelated}
 .cpn{font-family:var(--serif);font-size:18px;color:var(--brass);margin-bottom:12px}
-.cpd{font-size:12.5px;line-height:1.7;color:#c7b696;word-break:keep-all}
+.cpd{font-size:12.5px;line-height:1.7;color:#c7b696;word-break:keep-all;white-space:pre-line}
+/* 구역 낱말 빛깔 (사용자 2026-10-09) — 전투 붉은 · 구역 하늘 · 전용 구역 주황 · 퀘스트 노랑.
+   크기와 글꼴은 둘레 글을 따른다 (<b> 를 쓰면 .rw b 에 걸려 커진다) */
+.zk{font-weight:700!important;font-size:inherit!important;font-family:inherit!important}
+.zk-q{color:#f2d06b!important;text-shadow:0 0 6px rgba(240,200,110,.45)}
+.zk-battle{color:#e0705a!important}
+.zk-zone{color:#6fc8f0!important}
+.zk-gim{color:#e8a85a!important}
+/* 세계핵의 반복 퀘스트 — 되풀이라는 것을 한 눈에 (사용자 2026-10-09) */
+.qrep{font-style:normal;font-size:10px;color:#9a8a6a;margin-left:4px}
+.qrepb{color:#f2d06b}
 /* 떠오르는 등장 — 애니메이션은 바깥(.cpcw)이 맡는다. 안쪽(.cpc)은 커서와 고름에 쓴다 */
-.cpcw.intro{animation:cpRise .66s cubic-bezier(.16,.84,.3,1.01) both}
-.cpscr.intro .pkhd{animation:cpTitle 1.05s ease-out both}
+/* 등장 — 시안 A「어둠에서 깨어남」 (사용자가 넷 중에 고름, 2026-10-09).
+   화면이 캄캄했다가 천천히 밝아오고 카드가 0.45초 간격으로 하나씩. 다 서기까지 2.3초 */
+.cpscr.intro{animation:cpDark 2.3s ease-out both}
+.cpcw.intro{animation:cpRise .85s cubic-bezier(.17,.84,.3,1) both}
+.cpscr.intro .pkhd{animation:cpTitle 1.5s ease-out both}
+/* 넘어가기 — 카드 밑에 따로. 카드와 붙으면 잘못 눌러 못 고른 채 넘어간다 (사용자 2026-10-09).
+   카드가 다 선 뒤에 나타난다 — 처음부터 떠 있으면 떠오르는 결이 깨진다 */
+.cpskip{position:fixed;left:50%;top:calc(52% + 216px);transform:translateX(-50%);z-index:3}
+.cpscr.intro .cpskip{animation:cpSkipIn .55s ease-out 2.05s both}
+@keyframes cpSkipIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}
+  to{opacity:1;transform:translateX(-50%)}}
 .cpc::before{content:"";position:absolute;left:50%;top:44%;width:360px;height:360px;
   border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:-1;
   background:radial-gradient(circle,rgba(240,200,110,.26),rgba(240,200,110,0) 66%);
@@ -3234,8 +3256,9 @@ body.vtitle header #hBtns button:hover{border-color:#f4d67c;color:#f4d67c}
 .cpc.sel::after{content:"";position:absolute;left:50%;top:50%;width:300px;height:300px;
   border-radius:50%;border:3px solid rgba(240,212,136,.9);pointer-events:none;
   animation:cpRing .72s ease-out forwards}
-@keyframes cpRise{from{opacity:0;transform:translateY(52px) scale(.82)} to{opacity:1;transform:none}}
-@keyframes cpTitle{from{opacity:0;letter-spacing:1em;filter:blur(7px)} to{opacity:1;letter-spacing:.2em;filter:none}}
+@keyframes cpRise{from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:none}}
+@keyframes cpTitle{from{opacity:0;letter-spacing:1.4em} to{opacity:1;letter-spacing:.2em}}
+@keyframes cpDark{0%{filter:brightness(0)} 30%{filter:brightness(.12)} 100%{filter:brightness(1)}}
 @keyframes cpHalo{0%,100%{opacity:.45;transform:translate(-50%,-50%) scale(1)} 50%{opacity:.9;transform:translate(-50%,-50%) scale(1.12)}}
 @keyframes cpRing{from{opacity:.95;transform:translate(-50%,-50%) scale(.34)} to{opacity:0;transform:translate(-50%,-50%) scale(1.95)}}
 /* 고른 세계핵이 자원 줄의 제자리로 날아간다 (사용자 2026-10-09) */
@@ -3521,6 +3544,7 @@ body.vbattle .bagbtn{bottom:auto;top:9px;right:auto;left:16px;padding:6px 10px;g
 .bfstage .slot.empty{opacity:.001;border:0} .bfstage .slot.empty.pick,.bfstage .slot.empty.drop,.bfstage .slot.empty.hint{opacity:1;background:radial-gradient(ellipse at 50% 100%,rgba(244,214,124,.35),transparent 70%)}
 .bfstage .slot.pick,.bfstage .slot.hint,.bfstage .slot.drop{box-shadow:none;border:0;animation:none}   /* 상자 대신 발밑 빛 */
 .bfstage .slot.pick .art::after,.bfstage .slot.hint .art::after{background:radial-gradient(ellipse at center,rgba(244,214,124,.55),rgba(244,214,124,0) 70%);filter:none;width:80px;height:16px;z-index:0}
+.bfstage .slot.hint.hintsp .art::after{background:radial-gradient(ellipse at center,rgba(244,214,124,.26),rgba(244,214,124,0) 72%);width:52px;height:11px}
 .bfstage .slot.inrng .art::after{background:radial-gradient(ellipse at center,rgba(224,112,90,.55),rgba(224,112,90,0) 70%);filter:none;width:80px;height:16px}
 .bfstage .slot.empty.inrng{opacity:1;background:radial-gradient(ellipse at 50% 100%,rgba(224,112,90,.4),transparent 70%)}   /* 빈 칸도 적 공격 범위 안이면 붉게 (사용자 2026-09-20) */
 .bfstage .slot .reach.frng{color:#ffb4a8;top:100%;margin-top:96px;font-size:12px}
@@ -5100,6 +5124,30 @@ function sumBold(h){
     SUMN_RE=L.length?new RegExp(L.sort((a,b)=>b.length-a.length).map(n=>n.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("|"),"g"):false }
   if(!SUMN_RE||!h) return h;
   return String(h).split(/(<[^>]*>)/).map((p,i)=>i%2?p:p.replace(SUMN_RE,m=>`<b class="sumn">${m}</b>`)).join("") }
+/* 구역 낱말은 빛깔로, 퀘스트는 노랗게 (사용자 2026-10-09) — 세계핵과 보상 설명에서만 쓴다.
+   ⚠️ 긴 것을 앞에 둔다 — 「우두머리 전투」가 「전투」로 쪼개지지 않게. 태그 밖의 글자만 본다 */
+const ZONE_KW=[
+  /* 퀘스트 — 노랑 */        ["반복 퀘스트","q"],["퀘스트","q"],
+  /* 전투 — 붉은 */          ["우두머리 전투","battle"],["정예 전투","battle"],["일반 전투","battle"],
+  /* 구역 — 연두 */          ["미지의 구역","zone"],["주둔지","zone"],["쉼터","zone"],["상점","zone"],
+                             ["제련소","zone"],["훈련장","zone"],["치료소","zone"],
+  /* 전용 구역 — 주황 */     ["거대한 기계의 잔해","gim"],["고독의 동굴","gim"],["균열 군체","gim"],
+                             ["오염된 뿌리","gim"],["덩굴 수풀","gim"],["반딧불 둥지","gim"],
+                             ["기력의 샘","gim"],["간수 초소","gim"],["감옥의 우물","gim"],
+                             ["마른숲 상점","gim"],["죄수 마차","gim"],["안개 지대","gim"],
+                             ["고문실","gim"],["사형장","gim"],["울타리","gim"],["첨탑","gim"],["땅굴","gim"]];
+let ZONE_RE=null, ZONE_CLS=null;
+function zoneBold(h){
+  if(ZONE_RE===null){ ZONE_CLS={}; ZONE_KW.forEach(([n,c])=>{ ZONE_CLS[n]=c });
+    /* ⚠️ 긴 것부터 — 「우두머리 전투」가 「전투」로, 「마른숲 상점」이 「상점」으로 쪼개지지 않게 */
+    const L=ZONE_KW.map(([n])=>n).sort((a,b)=>b.length-a.length);
+    ZONE_RE=new RegExp(L.map(n=>n.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("|"),"g") }
+  if(!h) return h;
+  /* ⚠️ <b> 로 싸면 .rw b 의 글자 크기·글꼴에 걸려 커진다 — <span> 으로 굵기만 준다 */
+  return String(h).split(/(<[^>]*>)/).map((p,i)=>i%2?p:
+    p.replace(ZONE_RE,m=>`<span class="zk zk-${ZONE_CLS[m]}">${m}</span>`)).join("");
+}
+const richZone=t=>zoneBold(rich(t));
 /* 대사 — 말풍선 · 상점 주인 · 사건의 말 · 영입 인사. 그냥 말이라 키워드를 낱말로 둔다 (사용자 2026-10-01).
    키워드마다 앞에 / 를 붙여 rich 에 넘긴다 — '/이동' 은 강조 없이 '이동' 이 된다. 굵게(_ _)·기울임(* *)은 산다 */
 const talk=t=>rich(String(t==null?"":t).replace(kwRegex(),m=>/^[\/_*]/.test(m)?m:"/"+m));
@@ -5867,7 +5915,7 @@ const MAP_FRAME="menu-frame-inspector-768x1024.png";
 /* 한 장짜리 구도(네 귀퉁이에 뿌리)인 바닥은 반복하지 않고 무대 전체로 키운다 (사용자 2026-10-01). 돌바닥처럼 이어지는 것은 그대로 반복 */
 const MAP_FLOOR_WHOLE={"바닥-정령숲.png":1};
 const stageSty=floor=>{ const a=[]; if(floor){ a.push(`--floor:url(${mapPng(floor)})`); if(MAP_FLOOR_WHOLE[floor]) a.push("--floorsz:100% 100%") }
-  if(MAP_FRAME) a.push(`--frame:url(${mapPng(MAP_FRAME)})`);
+  if(MAP_FRAME) a.push(`--frame:url(ui/${MAP_FRAME})`);   /* 이 액자는 ui/ 에 있다 (map/ 로 찾다 404 가 났다) */
   return a.length?` style="${a.join(";")}"`:"" };
 /* 양피지 위 아이콘 — 잉크 판 v7 (art/아이콘/map-ink-v7, 사용자 2026-09-14). 주둔지는 v7 에 없어 금빛 그대로. v2(검은 잉크)는 ink_* 로 남아 있다 */
 /* 지도 아이콘 — 64px 잉크 판 map-pixel-ink-v11 (사용자 2026-09-15). 기믹 넷(첨탑·울타리·고문실·사형장)도 같은 판 */
@@ -5905,7 +5953,21 @@ const BGM_SRC={
   ev_dark:"bgm/ev_dark.mp3",  /* 미지의 구역 — 제단 · 균열 */
   ev_calm:"bgm/ev_calm.mp3",  /* 미지의 구역 — 정화 · 안식 */
   ev_folk:"bgm/ev_folk.mp3",  /* 미지의 구역 — 노점 · 도박 · 사람 */
-  reward :"bgm/reward.mp3"    /* 보상 · 레벨업 (한 번만 울리는 짧은 곡) */
+  reward :"bgm/reward.mp3",   /* 보상 · 레벨업 (한 번만 울리는 짧은 곡) */
+  corepick:"bgm/corepick.mp3", /* 세계핵 고르는 화면 (사용자 2026-10-09) */
+  /* ── 구역 전투 (사용자 2026-10-09) ── */
+  forest1:"bgm/forest1.mp3",  /* 정령숲 — 오염된 숲 */
+  forest2:"bgm/forest2.mp3",  /* 정령숲 — 추격 */
+  forest3:"bgm/forest3.mp3",  /* 정령숲 — 기계와 잔해 */
+  tower1 :"bgm/tower1.mp3",   /* 마력의 탑 — 마력과 탑 */
+  tower2 :"bgm/tower2.mp3",   /* 마력의 탑 — 서고 */
+  tower3 :"bgm/tower3.mp3",   /* 마력의 탑 — 시계와 시간 */
+  /* ── 우두머리 · 적 전용 ── */
+  boss_warden  :"bgm/boss_warden.mp3",    /* 간수장 */
+  boss_colossus:"bgm/boss_colossus.mp3",  /* 콜로서스 */
+  boss_frost   :"bgm/boss_frost.mp3",     /* 서리 군주 — 그 적이 생기면 건다 (아직 안 걸림) */
+  boss_frost2  :"bgm/boss_frost2.mp3",    /* 서리 군주 초월체 각성 — 위와 같다 */
+  foe_puppeteer:"bgm/foe_puppeteer.mp3"   /* 미치광이 인형사 전용 */
 };
 /* 곡마다 녹음된 크기가 다르다. 지도 곡(실효값 -18dB)을 기준 삼아 깎는다 —
    깎지 않으면 미지의 구역에 들어서는 순간 소리가 3dB 튄다.
@@ -5915,22 +5977,53 @@ const BGM_GAIN={
   title:0.65,     /* The Weeping Bell — 실효 -14.1dB, main(-17.8dB) 에 맞춤 */
   ev_dark:0.66,   /* -14.4dB 로 녹음되었다 */
   ev_folk:0.66,   /* -14.2dB */
+  corepick:0.66,  /* -14.5dB — ev_dark(-14.6dB) 와 같은 자리라 같은 값 (2026-10-09 에 재어 넣음) */
+  /* 전투 곡 열하나 — 2026-10-09 에 ffmpeg 으로 재어 넣었다 (기준 main -19.3dB) */
+  forest1:0.56, forest2:0.59, forest3:0.60,
+  tower1:0.65,  tower2:0.64,  tower3:0.63,
+  boss_warden:0.62, boss_colossus:0.59, boss_frost:0.65, boss_frost2:0.67,
+  foe_puppeteer:0.62,
   ev_calm:0.50    /* -14.3dB — 정화의 샘은 나머지보다 한 단 더 낮게 둔다.
                      오염이 턱까지 찼을 때 만나는 자리라 조용해지는 것 자체가 효과다 */
 };
 const bgmGain=k=>(k&&BGM_GAIN[k])||1;
 /* 전투마다 이 가운데 하나를 고른다. 곡을 더 받으면 여기에 이름만 더하면 된다 */
 const BATTLE_BGM=["battle","battle2","battle3","battle4"];
+/* 구역마다 도는 전투 곡 (사용자 2026-10-09). ⚠️ 구역이 늘면 줄을 하나 더한다 */
+const FIELD_BGM=[
+  ["battle","battle2","battle3","battle4"],   /* 핏빛 감옥 — 원래 넷이 그대로 */
+  ["forest1","forest2","forest3"],            /* 정령숲 — 오염된 숲 · 추격 · 기계와 잔해 */
+  ["tower1","tower2","tower3"]                /* 마력의 탑 — 마력과 탑 · 서고 · 시계와 시간 */
+];
+/* 우두머리 곡. 표에 없는 구역은 boss1 — 서리 군주는 그 적이 생기면 여기에 한 줄 */
+const BOSS_BGM={"간수장":"boss_warden","콜로서스":"boss_colossus"};
+/* 적 전용 곡 — 그 적이 전장에 서면 구역 곡을 밀어낸다. ⚠️ 늘릴 때는 이 표에 한 줄만 */
+const FOE_BGM={"미치광이 인형사":"foe_puppeteer"};
+/* ⚠️ 전투마다 한 번만 정한다 — 그 적이 죽거나 변신해도(인형사는 「다음 막」에 바뀐다) 곡이 안 끊긴다.
+   둘 이상 서 있으면 앞 칸 쪽 하나 */
+function foeBgm(){
+  if(typeof B==="undefined"||!B) return null;
+  if(B._foeBgm!==undefined) return B._foeBgm;
+  let k=null;
+  (B.foes||[]).some(f=>{ const x=FOE_BGM[f.name]; if(x){ k=x; return true } return false });
+  return (B._foeBgm=k);
+}
+function bossBgm(){
+  const n=(typeof BOSSES!=="undefined"&&BOSSES[(typeof run!=="undefined"&&run&&run.field)||0])||"";
+  return BOSS_BGM[n]||"boss1";
+}
 /* 곡은 라운드가 아니라 전투에 딸린다 — 라운드가 넘어가도 그대로 이어진다.
    방금 쓴 곡은 다음 전투에서 피해 같은 곡이 잇달아 나오지 않게 한다. */
 function pickBattleBgm(){
-  const pool=BATTLE_BGM.filter(k=>k!==(run&&run.lastBattleBgm));
-  return rnd(pool.length?pool:BATTLE_BGM);
+  const pool0=FIELD_BGM[(run&&run.field)||0]||BATTLE_BGM;
+  const pool=pool0.filter(k=>k!==(run&&run.lastBattleBgm));
+  return rnd(pool.length?pool:pool0);
 }
 /* 지금 화면에 맞는 곡. 없으면 null — 그러면 소리를 끈다 */
 function sceneBgm(){
   if(view==="battle"||view==="wavegap"){
-    if(B&&B.kind==="boss") return "boss1";
+    { const fb=foeBgm(); if(fb) return fb }   /* 적 전용이 가장 먼저 — 구역 곡을 밀어낸다 */
+    if(B&&B.kind==="boss") return bossBgm();
     if(B&&B.kind==="ambush") return "ambush";
     if(run&&run.dun&&run.dun.trial) return "title";   /* 시련의 문 — 메인 화면 곡 (사용자 2026-10-06) */
     return (run&&run.dun&&run.dun.bgm)||"battle";
@@ -5940,7 +6033,8 @@ function sceneBgm(){
   /* 미지의 구역 — 이벤트가 스스로 곡을 고른다. 결이 안 잡히면 지도 곡 그대로 */
   if(view==="relic") return (run&&run.ev&&evBgm(run.ev))||(run&&run.night?"night":"main");
   /* 시작 화면 곡 — 시작·이어하기, 그리고 시작 화면에서 들어가는 훈련장·원정 기록·도감·문구 수정 (사용자 2026-09-18). 판 도중에 연 도감·문구 수정은 판의 곡 그대로 */
-  if(view==="title"||view==="saves"||view==="codex"||view==="runs"||view==="heropick"||view==="corepick") return "title";
+  if(view==="corepick") return "corepick";   /* 세계핵 고르는 화면 전용 (사용자 2026-10-09) */
+  if(view==="title"||view==="saves"||view==="codex"||view==="runs"||view==="heropick") return "title";
   if((view==="text"||/dex$/.test(view))&&(!run||DEX_BACK==="title")) return "title";
   if(view==="over"||view==="clear") return "main";
   if(!run) return "main";
@@ -6075,6 +6169,23 @@ document.addEventListener("visibilitychange",()=>{
 /* ═══════ 이펙트 ═══════ */
 const FXQ=[];
 const fx=o=>{ FXQ.push(o) };
+/* 피신 — 보이지 않는 줄에 당겨지듯 뒤로 휙 (사용자가 시안 셋 중 A 를 고름, 2026-10-09).
+   자리는 이미 옮겨져 그려진 뒤라, 「왔던 자리에서 지금 자리로」 거꾸로 태운다.
+   ⚠️ transform 만 쓴다 — background-position 은 WAAPI 가 먹지 않는다 (2026-10-08) */
+function fleeFX(to,from){
+  const box=document.getElementById("foeSide"); if(!box) return;
+  const a=box.querySelector(`.slot[data-slot="${from}"]`), b=box.querySelector(`.slot[data-slot="${to}"]`);
+  const d=b&&b.querySelector(".art"); if(!a||!b||!d||!d.animate) return;
+  const dx=Math.round(a.getBoundingClientRect().x-b.getBoundingClientRect().x); if(!dx) return;
+  d.style.transformOrigin="50% 92%";
+  d.animate([
+    {transform:`translateX(${dx}px) rotate(0deg)`,          offset:0},
+    {transform:`translateX(${dx-18}px) rotate(-8deg)`,      offset:.16},
+    {transform:`translateX(${dx-22}px) rotate(-10deg)`,     offset:.28},
+    {transform:`translateX(0px) rotate(5deg)`,              offset:.88},
+    {transform:`translateX(0px) rotate(0deg)`,              offset:1}
+  ],{duration:Math.round(520*(typeof SPD!=="undefined"?SPD:1)),easing:"cubic-bezier(.35,0,.15,1)"});
+}
 /* 벌목도로 메아리 끊기 (사용자 2026-10-01) — 메아리 표식 위로 벌목도가 휘둘러 내려와 베고, 표식이 두 쪽으로 갈라져 떨어진다.
    표식은 f.echoCutAt 부터 ECHO_CUT_MS 동안 남아 있다가 다시 그릴 때 걷힌다 */
 const ECHO_CUT_MS=1500;
@@ -10449,14 +10560,15 @@ const CORE_GIFT={
   riftGift(){
     const T=RIFT_GIFT[Math.min(run.field||0,RIFT_GIFT.length-1)];
     const k=rnd(["gold","stone","grade","hp","item"]);
-    if(k==="gold"){ run.gold+=T.gold; toast(`균열 세계핵 — 금화 +${T.gold}`) }
-    else if(k==="stone"){ run.stone=(run.stone||0)+T.stone; toast(`균열 세계핵 — 제련석 +${T.stone}`) }
+    if(k==="gold"){ const v=rr(T.gold); run.gold+=v; toast(`균열 세계핵 — 금화 +${v}`) }
+    else if(k==="stone"){ const v=rr(T.stone); run.stone=(run.stone||0)+v; toast(`균열 세계핵 — 제련석 +${v}`) }
     else if(k==="grade"){ (run.after=run.after||[]).push({grade:T.grade}); toast(`균열 세계핵 — ${T.grade} 보상`) }
-    else if(k==="hp"){ run.heroes.forEach(h=>{ h.maxHp+=T.hp; if(!h.down) h.hp+=T.hp });
-      toast(`균열 세계핵 — 모든 대원 최대 체력 +${T.hp}`) }
-    else { const it=rnd(ITEMS.filter(i=>i.g===T.item));
-      if(it){ (run.after=run.after||[]).push({item:it}); toast(`균열 세계핵 — ${T.item} 장신구`) }
-      else { run.gold+=T.gold; toast(`균열 세계핵 — 금화 +${T.gold}`) } }
+    else if(k==="hp"){ const v=rr(T.hp); run.heroes.forEach(h=>{ h.maxHp+=v; if(!h.down) h.hp+=v });
+      toast(`균열 세계핵 — 모든 대원 최대 체력 +${v}`) }
+    else { const L=ITEMS.filter(i=>i.g===T.item), n=rr(T.itemN||[1,1]);
+      if(L.length){ for(let q=0;q<n;q++) (run.after=run.after||[]).push({item:rnd(L)});
+        toast(`균열 세계핵 — ${T.item} 장신구 ${n}개`) }
+      else { const v=rr(T.gold); run.gold+=v; toast(`균열 세계핵 — 금화 +${v}`) } }
   },
   /* 폭풍 세계핵 — 미지의 구역 둘마다 지도의 빈 구역에 하나 더 */
   stormZone(){
@@ -10464,10 +10576,13 @@ const CORE_GIFT={
     if(put) toast("폭풍 세계핵 — 지도에 미지의 구역이 하나 나타납니다.");
   }
 };
+/* 고정 수치가 아니라 범위다 (사용자 2026-10-09). 금화는 절반쯤 낮췄다 —
+   견준 값 : 발 마사지(상급) 20 · 정찰대 5 · 튼튼한 부츠 2~4.
+   일반 · 희귀 장신구는 귀해서 1개 고정, 파편만 1~2. 등급 보상은 하나씩 고르는 것이라 범위가 없다 */
 const RIFT_GIFT=[
- {gold:12, stone:2, grade:"하급", hp:3, item:"파편"},   /* 1 핏빛 감옥 */
- {gold:22, stone:3, grade:"중급", hp:5, item:"일반"},   /* 2 정령의 숲 */
- {gold:35, stone:4, grade:"상급", hp:8, item:"희귀"},   /* 3 마력의 탑 */
+ {gold:[5,9],   stone:[1,2], grade:"하급", hp:[2,4], item:"파편", itemN:[1,2]},   /* 1 핏빛 감옥 */
+ {gold:[10,16], stone:[2,3], grade:"중급", hp:[3,6], item:"일반", itemN:[1,1]},   /* 2 정령의 숲 */
+ {gold:[16,24], stone:[3,5], grade:"상급", hp:[5,9], item:"희귀", itemN:[1,1]},   /* 3 마력의 탑 */
 ];
 /* 지금 원정의 반복 퀘스트 — 화면이 진행도를 보일 때 (없으면 null) */
 function coreQuestNow(){ const c=coreNow(), q=c&&c.quest;
@@ -11789,7 +11904,7 @@ function rewDesc(d){
    글자 마디(text node)만 훑는다 — 이미 만든 강조 · 아이콘 · 태그 속은 건드리지 않는다.
    조합 이름은 뒤에 진영 · 직업 · 종족 · 대원 이 붙을 때만 — '투사' 가 '투사체' 에 걸리지 않게 */
 function rwDescHtml(d,h){
-  const html=rich(rewDesc(d));
+  const html=zoneBold(rich(rewDesc(d)));
   if(typeof document==="undefined") return html;
   const box=document.createElement("div"); box.innerHTML=html;
   const sks=[]; const seen={};
@@ -12172,7 +12287,7 @@ function coreDexCard(c){
     <div>
       <div class="ic-n">${esc(c.n)}</div>
       <div class="ic-g">${c.own?"획득함":"잠김"}</div>
-      <div class="ic-d">${rich(c.d||"")}</div>
+      <div class="ic-d">${richZone(c.d||"")}</div>
       ${c.own?(c.cond?`<div class="ic-rowh">${esc(c.cond)}</div>`:""):(c.condText?`<div class="ic-rowh">${esc(c.condText)}</div>`:"")}
     </div></div>`;
 }
@@ -16447,6 +16562,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 10, "v": "0.7", "d": "2026-10-09", "t": "세계핵 등장 연출, 전투 BGM 열하나, 피신 움직임, 번지는 기술 표시, 화면 손질", "big": 1},
  {"b": 9, "v": "0.7", "d": "2026-10-09", "t": "세계핵 다섯 · 반복 퀘스트 · 활동량 글 바로잡기 · 문지기 정지 3턴", "big": 0},
  {"b": 8, "v": "0.7", "d": "2026-10-09", "t": "데이터를 따로 내려받게 바꾼 뒤 시작 화면에서 나던 오류 수정", "big": 0},
  {"b": 7, "v": "0.7", "d": "2026-10-09", "t": "활동량 규칙 개편, 새 시스템 세계핵, 기술창 카드 아트", "big": 1},
@@ -17648,7 +17764,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=9;
+const BUILD_NO=10;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -18886,6 +19002,12 @@ function goCorePick(pack){
   COREPICK={offer:coreOffer(3), sel:null, pack:pack};
   view="corepick"; render();
 }
+function corePickSkip(){
+  if(!COREPICK) return;
+  const pack=COREPICK.pack; COREPICK=null;
+  newRun(pendingHero,pack);
+  corePick(null); render();   /* 세계핵 없이 — coreNow() 가 null 이 된다 */
+}
 function corePickGo(){
   if(!COREPICK||!COREPICK.sel) return;
   const id=COREPICK.sel, pack=COREPICK.pack; COREPICK=null;
@@ -18927,7 +19049,9 @@ function coreFly(from,id){
   /* 두 번 기다린다 — 첫 칸에 처음 자리가 찍혀야 옮겨 가는 것이 보인다 */
   requestAnimationFrame(()=>requestAnimationFrame(()=>put(t)));
   setTimeout(()=>{ fly.remove(); to.style.visibility=""; to.style.animation="coreLand .42s ease-out";
-    try{ SFX.play(sfxOr("영혼 얻기","level")) }catch(e){} }, 880);
+    /* 세계핵 고른 뒤 지도로 갈 때 — 받은 소리가 들어온 자리 (2026-10-09) */
+    try{ SFX.play(sfxOr("세계핵 선택 후 지도로 이동","level")) }catch(e){}
+  }, 880);
 }
 function coreChip(tid){
   const c=coreNow(); if(!c) return null;
@@ -18937,18 +19061,18 @@ function drawCorePick(app){
   if(!COREPICK){ view="heropick"; render(); return }
   /* 떠오르는 등장은 화면에 처음 들어설 때 한 번만 — 고를 때마다 다시 솟으면 어지럽다 */
   const first=!COREPICK.shown;
-  if(first){ COREPICK.shown=1; try{ SFX.play(sfxOr("메아리","unlock")) }catch(e){} }
+  if(first){ COREPICK.shown=1; try{ SFX.play(sfxOr("세계핵 등장 효과음","메아리")) }catch(e){} }
   const g=el(`<div class="pkscr cpscr ${first?"intro":""}"><div class="pkhd">세계핵 선택</div>
     <div class="cpwrap"></div><div class="pkfoot"></div></div>`);
   const wrap=g.querySelector(".cpwrap");
   COREPICK.offer.forEach((c,i)=>{
-    const card=el(`<div class="cpcw ${first?"intro":""}" style="animation-delay:${(i*0.15).toFixed(2)}s">
+    const card=el(`<div class="cpcw ${first?"intro":""}" style="animation-delay:${(0.55+i*0.45).toFixed(2)}s">
       <div class="cpc ${COREPICK.sel===c.id?"sel":""}">
       <div class="cpi">${uiPng(c.icon)}</div>
       <div class="cpn">${esc(c.n)}</div>
-      <div class="cpd">${rich(c.d||"")}</div></div></div>`);
+      <div class="cpd">${richZone(c.d||"")}</div></div></div>`);
     card.onclick=()=>{ if(COREPICK.sel===c.id) return; COREPICK.sel=c.id;
-      try{ SFX.play(sfxOr("제련 완성","level")) }catch(e){} render() };
+      try{ SFX.play(sfxOr("세계핵 선택 효과음","제련 완성")) }catch(e){} render() };
     card.ondblclick=()=>corePickGo();
     wrap.appendChild(card);
   });
@@ -18956,6 +19080,9 @@ function drawCorePick(app){
   const go=el(`<button class="tlink pkgo ${ready?"go":"dim"}">원정 시작</button>`);
   go.onclick=()=>{ if(!ready){ toast("세계핵을 하나 고르세요."); return } corePickGo() };
   g.querySelector(".pkfoot").appendChild(go);
+  const sk=el(`<button class="tlink small cpskip">넘어가기</button>`);
+  sk.onclick=()=>{ SFX.play("click"); corePickSkip() };
+  g.appendChild(sk);   /* 발치 묶음이 아니라 카드 밑에 따로 (사용자 2026-10-09) */
   const bk=el(`<button class="tlink small">뒤로</button>`);
   bk.onclick=()=>{ COREPICK=null; view="heropick"; render() };
   g.querySelector(".pkfoot").appendChild(bk);
@@ -19263,7 +19390,7 @@ function drawMap(app){
     bg.onclick=e=>{ e.stopPropagation(); run.bagBack=view; view="bag"; render() }; three.querySelector(".mbtns").appendChild(bg); }
   if(run.qNewFx&&run.qNewFx.length) setTimeout(questNewFX,550);   /* 새로 받은 퀘스트 — 아이콘이 흔들리며 빛나고 목록이 펼쳐져 들어온다 */
   if(run.qPend&&run.qPend.length) setTimeout(questPendPlay,500);   /* 밖에서 오른 퀘스트 — 지도의 퀘스트 칸에서 펼쳐 보인다 */
-  { const L=(run.quests||[]); const qb=el(`<span class="clock mquest ${L.length?"":"none"}" title="퀘스트">${uiPng("ui_quest")}${L.length?`<i class="qn">${L.length}</i>`:""}<div class="mqpop"></div></span>`);   /* 퀘스트 — 느낌표, 오른쪽 위 개수, 커서를 올리면 판 (사용자 2026-09-19) */
+  { const L=questList(); const qb=el(`<span class="clock mquest ${L.length?"":"none"}" title="퀘스트">${uiPng("ui_quest")}${L.length?`<i class="qn">${L.length}</i>`:""}<div class="mqpop"></div></span>`);   /* 퀘스트 — 느낌표, 오른쪽 위 개수, 커서를 올리면 판 (사용자 2026-09-19) */
     const pop=qb.querySelector(".mqpop"), qp=questPanel();
     if(qp) pop.appendChild(qp); else pop.appendChild(el(`<div class="qpanel"><div class="qh">${uiPng("ui_quest")}퀘스트 목록</div><div class="hint" style="margin-top:6px">진행 중인 퀘스트가 없습니다.</div></div>`));
     qb.onclick=e=>e.stopPropagation(); three.querySelector(".mbtns").appendChild(qb); }
@@ -19820,10 +19947,7 @@ function enterCell0(r,c){
     else if(cell.t==="rest"){ view="rest";
       if(!again) coreTally("rest",1);   /* 세계핵 — 쉼터 방문 (주둔지는 안 센다) */
       setTimeout(()=>stepBanner("쉼 터","잠깐 몸을 누입니다"),40);
-      if(!again&&tagSum("campfire")){ run.campfire=tagSum("campfire"); toast(`모닥불 이야기 — 다음 전투에서 대원마다 에너지 보호막 ${run.campfire}`) }
-      const v=best("restHeal");
-      if(v){ run.heroes.forEach(h=>{ if(!h.down) healUp(h,v) });
-        toast(`반가운 휴식 — 대원들이 체력을 ${v} 회복했습니다.`) }
+      restPerks(again);   /* 모닥불 이야기 · 반가운 휴식 — 주둔지 쉼터와 같은 자리에서 (사용자 2026-10-09) */
     }
     else if(cell.t==="forge"){ run.forgePick=[]; run.forgeMade=0; view="forge"; run.smithMood=null; smithVoice("enter");
       setTimeout(()=>stepBanner("제 련 소","장신구 두 개를 합칩니다"),40);
@@ -20340,8 +20464,11 @@ function drawCamp(app){
   const acts=[
    campAct("revive","치료소","쓰러진 대원을 절반의 체력으로 일으킵니다.",downed>0,
      ()=>{ restRecord(()=>run.heroes.forEach(h=>{ if(h.down){ h.down=0; h.hp=Math.max(1,Math.round(h.maxHp*0.5)) } }),"revive"); SFX.play("heal") }),   /* 회복 결과 화면 (사용자 2026-10-04) */
-   campAct("heal","쉼터",coreFx("noRest")?"잔혹한 세계핵 — 쉼터에서 휴식할 수 없습니다.":`다친 대원이 최대 체력의 ${restPct(40)}%를 회복합니다.${restUpV()?` (편안한 휴식 +${restUpV()}%)`:""}`,hurt>0&&!coreFx("noRest"),
-     ()=>{ restHeal(h=>Math.round(h.maxHp*restPct(40)/100),"camp"); SFX.play("heal") }),   /* 회복 결과 화면 (휴식소와 같은 것, 사용자 2026-10-04) */
+   /* 다친 대원이 없어도 들어간다 (사용자 2026-10-09) — 쉼터는 회복만 하는 자리가 아니다. 지도의 휴식소와 결이 같다 */
+   campAct("heal","쉼터",coreFx("noRest")?"잔혹한 세계핵 — 쉼터에서 휴식할 수 없습니다."
+     :hurt>0?`다친 대원이 최대 체력의 ${restPct(40)}%를 회복합니다.${restUpV()?` (편안한 휴식 +${restUpV()}%)`:""}`
+     :`모두 멀쩡합니다. 잠시 숨을 돌립니다.${restPerkNote()}`,!coreFx("noRest"),
+     ()=>{ restPerks(false); restHeal(h=>Math.round(h.maxHp*restPct(40)/100),"camp"); SFX.play("heal") }),   /* 쉼터에 걸린 것은 여기서도 돈다 (사용자 2026-10-09) · 회복 결과 화면 (2026-10-04) */
    campAct("train","훈련장",
      run.day<=1
        ? "몸을 풀 겨를도 없이 첫날이 밝았습니다. 둘째 날부터 쓸 수 있습니다."
@@ -21810,6 +21937,30 @@ function drawRest(app){
 
 /* 쉼터 회복 결과 — 대원마다 전 → 후 체력 막대(회복한 몫은 밝은 초록으로 차오른다), 회복량, 지금 상태 (사용자 2026-10-04) */
 /* 쓰러지지 않은 대원에게 amt(h) 만큼 회복하고, 전 → 후를 run.restRes 에 적는다 — from : rest(휴식소) · camp(주둔지 쉼터) */
+/* ── 쉼터에서 쉰다 ─────────────────────────────────────────────────────
+   지도의 쉼터 칸과 주둔지의 쉼터가 **같이** 지나는 자리다.
+   ★ 글에 「주둔지를 제외한」이 없으면 쉼터에 걸린 것은 주둔지에서도 돈다 (사용자 2026-10-09).
+   새 쉼터 보상은 반드시 여기 한 곳에 — 자리마다 따로 보면 주둔지에서 또 빠진다.
+   again : 이미 들렀던 칸에 다시 들어온 것 (그때는 아무것도 주지 않는다) */
+/* 쉼터에서 쉬면 회복 말고도 받는 것 — 멀쩡해도 들어갈 까닭이 있다 (사용자 2026-10-09).
+   restPerks() 와 취침 전 독서(restRecord)가 실제로 주는 것을 그대로 읽는다 */
+function restPerkNote(){
+  if(!run||!run.heroes) return "";
+  const L=[], big=k=>Math.max(0,...run.heroes.map(h=>(h.tag&&h.tag[k])||0));
+  { const v=tagSum("campfire"); if(v) L.push(`모닥불 이야기: 다음 전투 에너지 보호막 ${v}`) }
+  { const v=big("restHeal");    if(v) L.push(`반가운 휴식: 체력 ${v}`) }
+  { const d=run.heroes.find(h=>h.name==="도미니코"&&!h.down&&h.tag&&h.tag.bedRead);
+    if(d) L.push(`취침 전 독서: 경험치 ${d.tag.bedRead}`) }
+  return L.length?`\n쉬기만 해도 받습니다 — ${L.join(" / ")}`:"";
+}
+function restPerks(again){
+  if(!run||again) return;
+  if(tagSum("campfire")){ run.campfire=tagSum("campfire");
+    toast(`모닥불 이야기 — 다음 전투에서 대원마다 에너지 보호막 ${run.campfire}`) }
+  const v=Math.max(0,...run.heroes.map(h=>(h.tag&&h.tag.restHeal)||0));
+  if(v){ run.heroes.forEach(h=>{ if(!h.down) healUp(h,v) });
+    toast(`반가운 휴식 — 대원들이 체력을 ${v} 회복했습니다.`) }
+}
 function restHeal(amt,from){ restRecord(()=>run.heroes.forEach(h=>{ if(!h.down) healUp(h,amt(h)) }),from) }
 /* 회복 앞뒤를 적는다 — fn 이 실제로 회복시킨다. rev : 쓰러졌다가 일어선 대원 (치료소) */
 function restRecord(fn,from){ const L=run.heroes.map(h=>({n:h.name,b:h.down?0:Math.max(0,h.hp),m:h.maxHp,down:!!h.down}));
@@ -21861,12 +22012,12 @@ function drawRestRes(app){
       <div class="rmid"><div class="rtop"><b>${esc(r.n)}</b><span class="rst">${st[1]}</span></div>
         <div class="rbar"><i class="rb" style="width:${pb}%"></i><i class="rg" style="left:${pb}%;width:0%"></i></div>
         <div class="rnum">${r.down?"—":`${r.b} → <b>${r.a}</b> / ${r.m}`}</div></div>
-      <div class="rgain">${r.down?"":g>0?`+${g}`:"+0"}</div></div>`);
+      <div class="rgain">${r.down||g<=0?"":`+${g}`}</div></div>`);   /* 안 오른 줄에는 +0 을 안 적는다 — 「체력 가득」이 이미 말한다 (2026-10-09) */
     box.appendChild(row);
     setTimeout(()=>{ const gi=row.querySelector(".rg"); if(gi) gi.style.width=Math.max(0,pa-pb)+"%" },120+i*140);   /* 하나씩 차오른다 */
   });
   const total=R.reduce((t,r)=>t+Math.max(0,r.a-r.b),0);
-  const ft=el(`<div style="margin-top:14px;color:var(--dim);font-size:12.5px">모두 합쳐 체력 ${total} 회복</div>`);
+  const ft=el(`<div style="margin-top:14px;color:var(--dim);font-size:12.5px">${total?`모두 합쳐 체력 ${total} 회복`:"모두 멀쩡합니다. 잠시 숨을 돌렸습니다."}</div>`);   /* 다친 대원이 없어도 들어올 수 있다 (사용자 2026-10-09) */
   const b=el(`<div style="margin-top:16px"><button class="go">계속</button></div>`);
   b.querySelector("button").onclick=()=>{ run.restRes=null; if(camp) render(); else leaveNode() };   /* 주둔지는 주둔지로 돌아간다 */
   wrap.appendChild(ft); wrap.appendChild(b); app.appendChild(wrap);
@@ -22819,7 +22970,20 @@ function questOffer(id,msg){
   questAccept(id,Q.who==="hero"?(up[0]||run.heroes[0]).name:null);
   run.evMsg=questMsg(id,msg); render();
 }
+/* 세계핵의 반복 퀘스트를 퀘스트 한 칸처럼 꾸민 것. run.quests 에는 넣지 않는다 (세는 것은 coreQuestTick 이 한다) */
+function coreQuestCard(){
+  const q=(typeof coreQuestNow==="function")&&coreQuestNow(); if(!q) return null;
+  const c=coreNow(); if(!c) return null;
+  return {id:c.n, cur:q.have, need:q.n, done:0, hero:null, core:1, label:q.label};
+}
+/* 화면에 보일 퀘스트 — 세계핵의 반복 퀘스트를 맨 앞에 */
+function questList(){
+  const L=((typeof run!=="undefined"&&run&&run.quests)||[]).slice();
+  const cq=coreQuestCard(); if(cq) L.unshift(cq);
+  return L;
+}
 function questDesc(q){
+  if(q.core) return `${esc(q.label)} <b class="qp">${Math.min(q.cur,q.need)}/${q.need}</b> <i class="qrep">채울 때마다 되풀이</i>`;
   const Q=QUESTS[q.id]; if(!Q) return esc(q.id);
   return rich(Q.d).replace("{n}",`<b class="qp">${Math.min(q.cur,q.need)}/${q.need}</b>`);
 }
@@ -22860,19 +23024,19 @@ function questCard(q,isNew,small){
   const Q=QUESTS[q.id]||{rd:""};
   if(small) return `<div class="qcard sm${q.done?" done":""}"><b>${esc(q.id)}</b><div class="qb">${questDesc(q)}${q.done?` <i class="qok">완료</i>`:""}</div></div>`;
   return `<div class="qcard${q.done?" done":""}${isNew?" new":""}">
-    <div class="qt"><b>${esc(q.id)}</b><span>수락자 : <b>${esc(q.hero||"전원")}</b></span></div>
+    <div class="qt"><b>${esc(q.id)}</b><span>${q.core?`<b class="qrepb">반복 퀘스트</b>`:`수락자 : <b>${esc(q.hero||"전원")}</b>`}</span></div>
     <div class="qb">${questDesc(q)}${q.done?` <i class="qok">완료</i>`:""}</div>
     <div class="qr">${rich(Q.rd)}</div></div>`;
 }
 /* 지도 — 목록. 방금 받은 것은 '퀘스트 추가!' 와 함께 빛난다 (한 번) */
 function questPanel(){
-  const L=(run&&run.quests)||[]; if(!L.length) return null;
+  const L=questList(); if(!L.length) return null;
   const nw=run.qNew; run.qNew=null;
   return el(`<div class="qpanel"><div class="qh">${uiPng("ui_quest")}퀘스트 목록</div>${nw?`<em class="qadd">퀘스트 추가!</em>`:""}${L.map(q=>questCard(q,q.id===nw)).join("")}${qFxHtml()}</div>`);
 }
 /* 전투 — 퀘스트 아이콘 하나 (숫자는 아직 못 끝낸 퀘스트). 누르면 목록이 두루마리처럼 펼쳐지고, 다시 누르면 말려 올라간다 (사용자 2026-10-06, 시안 C) */
 function questMini(){
-  const L=(run&&run.quests)||[]; if(!L.length) return null;
+  const L=questList(); if(!L.length) return null;
   const live=L.filter(q=>!q.done);
   const w=el(`<div class="bfqi"><div class="qic">${uiPng("ui_quest")}${live.length?`<i>${live.length}</i>`:""}</div>${run.qOpen&&live.length?qListHtml(live):""}</div>`);
   w.querySelector(".qic").onclick=e=>{ e.stopPropagation(); SFX.play("click");
@@ -24633,7 +24797,9 @@ function skExec0(f,I){
     while(f.slot<SLOTS&&g++<SLOTS*2){
       if(foeStep(f,+1,1)) continue;
       const x=foeAt(f.slot+1); if(!x||x===f||!foeSwap(f,x)) break }
-    if(f.slot!==from) say(`${f.name}${jo(f.name,"ig")} ${f.slot-from}칸 물러나 가장 뒤에 섭니다.`,"t3") }
+    if(f.slot!==from){ const to=f.slot;
+      fx({side:"foe",slot:to,fn:()=>fleeFX(to,from),gap:Math.round(520*SPD)});   /* 줄에 당겨지듯 (시안 A) */
+      say(`${f.name}${jo(f.name,"ig")} ${f.slot-from}칸 물러나 가장 뒤에 섭니다.`,"t3") } }
   if(s.flee){ f.fled=1;
     const dead=B.foes.find(x=>!x.alive&&x.name===f.name&&x!==f);
     const dir=(dead&&dead.slot<f.slot)?+1:-1;
@@ -27348,7 +27514,38 @@ function autoSk(h,s){
 function guideOn(h){ return !!(h&&h.tag&&h.tag.guideAll&&(run&&run.souls||0)>=300) }   /* 균형은 플로우일 때만 (플레어면 적을 겨눈다) */
 /* 기술이 지금 닿을 칸들 — 기술 칸에 커서를 올렸을 때 밝힌다. 셈만 하고 아무것도 바꾸지 않는다.
    새 기술에 '정해진 대상' 규칙이 생기면 여기에 한 줄 더한다 (겨누는 기술은 validTarget 이 알아서 받는다) */
-function previewTargets(h,s){
+/* 번지는 기술 — 겨눈 칸 말고도 맞는 칸 (사용자 2026-10-09).
+   기술 칸에 커서를 올린 때라 「어디를 겨눌지」가 아직 없다 — 그래서 겨눌 수 있는 칸마다 번질 칸을 다 모은다.
+   ⚠️ 이미 겨눌 수 있어 밝은 칸은 뺀다. 값은 안 띄운다 — 겨눈 칸 기준 값이라 번지는 쪽과 다를 수 있다.
+   번지지 않는 것은 넣지 마라 — 균열 차원문은 설치한 한 칸에만 간다(2026-10-09 에 헷갈렸다). */
+function spreadTargets(h,s,aim){
+  if(typeof B==="undefined"||!B||!h||!s) return [];
+  const T=h.tag||{}, seen={}, out=[];
+  const foes=B.foes.filter(f=>f.alive);
+  (aim||[]).forEach(t=>{ seen[(t.side==="foe"?"f":"m")+t.slot]=1 });
+  const addF=sl=>{ const f=foeAt(sl); if(!f||!f.alive) return;
+    if(seen["f"+f.slot]) return; seen["f"+f.slot]=1; out.push({side:"foe",slot:f.slot,spread:1}) };
+  const addM=sl=>{ const u=unitAt(sl); if(!u||!(u.hp>0)) return;
+    if(seen["m"+u.slot]) return; seen["m"+u.slot]=1; out.push({side:"mine",slot:u.slot,spread:1}) };
+  /* 의지의 지팡이 — 라이티늄 지팡이가 겨눈 칸의 양옆에도 (적 피해 · 아군 회복 둘 다) */
+  if(T.willWand&&s.wand) (aim||[]).forEach(t=>{
+    if(t.side==="foe"){ addF(t.slot-1); addF(t.slot+1) } else { addM(t.slot-1); addM(t.slot+1) } });
+  /* 착취 — 영혼이 쌓이면 뒤(80)·앞(120)으로. 인도(300)는 previewTargets 가 이미 모든 적을 밝힌다 */
+  if(s.drain&&!(typeof guideOn==="function"&&guideOn(h))){ const sp=(typeof run!=="undefined"&&run&&run.souls)||0;
+    (aim||[]).forEach(t=>{ if(t.side!=="foe") return; if(sp>=80) addF(t.slot+1); if(sp>=120) addF(t.slot-1) }) }
+  /* 확산 — 겨눈 칸에서 거리 r 안 (광범위 확산이면 2). 감염이 번진다 */
+  if(s.spread){ const r=T.spreadRange||1;
+    (aim||[]).forEach(t=>{ if(t.side!=="foe") return;
+      foes.filter(f=>Math.abs(f.slot-t.slot)<=r).forEach(f=>addF(f.slot)) }) }
+  /* 척추뼈 화살촉 — 꿰뚫는 화살이 모든 적에게 */
+  if(s.pierce&&T.pierceAll) foes.forEach(f=>addF(f.slot));
+  /* 연쇄 족쇄 — 가까운 적 다음으로 몇을 더 (족쇄 난사면 이미 전부라 건너뛴다) */
+  if(s.shackle&&T.chainShackle&&!T.shackleAll)
+    foes.slice().sort((a,b)=>dist(h.slot,a.slot)-dist(h.slot,b.slot)).slice(1,1+T.chainShackle).forEach(f=>addF(f.slot));
+  return out;
+}
+function previewTargets(h,s){ const aim=previewTargets0(h,s); return aim.concat(spreadTargets(h,s,aim)) }
+function previewTargets0(h,s){
   const out=[]; if(!h||!s||!B||!(h.slot>0)) return out;
   const T=h.tag||{};
   const foes=B.foes.filter(f=>f.alive);
@@ -27398,6 +27595,7 @@ function hintSlots(list,mv,pv){
     const side=document.getElementById(t.side==="foe"?"foeSide":"mySide"); if(!side) return;
     const d=side.querySelector(`.slot[data-slot="${t.slot}"]`); if(!d) return;
     d.classList.add("hint");
+    if(t.spread){ d.classList.add("hintsp"); return }   /* 번지는 칸 — 빛만, 값은 안 띄운다 */
     /* 피해·보호막 예고 — 대상을 고르는 중(진짜 예고가 이미 떠 있음)이 아니면 커서를 올린 동안만 얹는다.
        페일노트처럼 고르는 순간 나가는 기술도 이렇게 값을 미리 본다 (사용자 2026-09-13) */
     if(!pv||d.querySelector(".hitpv")) return;
@@ -28342,6 +28540,25 @@ function pierceRate(p){ return p===true?100:Math.max(0,Math.min(100,+p||0)) }
 const PRED_OFF=["aim","armorUp","darkShadow","encore","frontal","fuse","grow","headshot",
   "jumpback","leech","minion","penance","phantom","quakeUp","soothe","spread","stance",
   "tune","venom","wall","warp","weaken","wrap"];
+/* ── 이 기술이 이 대상에게 치명타인가 ─────────────────────────────────────────
+   ★ 치명타를 거는 조건은 **여기 한 곳**에서 묻는다. 실제(runEffect)와 예고(predictDmg)가 같이 쓴다.
+     따로 보면 예고에서만 샌다 — 서릿빛 용의 비늘촉 · 치명적 명중 · 부조화가 그렇게 샜다 (2026-10-09).
+   조건만 본다. 쓰고 나서 **닳는 것**(정밀 표식 · 은신 · 전투 첫 한 방)은 쓰는 쪽이 따로 치르므로 여기 없다.
+   ★ 새 치명타 보상은 반드시 여기 한 줄 — 안 그러면 예고가 또 샌다.
+   돌려주는 것 : 치명타면 그 까닭(글), 아니면 null */
+function critWhy(h,s,tgt){
+  if(!h||!s) return null;
+  const T=h.tag||{};
+  if(h.name==="트리스탄"){
+    if(s.pierce&&T.pierceCrit) return "서릿빛 용의 비늘촉";                       /* 꿰뚫는 화살 — 늘 */
+    if(s.el!=="마법"&&T.genMark&&tgt&&(tgt.gmark||0)>0) return "대상 포착";        /* 장군의 표식이 박힌 적 */
+    if(s.farshot&&T.nearShot&&tgt&&tgt.taunt) return "반전활";                     /* 도발을 가진 적 */
+    if(s.markKill&&T.hitCrit){ const pin=T.nearShot?nearestFoe(h):farthestFoe(h);
+      if(pin&&tgt&&pin===tgt) return "치명적 명중" }
+  }
+  if(s.harmony&&(ffFlare(h)||T.disharmony)) return T.disharmony&&!ffFlare(h)?"부조화":"플레어";
+  return null;
+}
 /* 치명적인 공격 · 마법 — 이번 전투에 남은 치명타 수 (보상을 겹친 만큼, 2026-10-03) */
 function critLeft(h,key){ const done=key==="critMag"?"critMagUsed":"critAtkUsed"; return Math.max(0,((h&&h.tag&&h.tag[key])||0)-((h&&h[done])||0)) }
 /* 마법 치명이 이 대상에게 먼저 닿는가 — 여럿을 치는 기술은 적 줄의 앞쪽부터 맞는다 */
@@ -28357,13 +28574,13 @@ function predictDmg(h,s,tgt){
   const far=alive.length?alive.reduce((a,b)=>dist(h.slot,a.slot)>=dist(h.slot,b.slot)?a:b):null;
   const near0=alive.length?alive.reduce((a,b)=>dist(h.slot,a.slot)<=dist(h.slot,b.slot)?a:b):null;
   const topHp=alive.length?alive.slice().sort((a,b)=>b.hp-a.hp)[0]:null;
-  let dmg=null, crit=0, times=1, tail="", MAINC=0;
+  let dmg=null, crit=0, times=1, tail="", MAINC=0, tot=null;   /* tot — 여러 번 나가는데 타마다 값이 다를 때의 합 (2026-10-09) */
 
   if(s.n==="방패 밀치기"&&!(h.tag&&h.tag.pushAll)&&near0&&tgt!==near0) return null;   /* 가장 가까운 적만 */
   if(s.justice)          dmg=h.shield||0;
   /* 플레어와 플로우 — 균형은 플레어일 때만 때리고, 조화는 마법력+보호력에 플레어면 치명타 */
   else if(s.balance){ if(!ffFlare(h)) return null; dmg=bs("dmg")+MAG+(h.balFirst||0) }
-  else if(s.harmony){ dmg=bs("dmg")+MAG+(h.def||0); if(ffFlare(h)){ dmg*=2; crit=1 } }
+  else if(s.harmony){ dmg=bs("dmg")+MAG+(h.def||0); if(critWhy(h,s,tgt)){ dmg*=2; crit=1 } }   /* 플레어 · 부조화 — critWhy 한 곳에서 (2026-10-09) */
   else if(s.thrust)      dmg=(h.cutSum||0)*3;
   else if(s.dump)        dmg=h.ammo||0;
   else if(s.scaleBoom)   dmg=h.scale||0;
@@ -28384,13 +28601,16 @@ function predictDmg(h,s,tgt){
     if(T.armorShot&&h.armor>0) dmg+=T.armorShot;
     if(T.roundShot&&(h.first||{}).shot!==1) dmg+=T.roundShot+ATK;
     dmg+=(h.shotBonus||0);
-    if((T.nearShot&&tgt.taunt)||(T.genMark&&(tgt.gmark||0)>0)){ dmg*=2; crit=1 }
+    if(critWhy(h,s,tgt)){ dmg*=2; crit=1 }   /* 반전활 · 대상 포착 — critWhy 한 곳에서 (2026-10-09) */
   }
   else if(s.nearest)     dmg=bs("dmg")+MAG;
   else if(s.magnet)      dmg=bs("dmg")+MAG;
   else if(s.scaleGain)   dmg=bs("dmg")+MAG;
   else if(s.drain){ dmg=bs("dmg")+MAG; if((run.souls||0)>=200) times=2 }
-  else if(s.wand){ dmg=domWandDmg(h,s,tgt); if(domDemon(h)&&h.blessed){ dmg*=2; crit=1 } if(h.tag.worldWand) times=2 }
+  else if(s.wand){ dmg=domWandDmg(h,s,tgt); if(domDemon(h)&&h.blessed){ dmg*=2; crit=1 }
+    if(h.tag.worldWand){ times=2;
+      /* 세계의 지팡이 — 두 번 나간다. 충전의 지팡이는 첫 타에 다 쓰여 둘째 타에는 없다 (domWand 와 같은 셈) */
+      const chg=(h.wandChg||0)*(crit?2:1); tot=dmg*2-chg } }
   else if(s.penance) return null;   /* 참회의 기류 — 지나는 차례마다 값이 달라 칸 하나로 예고하지 않는다 (2026-10-06) */
   else if(s.shadow){ dmg=bs("dmg")+ATK; if(h.hide){ dmg*=2; crit=1 } }
   else if(s.shackle){
@@ -28428,6 +28648,7 @@ function predictDmg(h,s,tgt){
     if(h.name==="이테리오"&&itCritEl(h,s)&&(tgt.mark||0)>0){ dmg=Math.round(dmg*itCritX(h)); crit=1 }
     { const key=(s.el==="마법")?"critMag":"critAtk", done=(s.el==="마법")?"critMagUsed":"critAtkUsed";   /* 치명적인 공격 · 마법 — 그 전투의 첫 한 방 (2026-10-01) */
       if(critLeft(h,key)>0){ dmg*=2; crit=1 } MAINC=1 }
+    if(!crit&&critWhy(h,s,tgt)){ dmg*=2; crit=1 }   /* 보상으로 걸리는 치명타 — 실제와 같은 자리에서 묻는다 (2026-10-09) */
     if(h.name==="그슨대"&&h.hide&&s.el==="공격"){ dmg*=2; crit=1 }
     if(h.name==="데린저"){
       if(h.aimAt!=null){ if(tgt.id===h.aimAt){ dmg*=2; crit=1 } else dmg=0 }
@@ -28461,6 +28682,13 @@ function predictDmg(h,s,tgt){
     if(s.magnet&&T.tracker&&(tgt.mark||0)>0){   /* 추적 장치 — 끌려오면(움직이면) */
       if(!foeShiftWhy(tgt,tgt.slot-1)) add.push("추적 "+T.tracker) }   /* runEffect 와 같은 규칙 */
     if(h.name==="굴라"&&s.n==="씹어먹기"&&T.gas&&dist(h.slot,tgt.slot)<=2) add.push("가스 "+T.gas);   /* 가스 방출 */
+    if(s.farshot&&T.splitShot&&tgt===nearestFoe(h)) add.push("조각 "+T.splitShot);   /* 조각난 화살 — 가장 가까운 적에게 한 대 더 (2026-10-09) */
+    /* ── 번지는 기술 — 「여기를 겨누면 옆도 맞는다」 (사용자 2026-10-09) ── */
+    if(T.willWand&&s.wand&&[foeAt(tgt.slot-1),foeAt(tgt.slot+1)].some(x=>x&&x.alive)) add.push("양옆도");   /* 의지의 지팡이 */
+    if(s.drain&&!(typeof guideOn==="function"&&guideOn(h))){ const sp=(typeof run!=="undefined"&&run&&run.souls)||0;
+      const n=[sp>=80&&foeAt(tgt.slot+1), sp>=120&&foeAt(tgt.slot-1)].filter(x=>x&&x.alive).length;
+      if(n) add.push(n>1?"앞뒤도":"뒤도") }                                                                /* 착취 — 영혼이 쌓이면 */
+    if(s.pierce&&T.pierceAll&&B.foes.filter(f=>f.alive).length>1) add.push("모두");                        /* 척추뼈 화살촉 */
     if(add.length) tail=(tail?tail+" ":"")+"+ "+add.join(" ") }
   /* 보호막을 얼마나 뚫고 체력까지 닿는지 */
   if(tgt.armor>0&&dmg>tgt.armor) dmg=tgt.armor;   /* 갑피 — hurt() 와 같은 셈 */
@@ -28472,7 +28700,7 @@ function predictDmg(h,s,tgt){
   PR=pierceRate(PR);
   const thru=Math.round(dmg*PR/100);
   const eat=Math.min(shieldSum(tgt), dmg-thru);
-  return {v:dmg, crit:crit, times:times, eat:eat, tail:tail,
+  return {v:dmg, crit:crit, times:times, tot:tot, eat:eat, tail:tail,
           hp:Math.max(0,dmg-eat),          /* 보호막을 지나 체력에 닿는 몫 */
           evade:(tgt.evade||0)>0};
 }
@@ -28666,9 +28894,10 @@ function willKill(h,s,f,count){
    "6×3 · 막5 · 체력 5" 를 못 죽인다고 했다. */
 function predictTotal(p,n){
   n=n||1;
+  const sum=(p.tot!=null&&n===(p.times||1))?p.tot:p.v*n;   /* 타마다 값이 다르면 미리 셈해 둔 합을 쓴다 */
   const perShield=p.v-p.hp;                 /* 한 방에서 보호막이 먹는 몫 (관통은 지나간다) */
   const eaten=Math.min(p.eat||0, perShield*n);
-  return Math.max(0,p.v*n-eaten);
+  return Math.max(0,sum-eaten);
 }
 /* 해골은 피해 값과 따로 논다. 적 그림 한가운데에 겹쳐 놓기 위해
    칸이 아니라 .art 안으로 들어간다. */
@@ -28683,8 +28912,10 @@ function foeHitTag(h,s,f,count){
   if(p.evade) return hitTag("dmg","회피",0,"");
   if(s.verdict) return hitTag("dmg","즉사",1,"절반으로 되살아남");
   const n=(count||1)*p.times;
-  const note=[n>1?"×"+n:"", p.eat?"막"+p.eat:"", p.tail||""].filter(Boolean).join(" ");
-  return `<span class="hitpv dmg${p.crit?" crit":""}">`+"−"+p.v
+  /* 타마다 값이 다르면(세계의 지팡이) 「−11 ×2」가 거짓이 된다 — 합을 적고 몇 번인지만 덧붙인다 */
+  const tot=(p.tot!=null&&n===p.times)?p.tot:null;
+  const note=[tot!=null?p.times+"번 합쳐":(n>1?"×"+n:""), p.eat?"막"+p.eat:"", p.tail||""].filter(Boolean).join(" ");
+  return `<span class="hitpv dmg${p.crit?" crit":""}">`+"−"+(tot!=null?tot:p.v)
     +(note?`<em>${note}</em>`:"")+`</span>`;
 }
 function selfHitTag(h,s,count){
@@ -30486,8 +30717,7 @@ function runEffect0(h,i,s,target){
     if(t.roundShot&&h.first.shot!==1){ dmg+=t.roundShot+h.atk; h.first.shot=1;
       say(`활시위 당기기 — 시위를 끝까지 당겼습니다.`,"t2") }
     dmg+=(h.shotBonus||0);
-    if(t.nearShot&&f.taunt) CRIT=1;
-    if(t.genMark&&(f.gmark||0)>0) CRIT=1;
+    if(critWhy(h,s,f)) CRIT=1;   /* 반전활 · 대상 포착 — critWhy 한 곳에서 (2026-10-09) */
     if(CRIT){ dmg*=2; say(`${s.n} — 치명타!`,"t1") }
     if(isArcher(h)) fx({side:"foe",slot:f.slot,arrow:{side:"mine",slot:h.slot,who:h.name},gap:0});
     else fx({side:"foe",slot:f.slot,streak:{side:"mine",slot:h.slot},s:"arrow",gap:120});
@@ -30616,7 +30846,7 @@ function runEffect0(h,i,s,target){
     const f=foeAt(target); if(!f){ say("그 칸에는 적이 없습니다.","t2"); return }
     let dmg=s.dmg+mod(s,"dmg")+h.mag+h.def, crit=0;
     const both=!!T.disharmony;                           /* 부조화 — 늘 치명타 + 보호막 */
-    if(ffFlare(h)||both){ dmg*=2; crit=1; say("조화 — 치명타!","t1") }
+    if(critWhy(h,s,f)){ dmg*=2; crit=1; say("조화 — 치명타!","t1") }   /* critWhy 한 곳에서 (2026-10-09) */
     if(T.taintHarmony){ let n=0;                          /* 오염된 조화 — 대상의 부정 효과 2배 */
       if(f.deb) DEB_KEYS.forEach(k=>{ if(f.deb[k]>0){ n+=f.deb[k]; f.deb[k]*=2 } });
       ["infect","burn","mark","weak"].forEach(k=>{ if(f[k]>0){ n+=f[k]; f[k]*=2 } });
@@ -30936,13 +31166,7 @@ function runEffect0(h,i,s,target){
     }
     if(h.name==="트리스탄"){
       const T=h.tag||{};
-      let cr=0;
-      if(s.pierce&&T.pierceCrit) cr=1;                       /* 서릿빛 용의 비늘촉 */
-      if(s.el!=="마법"&&T.genMark&&(tgt.gmark||0)>0) cr=1;   /* 대상 포착 */
-      if(s.markKill&&T.hitCrit){                             /* 치명적 명중 */
-        const pin=T.nearShot?nearestFoe(h):farthestFoe(h);
-        if(pin&&pin===tgt) cr=1;
-      }
+      const cr=!!critWhy(h,s,tgt);   /* 서릿빛 용의 비늘촉 · 대상 포착 · 치명적 명중 — critWhy 한 곳에서 (2026-10-09) */
       if(cr&&!CRIT){ dmg*=2; CRIT=1; say(`${s.n} — 치명타!`,"t1") }
       if(s.pierce&&T.pierceLeech) addLeech(h,T.pierceLeech);
     }
