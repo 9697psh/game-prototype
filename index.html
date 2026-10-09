@@ -2375,9 +2375,16 @@ html.noscr, html.noscr body{overflow:hidden!important}   /* 가로만 숨기면 
 .gridmap.pmap .cell.cell{--dash:rgba(40,25,10,.5);   /* .cell.emp 의 background 단축 속성보다 세게 */
   background-image:linear-gradient(to bottom,var(--dash) 0 12px,transparent 12px 20px),linear-gradient(to right,var(--dash) 0 12px,transparent 12px 20px);
   background-size:1px 20px,20px 1px;background-position:right top,left bottom;background-repeat:repeat-y,repeat-x}
-.gridmap.pmap .cell.cell:nth-child(9n){background-image:linear-gradient(transparent,transparent),linear-gradient(to right,var(--dash) 0 12px,transparent 12px 20px)}
-.gridmap.pmap .cell.cell:nth-last-child(-n+9){background-image:linear-gradient(to bottom,var(--dash) 0 12px,transparent 12px 20px),linear-gradient(transparent,transparent)}
-.gridmap.pmap .cell.cell:nth-child(9n):nth-last-child(-n+9){background-image:none}
+.gridmap.pmap[data-n="9"] .cell.cell:nth-child(9n){background-image:linear-gradient(transparent,transparent),linear-gradient(to right,var(--dash) 0 12px,transparent 12px 20px)}
+.gridmap.pmap[data-n="9"] .cell.cell:nth-last-child(-n+9){background-image:linear-gradient(to bottom,var(--dash) 0 12px,transparent 12px 20px),linear-gradient(transparent,transparent)}
+.gridmap.pmap[data-n="9"] .cell.cell:nth-child(9n):nth-last-child(-n+9){background-image:none}
+/* 11×11 (마력의 탑) — 칸 수마다 끝선이 다르다 */
+.gridmap.pmap[data-n="11"] .cell.cell:nth-child(11n){background-image:linear-gradient(transparent,transparent),linear-gradient(to right,var(--dash) 0 12px,transparent 12px 20px)}
+.gridmap.pmap[data-n="11"] .cell.cell:nth-last-child(-n+11){background-image:linear-gradient(to bottom,var(--dash) 0 12px,transparent 12px 20px),linear-gradient(transparent,transparent)}
+.gridmap.pmap[data-n="11"] .cell.cell:nth-child(11n):nth-last-child(-n+11){background-image:none}
+/* 천장 · 계단 — 그림(64×64)이 오기 전에도 알아보게 (사용자 2026-10-10) */
+.gridmap.pmap .cell.cell.ceil{background-color:rgba(54,66,84,.55)}
+.gridmap.pmap .cell.cell.stair{background-color:rgba(201,162,39,.30)}
 .pmap .cell{border:0;border-right:1px solid var(--pline);border-bottom:1px solid var(--pline);border-radius:0;
   background:transparent;padding:2%;transition:background .12s,box-shadow .12s}
 .pmap .cell .cbg{display:none}
@@ -5937,9 +5944,13 @@ const INK_NODE={dungeon:"ink11_map_battle",elite:"ink11_map_elite",boss:"ink11_m
   post:"ink11_map_guard_post",wagon:"ink11_map_prison_wagon",tunnel:"ink11_map_tunnel",
   /* 정령숲 (2026-10-01) — 받은 지도 타일 art/아이콘/map-spirit */
   grove:"ink_sp_grove",thicket:"ink_sp_thicket",nest:"ink_sp_nest",dryshop:"ink_sp_dryshop",spring:"ink_sp_spring",
-  cave:"ink_sp_cave",colony:"ink_sp_colony",croot:"ink_sp_croot",fog:"ink_sp_fog"};
+  cave:"ink_sp_cave",colony:"ink_sp_colony",croot:"ink_sp_croot",fog:"ink_sp_fog",
+  /* 마력의 탑 (사용자 2026-10-10) — 천장 · 계단 칸 그림 자리. 64×64 가 오면 icons.js 에 이 이름으로 넣기만 하면 된다 */
+  ceil:"ink_tw_ceiling",stair:"ink_tw_stair"};
 /* 칸마다 그림이 다른 것 — 장벽(가로/세로) · 우물(3×3 조각) */
 function gimCellArt(cell){
+  if(cell.t==="wall"&&cell.ceil) return inkArt("ceil");   /* 마력의 탑 천장 — 칸마다 같은 그림 자리 */
+  if(cell.t==="empty"&&cell.stair) return inkArt("stair");
   if(cell.t==="wall") return iconImg(cell.dir==="h"?"ink11_prison_wall_h":"ink11_prison_wall_v");
   if(cell.t==="well") return iconImg("ink11_well_"+(cell.tile||"22"));
   if(cell.t==="mwreck") return iconImg("ink_sp_mw"+(cell.tile||"11"));   /* 거대한 기계의 잔해 2×2 조각 */
@@ -14898,7 +14909,8 @@ let run=null, view="title", B=null, sel=null, pending=null;
 const FIELDS=[
  {n:"핏빛 감옥", size:9, days:5, act:6},   /* act = 판을 시작할 때의 활동량. 12/15/20 → 전 구역 5 → 6 (사용자 2026-10-08) · 날짜 7→5 (사용자 2026-09-29) */
  {n:"정령숲",    size:9, days:6, act:6},
- {n:"마력의 탑", size:9, days:7, act:6}   /* 셋 다 9×9 (사용자 2026-09-15; 8×8 은 2026-09-14). NODE_N 은 그대로 */
+ {n:"마력의 탑", size:11, days:7, act:6, ceil:[3,7]}   /* 1 · 2구역은 9×9 (사용자 2026-09-15; 8×8 은 2026-09-14). 마력의 탑만 11×11 (사용자 2026-10-10) — 지도 상자는 그대로, 칸이 작아진다.
+      ceil = 천장 줄(위에서 4행 · 8행, 0 기준) — 그 줄의 칸은 전부 막힌 벽이고 줄마다 계단 한 칸만 뚫린다. 구역마다 size · ceil 을 따로 둘 수 있다. NODE_N 은 그대로 */
 ];
 const NODE={
  camp   :{label:"주둔지",     c:"#c9a227"},
@@ -14937,6 +14949,8 @@ const GIM_T={tower:1,fence:1,torture:1,gallows:1,post:1,wagon:1,tunnel:1,wall:1,
    {종류} 칸 이름 · {라운드} 라운드 수 · {강화} 적 강화 % · {설명} 적 무리 글 · {전리품} 전리품 글
    {거리} 여기서 몇 칸 · {습격} 밤에 빈 칸 습격 확률(%) · {날짜} 남은 날 · 줄바꿈은 그대로 줄이 된다 */
 const MAP_TIP={
+ ceil:"<b>천장</b>\n막힌 벽입니다. 지나갈 수 없습니다. 계단으로만 층을 오갈 수 있습니다.",
+ stair:"<b>계단</b>\n이 줄의 천장이 뚫린 곳입니다. 여기로만 위아래 층을 오갑니다.",
  dungeon:"<b>{종류}</b> {라운드}라운드, 적 강화 +{강화}%\n{설명}\n{전리품}",
  elite:"<b>{종류}</b> 적 강화 +{강화}%\n{설명}\n{전리품}\n더 세지만 더 좋은 것을 떨어뜨립니다.",
  boss:"<b>{종류}</b>\n이 구역의 마지막 상대입니다. {날짜}일 안에 넘어야 합니다.",
@@ -14970,7 +14984,7 @@ let MAPTIP_EL=null;
 function mapTipFill(cell,r,c){
   if(fogAt(r,c)&&!(run.pos.r===r&&run.pos.c===c)) cell={t:"fog"};
   const kind=cell.t||"empty";
-  let t=MAP_TIP[kind]; if(t==null) return "";
+  let t=MAP_TIP[cell.stair?"stair":(cell.ceil?"ceil":kind)]; if(t==null) return "";
   const patrolEmpty=kind==="empty"&&onPatrol(r,c);
   if(patrolEmpty) t=t.replace(/^빈 길/,"<b>간수 순찰로</b>");
   const dist=Math.abs(r-run.pos.r)+Math.abs(c-run.pos.c);
@@ -15288,14 +15302,42 @@ const SCOUT_ACT=2;    /* 정찰대를 보내면 얻는 활동량 (사용자 2026
 function remapCost(){
   return REMAP_COST[Math.min(run?run.field:0, REMAP_COST.length-1)];
 }
+/* 천장 — 구역의 ceil 줄(위에서 4행 · 8행)을 칸마다 막힌 벽으로 깔고, 줄마다 무작위 한 칸을 계단(걷는 빈 길)으로 뚫는다.
+   계단 열은 그냥 무작위다 — 같은 열에 서도 된다 (사용자 2026-10-10). 칸마다 제 그림 자리(INK_NODE.ceil · INK_NODE.stair)를 갖는다 */
+function placeCeilings(g,rows){
+  const S=g.length;
+  (rows||[]).forEach(r=>{
+    for(let c=0;c<S;c++) g[r][c]={t:"wall",ceil:1};
+    g[r][Math.floor(Math.random()*S)]={t:"empty",stair:1};
+  });
+}
+/* 주둔지에서 우두머리까지 막힌 벽(wall)을 빼고 걸어갈 수 있는가 — 못 걸으면 그 판은 못 깬다 */
+function gridConnected(g){
+  const S=g.length; let cp=null, bs=null;
+  for(let r=0;r<S;r++) for(let c=0;c<S;c++){ if(g[r][c].t==="camp") cp=[r,c]; if(g[r][c].t==="boss") bs=[r,c] }
+  if(!cp||!bs) return false;
+  const seen=new Set([cp[0]+"-"+cp[1]]), q=[cp];
+  while(q.length){ const [r,c]=q.shift(); if(r===bs[0]&&c===bs[1]) return true;
+    [[1,0],[-1,0],[0,1],[0,-1]].forEach(([a,b])=>{ const y=r+a, x=c+b, k=y+"-"+x;
+      if(y<0||x<0||y>=S||x>=S||seen.has(k)||g[y][x].t==="wall") return; seen.add(k); q.push([y,x]) }) }
+  return false;
+}
+/* 지도 한 장 — 길이 끊기면 그 자리에서 다시 만든다 (사용자 2026-10-10: 한 번이라도 막히면 안 된다) */
 function buildGrid(fi,keep){
+  let g=null;
+  for(let t=0;t<60;t++){ g=buildGrid0(fi,keep); if(gridConnected(g)) return g }
+  console.warn("지도 길이 끊김 — 60번 다시 만들어도 이어지지 않았습니다 (구역 "+fi+")");
+  return g;
+}
+function buildGrid0(fi,keep){
   const S=FIELDS[fi].size, g=[], mid=Math.floor(S/2);
   for(let r=0;r<S;r++){ const row=[]; for(let c=0;c<S;c++) row.push({t:"empty"}); g.push(row) }
   g[S-1][mid]={t:"camp"};
   g[0][mid]={t:"boss"};
+  if(FIELDS[fi].ceil) placeCeilings(g,FIELDS[fi].ceil);   /* 천장 · 계단을 먼저 — 기믹과 일반 칸은 빈 길에만 놓인다 */
   placeGimmicks(g,fi,keep);       /* 기믹을 먼저 (사용자 2026-09-15) — 빈자리에 일반 칸이 들어간다 */
   const free=[];
-  for(let r=0;r<S;r++) for(let c=0;c<S;c++) if(g[r][c].t==="empty") free.push([r,c]);
+  for(let r=0;r<S;r++) for(let c=0;c<S;c++) if(g[r][c].t==="empty"&&!g[r][c].stair) free.push([r,c]);
   const put=(t,n,mk)=>{
     for(let i=0;i<n&&free.length;i++){
       const k=Math.floor(Math.random()*free.length), rc=free.splice(k,1)[0];
@@ -15337,10 +15379,10 @@ const GIM_ODDS=[{tower:0.6,tg:0.6,post:0.5,wagon:0.4,tunnel:0.5,wall:0.5,patrol:
 const SPRING_N=4;   /* 기력의 샘 — 지도를 만들 때 넷, 새 날마다 미지의 구역처럼 채운다 */
 function placeGimmicks(g,fi,keep){
   const S=g.length, camp=[S-1,Math.floor(S/2)], O=GIM_ODDS[Math.min(fi,GIM_ODDS.length-1)]||{};
-  const ok=(r,c)=>r>=0&&c>=0&&r<S&&c<S&&g[r][c].t==="empty"&&(Math.abs(r-camp[0])+Math.abs(c-camp[1]))>=2&&!(r===0&&c===Math.floor(S/2));
+  const ok=(r,c)=>r>=0&&c>=0&&r<S&&c<S&&g[r][c].t==="empty"&&!g[r][c].stair&&(Math.abs(r-camp[0])+Math.abs(c-camp[1]))>=2&&!(r===0&&c===Math.floor(S/2));
   /* 재편성 — 첨탑과 울타리는 옛 자리 그대로 (새로고침 불가) */
   let hasTower=false;
-  (keep||[]).forEach(k=>{ if(g[k.r]&&g[k.r][k.c]&&g[k.r][k.c].t==="empty"){ g[k.r][k.c]=k.cell; hasTower=true } });
+  (keep||[]).forEach(k=>{ if(g[k.r]&&g[k.r][k.c]&&g[k.r][k.c].t==="empty"&&!g[k.r][k.c].stair){ g[k.r][k.c]=k.cell; hasTower=true } });
   if(!hasTower&&Math.random()<(O.tower||0)){
     for(let t=0;t<60;t++){
       const r=1+Math.floor(Math.random()*(S-3)), c=Math.floor(Math.random()*S);
@@ -15412,7 +15454,7 @@ function colonyStep(){
   if(!run||run.field!==1) return;
   if(run.gim&&run.gim.rootHold>=run.day) return;   /* 군체 억제 — 2일 동안 퍼지지 않는다 */
   const S=run.size, add=[];
-  const spread=(r,c,n)=>{ const nb=[[r-1,c],[r+1,c],[r,c-1],[r,c+1]].filter(([a,b])=>a>=0&&b>=0&&a<S&&b<S&&run.grid[a][b].t==="empty"&&!(run.pos.r===a&&run.pos.c===b)&&!add.some(([p,q])=>p===a&&q===b));
+  const spread=(r,c,n)=>{ const nb=[[r-1,c],[r+1,c],[r,c-1],[r,c+1]].filter(([a,b])=>a>=0&&b>=0&&a<S&&b<S&&run.grid[a][b].t==="empty"&&!run.grid[a][b].stair&&!(run.pos.r===a&&run.pos.c===b)&&!add.some(([p,q])=>p===a&&q===b));
     let k=0; for(let i=0;i<n&&nb.length;i++){ add.push(nb.splice(Math.floor(Math.random()*nb.length),1)[0].concat([r,c])); k++ } return k };   /* [새 칸, 뻗어 나온 칸] */
   /* 둘레에 빈 칸이 없어 하나도 못 번진 날은 번진 것으로 치지 않는다 — 다음 날 다시 (사용자 2026-10-06: 뿌리 둘이 나고 멈췄다) */
   /* 뿌리가 하나도 남지 않으면(헤치거나 베어 다 걷었으면) 군체가 다시 처음처럼 1~4 (사용자 2026-10-07) */
@@ -15453,7 +15495,7 @@ function placeGrove(g){
   return false;
 }
 function gimOk(g,r,c){ const S=g.length, camp=[S-1,Math.floor(S/2)];
-  return r>=0&&c>=0&&r<S&&c<S&&g[r][c].t==="empty"&&(Math.abs(r-camp[0])+Math.abs(c-camp[1]))>=2&&!(r===0&&c===Math.floor(S/2)) }
+  return r>=0&&c>=0&&r<S&&c<S&&g[r][c].t==="empty"&&!g[r][c].stair&&(Math.abs(r-camp[0])+Math.abs(c-camp[1]))>=2&&!(r===0&&c===Math.floor(S/2)) }
 function placeOne(g,t,extra){
   const S=g.length;
   for(let i=0;i<80;i++){ const r=Math.floor(Math.random()*S), c=Math.floor(Math.random()*S);
@@ -15506,7 +15548,7 @@ const WAGON_DAY=2;   /* 마차가 하루에 가는 칸 수 (사용자 2026-10-08
    같은 걸음 수면 우두머리 쪽(위 → 가운데 쪽)을 먼저 고른다 */
 function wagonPath(r0,c0){
   const S=run.size, bm=Math.floor(S/2), gr=0, gc=bm;
-  const free=(r,c)=>(r===gr&&c===gc)||(run.grid[r][c].t==="empty"&&!(run.pos.r===r&&run.pos.c===c));
+  const free=(r,c)=>(r===gr&&c===gc)||(run.grid[r][c].t==="empty"&&!run.grid[r][c].stair&&!(run.pos.r===r&&run.pos.c===c));
   const seen={}; seen[r0+"-"+c0]=1;
   const q=[{r:r0,c:c0,p:null}];
   for(let h=0;h<q.length;h++){
@@ -15551,7 +15593,7 @@ function wagonStep(){
 /* 고문실과 사형장 — 둘이 다섯 칸 넘게 떨어져서 */
 function placeTG(g){
   const S=g.length, camp=[S-1,Math.floor(S/2)];
-  const ok=(r,c)=>r>=0&&c>=0&&r<S&&c<S&&g[r][c].t==="empty"&&(Math.abs(r-camp[0])+Math.abs(c-camp[1]))>=2;
+  const ok=(r,c)=>r>=0&&c>=0&&r<S&&c<S&&g[r][c].t==="empty"&&!g[r][c].stair&&(Math.abs(r-camp[0])+Math.abs(c-camp[1]))>=2;
   for(let t=0;t<80;t++){
     const r1=Math.floor(Math.random()*S), c1=Math.floor(Math.random()*S), r2=Math.floor(Math.random()*S), c2=Math.floor(Math.random()*S);
     if(!ok(r1,c1)||!ok(r2,c2)||Math.abs(r1-r2)+Math.abs(c1-c2)<5) continue;
@@ -15578,7 +15620,7 @@ function nodeCount(t,fi){
 const DUN_REFILL=0.55;   /* 1구역 새 날 — 모자란 일반 전투 칸 한 자리마다 */
 function respawn(){
   const S=run.size, free=[];
-  for(let r=0;r<S;r++) for(let c=0;c<S;c++) if(run.grid[r][c].t==="empty"&&!(run.pos&&run.pos.r===r&&run.pos.c===c)) free.push([r,c]);   /* 서 있는 칸은 빼고 */
+  for(let r=0;r<S;r++) for(let c=0;c<S;c++) if(run.grid[r][c].t==="empty"&&!run.grid[r][c].stair&&!(run.pos&&run.pos.r===r&&run.pos.c===c)) free.push([r,c]);   /* 서 있는 칸은 빼고 */
   ["shop","rest","event"].concat(run.field===1?["dryshop","spring"]:[]).forEach(t=>{
     const want=t==="dryshop"?nodeCount("shop",run.field):t==="spring"?SPRING_N:nodeCount(t,run.field);
     let have=0;
@@ -16661,6 +16703,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 17, "v": "0.7", "d": "2026-10-10", "t": "받을 피해 예고를 더 바로잡고, 숨어 있던 피해 숫자를 띄웠습니다 — 마력의 탑 지도도 들어갑니다", "big": 0},
  {"b": 16, "v": "0.7", "d": "2026-10-10", "t": "지도 액자가 배경을 다 감싸게 — 양피지를 틈만큼만 넓힘", "big": 0},
  {"b": 15, "v": "0.7", "d": "2026-10-09", "t": "탭 아이콘 자리 — favicon 404 끄기", "big": 0},
  {"b": 14, "v": "0.7", "d": "2026-10-09", "t": "받을 피해 예고를 바로잡았습니다 — 밀려난 뒤의 과녁, 정지, 예약된 되감기, 터진 화상", "big": 0},
@@ -17869,7 +17912,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=16;
+const BUILD_NO=17;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -19323,7 +19366,7 @@ const near=(a,b)=>Math.abs(a.r-b.r)+Math.abs(a.c-b.c)===1;
    peek 이면 길 번호를 안 찍고 누르지 못한다. 풍선(mapTip)은 둘 다 뜬다 */
 function mapGridEl(peek){
   const S=run.size;
-  const g=el(`<div class="gridmap pmap${peek?" peekgrid":""}" style="grid-template-columns:repeat(${S},1fr)"></div>`);
+  const g=el(`<div class="gridmap pmap${peek?" peekgrid":""}" data-n="${S}" style="grid-template-columns:repeat(${S},1fr)"></div>`);
   const rstep={};
   if(run.route&&!peek) run.route.path.forEach((p,i)=>{ rstep[p.r+"-"+p.c]=i+1 });
   /* 길의 붉은 점 — 칸 가운데 사이 28% · 72% 자리. 그 점이 떨어지는 칸에 담아 그림 뒤에 깐다 */
@@ -19349,18 +19392,19 @@ function mapGridEl(peek){
     const ffly=nestNear(r,c);
     const risky=((run.night&&cell.t==="empty"&&adj)||(watch&&adj))&&!ffly;
     const glow=kind!=="well"&&wellNear(r,c);
-    const d=el(`<div class="cell k-${kind} ${cell.tutgo?"tutgo":""} ${kind==="empty"?"emp":""} ${here?"here":""} ${adj?"adj":""} ${cell.done?"done":""} ${risky?"risk":""} ${watch?"watch":""} ${glow?"glow":""} ${ffly?"ffly":""} ${kind==="wall"?"wall":""} ${(cell.boon||cell.weapon)?"boon":""} ${rn?"onroute":""} ${rn&&rn===(run.route?run.route.steps:0)?"rdest":""}">
+    const d=el(`<div class="cell k-${kind} ${cell.tutgo?"tutgo":""} ${cell.stair?"stair":""} ${cell.ceil?"ceil":""} ${kind==="empty"?"emp":""} ${here?"here":""} ${adj?"adj":""} ${cell.done?"done":""} ${risky?"risk":""} ${watch?"watch":""} ${glow?"glow":""} ${ffly?"ffly":""} ${kind==="wall"?"wall":""} ${(cell.boon||cell.weapon)?"boon":""} ${rn?"onroute":""} ${rn&&rn===(run.route?run.route.steps:0)?"rdest":""}">
       <span class="cbg"></span>
       ${(wpAt[r+"-"+c]||[]).map(w=>`<i class="wp${w.hz?" hz":""}" style="left:${w.x}%;top:${w.y}%;background-image:url(${ICON_PNG["map_wp"+w.v]})"></i>`).join("")}
       
-      ${kind!=="empty"?`<span class="cico">${gimCellArt(cell)||nodeArt(kind)}</span>`:(onPatrol(r,c)?`<span class="cico foot">${iconImg("ink11_map_guard_footprints")}</span>`:"")}
+      ${kind!=="empty"?`<span class="cico">${gimCellArt(cell)||nodeArt(kind)}</span>`:(cell.stair?`<span class="cico">${gimCellArt(cell)}</span>`:(onPatrol(r,c)?`<span class="cico foot">${iconImg("ink11_map_guard_footprints")}</span>`:""))}
       ${kind==="dungeon"||kind==="elite"?`<span class="cw">${cell.waves||1}</span>`:""}
       ${here?((typeof ICON_PNG!=="undefined"&&ICON_PNG.ui_move_down)
         ?`<span class="you arw"><img src="${ICON_PNG.ui_map_you||ICON_PNG.ui_move_down}" alt="현재 위치" draggable="false"></span>`   /* 붉은 붓 화살표 (사용자 2026-10-06) */
         :`<span class="you">${figure(run.heroes[0]?run.heroes[0].name:"나이코스")}</span>`):""}
       ${risky?`<span class="crisk">!</span>`:""}
       ${cell.bounty?`<span class="cbounty" title="현상금 — 전투 금화 +50%">${iconImg("bounty_bag")}</span>`:""}
-      ${kind!=="empty"&&!cell.done?`<span class="cl">${esc(NODE[kind].label)}</span>`:""}
+      ${cell.stair?`<span class="cl">계단</span>`:""}
+      ${kind!=="empty"&&!cell.done?`<span class="cl">${esc(cell.ceil?"천장":NODE[kind].label)}</span>`:""}
     </div>`);
     d.dataset.rc=r+"-"+c;
     { const bi=peek?-1:MAP_BORN.indexOf(r+"-"+c);
@@ -19580,12 +19624,12 @@ function mapInspector(at){
   const r=sel.r, c=sel.c, cell=(fogAt(sel.r,sel.c)&&!(run.pos.r===sel.r&&run.pos.c===sel.c))?{t:"fog"}:run.grid[r][c], kind=cell.t||"empty";
   const here=run.pos.r===r&&run.pos.c===c, dist=Math.abs(r-run.pos.r)+Math.abs(c-run.pos.c), locked=mapLocked();
   const box=el(`<div class="minsp"><div class="mib"></div></div>`), b=box.querySelector(".mib");
-  const label=kind==="empty"?(onPatrol(r,c)?"간수 순찰로":"빈 길"):((NODE[kind]||{}).label||kind);
+  const label=cell.stair?"계단":(cell.ceil?"천장":(kind==="empty"?(onPatrol(r,c)?"간수 순찰로":"빈 길"):((NODE[kind]||{}).label||kind)));
   const battle=kind==="dungeon"||kind==="elite"||kind==="boss"||kind==="tower"||kind==="wagon"||kind==="grove";
   b.appendChild(el(`<div class="mih">${esc(label)}${cell.done?`<em>끝냄</em>`:""}</div>`));
-  b.appendChild(el(`<div class="mii">${kind==="empty"?(onPatrol(r,c)?iconImg("ink11_map_guard_footprints"):""):(gimCellArt(cell)||inkArt(kind)||nodeArt(kind))}</div>`));
+  b.appendChild(el(`<div class="mii">${cell.stair?gimCellArt(cell):(kind==="empty"?(onPatrol(r,c)?iconImg("ink11_map_guard_footprints"):""):(gimCellArt(cell)||inkArt(kind)||nodeArt(kind)))}</div>`));
   /* 본문 — MAP_TIP 의 글(설명 고치기 「지도」) */
-  { let t=MAP_TIP[kind]||""; if(kind==="empty"&&onPatrol(r,c)) t=t.replace(/^빈 길/,"<b>간수 순찰로</b>");
+  { let t=MAP_TIP[cell.stair?"stair":(cell.ceil?"ceil":kind)]||""; if(kind==="empty"&&onPatrol(r,c)) t=t.replace(/^빈 길/,"<b>간수 순찰로</b>");
     const foeArt=battle&&/^등장:/.test(cell.style||"")&&!cell.done;
     const v={"종류":label,"라운드":cell.waves||1,"강화":battle&&kind!=="tower"&&kind!=="wagon"&&kind!=="grove"?Math.round((foeScale(kind).m-1)*100):0,"설명":foeArt?"":(cell.style||""),"전리품":"","거리":dist,"습격":"","날짜":Math.max(0,((FIELDS[run.field]||{}).days||7)-run.day+1)};
     t=t.replace(/\{(종류|라운드|강화|설명|전리품|거리|습격|날짜)\}/g,(m,k)=>String(v[k]));
@@ -20165,7 +20209,7 @@ const GIM_EV={
         f:()=>{ const b=caveReturn(); return b?(b.done?`${b.h.name}${jo(b.h.name,"ig")} 수련을 마치고 나옵니다. 공격력, 보호력, 마법력 +2.`:`${b.h.name}${jo(b.h.name,"ig")} 수련을 다 채우지 못하고 나옵니다.`):"" }},
        {t:"떨어지기",d:"수상한 구멍에 떨어집니다. 지도의 무작위 위치로 이동합니다.",end:1,
         when:()=>!run.cave,
-        f:()=>{ const L=[]; run.grid.forEach((row,a)=>row.forEach((x,b)=>{ if(x.t==="empty"&&!(a===r&&b===c)) L.push([a,b]) }));
+        f:()=>{ const L=[]; run.grid.forEach((row,a)=>row.forEach((x,b)=>{ if(x.t==="empty"&&!x.stair&&!(a===r&&b===c)) L.push([a,b]) }));
           run.grid[r][c]={t:"empty"}; const to=L.length?rnd(L):[r,c]; run.pos={r:to[0],c:to[1]}; fogLift(to[0],to[1]); run.nodeCost=0; run.mapSel=null; run.route=null;
           return "발밑이 꺼집니다! 한참을 굴러 낯선 곳으로 나왔습니다." }},
        {t:"수정 채굴",d:"푸른 수정을 1회 충전합니다.",end:1,
@@ -26492,6 +26536,13 @@ function drawBattle(app){
   const selfPick = tgMode==="ally" || tgMode==="any" || tgMode==="self";
   /* 대상을 고를 수 없는 자기 기술이 적을 친다(팽창 공격·시공간 폭탄·환상통…) — 아무 적이나 눌러도 발동 (사용자 2026-09-30) */
   const selfFoe = tgMode==="self" && !!preSkill && previewTargets(sel.hero,preSkill).some(t=>t.side==="foe");
+  /* 한 번 눌러 바로 나가는 기술(AUTO_SK — 화살비 · 영광의 족쇄 · 환상통 · 생명 에너지 전환 · 물과 불 …)은
+     **적을 겨누는 걸음이 없다.** 횟수를 고르는 순간 그대로 나간다 (사용자 2026-10-06/07).
+     그래서 여태 그 적들 위에 피해 숫자가 뜰 틈이 아예 없었다 — 값은 predictDmg 가 알고 있는데도.
+     볼 수 있는 틈은 **기술 칸을 누른 뒤 · 횟수를 고르기 전**(step 2·3) 하나뿐이라 거기에 띄운다
+     (사용자 2026-10-10 : 「띄워라」). 아래 selfHit 이 적마다 한 번 더 가린다. */
+  const autoPre = !!(sel && (sel.step===2||sel.step===3) && preSkill && autoSk(sel.hero,preSkill)
+                     && previewTargets(sel.hero,preSkill).some(t=>t.side==="foe"));
   const moveStep = !!(sel && sel.step===5);
   /* 이동 기술 — 갈 수 있는 칸에 붉은 화살표가 위에서 내려온다 (art/UI/move-arrow-down). 그림이 없으면 테두리만 */
   const movePick = moveStep || (tgMode==="ally" && isMoveSkill(preSkill));
@@ -26649,9 +26700,23 @@ function drawBattle(app){
                    : validTarget(sel.hero,sel.hero.sk[sel.skill],s);
       if(tgMode==="foe"||tgMode==="any"){ d.classList.add(canHit?"pick":"far") }
       if(selfFoe) d.classList.add("pick");
-      const dying=canHit&&willKill(sel.hero,preSkill,f,sel.count);
+      /* 제 몸 기술이 때리는 적 — 그 적에게도 숫자와 해골을 띄운다 (사용자 2026-10-10).
+         ⚠️ tg:"self" 를 통째로 열지 말 것. 적을 안 겨누는 기술 26가지 가운데 적이 드는 것은 여섯뿐이고,
+           나머지 스물에 숫자가 뜨면 안 뜨느니만 못하다. 그래서 문을 둘로 잠근다 :
+           ㉠ selfFoe(겨누는 걸음) 이나 autoPre(횟수 고르는 걸음) 여야 하고,
+           ㉡ predictDmg 가 **이 적에게** 값을 낼 줄 알아야 한다.
+         ★ ㉡ 을 미리보기로 대신하지 말 것 — 미리보기는 영광의 족쇄를 한 칸만 집는데 실제로는 셋을
+           때리고(연쇄 족쇄), 환상통은 셋을 집는데 실제로는 하나만 맞는다. predictDmg 는 적마다 맞는다
+           (재어 봄 : sim/probe-selfhit.js — 13번 견줘 어긋남 0가지).
+         ⚠️ 시공간 폭탄만은 예고가 못 본다(예고 없음 / 실제 6) — 값이 없으니 여기서 저절로 빠진다.
+           그건 predictDmg 쪽에 남은 미결이다 (sim/probe-hidden.js 의 KNOWN). */
+      const selfHit = !canHit && (selfFoe||autoPre) && (()=>{ let p=null;
+        try{ p=predictDmg(sel.hero,preSkill,f) }catch(e){}
+        return !!(p&&p.v!=null&&p.v>0) })();
+      const showHit = canHit||selfHit;
+      const dying=showHit&&willKill(sel.hero,preSkill,f,sel.count);
       if(dying) d.classList.add("willdie");
-      if(canHit) d.innerHTML+=foeHitTag(sel.hero,preSkill,f,sel.count);
+      if(showHit) d.innerHTML+=foeHitTag(sel.hero,preSkill,f,sel.count);
       const pf=B.portals&&B.portals.find(p=>p.side==="foe"&&p.slot===s);
       const pfk=(pf&&!pf.fresh)?`<i class="portal" style="background-image:url(${skinIcon("portal_idle")})"></i>`:"";
       const fesW=f.eshield?Math.max(6,Math.min(45,f.eshield/f.maxHp*100)):0;
@@ -29015,6 +29080,13 @@ function incoming(){
       /* 선고 — 자신을 뺀 모두(대원 · 소환물 · **다른 적**)가 멈춘다. 피해는 없다.
          여기서 멈춰 두어야 **뒤에 서는 적**의 몫이 0 으로 빠진다 (사용자 2026-10-09 :
          문지기 선고 턴에 시종의 「테이블 치우기」를 예고가 세고 있었다 — 예고 26 / 실제 0). */
+      /* 시간의 틈 — 가장 앞 대원과 가장 뒤 대원이 자리를 바꾼다 (skExec 의 swapEnds 와 같은 셈).
+         뒤에 오는 적이 **바뀐 자리**로 과녁을 고르므로 예고도 따라가야 한다 (사용자 2026-10-10 :
+         화살비가 뒤바뀐 사람을 쐈는데 예고는 바뀌기 전 사람을 쐈다). 피해는 없다. */
+      if(s&&s.swapEnds){
+        const L=run.heroes.filter(x=>x.slot>0&&x.hp>0).sort((x,y)=>hsl(x)-hsl(y));
+        if(L.length>=2){ const a=L[0], b=L[L.length-1], t=hsl(a); hv[uid(a)]=hsl(b); hv[uid(b)]=t }
+        return }
       if(s&&s.stopAll){
         list.forEach(u=>{ if(u.hp>0) vstop[uid(u)]=1 });
         B.foes.forEach(x=>{ if(x.alive&&x!==f) vstop[uid(x)]=1 });
@@ -29060,7 +29132,8 @@ function incoming(){
       let T=[];
       const tg=I.tg||(s&&s.tg)||"near";                       /* 실행(skExec)과 같은 갈래 */
       if(tg==="all") T=list.filter(u=>u.hp>0&&(!(s&&s.heroOnly)||!u.isMin)&&((s&&s.anyRng&&!s.debOut)||(s&&s.heatAll&&overheated(f))||dist(hsl(u),fsl(f))<=foeRng(f)));
-      else if(s&&(tg==="near2"||tg==="back2"||tg==="distAll"||tg==="within")) T=skTargets(f,s,list.filter(u=>u.hp>0));
+      else if(s&&(tg==="near2"||tg==="back2"||tg==="distAll"||tg==="within"))
+        T=skTargets(f,s,list.filter(u=>u.hp>0),VV);   /* 밀려난 뒤의 자리로 — 아랫줄 foeTarget 과 같게 (2026-10-10) */
       else if(s&&tg!=="self"&&tg!=="none"){ const R=foeTarget(f,I,s,VV); if(!R.why&&R.t) T=[R.t] }
       T.forEach(t=>{ let one=foeDmg(f,I.v+up(f),I.el)+(f.painBonus||0); if(s&&((s.burnCrit&&burnV(t)>0)||(s.debCrit&&DEB_KEYS.some(k=>deb(t,k)>0))||eyeCritFor(f,t,hsl,fsl))) one*=2;   /* 고통 감내 몫도 예고에 (2026-09-20) */
         for(let q=0;q<(s&&s.kindHits?Math.max(1,debKindsOnField()):Math.max(1,I.hits||1));q++) hitOn(t,one,f);
@@ -31776,7 +31849,7 @@ function itMagnetOne(h,s,f){
 function addUnknownCells(n){
   if(!run||!run.grid) return 0;
   const L=[];
-  run.grid.forEach((row,r)=>row.forEach((c,cc)=>{ if(c&&c.t==="empty"&&!c.done&&!(run.pos&&run.pos.r===r&&run.pos.c===cc)) L.push([r,cc]) }));
+  run.grid.forEach((row,r)=>row.forEach((c,cc)=>{ if(c&&c.t==="empty"&&!c.stair&&!c.done&&!(run.pos&&run.pos.r===r&&run.pos.c===cc)) L.push([r,cc]) }));
   for(let q=L.length-1;q>0;q--){ const k=Math.floor(Math.random()*(q+1)); const t=L[q]; L[q]=L[k]; L[k]=t }
   const pick=L.slice(0,n); pick.forEach(([r,c])=>{ run.grid[r][c]={t:"event"} });
   if(typeof MAP_BORN!=="undefined"&&!run.sandbox) pick.forEach(([r,c])=>MAP_BORN.push(r+"-"+c));   /* 지도에서 하나씩 솟아난다 */
