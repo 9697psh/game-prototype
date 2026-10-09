@@ -3482,6 +3482,7 @@ body.vmap .bagbtn{display:none}   /* 지도에서는 무대 안 시계 밑의 .m
 .icard.cdx.lock .ic-n,.icard.cdx.lock .ic-g,.icard.cdx.lock .ic-rowh{color:var(--faint)}
 .corechip img{image-rendering:pixelated;filter:drop-shadow(0 0 9px rgba(240,200,110,.45))}
 .mtop .mres .corechip img{width:clamp(46px,5.8vh,66px);height:clamp(46px,5.8vh,66px)}
+header #hRun .corechip img{width:22px;height:22px;filter:drop-shadow(0 0 6px rgba(240,200,110,.4))}
 .mapwrap.m3{--ms:min(calc(100vh - 120px),calc((100vw - 100px)*0.5),980px);--mp:min(calc(var(--ms)*0.62),600px);
   --sq:clamp(56px,calc(var(--ms)*0.095),92px);--cw:clamp(104px,calc(var(--ms)*0.18),176px);gap:22px}   /* 지도 크기에 맞춰 함께 — 사각 틀 · 대원 카드 */
 .mapwrap.m3 .map-m{flex-direction:column;align-items:flex-start;gap:14px;padding-top:0}
@@ -3516,7 +3517,7 @@ body.vbattle header h1,body.vbattle header .fname,body.vbattle header .rday,body
 body.vbattle header #hRun{display:flex;align-items:center;gap:12px;margin:0 auto}
 /* 머리줄 세 칸 — 시계는 가운데 칸, 양옆 칸은 같은 너비라 시계가 늘 정가운데 (사용자 2026-10-05). 다른 화면에선 묶음이 없는 것처럼 */
 #hRun .hL,#hRun .hR{display:contents}
-body.vbattle header #hRun,body.vnew header #hRun{display:grid;grid-template-columns:1fr auto 1fr;width:100%;column-gap:28px}
+body.vbattle header #hRun,body.vnew header #hRun{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);width:100%;column-gap:28px}
 body.vbattle header #hRun .hL,body.vnew header #hRun .hL{display:flex;align-items:center;justify-content:flex-end;gap:12px;grid-column:1;grid-row:1}
 body.vbattle header #hRun .clock,body.vnew header #hRun .clock{grid-column:2;grid-row:1}   /* 줄을 박아 둔다 — 시계의 order:3 이 자리 잡기 순서를 바꿔 둘째 줄로 밀려났다 */
 body.vbattle header #hRun .hR,body.vnew header #hRun .hR{display:flex;align-items:center;justify-content:flex-start;gap:12px;grid-column:3;grid-row:1}
@@ -10611,6 +10612,16 @@ function coreQuestTick(k,n){
   let fired=0;
   while(run.coreQ>=q.n&&fired<50){ run.coreQ-=q.n; fired++;
     try{ CORE_GIFT[q.do]() }catch(e){ console.error(e) } }
+  /* 보통 퀘스트와 같은 연출로 알린다 (사용자 2026-10-09) —
+     퀘스트 칸에서 목록이 펼쳐지는 것(questPopFX)은 questProgress 와 같은 줄(run.qPend)에 태우고,
+     소리와 전투 말풍선은 questCompleteFX 가 맡는다 */
+  if(!run.sandbox){
+    const u={id:c.n, cur:fired?q.n:Math.min(q.n,run.coreQ), need:q.n, done:fired?1:0, core:1};
+    if(typeof view!=="undefined"&&view==="battle"&&typeof B!=="undefined"&&B&&B.foes&&!B.over) fx({questUp:u,gap:0});
+    else { (run.qPend=run.qPend||[]).push(u);
+      if(typeof view!=="undefined"&&view==="map") setTimeout(()=>{ try{ questPendPlay() }catch(e){ console.error(e) } },300) }
+  }
+  if(fired) try{ questCompleteFX(c.n) }catch(e){ console.error(e) }
   return fired;
 }
 
@@ -16125,7 +16136,9 @@ function render0(){
       ${`<span class="res stone" title="제련석 — 주둔지 제련소에서 장신구 두 개를 합칠 때 씁니다.">${resIcon("stone")}<b>${run.stone||0}</b></span>`}`;
     { const ck=hr.querySelector(".clock");
       if(ck){ const L=el(`<span class="hL"></span>`), R=el(`<span class="hR"></span>`);
-        [".res.crystal",".res.taint",".res.act"].forEach(q=>{ const x=hr.querySelector(":scope > "+q); if(x) L.appendChild(x) });
+        [".res.crystal","CORE",".res.taint",".res.act"].forEach(q=>{
+          if(q==="CORE"){ const cc=coreChip("hcore"); if(cc) L.appendChild(cc); return }   /* 고른 세계핵이 없으면 자리도 안 생긴다 (사용자 2026-10-09) */
+          const x=hr.querySelector(":scope > "+q); if(x) L.appendChild(x) });
         [".res.gold",".res.stone"].forEach(q=>{ const x=hr.querySelector(":scope > "+q); if(x) R.appendChild(x) });
         hr.insertBefore(L,ck); ck.after(R) } }
   } else hr.innerHTML="";
@@ -16580,6 +16593,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 13, "v": "0.7", "d": "2026-10-09", "t": "머리줄 세계핵 아이콘·시계 가운데, 세계핵 카드 숫자키, 반복 퀘스트 완료 연출", "big": 0},
  {"b": 12, "v": "0.7", "d": "2026-10-09", "t": "대원 고르는 화면 단추를 세계핵 선택으로", "big": 0},
  {"b": 11, "v": "0.7", "d": "2026-10-09", "t": "전투 BGM 열하나, 세계핵 화면 소리와 배경, 반복 퀘스트 보상 바로 받기, 보상 소리 고침", "big": 0},
  {"b": 10, "v": "0.7", "d": "2026-10-09", "t": "세계핵 등장 연출, 전투 BGM 열하나, 피신 움직임, 번지는 기술 표시, 화면 손질", "big": 1},
@@ -17784,7 +17798,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=12;
+const BUILD_NO=13;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -23097,7 +23111,7 @@ function questPopFX(u){
   if(QPOP&&QPOP.p.isConnected){ clearTimeout(QPOP.t); qTick(QPOP.p,u); QPOP.t=setTimeout(qPopClose,u.done?1500:1000); return }
   const l=document.getElementById("fx"); if(!l) return;
   const r=layoutRect(ic);
-  const L=(run.quests||[]).filter(q=>!q.done||q.id===u.id), vals={}; vals[u.id]=u.cur-1;
+  const L=((typeof questList==="function"?questList():run.quests)||[]).filter(q=>!q.done||q.id===u.id), vals={}; vals[u.id]=u.cur-1;   /* 반복 퀘스트 칸도 들어오게 (사용자 2026-10-09) */
   if(!L.some(q=>q.id===u.id)) L.push({id:u.id,cur:u.cur,need:u.need});   /* 보상까지 받아 목록에서 빠진 것 — 그 순간의 값으로 */
   const p=el(qListHtml(L,vals)); p.classList.add("qpop");
   if(A.al==="r") p.style.right=Math.max(4,window.innerWidth-r.right)+"px"; else p.style.left=Math.max(4,r.left)+"px";
@@ -27915,6 +27929,12 @@ document.addEventListener("keydown",e=>{   /* 지도 — 스페이스바 = 판 �
   if(view!=="map"||e.key!==" "||e.repeat||!run||run.walkTo) return;
   const b=document.querySelector("#app .mgo"); if(!b) return;
   e.preventDefault(); b.click();
+});
+document.addEventListener("keydown",e=>{   /* 세계핵 고르기 — 숫자 1 · 2 · 3 (키패드도) 으로 그 자리 카드 (사용자 2026-10-09, 보상 카드와 같은 결 : 안내 글은 안 둔다) */
+  if(view!=="corepick"||!COREPICK||e.repeat||e.ctrlKey||e.altKey||e.metaKey) return;
+  const m=/^(?:Digit|Numpad)([1-9])$/.exec(e.code||""); if(!m) return;
+  const L=[...document.querySelectorAll("#app .cpwrap .cpcw")]; const c=L[+m[1]-1];
+  if(c){ e.preventDefault(); c.click() }
 });
 document.addEventListener("keydown",e=>{   /* 이벤트 선택지 — 숫자 1 · 2 · 3 · 4 (키패드도), 위에서부터 (사용자 2026-10-05) */
   if(view!=="relic"||e.repeat||e.ctrlKey||e.altKey||e.metaKey) return;
