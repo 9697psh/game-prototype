@@ -15934,6 +15934,9 @@ function postNear(r,c){ return gimCells(run.grid,"post").some(p=>!(p.cell.quiet>
 function wellNear(r,c){ return gimCells(run.grid,"well").some(p=>Math.abs(p.r-r)+Math.abs(p.c-c)<=2) }
 /* 반딧불 둥지 둘레 2칸 — 밤에도 습격이 없다 (노랗게 빛남) */
 function nestNear(r,c){ return !!run&&!!run.grid&&gimCells(run.grid,"nest").some(p=>Math.abs(p.r-r)+Math.abs(p.c-c)<=2) }
+const WAGON_DAY=2;   /* 마차가 하루에 가는 칸 수 (사용자 2026-10-08 — 한 칸에서 늘림).
+   ⚠️ 2026-10-11 에 되살린 줄이다 — 436ee141 에서 늑대 블록을 넣으며 이 선언만 지워졌고,
+   쓰는 곳(wagonStep)은 남아 nextDay() 가 통째로 죽었다. 날을 못 넘기는 멈춤이었다. */
 /* ═══ 격동하는 제련소 — 지도가 흔들린다 (사용자 2026-10-10) ═══
    천장과 계단을 뺀 구역들을 **그 층 안에서** 다시 뿌린다.
    ⚠️ **층 밖으로는 안 옮긴다** — 층마다 제 종류의 구역만 선다는 규칙(TOWER_FLOORS)이 깨진다.
@@ -17334,6 +17337,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 24, "v": "0.7", "d": "2026-10-11", "t": "치명 버그 고침 — 횟수만 쌓아도 저절로 딜이 들어가 라운드가 끝나던 것", "big": 1},
  {"b": 23, "v": "0.7", "d": "2026-10-11", "t": "도감에 연대기 탭 — 시대 차례, 큰 사건은 마름모", "big": 0},
  {"b": 22, "v": "0.7", "d": "2026-10-10", "t": "마력의 탑 — 탑 전용 이벤트 둘, 붉은 망토 늑대, 계단 열쇠, 도감 셋", "big": 0},
  {"b": 21, "v": "0.7", "d": "2026-10-10", "t": "액자를 더 물림 — 위와 양옆", "big": 0},
@@ -18549,7 +18553,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=23;
+const BUILD_NO=24;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -26123,8 +26127,12 @@ function skExec0(f,I){
   if(s.healPct){ const v=Math.round(f.maxHp*s.healPct); healUp(f,v);
     fx({side:"foe",slot:f.slot,s:"heal",ring:"#7fd39a",txt:"+"+v,cls:"heal",gap:160}); say(`${f.name} 체력 +${v}`,"t2") }
   if(s.hideUp){ f.hide=1; f.hideAt=B.turn||1; fx({side:"foe",slot:f.slot,ring:"#8b7fd8",txt:"은신",cls:"shd",gap:120}); say(`${f.name}${jo(f.name,"ig")} 몸을 숨깁니다.`,"t3") }
-  if(s.taint&&run){ run.taint=Math.min(taintMax(),(run.taint||0)+s.taint);
-    fx({side:"foe",slot:f.slot,ring:"#c98ae0",txt:"오염 +"+s.taint,cls:"shd",gap:120}); say(`${s.n} — 오염도 +${s.taint}`,"t3") }
+  if(s.taint&&run){
+    /* 오염도는 addTaint 한 길로 — 균열 세계핵의 누적에 들고, 전투 중 대원에게 바로 반영되고(taintSync), 100 이 되면 그 자리에서 진다 (사용자 승인 2026-10-10).
+       연습장은 지지 않는다 (옛 꼴 그대로 — 100 에서 멈춘다) */
+    if(run.sandbox) run.taint=Math.min(taintMax(),(run.taint||0)+s.taint); else addTaint(s.taint);
+    fx({side:"foe",slot:f.slot,ring:"#c98ae0",txt:"오염 +"+s.taint,cls:"shd",gap:120}); say(`${s.n} — 오염도 +${s.taint}`,"t3");
+    if(run.lost&&B&&!B.over){ B.over=1; say("오염이 한계에 달했습니다.","t3") } }   /* 진 판 — 이 차례의 남은 적은 더 움직이지 않는다 (actOne · actTwice · rewRun 이 B.over 를 본다) */
   if(s.parasite){                      /* 기생 — 다른 적에게 '죽음' 을 심는다 */
     const L=B.foes.filter(x=>x.alive&&x!==f&&!x.dthTag);
     const t=L.length?rnd(L):null;
@@ -30270,6 +30278,8 @@ function predictRun(h,s,f,n){
   const sp=predSnap();
   const kSel=sel, kBark=BARK_SHOW, kSave=SAVE_ON, kRnd=Math.random, kHold=FOE_HOLD;
   let out=null;
+  const kST=setTimeout;   /* 돌려 보는 동안 걸린 타이머는 되돌린 판에 떨어지면 안 된다 — 값은 동기로 얻으니 걸 까닭이 없다 */
+  setTimeout=function(){ return 0 };
   PRED_DRY=1; BARK_SHOW=0; SAVE_ON=false; FOE_HOLD=null;
   { let z=987654321; Math.random=()=>{ z=(z*1103515245+12345)&0x7fffffff; return (z%100000)/100000 } }   /* ㉢ */
   try{
@@ -30285,7 +30295,7 @@ function predictRun(h,s,f,n){
     }
   }catch(e){ out=null }
   finally{
-    Math.random=kRnd; FOE_HOLD=kHold; SAVE_ON=kSave; BARK_SHOW=kBark; sel=kSel;
+    setTimeout=kST; Math.random=kRnd; FOE_HOLD=kHold; SAVE_ON=kSave; BARK_SHOW=kBark; sel=kSel;
     try{ predRest(sp) }catch(e){}
     PRED_DRY=0;
   }
@@ -33630,6 +33640,11 @@ const foeReal=f=>f.alive&&!f.summoned&&!f.isPhantom;
 function checkEnd(){
   if(run&&run.sandbox) return;
   if(B.over) return;
+  /* 미리 돌려 보는 중(predictRun) — 마지막 적이 쓰러지는 수를 돌려 보다 여기로 오면 `setTimeout(afterWave)` 가 걸려,
+     돌려 보기가 끝나 적이 되살아난 **뒤에** 그 타이머가 터져 라운드가 끝나 버렸다 (사용자 2026-10-11:
+     「마지막 적과 1대1 일 때 기술을 입력하지 않아도 횟수만 쌓으면 저절로 딜이 들어가 라운드가 끝난다」).
+     돌려 보기는 판을 건드리지 않는다 — 끝내지도, 끝낼 타이머를 걸지도 않는다 */
+  if(PRED_DRY) return;
   /* 죄수 호송 마차 — 경비병이 다 쓰러지면 죄수는 풀려난다(전투 끝) */
   if(run.dun&&run.dun.cell&&run.dun.cell.wagon){
     const pr=B.foes.find(f=>f.name==="억울한 죄수");
