@@ -2909,6 +2909,17 @@ img.ri{width:14px;height:14px;vertical-align:-2px;image-rendering:auto}
 .cell .you.arw img{display:block;width:46px;height:46px;image-rendering:pixelated;animation:mvDown 1.1s ease-in infinite}
 @media (prefers-reduced-motion:reduce){ .cell .you.arw img{animation:none} }
 .cell .crisk{position:absolute;left:3px;top:1px;color:var(--danger);font-weight:900;font-size:13px}
+/* 마도서가 섞이는 전투 칸 — 오른쪽 아래 구석. 활동량 아이콘(왼쪽 아래)과 같은 크기, 반대쪽이라 안 부딪힌다 */
+/* 지도의 늑대 — 빈 길로만 다니니(/map, 2026-10-10) 칸 가운데 큼직하게 둔다. 겹칠 구역 그림이 없다.
+   붉은 빛만 둘러 쫓기는 것이 눈에 띄게 한다 — 다른 칸 그림에는 없는 것이라 그것만으로 도드라진다 */
+.cell .cico.wolf{z-index:5;filter:drop-shadow(0 0 4px rgba(220,60,50,.9)) drop-shadow(0 1px 2px rgba(0,0,0,.85))}
+.cell .ctome{position:absolute;right:5%;bottom:4%;width:26%;height:26%;z-index:3;display:flex;align-items:flex-end;justify-content:flex-end;pointer-events:auto;cursor:help;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.85))}
+.cell .ctome img{width:100%;height:100%;image-rendering:pixelated;display:block}
+/* 활동량을 내는 칸 — 왼쪽 아래 구석에 작게. 칸 그림을 가리지 않게 칸의 26% 로 (사용자 2026-10-10) */
+.cell .cact{position:absolute;left:5%;bottom:4%;width:26%;height:26%;z-index:3;display:flex;align-items:flex-end;justify-content:flex-start;pointer-events:auto;cursor:help;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.85))}
+.cell .cact .ri,.cell .cact img.ri{width:100%;height:100%;flex:none;image-rendering:pixelated;display:block}
 .cell.adj{cursor:pointer}
 .cell.adj{filter:none}
 .cell:not(.adj):not(.here){filter:brightness(.55) saturate(.6)}
@@ -3246,6 +3257,13 @@ body.vtitle header #hBtns button:hover{border-color:#f4d67c;color:#f4d67c}
 .zk-gim{color:#e8a85a!important}
 /* 세계핵의 반복 퀘스트 — 되풀이라는 것을 한 눈에 (사용자 2026-10-09) */
 .qrepb{color:#f2d06b}
+/* 계단 열쇠 — 아이콘이 오기 전까지 글자로 (사용자에게 청해 둠, 2026-10-10). 그림이 오면 이 규칙은 지운다 */
+.res.skey .rkey{font-style:normal;font-size:11px;letter-spacing:.04em;color:var(--brass);border:1px solid var(--rule2);border-radius:3px;padding:0 3px;line-height:1.5}
+.res.skey.empty{opacity:.45}
+/* 마나석 기둥 — 다 켜지면 밝아진다 (총괄 2026-10-10). 아이콘 없이 글자로 두는 것은 열쇠와 같은 결 */
+.res.spil{opacity:.62}
+.res.spil.on{opacity:1}
+.res.spil.on .rkey{color:#7fc6ff;border-color:#4a8ac8}
 .qcard b.qcore{color:#e0705a!important}   /* 반복 퀘스트 — 이름을 붉게 (사용자 2026-10-09) */
 /* 떠오르는 등장 — 애니메이션은 바깥(.cpcw)이 맡는다. 안쪽(.cpc)은 커서와 고름에 쓴다 */
 /* 등장 — 시안 A「어둠에서 깨어남」 (사용자가 넷 중에 고름, 2026-10-09).
@@ -4696,6 +4714,9 @@ body.vnew #app .evopts .evres p{color:#e6d6b2;font-size:15px;line-height:1.7;tex
   34%{transform:translate(calc(var(--dx) * 62%),calc(var(--dy) * 62% - 5%)) rotate(-3deg)}46%{transform:translate(calc(var(--dx) * 48%),calc(var(--dy) * 48%)) rotate(2deg)}
   58%{transform:translate(calc(var(--dx) * 34%),calc(var(--dy) * 34% - 6%)) rotate(-4deg)}70%{transform:translate(calc(var(--dx) * 20%),calc(var(--dy) * 20%)) rotate(2deg)}
   82%{transform:translate(calc(var(--dx) * 8%),calc(var(--dy) * 8% - 4%)) rotate(-2deg)}92%{transform:translate(0,0) rotate(1deg)}100%{transform:none}}
+/* 모형 열병식 : 늑대 — 마차와 같은 길로 굴러 들어온다 (2026-10-10). 늑대는 칸 위의 그림이라 그것만 굴린다 */
+.gridmap .cell.parademove .cico{animation:wagonRoll 1.5s linear var(--bd,0ms) backwards}
+.gridmap .cell.wolfmove .cico.wolf{animation:wagonRoll 1.5s linear var(--bd,0ms) backwards}
 .gridmap .cell .cico.wagongo{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:6;animation:wagonGo 1.5s linear var(--bd,0ms) forwards}
 
 @keyframes wagonGo{0%{transform:none;opacity:1}20%{transform:translate(calc(var(--dx) * 20%),calc(var(--dy) * 20% - 6%)) rotate(-4deg)}
@@ -5946,7 +5967,9 @@ const INK_NODE={dungeon:"ink11_map_battle",elite:"ink11_map_elite",boss:"ink11_m
   grove:"ink_sp_grove",thicket:"ink_sp_thicket",nest:"ink_sp_nest",dryshop:"ink_sp_dryshop",spring:"ink_sp_spring",
   cave:"ink_sp_cave",colony:"ink_sp_colony",croot:"ink_sp_croot",fog:"ink_sp_fog",
   /* 마력의 탑 (사용자 2026-10-10) — 천장 · 계단 칸 그림 자리. 64×64 가 오면 icons.js 에 이 이름으로 넣기만 하면 된다 */
-  ceil:"ink_tw_ceiling",stair:"ink_tw_stair"};
+  ceil:"ink_tw_ceiling",stair:"ink_tw_stair",
+  lockdoor:"ink_tw_locked_gate",hole:"ink_tw_broken_hole",keyroom:"ink_tw_key_room",fog_tw:"ink_tw_fog",
+  bookcase:"ink_tw_library",tome_shelf:"ink_tw_tome_shelf",mana_pillar:"ink_tw_mana_pillar",clocktower:"ink_tw_clocktower",parade:"ink_tw_model_parade"};
 /* 칸마다 그림이 다른 것 — 장벽(가로/세로) · 우물(3×3 조각) */
 function gimCellArt(cell){
   if(cell.t==="wall"&&cell.ceil) return inkArt("ceil");   /* 마력의 탑 천장 — 칸마다 같은 그림 자리 */
@@ -5956,7 +5979,7 @@ function gimCellArt(cell){
   if(cell.t==="mwreck") return iconImg("ink_sp_mw"+(cell.tile||"11"));   /* 거대한 기계의 잔해 2×2 조각 */
   return inkArt(cell.t);
 }
-function inkArt(t){ return iconImg(INK_NODE[t]) }
+function inkArt(t){ if(t==="fog"&&typeof towerOn==="function"&&towerOn()) t="fog_tw"; return iconImg(INK_NODE[t]) }   /* 마력의 탑 안개는 제 그림(ink_tw_fog) */
 /* ═══════════ 배경음악 ═══════════
    파일은 bgm/ 폴더에 따로 둔다. 한 파일 게임에 14MB 를 심을 수는 없다.
    곡을 더 넣을 때는 BGM_SRC 에 파일 이름을, sceneBgm() 에 어느 화면인지를
@@ -14149,6 +14172,13 @@ const FOE={
       늑대가 서로를 돌보고 저주를 건다. 돌보는 것은 늑대치기 몫이다. */
    ai:{open:"back",back:10,weak:5,near:4,twin:4,any:2,chase:1,debs:["bind"]},
    hit:"목덜미 물어뜯기"},
+ /* 동화의 방 — 지도에서 쫓아오다 따라잡으면 혼자 달려든다 (사용자 2026-10-10).
+    ⚠️ 체력 · 공격력 · 보호력 · 경험치는 노트에 없어 **내가 정한 값**이다 (3구역 정예 언저리).
+    ⚠️ 전투 그림은 아직 안 구워졌다 — art/_받은묶음/spire-wolves-64-v1/poses/red_hood_wolf (/art 몫) */
+ "붉은 망토 늑대":{hp:120,atk:14,def:6,rng:5,exp:12,
+   el:"공격", race:"야수",
+   ai:{open:"near",near:6,weak:5,back:4,chase:3,any:2,debs:["bind","fear"]},
+   hit:"송곳니 물어뜯기"},
  /* 세 단계 (사용자 2026-10-03) — 체력 300, 공격력 8 은 배율을 안 받는다(fixHp). 기술 숫자가 적은 그대로 들어간다.
     보호력만 여느 우두머리처럼 오른다 (맞는 쪽). 200 아래 2단계, 100 아래 3단계 — 단계를 넘으면 그 단계의 「전환」부터.
     배율을 곱해 보니(철퇴 25, 연타 12×3) 예전 간수장보다 훨씬 어려웠다 (sim, 4명 lv9 42% → 10%) */
@@ -14909,7 +14939,7 @@ let run=null, view="title", B=null, sel=null, pending=null;
 const FIELDS=[
  {n:"핏빛 감옥", size:9, days:5, act:6},   /* act = 판을 시작할 때의 활동량. 12/15/20 → 전 구역 5 → 6 (사용자 2026-10-08) · 날짜 7→5 (사용자 2026-09-29) */
  {n:"정령숲",    size:9, days:6, act:6},
- {n:"마력의 탑", size:11, days:7, act:6, ceil:[3,7]}   /* 1 · 2구역은 9×9 (사용자 2026-09-15; 8×8 은 2026-09-14). 마력의 탑만 11×11 (사용자 2026-10-10) — 지도 상자는 그대로, 칸이 작아진다.
+ {n:"마력의 탑", size:11, days:7, act:6, ceil:[3,7], restCleanse:25}   /* 1 · 2구역은 9×9 (사용자 2026-09-15; 8×8 은 2026-09-14). 마력의 탑만 11×11 (사용자 2026-10-10) — 지도 상자는 그대로, 칸이 작아진다.
       ceil = 천장 줄(위에서 4행 · 8행, 0 기준) — 그 줄의 칸은 전부 막힌 벽이고 줄마다 계단 한 칸만 뚫린다. 구역마다 size · ceil 을 따로 둘 수 있다. NODE_N 은 그대로 */
 ];
 const NODE={
@@ -14942,15 +14972,34 @@ const NODE={
  croot  :{label:"오염된 뿌리", c:"#6a3a5a"},
  mwreck :{label:"거대한 기계의 잔해",c:"#6a6a6a"},
  fog    :{label:"안개 지대",   c:"#8a8a8a"},
+ /* 마력의 탑 (사용자 2026-10-10) */
+ lockdoor:{label:"잠금문",     c:"#8a7a3a"},
+ stair  :{label:"계단",       c:"#c9a227"},
+ parade :{label:"모형 열병식", c:"#9a7b4f"},
+ hole   :{label:"부서진 구멍", c:"#5a4a6a"},
+ keyroom:{label:"열쇠방",     c:"#b89a4a"},
+ mana_pillar:{label:"마나석 기둥",c:"#4a8ac8"},
+ clocktower:{label:"종탑",       c:"#8a8a6a"},
+ bookcase:{label:"책장",      c:"#7a5a3a"},
+ tome_shelf:{label:"고대 서적 선반",c:"#9a7a4a"},
  empty  :{label:"",           c:"#3a3128"}
 };
-const GIM_T={tower:1,fence:1,torture:1,gallows:1,post:1,wagon:1,tunnel:1,wall:1,well:1,grove:1,thicket:1,nest:1,spring:1,cave:1,colony:1,croot:1,mwreck:1};
+const GIM_T={parade:1,tower:1,fence:1,torture:1,gallows:1,post:1,wagon:1,tunnel:1,wall:1,well:1,grove:1,thicket:1,nest:1,spring:1,cave:1,colony:1,croot:1,mwreck:1,lockdoor:1,stair:1,hole:1,keyroom:1,bookcase:1,tome_shelf:1,mana_pillar:1,clocktower:1};
 /* ── 지도 칸 카드 글 — 설명 고치기 「지도」 에서 고친다. 자리표는 mapTipFill 이 채운다 ──
    {종류} 칸 이름 · {라운드} 라운드 수 · {강화} 적 강화 % · {설명} 적 무리 글 · {전리품} 전리품 글
    {거리} 여기서 몇 칸 · {습격} 밤에 빈 칸 습격 확률(%) · {날짜} 남은 날 · 줄바꿈은 그대로 줄이 된다 */
 const MAP_TIP={
+ parade:"<b>모형 열병식</b>\n모형 병사들이 일렬로 서 열병식을 진행하고 있습니다.\n여섯 시간마다 한 칸씩 자리를 옮깁니다. 칸 셋은 늘 붙어 다닙니다.",
  ceil:"<b>천장</b>\n막힌 벽입니다. 지나갈 수 없습니다. 계단으로만 층을 오갈 수 있습니다.",
- stair:"<b>계단</b>\n이 줄의 천장이 뚫린 곳입니다. 여기로만 위아래 층을 오갑니다.",
+ stair:"<b>계단</b>\n잠긴 상태로 시작합니다. 계단 열쇠로 잠금문을 열면 계단으로 이동할 수 있습니다.",
+ lockdoor:"<b>잠금문</b>\n계단 열쇠로 잠금문을 해제하고 계단을 이용할 수 있습니다.",
+ hole:"<b>부서진 구멍</b>\n아래 층으로 떨어집니다.",
+ keyroom:"<b>열쇠방</b>\n퀘스트를 수행하고 계단 열쇠를 얻을 수 있습니다.",
+ clocktower:"<b>종탑</b>\n거대한 종이 울리는 소리가 저 멀리 들립니다. 우뚝 서 있는 종탑에 도착합니다. 쓰면 부서집니다.",
+ mana_pillar:"<b>마나석 기둥</b>\n마나로 이루어진 기둥입니다. 이번 층의 모든 마나석 기둥을 활성화하면 모든 대원이 전투에서 추가 마나를 1 얻습니다.",
+ bookcase:"<b>책장</b>\n수많은 책들이 쌓여있는 곳입니다. 처음 보는 문자들도 많습니다.\n고대 서적 선반을 둘러막고 있습니다. 활동량 1.",
+ tome_shelf:"<b>고대 서적 선반</b>\n대원에게 고대 서적을 읽혀 추가 마법력을 얻거나, 선반을 엎을 수 있습니다. 책장이 둘러막고 있습니다.",
+ fog_tw:"<b>마력의 안개</b>\n각 층에 도달하기 전에는 마력의 안개로 가려져 있습니다.",
  dungeon:"<b>{종류}</b> {라운드}라운드, 적 강화 +{강화}%\n{설명}\n{전리품}",
  elite:"<b>{종류}</b> 적 강화 +{강화}%\n{설명}\n{전리품}\n더 세지만 더 좋은 것을 떨어뜨립니다.",
  boss:"<b>{종류}</b>\n이 구역의 마지막 상대입니다. {날짜}일 안에 넘어야 합니다.",
@@ -14984,7 +15033,7 @@ let MAPTIP_EL=null;
 function mapTipFill(cell,r,c){
   if(fogAt(r,c)&&!(run.pos.r===r&&run.pos.c===c)) cell={t:"fog"};
   const kind=cell.t||"empty";
-  let t=MAP_TIP[cell.stair?"stair":(cell.ceil?"ceil":kind)]; if(t==null) return "";
+  let t=MAP_TIP[cell.stair?"stair":(cell.ceil?"ceil":(kind==="fog"&&towerOn()?"fog_tw":kind))]; if(t==null) return "";
   const patrolEmpty=kind==="empty"&&onPatrol(r,c);
   if(patrolEmpty) t=t.replace(/^빈 길/,"<b>간수 순찰로</b>");
   const dist=Math.abs(r-run.pos.r)+Math.abs(c-run.pos.c);
@@ -15308,12 +15357,44 @@ function placeCeilings(g,rows){
   const S=g.length;
   (rows||[]).forEach(r=>{
     for(let c=0;c<S;c++) g[r][c]={t:"wall",ceil:1};
-    g[r][Math.floor(Math.random()*S)]={t:"empty",stair:1};
+    g[r][Math.floor(Math.random()*S)]={t:"lockdoor"};   /* 잠금문 — 열쇠로 열면 계단이 된다 */
   });
+}
+/* ═══ 마력의 탑 층 (사용자 2026-10-10) ═══
+   천장 줄(ceil)이 가름막이다. 1층 = 맨 아래 · 2층 = 가운데 · 3층 = 맨 위. 천장 줄 자신은 0.
+   층을 셈하는 곳은 여기 하나다 — 화면은 floorHidden · towerFloor 에 묻는다 (행 번호를 손으로 적지 말 것) */
+function towerFloor(r,fi){
+  const ce=(FIELDS[fi==null?(run&&run.field):fi]||{}).ceil; if(!ce) return 0;
+  if(ce.indexOf(r)>=0) return 0;
+  return 1+ce.filter(x=>x>r).length;
+}
+function curFloor(){ if(!run||!run.pos) return 0; const f=towerFloor(run.pos.r); return f||towerFloor(run.pos.r+1) }
+function towerOn(){ return !!(run&&FIELDS[run.field]&&FIELDS[run.field].ceil) }
+function floorSeen(f){ const m=(run&&run.floorsSeen)||{1:1}; return !!m[f]||curFloor()===f }
+/* 마력의 안개 — 아직 닿지 않은 층의 칸 속을 가린다. 우두머리 · 천장 줄(잠금문 · 계단)은 늘 보인다 */
+function floorHidden(r,c){
+  if(!towerOn()||!run.grid||!run.grid[r]||!run.grid[r][c]) return false;
+  if(run.grid[r][c].t==="boss") return false;
+  const f=towerFloor(r); return f>0&&!floorSeen(f);
+}
+/* 층이 열린다 — 안개가 걷히는 연출을 그 층 칸마다 부른다 */
+function floorReveal(f){
+  if(!towerOn()||!f||(run.floorsSeen&&run.floorsSeen[f])) return;
+  const keys=[]; const S=run.size;
+  for(let r=0;r<S;r++) if(towerFloor(r)===f) for(let c=0;c<S;c++) if(run.grid[r][c].t!=="boss") keys.push(r+"-"+c);
+  run.floorsSeen=Object.assign({1:1},run.floorsSeen||{}); run.floorsSeen[f]=1;
+  try{ mapGone("fog",keys) }catch(e){}
+}
+const TOWER_STOP={lockdoor:1,stair:1,hole:1,bookcase:1,tome_shelf:1};   /* 지나는 길에 못 낀다 — 길찾기는 이 칸을 목적지로만 쓴다 */
+/* 계단 위 · 아래 칸에는 전투가 없다 */
+function nearStair(g,r,c){
+  return [[-1,0],[1,0]].some(([a,b])=>{ const x=g[r+a]&&g[r+a][c+b]; return x&&(x.t==="stair"||x.t==="lockdoor") });
 }
 /* 주둔지에서 우두머리까지 막힌 벽(wall)을 빼고 걸어갈 수 있는가 — 못 걸으면 그 판은 못 깬다 */
 function gridConnected(g){
   const S=g.length; let cp=null, bs=null;
+  { const ce=[]; for(let r=0;r<S;r++) if(g[r].some(x=>x.ceil)) ce.push(r);
+    if(ce.length) return towerConnected(g,ce.sort((a,b)=>b-a)) }
   for(let r=0;r<S;r++) for(let c=0;c<S;c++){ if(g[r][c].t==="camp") cp=[r,c]; if(g[r][c].t==="boss") bs=[r,c] }
   if(!cp||!bs) return false;
   const seen=new Set([cp[0]+"-"+cp[1]]), q=[cp];
@@ -15322,10 +15403,38 @@ function gridConnected(g){
       if(y<0||x<0||y>=S||x>=S||seen.has(k)||g[y][x].t==="wall") return; seen.add(k); q.push([y,x]) }) }
   return false;
 }
+/* 마력의 탑 길 — 층마다 따로 센다. 열쇠방의 열쇠로 잠금문을 열어야 윗층에 가므로,
+   1층에서 (잠금문 아래 줄까지) 걸어서 쉼터 · 열쇠방 · 잠금문에 닿고, 2층에서 또 그렇고, 마지막에 우두머리까지 이어져야 한다 */
+function towerConnected(g,ce){
+  const S=g.length; let cp=null, bs=null;
+  for(let r=0;r<S;r++) for(let c=0;c<S;c++){ if(g[r][c].t==="camp") cp=[r,c]; if(g[r][c].t==="boss") bs=[r,c] }
+  if(!cp||!bs) return false;
+  const bfs=lim=>{   /* lim — 이 줄보다 위로는 못 간다 (열린 잠금문 바로 앞까지) */
+    const seen=new Set([cp[0]+"-"+cp[1]]), q=[cp], got=[];
+    while(q.length){ const [r,c]=q.shift(); got.push([r,c]);
+      const t0=g[r][c].t;
+      if(t0==="lockdoor"||t0==="stair"){   /* 열린 문(계단)은 한 칸 위로 옮겨 주는 길이다 — 아직 잠긴 문 · 구멍은 길을 못 낀다 (길찾기와 같다) */
+        if(r>lim&&r-1>=lim&&!seen.has((r-1)+"-"+c)){ seen.add((r-1)+"-"+c); q.push([r-1,c]) }
+        continue }
+      if(t0==="hole"||t0==="bookcase"||t0==="tome_shelf") continue;
+      [[1,0],[-1,0],[0,1],[0,-1]].forEach(([a,b])=>{ const y=r+a, x=c+b, k=y+"-"+x;
+        if(y<lim||x<0||y>=S||x>=S||seen.has(k)||g[y][x].t==="wall") return; seen.add(k); q.push([y,x]) }) }
+    return got };
+  if(g.towerKinds){ for(let f=1;f<=g.towerKinds.length;f++){ const T=TOWER_FLOORS[g.towerKinds[f-1]]; if(T&&T.ok&&!T.ok(g,f)) return false } }   /* 서재 층에 도서관 · 마나 제련소 층에 기둥 · 톱니 용광로 층에 종탑 */
+  for(let i=0;i<=ce.length;i++){
+    const lim=i<ce.length?ce[i]:0, floor=i+1, got=bfs(lim);
+    if(!got.some(([r,c])=>g[r][c].t==="rest"&&towerFloor(r,2)===floor)) return false;                 /* 층마다 쉼터 */
+    if(i<ce.length){
+      if(!got.some(([r,c])=>g[r][c].t==="lockdoor"&&r===lim)) return false;                              /* 윗층으로 가는 문에 닿는다 */
+      if(i<2&&!got.some(([r,c])=>g[r][c].t==="keyroom"&&towerFloor(r,2)===floor)) return false;           /* 1 · 2층에는 열쇠방 */
+    } else if(!got.some(([r,c])=>r===bs[0]&&c===bs[1])) return false;
+  }
+  return true;
+}
 /* 지도 한 장 — 길이 끊기면 그 자리에서 다시 만든다 (사용자 2026-10-10: 한 번이라도 막히면 안 된다) */
 function buildGrid(fi,keep){
   let g=null;
-  for(let t=0;t<60;t++){ g=buildGrid0(fi,keep); if(gridConnected(g)) return g }
+  for(let t=0;t<60;t++){ g=buildGrid0(fi,keep); if(gridConnected(g)){ if(g.towerKinds&&typeof run!=="undefined"&&run) run.floorKinds=g.towerKinds.slice(); return g } }
   console.warn("지도 길이 끊김 — 60번 다시 만들어도 이어지지 않았습니다 (구역 "+fi+")");
   return g;
 }
@@ -15336,24 +15445,172 @@ function buildGrid0(fi,keep){
   g[0][mid]={t:"boss"};
   if(FIELDS[fi].ceil) placeCeilings(g,FIELDS[fi].ceil);   /* 천장 · 계단을 먼저 — 기믹과 일반 칸은 빈 길에만 놓인다 */
   placeGimmicks(g,fi,keep);       /* 기믹을 먼저 (사용자 2026-09-15) — 빈자리에 일반 칸이 들어간다 */
+  if(FIELDS[fi].ceil) placeTower(g,fi);
   const free=[];
   for(let r=0;r<S;r++) for(let c=0;c<S;c++) if(g[r][c].t==="empty"&&!g[r][c].stair) free.push([r,c]);
   const put=(t,n,mk)=>{
     for(let i=0;i<n&&free.length;i++){
       const k=Math.floor(Math.random()*free.length), rc=free.splice(k,1)[0];
-      g[rc[0]][rc[1]]=Object.assign({t:t},mk?mk():{});
+      g[rc[0]][rc[1]]=Object.assign({t:t},mk?mk(rc[0],rc[1]):{});
     }
   };
-  const dun=()=>{ const w=1+Math.floor(Math.random()*3); return Object.assign({waves:w},encRoll("dungeon",fi,w)) };
+  const kAt=r=>(g.towerKinds&&towerFloor(r,fi)>0)?g.towerKinds[towerFloor(r,fi)-1]:null;   /* 탑 — 그 칸이 선 층의 종류 */
+  const dun=(r)=>{ const w=1+Math.floor(Math.random()*3); return Object.assign({waves:w},encRoll("dungeon",fi,w,kAt(r))) };
   put("dungeon",nodeCount("dungeon",fi),dun);
-  put("elite",nodeCount("elite",fi),()=>Object.assign({waves:1},encRoll("elite",fi,1)));
+  put("elite",nodeCount("elite",fi),(r)=>Object.assign({waves:1},encRoll("elite",fi,1,kAt(r))));
   put("shop",nodeCount("shop",fi));
   if(fi===1) put("dryshop",nodeCount("shop",fi));   /* 마른숲 상점 — 상점과 똑같이 (사용자 2026-10-01) */
   put("rest",nodeCount("rest",fi)+1+(Math.random()<0.5?1:0));   /* 쉼터 +1~2 — 9×9 로 밤이 빨리 온다 (사용자 2026-09-15) */
   put("event",nodeCount("event",fi));
   put("forge",1);                 /* 제련소는 어느 구역에나 한 곳 */
   campSafe(g);
+  if(FIELDS[fi].ceil) towerFix(g,fi);
   return g;
+}
+/* 탑의 필수 칸 — 열쇠방(1 · 2층 하나씩) · 부서진 구멍(2 · 3층 하나씩). 빈 길에 먼저 놓는다 */
+function placeTower(g,fi){
+  const S=g.length, camp=[S-1,Math.floor(S/2)], put=(f,t)=>{
+    const L=[]; for(let r=0;r<S;r++) for(let c=0;c<S;c++) if(g[r][c].t==="empty"&&towerFloor(r,fi)===f&&Math.abs(r-camp[0])+Math.abs(c-camp[1])>=2) L.push([r,c]);
+    if(!L.length) return; const [r,c]=L[Math.floor(Math.random()*L.length)];
+    g[r][c]=t==="keyroom"?{t:t,trials:keyTrialPick()}:{t:t} };
+  /* 층의 종류 — 층마다 하나씩 뽑아 그 층에는 그 종류의 구역만 세운다. 열쇠방 · 구멍보다 먼저 빈 자리를 잡는다 */
+  const KS=Object.keys(TOWER_FLOORS).filter(k=>typeof TOWER_FLOORS[k].place==="function");
+  for(let i=KS.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=KS[i]; KS[i]=KS[j]; KS[j]=t }
+  g.towerKinds=[0,1,2].map(i=>KS[i%KS.length]);   /* 종류가 셋보다 적으면 돌려 쓴다 */
+  g.towerKinds.forEach((k,i)=>TOWER_FLOORS[k].place(g,fi,i+1));
+  put(1,"keyroom"); put(2,"keyroom"); put(2,"hole"); put(3,"hole");
+}
+/* ═══ 층의 종류 (총괄 읽기 2026-10-10 — 사용자 글: 「각 층은 고유한 전용 구역을 가지고 있고」, 「층은 총 4개 (서재 / 마나 제련소 / 톱니 용광로 / 동화의 방)」) ═══
+   층은 셋, 종류는 넷 — 한 판에 종류를 겹치지 않게 셋 뽑아 1 · 2 · 3층에 하나씩 놓는다. 종류를 늘리려면 이 표에 한 줄:
+     place(g,fi,f) — 그 층(f)에 구역을 세운다 (층 칸 판정은 towerFloor(r,fi)===f) · ok(g,f) — 지도가 그 층의 구역을 갖췄는가 (없으면 지도를 다시 만든다)
+   place 가 없는 종류(아직 안 만든 것)는 뽑지 않는다. 층에 서는 개수 — 서재: 도서관 1개 확정 + 20% 로 하나 더 / 마나 제련소: 기둥 2개(15% 는 3개) / 톱니 용광로: 종탑 1개 */
+const floorCount=(g,f,t)=>{ let n=0; for(let r=0;r<g.length;r++) if(towerFloor(r,2)===f) for(let c=0;c<g.length;c++) if(g[r][c].t===t) n++; return n };
+const TOWER_FLOORS={
+ library:{n:"서재",        place:(g,fi,f)=>{ placeLibrary(g,fi,f); if(Math.random()<LIB_ODDS) placeLibrary(g,fi,f) }, ok:(g,f)=>floorCount(g,f,"tome_shelf")>=1},
+ mana:   {n:"마나 제련소",  place:(g,fi,f)=>placeMana(g,fi,f),  ok:(g,f)=>floorCount(g,f,"mana_pillar")>=2},
+ gears:  {n:"톱니 용광로",  place:(g,fi,f)=>placeClock(g,fi,f), ok:(g,f)=>floorCount(g,f,"clocktower")>=1},
+ fairy:  {n:"동화의 방",    place:(g,fi,f)=>placeParade(g,fi,f), ok:(g,f)=>floorCount(g,f,"parade")>=3}
+};
+/* 이 판의 f 층은 어떤 종류인가 — 화면 · 점검이 묻는다 (지도 배열의 towerKinds, 없으면 run.floorKinds) */
+function floorKind(f){ const K=(run&&run.grid&&run.grid.towerKinds)||(run&&run.floorKinds)||[]; return K[f-1]||null }
+function floorKindName(f){ const k=floorKind(f); return k&&TOWER_FLOORS[k]?TOWER_FLOORS[k].n:"" }
+/* ═══ 동화의 방 — 모형 열병식 (사용자 2026-10-10) ═══
+   이어진 세 칸이 한 벌이다. 여섯 시간마다 한 칸씩 자리를 옮기되 셋은 늘 붙어 있다(일렬이 아니어도 된다).
+   ⚠️ 열병식 칸은 **지나갈 수 있는 구역 칸**이다(책장 · 구멍과 달리 TOWER_STOP 이 아니다) —
+   그래서 어디로 움직여도 층의 길을 끊지 않는다. 길 검사(towerConnected)를 따로 돌릴 까닭이 없다 */
+const PARADE_N=3, PARADE_H=6;   /* 칸 수 · 몇 시간마다 한 칸 */
+function placeParade(g,fi,f){
+  const S=g.length, camp=[S-1,Math.floor(S/2)];
+  const ok=(r,c)=>r>=0&&c>=0&&r<S&&c<S&&g[r][c].t==="empty"&&!g[r][c].stair&&towerFloor(r,fi)===f
+                  &&Math.abs(r-camp[0])+Math.abs(c-camp[1])>=2;
+  const seeds=[]; for(let r=0;r<S;r++) for(let c=0;c<S;c++) if(ok(r,c)) seeds.push([r,c]);
+  for(let t=0;t<40&&seeds.length;t++){
+    const [r0,c0]=seeds[Math.floor(Math.random()*seeds.length)], got=[[r0,c0]];
+    while(got.length<PARADE_N){
+      const nb=[];
+      got.forEach(([r,c])=>[[-1,0],[1,0],[0,-1],[0,1]].forEach(([dr,dc])=>{
+        const a=r+dr, b=c+dc;
+        if(ok(a,b)&&!got.some(([x,y])=>x===a&&y===b)) nb.push([a,b]) }));
+      if(!nb.length) break;
+      got.push(nb[Math.floor(Math.random()*nb.length)]);
+    }
+    if(got.length<PARADE_N) continue;
+    got.forEach(([r,c])=>{ g[r][c]={t:"parade"} });
+    return true;
+  }
+  return false;
+}
+/* 열병식 칸 목록 */
+function paradeCells(){ const L=[]; if(run&&run.grid) run.grid.forEach((row,r)=>row.forEach((x,c)=>{ if(x.t==="parade") L.push({r:r,c:c}) })); return L }
+const paradeAdj=(a,b)=>Math.abs(a.r-b.r)+Math.abs(a.c-b.c)===1;
+/* 남은 둘이 서로 붙어 있는가 — 하나를 떼어도 벌이 이어지는가 */
+function paradeKeeps(L,i){ const rest=L.filter((x,k)=>k!==i); return rest.length<2||paradeAdj(rest[0],rest[1]) }
+/* 여섯 시간마다 한 칸 — spend() 가 시간을 더할 때마다 들른다. 셋은 늘 붙어 있게,
+   대원이 선 칸 · 계단 · 다른 층으로는 안 간다 */
+function paradeStep(){
+  if(!run||!run.grid||run.lost) return 0;
+  const L=paradeCells(); if(L.length<2) return 0;
+  const f=towerFloor(L[0].r), S=run.size;
+  const moves=[];
+  L.forEach((p,i)=>{
+    if(!paradeKeeps(L,i)) return;
+    const rest=L.filter((x,k)=>k!==i);
+    rest.forEach(q=>[[-1,0],[1,0],[0,-1],[0,1]].forEach(([dr,dc])=>{
+      const r=q.r+dr, c=q.c+dc, x=run.grid[r]&&run.grid[r][c];
+      if(!x||x.t!=="empty"||x.stair||towerFloor(r)!==f) return;
+      if(run.pos&&run.pos.r===r&&run.pos.c===c) return;
+      if(L.some(y=>y.r===r&&y.c===c)) return;
+      moves.push({from:p,to:{r:r,c:c}}) }));
+  });
+  if(!moves.length) return 0;
+  const m=moves[Math.floor(Math.random()*moves.length)];
+  run.grid[m.to.r][m.to.c]={t:"parade"};
+  run.grid[m.from.r][m.from.c]={t:"empty"};
+  /* 연출에 줄 것 — 마차(WAGON_MOVE)와 똑같은 꼴 (/ui 와 맞춘 것, 2026-10-10).
+     k 는 옮겨 간 뒤의 자리, dr/dc 는 **온 방향**(한 칸이면 ±1), t0 는 화면이 채운다.
+     ⚠️ 한 번에 **한 칸만** 움직인다 — 셋이 통째로 가는 것이 아니라 셋 가운데 하나가 옮긴다
+     (사용자 글 「칸 셋이 늘 붙어 있다」가 그래야 뜻이 산다). 그래서 목록에 한 줄이 들어간다 */
+  paradeMoveLog(m.to, m.from);
+  return 1;
+}
+let PARADE_MOVE=[];   /* 모형 열병식 — 방금 옮긴 칸 {k, dr/dc 온 쪽, t0} (마차와 같은 꼴) */
+function paradeMoveLog(to,from){
+  PARADE_MOVE.push({k:to.r+"-"+to.c, dr:from.r-to.r, dc:from.c-to.c, t0:0});
+  while(PARADE_MOVE.length>6) PARADE_MOVE.shift();   /* 화면이 안 가져가도 쌓이지 않게 */
+}
+function paradeTick(){
+  if(!run||!run.grid||run.sandbox) return;
+  if(!paradeCells().length){ run.paradeAt=null; return }
+  if(run.paradeAt==null){ run.paradeAt=tClock(); return }
+  let n=0;
+  while(tClock()-run.paradeAt>=PARADE_H&&n<12){ run.paradeAt+=PARADE_H; paradeStep(); n++ }
+}
+/* 종탑 — 층에 하나, 빈 길 아무 데나(주둔지 곁 두 칸은 피한다). 쓰면 부서진다 (사용자 2026-10-10) */
+function placeClock(g,fi,f){
+  const S=g.length, camp=[S-1,Math.floor(S/2)], L=[];
+  for(let r=0;r<S;r++) for(let c=0;c<S;c++) if(g[r][c].t==="empty"&&towerFloor(r,fi)===f&&Math.abs(r-camp[0])+Math.abs(c-camp[1])>=2) L.push([r,c]);
+  if(!L.length) return false; const [r,c]=L[Math.floor(Math.random()*L.length)]; g[r][c]={t:"clocktower"}; return true;
+}
+/* 마나석 기둥 — 한 층에 2~3개 (3개는 15%). 빈 길 아무 데나, 주둔지 곁 두 칸은 피한다 (사용자 2026-10-10). 층마다 MANA_ODDS 로 선다 (확률은 내 판단) */
+function placeMana(g,fi,f){
+  const S=g.length, camp=[S-1,Math.floor(S/2)], L=[];
+  for(let r=0;r<S;r++) for(let c=0;c<S;c++) if(g[r][c].t==="empty"&&towerFloor(r,fi)===f&&Math.abs(r-camp[0])+Math.abs(c-camp[1])>=2) L.push([r,c]);
+  const n=Math.random()<0.15?3:2;
+  for(let i=0;i<n&&L.length;i++){ const k=Math.floor(Math.random()*L.length), [r,c]=L.splice(k,1)[0]; g[r][c]={t:"mana_pillar"} }
+}
+/* 도서관 — 고대 서적 선반 하나를 책장 셋이 둘러막는다 (사용자 2026-10-10: 낮은 확률). 선반은 층의 천장에 맞닿은 줄에 놓는다 —
+   책장이 그 줄의 좌우와 안쪽 한 칸을 막으니 층의 길이 끊기지 않는다. 잠금문 앞 칸과는 두 칸 이상 떨어뜨린다 */
+const LIB_ODDS=0.2;   /* 서재 층에 도서관이 하나 더 설 확률 (하나는 확정) */
+function placeLibrary(g,fi,f){
+  const S=g.length, rows=[]; for(let r=0;r<S;r++) if(towerFloor(r,fi)===f) rows.push(r);
+  if(!rows.length) return false;
+  const ce=FIELDS[fi].ceil, cand=[];
+  [[rows[0],1],[rows[rows.length-1],-1]].forEach(([e,dr])=>{
+    if(ce.indexOf(e-dr)<0) return;   /* 천장에 맞닿은 줄만 */
+    const dc=g[e-dr].findIndex(x=>x.t==="lockdoor");
+    for(let c=1;c<S-1;c++){
+      if(dc>=0&&Math.abs(c-dc)<2) continue;
+      if([[e,c-1],[e,c],[e,c+1],[e+dr,c]].every(([a,b])=>g[a]&&g[a][b]&&g[a][b].t==="empty")) cand.push([e,c,dr]) } });
+  if(!cand.length) return false;
+  const [e,c,dr]=cand[Math.floor(Math.random()*cand.length)];
+  g[e][c]={t:"tome_shelf"}; [[e,c-1],[e,c+1],[e+dr,c]].forEach(([a,b])=>{ g[a][b]={t:"bookcase"} });
+  return true;
+}
+/* 일반 칸을 다 놓은 뒤 — ⓐ층마다 쉼터 하나 이상 ⓑ계단(잠금문) 위아래 칸에서 전투를 치운다 */
+function towerFix(g,fi){
+  const S=g.length;
+  for(let f=1;f<=3;f++){
+    let have=0; for(let r=0;r<S;r++) for(let c=0;c<S;c++) if(g[r][c].t==="rest"&&towerFloor(r,fi)===f) have++;
+    if(have) continue;
+    const L=[]; for(let r=0;r<S;r++) for(let c=0;c<S;c++) if(g[r][c].t==="empty"&&towerFloor(r,fi)===f) L.push([r,c]);
+    if(L.length){ const [r,c]=L[Math.floor(Math.random()*L.length)]; g[r][c]={t:"rest"} }
+  }
+  for(let r=0;r<S;r++) for(let c=0;c<S;c++){ const x=g[r][c];
+    if((x.t!=="dungeon"&&x.t!=="elite")||!nearStair(g,r,c)) continue;
+    const L=[]; for(let r2=0;r2<S;r2++) for(let c2=0;c2<S;c2++) if(g[r2][c2].t==="empty"&&!nearStair(g,r2,c2)&&towerFloor(r2,fi)>0) L.push([r2,c2]);
+    g[r][c]={t:"empty"};
+    if(L.length){ const [a,b]=L[Math.floor(Math.random()*L.length)]; g[a][b]=x }   /* 다른 빈 길로 옮긴다 */
+  }
 }
 /* 주둔지 반경 2칸에는 3라운드 전투·정예 전투가 없다 (사용자 2026-09-16) — 새 판·재편성·새 날 모두.
    정예는 멀리 있는 전투 칸과 자리를 바꾸고(없으면 1라운드 전투로), 3라운드 전투는 1~2라운드로 줄인다 */
@@ -15445,7 +15702,7 @@ function rollFog(){
     run.fog={cells:L.map(([a,b])=>a+"-"+b),until:run.day+rr([2,3])}; return true }
   return false;
 }
-const fogAt=(r,c)=>!!(run&&run.fog&&run.fog.cells.indexOf(r+"-"+c)>=0);
+const fogAt=(r,c)=>!!(run&&run.fog&&run.fog.cells.indexOf(r+"-"+c)>=0)||(typeof floorHidden==="function"&&floorHidden(r,c));   /* 마력의 탑 — 아직 닿지 않은 층 */
 function fogLift(r,c){ if(run&&run.fog){ if(run.fog.cells.indexOf(r+"-"+c)>=0) mapGone("fog",[r+"-"+c]); run.fog.cells=run.fog.cells.filter(k=>k!==r+"-"+c); if(!run.fog.cells.length) run.fog=null } }
 /* 지도에서 사라지는 것 — 다음 지도 그리기에서 사라지는 연출 (안개가 걷힘 · 기계 잔해가 무너짐) (사용자 2026-10-07) */
 function mapGone(t,keys,extra){ if(typeof MAP_GONE==="undefined") return; keys.forEach((k,i)=>MAP_GONE.push(Object.assign({t:t,k:k,i:i,t0:0},extra&&extra[i]||{}))) }
@@ -15474,9 +15731,9 @@ function partyHp(){ return run.heroes.reduce((a,h)=>a+Math.max(0,h.hp),0)+(run.c
 function caveReturn(){
   const ch=run.cave; if(!ch) return null; run.cave=null;
   const h=ch.h, done=run.day>=ch.until; h.slot=0;
-  if(done){ h.atk+=2; h.def+=2; h.mag+=2 }
+  if(done){ if(ch.shelf) h.mag+=3; else { h.atk+=2; h.def+=2; h.mag+=2 } }   /* 고대 서적 선반(ch.shelf)은 추가 마법력 3 */
   run.heroes.push(h);
-  return {h:h,done:done};
+  return {h:h,done:done,shelf:!!ch.shelf};
 }
 /* 고목 덩굴 — 울창한 수목을 덩굴 수풀이 상하좌우로 두른다. 판 끝에 걸린 수풀은 빠진다.
    주둔지 둘레(2칸 안)에는 한 칸도 두지 않는다 — 새로고침 불가라 판 내내 남는다 */
@@ -15542,7 +15799,99 @@ function postNear(r,c){ return gimCells(run.grid,"post").some(p=>!(p.cell.quiet>
 function wellNear(r,c){ return gimCells(run.grid,"well").some(p=>Math.abs(p.r-r)+Math.abs(p.c-c)<=2) }
 /* 반딧불 둥지 둘레 2칸 — 밤에도 습격이 없다 (노랗게 빛남) */
 function nestNear(r,c){ return !!run&&!!run.grid&&gimCells(run.grid,"nest").some(p=>Math.abs(p.r-r)+Math.abs(p.c-c)<=2) }
-const WAGON_DAY=2;   /* 마차가 하루에 가는 칸 수 (사용자 2026-10-08 — 한 칸에서 늘림) */
+/* ═══ 붉은 망토 늑대 — 동화의 방 (사용자 2026-10-10) ═══
+   미지의 구역 「붉은 망토와 늑대」로 나타나 **이동할 때마다 두 칸씩** 쫓아온다. 같은 칸에 서면 전투.
+   상태는 run.wolf={r,c,f} — 숫자만 (저장이 JSON 이다).
+   ⚠️ **천장은 못 지나간다 — 계단 · 잠금문도.** 나타난 층에 머문다 (사용자 글에 없어 내가 정했다):
+   대원과 같은 규칙으로 두면 잠긴 문을 늑대가 지나는 꼴이 되고, 다 풀어 주면 층을 건너뛰어 쫓아온다.
+   이렇게 두면 **계단을 올라 따돌릴 수 있다** — 열쇠 한 개 값으로. */
+const WOLF_STEP=2;            /* 대원이 한 칸 걸을 때 늑대가 오는 칸 수 */
+/* 동화의 방 층인가 — **층 종류 표(TOWER_FLOORS · floorKind)는 `/foe` 가 쥔다** (2026-10-10 둘이 맞춘 것).
+   내가 따로 표를 만들지 않는다. 표가 아직 없으면 탑 어디서나 뜬다 */
+function taleFloor(f){
+  if(typeof floorKind!=="function") return true;
+  return floorKind(f)==="fairy";
+}
+function wolfOn(){ return !!(run&&run.wolf&&run.wolf.r!=null) }
+/* 늑대가 디딜 수 있는 칸 — 제 층의 **빈 길만** (사용자 2026-10-10: 「죄수 호송 마차처럼」).
+   구역 칸 안에는 못 들어간다 — 마차(wagonPath 의 free)와 같은 자, 같은 규칙이다.
+   천장 · 계단 · 잠금문 · 주둔지도 빈 길이 아니니 저절로 걸린다.
+   **대원이 선 칸은 그 칸이 빈 길일 때만** 디딘다 — 그 한 걸음이 곧 따라잡음이다.
+   ⚠️ 그래서 대원이 아직 안 끝낸 구역 칸 위에 서 있으면 늑대는 못 온다 (끝낸 칸 · 들른 상점은 빈 길이 된다). */
+function wolfOk(r,c){
+  const S=run.size; if(r<0||c<0||r>=S||c>=S) return false;
+  const x=run.grid[r][c];
+  if(!x||x.t!=="empty"||x.stair) return false;
+  return towerFloor(r)===run.wolf.f;
+}
+/* 늑대가 갈 길 — 제 층의 빈 길을 다 훑어, **대원 칸에 닿으면 그리로 · 못 닿으면 가장 가까워지는 칸으로** 간다.
+   즉 **길이 막히면 둘러 간다** (사용자 2026-10-10: 「빈 길을 따라 둘러 가서 다가간다」).
+   그래서 두 칸은 「직선 두 칸」이 아니라 **「길을 따라 두 칸」**이다 — 마차도 지도 길을 따라 돈다.
+   둘러 갈 길조차 없으면(둘레가 통째로 막혔으면) null — 그 걸음은 **그 자리에 머문다** (내 판단, 2026-10-10) */
+function wolfPlan(){
+  const S=run.size, w=run.wolf, tr=run.pos.r, tc=run.pos.c, K=(r,c)=>r*S+c;
+  const par={}, dist={}, s0=K(w.r,w.c);
+  par[s0]=-1; dist[s0]=0;
+  const q=[[w.r,w.c]];
+  let goal=null, gd=Math.abs(w.r-tr)+Math.abs(w.c-tc), gn=0;
+  for(let h=0;h<q.length;h++){
+    const r0=q[h][0], c0=q[h][1], k0=K(r0,c0);
+    [[-1,0],[1,0],[0,-1],[0,1]].forEach(([dr,dc])=>{
+      const r=r0+dr, c=c0+dc, k=K(r,c);
+      if(par[k]!=null||!wolfOk(r,c)) return;
+      par[k]=k0; dist[k]=dist[k0]+1; q.push([r,c]);
+      const d=Math.abs(r-tr)+Math.abs(c-tc);
+      if(d<gd||(d===gd&&goal&&dist[k]<gn)){ gd=d; goal=[r,c]; gn=dist[k] }
+    });
+  }
+  if(!goal) return null;
+  const path=[]; let k=K(goal[0],goal[1]);
+  while(k!==s0){ path.unshift({r:Math.floor(k/S),c:k%S}); k=par[k]; if(k==null) return null }
+  return path.length?path:null;
+}
+/* 대원이 한 칸 걸을 때마다 부른다. 따라잡았으면 전투를 열고 true.
+   길이 없으면(둘레가 다 구역 칸 · 천장이거나, 대원이 구역 칸 위에 있으면) **그 걸음은 가만히 있는다** —
+   마차와 같다(마차도 갈 칸이 없으면 그 날은 서 있는다). 알림은 안 띄운다 — 늑대는 지도에 보이니까 */
+function wolfStep(){
+  if(!wolfOn()||!run.grid||run.lost) return false;
+  const path=wolfPlan();
+  if(!path||!path.length) return false;
+  const go=path.slice(0,WOLF_STEP), end=go[go.length-1], from={r:run.wolf.r,c:run.wolf.c};
+  run.wolf.r=end.r; run.wolf.c=end.c;
+  /* 연출에 줄 것 — 마차와 같은 꼴. 두 칸을 곧게 왔으면 그 두 칸을, 꺾어 왔으면 마지막 한 칸을 굴린다
+     (비스듬히 미끄러지면 어색하다 — 마차에서 쓴 규칙 그대로) */
+  { const dr=from.r-end.r, dc=from.c-end.c, str=(dr===0||dc===0);
+    WOLF_MOVE.push({k:end.r+"-"+end.c, dr:str?dr:Math.sign(dr), dc:str?dc:0, t0:0});
+    while(WOLF_MOVE.length>6) WOLF_MOVE.shift(); }
+  if(end.r===run.pos.r&&end.c===run.pos.c){ wolfBattle(); return true }
+  return false;
+}
+let WOLF_MOVE=[];   /* 붉은 망토 늑대 — 방금 옮긴 칸 {k, dr/dc 온 쪽, t0} (마차와 같은 꼴) */
+/* 늑대를 지도에 놓는다 — 제 층의 빈 길 가운데 대원에게서 세 칸 넘게 떨어진 곳 */
+function wolfSpawn(){
+  const S=run.size, f=curFloor(), L=[], L2=[];
+  for(let r=0;r<S;r++) for(let c=0;c<S;c++){
+    const x=run.grid[r][c];
+    if(x.t!=="empty"||x.stair||towerFloor(r)!==f) continue;
+    const d=Math.abs(r-run.pos.r)+Math.abs(c-run.pos.c);
+    if(d>=3) L.push([r,c]); else if(d>=2) L2.push([r,c]);
+  }
+  const pick=(L.length?L:L2);
+  if(!pick.length) return false;
+  const [r,c]=pick[Math.floor(Math.random()*pick.length)];
+  run.wolf={r:r,c:c,f:f}; WOLF_MOVE=[];   /* 처음 나타나는 것은 「움직임」이 아니다 — 등장 연출은 /ui 가 따로 */
+  return true;
+}
+/* 따라잡혔다 — 늑대 혼자 달려드는 전투 (칸에 매이지 않는다) */
+function wolfBattle(){
+  run.route=null; run.walkTo=0; run.mapSel=null;
+  SFX.play("danger");
+  startDungeon({t:"dungeon",waves:1,wolf:1},null,null);
+  run.dun.forceFoes=[["붉은 망토 늑대",1]];
+  startBattle("battle");
+  setTimeout(()=>stepBanner("붉 은 망 토 늑 대","굶주린 늑대가 달려듭니다"),40);
+}
+/* 주둔지 반경 2칸에는 3라운드 전투·정예 전투가 없다 (사용자 2026-09-16)   /* 마차가 하루에 가는 칸 수 (사용자 2026-10-08 — 한 칸에서 늘림) */
 /* 마차가 우두머리에게 가는 길 — 빈 칸으로만(대원이 선 칸도 못 지난다), 마지막 한 걸음만 우두머리 칸.
    대원의 길 찾기(routeTo)는 run.pos 에서 떠나고 구역 칸도 밟을 수 있어 마차에는 못 쓴다 — 여기서 따로 훑는다.
    같은 걸음 수면 우두머리 쪽(위 → 가운데 쪽)을 먼저 고른다 */
@@ -15618,6 +15967,12 @@ function nodeCount(t,fi){
 /* 이미 들른 상점·쉼터·미지의 구역은 다른 날 다른 자리에 다시 나타난다.
    제련소는 넣지 않는다 — 한 번 들르면 지도를 다시 그릴 때까지 없다. */
 const DUN_REFILL=0.55;   /* 1구역 새 날 — 모자란 일반 전투 칸 한 자리마다 */
+/* 전투 칸을 놓을 빈 칸 하나 — 탑에서는 계단 위 · 아래 칸을 뺀다 */
+function takeBattle(free){
+  const L=free.map((p,i)=>i).filter(i=>!(towerOn()&&nearStair(run.grid,free[i][0],free[i][1])));
+  if(!L.length) return null;
+  const k=L[Math.floor(Math.random()*L.length)]; return free.splice(k,1)[0];
+}
 function respawn(){
   const S=run.size, free=[];
   for(let r=0;r<S;r++) for(let c=0;c<S;c++) if(run.grid[r][c].t==="empty"&&!run.grid[r][c].stair&&!(run.pos&&run.pos.r===r&&run.pos.c===c)) free.push([r,c]);   /* 서 있는 칸은 빼고 */
@@ -15652,7 +16007,7 @@ function respawn(){
     let have=0; for(let r=0;r<S;r++) for(let c=0;c<S;c++) if(run.grid[r][c].t==="dungeon") have++;
     for(let i=have;i<nodeCount("dungeon",0)&&free.length;i++){
       if(Math.random()>=DUN_REFILL) continue;
-      const k=Math.floor(Math.random()*free.length), rc=free.splice(k,1)[0], w=1+Math.floor(Math.random()*3);
+      const rc=takeBattle(free), w=1+Math.floor(Math.random()*3); if(!rc) break;
       run.grid[rc[0]][rc[1]]=Object.assign({t:"dungeon",waves:w},encRoll("dungeon",run.field,w));
       if(typeof MAP_BORN!=="undefined"){ MAP_BORN.push(rc[0]+"-"+rc[1]); MAP_BORN_QUIET=1 }
     }
@@ -15664,7 +16019,7 @@ function respawn(){
   if(!left){
     const n=4+Math.floor(Math.random()*3)+run.field*2;
     for(let i=0;i<n&&free.length;i++){
-      const k=Math.floor(Math.random()*free.length), rc=free.splice(k,1)[0];
+      const rc=takeBattle(free); if(!rc) break;
       { const t=i<2?"elite":"dungeon", w=i<2?1:1+Math.floor(Math.random()*3);
         run.grid[rc[0]][rc[1]]=Object.assign({t:t,waves:w},encRoll(t,run.field,w)) }
     }
@@ -15780,6 +16135,7 @@ function spend(hours,act){
   run.time=Math.round(run.time*60)/60;   /* 분 단위로 맞춘다 — 5분짜리가 쌓여 생기는 소수 찌꺼기 (2026-10-05) */
   if(run.time>=18&&!run.night){ run.night=1; if(sfxHas("밤 종")) SFX.play("밤 종") }   /* 해 질 녘 — 알림 글 대신 종 (사용자 2026-10-05 · 10-06) */
   if(run.time>=30){ nextDay() }   /* '길에서 밤을 지새웠습니다' 알림 걷음 (사용자 2026-10-05) */
+  if(hours>0) try{ paradeTick() }catch(e){ console.error(e) }   /* 모형 열병식 — 여섯 시간마다 한 칸 (2026-10-10) */
 }
 function addTaint(v){
   const was=run.taint;
@@ -15823,7 +16179,18 @@ function taintArrow(tn){ return `${resIcon("taint")}${run.taint} → ${Math.min(
 function taintHot(tn){ return tn>=80 }
 /* 머리줄의 오염도 · 푸른 수정 */
 function taintChip(extra){
-  const tc=`<span class="res taint ${extra||""} ${run.taint>=70?"bad":run.taint>=45?"warn":""}" title="오염도 — ${taintMax()}이 되면 그 자리에서 끝납니다. ${spiritOn()?"정령숲에서는 전투에 이겨도 줄지 않습니다 — 푸른 수정을 눌러 30 걷어 냅니다.":"전투에 이기면 20 내려갑니다."}">${resIcon("taint")}<b>${run.taint}</b><i>/${taintMax()}</i><u style="width:${Math.min(100,run.taint/taintMax()*100)}%"></u></span>`;
+  let tc=`<span class="res taint ${extra||""} ${run.taint>=70?"bad":run.taint>=45?"warn":""}" title="오염도 — ${taintMax()}이 되면 그 자리에서 끝납니다. ${spiritOn()?"정령숲에서는 전투에 이겨도 줄지 않습니다 — 푸른 수정을 눌러 30 걷어 냅니다.":"전투에 이기면 20 내려갑니다."}">${resIcon("taint")}<b>${run.taint}</b><i>/${taintMax()}</i><u style="width:${Math.min(100,run.taint/taintMax()*100)}%"></u></span>`;
+  /* 마력의 탑 — 계단 열쇠. 푸른 수정과 같은 결 : 그 구역에서만 뜨고, 0개여도 칸은 남고 흐려진다.
+     ⚠️ 아직 자원 아이콘이 없어 글자로 둔다 — 「계단 열쇠」 그림이 오면 RES_ICON 에 한 줄 더하고
+        아래 <i class="rkey">열쇠</i> 를 resIcon("key") 로 바꾸면 끝이다 (사용자에게 청해 둠, 2026-10-10) */
+  if(typeof towerOn==="function"&&towerOn()){ const k=run.stairKey||0;
+    tc+=`<span class="res skey ${extra||""} ${k<=0?"empty":""}" ${pickTip("hskey","<b>계단 열쇠</b><br>잠금문을 하나 엽니다. 열쇠방의 시험으로 얻습니다.")}><i class="rkey">열쇠</i><b>${k}</b></span>`; }
+  /* 마나석 기둥 — 그 층에 기둥이 있을 때만. 다 켜지면 밝아진다 (총괄 2026-10-10).
+     셈은 pillarState(층) 한 곳에 묻는다 — 층을 가르는 것은 /foe 쪽이다 */
+  if(typeof pillarState==="function"&&typeof curFloor==="function"&&typeof towerOn==="function"&&towerOn()){
+    const ps=pillarState(curFloor());
+    if(ps&&ps.total>0){ const full=ps.on>=ps.total;
+      tc+=`<span class="res spil ${extra||""} ${full?"on":""}" ${pickTip("hspil","<b>마나석 기둥</b><br>이 층의 기둥을 모두 켜면 전투에서 모든 대원이 마나를 1 더 얻습니다.<br>켜 둔 기둥은 얼마 뒤 다시 꺼집니다.")}><i class="rkey">기둥</i><b>${ps.on}/${ps.total}</b></span>`; } }
   if(!spiritOn()) return tc;
   const cr=run.crystal==null?CRYSTAL_MAX:run.crystal;
   return tc+`<span class="res crystal use ${extra||""} ${cr<=0?"empty":""}" role="button" title="푸른 수정 — 누르면 수정 1칸으로 오염도를 ${CRYSTAL_CURE} 걷어 냅니다. 기력의 샘, 마른숲 상점의 파편으로 채웁니다.">${iconImg("item_spirit_blue_crystal")?`<span class="ri">${iconImg("item_spirit_blue_crystal")}</span>`:""}<b>${cr}</b><i>/${CRYSTAL_MAX}</i><em class="cruse">사용</em><u style="width:${cr/CRYSTAL_MAX*100}%"></u></span>`;
@@ -15999,6 +16366,7 @@ function nextField(){
   run.night=0; run.taint=0; run.campDone=0; run.remapUsed=0;
   run.crystal=run.field===1?CRYSTAL_MAX:null;             /* 푸른 수정 — 정령숲에서만 (2026-10-01) */
   run.fieldRules=FIELD_RULES[run.field]?1:0;
+  run.floorsSeen={1:1}; run.keyQ=[]; run.wolf=null; if(towerOn()) run.stairKey=0;   /* 마력의 탑 — 1층만 보인다 */
   run.fog=null; if(run.field===1&&Math.random()<(GIM_ODDS[1].fog||0)) rollFog();
   if(run.cave){ const b=caveReturn(); if(b) toast(`${b.h.name}${jo(b.h.name,"ig")} 동굴에서 나와 함께 떠납니다.${b.done?" 수련을 마쳐 모든 추가 능력치 +2.":""}`) }               /* 바뀐 규칙 안내 창 — 지도가 펴진 뒤 한 번 (사용자 2026-10-01) */
   if(run.futureGold){ run.gold+=run.futureGold; toast(`미래 계획 — 금화 +${run.futureGold}`); run.futureGold=0 }
@@ -16059,7 +16427,12 @@ const FIELD_RULES={
  1:{t:"정 령 숲",sub:"이 구역에서는 규칙이 달라집니다",rows:[
    ["corruption","오염도","정령숲에서는 전투에 이겨도 오염도가 줄지 않습니다."],
    ["item_spirit_blue_crystal","푸른 수정","오염도 옆의 푸른 수정을 눌러 오염도를 30 낮출 수 있습니다. 최대 5칸까지 충전할 수 있습니다."],
-   ["ink_sp_spring","기력의 샘","푸른 수정을 충전할 수 있습니다."]]}   /* 지도 기믹은 기력의 샘만 소개 — 나머지는 전용 구역 도감에 (사용자 2026-10-01) */
+   ["ink_sp_spring","기력의 샘","푸른 수정을 충전할 수 있습니다."]]},   /* 지도 기믹은 기력의 샘만 소개 — 나머지는 전용 구역 도감에 (사용자 2026-10-01) */
+ /* 마력의 탑 — 세 문장은 사용자가 정한 글 그대로 (2026-10-10). 고치지 말 것 */
+ 2:{t:"마 력 의  탑",sub:"이 구역에서는 규칙이 달라집니다",rows:[
+   ["ink_tw_stair","층","마력의 탑은 각 층으로 구성되어 있습니다. 각 층은 고유한 전용 구역을 가지고 있고, 계단을 통해서만 이동할 수 있습니다. 2층, 3층에 도달하기 전까지, 해당 층을 확인할 수 없습니다."],
+   ["ink_tw_locked_gate","계단과 열쇠","각 층 사이의 계단은 처음에 잠겨 있습니다. 각 층에의 열쇠방에서 특별한 시험을 수행한 후, 열쇠를 얻어 잠긴 문을 열고 계단을 오르내릴 수 있습니다."],
+   ["ink_tw_key_room","숙면","쉼터에서 숙면할 때, 오염도가 증가하지 않고 대신 25 감소합니다."]]}
 };
 let FR_WAIT=0;
 function showFieldRules(){
@@ -16703,6 +17076,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 18, "v": "0.7", "d": "2026-10-10", "t": "마력의 탑 한 벌 — 층·열쇠·안개·동화의 방, 늑대와 열병식, 칸 표식들", "big": 0},
  {"b": 17, "v": "0.7", "d": "2026-10-10", "t": "받을 피해 예고를 더 바로잡고, 숨어 있던 피해 숫자를 띄웠습니다 — 마력의 탑 지도도 들어갑니다", "big": 0},
  {"b": 16, "v": "0.7", "d": "2026-10-10", "t": "지도 액자가 배경을 다 감싸게 — 양피지를 틈만큼만 넓힘", "big": 0},
  {"b": 15, "v": "0.7", "d": "2026-10-09", "t": "탭 아이콘 자리 — favicon 404 끄기", "big": 0},
@@ -17912,7 +18286,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=17;
+const BUILD_NO=18;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -19375,6 +19749,11 @@ function mapGridEl(peek){
   const RN=Date.now(); if(!peek){ ROOT_BORN.forEach(x=>{ if(!x.t0) x.t0=RN }); ROOT_BORN=ROOT_BORN.filter(x=>RN-x.t0<4000) }
   const rootSnd=!peek&&ROOT_BORN.length&&RN===ROOT_BORN[0].t0;
   if(!peek){ WAGON_MOVE.forEach(x=>{ if(!x.t0) x.t0=RN }); WAGON_MOVE=WAGON_MOVE.filter(x=>RN-x.t0<4000) }
+  /* 열병식 : 늑대도 마차와 같은 목록 꼴이다 (/map 2026-10-10) — 같은 길로 굴린다.
+     splice 로 비운다 : 배열을 바꿔 끼우지 않아야 저쪽이 들고 있는 것과 어긋나지 않는다 */
+  if(!peek) [typeof PARADE_MOVE!=="undefined"?PARADE_MOVE:null, typeof WOLF_MOVE!=="undefined"?WOLF_MOVE:null]
+    .forEach(A=>{ if(!A||!A.forEach) return; A.forEach(x=>{ if(!x.t0) x.t0=RN });
+      for(let i=A.length-1;i>=0;i--) if(RN-A[i].t0>4000) A.splice(i,1) });
   if(!peek){ MAP_GONE.forEach(x=>{ if(!x.t0) x.t0=RN }); MAP_GONE=MAP_GONE.filter(x=>RN-x.t0<4000) }
   const goneSnd=!peek&&MAP_GONE.some(x=>x.t==="wreck"&&x.t0===RN);
   const wagonSnd=!peek&&WAGON_MOVE.length&&RN===WAGON_MOVE[0].t0;
@@ -19392,6 +19771,8 @@ function mapGridEl(peek){
     const ffly=nestNear(r,c);
     const risky=((run.night&&cell.t==="empty"&&adj)||(watch&&adj))&&!ffly;
     const glow=kind!=="well"&&wellNear(r,c);
+    /* 칸 왼쪽 아래 .cact — 활동량을 내야 들어가는 칸에만. 어느 칸인지는 enterCost 가 안다 (사용자 2026-10-10).
+       ⚠️ 아래는 템플릿 문자열이다. 그 안에 주석을 쓰면 글자로 들어가 칸이 벌어진다 */
     const d=el(`<div class="cell k-${kind} ${cell.tutgo?"tutgo":""} ${cell.stair?"stair":""} ${cell.ceil?"ceil":""} ${kind==="empty"?"emp":""} ${here?"here":""} ${adj?"adj":""} ${cell.done?"done":""} ${risky?"risk":""} ${watch?"watch":""} ${glow?"glow":""} ${ffly?"ffly":""} ${kind==="wall"?"wall":""} ${(cell.boon||cell.weapon)?"boon":""} ${rn?"onroute":""} ${rn&&rn===(run.route?run.route.steps:0)?"rdest":""}">
       <span class="cbg"></span>
       ${(wpAt[r+"-"+c]||[]).map(w=>`<i class="wp${w.hz?" hz":""}" style="left:${w.x}%;top:${w.y}%;background-image:url(${ICON_PNG["map_wp"+w.v]})"></i>`).join("")}
@@ -19401,6 +19782,9 @@ function mapGridEl(peek){
       ${here?((typeof ICON_PNG!=="undefined"&&ICON_PNG.ui_move_down)
         ?`<span class="you arw"><img src="${ICON_PNG.ui_map_you||ICON_PNG.ui_move_down}" alt="현재 위치" draggable="false"></span>`   /* 붉은 붓 화살표 (사용자 2026-10-06) */
         :`<span class="you">${figure(run.heroes[0]?run.heroes[0].name:"나이코스")}</span>`):""}
+      ${cell.tome?`<span class="ctome kw" ${pickTip("ctome"+r+"-"+c,"<b>떠드는 마도서</b><br>이 전투의 빈 자리에 떠드는 마도서가 한 마리 섞입니다.")}>${uiPng(TOME_ICON)}</span>`:""}
+      ${(cell.t!=="fog"&&enterCost(cell)>0)?`<span class="cact kw" ${pickTip("cact"+r+"-"+c,"<b>활동량</b><br>이 구역에 들어갈 때 활동량을 씁니다.")}>${resIcon("act")}</span>`:""}
+      ${(run.wolf&&run.wolf.r===r&&run.wolf.c===c&&cell.t!=="fog")?`<span class="cico wolf">${iconImg("ink_tw_red_hood_wolf")}</span>`:""}
       ${risky?`<span class="crisk">!</span>`:""}
       ${cell.bounty?`<span class="cbounty" title="현상금 — 전투 금화 +50%">${iconImg("bounty_bag")}</span>`:""}
       ${cell.stair?`<span class="cl">계단</span>`:""}
@@ -19422,6 +19806,14 @@ function mapGridEl(peek){
         if(x.gone){ const art=gimCellArt({t:"wagon"}); if(art){ const g=el(`<span class="cico wagongo">${art}</span>`);
             g.style.setProperty("--dx",x.dc); g.style.setProperty("--dy",x.dr); g.style.setProperty("--bd",del); d.appendChild(g) } }
         else if(kind==="wagon"){ d.classList.add("wagonmove"); d.style.setProperty("--dx",x.dc); d.style.setProperty("--dy",x.dr); d.style.setProperty("--bd",del) } } }
+    if(!peek&&typeof PARADE_MOVE!=="undefined"&&PARADE_MOVE&&PARADE_MOVE.length){
+      const x=PARADE_MOVE.find(y=>y.k===r+"-"+c);
+      if(x){ d.classList.add("parademove"); d.style.setProperty("--dx",x.dc); d.style.setProperty("--dy",x.dr);
+        d.style.setProperty("--bd",(300-(RN-x.t0))+"ms") } }
+    if(!peek&&typeof WOLF_MOVE!=="undefined"&&WOLF_MOVE&&WOLF_MOVE.length){
+      const x=WOLF_MOVE.find(y=>y.k===r+"-"+c);
+      if(x){ d.classList.add("wolfmove"); d.style.setProperty("--dx",x.dc); d.style.setProperty("--dy",x.dr);
+        d.style.setProperty("--bd",(300-(RN-x.t0))+"ms") } }
     if(!peek&&ROOT_BORN.length){ const k=r+"-"+c, ri=ROOT_BORN.findIndex(x=>x.k===k), si=ROOT_BORN.findIndex(x=>x.src===k);
       if(ri>=0){ const x=ROOT_BORN[ri]; d.classList.add("rootgrow"); d.style.setProperty("--dx",x.dc); d.style.setProperty("--dy",x.dr);
         d.style.setProperty("--bd",(520+ri*260-(RN-x.t0))+"ms") }
@@ -19650,8 +20042,11 @@ function mapInspector(at){
     if(kind!=="well"&&wellNear(r,c)) N.push([inkArt("well")||"","우물 둘레","감옥의 우물 둘레 — 전투 금화 획득량 +50%"]);
     { const wt=kind!=="wall"&&kind!=="camp"&&kind!=="boss"&&kind!=="post"&&(postNear(r,c)||(kind==="empty"&&onPatrol(r,c)));
       if(wt) N.push([iconImg("ink11_map_guard_footprints"),"습격 25%",postNear(r,c)?"간수 초소 둘레 — 낮에도 습격당할 수 있습니다(25%)":"간수 순찰로 — 낮에도 습격당할 수 있습니다(25%)"]); }
+    if(kind==="mana_pillar"){ const st=pillarState(towerFloor(r)), L=pillarLeft(cell);
+      N.push([inkArt("mana_pillar")||"",L>0?"활성화 중":"꺼져 있음",`이 층 ${st.on}/${st.total} 활성화${L>0?` — 이 기둥은 ${Math.ceil(L)}시간 남음`:""}${st.total>0&&st.on===st.total?" — 전투에서 모든 대원이 추가 마나 +1":""}`]) }
+    if(kind==="tome_shelf"&&run.cave&&run.cave.shelf&&run.cave.r===r&&run.cave.c===c){ const L=Math.max(0,run.cave.until-run.day); N.push([figure(run.cave.h.name),L?`독서 중 ${L}일`:"독서 끝",`${run.cave.h.name} — ${L?`${L}일 더 지나야 다 읽습니다`:"다 읽었습니다. 데려오면 추가 마법력 +3, 마법서를 하나 고릅니다"}`]) }
     if(kind==="cave"&&run.cave){ const L=Math.max(0,run.cave.until-run.day); N.push([figure(run.cave.h.name),L?`수련 중 ${L}일`:"수련 끝",`${run.cave.h.name} — ${L?`${L}일 더 지나야 수련이 끝납니다`:"수련을 마쳤습니다. 데려오면 모든 추가 능력치 +2"}`]) }
-    if(kind==="fog") N.push([inkArt("fog")||"","가려짐",`안개 지대 — ${run.fog?Math.max(0,run.fog.until-run.day)+"일 뒤 걷힙니다":"곧 걷힙니다"}`]);
+    if(kind==="fog") N.push([inkArt("fog")||"","가려짐",(towerOn()?"마력의 안개 — 그 층에 닿으면 걷힙니다":`안개 지대 — ${run.fog?Math.max(0,run.fog.until-run.day)+"일 뒤 걷힙니다":"곧 걷힙니다"}`)]);
     if(nestNear(r,c)&&kind!=="nest") N.push([inkArt("nest")||"","반딧불 둘레","반딧불 둥지 둘레 — 밤에도 습격이 일어나지 않습니다"]);
     else if(run.night&&kind==="empty"&&!here) N.push(["","밤길",`밤 — 빈 칸에서 습격당할 확률 ${Math.round(ambushChance({t:"empty"})*100)}%`]);
     if(cell.visited) N.push(["","다시 들를 수 있음","들렀던 곳 — 떠나기 전에는 다시 들어갈 수 있습니다"]);
@@ -19754,7 +20149,7 @@ function routeTo(tr,tc){
   if(tr<0||tc<0||tr>=S||tc>=S) return null;
   if(tr===run.pos.r&&tc===run.pos.c) return null;
   const sr=run.pos.r, sc=run.pos.c, DIR=[[1,0],[-1,0],[0,1],[0,-1]], INF=1e9;
-  const open=(r,c)=>run.grid[r][c].t!=="wall";   /* 감옥 장벽 */
+  const open=(r,c)=>{ const t=run.grid[r][c].t; return t!=="wall"&&((r===tr&&c===tc)||!TOWER_STOP[t]) };   /* 감옥 장벽 · 탑의 문 · 계단 · 구멍은 목적지로만 */
   /* 그 칸을 밟는 게 성가신가 — 목적지는 밟는 게 목적이므로 세지 않는다 */
   const detour=(r,c)=>{
     if(r===tr&&c===tc) return 0;
@@ -19869,6 +20264,7 @@ function walkRoute(){
       ambushCard(run.night?"인기척 하나 없는 자리입니다. 어둠 속에서 무언가 달려듭니다.":"간수들이 지켜보고 있었습니다. 경비병이 달려듭니다.");
       return;
     }
+    if(wolfStep()) return;   /* 붉은 망토 늑대 — 따라잡히면 걸음을 멈추고 전투 */
     if(last||(cell.t!=="empty"&&!cell.done)){
       if(!last) toast("가는 길에 있는 구역을 지나칠 수 없었습니다.");
       mapSay("move:"+(cell.done?"empty":cell.t));
@@ -19943,6 +20339,7 @@ function moveTo2(r,c){
     ambushCard(run.night?"인기척 하나 없는 자리입니다. 어둠 속에서 무언가 달려듭니다.":"간수들이 지켜보고 있었습니다. 경비병이 달려듭니다.");
     return;
   }
+  if(wolfStep()) return;   /* 붉은 망토 늑대 — 따라잡히면 전투 */
   /* 말풍선 — 칸마다 다른 대사 20%. 닿으면 판에 보여 주고 멈춘다 — 들어가는 것은 [전투 시작]/[입장] 이나 두 번 누르기 (2026-09-18) */
   (tired&&mapSay("long"))||mapSay("move:"+(cell.done?"empty":cell.t));
   arriveAt(r,c);
@@ -19967,7 +20364,7 @@ let MAP_BORN=[], MAP_BORN_QUIET=0;   /* QUIET — 새 날 채운 전투 칸은 �
    ⚠️ **땅굴(`tunnel`)만 일부러 뺐다 (사용자 2026-10-08).** 들어가는 구역이 아니라 **지나가는 길**이라,
    묶으면 올라선 순간 활동량을 내고 들어가 「나가기」를 눌러야 해서 성가시다. **넣지 말 것.**
    (울타리 · 기력의 샘 · 빈 칸도 안 묶는다 — 들르는 구역이 아니다) */
-const LOCK_T={dungeon:1,elite:1,boss:1,tower:1,wagon:1,event:1,grove:1,thicket:1,nest:1,colony:1,croot:1,shop:1,dryshop:1,rest:1,forge:1,post:1,well:1};
+const LOCK_T={dungeon:1,elite:1,boss:1,tower:1,wagon:1,event:1,grove:1,thicket:1,nest:1,colony:1,croot:1,shop:1,dryshop:1,rest:1,forge:1,post:1,well:1,parade:1};
 function mapLocked(){ const c=run&&run.grid[run.pos.r][run.pos.c];
   return !!(c&&LOCK_T[c.t]&&!c.done&&!c.visited&&canEnter(c)) }   /* 활동량이 넉넉하면 묶이고, 모자라면 지나간다 (사용자 2026-10-08 밤) */
 /* 발이 묶인 까닭 — 판 아래 글과 알림이 같이 쓴다 */
@@ -20005,7 +20402,9 @@ function mapGo(r,c){
    0 인 것 — 우두머리 · 주둔지 · 울타리 · 기력의 샘 · 균열 군체의 뿌리.
    빈 칸 · 끝낸 칸 · 이미 들른 상점(다시 들어가기)은 셈하지 않는다.
    ⚠️ 덩굴 수풀(thicket)은 사용자 목록에 없어 다른 기믹처럼 1 로 두었다 — 확인받을 것 */
-const ENTER_FREE={boss:1,camp:1,fence:1,spring:1,croot:1};
+const ENTER_FREE={boss:1,camp:1,fence:1,spring:1,croot:1,lockdoor:1,stair:1,hole:1,
+  tunnel:1};   /* 땅굴 — 들어가는 구역이 아니라 지나가는 길이라 올라서는 데는 안 낸다 (사용자 2026-10-08).
+                  LOCK_T 에서도 빠져 있고 payEnter 를 거치지 않는다 — 여기까지 맞춰 둔다 (2026-10-10) */
 function enterCost(cell){
   if(!cell||cell.t==="empty"||cell.t==="wall"||cell.done||cell.visited) return 0;
   return ENTER_FREE[cell.t]?0:1;
@@ -20076,6 +20475,7 @@ function enterCell0(r,c){
   const cell=run.grid[r][c];
   if(cell.done||cell.t==="empty"){ view="map"; render(); return }
   if(cell.t==="camp"){ view="map"; render(); return }   /* 주둔지는 지도 판 안에 (2026-09-18) */
+  if(cell.t==="dungeon"||cell.t==="elite"||cell.t==="event") keyQuestTick(cell.t);   /* 열쇠방의 퀘스트 — 입장 수 */
   if(GIM_T[cell.t]){ gimEnter(cell,r,c); return }
   if(cell.t==="shop"||cell.t==="dryshop"||cell.t==="rest"||cell.t==="event"||cell.t==="forge"){
     /* 시간은 여기서 받지 않는다 — 볼일을 다 보고 지도로 나설 때 낸다.
@@ -20170,7 +20570,7 @@ function gimEnter(cell,r,c){
   setTimeout(()=>stepBanner(NODE[cell.t].label,GIM_SUB[cell.t]),40);
   render();
 }
-const GIM_SUB={cave:"차가운 바람이 새어 나옵니다",colony:"검붉은 기운이 맥동합니다",croot:"뿌리가 발목을 휘감습니다",mwreck:"녹슨 거체가 반쯤 묻혀 있습니다",thicket:"덩굴이 길을 막고 있습니다",nest:"작은 빛들이 깜빡입니다",spring:"푸른 기운이 샘솟습니다",fence:"첨탑을 두른 울타리입니다",torture:"쇠사슬 소리가 납니다",gallows:"밧줄이 바람에 흔들립니다",post:"간수들이 이쪽을 봅니다",tunnel:"축축한 바람이 올라옵니다",well:"물소리가 울립니다"};
+const GIM_SUB={clocktower:"거대한 종소리가 울립니다",mana_pillar:"푸른 빛이 맥동합니다",bookcase:"먼지 쌓인 책등이 빽빽합니다",tome_shelf:"낡은 책들이 꽂혀 있습니다",lockdoor:"굳게 잠겨 있습니다",stair:"위아래로 이어집니다",hole:"바닥이 부서져 있습니다",keyroom:"시험이 기다립니다",cave:"차가운 바람이 새어 나옵니다",colony:"검붉은 기운이 맥동합니다",croot:"뿌리가 발목을 휘감습니다",mwreck:"녹슨 거체가 반쯤 묻혀 있습니다",thicket:"덩굴이 길을 막고 있습니다",nest:"작은 빛들이 깜빡입니다",spring:"푸른 기운이 샘솟습니다",fence:"첨탑을 두른 울타리입니다",torture:"쇠사슬 소리가 납니다",gallows:"밧줄이 바람에 흔들립니다",post:"간수들이 이쪽을 봅니다",tunnel:"축축한 바람이 올라옵니다",well:"물소리가 울립니다"};
 /* 조심히 지나가기 — 둘레 한 칸 중 무작위로 밀려난다. no 는 뺄 칸 종류 */
 function gimPush(r,c,no){
   const S=run.size;
@@ -20196,7 +20596,175 @@ function mwApply(w,extra){
   if(w.k==="crystal"){ const n=spiritOn()?crystalUp(1):0; extra&&extra.push({t:"회복",label:n?"푸른 수정 +1":"푸른 수정 (가득)"}); return n?"푸른 수정 1 충전":"푸른 수정 조각 (이미 가득)" }
   (run.after=run.after||[]).push({grade:w.k}); return `${w.k} 보상` }
 const MW_FOES=["부서진 파수병","고장난 수호기","수리 드론"];
+/* ═══ 마력의 탑 열쇠방 (사용자 2026-10-10) — 시험 다섯 중 셋이 무작위로 선다. 보상은 늘 「계단 열쇠」 ═══
+   퀘스트(q)는 세계핵 반복 퀘스트처럼 입장 수를 세고(keyQuestTick), 채우면 열쇠를 준다. 금화 · 피의 시험은 그 자리에서 열쇠 */
+const KEY_TRIALS=[
+ {id:"conf", n:"자신감의 시험", d:"일반 전투 구역에 3번 입장하면 계단 열쇠를 얻습니다. (퀘스트)", q:{k:"dungeon",n:3,lb:"일반 전투 구역 입장"}},
+ {id:"curi", n:"호기심의 시험", d:"미지의 구역에 5번 입장하면 계단 열쇠를 얻습니다. (퀘스트)", q:{k:"event",n:5,lb:"미지의 구역 입장"}},
+ {id:"greed",n:"탐욕의 시험",   d:"금화 20개를 잃고 계단 열쇠를 얻습니다.", gold:20},
+ {id:"blood",n:"피의 시험",     d:"모든 대원이 최대 체력의 30% 피해를 받고 계단 열쇠를 얻습니다. (체력은 1 아래로 내려가지 않습니다)", blood:0.3},
+ {id:"elite",n:"정예로운 시험", d:"정예 전투 구역에 1번 입장하면 계단 열쇠를 얻습니다. (퀘스트)", q:{k:"elite",n:1,lb:"정예 전투 구역 입장"}}];
+function keyTrialPick(){ const L=KEY_TRIALS.map(t=>t.id); for(let i=L.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const x=L[i]; L[i]=L[j]; L[j]=x } return L.slice(0,3) }
+/* ═══ 마나 제련소 (사용자 2026-10-10) ═══
+   마나석 기둥은 한 번 켜면 48시간(tClock 기준) 켜져 있다. 「이번 층」 = 대원이 선 층의 기둥이 (남은 것 모두) 켜져 있으면
+   그 층에서 싸울 때 모든 대원이 라운드 첫 턴에 추가 마나 +1 (firstMana 와 같은 자리). 부순 기둥은 셈에서 빠진다 (내 판단: 남은 것을 다 켜면 된다).
+   화면은 pillarState(층) → {on,total} · pillarLeft(칸) → 남은 시간 · pillarBonus() 에 묻는다 */
+const PILLAR_HOURS=48;
+function tClock(){ return run?((run.day||1)-1)*24+(run.time||0):0 }
+function pillarLeft(cell){ return cell&&cell.until?Math.max(0,cell.until-tClock()):0 }
+function pillarState(f){
+  const st={on:0,total:0}; if(!run||!run.grid||!f) return st;
+  run.grid.forEach((row,r)=>row.forEach(x=>{ if(x.t==="mana_pillar"&&towerFloor(r)===f){ st.total++; if(pillarLeft(x)>0) st.on++ } }));
+  return st;
+}
+function pillarBonus(){
+  if(!towerOn()||!run.pos) return 0;
+  const st=pillarState(curFloor()); return st.total>0&&st.on===st.total?1:0;
+}
+/* 종 울리기 — 이 층의 빈 길을 무작위 구역으로 가득 채운다. 모두 걸어 지나갈 수 있는 구역만이라 길이 끊기지 않는다
+   (문 · 구멍 · 책장 같은 막힘은 빈 길이 아니니 건드리지 않는다). 계단 위 · 아래 칸에는 전투를 놓지 않는다 */
+const BELL_ZONES=[["dungeon",42],["event",22],["rest",12],["elite",8],["shop",8],["forge",3]];
+function bellFill(f){
+  const S=run.size, L=[], here=run.pos;
+  run.grid.forEach((row,r)=>row.forEach((x,c)=>{ if(x.t==="empty"&&towerFloor(r)===f&&!(here&&here.r===r&&here.c===c)) L.push([r,c]) }));
+  const pickZone=bat=>{ const Z=BELL_ZONES.filter(z=>bat||(z[0]!=="dungeon"&&z[0]!=="elite")); let x=Math.random()*Z.reduce((a,z)=>a+z[1],0); for(const z of Z){ if(x<z[1]) return z[0]; x-=z[1] } return Z[0][0] };
+  L.forEach(([r,c])=>{ const t=pickZone(!nearStair(run.grid,r,c));
+    if(t==="dungeon"){ const w=1+Math.floor(Math.random()*3); run.grid[r][c]=Object.assign({t:"dungeon",waves:w},encRoll("dungeon",run.field,w,floorKind(f))) }
+    else if(t==="elite") run.grid[r][c]=Object.assign({t:"elite",waves:1},encRoll("elite",run.field,1,floorKind(f)));
+    else run.grid[r][c]={t:t};
+    if(typeof MAP_BORN!=="undefined"&&!run.sandbox) MAP_BORN.push(r+"-"+c) });
+  campSafe(run.grid);
+  return L.length;
+}
+const MANA_LOOT=[["사파이어 파편",50],["사파이어 수정",40],["마나석",10]];
+function manaLoot(){ let x=Math.random()*100; for(const [n,w] of MANA_LOOT){ if(x<w) return n; x-=w } return MANA_LOOT[0][0] }
+/* 지도 칸의 마도서 표시에 쓸 그림. ⚠️ 임시다 — 이것은 장신구 아이콘(닫힌 마법책)을 돌려 쓴 것이고
+   지도 칸에 쓸 전용 그림이 아직 없다. 「떠드는 마도서」 표시 그림이 오면 이 한 줄만 바꾸면 된다
+   (사용자에게 청해 둠, 2026-10-10) */
+const TOME_ICON="item_common_spellbook";
+/* 마도서 심기 — 전투 칸에 cell.tome 표시를 단다. floor 0 이면 지도 전체(일반 전투 · 정예 전투), 아니면 그 층의 일반 전투만.
+   n 곳까지 무작위로. 표시가 이미 있는 칸은 건너뛴다. 실제로 단 수를 돌려준다. 칸 오른쪽 아래의 작은 마도서 그림은 /ui 몫 */
+function tomePlant(floor,n){
+  const L=[]; run.grid.forEach((row,r)=>row.forEach((x,c)=>{
+    if(x.tome||x.done) return;
+    if(floor?(x.t==="dungeon"&&towerFloor(r)===floor):(x.t==="dungeon"||x.t==="elite")) L.push(x) }));
+  for(let q=L.length-1;q>0;q--){ const k=Math.floor(Math.random()*(q+1)); const t=L[q]; L[q]=L[k]; L[k]=t }
+  const pick=L.slice(0,n); pick.forEach(x=>{ x.tome=1 }); return pick.length;
+}
+/* 선반이 내주는 마법서 — 기초 마법서 시리즈(생명 · 마나 · 순회) · 네코럽티콘 · 그리모어 · 성서 여섯 중 n 개 */
+const TOME_BOOKS=["기초 마법서: 생명","기초 마법서: 마나","기초 마법서: 순회","네코럽티콘","그리모어","성서"];
+function bookPick(n){ const L=TOME_BOOKS.slice(); for(let q=L.length-1;q>0;q--){ const k=Math.floor(Math.random()*(q+1)); const t=L[q]; L[q]=L[k]; L[k]=t } return L.slice(0,n) }
+function keyUp(n){ run.stairKey=Math.max(0,(run.stairKey||0)+(n||1)); return run.stairKey }
+function keyQuestTick(kind){
+  if(!run||!run.keyQ||!run.keyQ.length) return;
+  run.keyQ.forEach(q=>{ if(q.k===kind&&q.have<q.n) q.have++ });
+  const done=run.keyQ.filter(q=>q.have>=q.n);
+  run.keyQ=run.keyQ.filter(q=>q.have<q.n);
+  /* 퀘스트 칸에서 목록이 펼쳐지는 연출 — 보통 퀘스트 : 세계핵 반복 퀘스트와 같은 줄에 태운다 (2026-10-10) */
+  const push=(q,done)=>{ if(!run||run.sandbox) return;
+    const u={id:q.n0||"열쇠방의 시험", cur:Math.min(q.have,q.n), need:q.n, done:done?1:0, key:1, label:q.lb};
+    if(typeof view!=="undefined"&&view==="battle"&&typeof B!=="undefined"&&B&&B.foes&&!B.over) fx({questUp:u,gap:0});
+    else { (run.qPend=run.qPend||[]).push(u);
+      if(typeof view!=="undefined"&&view==="map") setTimeout(()=>{ try{ questPendPlay() }catch(e){ console.error(e) } },300) } };
+  run.keyQ.forEach(q=>{ if(q.k===kind) push(q,0) });
+  done.forEach(q=>{ push(q,1);
+    if(q.give){ questGive(q.n0,q.give); return }   /* 모형 토벌처럼 열쇠가 아닌 상 (2026-10-10) */
+    keyUp(1); toast(`${q.n0} 완료 — 계단 열쇠를 얻었습니다.`); SFX.play("unlock");
+    try{ questCompleteFX(q.n0||"열쇠방의 시험") }catch(e){ console.error(e) } });
+}
+/* 퀘스트를 다 채우면 주는 장신구 — ⚠️ 「모형 창」은 **사용자가 나중에 만든다**(2026-10-10).
+   그때까지는 자리만 비워 두고 알린다. 장신구가 생기면 이 함수가 저절로 집어 준다 */
+function questGive(n0,name){
+  let it=null; try{ it=(typeof itemDef==="function")?itemDef(name):null }catch(e){}
+  if(it){ (run.after=run.after||[]).push({item:it}); toast(`${n0} 완료 — ${name}을 얻었습니다.`) }
+  else toast(`${n0} 완료 — 「${name}」은 아직 없습니다. (자리만 비워 둡니다)`);
+  SFX.play("unlock");
+  try{ questCompleteFX(n0) }catch(e){ console.error(e) }
+}
 const GIM_EV={
+  lockdoor:(cell,r,c)=>{ run.nodeCost=0; return {n:"잠금문",art:"ink_tw_locked_gate",face:"첨탑 관리자",gim:1,
+    t:"위층으로 이어지는 계단 앞을 굳게 잠긴 문이 막고 있습니다.\n계단 열쇠 "+((run.stairKey||0))+"개를 가지고 있습니다.",
+    o:[{t:"문 열기",d:"계단 열쇠를 하나 써서 잠금문을 엽니다. 문이 있던 자리에 계단이 생깁니다.",end:1,
+        when:()=>(run.stairKey||0)>=1,
+        f:()=>{ keyUp(-1); run.grid[r][c]={t:"stair"}; SFX.play("unlock");
+          return "열쇠가 돌아가며 문이 열립니다. 위아래로 이어지는 계단이 드러납니다." }},
+       {t:"나가기",d:"지도로 돌아갑니다.",leave:1,f:()=>""}]} },
+  stair:(cell,r,c)=>{ run.nodeCost=0; return {n:"계단",art:"ink_tw_stair",face:"첨탑 관리자",gim:1,
+    t:"위층과 아래층을 잇는 계단입니다.",
+    o:[{t:"올라가기",d:"위층으로 올라갑니다.",end:1,
+        f:()=>{ run.pos={r:r-1,c:c}; floorReveal(towerFloor(r-1)); run.mapSel=null; run.route=null; return "계단을 올라 윗층에 닿았습니다." }},
+       {t:"내려가기",d:"아래층으로 내려갑니다.",end:1,
+        f:()=>{ run.pos={r:r+1,c:c}; floorReveal(towerFloor(r+1)); run.mapSel=null; run.route=null; return "계단을 내려 아랫층에 닿았습니다." }},
+       {t:"나가기",d:"지도로 돌아갑니다.",leave:1,f:()=>""}]} },
+  hole:(cell,r,c)=>{ run.nodeCost=0; return {n:"부서진 구멍",art:"ink_tw_broken_hole",face:"첨탑 관리자",gim:1,
+    t:"바닥이 부서져 아래층이 내려다보입니다.",
+    o:[{t:"발 헛디디기",d:"아래 층으로 떨어집니다. 같은 열, 같은 줄의 아래층 칸에 닿습니다.",end:1,
+        f:()=>{ const to=r+4; if(to>=run.size||run.grid[to][c].t==="wall") return "발밑이 단단합니다. 아무 일도 일어나지 않습니다.";
+          run.pos={r:to,c:c}; floorReveal(towerFloor(to)); run.mapSel=null; run.route=null;
+          return "발이 미끄러집니다! 한참을 떨어져 아래층에 닿았습니다." }},
+       {t:"나가기",d:"지도로 돌아갑니다.",leave:1,f:()=>""}]} },
+  clocktower:(cell,r,c)=>({n:"종탑",art:"ink_tw_clocktower",face:"첨탑 관리자",gim:1,
+    t:"거대한 종이 울리는 소리가 저 멀리 들립니다. 우뚝 서 있는 종탑에 도착합니다.",
+    o:[{t:"종 울리기",d:"이 층의 빈 자리를 무작위 구역으로 가득 채웁니다. 종탑이 부서집니다.",end:1,
+        f:()=>{ const n=bellFill(towerFloor(r)); run.grid[r][c]={t:"empty"}; SFX.play("danger");
+          return `종이 크게 울립니다. 이 층의 빈 자리 ${n}곳에 구역들이 솟아납니다. 종탑이 무너져 내립니다.` }},
+       {t:"태엽 감기",d:"과거의 우두머리 영혼들과 싸웁니다. 1라운드는 1구역 우두머리, 2라운드는 2구역 우두머리 — 대신 체력 70%로 시작합니다. 이기면 상급 보상 2개. 종탑이 부서집니다.",
+        f:()=>{ run.gimBattle={r:r,c:c,gears:1}; return "" }},
+       {t:"나가기",d:"지도로 돌아갑니다.",leave:1,f:()=>""}]}),
+  mana_pillar:(cell,r,c)=>{ const st=pillarState(towerFloor(r)), L=pillarLeft(cell);
+    return {n:"마나석 기둥",art:"ink_tw_mana_pillar",face:"마나 결정체",gim:1,
+    t:"마나로 이루어진 기둥입니다. 이번 층의 모든 마나석 기둥을 활성화하면 모든 대원이 전투에서 추가 마나를 1 얻습니다.\n"
+      +`이 층의 기둥 ${st.on}/${st.total} 활성화${L>0?` — 이 기둥은 ${Math.ceil(L)}시간 더 켜져 있습니다.`:"."}`,
+    o:[{t:"활성화",d:`마나석 기둥을 ${PILLAR_HOURS}시간 동안 활성화합니다.`+(L>0?" 이미 켜져 있다면 시간을 다시 채웁니다.":""),end:1,
+        f:()=>{ cell.until=tClock()+PILLAR_HOURS; SFX.play("unlock"); const s2=pillarState(towerFloor(r));
+          return `기둥이 푸르게 타오릅니다. 이 층의 기둥 ${s2.on}/${s2.total} 활성화.`+(s2.total>0&&s2.on===s2.total?" 이 층의 모든 기둥이 켜져 모든 대원이 전투에서 추가 마나 +1을 얻습니다.":"") }},
+       {t:"부수기",d:"기둥을 부수고 마나 장신구를 얻습니다. 사파이어 파편 50%, 사파이어 수정 40%, 마나석 10%. 부순 기둥은 이 층의 셈에서 빠집니다.",end:1,
+        f:()=>{ const nm=manaLoot(), it=ITEMS.find(i=>i.n===nm); run.grid[r][c]={t:"empty"}; SFX.play("danger");
+          if(it) (run.after=run.after||[]).push({item:it});
+          return `기둥이 산산이 부서지며 ${nm}${jo(nm,"ig")} 굴러 나옵니다.` }},
+       {t:"나가기",d:"지도로 돌아갑니다.",leave:1,f:()=>""}]} },
+  bookcase:(cell,r,c)=>({n:"책장",art:"ink_tw_library",face:"책벌레",gim:1,
+    t:"수많은 책들이 쌓여있는 곳입니다. 처음 보는 문자들도 많습니다.",
+    o:[{t:"독서",d:"책을 모두 꺼내 읽어 12시간이 지납니다. 이 구역을 부숩니다.",end:1,
+        f:()=>{ run.grid[r][c]={t:"empty"}; run.nodeCost=12; SFX.play("click"); return "책을 모두 꺼내 읽었습니다. 어느새 12시간이 흘렀습니다. 빈 책장만 남았습니다." }},
+       {t:"책장 엎기",d:"이 층의 무작위 일반 전투 2곳으로 떠도는 마도서가 도망갔습니다. 이 구역을 부숩니다.",end:1,
+        f:()=>{ const n=tomePlant(towerFloor(r),2); run.grid[r][c]={t:"empty"}; SFX.play("danger");
+          return n?`책장이 쓰러지며 마도서들이 뛰쳐나갑니다. 이 층의 전투 ${n}곳에 마도서가 도망쳤습니다.`:"책장이 쓰러집니다. 도망칠 마도서도 없었습니다." }},
+       {t:"나가기",d:"지도로 돌아갑니다.",leave:1,f:()=>""}]}),
+  tome_shelf:(cell,r,c)=>{ const mine=!!(run.cave&&run.cave.shelf&&run.cave.r===r&&run.cave.c===c);
+    const books=(cell.books||[]).map(n=>ITEMS.find(i=>i.n===n)).filter(Boolean);
+    return {n:"고대 서적 선반",art:"ink_tw_tome_shelf",face:"책벌레",gim:1,
+    t:books.length?"다 읽은 서적들 사이에서 마법서 몇 권이 눈에 띕니다. 하나를 가져갈 수 있습니다."
+      :mine?`선반 앞에서 ${run.cave.h.name}${jo(run.cave.h.name,"ig")} 책을 읽고 있습니다. ${run.day>=run.cave.until?"다 읽은 것 같습니다.":`${run.cave.until-run.day}일 더 지나야 다 읽습니다.`}`
+      :"낡고 오래된 서적들이 빽빽이 꽂힌 선반입니다.",
+    o:books.length?books.map(it=>({t:it.n,d:"이 마법서를 가져갑니다. 선반이 사라집니다.",end:1,
+        f:()=>{ (run.after=run.after||[]).push({item:it}); run.grid[r][c]={t:"empty"}; SFX.play("unlock"); return `${it.n}${jo(it.n,"eul")} 가져갑니다. 선반이 무너져 내립니다.` }}))
+      .concat([{t:"나가기",d:"지도로 돌아갑니다.",leave:1,f:()=>""}])
+    :[{t:"고대 서적 읽히기",d:"대원을 골라 2일 동안 고대 서적을 읽히고 추가 마법력을 3 줍니다. 다시 찾아와 데려오면 마법서 셋 중 하나를 고릅니다.",
+        when:()=>!run.cave&&run.heroes.filter(h=>!h.down).length>=2,
+        f:()=>{ run.evSub={t:"cave",r:r,c:c,shelf:1}; return "누구에게 고대 서적을 읽힐까요?" }},
+       {t:"데려오기",d:"읽고 있는 대원을 데려옵니다. 2일을 채웠다면 추가 마법력 +3, 마법서 셋 중 하나를 고릅니다.",again:1,
+        when:()=>mine,
+        f:()=>{ const b=caveReturn(); if(!b) return "";
+          if(!b.done) return `${b.h.name}${jo(b.h.name,"ig")} 아직 다 읽지 못한 채 돌아옵니다.`;
+          cell.books=bookPick(3); return `${b.h.name}${jo(b.h.name,"ig")} 책을 덮고 일어섭니다. 마법력 +3. 선반에서 마법서 몇 권이 눈에 띕니다.` }},
+       {t:"선반 엎기",d:"지도의 모든 전투로 마도서가 도망갑니다. 상급 보상을 얻습니다. 이 구역을 부숩니다.",end:1,
+        when:()=>!mine,
+        f:()=>{ const n=tomePlant(0,999); (run.after=run.after||[]).push({grade:"상급"}); run.grid[r][c]={t:"empty"}; SFX.play("danger");
+          return `선반이 쓰러지며 마도서들이 사방으로 뛰쳐나갑니다. 지도의 전투 ${n}곳에 마도서가 도망쳤습니다. 선반 뒤에서 보상이 나옵니다.` }},
+       {t:"나가기",d:"지도로 돌아갑니다.",leave:1,f:()=>""}]} },
+  keyroom:(cell,r,c)=>({n:"열쇠방",art:"ink_tw_key_room",face:"첨탑 관리자",gim:1,
+    t:"작은 방 한가운데 계단 열쇠가 놓여 있습니다. 가져가려면 시험을 치러야 합니다.",
+    o:(cell.trials||["conf","greed","blood"]).map(id=>KEY_TRIALS.find(x=>x.id===id)).filter(Boolean).map(T=>({
+        t:T.n,d:T.d,end:1,
+        when:T.gold?()=>run.gold>=T.gold:null,
+        f:()=>{ run.grid[r][c]={t:"empty"};
+          if(T.q){ (run.keyQ=run.keyQ||[]).push({id:T.id,n0:T.n,k:T.q.k,n:T.q.n,have:0,lb:T.q.lb}); SFX.play("unlock");
+            return `${T.n}을 받아들였습니다. ${T.q.lb} ${T.q.n}번을 채우면 계단 열쇠를 얻습니다.` }
+          if(T.gold){ run.gold-=T.gold; keyUp(1); if(sfxHas("금화 쓰기")) SFX.play("금화 쓰기"); return `금화 ${T.gold}개를 내놓았습니다. 계단 열쇠를 얻었습니다.` }
+          run.heroes.forEach(h=>{ if(!h.down) h.hp=Math.max(1,h.hp-Math.round(h.maxHp*T.blood)) }); keyUp(1); SFX.play("danger");
+          return "피를 내놓았습니다. 대원들이 상처를 입었지만, 계단 열쇠를 얻었습니다." }}))
+      .concat([{t:"나가기",d:"지도로 돌아갑니다.",leave:1,f:()=>""}]) }),
   /* ── 정령숲 둘째 묶음 (사용자 2026-10-01) ── */
   cave:(cell,r,c)=>({n:"고독의 동굴",art:"ink_sp_cave",face:"균열 벌레",gim:1,
     t:run.cave?`동굴 안쪽에서 ${run.cave.h.name}의 숨소리가 들립니다. ${run.day>=run.cave.until?"수련을 마친 것 같습니다.":`${run.cave.until-run.day}일 더 지나야 수련이 끝납니다.`}`
@@ -20267,6 +20835,15 @@ const GIM_EV={
         f:()=>{ run.gimBattle={r:r,c:c,nest:1}; return "" }},
        {t:"조심히 지나가기",d:"주변 무작위 둥지를 제외한 1칸 이내 구역으로 밀려납니다.",end:1,
         f:()=>{ gimPush(r,c,["nest"]); return "빛을 건드리지 않게 둥지를 비켜 갑니다." }}]}),
+  parade:(cell,r,c)=>({n:"모형 열병식",art:"ink_tw_model_parade",face:"모형 기사단장",gim:1,
+    t:"모형 병사들이 일렬로 서 열병식을 진행하고 있습니다.\n나무와 쇠로 깎은 병사들이 한 치도 어긋나지 않게 발을 맞춥니다.",
+    o:[{t:"대형 망치기",d:"열병식 한가운데로 뛰어듭니다. 모형 전략가가 이끄는 정예 전투입니다. 이기면 상급 보상 1개와 다른 보상을 얻고, 모형 열병식 칸이 모두 사라집니다.",
+        f:()=>{ run.gimBattle={r:r,c:c,parade:1}; return "" }},
+       {t:"모형 토벌",d:"퀘스트 — 모형 병사를 10회 처치합니다. (보상: 특수 장신구 「모형 창」)",end:1,
+        when:()=>!(run.keyQ||[]).some(q=>q.id==="parade"),
+        f:()=>{ (run.keyQ=run.keyQ||[]).push({id:"parade",n0:"모형 토벌",k:"모형 병사",n:10,have:0,lb:"모형 병사 처치",give:"모형 창"});
+          SFX.play("unlock"); return "대열을 눈에 담아 둡니다. 모형 병사를 열 번 쓰러뜨리면 되겠습니다." }},
+       {t:"나가기",d:"지도로 돌아갑니다.",leave:1,f:()=>""}]}),
   spring:(cell,r,c)=>({n:"기력의 샘",art:"ink_sp_spring",face:"샘의 잔영",gim:1,
     t:`맑은 샘에서 푸른 기운이 솟습니다. 수정을 대면 빛이 돌아올 것 같습니다.\n푸른 수정 ${run.crystal==null?CRYSTAL_MAX:run.crystal}/${CRYSTAL_MAX}`,
     o:[{t:"기력 충전",d:"푸른 수정을 1회 충전합니다.",end:1,
@@ -20376,6 +20953,14 @@ function gimFenceBattle(){
     say(`거대한 기계의 잔해 — 부서진 기계들이 깨어납니다. (${w}라운드)`,"t3");
     return;
   }
+  if(g.parade){   /* 모형 열병식 — 모형 전략가가 대열을 이끈다 (사용자 2026-10-10) */
+    startDungeon({t:"elite",waves:1,parade:1},g.r,g.c);
+    const sol=["모형 창병","모형 기병","모형 궁수","모형 궁정 마법사"];
+    run.dun.forceFoes=[[rnd(sol),1],[rnd(sol),2],["모형 전략가",3]];
+    startBattle("elite");
+    setTimeout(()=>stepBanner("모 형 열 병 식","모형 전략가가 대열을 세웁니다"),40);
+    return;
+  }
   if(g.nest){   /* 반딧불 둥지 — 빛무리 셋 (2026-10-01) */
     startDungeon({t:"dungeon",waves:1,nest:1},g.r,g.c);
     run.dun.forceFoes=[["빛무리",1],["빛무리",2],["빛무리",3]];
@@ -20388,6 +20973,15 @@ function gimFenceBattle(){
     run.dun.forceFoes=[["감옥 경비병",1],["감옥 경비병",2],["감옥 경비병",3]];
     startBattle("battle");
     say("간수 초소 — 경비병을 모두 쓰러뜨리면 초소가 무너집니다.","t3");
+    return;
+  }
+  if(g.gears){   /* 톱니 용광로 종탑 — 과거의 우두머리 영혼 둘 (1라운드 1구역 · 2라운드 2구역 우두머리, 체력 70%) */
+    startDungeon({t:"elite",waves:2,gears:1},g.r,g.c);
+    run.dun.waveFoes=[0,1].map(i=>[[BOSSES[i],(FOE[BOSSES[i]]||{}).bossSlot||1]]);
+    run.dun.souls=[0,1]; run.dun.hpPct=0.7;
+    startBattle("elite");
+    setTimeout(()=>stepBanner("종 탑","과거의 우두머리들이 깨어납니다"),40);
+    say("종탑 — 과거의 우두머리 영혼들이 차례로 나섭니다. 체력은 70% 입니다.","t3");
     return;
   }
   startDungeon({t:"dungeon",waves:1,fence:1},g.r,g.c);
@@ -20552,6 +21146,14 @@ function gimBattleWon(d){
   if(d.cell.tower){ gimBreakTower(); questProgress("tower");
     (run.after=run.after||[]).push({grade:"중급"},{grade:"중급"},{item:rnd(ITEMS.filter(i=>i.g==="일반"))});
     title="첨탑"; sub="첨탑 관리자를 쓰러뜨렸습니다"; msg="첨탑이 무너지고 울타리가 걷힙니다. 관리자의 금고에서 나온 것들입니다." }
+  else if(d.cell.parade){   /* 모형 열병식 (사용자 2026-10-10) */
+    let gone=0;
+    run.grid.forEach((row,r)=>row.forEach((x,c)=>{ if(x.t==="parade"){ run.grid[r][c]={t:"empty"}; gone++ } }));
+    run.paradeAt=null;
+    (run.after=run.after||[]).push({grade:"상급"},{grade:"중급"});
+    title="모형 열병식"; sub="모형 전략가를 쓰러뜨렸습니다";
+    msg=`대열이 무너지고 모형들이 흩어집니다. 열병식 칸 ${gone}곳이 사라집니다.`;
+  }
   else if(d.cell.fence){
     title="울타리";
     /* 어느 쪽이든 그 울타리 한 칸만 걷힌다 — 첨탑은 관리자를 잡아야 무너진다 (사용자 2026-09-16: 울타리 하나에 첨탑 전체가 무너지던 것 고침) */
@@ -20559,6 +21161,9 @@ function gimBattleWon(d){
     if(!d.guards){ sub="3턴 안에 울타리를 부쉈습니다"; msg="" }
     else { sub="경비병을 물리쳤습니다"; msg="" }
   }
+  else if(d.cell.gears){
+    (run.after=run.after||[]).push({grade:"상급"},{grade:"상급"});
+    title="종탑"; sub="우두머리의 영혼들을 물리쳤습니다"; msg="종이 멎고 종탑이 무너집니다. 톱니 사이에서 상급 보상 둘이 굴러 나옵니다." }
   else if(d.cell.grove){   /* 울창한 수목 — 수목과 덩굴 수풀이 모두 걷힌다 */
     run.grid.forEach((row,r)=>row.forEach((x,c)=>{ if(x.t==="grove"||x.t==="thicket") run.grid[r][c]={t:"empty"} }));
     const heart=ITEMS.find(i=>i.n==="뿌리모체의 심장");
@@ -21164,7 +21769,7 @@ function startDungeon(cell,r,c){
   if(cell.seq){ run.dun.seq=cell.seq.slice(); run.dun.seqName=cell.seqName }   /* 칸을 놓을 때 정해 둔 구성 (encRoll) */
   else if(!cell.enc){ const f=Math.min(run.field,2), cands=(ENC_SEQ[f]||[]).filter(q=>q.rounds.length===run.dun.waves);
     if(run.dun.waves>1&&cands.length&&Math.random()<0.5&&(cell.t==="dungeon"||cell.t==="elite")){
-      const q=rnd(cands); run.dun.seq=q.rnd?q.rounds.slice().sort(()=>Math.random()-0.5):q.rounds.slice(); run.dun.seqName=q.n } }
+      const fk3=towerKindAtRow(r), q=fk3?wpick(cands,q=>themeMul(encTheme(encFoesOf(f,q)),fk3)):rnd(cands); run.dun.seq=q.rnd?q.rounds.slice().sort(()=>Math.random()-0.5):q.rounds.slice(); run.dun.seqName=q.n } }
   if(cell.force) run.dun.forceFoes=cell.force.map(x=>x.slice());   /* 정해진 상대 (미믹 · 시련의 문, 2026-10-05) */
   if(cell.winItem) run.dun.winItem=cell.winItem;                    /* 이기면 이 장신구 */
   if(cell.trial) run.dun.trial=cell.trial;                          /* 시련의 문 몇 단 */
@@ -21205,6 +21810,7 @@ function dungeonCleared(){
       others.forEach(h=>{ h.maxHp-=g.tag.steal; h.hp=Math.min(h.hp,h.maxHp) });
       if(others.length){ g.maxHp+=g.tag.steal*others.length; g.hp+=g.tag.steal*others.length;
         toast(`뺏어먹기 — 굴라가 다른 대원 ${others.length}에게서 최대 체력을 ${g.tag.steal}씩 빼앗았습니다.`) } } }
+  if(d.cell&&d.cell.wolf){ run.wolf=null; WOLF_MOVE=[]; toast("붉은 망토 늑대를 쓰러뜨렸습니다.") }   /* 동화의 방 (2026-10-10) — 깃발은 startDungeon 이 담은 cell 에 실린다 */
   gimBattleWon(d);                                    /* 첨탑·울타리·초소·마차 (사용자 2026-09-15) */
   if(d.kind!=="ambush"&&d.r!=null&&run.grid[d.r]&&run.grid[d.r][d.c]&&!d.cell.fence)
     run.grid[d.r][d.c]={t:"empty"};
@@ -22060,6 +22666,9 @@ function partyStrip(note){
       :`<span class="hint">${down?`쓰러짐 ${down}명, `:""}${hurt?`다친 대원 ${hurt}명`:"모두 멀쩡합니다"}</span>`}
   </div>`;
 }
+/* 이 구역에서는 쉼터에서 밤을 보내면 오염도가 오르지 않고 이만큼 내려간다 (마력의 탑 25, 사용자 2026-10-10).
+   구역 번호를 적지 않고 FIELDS 에 묻는다 — 다른 구역에 같은 규칙을 줄 때도 거기 한 줄이면 된다 */
+function restCl(){ return (typeof run!=="undefined"&&run&&!run.sandbox&&(FIELDS[run.field]||{}).restCleanse)||0 }
 function drawRest(app){
   if(run.restRes) return drawRestRes(app);
   app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">휴 식 소</div>
@@ -22081,9 +22690,9 @@ function drawRest(app){
   b.onclick=()=>{ run.after=run.after||[]; for(let i=0;i<n;i++) run.after.push({grade:grade});
     afterChest() };
   const c=el(`<div class="rw ${run.night?"":"no"}"><div class="rwi">${uiPng("clock")||nodeArt("camp")}</div>
-    <b>노숙하기</b><p>여기서 밤을 보내고 다음 날 아침을 맞습니다. 주둔지가 아니라 오염도가 10 오릅니다.</p>
+    <b>노숙하기</b><p>여기서 밤을 보내고 다음 날 아침을 맞습니다. ${restCl()?`오염도가 ${restCl()} 내려갑니다.`:"주둔지가 아니라 오염도가 10 오릅니다."}</p>
     ${run.night?"":`<p style="color:var(--faint)">해가 진 뒤에만 할 수 있습니다.</p>`}</div>`);
-  if(run.night) c.onclick=()=>{ addTaint(10); nextDay();
+  if(run.night) c.onclick=()=>{ addTaint(restCl()?-restCl():10); nextDay();
     if(view!=="over"){ run.here=null; toast("모닥불 곁에서 밤을 보냈습니다."); view="map"; render() } };
   row.appendChild(a); row.appendChild(b); row.appendChild(c);
   wrap.appendChild(row);
@@ -22451,6 +23060,14 @@ const EVENTS=[
       f:()=>{ const it=ITEMS.find(x=>x.n==="창조의 시침");
         (run.after=run.after||[]).push({item:it});
         return "순간 머리 속에 빛이 들어옵니다. 정신을 차려보니 손에 얇은 시침을 쥐고 있습니다." }}]},
+
+ /* 마력의 탑 — 동화의 방 (사용자 2026-10-10). 늑대가 지도에 남아 쫓아온다 */
+ {n:"붉은 망토와 늑대",art:"ink_tw_red_hood_wolf", face:"무시무시한 늑대",
+  when:()=>typeof towerOn==="function"&&towerOn()&&!wolfOn()&&curFloor()>0&&taleFloor(curFloor()),
+  t:"낡은 그림책이 바닥에 펼쳐져 있습니다.\n책장을 넘기자 이야기 속 늑대가 종이 밖으로 걸어 나옵니다.\n<wave>굶주린 늑대가 당신을 쫓습니다.</wave>",
+  o:[{t:"달아나기",d:"늑대가 이 층에 남아 쫓아옵니다. 한 칸 움직일 때마다 두 칸씩 따라붙고, 같은 칸에 서면 싸우게 됩니다.",
+      f:()=>wolfSpawn()?"책장을 덮고 달아납니다. 등 뒤에서 발소리가 따라붙습니다."
+                      :"늑대가 그림책 속으로 돌아갑니다. 이 층에는 늑대가 설 자리가 없었습니다."}]},
 
  /* 정령숲 전용 (사용자 2026-10-01) */
  {n:"버려진 벌목도",art:"explore", face:"늪 두꺼비",
@@ -23134,10 +23751,14 @@ function coreQuestCard(){
 function questList(){
   const L=((typeof run!=="undefined"&&run&&run.quests)||[]).slice();
   const cq=coreQuestCard(); if(cq) L.unshift(cq);
+  /* 열쇠방의 시험 — 세계핵 반복 퀘스트와 같은 꼴로 얹는다 (총괄 2026-10-10). run.quests 에는 넣지 않는다 */
+  ((typeof run!=="undefined"&&run&&run.keyQ)||[]).forEach(q=>{
+    L.push({id:q.n0||"열쇠방의 시험", cur:q.have||0, need:q.n, done:0, hero:null, key:1,
+            label:q.lb, rd:"계단 열쇠 1개"}) });
   return L;
 }
 function questDesc(q){
-  if(q.core) return `${esc(q.label)} <b class="qp">${Math.min(q.cur,q.need)}/${q.need}</b>`;
+  if(q.core||q.key) return `${esc(q.label)} <b class="qp">${Math.min(q.cur,q.need)}/${q.need}</b>`;
   const Q=QUESTS[q.id]; if(!Q) return esc(q.id);
   return rich(Q.d).replace("{n}",`<b class="qp">${Math.min(q.cur,q.need)}/${q.need}</b>`);
 }
@@ -23175,10 +23796,10 @@ function qFxHtml(){
   return `<div class="qdonefx">${uiPng("ui_quest")}<b>퀘스트 완료</b><span>${esc(f.id)}</span></div>`;
 }
 function questCard(q,isNew,small){
-  const Q=QUESTS[q.id]||{rd:""};
+  const Q=QUESTS[q.id]||{rd:q.rd||""};   /* 열쇠방 시험처럼 QUESTS 에 없는 것은 제 보상 글을 쓴다 (2026-10-10) */
   if(small) return `<div class="qcard sm${q.done?" done":""}"><b class="${q.core?"qcore":""}">${esc(q.id)}</b><div class="qb">${questDesc(q)}${q.done?` <i class="qok">완료</i>`:""}</div></div>`;
   return `<div class="qcard${q.done?" done":""}${isNew?" new":""}">
-    <div class="qt"><b class="${q.core?"qcore":""}">${esc(q.id)}</b><span>${q.core?`<b class="qrepb">반복 퀘스트</b>`:`수락자 : <b>${esc(q.hero||"전원")}</b>`}</span></div>
+    <div class="qt"><b class="${q.core?"qcore":""}">${esc(q.id)}</b><span>${q.core?`<b class="qrepb">반복 퀘스트</b>`:q.key?`<b class="qrepb">열쇠방의 시험</b>`:`수락자 : <b>${esc(q.hero||"전원")}</b>`}</span></div>
     <div class="qb">${questDesc(q)}${q.done?` <i class="qok">완료</i>`:""}</div>
     <div class="qr">${rich(Q.rd)}</div></div>`;
 }
@@ -23378,14 +23999,15 @@ function drawRelic0(app){
   if(run.evSub&&EV_GAME[run.evSub.t]){ box.classList.add("evgame"); EV_GAME[run.evSub.t].draw(row,evApiReal(desc)); return }
   if(run.evMsg&&run.evSub&&run.evSub.t==="cave"){   /* 고독의 동굴 — 남길 대원을 고른다 (2026-10-01) */
     const sub=run.evSub;
-    row.appendChild(el(`<div class="evres"><div class="evi">${chestIcon("경험치")}</div><div><b>동굴 수련</b><p>2일 동안 동굴에 남아 수련합니다. 그동안은 전투에 나서지 않습니다.</p></div></div>`));
+    row.appendChild(el(`<div class="evres"><div class="evi">${chestIcon("경험치")}</div><div><b>${sub.shelf?"고대 서적 읽기":"동굴 수련"}</b><p>${sub.shelf?"2일 동안 고대 서적을 읽습니다.":"2일 동안 동굴에 남아 수련합니다."} 그동안은 전투에 나서지 않습니다.</p></div></div>`));
     run.heroes.filter(h=>!h.down).forEach(h=>{
-      const c=el(`<div class="choice evfoe"><span class="evfart">${figure(h.name)}</span><b>${esc(h.name)}</b><span>Lv.${h.lv} ${ic("atk")}${h.atk} ${ic("def")}${h.def} ${ic("mag")}${h.mag} — 2일 뒤 모두 +2</span></div>`);
+      const c=el(`<div class="choice evfoe"><span class="evfart">${figure(h.name)}</span><b>${esc(h.name)}</b><span>Lv.${h.lv} ${ic("atk")}${h.atk} ${ic("def")}${h.def} ${ic("mag")}${h.mag} — ${sub.shelf?"2일 뒤 마법력 +3":"2일 뒤 모두 +2"}</span></div>`);
       c.onclick=()=>{ const i=run.heroes.indexOf(h); if(i<0) return; run.heroes.splice(i,1); h.slot=0;
-        run.cave={h:h,until:run.day+2,r:sub.r,c:sub.c}; run.evSub=null;
+        run.cave={h:h,until:run.day+2,r:sub.r,c:sub.c,shelf:sub.shelf?1:0}; run.evSub=null;
         if(run.showHero!=null) run.showHero=null;
-        run.ev=GIM_EV.cave(run.grid[sub.r][sub.c],sub.r,sub.c);
-        run.evMsg=`${h.name}${jo(h.name,"ig")} 동굴 깊숙이 들어가 앉습니다. ${run.day+2}일차부터 데려올 수 있습니다.`; SFX.play("click"); render() };
+        { const cl=run.grid[sub.r][sub.c]; run.ev=GIM_EV[cl.t](cl,sub.r,sub.c); run.ev.gimEv=1 }
+        run.evMsg=sub.shelf?`${h.name}${jo(h.name,"ig")} 선반 앞에 앉아 고대 서적을 펼칩니다. ${run.day+2}일차부터 데려올 수 있습니다.`
+          :`${h.name}${jo(h.name,"ig")} 동굴 깊숙이 들어가 앉습니다. ${run.day+2}일차부터 데려올 수 있습니다.`; SFX.play("click"); render() };
       row.appendChild(c) });
     const b=el(`<div class="choice go2 evquit">그만두기</div>`); b.onclick=()=>{ run.evSub=null; run.evMsg=null; run.evPick=null; render() }; row.appendChild(b);
     return;
@@ -23657,32 +24279,71 @@ function lootRoll(kind,fi){
   while(pick.length<n&&cand.length){ const i=Math.floor(Math.random()*cand.length); pick.push(cand.splice(i,1)[0]) }
   return {boost:pick, loot:`획득 확률 증가: ${pick.map(t=>LOOT_NM[t]).join(", ")}`};
 }
-function encRoll(kind,fi,waves){
+/* ═══ 층별 적 풀 (마력의 탑, 사용자 2026-10-10: 「각 층 적 풀은 내가 나중에 고칠 테니 일단 임의로」) ═══
+   새 적은 없다 — 있는 조합을 층 종류(TOWER_FLOORS)에 맞게 가중만 준다. 그 층 결의 조합은 ×3, 결이 없는 조합은 ×1, 다른 층 결은 ×0.3.
+   조합의 결 = 거기 선 적들의 결 중 가장 많은 것. 아직 표에 없는 층 종류(동화의 방)의 결은 중립으로 센다.
+   사용자가 고칠 자리는 이 표(FOE_THEME) 하나 — 적 이름 → 층 종류 */
+const FOE_THEME={"책벌레":"library","떠드는 마도서":"library","장부쟁이":"library",
+  "마나 결정체":"mana","결정에 갇힌 잔영":"mana",
+  "흘러나온 시간":"gears","시평선의 문지기":"gears","근위병의 갑옷":"gears",
+  "모형 창병":"fairy","모형 기병":"fairy","모형 궁수":"fairy","모형 궁정 마법사":"fairy","모형 전략가":"fairy"};
+const THEME_W={on:3, off:0.3};
+function encTheme(foes){
+  const c={}; (foes||[]).forEach(nm=>{ const t=FOE_THEME[nm]; if(t) c[t]=(c[t]||0)+1 });
+  let best=null; Object.keys(c).forEach(t=>{ if(!best||c[t]>c[best]) best=t }); return best;
+}
+function themeMul(theme,fk){
+  if(!fk||!theme) return 1;
+  if(!TOWER_FLOORS[theme]||typeof TOWER_FLOORS[theme].place!=="function") return 1;   /* 아직 없는 층 종류의 결은 중립 */
+  return theme===fk?THEME_W.on:THEME_W.off;
+}
+/* 가중 뽑기 — wf(e) 가 가중. 0 이하면 못 뽑는다 */
+function wpick(L,wf){
+  let tot=0; const ws=L.map(e=>{ const w=Math.max(0,wf(e)); tot+=w; return w });
+  if(tot<=0) return rnd(L);
+  let x=Math.random()*tot; for(let i=0;i<L.length;i++){ if(x<ws[i]) return L[i]; x-=ws[i] } return L[L.length-1];
+}
+const encFoesOf=(f,e)=>e&&(e.foes||(e.rounds?[].concat(...e.rounds.map(nm=>((encByName(f,nm)||{}).foes||[]))):[]))||[];
+/* 이 칸(r)이 선 층의 종류 — 탑이 아니면 null */
+function towerKindAtRow(r){ return (typeof towerOn==="function"&&towerOn())?floorKind(towerFloor(r)):null }
+function encRoll(kind,fi,waves,fk){
   const f=Math.min(fi||0,2), n=(run&&run.heroes&&run.heroes.length)||1;
   let enc=null, seq=null, seqName=null;
-  if(kind==="elite"&&(ELITE_ENC[f]||[]).length){ const L=ELITE_ENC[f].filter(e=>(e.min||1)<=n&&!e.gim); enc=rnd(L.length?L:ELITE_ENC[f].filter(e=>!e.gim)) }   /* gim — 기믹 구역 전용 (2026-09-30) */
+  const wf=e=>(e.w||1)*themeMul(encTheme(encFoesOf(f,e)),fk);
+  if(kind==="elite"&&(ELITE_ENC[f]||[]).length){ const L=ELITE_ENC[f].filter(e=>(e.min||1)<=n&&!e.gim); enc=wpick(L.length?L:ELITE_ENC[f].filter(e=>!e.gim),e=>themeMul(encTheme(e.foes),fk)) }   /* gim — 기믹 구역 전용 (2026-09-30) */
   else {
     const cands=(ENC_SEQ[f]||[]).filter(q=>q.rounds.length===(waves||1));
-    if((waves||1)>1&&cands.length&&Math.random()<0.5){ const q=rnd(cands); seq=q.rnd?q.rounds.slice().sort(()=>Math.random()-0.5):q.rounds.slice(); seqName=q.n; enc=encByName(f,seq[0]) }
-    if(!enc) enc=pickEncounter(f,n,1);
+    if((waves||1)>1&&cands.length&&Math.random()<0.5){ const q=wpick(cands,q=>themeMul(encTheme(encFoesOf(f,q)),fk)); seq=q.rnd?q.rounds.slice().sort(()=>Math.random()-0.5):q.rounds.slice(); seqName=q.n; enc=encByName(f,seq[0]) }
+    if(!enc) enc=pickEncounter(f,n,1,fk);
   }
   const foes=enc?(enc.foes||[]).filter(x=>FOE[x]):[];
   const hide=Math.random()<(kind==="elite"?0.7:0.5);
   const hint=(!hide&&foes.length)?rnd(foes):null;
   return Object.assign({enc:enc?enc.n:null, seq:seq, seqName:seqName, hint:hint, style:`등장: ${hint||"확인 불가"}`},lootRoll(kind,fi));
 }
-function pickEncounter(f,n,round){
+function pickEncounter(f,n,round,fk){
   const rd=Math.max(1,Math.min(3,round||1));
   const ok=e=>(e.min||1)<=n && (!e.r||e.r.indexOf(rd)>=0);
   let list=(ENCOUNTER[f]||[]).filter(ok);
   /* 그 라운드에 맞는 것이 없으면 라운드 조건을 풀어 준다 — 빈 판은 없어야 한다 */
   if(!list.length) list=(ENCOUNTER[f]||[]).filter(e=>(e.min||1)<=n);
   if(!list.length) return null;
+  if(fk) return wpick(list,e=>(e.w||1)*themeMul(encTheme(e.foes),fk));   /* 탑 — 그 층 종류의 결로 */
   const pool=[];
   list.forEach(e=>{ for(let q=0;q<(e.w||1);q++) pool.push(e) });
   return rnd(pool);
 }
-function foeSet(kind){
+/* 떠도는 마도서(서재, 사용자 2026-10-10) — 표시가 달린 전투(cell.tome)의 1라운드 빈 자리에 떠드는 마도서 한 마리가 선다.
+   * 뒤쪽 빈 자리부터 찾는다. 빈 자리가 없으면 서지 않는다 (표시는 그 전투 하나에만 — 이기든 지든 한 번 치르면 걷힌다) */
+function tomeJoin(out,kind){
+  const d=run&&run.dun; if(!d||!d.cell||!d.cell.tome||d.wave!==1||kind==="boss") return out;
+  const used=new Set(); out.forEach(([nm,sl])=>{ const w=(FOE[nm]&&FOE[nm].big)?2:1; for(let i=0;i<w;i++) used.add(sl+i) });
+  for(let sl=SLOTS;sl>=1;sl--) if(!used.has(sl)){ out.push(["떠드는 마도서",sl]); d.tomeSet=1; break }
+  return out;
+}
+function foeSet(kind){ return tomeJoin(foeSet0(kind),kind) }
+function foeSet0(kind){
+  if(run.dun&&run.dun.waveFoes){ const L=run.dun.waveFoes; return L[Math.min(L.length,Math.max(1,run.dun.wave||1))-1].map(x=>x.slice()) }   /* 라운드마다 정한 적 (종탑의 우두머리 영혼) */
   /* 이 전투에만 세울 적이 정해져 있으면 그것부터 (미지의 구역 난동꾼 등) */
   if(run.dun&&run.dun.forceFoes) return run.dun.forceFoes.map(x=>x.slice());
   const f=Math.min(run.field,2), pool=FIELD_FOES[f], out=[];
@@ -23702,12 +24363,13 @@ function foeSet(kind){
   if(kind==="elite"&&(ELITE_ENC[f]||[]).length){
     const pre=run.dun&&run.dun.wave===1&&run.dun.cell&&run.dun.cell.enc&&ELITE_ENC[f].find(e=>e.n===run.dun.cell.enc);   /* 미리 정한 조합 — 힌트가 참이게 */
     const L2=ELITE_ENC[f].filter(e=>(e.min||1)<=n&&!e.gim);   /* gim — 기믹 구역 전용은 미리 정했을 때만 (2026-09-30) */
-    const enc2=pre||rnd(L2.length?L2:ELITE_ENC[f].filter(e=>!e.gim)); B_ENC=enc2.n;
+    const fk2=(run.dun&&run.dun.r!=null)?towerKindAtRow(run.dun.r):null;
+    const enc2=pre||(fk2?wpick(L2.length?L2:ELITE_ENC[f].filter(e=>!e.gim),e=>themeMul(encTheme(e.foes),fk2)):rnd(L2.length?L2:ELITE_ENC[f].filter(e=>!e.gim))); B_ENC=enc2.n;
     encLayout(enc2).forEach(x=>out.push(x)); return out;
   }
   if(run.dun&&run.dun.seq){ enc=encByName(f,run.dun.seq[((run.dun.wave||1)-1)%run.dun.seq.length]) }   /* 짜여진 구성 */
   if(!enc&&run.dun&&run.dun.wave===1&&run.dun.cell&&run.dun.cell.enc) enc=encByName(f,run.dun.cell.enc);   /* 칸을 놓을 때 정한 첫 라운드 (힌트가 참이게) */
-  if(!enc) enc=pickEncounter(f,n,(run.dun&&run.dun.wave)||1);
+  if(!enc) enc=pickEncounter(f,n,(run.dun&&run.dun.wave)||1,(run.dun&&run.dun.r!=null)?towerKindAtRow(run.dun.r):null);
   if(enc){
     B_ENC=enc.n;
     let lay=encLayout(enc);
@@ -23774,7 +24436,9 @@ function foeScale(kind){
      필드 몫을 +50% 로 낮추고, 그만큼을 하루하루(l)로 옮겨
      한 필드 안에서 천천히 오르게 했다.
        필드1 끝 1.42 → 필드2 첫날 1.50  (예전 1.30 → 1.85) */
-  const f=run.field, n=Math.min(run.heroes.length,5);
+  const soul=(run.dun&&run.dun.souls)?run.dun.souls[Math.min(run.dun.souls.length,Math.max(1,run.dun.wave||1))-1]:null;   /* 과거의 우두머리 영혼 — 그 구역 우두머리의 세기로 (종탑) */
+  if(soul!=null) kind="boss";
+  const f=soul!=null?soul:run.field, n=Math.min(run.heroes.length,5);
   const boss=(kind==="boss");
   /* 우두머리 : 날짜는 그 구역의 마지막 날, 대원의 세기는 못 박은 값 (위 BOSS_LV) */
   const l=boss?((FIELDS[Math.min(f,FIELDS.length-1)].days-1)+(run.dun?run.dun.wave-1:0))
@@ -23838,7 +24502,7 @@ function startBattle(kind,pinned){
     h.first=h.first||{}; h.first.cut=0; h.first.shot=0;
     windReset(h);                    /* 진선풍도 중첩도 라운드마다, 회오리로 바뀐 칸은 진선풍도로 */
     altReset(h);                     /* 전환 기술은 라운드마다 처음 꼴로 (헥토 방패 막기 · 선두 방어, 사용자 2026-10-06) */
-    h.mana=h.maxMana+itemBt(h,"firstMana")+(h.tag.firstMana||0);
+    h.mana=h.maxMana+itemBt(h,"firstMana")+(h.tag.firstMana||0)+((typeof pillarBonus==="function")?pillarBonus():0);   /* 마나석 기둥 — 이 층의 기둥을 모두 켰다면 (마나 제련소) */
     if(itemBt(h,"negMana")&&itemBt(h,"negShield")) h.mana+=itemBt(h,"negMana");   /* 봉인된 어둠 — 배치하며 얻은 부정 보호막, 그 턴 마나 +1 (점검 2026-10-07) */   /* 사파이어 파편 — 각 라운드 첫 턴 (사용자 2026-10-03, 전에는 전투 첫 라운드만) */
     if(fresh){
       /* ── 전투 하나에 한 번만 (표 BATTLE_RESET) ── */
@@ -23865,7 +24529,7 @@ function startBattle(kind,pinned){
   const sc=foeScale(kind);
   foeSet(kind).forEach(([n,s],i)=>{
     const d=FOE[n];
-    const lead=(kind==="elite"&&s===1)?1.26:1;
+    const lead=(kind==="elite"&&s===1&&!(run.dun&&run.dun.souls))?1.26:1;   /* 종탑의 우두머리 영혼은 앞자리 덤이 없다 */
     const hp=Math.round(d.hp*sc.m*sc.hpP*lead)+sc.hpAdd;
     B.foes.push({name:n,slot:s,isFoe:1,maxHp:hp,hp:hp,
       atk:Math.max(1,Math.round(d.atk*foeAtkMult()*(1+(sc.m-1)*0.5)*sc.atkP*lead))+sc.atkAdd,
@@ -23875,6 +24539,7 @@ function startBattle(kind,pinned){
       taunt:0,thorn:0,evade:0,negShield:0,hide:0,deb:{}});
   });
   B.foes.forEach(f=>foeFix(f));   /* 체력을 못 박은 우두머리 (간수장 300) */
+  if(run.dun&&run.dun.hpPct) B.foes.forEach(f=>{ f.hp=Math.max(1,Math.round(f.maxHp*run.dun.hpPct)) });   /* 종탑 — 체력 70% 로 시작 */
   B.foes.forEach(f=>{ const b=foePas(f,"bounty"); if(b) f.bounty=b.v });   /* 미믹 — 쥔 금화 (2026-10-05) */
   /* 사슬에 묶인 마귀 — 묶여 있는 동안은 속박 99 (사용자 2026-09-29). 사슬 간수가 다 죽어 각성하면 boundCheck 가 푼다 */
   B.foes.forEach(f=>{ if(foePas(f,"bound")&&!f.awake){ f.deb=f.deb||{}; f.deb.bind=99 } });
@@ -29470,6 +30135,7 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
       fx({side:"foe",slot:f.slot,txt:"금화 +"+f.bounty,cls:"crit",gap:90}); say(`죽음 — ${f.name}이 쥐고 있던 금화 ${f.bounty}개를 얻습니다.`,"t1"); f.bounty=0 }
     if(run&&!f.isPhantom&&!f.summoned&&!run.sandbox){ run.kills=(run.kills||0)+1; if(f.boss) run.bossKills=(run.bossKills||0)+1;
       coreKillTick();   /* 세계핵 — 전투가 끝날 때 통산 처치 수에 더한다 (사용자 2026-10-09) */
+      if(/^모형 /.test(f.name)&&f.name!=="모형 전략가") try{ keyQuestTick("모형 병사") }catch(e){}   /* 모형 토벌 (2026-10-10) */
       try{ skinKillCheck(f.name) }catch(e){}   /* 스킨 — 간수장 처치 따위 (2026-10-01) */
       /* 행운의 금화 — 5% + 고른 수마다 10% 누적 (2026-09-16) */
       const lg=tagSum("luckGold"); if(lg&&Math.random()<(0.05+0.10*(lg-1))){ run.gold+=1;
