@@ -2303,7 +2303,10 @@ header{align-items:center}
   text-decoration:none;transition:width .25s}
 .res.act{color:var(--r-act)} .res.taint{color:var(--r-taint)}
 .res.gold{color:var(--r-gold)} .res.stone{color:var(--r-stone)}
-#hBtns button.skip2{color:#9fd8ff;border-color:rgba(111,208,240,.55)}   /* 시험판 — 2스테이지로 (2026-10-01) */
+/* 시험판 — 구역 건너뛰기 단추 둘. 머리줄 왼쪽에 작게 나란히 (사용자 2026-10-10) */
+#hSkip{position:absolute;left:14px;top:50%;transform:translateY(-50%);display:flex;gap:6px;z-index:6;pointer-events:auto}
+#hSkip button.skip2{font-size:11px;padding:3px 9px;height:auto;min-height:0;line-height:1.5;
+  color:#9fd8ff;border-color:rgba(111,208,240,.55)}
 .res.crystal{color:#6fd0f0}
 .res.crystal.use{cursor:pointer!important;transition:filter .15s}
 .crpop{position:fixed;z-index:9000;pointer-events:none;transform:translate(-50%,-100%);font-size:13px;font-weight:800;color:#9fe4ff;
@@ -2333,12 +2336,17 @@ header{align-items:center}
 .pstage>img{position:absolute;image-rendering:pixelated;pointer-events:none;user-select:none}
 /* 테두리 — 격자 위, 손·말풍선 아래. 칸은 그대로 눌린다 (사용자 2026-09-29) */
 .pstage{border-radius:0}   /* 틀이 모서리까지 곧게 닿게 (2026-09-29) */
-.pstage::after{content:"";position:absolute;inset:0;box-sizing:border-box;border-style:solid;border-color:transparent;border-width:36px 48px 60px 48px;border-image-source:var(--frame,none);border-image-outset:3px 19px 35px 20px;border-image-slice:36 48 60 48;border-image-width:auto;border-image-repeat:round;image-rendering:pixelated;pointer-events:none;z-index:7}
+/* 액자는 양피지 가장자리를 덮을 만큼만 안쪽으로 물린다 (사용자 2026-10-10) —
+   양피지 여백은 지도폭의 7.8% 인데 액자 두께는 px 라, 지도가 커지면 모자란 만큼 물려야 덮는다.
+   ⚠️ 양피지를 늘려 메우려던 길은 되돌렸다 : 손이 액자 밖으로 나오고 격자가 몰려 보였다 */
+.pstage::after{content:"";position:absolute;
+  inset:max(0px,calc(7.8% - 36px)) max(0px,calc(7.8% - 48px)) max(0px,calc(7.8% - 60px)) max(0px,calc(7.8% - 48px));
+  box-sizing:border-box;border-style:solid;border-color:transparent;border-width:36px 48px 60px 48px;border-image-source:var(--frame,none);border-image-outset:3px 19px 35px 20px;border-image-slice:36 48 60 48;border-image-width:auto;border-image-repeat:round;image-rendering:pixelated;pointer-events:none;z-index:7}
 .pstage.unfolding::after{display:none}
-/* 양피지를 액자 밑까지 깔아 틈을 메운다 (사용자 2026-10-10) — 양피지 여백은 비율, 액자 두께는 px 라 지도가 커지면 벌어진다.
-   틈이 없는 작은 화면에서는 max(0px,…) 가 0 이라 그대로다. 액자 그림은 건드리지 않으니 흐려지지 않는다 */
-.pstage .pmapimg{--pad:max(0px,calc(7.8% - 26px));
-  inset:calc(-1 * var(--pad));width:calc(100% + 2 * var(--pad));height:calc(100% + 2 * var(--pad))}
+/* ⚠️ 한때 여기서 양피지를 --pad 만큼 넓혀 액자 안쪽 틈을 메웠다가 되돌렸다 (사용자 2026-10-10).
+   양피지가 액자 밖으로 나와 왼쪽 아래 손 그림이 튀어나왔고, 양피지만 커져 격자가 가운데로 몰려 보였다.
+   액자 안쪽 틈은 「양피지를 늘려」 메우는 것이 아니다 — 그 길로 다시 가지 말 것 */
+.pstage .pmapimg{inset:0;width:100%;height:100%}
 .pstage .unf{inset:0;width:100%;height:100%;display:none}
 .pstage.unfolding .unf{display:block}
 .pstage.unfolding .pmapimg,.pstage.unfolding .pmap,.pstage.unfolding .mhand{visibility:hidden}
@@ -3404,6 +3412,7 @@ body.vmap header #hBtns button:hover{border-color:#f4d67c;color:#f4d67c}
 .minsp .mgo{background:url("ui/menu-card-wide-512x192.png") center/100% 100% no-repeat;border:0;border-radius:0;width:176px;height:66px;color:#f4d67c;font-size:15px;letter-spacing:.1em;box-shadow:none;image-rendering:pixelated;text-shadow:0 1px 0 #000}
 .minsp .mgo:hover{filter:brightness(1.25)}
 .minsp .mgo:disabled{opacity:.4;filter:grayscale(.6);cursor:not-allowed}
+.minsp .mif.mitime img{width:18px;height:18px;flex:0 0 18px;image-rendering:pixelated}   /* 들어설 때 드는 시간 (사용자 2026-10-10) */
 .minsp .mif{font-size:14px;color:#b9a888;display:flex;align-items:center;justify-content:center;gap:4px} .minsp .mif.on{color:#e08a8a} .minsp .mif img.ri,.minsp .mif svg.ri{width:18px;height:18px;flex:0 0 18px}
 .minsp .mir2{justify-content:center;font-size:12.5px;border-top:0;gap:6px 14px}
 .minsp .mir2 span{border:0;padding:0;border-radius:0;color:#d8c8a6;font-size:inherit}
@@ -16391,6 +16400,10 @@ function nextField(){
 /* ═══ 시험판 — 2스테이지로 바로 (사용자 2026-10-01) ═══
    지금 대원 그대로 Lv.15 까지 올리며, 레벨마다 그 레벨의 등급(LV_GRADE) 보상을 보상 화면과 같은 풀에서 하나씩 무작위로 받는다 */
 const SKIP2_LV=15, SKIP2_GOLD=40, SKIP2_STONE=5;
+/* 구역마다 건너뛸 때의 몸 — /sim 이 field 1 을 lv 12, field 2 를 lv 13(golden 은 15)으로 잰다.
+   2구역 단추가 sim 기준보다 3 높은 15 를 주니 3구역도 같은 여유로 18 (2026-10-10) */
+const SKIP_SET={1:{lv:SKIP2_LV,gold:SKIP2_GOLD,stone:SKIP2_STONE,item:1},
+                2:{lv:18,gold:80,stone:10,item:2}};
 function autoLvReward(h,grade){
   const own=(HERO_REWARDS[h.name]||[]).filter(r=>r.g===grade&&rewardOk(h,r)).map(r=>Object.assign({},r,{w:(r.w==null?1:r.w)*OWN_W}));
   const com=COMMON.filter(r=>r.g===grade&&rewardOk(h,r));
@@ -16401,21 +16414,24 @@ function autoLvReward(h,grade){
   h.tag.tk=(h.tag.tk||[]).concat(rwKey(r));
   return r.n;
 }
-function skipToStage2(){
+function skipToStage2(){ return skipToStage(1) }
+function skipToStage(f){
   if(!run||run.field!==0) return;
-  if(!confirm(`시험용 — 1스테이지를 건너뛰고 정령숲으로 갑니다.\n대원 Lv.${SKIP2_LV} 레벨 보상 무작위, 금화 ${SKIP2_GOLD} 제련석 ${SKIP2_STONE} 일반 장신구 1`)) return;
+  const S=SKIP_SET[f]; if(!S||!FIELDS[f]) return;
+  const SKIP2_LV=S.lv, SKIP2_GOLD=S.gold, SKIP2_STONE=S.stone;
+  if(!confirm(`시험용 — ${FIELDS[f].n}(으)로 바로 갑니다.\n대원 Lv.${SKIP2_LV} 레벨 보상 무작위, 금화 ${SKIP2_GOLD} 제련석 ${SKIP2_STONE} 일반 장신구 ${S.item}`)) return;
   const got=[];
   run.heroes.forEach(h=>{ h.down=0; if(h.hp<1) h.hp=1;
     let n=0; while(h.lv<SKIP2_LV){ levelUp(h); if(autoLvReward(h,LV_GRADE[h.lv]||"하급")) n++ }
     h.exp=0;
-    if((h.items||[]).length<3){ const it=rnd(ITEMS.filter(i=>i.g==="일반")); if(it) equip(h,Object.assign({},it)) }
+    for(let q=0;q<S.item;q++){ if((h.items||[]).length<3){ const it=rnd(ITEMS.filter(i=>i.g==="일반")); if(it) equip(h,Object.assign({},it)) } }
     got.push(`${h.name} 보상 ${n}`) });
   run.pendingLv=null; run.after=[];
   run.gold+=SKIP2_GOLD; run.stone=(run.stone||0)+SKIP2_STONE;
   run.skipped=1;
-  nextField();
+  run.field=f-1; nextField();   /* f 구역으로 — nextField 가 run.field++ 하고 그 구역을 깐다 */
   run.heroes.forEach(h=>{ h.hp=h.maxHp });   /* 시험판 — 온 체력으로 */
-  toast(`시험판 — 정령숲으로 건너뜁니다. ${got.join(" ")}`);
+  toast(`시험판 — ${FIELDS[f].n}(으)로 건너뜁니다. ${got.join(" ")}`);
   saveGame(); render();
 }
 
@@ -16626,10 +16642,15 @@ function render0(){
   const hb=document.getElementById("hBtns"); hb.innerHTML="";
   { const sb=el(`<button class="hset">설정</button>`);   /* 소리 · 연출 속도 · 처치 임팩트 · 도움말 (사용자 2026-10-06) */
     sb.onclick=ev=>{ ev.stopPropagation(); setPanel(sb) }; hb.appendChild(sb); }
-  if(run&&view==="map"&&run.field===0&&!run.sandbox&&!TUT.on){   /* 시험판 — 2스테이지로 바로 (사용자 2026-10-01) */
-    const sk=el(`<button class="skip2" title="시험용 — 대원 Lv.${SKIP2_LV} 레벨 보상 무작위, 금화 ${SKIP2_GOLD} 제련석 ${SKIP2_STONE} 일반 장신구 1 로 정령숲에 들어갑니다">2스테이지로 ▶</button>`);
-    sk.onclick=()=>skipToStage2(); hb.appendChild(sk);
-  }
+  /* 시험판 — 구역 건너뛰기. 머리줄 오른쪽 묶음이 아니라 왼쪽에 작게 둘을 나란히 (사용자 2026-10-10) */
+  { const hdr=document.querySelector("header");
+    const old=hdr&&hdr.querySelector("#hSkip"); if(old) old.remove();
+    if(hdr&&run&&view==="map"&&run.field===0&&!run.sandbox&&!TUT.on){
+      const box=el(`<div id="hSkip"></div>`);
+      [1,2].forEach(f=>{ const S=SKIP_SET[f]; if(!S||!FIELDS[f]) return;
+        const b=el(`<button class="skip2" title="시험용 — 대원 Lv.${S.lv} 레벨 보상 무작위, 금화 ${S.gold} 제련석 ${S.stone} 일반 장신구 ${S.item} 로 ${FIELDS[f].n}에 들어갑니다">${f+1}구역 ▶</button>`);
+        b.onclick=()=>skipToStage(f); box.appendChild(b) });
+      hdr.appendChild(box) } }
   if(run&&(view==="map"||view==="battle"||view==="wavegap")){   /* 메인화면 — 판은 저장돼 있으니 시작 화면으로 (2026-09-18, 전투도 2026-09-19) */
     const hb2=el(`<button title="시작 화면으로 — 판은 저장되어 있습니다">메인화면</button>`);
     hb2.onclick=()=>{ saveGame(); run=null; B=null; view="title"; render() }; hb.appendChild(hb2);
@@ -17074,6 +17095,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 20, "v": "0.7", "d": "2026-10-10", "t": "액자 물리기, 칸 설명의 시간 줄, 구역 건너뛰기 단추 둘, 해시계 바닥", "big": 0},
  {"b": 19, "v": "0.7", "d": "2026-10-10", "t": "열병식 통째 행진, 탑 천장 이어 붙이기", "big": 0},
  {"b": 18, "v": "0.7", "d": "2026-10-10", "t": "마력의 탑 한 벌 — 층·열쇠·안개·동화의 방, 늑대와 열병식, 칸 표식들", "big": 0},
  {"b": 17, "v": "0.7", "d": "2026-10-10", "t": "받을 피해 예고를 더 바로잡고, 숨어 있던 피해 숫자를 띄웠습니다 — 마력의 탑 지도도 들어갑니다", "big": 0},
@@ -18285,7 +18307,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=19;
+const BUILD_NO=20;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -20073,6 +20095,8 @@ function mapInspector(at){
   if(here){
     if(kind!=="empty"&&!cell.done&&kind!=="camp"&&kind!=="wall"){
       const _cost=enterCost(cell),_can=canEnter(cell);
+      { const _h=enterHours(cell);
+        if(_h>0) foot.appendChild(el(`<div class="mif mitime">${uiPng("clock")}<b>${hrsTxt(_h)}</b></div>`)) }
       if(_cost>0) foot.appendChild(el(`<div class="mif${_can?"":" on"}">${resIcon("act")}<b>${_cost}</b></div>`));
       const go=el(`<button class="go mgo">입장</button>`); go.onclick=()=>mapEnter();
       if(!_can) go.disabled=true;
@@ -20085,6 +20109,8 @@ function mapInspector(at){
     const rt=near(run.pos,{r:r,c:c})?{steps:1,pass:0}:(run.route&&run.route.to.r===r&&run.route.to.c===c?run.route:routeTo(r,c));
     if(rt){
       const _ec=enterCost(cell);
+      { const _h=enterHours(cell);
+        if(_h>0) foot.appendChild(el(`<div class="mif mitime">${uiPng("clock")}<b>${hrsTxt(_h)}</b></div>`)) }
       if(_ec>0) foot.appendChild(el(`<div class="mif">${resIcon("act")}<b>${_ec}</b></div>`));
       const go=el(`<button class="go mgo mmove">이동</button>`); go.onclick=()=>mapGo(r,c); foot.appendChild(go);
     } else foot.appendChild(el(`<div class="mif">가는 길이 없습니다</div>`));
@@ -20408,6 +20434,29 @@ function enterCost(cell){
   if(!cell||cell.t==="empty"||cell.t==="wall"||cell.done||cell.visited) return 0;
   return ENTER_FREE[cell.t]?0:1;
 }
+/* 구역에 들어갈 때 드는 **시간** — 활동량과 **같은 자리에서** 낸다 (사용자 2026-10-10: 「들어갈 때 시간이 지나게」).
+   2026-09-10 에 「나설 때」로 두었던 까닭은 「도착하자마자 받으면 진열대를 들여다보기만 해도 30분이 날아간다」였는데,
+   이제는 칸에 서는 것과 들어가는 것이 갈라져 **[입장]을 눌러야** 들어가니 그 걱정이 없어졌다.
+   0 인 것 — 빈 칸 · 끝낸 칸 · **이미 들른 상점**(다시 들어가기) · 주둔지 · **전투 칸**(걸어온 1시간이 그 값이다) ·
+   곧바로 전투로 가는 기믹(첨탑 · 죄수 마차 · 울창한 수목) · 층을 오가는 칸(계단 · 잠금문 · 부서진 구멍) ·
+   뇌물을 받아 조용한 초소. 나머지 구역은 30분.
+   ⚠️ **선택지가 먹는 시간**(서재의 독서 12시간 따위)은 여기가 아니라 `run.nodeCost` 로 **그 뒤에** 낸다 */
+const ENTER_H=0.5;
+const ENTER_FREE_H={dungeon:1,elite:1,boss:1,ambush:1,tower:1,wagon:1,grove:1,stair:1,lockdoor:1,hole:1,camp:1,empty:1,wall:1};
+function enterHours(cell){
+  if(!cell||cell.done||cell.visited||ENTER_FREE_H[cell.t]) return 0;
+  if(cell.t==="post"&&cell.quiet>=((run&&run.day)||0)) return 0;
+  return ENTER_H;
+}
+/* 이 기믹은 **전투로 갈 수 있는가** — 선택지 가운데 `run.gimBattle` 을 세우는 것이 있으면 그렇다.
+   ⚠️ 어느 기믹인지 **손으로 적지 않는다** — 선택지의 글(함수 본문)을 보고 가린다.
+   그래서 전투로 가는 기믹이 하나 더 생겨도 **저절로 따라온다**. 한 번 가리고 적어 둔다.
+   (부르지 않고 **글만** 본다 — 선택지를 만들어 보면 run 을 건드리는 것이 있다) */
+const GIM_FIGHT={};
+function gimCanFight(t){
+  if(GIM_FIGHT[t]==null) GIM_FIGHT[t]=!!(typeof GIM_EV!=="undefined"&&GIM_EV[t]&&/gimBattle/.test(String(GIM_EV[t])));
+  return GIM_FIGHT[t];
+}
 /* 지금 이 칸에 들어갈 수 있는가 — **화면(단추 막기)도 이것을 본다.** 두 곳에서 따로 세면 어긋난다 */
 function canEnter(cell){ return (run?Math.max(0,run.act||0):0)>=enterCost(cell) }
 /* 들어서며 활동량을 낸다. 모자라면 못 들어간다 */
@@ -20445,6 +20494,13 @@ function enterCell(r,c){
   const cell=run.grid[r][c];
   if(cell.done||cell.t==="empty"){ enterCell0(r,c); return }
   if(!payEnter(cell,r,c)) return;   /* 활동량 — 들어설 때 낸다 (사용자 2026-10-08) */
+  /* 시간도 같은 자리에서 (사용자 2026-10-10). 다만 **전투로 갈 수 있는 기믹**은 들어갈 때 안 내고
+     run.nodeCost 에 얹어 둔다 — 싸우기로 하면 전투가 그것을 0 으로 지우고(gimFenceBattle),
+     싸우지 않으면 나설 때 낸다. 「전투로 이어지면 시간이 안 든다」가 잣대다 (사용자 2026-10-10).
+     시계를 되돌리는 길도 있었으나 안 골랐다 — 밤 판정 · 날 넘김 · 하루 한 번짜리와 얽힌다 */
+  { const h=enterHours(cell);
+    if(h){ if(gimCanFight(cell.t)) run.nodeCost=h; else spend(h,0) } }
+  if(run.lost) return;              /* 시간이 흘러 판이 끝났으면 화면을 덮지 않는다 */
   fadeInto(()=>{ if(run&&!run.lost&&run.pos.r===r&&run.pos.c===c) enterCell0(r,c) });
 }
 /* 밤 — 화면 전체가 살짝 어두워진다 (사용자 2026-09-15). 제목·도감·종료 화면은 빼고, 판이 밤일 때만 */
@@ -20482,7 +20538,7 @@ function enterCell0(r,c){
     /* 상점·제련소는 들렀다고 바로 지우지 않는다 — 그 칸을 떠날 때(leaveVisited) 지운다.
        나갔다가 '아, 그거 안 샀는데' 하면 제 칸을 눌러 다시 들어간다. 시간·반가운 상인·진열은 처음 한 번만 */
     const again=!!cell.visited;
-    run.nodeCost=again?0:0.5;
+    run.nodeCost=0;   /* 들어설 때 이미 냈다 (enterHours, 2026-10-10) — 여기 남는 것은 선택지가 먹는 시간뿐 */
     run.here={r:r,c:c};
     if(cell.t==="shop"||cell.t==="dryshop"||cell.t==="forge") cell.visited=1;
     else run.grid[r][c]={t:"empty"};      /* 쉼터·미지의 구역은 한 번 들르면 사라진다 */
@@ -20533,7 +20589,8 @@ function enterCell0(r,c){
    칸은 안 없어진다(부수기 전까지). 첨탑은 곧바로 정예 전투 */
 function gimEnter(cell,r,c){
   run.gim=run.gim||{tort:0,gal:0};
-  run.here={r:r,c:c}; run.nodeCost=0.5;
+  run.here={r:r,c:c};   /* 시간은 enterCell 이 이미 맡았다 — 여기서 run.nodeCost 를 지우지 말 것 (2026-10-10):
+                           싸울 수 있는 기믹은 거기에 30분이 얹혀 있고, 전투로 가면 gimFenceBattle 이 0 으로 지운다 */
   if(cell.t==="grove"){   /* 울창한 수목 — 뿌리모체 정예 조합 (ELITE_ENC 의 gim 조합) */
     run.nodeCost=0;
     startDungeon({t:"elite",waves:1,grove:1},r,c);
@@ -22927,7 +22984,11 @@ const EVENTS=[
  {n:"해시계 파편",art:"clock", face:"부서진 파수병",
   t:"깨진 해시계가 반쯤 묻혀 있습니다. 바늘이 아직 미세하게 떨립니다.",
   o:[{t:"태엽 감기",d:"시간을 5시간 되돌립니다.",
-      f:()=>{ run.time=Math.max(6,run.time-5); run.night=run.time>=18?1:0;
+      /* 06:00 이 바닥이던 것을 00:00 으로 내렸다 (사용자 2026-10-10 — 「그 밑으로 못 내려가나」).
+         **날짜는 안 되돌린다** — 그 날의 시각만 내려가니 하루가 그만큼 길어지는 셈이다.
+         (전날로 넘기면 남은 날 세기 · 마지막 날 패배 · 하루 한 번짜리 · 마차 · 세계핵 퀘스트가 다 어그러진다)
+         0 밑으로는 시계 글자가 깨져(clockAt 이 음수를 못 읽는다) 거기서 멈춘다 */
+      f:()=>{ run.time=Math.max(0,run.time-5); run.night=run.time>=18?1:0;
         return `바늘이 거꾸로 돕니다. 지금은 ${clock()}입니다.` }},
      {t:"부수기",d:"제련석 3개를 얻습니다.",
       f:()=>{ run.stone=(run.stone||0)+3; return "산산이 부수자 제련석 3개가 굴러 나옵니다." }}]},
