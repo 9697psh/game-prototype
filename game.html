@@ -4143,6 +4143,34 @@ kbd{display:inline-block;min-width:20px;text-align:center;padding:1px 7px;font-s
 .dbdetail > .ccard.cf{width:160px!important;height:224px;zoom:1.7;margin:0 auto!important}   /* 카드는 제 비율로 (사용자 2026-10-01 — 찌그러짐) */
 .dbempty{color:#6b4226;text-align:center;margin-top:40%}
 .dbfoot{display:flex;justify-content:center;gap:10px;margin-top:6px}
+/* ── 연대기 (이야기 탭) — 왼쪽 차례는 세로 점선으로 이은 마커. 큰 사건은 마름모, 나머지는 빈 동그라미 ── */
+.dbchron{flex:1;min-height:0;overflow:auto;position:relative;padding:4px 10px 6px;scrollbar-width:none}
+.dbchron::-webkit-scrollbar{display:none}
+.chrows{position:relative}
+.chline{position:absolute;left:12px;top:16px;bottom:16px;width:3px;
+  background:repeating-linear-gradient(to bottom,rgba(105,76,38,.85) 0 3px,transparent 3px 8px)}
+.chrow{display:flex;align-items:center;gap:9px;min-height:36px;position:relative;padding:2px 6px;border-radius:4px;cursor:pointer}
+.chrow:hover{background:rgba(120,80,40,.13)}
+.chrow.on{background:rgba(120,80,40,.2)}
+.chmk{width:15px;display:flex;justify-content:center;flex:none;z-index:1}
+.chmk > i{display:flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;background:#efe2c2;font-style:normal}
+.chrow.big .chmk > i{width:19px;height:19px}
+.chdot{width:9px;height:9px;border-radius:50%;box-sizing:border-box;border:2px solid #6e5128;background:#efe2c2}
+.chdia{width:13px;height:13px;transform:rotate(45deg);background:#8c2f2a;box-shadow:0 0 0 1.5px rgba(60,40,20,.4)}
+.chrow.lock .chdot{border-color:#9a8d79}
+.chrow.lock .chdia{background:#9a8d79}
+.chnm{font-size:11.5px;color:#60492a;word-break:keep-all;line-height:1.3}
+.chrow.big .chnm{font-size:12.5px;font-weight:700;color:#4a3418}
+.chrow.lock .chnm{color:#8d8372}
+.chrow.on .chnm{color:#4a3418;text-decoration:underline;text-underline-offset:3px;text-decoration-color:rgba(140,47,42,.5)}
+.chdt{padding:14px 14px 10px}
+.chdh{display:flex;align-items:center;gap:11px;margin-bottom:11px}
+.chdh .npx{height:52px;width:auto;image-rendering:pixelated}
+.chdt.lock .chdh .npx{filter:grayscale(1) brightness(.6) blur(1.4px)}
+.chdn{display:flex;align-items:center;gap:6px;font-family:var(--serif);font-size:16px;color:#4a3418;font-weight:700}
+.chdn i{width:9px;height:9px;transform:rotate(45deg);background:#8c2f2a;flex:none}
+.chdo{font-size:10.5px;color:#7a6442;margin-top:2px}
+.chdb{font-size:12px;line-height:1.8;color:#5e4826;word-break:keep-all}
 .dexsrc{display:none}
 /* 홀로그램 분신 (이테리오 보상 2026-09-30) — 비치는 푸른 그림, 가끔 일렁인다 */
 .slot .art.holo{opacity:.5;filter:grayscale(1) sepia(1) hue-rotate(150deg) saturate(3) brightness(1.3) drop-shadow(0 0 6px #6ad8ff);pointer-events:none}
@@ -16982,7 +17010,7 @@ function drawSaves(app){
 
 /* ═══════════ 도감 — 탭 하나로 (사용자 2026-09-17) ═══════════ */
 let DEX_TAB="itemdex";
-const DEX_TABS=[["itemdex","장신구"],["carddex","카드"],["evdex","이벤트"],["gimdex","전용 구역"],["foedex","적"],["encdex","조합"],["coredex","세계핵"]];
+const DEX_TABS=[["itemdex","장신구"],["carddex","카드"],["evdex","이벤트"],["gimdex","전용 구역"],["foedex","적"],["encdex","조합"],["coredex","세계핵"],["chrondex","연대기"]];
 /* 도감 — 책 (사용자 2026-09-30). 칸마다 고른 항목 번호 · 펼친 쪽을 기억한다 */
 const DEX_SEL={}, DEX_PAGE={};
 /* 쪽 넘김 프레임 — 미리 받아 둔다 (첫 넘김에 빈 그림이 끼지 않게) */
@@ -16996,10 +17024,67 @@ if(typeof window!=="undefined"&&window.addEventListener) window.addEventListener
   if(view!=="dex"||!DEX_TURNFN) return;
   if(e.key==="ArrowRight"){ DEX_TURNFN(1); e.preventDefault() }
   else if(e.key==="ArrowLeft"){ DEX_TURNFN(-1); e.preventDefault() } });
+/* ═══════════ 연대기 — 이야기 탭 (사용자 2026-10-11) ═══════════
+   글은 「문서/세계관.md」 에 적힌 사용자의 말이다 (어미만 게임 말투로 맞췄다).
+   ⚠️ 내용을 고치거나 늘리지 마라. 비워 둔 이름(인간의 초월체 : 기계공)은 비운 채로 둔다.
+   big  — 큰 사건. 왼쪽 차례에서 붉은 마름모가 된다. 지금 셋은 임시다 (사용자가 정해 주면 고친다).
+   lock — 아직 안 열린 시대. 「? ? ?」 로만 보인다.
+          열림 조건은 아직 안 정했다 — 지금은 마지막 하나만 손으로 잠가 두었다. 조건이 서면 여기에 건다. */
+const CHRONICLE=[
+ {n:"태초", a:"world_core_reality",
+  t:"초월체들이 세상을 지배하던 시대입니다. 인간과 골렘 등의 종족은 저마다 초월체의 하수인이었고, 정령은 이 세계의 「세계핵」 에너지를 통해 자연에서 만들어진 존재들입니다."},
+ {n:"세계의 격동", a:"world_core_purification", big:1,
+  t:"초월체 전쟁이 일어납니다. 인간 하수인들의 우상이던 초월체가 승리하여, 인간 사이에서 1대 국왕이 세워집니다."},
+ {n:"문명의 발달", a:"ink11_map_spire",
+  t:"중세 문명 「발렌하임」 이 국가를 선포하고, 기계화 문명이 시작됩니다."},
+ {n:"정복의 시대", a:"ink_sp_grove",
+  t:"국가가 기계화 군대로 영토를 넓힙니다. 정령숲과 모래 바다 등을 공격합니다."},
+ {n:"1차 균열", a:"world_core_rift", big:1,
+  t:"국가가 「세계의 절벽」 까지 다다르자 1차 균열이 해방됩니다. 끝없이 나오는 악마들과의 1차 대전쟁입니다.\n정령들과 전투 기계, 왕실 기사단이 균열을 닫습니다."},
+ {n:"돌보미 기계와 평화 조약", a:"ink_sp_mw11",
+  t:"한 기계공이 전투 기계들을 개조해 정령숲을 복구하는 돌보미 기계로 만듭니다. 오토가 1세대 돌보미 기계입니다.\n여러 진영이 1차 대전쟁으로 큰 피해를 입었고, 기계 공장이 파괴되어 「고철의 무덤」 으로 불립니다. 왕실은 다른 진영들과 평화 조약을 맺고 기계 생산을 중지합니다."},
+ {n:"3대 국왕의 타락", a:"ink11_map_torture_chamber",
+  t:"균열의 기운은 아직 남아 있었습니다. 1차 대전쟁 때 균열의 기운에 감염된 2대 국왕의 아내가 3대 국왕을 낳았고, 3대 국왕은 집권하며 타락합니다.\n죄 없는 시민과 영웅들을 진영과 종족을 가리지 않고 감옥에 가둡니다."},
+ {n:"2차 균열", a:"ink11_map_tunnel", big:1, lock:1,
+  t:"감옥에는 전부터 수상한 기둥이 마구 솟아나고 있었는데, 어느 날 기둥이 크게 진동하며 바닥에 균열이 다시 열립니다.\n간수와 죄수들 몇몇이 악마로 타락하고, 혼돈의 시대가 다시 열립니다. 감옥에서 퍼져나간 오염의 기운이 결국 전 세계로 번집니다.\n깊은 지하에 갇힌 영웅들에게 누군가의 목소리가 들립니다."},
+];
+const CH_ORD=["첫째","둘째","셋째","넷째","다섯째","여섯째","일곱째","여덟째","아홉째","열째"];
+function drawChronicle(app){
+  dexPreload();
+  const book=el(`<div class="dexbook t-chrondex">
+    <div class="dbpage dbl"><div class="dbhead">연 대 기</div>
+      <div class="dbchron"><div class="chrows"><div class="chline"></div></div></div></div>
+    <div class="dbpage dbr"><div class="dbdetail"></div></div></div>`);
+  const list=book.querySelector(".chrows"), detail=book.querySelector(".dbdetail");
+  let sel=Math.min(DEX_SEL.chrondex||0,CHRONICLE.length-1);
+  const rows=[];
+  const show=i=>{ sel=i; DEX_SEL.chrondex=i;
+    rows.forEach((r,k)=>r.classList.toggle("on",k===i));
+    const c=CHRONICLE[i];
+    detail.innerHTML=`<div class="chdt${c.lock?" lock":""}">
+      <div class="chdh">${uiPng(c.a)}<div>
+        <div class="chdn">${c.big?`<i></i>`:""}<span>${c.lock?"? ? ?":esc(c.n)}</span></div>
+        <div class="chdo">${CH_ORD[i]||(i+1)} 시대</div></div></div>
+      <div class="chdb">${c.lock?"아직 닿지 않은 때입니다.":esc(c.t).replace(/\n/g,"<br>")}</div></div>`;
+    detail.scrollTop=0 };
+  CHRONICLE.forEach((c,i)=>{
+    const r=el(`<div class="chrow${c.big?" big":""}${c.lock?" lock":""}">
+      <span class="chmk"><i><span class="${c.big?"chdia":"chdot"}"></span></i></span>
+      <span class="chnm">${c.lock?"? ? ?":esc(c.n)}</span></div>`);
+    r.onclick=()=>{ SFX.play("click"); show(i) };
+    rows.push(r); list.appendChild(r);
+  });
+  app.appendChild(book);
+  show(sel);
+  const foot=el(`<div class="dbfoot"><button class="go">닫기</button></div>`);
+  foot.querySelector("button").onclick=()=>{ view=DEX_BACK||"title"; render() };
+  app.appendChild(foot);
+}
 function drawDex(app){
   const bar=el(`<div class="dextabs">${DEX_TABS.map(([k,n])=>`<button class="dtab ${k===DEX_TAB?"on":""}" data-k="${k}">${esc(n)}</button>`).join("")}</div>`);
   bar.querySelectorAll(".dtab").forEach(b=>{ b.onclick=()=>{ DEX_TAB=b.dataset.k; render() } });
   app.appendChild(bar);
+  if(DEX_TAB==="chrondex"){ drawChronicle(app); return }   /* 연대기는 틀이 달라 따로 그린다 */
   const fn={itemdex:drawItemDex,carddex:drawCardDex,evdex:drawEventDex,gimdex:drawGimDex,foedex:drawFoeDex,encdex:drawEncDex,coredex:drawCoreDex}[DEX_TAB]||drawItemDex;
   /* 칸의 원래 화면을 보이지 않는 그릇에 그린다 — 카드(자세한 것)는 거기서 꺼내 오른쪽 페이지로 옮긴다 */
   const src=el(`<div class="dexsrc"></div>`);
@@ -17249,6 +17334,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 23, "v": "0.7", "d": "2026-10-11", "t": "도감에 연대기 탭 — 시대 차례, 큰 사건은 마름모", "big": 0},
  {"b": 22, "v": "0.7", "d": "2026-10-10", "t": "마력의 탑 — 탑 전용 이벤트 둘, 붉은 망토 늑대, 계단 열쇠, 도감 셋", "big": 0},
  {"b": 21, "v": "0.7", "d": "2026-10-10", "t": "액자를 더 물림 — 위와 양옆", "big": 0},
  {"b": 20, "v": "0.7", "d": "2026-10-10", "t": "액자 물리기, 칸 설명의 시간 줄, 구역 건너뛰기 단추 둘, 해시계 바닥", "big": 0},
@@ -18463,7 +18549,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=22;
+const BUILD_NO=23;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
