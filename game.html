@@ -10903,7 +10903,8 @@ function wanderCheck(){
 const R=(n,g,d,fx,w)=>({n:n,g:g,d:d,fx:fx,w:w});
 /* ⚠️ 하급 · 중급 · 상급이 **같은 효과의 크기만 다른** 공용 보상(마나 흡입 · 가죽 장화끈 · 잔불 · 카드 마술 · 독이 담긴 병)은 **더한다** —
    고른 만큼 쌓인다 (사용자 2026-10-11: 마나 흡입 하급 1 + 중급 2 = 3 이어야 하는데 2 였다. 예전에는 Math.max 라 큰 것만 먹었다).
-   달리기(한도 3 · 5 · 99 와 배율 2 · 2 · 3 을 각각 더한다 — 상급의 99 는 「모두 소모」라 더해도 사실상 제한 없음) · 꼭두각시 인형(한 대원이 고른 것은 더한다 20 + 40 = 60%.
+   달리기는 **숫자를 합치지 않는다** — 고른 보상 하나하나가 제 몫(한도 × 배율)을 따로 돌린다 (사용자 2026-10-11: 「하급 따로 중급 따로 작동」, dashRuns · dashPlan).
+   꼭두각시 인형(한 대원이 고른 것은 더한다 20 + 40 = 60%.
    다만 minHpBonus 는 **대원들 사이에서는** 「가장 큰 비율만큼」 — 그 설계는 그대로다) 도 사용자가 쌓으라 했다 (2026-10-11).
    */
 const COMMON=[
@@ -10996,10 +10997,10 @@ const COMMON=[
  R("무거운 짐","하급","금화 15개와 제련석 4개를 얻습니다. 활동량을 모두 잃고 즉시 밤이 됩니다.",
    h=>{ run.gold+=15; run.stone=(run.stone||0)+4; run.act=0; if(!run.night){ run.night=1; run.time=Math.max(run.time,18) } }),
  R("하급: 달리기","하급","내 턴이 끝날 때, 추진력을 최대 3만큼 소모하고 그 2배만큼 보호막을 얻습니다.",
-   h=>{ h.tag.dashMax=(h.tag.dashMax||0)+3; h.tag.dashMul=(h.tag.dashMul||0)+2 }),
+   h=>{ (h.tag.dashes=h.tag.dashes||[]).push([3,2]) }),
  /* ── 중급 ── */
  R("중급: 달리기","중급","내 턴이 끝날 때, 추진력을 최대 5만큼 소모하고 그 2배만큼 보호막을 얻습니다.",
-   h=>{ h.tag.dashMax=(h.tag.dashMax||0)+5; h.tag.dashMul=(h.tag.dashMul||0)+2 }),
+   h=>{ (h.tag.dashes=h.tag.dashes||[]).push([5,2]) }),
  R("중급: 마나 흡입","중급","매 라운드 시작 후, 추가 마나를 2 얻습니다.",
    h=>h.tag.roundMana=(h.tag.roundMana||0)+2),
  R("중급: 잔불","중급","대원 배치 후, 무작위 적 하나에게 화상을 8 부여합니다.",
@@ -11041,7 +11042,7 @@ const COMMON=[
    h=>{ (run.after=run.after||[]).push({item:rnd(ITEMS.filter(i=>i.g==="일반"))}) }),
  /* ── 상급 ── */
  R("상급: 달리기","상급","내 턴이 끝날 때, 추진력을 모두 소모하고 그 3배만큼 보호막을 얻습니다.",
-   h=>{ h.tag.dashMax=(h.tag.dashMax||0)+99; h.tag.dashMul=(h.tag.dashMul||0)+3 }),
+   h=>{ (h.tag.dashes=h.tag.dashes||[]).push([99,3]) }),
  R("첨탑관리자의 회중시계","상급","턴이 끝날 때 발동하는 효과가 2번 발동합니다.",
    h=>h.tag.endTwice=1,0.4),
  Object.assign(R("외톨이","상급","방랑자 특성을 얻습니다.\n*방랑자가 아닌 대원에게만 등장\n*획득 후 보상에서 제외",
@@ -17341,6 +17342,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 27, "v": "0.7", "d": "2026-10-11", "t": "달리기 보상 바로잡음 — 하급 · 중급 · 상급이 합쳐지지 않고 각자 따로 돌린다", "big": 0},
  {"b": 26, "v": "0.7", "d": "2026-10-11", "t": "달리기 · 꼭두각시 인형 보상도 쌓인다 (하급 · 중급 · 상급을 고른 만큼 더한다)", "big": 0},
  {"b": 25, "v": "0.7", "d": "2026-10-11", "t": "공용 보상 중첩 고침 — 하급 · 중급이 같은 효과면 쌓인다 (마나 흡입 · 가죽 장화끈 · 잔불 · 카드 마술 · 독이 담긴 병)", "big": 0},
  {"b": 24, "v": "0.7", "d": "2026-10-11", "t": "치명 버그 고침 — 횟수만 쌓아도 저절로 딜이 들어가 라운드가 끝나던 것", "big": 1},
@@ -18559,7 +18561,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=26;
+const BUILD_NO=27;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -29974,6 +29976,20 @@ function predictSelf(h,s){
    foePhase 의 공격 갈래를 그대로 따라간다. 아무것도 바꾸지 않는다.
    칸 번호로 모으는 이유 : 아군과 소환물이 한 칸에 하나씩만 서기 때문. */
 /* 내 턴이 끝날 때 붙을 보호막 — endPhase 와 같은 셈 (받을 피해 예고가 미리 얹는다, 2026-10-01) */
+/* ═══ 달리기 — 고른 보상 하나하나가 제 몫을 따로 돌린다 (사용자 2026-10-11) ═══
+   하급 [한도 3 · 배율 2] · 중급 [5 · 2] · 상급 [99 · 3(남은 추진력 전부)]. 같은 보상을 여럿 고를 수 있다(공용 보상은 횟수 제한이 없다) —
+   하급 둘 + 중급 둘이면 6 + 6 + 10 + 10. **작은 한도부터** 돈다 — 하급 · 중급이 제 몫을 쓰고 **남은 것을 상급이 전부** 먹는다.
+   추진력이 모자라면 있는 만큼 차례로 쓰고 모자란 몫은 0. h.tag.dashes = [[한도,배율],…]. 옛 저장의 dashMax · dashMul 은 한 몫으로 읽는다 */
+function dashRuns(h){
+  const T=(h&&h.tag)||{}; let L=(T.dashes||[]).map(x=>x.slice());
+  if(!L.length&&T.dashMul) L=[[T.dashMax||3,T.dashMul]];
+  return L.sort((a,b)=>a[0]-b[0]);
+}
+function dashPlan(h,mom){
+  let left=Math.max(0,mom||0); const out=[];
+  dashRuns(h).forEach(([mx,mu])=>{ const use=Math.min(mx,left); left-=use; out.push({use:use,v:use*mu}) });
+  return {runs:out, use:out.reduce((a,x)=>a+x.use,0), v:out.reduce((a,x)=>a+x.v,0)};
+}
 function endShieldAhead(){
   /* 보호약화 — addShield 와 같게. 다만 **턴이 끝날 때 한 칸 먼저 준 뒤**(tickDebEnd) 보호막이 붙으므로
      지금 1 이면 붙을 때는 0 이라 반이 안 깎인다 (사용자 2026-10-09) */
@@ -29988,7 +30004,7 @@ function endShieldAhead(){
       if(itemBt(h,"manaShield")) mu=0;
       const qs=itemBt(h,"momShield"); if(qs&&mom>0){ const use=Math.min(6,mom); mom-=use; put(h,"s",use*qs) }
       if(h.name==="보아"){ put(h,"s",1+h.def+sct); sct=0 }
-      if(h.tag&&h.tag.dashMul&&mom>0){ const use=Math.min(h.tag.dashMax||3,mom); mom-=use; put(h,"s",use*h.tag.dashMul) }
+      if(dashRuns(h).length&&mom>0){ const dp=dashPlan(h,mom); mom-=dp.use; if(dp.v>0) put(h,"s",dp.v) }
       if(hasTag(h,"왕실")&&synOn("왕실",2)) put(h,"s",synOn("왕실",3)?12:5);
       if(hasTag(h,"기계")&&synOn("기계",2)) put(h,"e",synOn("기계",3)?4:2);
       if(h.name==="헥토"){ const v=(h.tag.allyShield||2)+h.def; allUnits().forEach(a=>{ if(a!==h) put(a,h.tag.allyEsh?"e":"s",v) }) }
@@ -33181,11 +33197,11 @@ function endPhase(){
       endShield(h,v); h.scaleTurn=0; bump();
       fx({side:"mine",slot:h.slot,s:"shield",glow:1,gap:190});
       say(`적응성 비늘 — ${h.name} 보호막 +${v} (기본 1 + 보호력 ${h.def}${sc?` + 이번 턴 비늘 ${sc}`:""})`) }
-    if(h.tag.dashMul&&h.mom>0){
-      const use=Math.min(h.tag.dashMax||3,h.mom); h.mom-=use;
-      const v=use*h.tag.dashMul; endShield(h,v); bump();   /* 보호막 — 에너지 보호막이던 것 (사용자 2026-10-04) */
+    if(dashRuns(h).length&&h.mom>0){
+      const dp=dashPlan(h,h.mom), use=dp.use, v=dp.v; h.mom-=use;
+      endShield(h,v); bump();   /* 보호막 — 에너지 보호막이던 것 (사용자 2026-10-04) */
       fx({side:"mine",slot:h.slot,s:"shield",ring:"#9ecbf5",txt:"추진력 -"+use,cls:"shd",gap:170});
-      say(`달리기 — ${h.name} 추진력을 ${use} 써서 보호막 +${v}`) }
+      say(`달리기 — ${h.name} 추진력을 ${use} 써서 보호막 +${v}${dp.runs.length>1?` (${dp.runs.map(x=>x.v).join("+")})`:""}`) }
     /* 왕실 2 · 3 — 보호막 5 · 12, 기계 2 · 3 — 에너지 보호막 2 · 4 (노트 2026-10-04) */
     if(hasTag(h,"왕실")&&synOn("왕실",2)){ const v=synOn("왕실",3)?12:5; endShield(h,v); bump();
       fx({side:"mine",slot:h.slot,s:"shield",ring:"#c9a227",txt:"보호막 +"+v,cls:"shd",gap:120}); say(`왕실 — ${h.name} 보호막 +${v}`,"t2"); synFlash("왕실",[h]) }
