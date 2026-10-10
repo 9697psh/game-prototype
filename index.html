@@ -10901,6 +10901,9 @@ function wanderCheck(){
 
 /* ═══════════ 보상 ═══════════ */
 const R=(n,g,d,fx,w)=>({n:n,g:g,d:d,fx:fx,w:w});
+/* ⚠️ 하급 · 중급 · 상급이 **같은 효과의 크기만 다른** 공용 보상(마나 흡입 · 가죽 장화끈 · 잔불 · 카드 마술 · 독이 담긴 병)은 **더한다** —
+   고른 만큼 쌓인다 (사용자 2026-10-11: 마나 흡입 하급 1 + 중급 2 = 3 이어야 하는데 2 였다. 예전에는 Math.max 라 큰 것만 먹었다).
+   일부러 큰 것만 먹게 둔 것 둘 — 달리기(추진력을 쓰는 한도 · 배율이라 상급이 윗단계) · 꼭두각시 인형(「가장 큰 비율만큼」, minHpBonus 가 대원 가운데 최댓값을 쓴다) */
 const COMMON=[
  /* ── 하급 ── */
  R("장신구: 파편","하급","무작위 <b>파편 장신구</b>을 얻습니다.",
@@ -10927,12 +10930,12 @@ const COMMON=[
  R("행상인 수레 방문","하급","빵, 소형 방패, 맥주 카드를 1장씩 얻습니다.",
    h=>{ addCard(run,"빵",1); addCard(run,"소형 방패",1); addCard(run,"맥주",1) }),
  R("하급: 가죽 장화끈","하급","이동할 때마다 보호막을 1 얻습니다.",
-   h=>h.tag.moveShield=Math.max(h.tag.moveShield||0,1)),
+   h=>h.tag.moveShield=(h.tag.moveShield||0)+1),
  R("간이 신발","하급","간이 신발 카드를 5장 얻습니다.",h=>{ addCard(run,"간이 신발",5) }),
  R("하급: 마나 흡입","하급","매 라운드 시작 후, 추가 마나를 1 얻습니다.",
-   h=>h.tag.roundMana=Math.max(h.tag.roundMana||0,1)),
+   h=>h.tag.roundMana=(h.tag.roundMana||0)+1),
  R("하급: 잔불","하급","대원 배치 후, 무작위 적 하나에게 화상을 4 부여합니다.",
-   h=>h.tag.placeBurn=Math.max(h.tag.placeBurn||0,4)),
+   h=>h.tag.placeBurn=(h.tag.placeBurn||0)+4),
  R("곰팡이 빵","하급","빵 카드를 4장 얻습니다. 오염도가 4 증가합니다.",
    h=>{ addCard(run,"빵",4); addTaint(4) }),
  R("잔걸음","하급","전투 시작 후, 추진력을 5 얻습니다.",
@@ -10942,9 +10945,9 @@ const COMMON=[
  R("하급: 편안한 휴식","하급","쉼터 회복량이 10% 증가합니다.",
    h=>h.tag.restPlus=(h.tag.restPlus||0)+10),
  R("하급: 카드 마술","하급","카드를 낸 후에, 보호막을 2 얻습니다.",
-   h=>h.tag.cardShield=Math.max(h.tag.cardShield||0,2)),
+   h=>h.tag.cardShield=(h.tag.cardShield||0)+2),
  R("하급: 독이 담긴 병","하급","대원 배치 후, 모든 적에게 공격약화, 마법약화, 보호약화 1을 부여합니다.",
-   h=>h.tag.roundPoison=Math.max(h.tag.roundPoison||0,1)),
+   h=>h.tag.roundPoison=(h.tag.roundPoison||0)+1),
  R("탐험가","하급","지도 위 무작위 위치에 미지의 구역 2곳을 추가합니다. 해당 위치에 도착하면 오염도가 20 감소합니다.",
    h=>{ const n=sprinkleCell("event",2,{boon:20});
         toast(n?`탐험가 — 지도에 미지의 구역 ${n}곳이 나타납니다.`:"지도에 빈 자리가 없습니다.") },0.5),
@@ -10996,17 +10999,17 @@ const COMMON=[
  R("중급: 달리기","중급","내 턴이 끝날 때, 추진력을 최대 5만큼 소모하고 그 2배만큼 보호막을 얻습니다.",
    h=>{ h.tag.dashMax=Math.max(h.tag.dashMax||0,5); h.tag.dashMul=Math.max(h.tag.dashMul||0,2) }),
  R("중급: 마나 흡입","중급","매 라운드 시작 후, 추가 마나를 2 얻습니다.",
-   h=>h.tag.roundMana=Math.max(h.tag.roundMana||0,2)),
+   h=>h.tag.roundMana=(h.tag.roundMana||0)+2),
  R("중급: 잔불","중급","대원 배치 후, 무작위 적 하나에게 화상을 8 부여합니다.",
-   h=>h.tag.placeBurn=Math.max(h.tag.placeBurn||0,8)),
+   h=>h.tag.placeBurn=(h.tag.placeBurn||0)+8),
  R("중급: 꼭두각시 인형","중급","소환물 카드를 낸 후에, 그 소환물의 최대 체력이 40% 증가합니다.",
    h=>h.tag.minHp=Math.max(h.tag.minHp||0,40)),
  R("중급: 카드 마술","중급","카드를 낸 후에, 보호막을 4 얻습니다.",
-   h=>h.tag.cardShield=Math.max(h.tag.cardShield||0,4)),
+   h=>h.tag.cardShield=(h.tag.cardShield||0)+4),
  R("중급: 독이 담긴 병","중급","대원 배치 후, 모든 적에게 공격약화, 마법약화, 보호약화 2를 부여합니다.",
-   h=>h.tag.roundPoison=Math.max(h.tag.roundPoison||0,2)),
+   h=>h.tag.roundPoison=(h.tag.roundPoison||0)+2),
  R("중급: 가죽 장화끈","중급","이동할 때마다 보호막을 2 얻습니다.",
-   h=>h.tag.moveShield=Math.max(h.tag.moveShield||0,2)),
+   h=>h.tag.moveShield=(h.tag.moveShield||0)+2),
  R("가벼운 발걸음","중급","지도에서 움직여서 얻는 오염도가 영구히 1 감소합니다.",
    h=>h.tag.stepCut=(h.tag.stepCut||0)+1),
  R("치명적인 마법","중급","전투 시작 후, 첫 마법 피해가 치명타로 적중합니다.",
@@ -11042,7 +11045,7 @@ const COMMON=[
  Object.assign(R("외톨이","상급","방랑자 특성을 얻습니다.\n*방랑자가 아닌 대원에게만 등장\n*획득 후 보상에서 제외",
    h=>{ h.tag.addJob=(h.tag.addJob||[]).concat("방랑자"); if(B&&!B.over) try{ wanderCheck() }catch(e){} },0.5),{okf:h=>!hasTag(h,"방랑자")}),   /* 낮은 확률 (사용자 2026-10-07) */
  R("상급: 가죽 장화끈","상급","이동할 때마다 보호막을 3 얻습니다.",
-   h=>h.tag.moveShield=Math.max(h.tag.moveShield||0,3)),
+   h=>h.tag.moveShield=(h.tag.moveShield||0)+3),
  R("상급: 회피 기동","상급","전투 시작 후, 회피를 5 얻습니다.",
    h=>h.tag.startEvade=(h.tag.startEvade||0)+5,0.12),
  R("마나석 발견","상급","최대 마나가 1 증가합니다.",h=>{ h.maxMana+=1; h.mana=h.maxMana }),
@@ -16082,7 +16085,6 @@ function wolfBattle(){
   startBattle("battle");
   setTimeout(()=>stepBanner("붉 은 망 토 늑 대","굶주린 늑대가 달려듭니다"),40);
 }
-/* 주둔지 반경 2칸에는 3라운드 전투·정예 전투가 없다 (사용자 2026-09-16)   /* 마차가 하루에 가는 칸 수 (사용자 2026-10-08 — 한 칸에서 늘림) */
 /* 마차가 우두머리에게 가는 길 — 빈 칸으로만(대원이 선 칸도 못 지난다), 마지막 한 걸음만 우두머리 칸.
    대원의 길 찾기(routeTo)는 run.pos 에서 떠나고 구역 칸도 밟을 수 있어 마차에는 못 쓴다 — 여기서 따로 훑는다.
    같은 걸음 수면 우두머리 쪽(위 → 가운데 쪽)을 먼저 고른다 */
@@ -17337,6 +17339,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 25, "v": "0.7", "d": "2026-10-11", "t": "공용 보상 중첩 고침 — 하급 · 중급이 같은 효과면 쌓인다 (마나 흡입 · 가죽 장화끈 · 잔불 · 카드 마술 · 독이 담긴 병)", "big": 0},
  {"b": 24, "v": "0.7", "d": "2026-10-11", "t": "치명 버그 고침 — 횟수만 쌓아도 저절로 딜이 들어가 라운드가 끝나던 것", "big": 1},
  {"b": 23, "v": "0.7", "d": "2026-10-11", "t": "도감에 연대기 탭 — 시대 차례, 큰 사건은 마름모", "big": 0},
  {"b": 22, "v": "0.7", "d": "2026-10-10", "t": "마력의 탑 — 탑 전용 이벤트 둘, 붉은 망토 늑대, 계단 열쇠, 도감 셋", "big": 0},
@@ -18553,7 +18556,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=24;
+const BUILD_NO=25;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
