@@ -2384,6 +2384,12 @@ html.noscr, html.noscr body{overflow:hidden!important}   /* 가로만 숨기면 
 .gridmap.pmap[data-n="11"] .cell.cell:nth-child(11n):nth-last-child(-n+11){background-image:none}
 /* 천장 · 계단 — 그림(64×64)이 오기 전에도 알아보게 (사용자 2026-10-10) */
 .gridmap.pmap .cell.cell.ceil{background-color:rgba(54,66,84,.55)}
+/* 천장은 줄로 이어 보이게 — 칸 사이 절취선을 지우고 그림을 칸에 꽉 채운다 (사용자 2026-10-10).
+   .ceil 이 붙은 칸에만 건다. 계단 칸은 .stair 라 그대로 끊긴다 — 거기가 뚫린 자리다 */
+.gridmap.pmap .cell.cell.ceil{background-image:none}
+.gridmap.pmap .cell.cell.ceil{border-color:transparent}
+.gridmap.pmap .cell.ceil .cico{inset:-1px}
+.gridmap.pmap .cell.ceil .cico img{width:100%;height:100%;max-width:none;max-height:none}
 .gridmap.pmap .cell.cell.stair{background-color:rgba(201,162,39,.30)}
 .pmap .cell{border:0;border-right:1px solid var(--pline);border-bottom:1px solid var(--pline);border-radius:0;
   background:transparent;padding:2%;transition:background .12s,box-shadow .12s}
@@ -14989,7 +14995,7 @@ const GIM_T={parade:1,tower:1,fence:1,torture:1,gallows:1,post:1,wagon:1,tunnel:
    {종류} 칸 이름 · {라운드} 라운드 수 · {강화} 적 강화 % · {설명} 적 무리 글 · {전리품} 전리품 글
    {거리} 여기서 몇 칸 · {습격} 밤에 빈 칸 습격 확률(%) · {날짜} 남은 날 · 줄바꿈은 그대로 줄이 된다 */
 const MAP_TIP={
- parade:"<b>모형 열병식</b>\n모형 병사들이 일렬로 서 열병식을 진행하고 있습니다.\n여섯 시간마다 한 칸씩 자리를 옮깁니다. 칸 셋은 늘 붙어 다닙니다.",
+ parade:"<b>모형 열병식</b>\n모형 병사들이 일렬로 서 열병식을 진행하고 있습니다.\n여섯 시간마다 세 칸이 한 몸으로 한 칸씩 자리를 옮깁니다.",
  ceil:"<b>천장</b>\n막힌 벽입니다. 지나갈 수 없습니다. 계단으로만 층을 오갈 수 있습니다.",
  stair:"<b>계단</b>\n잠긴 상태로 시작합니다. 계단 열쇠로 잠금문을 열면 계단으로 이동할 수 있습니다.",
  lockdoor:"<b>잠금문</b>\n계단 열쇠로 잠금문을 해제하고 계단을 이용할 수 있습니다.",
@@ -15522,41 +15528,33 @@ function placeParade(g,fi,f){
 }
 /* 열병식 칸 목록 */
 function paradeCells(){ const L=[]; if(run&&run.grid) run.grid.forEach((row,r)=>row.forEach((x,c)=>{ if(x.t==="parade") L.push({r:r,c:c}) })); return L }
-const paradeAdj=(a,b)=>Math.abs(a.r-b.r)+Math.abs(a.c-b.c)===1;
-/* 남은 둘이 서로 붙어 있는가 — 하나를 떼어도 벌이 이어지는가 */
-function paradeKeeps(L,i){ const rest=L.filter((x,k)=>k!==i); return rest.length<2||paradeAdj(rest[0],rest[1]) }
-/* 여섯 시간마다 한 칸 — spend() 가 시간을 더할 때마다 들른다. 셋은 늘 붙어 있게,
-   대원이 선 칸 · 계단 · 다른 층으로는 안 간다 */
+/* 여섯 시간마다 한 칸 — **셋이 통째로** 같은 방향으로 (사용자 2026-10-10. 하나씩 옮기던 것을 고쳤다).
+   밀려면 **세 칸이 갈 자리가 모두 비어 있어야** 한다 — 하나라도 막히면 그 방향으로는 못 간다
+   (제 벌이 비켜 주는 자리는 괜찮다). 갈 방향이 아예 없으면 **그 턴은 제자리**다 (늑대와 같은 결, 내 판단).
+   대원이 선 칸 · 계단 · 다른 층으로는 안 간다. spend() 가 시간을 더할 때마다 들른다 */
 function paradeStep(){
   if(!run||!run.grid||run.lost) return 0;
-  const L=paradeCells(); if(L.length<2) return 0;
-  const f=towerFloor(L[0].r), S=run.size;
-  const moves=[];
-  L.forEach((p,i)=>{
-    if(!paradeKeeps(L,i)) return;
-    const rest=L.filter((x,k)=>k!==i);
-    rest.forEach(q=>[[-1,0],[1,0],[0,-1],[0,1]].forEach(([dr,dc])=>{
-      const r=q.r+dr, c=q.c+dc, x=run.grid[r]&&run.grid[r][c];
-      if(!x||x.t!=="empty"||x.stair||towerFloor(r)!==f) return;
-      if(run.pos&&run.pos.r===r&&run.pos.c===c) return;
-      if(L.some(y=>y.r===r&&y.c===c)) return;
-      moves.push({from:p,to:{r:r,c:c}}) }));
-  });
-  if(!moves.length) return 0;
-  const m=moves[Math.floor(Math.random()*moves.length)];
-  run.grid[m.to.r][m.to.c]={t:"parade"};
-  run.grid[m.from.r][m.from.c]={t:"empty"};
-  /* 연출에 줄 것 — 마차(WAGON_MOVE)와 똑같은 꼴 (/ui 와 맞춘 것, 2026-10-10).
-     k 는 옮겨 간 뒤의 자리, dr/dc 는 **온 방향**(한 칸이면 ±1), t0 는 화면이 채운다.
-     ⚠️ 한 번에 **한 칸만** 움직인다 — 셋이 통째로 가는 것이 아니라 셋 가운데 하나가 옮긴다
-     (사용자 글 「칸 셋이 늘 붙어 있다」가 그래야 뜻이 산다). 그래서 목록에 한 줄이 들어간다 */
-  paradeMoveLog(m.to, m.from);
+  const L=paradeCells(); if(!L.length) return 0;
+  const f=towerFloor(L[0].r);
+  const mine=(r,c)=>L.some(p=>p.r===r&&p.c===c);
+  const dirs=[[-1,0],[1,0],[0,-1],[0,1]].filter(([dr,dc])=>L.every(p=>{
+    const r=p.r+dr, c=p.c+dc;
+    if(mine(r,c)) return true;                       /* 제 벌이 비켜 주는 자리 */
+    const x=run.grid[r]&&run.grid[r][c];
+    if(!x||x.t!=="empty"||x.stair||towerFloor(r)!==f) return false;
+    if(run.pos&&run.pos.r===r&&run.pos.c===c) return false;
+    return true;
+  }));
+  if(!dirs.length) return 0;
+  const d=dirs[Math.floor(Math.random()*dirs.length)], dr=d[0], dc=d[1];
+  L.forEach(p=>{ run.grid[p.r][p.c]={t:"empty"} });   /* 먼저 다 비우고 */
+  L.forEach(p=>{ run.grid[p.r+dr][p.c+dc]={t:"parade"}; paradeMoveLog({r:p.r+dr,c:p.c+dc},p) });   /* 셋을 한꺼번에 */
   return 1;
 }
 let PARADE_MOVE=[];   /* 모형 열병식 — 방금 옮긴 칸 {k, dr/dc 온 쪽, t0} (마차와 같은 꼴) */
 function paradeMoveLog(to,from){
   PARADE_MOVE.push({k:to.r+"-"+to.c, dr:from.r-to.r, dc:from.c-to.c, t0:0});
-  while(PARADE_MOVE.length>6) PARADE_MOVE.shift();   /* 화면이 안 가져가도 쌓이지 않게 */
+  while(PARADE_MOVE.length>9) PARADE_MOVE.shift();   /* 화면이 안 가져가도 쌓이지 않게 (한 박자에 셋이 들어온다) */
 }
 function paradeTick(){
   if(!run||!run.grid||run.sandbox) return;
@@ -17076,6 +17074,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 19, "v": "0.7", "d": "2026-10-10", "t": "열병식 통째 행진, 탑 천장 이어 붙이기", "big": 0},
  {"b": 18, "v": "0.7", "d": "2026-10-10", "t": "마력의 탑 한 벌 — 층·열쇠·안개·동화의 방, 늑대와 열병식, 칸 표식들", "big": 0},
  {"b": 17, "v": "0.7", "d": "2026-10-10", "t": "받을 피해 예고를 더 바로잡고, 숨어 있던 피해 숫자를 띄웠습니다 — 마력의 탑 지도도 들어갑니다", "big": 0},
  {"b": 16, "v": "0.7", "d": "2026-10-10", "t": "지도 액자가 배경을 다 감싸게 — 양피지를 틈만큼만 넓힘", "big": 0},
@@ -18286,7 +18285,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=18;
+const BUILD_NO=19;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -20638,9 +20637,9 @@ function bellFill(f){
 }
 const MANA_LOOT=[["사파이어 파편",50],["사파이어 수정",40],["마나석",10]];
 function manaLoot(){ let x=Math.random()*100; for(const [n,w] of MANA_LOOT){ if(x<w) return n; x-=w } return MANA_LOOT[0][0] }
-/* 지도 칸의 마도서 표시에 쓸 그림. ⚠️ 임시다 — 이것은 장신구 아이콘(닫힌 마법책)을 돌려 쓴 것이고
-   지도 칸에 쓸 전용 그림이 아직 없다. 「떠드는 마도서」 표시 그림이 오면 이 한 줄만 바꾸면 된다
-   (사용자에게 청해 둠, 2026-10-10) */
+/* 지도 칸의 마도서 표시에 쓸 그림. 장신구 아이콘(닫힌 마법책)을 돌려 쓴 것인데
+   사용자가 이대로 쓰기로 했다 (2026-10-10) — 전용 그림을 기다리지 않아도 된다.
+   나중에 바꾸고 싶어지면 여전히 이 한 줄이다 */
 const TOME_ICON="item_common_spellbook";
 /* 마도서 심기 — 전투 칸에 cell.tome 표시를 단다. floor 0 이면 지도 전체(일반 전투 · 정예 전투), 아니면 그 층의 일반 전투만.
    n 곳까지 무작위로. 표시가 이미 있는 칸은 건너뛴다. 실제로 단 수를 돌려준다. 칸 오른쪽 아래의 작은 마도서 그림은 /ui 몫 */
