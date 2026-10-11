@@ -15583,7 +15583,7 @@ function towerConnected(g,ce){
 /* 지도 한 장 — 길이 끊기면 그 자리에서 다시 만든다 (사용자 2026-10-10: 한 번이라도 막히면 안 된다) */
 function buildGrid(fi,keep){
   let g=null;
-  for(let t=0;t<60;t++){ g=buildGrid0(fi,keep); if(gridConnected(g)){ if(g.towerKinds&&typeof run!=="undefined"&&run) run.floorKinds=g.towerKinds.slice(); return g } }
+  for(let t=0;t<60;t++){ g=buildGrid0(fi,keep); if(gridConnected(g)&&campBattlesOk(g,fi)){ if(g.towerKinds&&typeof run!=="undefined"&&run) run.floorKinds=g.towerKinds.slice(); return g } }
   console.warn("지도 길이 끊김 — 60번 다시 만들어도 이어지지 않았습니다 (구역 "+fi+")");
   return g;
 }
@@ -15604,7 +15604,7 @@ function buildGrid0(fi,keep){
     }
   };
   const kAt=r=>(g.towerKinds&&towerFloor(r,fi)>0)?g.towerKinds[towerFloor(r,fi)-1]:null;   /* 탑 — 그 칸이 선 층의 종류 */
-  const dun=(r)=>{ const w=1+Math.floor(Math.random()*3); return Object.assign({waves:w},encRoll("dungeon",fi,w,kAt(r))) };
+  const dun=(r)=>{ const w=startWaves(); return Object.assign({waves:w},encRoll("dungeon",fi,w,kAt(r))) };   /* 처음 깔 때 40/30/30 (2026-10-11) */
   put("dungeon",nodeCount("dungeon",fi),dun);
   put("elite",nodeCount("elite",fi),(r)=>Object.assign({waves:1},encRoll("elite",fi,1,kAt(r))));
   put("shop",nodeCount("shop",fi));
@@ -15614,6 +15614,7 @@ function buildGrid0(fi,keep){
   put("forge",1);                 /* 제련소는 어느 구역에나 한 곳 */
   campSafe(g);
   if(FIELDS[fi].ceil) towerFix(g,fi);
+  campBattles(g,fi);   /* 전투 칸은 맨 마지막에 정한다 — towerFix 가 전투를 옮긴 뒤라야 수가 안 어긋난다 (2026-10-11) */
   return g;
 }
 /* 탑의 필수 칸 — 열쇠방(1 · 2층 하나씩) · 부서진 구멍(2 · 3층 하나씩). 빈 길에 먼저 놓는다 */
@@ -15752,6 +15753,70 @@ function towerFix(g,fi){
     g[r][c]={t:"empty"};
     if(L.length){ const [a,b]=L[Math.floor(Math.random()*L.length)]; g[a][b]=x }   /* 다른 빈 길로 옮긴다 */
   }
+}
+/* ═══ 처음 지도를 깔 때 — 주둔지 둘레의 전투 칸 (사용자 2026-10-11) ═══
+   **주둔지 3칸 안**에서 ① **정예 전투 없음** ② **1라운드 일반 전투 셋 이상** ③ **전투 칸은 모두 합쳐 다섯 이하**.
+   ⚠️ **셋 다 「반경 3칸 안」의 수다 — 지도 전체의 전투 수는 건드리지 않는다**(수를 맞추는 길이 「자리 바꾸기」라 그렇다).
+   거리는 이 집이 쓰는 자(가로세로 걸음 수, `campSafe` 와 같다)다 — 대각선은 두 칸이다.
+   **정예를 밀어내는 길은 `campSafe` 의 것을 그대로 쓴다** — 멀리 있는 1~2라운드 전투와 자리를 바꾸고, 그럴 곳이 없으면 1라운드 전투로 낮춘다.
+   그래서 **반경 3칸 안의 전투는 모두 일반 전투**이고 ③의 다섯도 일반 전투 수다 (우두머리는 맨 윗줄이라 여기 들지 않는다 — 셈에서도 뺀다).
+   ⚠️ **3라운드 전투를 깎는 것은 `campSafe` 의 반경 2칸 그대로 두었다** — 사용자가 집어 말한 것은 「정예」뿐이다.
+   거리 3 에는 3라운드가 설 수 있다. 그것까지 순하게 하려면 `campSafe` 의 `<=2` 를 `<=3` 으로 바꾸면 된다(한 줄).
+   ⚠️ **새 날에 채우는 것은 ②③ 을 안 본다** — 사용자 말이 「맵 시작시」였다.
+   다만 **정예를 밀어내는 `campSafe` 는 새 날에도 돈다**(둘레가 순해야 하는 까닭은 날마다 달라지지 않는다).
+   못 맞추면 `buildGrid` 가 지도를 다시 만든다 — 길 검사와 같은 자리에서 본다 */
+const CAMP_R=3, CAMP_DUN=3, CAMP_FIGHT_MAX=5;
+function campDist(g,r,c){ const S=g.length; return Math.abs(r-(S-1))+Math.abs(c-Math.floor(S/2)) }
+function campBattles(g,fi){
+  const S=g.length;
+  const free=(r,c)=>{ const x=g[r][c]; return x.t==="empty"&&!x.stair&&!(FIELDS[fi].ceil&&nearStair(g,r,c)) };
+  const mix=L=>{ for(let i=L.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=L[i]; L[i]=L[j]; L[j]=t } return L };
+  const inR=[], outFree=[], outDun=[];
+  for(let r=0;r<S;r++) for(let c=0;c<S;c++){
+    const d=campDist(g,r,c), x=g[r][c];
+    if(!d) continue;
+    if(d<=CAMP_R){ inR.push([r,c]); continue }
+    if(free(r,c)) outFree.push([r,c]);
+    else if(x.t==="dungeon") outDun.push([r,c]);
+  }
+  mix(inR); mix(outFree); mix(outDun);
+  const at=p=>g[p[0]][p[1]];
+  /* ⓪ 정예는 반경 3칸 밖으로 (campSafe 와 같은 길) */
+  inR.forEach(p=>{ const x=at(p); if(x.t!=="elite") return;
+    const k=outDun.findIndex(q=>(at(q).waves||1)<=2);
+    if(k>=0){ const q=outDun.splice(k,1)[0]; const y=at(q); g[q[0]][q[1]]=x; g[p[0]][p[1]]=y }   /* 자리 바꾸기 */
+    else g[p[0]][p[1]]={t:"dungeon",waves:1,style:x.style||rnd(DUN_STYLE),loot:x.loot||rnd(DUN_LOOT)};
+  });
+  const one=()=>inR.filter(p=>{ const x=at(p); return x.t==="dungeon"&&(x.waves||1)===1 }).length;
+  const fights=()=>inR.filter(p=>at(p).t==="dungeon"||at(p).t==="elite").length;
+  /* ① 1라운드 일반 전투 셋 — 있는 것의 라운드를 낮추고, 모자라면 밖에서 데려온다 */
+  for(const p of inR){ if(one()>=CAMP_DUN) break;
+    const x=at(p); if(x.t==="dungeon"&&(x.waves||1)>1) x.waves=1 }
+  for(const p of inR){ if(one()>=CAMP_DUN) break;
+    if(!free(p[0],p[1])||!outDun.length) continue;
+    const q=outDun.pop(), x=at(q);
+    x.waves=1; g[p[0]][p[1]]=x; g[q[0]][q[1]]={t:"empty"};   /* 자리 바꾸기 — 전체 수는 그대로 */
+  }
+  /* ② 전투 칸은 다섯 이하 — 넘치면 밖의 빈 길로 내보낸다 (라운드 큰 것부터) */
+  while(fights()>CAMP_FIGHT_MAX&&outFree.length){
+    const L=inR.filter(p=>{ const x=at(p);
+      return x.t==="dungeon"&&((x.waves||1)>1||one()>CAMP_DUN) }).sort((a,b)=>(at(b).waves||1)-(at(a).waves||1));
+    if(!L.length) break;
+    const p=L[0], q=outFree.pop();
+    g[q[0]][q[1]]=at(p); g[p[0]][p[1]]={t:"empty"};
+  }
+  return {one:one(), fights:fights()};
+}
+/* 지도가 그 규칙을 지켰는가 — buildGrid 가 보고 모자라면 다시 만든다 */
+function campBattlesOk(g,fi){
+  const S=g.length; let one=0, fight=0, el=0;
+  for(let r=0;r<S;r++) for(let c=0;c<S;c++){
+    const d=campDist(g,r,c); if(!d||d>CAMP_R) continue;
+    const x=g[r][c];
+    if(x.t==="elite"){ el++; fight++ }
+    if(x.t==="dungeon"){ fight++; if((x.waves||1)===1) one++ }
+  }
+  return !el&&one>=CAMP_DUN&&fight<=CAMP_FIGHT_MAX;
 }
 /* 주둔지 반경 2칸에는 3라운드 전투·정예 전투가 없다 (사용자 2026-09-16) — 새 판·재편성·새 날 모두.
    정예는 멀리 있는 전투 칸과 자리를 바꾸고(없으면 1라운드 전투로), 3라운드 전투는 1~2라운드로 줄인다 */
@@ -16155,14 +16220,27 @@ function gimBreakTower(){
 /* 구역이 넓어질수록 칸도 함께 늘어난다 (7x7 / 8x8 / 9x9)
    빈 칸이 절반쯤은 남아야 한다 — 길을 고르는 맛도, 밤의 습격도 빈 칸에서 난다.
    지금 밀도(주둔지·우두머리·제련소까지 세어) 51% · 50% · 46% */
-const NODE_N={dungeon:[10,12,14], elite:[3,4,5], shop:[2,3,3], rest:[2,3,4], event:[5,7,8]};
+const NODE_N={dungeon:[12,12,14], elite:[3,4,5], shop:[2,3,3], rest:[2,3,4], event:[5,7,8]};   /* 1구역 일반 전투 10 → 12 (사용자 2026-10-11) */
 function nodeCount(t,fi){
   const a=NODE_N[t]; if(!a) return 0;
   return a[Math.min(fi==null?(run?run.field:0):fi, a.length-1)];
 }
 /* 이미 들른 상점·쉼터·미지의 구역은 다른 날 다른 자리에 다시 나타난다.
    제련소는 넣지 않는다 — 한 번 들르면 지도를 다시 그릴 때까지 없다. */
-const DUN_REFILL=0.55;   /* 1구역 새 날 — 모자란 일반 전투 칸 한 자리마다 */
+const DUN_REFILL=0.55;   /* 새 날 — 모자란 일반 전투 칸 한 자리마다 */
+/* 전투 칸의 라운드 비율 — **두 자리가 따로다** (사용자 2026-10-11). 한쪽을 고칠 때 다른 쪽이 따라 움직이면 안 되니
+   표를 둘로 두고 굴리는 함수 하나를 같이 쓴다. 값을 다른 데 손으로 적지 말 것 — 여기만 고친다.
+     처음 지도를 깔 때  40 / 30 / 30   (startWaves)
+     새 날에 보충할 때  50 / 30 / 20   (refillWaves. 종탑의 「종 울리기」·전투를 다 깼을 때의 새 칸도 이쪽이다)
+   ⚠️ 뽑은 뒤에 `campSafe` 가 주둔지 2칸 안의 3라운드를 1~2로 깎고, `campBattles` 가 반경 3칸 안의 라운드를
+   1로 낮춘다 — 그래서 **주둔지 둘레는 이 비율과 다르다.** 비율을 잴 때는 반경 바깥으로 센다 */
+const BUILD_W=[0.4,0.3,0.3], REFILL_W=[0.5,0.3,0.2];
+function pickWaves(T){ let r=Math.random();
+  for(let i=0;i<T.length;i++){ r-=T[i]; if(r<0) return i+1 }
+  return 1;
+}
+function startWaves(){ return pickWaves(BUILD_W) }
+function refillWaves(){ return pickWaves(REFILL_W) }
 /* 전투 칸을 놓을 빈 칸 하나 — 탑에서는 계단 위 · 아래 칸을 뺀다 */
 function takeBattle(free){
   const L=free.map((p,i)=>i).filter(i=>!(towerOn()&&nearStair(run.grid,free[i][0],free[i][1])));
@@ -16197,14 +16275,17 @@ function respawn(){
     else if(!run.fog&&Math.random()<0.25) rollFog();
   }
   if(run.field===1&&!gimCells(run.grid,"nest").length&&Math.random()<0.2){ const p=placeOne(run.grid,"nest"); if(p&&(p.r!==run.pos.r||p.c!==run.pos.c)) toast("어딘가에 반딧불 둥지가 새로 생겼습니다.") }
-  /* 1구역 — 날이 밝으면 비어 가는 지도에 일반 전투 칸을 보탠다 (사용자 2026-10-05: 4~5일차엔 지도가 너무 비어 보였다).
-     처음 수(NODE_N.dungeon)에 모자란 만큼, 한 자리마다 DUN_REFILL 확률로. 새 칸은 지도에서 솟아난다 */
-  if(run.field===0){
+  /* 날이 밝으면 비어 가는 지도에 일반 전투 칸을 보탠다 (사용자 2026-10-05: 4~5일차엔 지도가 너무 비어 보였다).
+     처음 수(NODE_N.dungeon)에 모자란 만큼, 한 자리마다 DUN_REFILL 확률로. 새 칸은 지도에서 솟아난다.
+     ⚠️ **구역을 가리지 않는다** — 2 · 3구역도 보충한다 (사용자 2026-10-11. 전에는 1구역에서만 돌았다).
+     라운드는 refillWaves() 의 50 / 30 / 20. 탑에서는 그 층의 결에 맞는 조합으로 뽑는다 */
+  {
     let have=0; for(let r=0;r<S;r++) for(let c=0;c<S;c++) if(run.grid[r][c].t==="dungeon") have++;
-    for(let i=have;i<nodeCount("dungeon",0)&&free.length;i++){
+    for(let i=have;i<nodeCount("dungeon",run.field)&&free.length;i++){
       if(Math.random()>=DUN_REFILL) continue;
-      const rc=takeBattle(free), w=1+Math.floor(Math.random()*3); if(!rc) break;
-      run.grid[rc[0]][rc[1]]=Object.assign({t:"dungeon",waves:w},encRoll("dungeon",run.field,w));
+      const rc=takeBattle(free), w=refillWaves(); if(!rc) break;
+      const fk=(typeof towerOn==="function"&&towerOn())?floorKind(towerFloor(rc[0])):null;
+      run.grid[rc[0]][rc[1]]=Object.assign({t:"dungeon",waves:w},encRoll("dungeon",run.field,w,fk));
       if(typeof MAP_BORN!=="undefined"){ MAP_BORN.push(rc[0]+"-"+rc[1]); MAP_BORN_QUIET=1 }
     }
   }
@@ -16216,7 +16297,7 @@ function respawn(){
     const n=4+Math.floor(Math.random()*3)+run.field*2;
     for(let i=0;i<n&&free.length;i++){
       const rc=takeBattle(free); if(!rc) break;
-      { const t=i<2?"elite":"dungeon", w=i<2?1:1+Math.floor(Math.random()*3);
+      { const t=i<2?"elite":"dungeon", w=i<2?1:refillWaves();   /* 전투를 다 깼을 때 새로 서는 칸 — 보충 쪽 비율 */
         run.grid[rc[0]][rc[1]]=Object.assign({t:t,waves:w},encRoll(t,run.field,w)) }
     }
     if(n) toast("정복하지 않은 전투 칸이 사라지고, 새 전투 칸이 나타났습니다.");
@@ -17342,6 +17423,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 28, "v": "0.7", "d": "2026-10-11", "t": "지도 — 주둔지 반경 3칸 전투 규칙, 1구역 전투 12개, 세 구역 보충, 라운드 비율", "big": 0},
  {"b": 27, "v": "0.7", "d": "2026-10-11", "t": "달리기 보상 바로잡음 — 하급 · 중급 · 상급이 합쳐지지 않고 각자 따로 돌린다", "big": 0},
  {"b": 26, "v": "0.7", "d": "2026-10-11", "t": "달리기 · 꼭두각시 인형 보상도 쌓인다 (하급 · 중급 · 상급을 고른 만큼 더한다)", "big": 0},
  {"b": 25, "v": "0.7", "d": "2026-10-11", "t": "공용 보상 중첩 고침 — 하급 · 중급이 같은 효과면 쌓인다 (마나 흡입 · 가죽 장화끈 · 잔불 · 카드 마술 · 독이 담긴 병)", "big": 0},
@@ -18561,7 +18643,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=27;
+const BUILD_NO=28;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -20940,7 +21022,7 @@ function bellFill(f){
   run.grid.forEach((row,r)=>row.forEach((x,c)=>{ if(x.t==="empty"&&towerFloor(r)===f&&!(here&&here.r===r&&here.c===c)) L.push([r,c]) }));
   const pickZone=bat=>{ const Z=BELL_ZONES.filter(z=>bat||(z[0]!=="dungeon"&&z[0]!=="elite")); let x=Math.random()*Z.reduce((a,z)=>a+z[1],0); for(const z of Z){ if(x<z[1]) return z[0]; x-=z[1] } return Z[0][0] };
   L.forEach(([r,c])=>{ const t=pickZone(!nearStair(run.grid,r,c));
-    if(t==="dungeon"){ const w=1+Math.floor(Math.random()*3); run.grid[r][c]=Object.assign({t:"dungeon",waves:w},encRoll("dungeon",run.field,w,floorKind(f))) }
+    if(t==="dungeon"){ const w=refillWaves(); run.grid[r][c]=Object.assign({t:"dungeon",waves:w},encRoll("dungeon",run.field,w,floorKind(f))) }   /* 종탑 — 보충 쪽 비율 */
     else if(t==="elite") run.grid[r][c]=Object.assign({t:"elite",waves:1},encRoll("elite",run.field,1,floorKind(f)));
     else run.grid[r][c]={t:t};
     if(typeof MAP_BORN!=="undefined"&&!run.sandbox) MAP_BORN.push(r+"-"+c) });
