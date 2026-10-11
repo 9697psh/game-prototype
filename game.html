@@ -2121,15 +2121,15 @@ body:has(.rwq) .hpanel{top:auto;bottom:16px;max-height:min(52vh,calc(100vh - 100
 .rw.ro:hover{border-color:#4a3f63;box-shadow:0 6px 18px rgba(0,0,0,.4)}
 /* ── 이펙트 ── */
 #fx{position:fixed;inset:0;pointer-events:none;z-index:900;overflow:hidden}
-/* 내 턴 알림 — 적의 행동이 다 끝난 뒤 전장 위를 작게 스쳐 지나간다 */
-.turnban{position:fixed;z-index:940;pointer-events:none;
-  display:flex;align-items:baseline;gap:9px;white-space:nowrap;
-  padding:5px 17px;border-radius:999px;
-  background:linear-gradient(180deg,rgba(48,40,29,.95),rgba(24,20,16,.95));
-  border:1px solid rgba(201,162,39,.55);
-  box-shadow:0 0 0 1px rgba(0,0,0,.55),0 7px 20px rgba(0,0,0,.5),
-             0 0 24px rgba(201,162,39,.2);
-  animation:turnban 1.25s cubic-bezier(.2,.8,.3,1) forwards}
+/* 내 턴 알림 — 적의 행동이 다 끝난 뒤 화면 한가운데를 오른쪽에서 왼쪽으로 지나간다
+   (사용자 2026-10-11, 시안 ③ : 띠 바탕 없이 글자만, 세로도 화면 한가운데).
+   글자값은 「바람처럼 사라져라」(.fleeword)에서 빌렸다 — 새로 짓지 않아 혼자 튀지 않는다.
+   자리는 여기서 쥔다(left/top 50%). --tbx 는 얼마나 멀리서 들어올지 — turnBanner() 가 준다 */
+.turnban{position:fixed;left:50%;top:50%;z-index:940;pointer-events:none;white-space:nowrap;
+  font-family:var(--serif);font-size:clamp(20px,3.2vw,34px);font-weight:700;
+  letter-spacing:.24em;color:#cfd6e6;
+  text-shadow:0 0 18px rgba(0,0,0,.9),0 2px 7px rgba(0,0,0,.95);
+  animation:turnban 1.2s linear forwards}
 .fleeword{position:fixed;z-index:940;pointer-events:none;transform:translateX(-50%);
   font-family:var(--serif);font-size:clamp(20px,3.2vw,34px);font-weight:700;
   letter-spacing:.24em;color:#cfd6e6;text-shadow:0 0 18px rgba(0,0,0,.9);
@@ -2152,15 +2152,14 @@ body:has(.rwq) .hpanel{top:auto;bottom:16px;max-height:min(52vh,calc(100vh - 100
   16%{opacity:1;transform:translateX(-50%) translateY(0)}
   74%{opacity:1}
   100%{opacity:0;transform:translateX(-50%) translateY(-8px)}}
-.turnban b{font-size:15px;font-weight:800;letter-spacing:.14em;color:var(--brass);
-  text-shadow:0 0 10px rgba(201,162,39,.55)}
-.turnban span{font-size:11px;color:var(--dim);letter-spacing:.04em}
 @keyframes turnban{
-  0%  {opacity:0;transform:translate(-50%,-42%) scale(.9)}
-  12% {opacity:1;transform:translate(-50%,-50%) scale(1.05)}
-  22% {opacity:1;transform:translate(-50%,-50%) scale(1)}
-  70% {opacity:1;transform:translate(-50%,-50%) scale(1)}
-  100%{opacity:0;transform:translate(-50%,-62%) scale(1)}}
+  0%  {opacity:0;transform:translate(-50%,-50%) translateX(var(--tbx,60vw))}
+  20% {opacity:1;transform:translate(-50%,-50%) translateX(calc(var(--tbx,60vw) * .2));
+       animation-timing-function:cubic-bezier(.15,.85,.25,1)}
+  32% {opacity:1;transform:translate(-50%,-50%) translateX(0)}
+  62% {opacity:1;transform:translate(-50%,-50%) translateX(0);animation-timing-function:ease-in}
+  84% {opacity:.85;transform:translate(-50%,-50%) translateX(calc(var(--tbx,60vw) * -.35))}
+  100%{opacity:0;transform:translate(-50%,-50%) translateX(calc(var(--tbx,60vw) * -1))}}
 @media (prefers-reduced-motion: reduce){ .turnban{animation-duration:.8s} }
 .pop{position:absolute;transform:translate(-50%,-50%);font-family:var(--serif);font-weight:700;
   font-size:21px;text-shadow:0 2px 4px #000,0 0 10px #000;animation:pop .95s ease-out forwards}
@@ -2336,35 +2335,29 @@ header{align-items:center}
 .pstage>img{position:absolute;image-rendering:pixelated;pointer-events:none;user-select:none}
 /* 테두리 — 격자 위, 손·말풍선 아래. 칸은 그대로 눌린다 (사용자 2026-09-29) */
 .pstage{border-radius:0}   /* 틀이 모서리까지 곧게 닿게 (2026-09-29) */
-/* 액자는 사진(양피지)의 테두리에 그대로 있어야 한다 (사용자 2026-10-10).
-   ⚠️ 안쪽으로 물려 봤다가 되돌렸다 — 액자 바깥에 자리가 생겨 테두리가 제자리를 벗어난다.
-   ⚠️ 양피지를 통째로 늘려 봤다가도 되돌렸다 — 손 그림이 액자 밖으로 나오고 격자가 몰려 보였다.
-   액자 안쪽 틈은 .pmapbg(뒤에 한 겹 더 깐 양피지)가 막는다 */
+/* 액자는 양피지 그림의 「바깥」에 있어야 한다 (사용자 2026-10-11 — 사진에 동그라미를 쳐서 짚었다).
+   양피지 그림의 왼쪽 아래 손은 종이 바깥에 그려져 있다 (그림 모서리 x=0 · y=256 까지 닿는다).
+   액자를 종이 가장자리에 맞추면 그 손이 가운데서 잘린다 — 그래서 62px 밖으로 낸다.
+   ⚠️ 액자와 종이 사이의 틈을 「메우려」 하지 말 것. 거기가 손이 종이를 쥐는 자리다.
+      2026-10-10~11 에 1.16배 양피지로, 다음엔 색판으로 메워 봤다가 둘 다 걷어냈다 */
 .pstage::after{content:"";position:absolute;
-  inset:0;
+  inset:-62px;   /* 양피지 그림 바깥까지 — 왼쪽 아래 손이 안 잘리게 (사용자 2026-10-11) */
   box-sizing:border-box;border-style:solid;border-color:transparent;border-width:36px 48px 60px 48px;border-image-source:var(--frame,none);border-image-outset:3px 19px 35px 20px;border-image-slice:36 48 60 48;border-image-width:auto;border-image-repeat:round;image-rendering:pixelated;pointer-events:none;z-index:7}
 .pstage.unfolding::after{display:none}
 /* ⚠️ 한때 여기서 양피지를 --pad 만큼 넓혀 액자 안쪽 틈을 메웠다가 되돌렸다 (사용자 2026-10-10).
    양피지가 액자 밖으로 나와 왼쪽 아래 손 그림이 튀어나왔고, 양피지만 커져 격자가 가운데로 몰려 보였다.
    액자 안쪽 틈은 「양피지를 늘려」 메우는 것이 아니다 — 그 길로 다시 가지 말 것 */
-.pstage .pmapimg{inset:0;width:100%;height:100%}
-/* 양피지와 격자를 「함께」 1.09배 — 지도가 액자에 꽉 차고 액자 안쪽 띠가 사라진다 (2026-10-11).
-   양피지 가장자리 7% 가 투명이라, 그대로 두면 액자(위 36px)가 거기까지 못 닿아 띠가 남는다.
-   ⚠️ 둘을 함께 키우는 것이 요점이다 — 양피지만 키우면 격자가 가운데로 몰려 보인다 (2026-10-10 에 겪었다).
-   ⚠️ 1.09 를 넘기지 말 것 — 왼쪽 아래 손이 액자 밖으로 나온다 */
-.pstage .pmapimg,.pstage .pmap{transform:scale(1.09)}
-/* 액자 안쪽 틈막이 — 양피지 테두리색 한 겹을 뒤에 깐다 (2026-10-11).
-   ⚠️ 전에는 같은 양피지를 1.16배로 깔았는데, 뒷장이 사방 47px 커지는 동안
-      액자가 「위로」 덮는 것은 outset 3px 뿐이라 44px 이 액자 위로 드러났다 — 그 길로 다시 가지 말 것.
-   양피지 그림은 가장자리 7% 가 투명하고 그 안이 탄 갈색 테두리다(재 보았다: rgb 53~71,16~27,0~5).
-   그래서 같은 색 색판을 inset:0 으로 깔면 액자 밖으로 한 점도 안 나가면서 틈만 메운다.
-   앞의 양피지도 격자도 한 치도 안 움직인다 */
-.pstage .pmapbg{inset:0;width:100%;height:100%;background:#3e1802;z-index:0;pointer-events:none}
+/* 양피지를 액자 안쪽에 맞춘다 — 액자를 62 밖으로 냈으니 안쪽이 2*62-96 = 28px 넓어졌다.
+   액자 두께가 위 36 · 아래 60 이라 안쪽 한가운데가 무대 한가운데보다 12px 위다 — 그만큼 올린다 */
+.pstage .pmapimg{left:-14px;top:-26px;right:auto;bottom:auto;width:calc(100% + 28px);height:calc(100% + 28px)}
+/* ⚠️ 액자와 종이 사이의 틈은 「메울 것」이 아니다 — 거기가 왼쪽 아래 손이 종이를 쥐는 자리다.
+   2026-10-10~11 에 그 틈을 1.16배 양피지로, 다음엔 색판(.pmapbg)으로 메워 봤다가 둘 다 걷어냈다.
+   액자를 그림 바깥으로 물리는 것이 답이었다 (사용자 2026-10-11) */
 .pstage .unf{inset:0;width:100%;height:100%;display:none}
 .pstage.unfolding .unf{display:block}
-/* 펼쳐지는 동안에는 펼침 그림(.unf)만 보인다 — 뒷장(틈막이)도 같이 숨긴다.
-   ⚠️ 2026-10-10~11 에 여기 .pmapbg 가 빠져 있어, 액자는 숨는데 뒷장은 남아 배경이 이상했다 */
-.pstage.unfolding .pmapimg,.pstage.unfolding .pmapbg,.pstage.unfolding .pmap,.pstage.unfolding .mhand{visibility:hidden}
+/* 펼쳐지는 동안에는 펼침 그림(.unf)만 보인다 — 여기 빠뜨린 것이 있으면 액자 없이 그것만 드러난다
+   (2026-10-10 에 틈막이가 빠져 있어 사용자가 「펼쳐지는 거 뒤에 배경 다 이상해짐」이라 했다) */
+.pstage.unfolding .pmapimg,.pstage.unfolding .pmap,.pstage.unfolding .mhand{visibility:hidden}
 .pstage .mhand{width:29.3%;height:auto;display:none;z-index:9}
 /* 손 커서 (2026-10-01) — 전투 밖에서는 운영체제 커서를 숨기고 대원의 오른손을 띄운다 */
 .holdmark{position:fixed;pointer-events:none;image-rendering:pixelated;opacity:1;animation:markShk .36s linear}   /* 처음 남을 때 잠깐 떨린다 (사용자 2026-10-04) */
@@ -2391,7 +2384,7 @@ html.noscr, html.noscr body{overflow:hidden!important}   /* 가로만 숨기면 
 .pstage .tapdust{position:absolute;width:64px;height:64px;background-repeat:no-repeat;background-size:384px 64px;
   image-rendering:pixelated;pointer-events:none;z-index:7}
 @keyframes msayIn{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}   /* 폭은 그림마다 JS 가 (w/256) 로 다시 준다 */
-.gridmap.pmap{position:absolute;left:15.1%;top:14.5%;width:71%;height:71%;   /* 양피지 크림색 한가운데 (256 기준 중심 129.5,128) */margin:0;max-width:none;gap:0;
+.gridmap.pmap{position:absolute;left:calc(15.1% - 14px);top:calc(14.5% - 26px);width:calc(71% + 28px);height:calc(71% + 28px);   /* 양피지와 같이 (2026-10-11) */   /* 양피지 크림색 한가운데 (256 기준 중심 129.5,128) */margin:0;max-width:none;gap:0;
   border-left:1px solid var(--pline);border-top:1px solid var(--pline)}
 /* 칸 — 얇은 흰 선 · 속은 비침 · 커서를 대면 밝게 */
 /* 격자 — 절취선 (사용자 2026-09-15 2번): 1px, 선 12 · 빈 8, 갈색 50%. 오른쪽·아래 가장자리에만, 판 끝은 안 긋는다 */
@@ -3469,7 +3462,7 @@ body.vmap .wrap{max-width:none;padding:6px 28px 10px;margin:0}
 .mapwrap.m3{--ms:min(calc(100vh - 152px),980px);--mp:min(calc(var(--ms)*0.78),620px,calc((100vh - 200px)*0.75));grid-template-columns:auto var(--ms) var(--mp);gap:26px;justify-content:center;margin-top:2px}
 /* 대원 칸이 왼쪽, 지도가 가운데 (사용자 2026-09-29). 조합 아이콘은 그대로 지도 옆에 붙는다 — 통째로 거울처럼 뒤집는다 */
 .mapwrap.m3 .map-m{order:1;flex-direction:row-reverse} .mapwrap.m3 .map-l{order:2} .mapwrap.m3 .map-r{order:3}
-.m3 .pstage{width:var(--ms)}
+.m3 .pstage{width:calc(var(--ms) - 70px)}   /* 액자가 62px 밖으로 나간다 — 그 자리를 칸 안에서 낸다 (2026-10-11) */
 /* 대원 카드 — 전투 손패 카드와 같은 크기 (사용자 2026-09-29: 150×200) */
 .mcards{width:auto;gap:10px}
 .mcards .mcard{width:150px;height:200px;padding:7% 8% 6%}
@@ -9185,12 +9178,11 @@ function stepBanner(word,sub){
 /* 내 턴이 돌아왔다 */
 function turnBanner(){
   document.querySelectorAll(".turnban").forEach(x=>x.remove());
-  const nd=el(`<div class="turnban"><b>내 턴</b><span>${B.turn}턴</span></div>`);
+  const nd=el(`<div class="turnban">내 턴</div>`);
   document.body.appendChild(nd);
-  const f=document.querySelector(".field");
-  const r=f?f.getBoundingClientRect():{left:0,width:innerWidth,top:0,height:innerHeight};
-  nd.style.left=(r.left+r.width/2)+"px";
-  nd.style.top =(r.top-2)+"px";        /* 전장 바로 위 — 대원을 가리지 않게 */
+  /* 자리(화면 한가운데)는 CSS 가 쥔다. 여기서 주는 것은 얼마나 멀리서 들어오는가뿐 —
+     글자 폭까지 더해 화면 밖에서 들어와 화면 밖으로 빠진다 (사용자 2026-10-11) */
+  nd.style.setProperty("--tbx",Math.round(innerWidth/2+nd.offsetWidth)+"px");
   SFX.play("turn");
   setTimeout(()=>nd.remove(),1300);
 }
@@ -16852,8 +16844,7 @@ function drawMapPeek(){
   { /* 지도 화면과 같은 양피지 무대 + 같은 판 (사용자 2026-09-16). 손은 없다 */
     const floor=MAP_FLOOR[Math.min(run.field,MAP_FLOOR.length-1)], H=mapHands();
     const stage=el(`<div class="pstage peekstage"${stageSty(floor)}>
-      <img class="pmapbg" src="${mapPng(H.held)}" alt="" draggable="false">
-    <img class="pmapimg" src="${mapPng(H.held)}" alt="" draggable="false"></div>`);
+      <img class="pmapimg" src="${mapPng(H.held)}" alt="" draggable="false"></div>`);
     stage.appendChild(mapGridEl(1));
     ov.querySelector(".pkgap").after(stage) }
   const lg=ov.querySelector(".legend");
@@ -17433,6 +17424,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 33, "v": "0.7", "d": "2026-10-11", "t": "지도 액자를 양피지 바깥으로 — 왼쪽 아래 손이 안 잘리게", "big": 0},
  {"b": 32, "v": "0.7", "d": "2026-10-11", "t": "지도 액자 틈막이와 펼침 뒤 배경, 날 넘기기 멈춤(WAGON_DAY)", "big": 0},
  {"b": 31, "v": "0.7", "d": "2026-10-11", "t": "튜토리얼 오염도 글에서 정령숲 얘기를 뺌", "big": 0},
  {"b": 30, "v": "0.7", "d": "2026-10-11", "t": "오염도 안내 글을 전투 종류별 값에 맞춤 — 칩 설명 · 튜토리얼 (정령숲은 줄지 않음)", "big": 0},
@@ -18657,7 +18649,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=32;
+const BUILD_NO=33;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -20262,7 +20254,6 @@ function drawMap(app){
   const floor=MAP_FLOOR[Math.min(run.field,MAP_FLOOR.length-1)];
   const H=mapHands();
   const stage=el(`<div class="pstage${MAP_ENTER?" unfolding":""}"${stageSty(floor)}>
-    <img class="pmapbg" src="${mapPng(H.held)}" alt="" draggable="false">
     <img class="pmapimg" src="${mapPng(H.held)}" alt="" draggable="false">
     <img class="unf" alt="" draggable="false">
     <img class="mhand" alt="" draggable="false"></div>`);
