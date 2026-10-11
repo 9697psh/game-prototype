@@ -2348,12 +2348,23 @@ header{align-items:center}
    양피지가 액자 밖으로 나와 왼쪽 아래 손 그림이 튀어나왔고, 양피지만 커져 격자가 가운데로 몰려 보였다.
    액자 안쪽 틈은 「양피지를 늘려」 메우는 것이 아니다 — 그 길로 다시 가지 말 것 */
 .pstage .pmapimg{inset:0;width:100%;height:100%}
-/* 액자 안쪽 틈막이 — 같은 양피지를 뒤에 한 겹 더, 조금 키워 깐다 (사용자 2026-10-10).
-   앞의 양피지와 격자는 한 치도 안 움직이고, 늘어난 가장자리는 액자가 덮어 안 보인다 */
-.pstage .pmapbg{inset:0;width:100%;height:100%;transform:scale(1.16);z-index:0;pointer-events:none}
+/* 양피지와 격자를 「함께」 1.09배 — 지도가 액자에 꽉 차고 액자 안쪽 띠가 사라진다 (2026-10-11).
+   양피지 가장자리 7% 가 투명이라, 그대로 두면 액자(위 36px)가 거기까지 못 닿아 띠가 남는다.
+   ⚠️ 둘을 함께 키우는 것이 요점이다 — 양피지만 키우면 격자가 가운데로 몰려 보인다 (2026-10-10 에 겪었다).
+   ⚠️ 1.09 를 넘기지 말 것 — 왼쪽 아래 손이 액자 밖으로 나온다 */
+.pstage .pmapimg,.pstage .pmap{transform:scale(1.09)}
+/* 액자 안쪽 틈막이 — 양피지 테두리색 한 겹을 뒤에 깐다 (2026-10-11).
+   ⚠️ 전에는 같은 양피지를 1.16배로 깔았는데, 뒷장이 사방 47px 커지는 동안
+      액자가 「위로」 덮는 것은 outset 3px 뿐이라 44px 이 액자 위로 드러났다 — 그 길로 다시 가지 말 것.
+   양피지 그림은 가장자리 7% 가 투명하고 그 안이 탄 갈색 테두리다(재 보았다: rgb 53~71,16~27,0~5).
+   그래서 같은 색 색판을 inset:0 으로 깔면 액자 밖으로 한 점도 안 나가면서 틈만 메운다.
+   앞의 양피지도 격자도 한 치도 안 움직인다 */
+.pstage .pmapbg{inset:0;width:100%;height:100%;background:#3e1802;z-index:0;pointer-events:none}
 .pstage .unf{inset:0;width:100%;height:100%;display:none}
 .pstage.unfolding .unf{display:block}
-.pstage.unfolding .pmapimg,.pstage.unfolding .pmap,.pstage.unfolding .mhand{visibility:hidden}
+/* 펼쳐지는 동안에는 펼침 그림(.unf)만 보인다 — 뒷장(틈막이)도 같이 숨긴다.
+   ⚠️ 2026-10-10~11 에 여기 .pmapbg 가 빠져 있어, 액자는 숨는데 뒷장은 남아 배경이 이상했다 */
+.pstage.unfolding .pmapimg,.pstage.unfolding .pmapbg,.pstage.unfolding .pmap,.pstage.unfolding .mhand{visibility:hidden}
 .pstage .mhand{width:29.3%;height:auto;display:none;z-index:9}
 /* 손 커서 (2026-10-01) — 전투 밖에서는 운영체제 커서를 숨기고 대원의 오른손을 띄운다 */
 .holdmark{position:fixed;pointer-events:none;image-rendering:pixelated;opacity:1;animation:markShk .36s linear}   /* 처음 남을 때 잠깐 떨린다 (사용자 2026-10-04) */
@@ -16842,7 +16853,6 @@ function drawMapPeek(){
     const floor=MAP_FLOOR[Math.min(run.field,MAP_FLOOR.length-1)], H=mapHands();
     const stage=el(`<div class="pstage peekstage"${stageSty(floor)}>
       <img class="pmapbg" src="${mapPng(H.held)}" alt="" draggable="false">
-      <img class="pmapbg" src="${mapPng(H.held)}" alt="" draggable="false">
     <img class="pmapimg" src="${mapPng(H.held)}" alt="" draggable="false"></div>`);
     stage.appendChild(mapGridEl(1));
     ov.querySelector(".pkgap").after(stage) }
@@ -17423,6 +17433,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 32, "v": "0.7", "d": "2026-10-11", "t": "지도 액자 틈막이와 펼침 뒤 배경, 날 넘기기 멈춤(WAGON_DAY)", "big": 0},
  {"b": 31, "v": "0.7", "d": "2026-10-11", "t": "튜토리얼 오염도 글에서 정령숲 얘기를 뺌", "big": 0},
  {"b": 30, "v": "0.7", "d": "2026-10-11", "t": "오염도 안내 글을 전투 종류별 값에 맞춤 — 칩 설명 · 튜토리얼 (정령숲은 줄지 않음)", "big": 0},
  {"b": 29, "v": "0.7", "d": "2026-10-11", "t": "전투 승리 오염도 종류별(일반 20·25·30 · 정예 35 · 습격 20 · 우두머리 40 · 특수 20) · 늘어가는 실력 · 침입자 토벌 피해 증가 2 → 1", "big": 0},
@@ -18646,7 +18657,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=31;
+const BUILD_NO=32;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
