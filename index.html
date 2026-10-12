@@ -2130,6 +2130,18 @@ body:has(.rwq) .hpanel{top:auto;bottom:16px;max-height:min(52vh,calc(100vh - 100
   letter-spacing:.24em;color:#cfd6e6;
   text-shadow:0 0 18px rgba(0,0,0,.9),0 2px 7px rgba(0,0,0,.95);
   animation:turnban 1.2s linear forwards}
+/* 마력의 안개가 걷힌다 — 화면 한가운데에 잠깐 뜨는 큰 글 (사용자 2026-10-12: 「가운데에 크게」).
+   「내 턴」(.turnban)은 화면을 가로질러 지나가지만, 이것은 **가운데에서 피었다 진다** —
+   층이 열리는 것은 지나가는 알림이 아니라 그 자리에서 일어나는 일이다.
+   ⚠️ pointer-events:none — 다음 수를 막지 않는다. ⚠️ 글이 길어 좁은 화면에서는 두 줄로 접힌다 */
+.fogban{position:fixed;left:50%;top:44%;transform:translate(-50%,-50%);z-index:940;pointer-events:none;
+  max-width:92vw;text-align:center;line-height:1.45;
+  font-family:var(--serif);font-size:clamp(17px,2.9vw,31px);font-weight:700;letter-spacing:.1em;
+  color:#e2e9f6;text-shadow:0 0 24px rgba(70,105,170,.95),0 2px 8px rgba(0,0,0,.95);
+  animation:fogban 2.4s ease-out forwards}
+@keyframes fogban{0%{opacity:0;letter-spacing:.34em;filter:blur(7px)}
+  18%{opacity:1;letter-spacing:.1em;filter:blur(0)}70%{opacity:1}100%{opacity:0;filter:blur(4px)}}
+@media (prefers-reduced-motion: reduce){ .fogban{animation:none} }
 .fleeword{position:fixed;z-index:940;pointer-events:none;transform:translateX(-50%);
   font-family:var(--serif);font-size:clamp(20px,3.2vw,34px);font-weight:700;
   letter-spacing:.24em;color:#cfd6e6;text-shadow:0 0 18px rgba(0,0,0,.9);
@@ -2415,6 +2427,36 @@ html.noscr, html.noscr body{overflow:hidden!important}   /* 가로만 숨기면 
 .gridmap.pmap .cell.ceil .cico{inset:-1px}
 .gridmap.pmap .cell.ceil .cico img{width:100%;height:100%;max-width:none;max-height:none}
 .gridmap.pmap .cell.cell.stair{background-color:rgba(201,162,39,.30)}
+/* ═══ 마력의 탑 — 층마다 고유한 빛깔 (사용자 2026-10-12) ═══
+   사용자가 처음 말한 것은 「각 층마다 타일이 아주 살짝 고유의 색으로 빛났으면」이었고,
+   칸마다 칠해 보여 드린 뒤 **「타일을 칠하는 것 말고, 큰 테두리만 색으로 빛나게」**로 바뀌었다.
+   그래서 지금은 **층 하나를 통째로 두르는 네모 하나**다 (.flband). 칸에는 아무것도 안 칠한다.
+   ⚠️ 걸어 보고 버린 길 — **칸마다 칠하기.** 쓸 만했지만 사용자가 테두리를 골랐다. 그때 알아낸 것은 남긴다:
+      ① 넷 다 알파 .09 — 양피지(크림빛) 위에서 **아예 안 보였다**
+      ② 푸름 90,150,220 — **회색으로 읽혀 「꺼진 칸」**처럼 보였다. 더 맑게(45,150,245) 해야 푸름으로 읽힌다
+      ③ 구릿빛 205,70,25 — **살굿빛**이 되어 동화의 방(보라)과 가까웠다. 주황 쪽으로 옮겨야 갈린다
+      ④ **같은 알파가 같은 세기가 아니다** — 크림빛 양피지에서 따뜻한 빛은 묻히고 차가운 빛은 바로 보인다.
+         칠할 때는 차가운 둘 .15 · 따뜻한 둘 .22 라야 엇비슷해 보였다.
+      견준 그림 tools/_ft_alpha.png · tools/_ft_alpha2.png
+   ⚠️ 테두리는 **면이 아니라 선이라 더 묻힌다** — 그래서 칠보다 훨씬 진하게(.95) 긋고 번짐을 얹었다.
+   ⚠️ 번짐이 옆 층으로 넘어가면 두 층이 섞여 보인다. 층 사이에는 천장 한 줄(칸 하나 높이)뿐이라
+      바깥으로 나가는 몫(outset 4px + 번짐 8px)을 그 안에 들어가게 잡았다.
+   ⚠️ 가려진 층은 테두리도 없다 (floorSeen) — 아직 닿지 않은 층의 종류를 미리 알려 주는 꼴이 된다.
+   ⚠️ 자리 셈 — .gridmap.pmap 은 gap:0 이고 칸이 aspect-ratio:1 이라 **한 줄 높이가 정확히 1/칸수**다.
+      그래서 퍼센트 셈만으로 자리가 잡히고 창 크기가 바뀌어도 따라간다 (JS 가 재지 않는다) */
+/* 바깥으로 나가는 몫(--out)과 번짐(--blur)을 **한 줄 높이에 견주어** 잡는다 — 창이 작아져도
+   층 사이 천장 한 줄 안에 들어가 두 층이 안 섞인다. cqh 는 .gridmap.pmap 의 높이다 */
+.gridmap.pmap{container-type:size}
+.flband{position:absolute;pointer-events:none;z-index:6;border-radius:11px;
+  --row:calc(100cqh / var(--n));--out:calc(var(--row) * .10);--blur:calc(var(--row) * .14);
+  left:calc(var(--out) * -1);right:calc(var(--out) * -1);
+  top:calc(100% / var(--n) * var(--r1) - var(--out));
+  height:calc(100% / var(--n) * (var(--r2) - var(--r1) + 1) + var(--out) * 2);
+  border:2px solid var(--fc);box-shadow:0 0 var(--blur) var(--fg),inset 0 0 calc(var(--blur) * 2) var(--fg)}
+.flband.fl-library{--fc:rgba(196,152,20,.95);--fg:rgba(232,186,40,.5)}    /* 서재 — 낡은 금빛 */
+.flband.fl-mana{--fc:rgba(40,130,230,.95);--fg:rgba(70,160,255,.5)}       /* 마나 제련소 — 푸른빛 */
+.flband.fl-gears{--fc:rgba(200,95,20,.95);--fg:rgba(235,130,40,.5)}       /* 톱니 용광로 — 구릿빛 */
+.flband.fl-fairy{--fc:rgba(135,70,215,.95);--fg:rgba(172,112,245,.5)}     /* 동화의 방 — 연보랏빛 */
 .pmap .cell{border:0;border-right:1px solid var(--pline);border-bottom:1px solid var(--pline);border-radius:0;
   background:transparent;padding:2%;transition:background .12s,box-shadow .12s}
 .pmap .cell .cbg{display:none}
@@ -9215,6 +9257,17 @@ function turnBanner(){
   SFX.play("turn");
   setTimeout(()=>nd.remove(),1300);
 }
+/* 마력의 안개가 걷혔다 — 그 층 이름을 가운데에 한 번 (사용자 2026-10-12).
+   ⚠️ 부르는 곳은 floorReveal 하나뿐이다 — 거기가 「처음 닿은 층」을 가리는 자리라 두 번 뜰 일이 없다.
+   ⚠️ 1층은 nextField 가 run.floorsSeen 에 바로 적어서 floorReveal 을 지나지 않는다 —
+      그래서 판을 열자마자 뜨는 일이 없다 (따로 막을 것이 없었다) */
+function fogBanner(f){
+  document.querySelectorAll(".fogban").forEach(x=>x.remove());
+  const n=(typeof floorKindName==="function")?floorKindName(f):"";
+  const nd=el(`<div class="fogban">${esc(n?n+" 층":f+"층")}의 마력의 안개가 걷혔습니다</div>`);
+  document.body.appendChild(nd);
+  setTimeout(()=>nd.remove(),2400);
+}
 function veil(color){
   const v=el('<div class="veil" style="background:'+color+'"></div>');
   document.body.appendChild(v); setTimeout(()=>v.remove(),620);
@@ -13125,8 +13178,7 @@ const FDX_SUMMONER={"오염된 씨앗":"타락한 드루이드","오염된 덩�
   "굶주린 자":"악마 차원문","콜로서스의 여분팔":"콜로서스","콜로서스의 여분발":"콜로서스",
   "꼭두각시":"미치광이 인형사","모형 기사단장":"모형 창병"};
 /* 어느 조우표에도 이름이 없는 적 — 왜 안 보이는지 적어 둔다 (지우지 않는 쪽이 정직하다) */
-const FDX_GONE={"고철 거인":"지금은 나오지 않습니다 (옛 2구역 우두머리)",
-  "사슬 처형자":"지금은 나오지 않습니다 (조우표에 이름이 없습니다)"};
+const FDX_GONE={};   /* 안 서는 적 안내 — 고철 거인 · 사슬 처형자는 표에서 지웠다 (2026-10-12). 앞으로 표에 남기되 안 서는 적이 생기면 여기에 */
 function fdxCard(name){
   const D=FOE[name]||{};
   const tier=D.boss?"우두머리":D.elite?"정예":D.strong?"일반 !":"일반";
@@ -13152,7 +13204,7 @@ function fdxCard(name){
     </div></div>`;
 }
 function drawFoeDex(app){
-  const all=Object.keys(FOE).filter(n=>!FOE[n].isPhantom);
+  const all=Object.keys(FOE).filter(n=>!FOE[n].isPhantom&&!FOE[n].dexHide);   /* dexHide — 도감에서만 감춘다 (서리 군주) */
   app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">적 도 감</div>
     <div class="sub">${all.length}종 — 어디에 나오고, 무엇을 하는지. 수치는 구역 배수(1, 1.5, 2)와 성장이 붙기 전 기본값</div></div>`));
   const wrap=el(`<div class="dexwrap"></div>`);
@@ -13734,7 +13786,7 @@ const FOE={
    el:"공격",
    /* 두 턴마다 [감시] 카드를 손패에 밀어 넣고 기술 하나를 두 턴 잠근다 (foePhase 의 gimWatch)
       기술은 차례대로 바뀐다 — 찌르기 → 막기 → 두 번 찌르기 → 멀리보기 → 휘두르기 → 무르기 (사용자 2026-09-15) */
-   pas:[{k:"watchAtk",v:2,n:"멀리 보기",d:"손패의 감시 1장 당 공격력을 +2 얻습니다."},{k:"cycle",every:2,gain:"negShield",v:3,n:"정화",d:"2턴마다 부정 보호막을 3 얻습니다."}],   /* 2026-09-16: '차례대로' → 멀리 보기 (기술은 여전히 차례대로 돈다) */
+   pas:[{k:"watchAtk",v:2,n:"멀리 보기",d:"손패의 감시 1장 당 공격력을 +2 얻습니다."},{k:"cycle",every:2,gain:"negShield",v:2,n:"정화",d:"2턴마다 부정 보호막을 2 얻습니다."}],   /* 2026-09-16: '차례대로' → 멀리 보기 (기술은 여전히 차례대로 돈다) */
    ai:{open:"def",near:8,any:5,def:6,weak:3,buff:2},
    sk:[
     {n:"감시",w:1,tg:"self",open:1,giveCard:"감시",shield:4,d:"[감시] 카드 1장을 줍니다. 보호막을 4 얻습니다."},
@@ -13878,7 +13930,7 @@ const FOE={
    el:"마법",
    gim:{neg:5},
    pas:[{k:"info",n:"면역자",d:"부정 보호막을 5 얻은 채로 전투를 시작합니다."},
-        {k:"outRangeDmg",v:10,n:"감시관의 갑주",d:"적 턴이 끝날 때, 공격 범위 밖의 상대(대원과 소환물)들이 마법 피해를 {피해} 입습니다."},{k:"cycle",every:2,gain:"negShield",v:3,n:"정화",d:"2턴마다 부정 보호막을 3 얻습니다."}],
+        {k:"outRangeDmg",v:10,n:"감시관의 갑주",d:"적 턴이 끝날 때, 공격 범위 밖의 상대(대원과 소환물)들이 마법 피해를 {피해} 입습니다."},{k:"cycle",every:2,gain:"negShield",v:2,n:"정화",d:"2턴마다 부정 보호막을 2 얻습니다."}],
    sk:[
     {n:"음산한 기운",w:2,tg:"all",open:1,deb:{magDn:2,atkDn:2},shield:6,cd:2,d:"공격 범위 안 상대에게 마법약화와 공격약화를 2 부여하고 보호막을 6 얻습니다."},
     {n:"엄벌",w:4,tg:"all",dmg:8,d:"공격 범위 안 모든 상대에게 마법 피해를 8 줍니다."},
@@ -13888,7 +13940,7 @@ const FOE={
  "사슬에 묶인 마귀":{hp:50,atk:4,def:4,rng:4,exp:12,demon:1,elite:1,
    el:"공격",
    pas:[{k:"bound",n:"사슬에 묶임",d:"주변 사슬 간수를 처치하면 사슬을 풀고 각성합니다."},
-        {k:"everyTwo",v:2,n:"풀려남!",d:"(풀려난 뒤) 2턴마다 공격력을 2 얻습니다."},{k:"cycle",every:2,gain:"negShield",v:3,n:"정화",d:"2턴마다 부정 보호막을 3 얻습니다."}],
+        {k:"everyTwo",v:2,n:"풀려남!",d:"(풀려난 뒤) 2턴마다 공격력을 2 얻습니다."},{k:"cycle",every:2,gain:"negShield",v:2,n:"정화",d:"2턴마다 부정 보호막을 2 얻습니다."}],
    sk:[
     {n:"부정의 기운",w:1,tg:"near",cond:"bound",deb:{magDn:1},chase:1,d:"(묶인 동안) 가장 가까운 상대에게 마법약화를 1 부여합니다."},
     {n:"체력보존",w:4,tg:"self",cond:"bound",maxUp:2,d:"(묶인 동안) 최대 생명력을 2 얻습니다."},
@@ -13900,7 +13952,7 @@ const FOE={
  "정체 모를 주술사":{ghostMove:1,hp:40,atk:4,def:3,rng:5,exp:12,demon:1,elite:1,
    el:"마법",
    pas:[{k:"retreat",n:"물러남",d:"보호되지 않은 피해를 받은 후, 정체 모를 주술사가 1칸 뒤로 이동합니다."},
-        {k:"dist4Double",n:"죽음과 저주",d:"정체 모를 주술사와 거리가 정확히 4칸이라면 주술사가 2번 공격합니다."},{k:"cycle",every:2,gain:"negShield",v:3,n:"정화",d:"2턴마다 부정 보호막을 3 얻습니다."}],
+        {k:"dist4Double",n:"죽음과 저주",d:"정체 모를 주술사와 거리가 정확히 4칸이라면 주술사가 2번 공격합니다."},{k:"cycle",every:2,gain:"negShield",v:2,n:"정화",d:"2턴마다 부정 보호막을 2 얻습니다."}],
    sk:[
     {n:"전진",w:3,tg:"near",fwd:1,deb:{stun:2},chase:1,d:"앞으로 1칸 이동하고, 가장 가까운 상대에게 기절을 2 부여합니다."},
     {n:"전진2",w:3,tg:"all",fwd:2,dmg:8,d:"앞으로 2칸 이동하고, 공격 범위 안 모든 상대에게 마법 피해를 8 줍니다."},
@@ -14015,7 +14067,7 @@ const FOE={
  "물길군주":{hp:60,atk:5,def:6,rng:3,exp:25,elite:1,
    el:"마법",
    pas:[{k:"echo",n:"메아리",kw:"메아리",d:"죽으면 절반의 생명력으로 1회 부활합니다."},
-        {k:"echoUp",v:3,n:"울리는 메아리",d:"메아리가 발동할 때마다 마법력을 3 얻습니다."},{k:"cycle",every:2,gain:"negShield",v:3,n:"정화",d:"2턴마다 부정 보호막을 3 얻습니다."}],
+        {k:"echoUp",v:3,n:"울리는 메아리",d:"메아리가 발동할 때마다 마법력을 3 얻습니다."},{k:"cycle",every:2,gain:"negShield",v:2,n:"정화",d:"2턴마다 부정 보호막을 2 얻습니다."}],
    sk:[
     {n:"샘의 정령들",w:2,tg:"none",cd:2,summon:{n:"샘의 잔영",min:1,max:1},d:"샘의 잔영을 부릅니다. (소환물)"},
     {n:"샘의 정령들",w:2,tg:"none",cd:2,summon:{n:"메아리 정령",min:1,max:1},d:"메아리 정령을 부릅니다. (소환물)"},
@@ -14049,7 +14101,7 @@ const FOE={
    hit:"혀 채찍"},
  "타락한 드루이드":{hp:70,atk:5,def:6,rng:4,exp:25,elite:1,
    el:"마법",
-   pas:[{k:"info",n:"오염된 씨앗",d:"심은 씨앗은 2턴 뒤에 오염된 덩굴로 자랍니다. 대원 전장에 심긴 씨앗, 덩굴은 잔해처럼 자리를 차지합니다."},{k:"cycle",every:2,gain:"negShield",v:3,n:"정화",d:"2턴마다 부정 보호막을 3 얻습니다."}],
+   pas:[{k:"info",n:"오염된 씨앗",d:"심은 씨앗은 2턴 뒤에 오염된 덩굴로 자랍니다. 대원 전장에 심긴 씨앗, 덩굴은 잔해처럼 자리를 차지합니다."},{k:"cycle",every:2,gain:"negShield",v:2,n:"정화",d:"2턴마다 부정 보호막을 2 얻습니다."}],
    sk:[
     {n:"오염된 창조",w:7,tg:"none",cd:1,cond:"fewSeeds",seed:{n:2,hp:40,turns:2},d:"적과 대원 전장의 빈 칸에 체력이 40인 오염된 씨앗을 둘 심습니다."},
     {n:"양분 흡수",w:3,tg:"none",lifeDrain:6,d:"모든 대상(적과 대원 모두)에게서 체력을 6씩 가져옵니다."},
@@ -14062,7 +14114,7 @@ const FOE={
  /* ── 균열 군체 (정예 · 사용자 2026-10-01) — 직접 때리지 않는다. 디버프와 차원문. 정령숲 '균열 군체' 칸에서만 ── */
  "균열 군체":{hp:100,atk:4,def:6,rng:5,exp:30,elite:1,noMove:1,
    el:"마법",
-   pas:[{k:"shift",n:"변화",d:"균열 군체가 피해를 받을 때마다 의도가 변합니다. (차원문 생성 제외)"},{k:"cycle",every:2,gain:"negShield",v:3,n:"정화",d:"2턴마다 부정 보호막을 3 얻습니다."}],
+   pas:[{k:"shift",n:"변화",d:"균열 군체가 피해를 받을 때마다 의도가 변합니다. (차원문 생성 제외)"},{k:"cycle",every:2,gain:"negShield",v:2,n:"정화",d:"2턴마다 부정 보호막을 2 얻습니다."}],
    sk:[
     {n:"차원문 생성",w:2,tg:"none",open:1,cd:2,gate:2,d:"빈 칸에 악마 차원문을 둘 소환합니다. 잔해가 남아 있다면 대신 잔해를 다시 세웁니다."},
     {n:"오염",w:3,tg:"none",taint:15,d:"오염도를 15 올립니다."},
@@ -14234,7 +14286,7 @@ const FOE={
    hit:"삼연 베기"},
  /* 꼭두각시를 부리는 인형사. 꼭두각시는 인형사의 명령으로만 움직이고, 인형사는 꼭두각시 사이로 숨기도 한다 */
  "미치광이 인형사":{hp:110,atk:7,def:6,rng:6,exp:30,elite:1,
-   pas:[{k:"cycle",every:2,gain:"negShield",v:3,n:"정화",d:"2턴마다 부정 보호막을 3 얻습니다."}],
+   pas:[{k:"cycle",every:2,gain:"negShield",v:2,n:"정화",d:"2턴마다 부정 보호막을 2 얻습니다."}],
    el:"마법",
    sk:[
     {n:"꼭두각시 소환",w:9,tg:"none",summon:{n:"꼭두각시",min:2,max:2},cond:"noPuppet",must:1,d:"꼭두각시를 2마리 소환합니다. (꼭두각시가 없을 때만) (소환물)"},
@@ -14251,7 +14303,7 @@ const FOE={
  "마나 정제로":{hp:130,atk:5,def:4,rng:9,exp:30,elite:1,
    el:"마법",
    pas:[{k:"flow",n:"마나 흐름 정제소",d:"적 턴이 끝날 때, 대원과 소환물이 서 있는 칸에 따라 약화를 부여합니다. 1칸: 마법약화 1 / 2칸: 공격약화 1 / 3칸: 마법약화 1 / 4칸: 공격약화 1 / 5칸: 보호약화 1"},
-        {k:"heat",v:12,n:"과열",d:"피해를 12번 받으면 과열 상태가 됩니다."},{k:"cycle",every:2,gain:"negShield",v:3,n:"정화",d:"2턴마다 부정 보호막을 3 얻습니다."}],
+        {k:"heat",v:12,n:"과열",d:"피해를 12번 받으면 과열 상태가 됩니다."},{k:"cycle",every:2,gain:"negShield",v:2,n:"정화",d:"2턴마다 부정 보호막을 2 얻습니다."}],
    sk:[
     {n:"마나 폭발",w:5,tg:"all",anyRng:1,dmg:10,heatDmg:30,d:"모든 상대에게 마법 피해를 10 줍니다. 과열 상태라면 마법 피해 30."},
     {n:"냉각수 유출",w:4,tg:"all",anyRng:1,deb:{chill:3},heatDeb:{burn:6},d:"모든 상대에게 냉각을 3 부여합니다. 과열 상태라면 화상도 6 부여합니다."},
@@ -14264,7 +14316,7 @@ const FOE={
  "누군가의 기억":{hp:100,atk:6,def:6,rng:9,exp:30,elite:1,
    el:"마법",
    pas:[{k:"memory",n:"떠오르는 기억",d:"행동할 때마다 기억 중첩을 얻습니다. 3번 중첩되면 다음 행동이 강화됩니다. (강화된 행동을 하면 중첩이 사라집니다)"},
-        {k:"lastWill",v:10,n:"최후의 의지",d:"전투당 1회, 체력이 30% 이하가 되면 모든 상대에게 보호막을 10 부여합니다."},{k:"cycle",every:2,gain:"negShield",v:3,n:"정화",d:"2턴마다 부정 보호막을 3 얻습니다."}],
+        {k:"lastWill",v:10,n:"최후의 의지",d:"전투당 1회, 체력이 30% 이하가 되면 모든 상대에게 보호막을 10 부여합니다."},{k:"cycle",every:2,gain:"negShield",v:2,n:"정화",d:"2턴마다 부정 보호막을 2 얻습니다."}],
    sk:[
     {n:"흐려진 의지",w:4,tg:"none",dimNext:5,empBuff:5,d:"다음 턴 동안 모든 상대의 추가 능력치를 5 감소시킵니다. 강화된 상태라면 마법력을 5 얻습니다."},
     {n:"흐릿한 족쇄",w:5,tg:"near",dmg:10,deb:{bind:1},empDeb:{stun:1},chase:1,d:"가장 앞 상대에게 마법 피해를 10 주고 속박시킵니다. 강화된 상태라면 대신 기절시킵니다."},
@@ -14285,7 +14337,7 @@ const FOE={
  "모형 창병":{hp:70,atk:6,def:7,rng:5,exp:9,
    el:"공격",
    grp:"모형 병사",
-   pas:[{k:"promote",turns:3,to:"모형 기사단장",heal:0.5,n:"진급",d:"3턴 후에 체력을 50% 회복하고 모형 기사단장으로 진급합니다. (버프와 디버프는 모두 풀리고 체력만 이어집니다)"}],
+   pas:[{k:"promote",turns:3,to:"모형 기사단장",heal:0.5,n:"진급",d:"3턴 후에 체력을 50% 회복하고 모형 기사단장으로 진급합니다."}],
    sk:[
     {n:"창 찌르기",w:6,tg:"any",dmg:6,chase:1,d:"무작위 상대에게 공격 피해를 6 줍니다."},
     {n:"방패 들기",w:3,tg:"self",shield:6,d:"보호막을 6 얻습니다."},
@@ -14470,12 +14522,8 @@ const FOE={
     {n:"강화",w:2,tg:"self",buff:2,d:"추가 공격력을 2 얻습니다."},
     {n:"발묶기",w:2,tg:"near",deb:{bind:1},d:"가장 가까운 상대에게 속박을 1 부여합니다."}],
    hit:"때리기"},
- "고철 거인":  {hp:70,atk:10,def:14,rng:3,exp:12,boss:1,
-   el:"공격",
-   gim:{taunt:1,neg:2},
-   ai:{open:"near",near:8,volley:6,buff:4,twin:3,def:2,weak:2,back:2,any:2,debs:["stun","atkDn"]},
-   hit:"고철 주먹"},
- "서리 군주":  {hp:95,atk:11,def:14,rng:5,exp:18,boss:1,demon:1,
+ /* 고철 거인 — 적으로는 지웠다 (사용자 2026-10-12: 옛 2구역 우두머리, 콜로서스로 바뀐 뒤 어디에도 안 섰다). 그림 표 · 대사는 그대로 둔다 (얼음 정령과 같은 꼴) */
+ "서리 군주":  {hp:95,atk:11,def:14,rng:5,exp:18,boss:1,demon:1,dexHide:1,   /* 도감에서만 감춘다 (사용자 2026-10-12) — 지금 3구역 우두머리(BOSSES)라 표에서는 못 뺀다. 탑의 주인이 3구역 우두머리를 대신하는 때에 표에서 뺀다 */
    el:"마법",
    gim:{neg:3},
    ai:{open:"def",volley:6,near:6,weak:5,back:4,thorn:2,buff:2,any:2,def:1,ret:0.2,debs:["chill","fear","atkDn"]},
@@ -14594,10 +14642,10 @@ const ENCOUNTER=[
   {n:"책과 벌레", w:8, foes:["책벌레", "책벌레", "떠드는 마도서"], back:["떠드는 마도서"], min:2},   /* 마도서는 뒤에서 읊는다 */
   {n:"서고", w:5, foes:["장부쟁이", "떠드는 마도서"], back:["떠드는 마도서"], min:1},   /* 기술을 잠그고 되감아 읊는다 */
   {n:"장부와 갑옷", w:4, foes:["근위병의 갑옷", "장부쟁이"], min:1},
-  {n:"결정과 시종", w:3, foes:["마나 결정체", "시종"], min:2},   /* 결정체는 절반에서 모두를 기절시킨다 */
-  {n:"결정 광산", w:6, foes:["마나 결정체", "책벌레", "책벌레"], r:[2, 3], min:2},
-  {n:"시간의 서", w:5, foes:["흘러나온 시간", "근위병의 갑옷"], min:1},   /* 시간이 갑옷을 되감는다 */
-  {n:"모래시계", w:6, foes:["흘러나온 시간", "떠드는 마도서"], min:1},
+  {n:"결정 하나", w:4, foes:["마나 결정체"], min:1},   /* 결정체는 절반에서 모두를 기절시킨다 (옛 「결정과 시종」 — 시종은 서재 적이라 뺐다, 2026-10-12) */
+  {n:"결정 광산", w:6, foes:["마나 결정체", "마나 결정체", "결정에 갇힌 잔영"], r:[2, 3], min:2},   /* 책벌레 둘은 서재 적이라 결정체와 잔영으로 바꿨다 (2026-10-12) */
+  {n:"시간의 서", w:5, foes:["흘러나온 시간", "마나 결정체"], min:1},   /* 시간이 결정을 되감는다 (근위병의 갑옷은 서재 적이라 바꿨다) */
+  {n:"모래시계", w:6, foes:["흘러나온 시간", "결정에 갇힌 잔영"], min:1},   /* 떠드는 마도서는 서재 적이라 잔영으로 바꿨다 */
   {n:"시간 둘", w:4, foes:["흘러나온 시간", "흘러나온 시간"], r:[2, 3], min:2},   /* 서로 되감는다 */
   {n:"모형 선봉", w:6, foes:["모형 창병", "모형 궁수"], back:["모형 궁수"], min:1},
   {n:"기병 돌격", w:5, foes:["모형 창병", "모형 기병"], min:1},   /* 질주 한 턴 뒤 짓밟기 15 */
@@ -14606,12 +14654,16 @@ const ENCOUNTER=[
   {n:"잔영과 시종", w:8, foes:["결정에 갇힌 잔영", "시종"], min:1},
   {n:"갇힌 둘", w:5, foes:["결정에 갇힌 잔영", "결정에 갇힌 잔영"], min:1},   /* 메아리를 나눠 주고, 죽으면 샘의 잔영이 풀려난다 */
   {n:"갇힌 결정", w:5, foes:["결정에 갇힌 잔영", "마나 결정체"], r:[2, 3], min:2},
-  {n:"문지기와 시종", w:4, foes:["시평선의 문지기", "시종"], r:[2, 3], min:2},   /* 체력 100 고정 · 갑피 5 */
-  {n:"문 앞의 책", w:4, foes:["시평선의 문지기", "떠드는 마도서", "책벌레"], back:["떠드는 마도서"], r:[2, 3], min:3},
-  {n:"문지기와 모형", w:3, foes:["시평선의 문지기", "모형 창병", "모형 궁수"], back:["모형 궁수"], r:[3], min:3},   /* 3라운드 전용 */
+  {n:"문지기와 잔영", w:5, foes:["시평선의 문지기", "결정에 갇힌 잔영"], r:[2, 3], min:2},   /* 체력 100 고정 · 갑피 5 (옛 「문지기와 시종」 — 톱니 용광로 적으로 맞췄다, 2026-10-12) */
+  {n:"문 앞의 갇힌 둘", w:4, foes:["시평선의 문지기", "결정에 갇힌 잔영", "결정에 갇힌 잔영"], r:[2, 3], min:3},   /* 옛 「문 앞의 책」 */
+  {n:"문지기 홀로", w:4, foes:["시평선의 문지기"], r:[2, 3], min:1},   /* 옛 「문지기와 모형」 — 문지기만 선다 */
+  {n:"갇힌 셋", w:3, foes:["결정에 갇힌 잔영", "결정에 갇힌 잔영", "결정에 갇힌 잔영"], min:2},   /* 톱니 용광로 — 잔영 셋 (2026-10-12) */
+  {n:"잔영 한둘", w:4, foes:["결정에 갇힌 잔영"], vary:{"결정에 갇힌 잔영": [1, 2]}, r:[1], min:1},   /* 톱니 용광로 첫 라운드 — 한두 마리 (2026-10-12) */
   {n:"서고 한 켠", w:9, foes:["시종", "책벌레", "책벌레"], vary:{"책벌레": [1, 3]}, min:1},   /* 임시안 — 쉬운 판을 늘렸다 */
   {n:"잔영과 책", w:7, foes:["결정에 갇힌 잔영", "책벌레", "책벌레"], vary:{"책벌레": [1, 2]}, min:1},
   {n:"탑의 파티", w:6, foes:["시종", "떠드는 마도서", "책벌레", "장부쟁이", "근위병의 갑옷"], rnd:1, pick:[2, 4], min:1},   /* 배치 무작위, 5종 중 2~4종 */
+  {n:"모형 궁수대", w:5, foes:["모형 궁수", "모형 궁정 마법사"], back:["모형 궁수", "모형 궁정 마법사"], min:1},   /* 동화의 방 — 뒤에서만 쏜다 (2026-10-12) */
+  {n:"기병 둘", w:4, foes:["모형 기병", "모형 기병"], r:[2, 3], min:2},   /* 동화의 방 (2026-10-12) */
  ]
 ];
 /* ── 여러 라운드 전투의 짜여진 구성 (ppt 15장) — 라운드마다 무작위로 고르는 대신 이 차례대로. 구역마다. rnd 면 차례를 섞는다.
@@ -14684,9 +14736,11 @@ const ENC_SEQ=[
   /* ── 3구역 · 마력의 탑 (임시안 2026-10-08) ── */
   {n:"서고의 소동",rounds:["책벌레 떼", "서고"]},
   {n:"모형 연병장",rounds:["모형 선봉", "모형 행렬"]},
-  {n:"시간의 회랑",rounds:["시간의 서", "모래시계", "문지기와 시종"]},
+  {n:"시간의 회랑",rounds:["잔영 한둘", "갇힌 둘", "문지기와 잔영"]},   /* 톱니 용광로 — 라운드가 바뀌며 늘어난다 (2026-10-12) */
+  {n:"톱니의 문",rounds:["잔영 한둘", "문지기와 잔영"]},   /* 톱니 용광로 2라운드 (2026-10-12) */
+  {n:"시간의 모래",rounds:["모래시계", "시간 둘"]},   /* 마나 제련소 2라운드 (2026-10-12) */
   {n:"모형의 행진",rounds:["모형 선봉", "기병 돌격", "모형 군단"]},
-  {n:"결정의 방",rounds:["잔영과 시종", "갇힌 결정", "결정 광산"]},
+  {n:"결정의 방",rounds:["결정 하나", "갇힌 결정", "결정 광산"]},   /* 마나 제련소 (옛 「잔영과 시종」을 「결정 하나」로 — 시종은 서재 적, 2026-10-12) */
  ]
 ];
 /* ── 정예 전투 조합 (ppt '핏빛 감옥. 정예 전투', 사용자 2026-09-16) — 정예 칸은 이것만. 칸은 그림 자리(1이 맨 앞) ── */
@@ -14843,9 +14897,7 @@ function roleOf(f,group){
    1구역 적이 3구역에 다시 나올 때. 수치만 올리면 똑같은 짓을 더 아프게 할 뿐이라,
    이름을 갈고 **행동을 하나 더** 준다. 조우표에 변종 이름을 그대로 적어 쓴다. */
 const VARIANT={
- "사슬 처형자":{of:"사슬 광인", hpX:1.7, atkX:1.35,
-   ai:{combo:12,buff:8,volley:5,weak:4,near:2,thorn:2,def:1},
-   d:"사슬을 여럿 휘감아 한꺼번에 후려친다"},
+ /* 사슬 처형자 — 적으로는 지웠다 (사용자 2026-10-12: 조우표에 이름이 없어 어디에도 안 섰다) */
 };
 /* 변종을 FOE 에 풀어 넣는다 — 밑동을 베끼고 적은 것만 덮어쓴다 */
 Object.keys(VARIANT).forEach(nm=>{
@@ -15631,6 +15683,7 @@ function floorReveal(f){
   for(let r=0;r<S;r++) if(towerFloor(r)===f) for(let c=0;c<S;c++) if(run.grid[r][c].t!=="boss") keys.push(r+"-"+c);
   run.floorsSeen=Object.assign({1:1},run.floorsSeen||{}); run.floorsSeen[f]=1;
   try{ mapGone("fog",keys) }catch(e){}
+  try{ fogBanner(f) }catch(e){}   /* 화면이 없는 자리(sim)에서는 조용히 넘어간다 */
 }
 const TOWER_STOP={lockdoor:1,stair:1,hole:1,bookcase:1,tome_shelf:1};   /* 지나는 길에 못 낀다 — 길찾기는 이 칸을 목적지로만 쓴다 */
 /* 계단 위 · 아래 칸에는 전투가 없다 */
@@ -17547,6 +17600,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 43, "v": "0.7", "d": "2026-10-12", "t": "탑 층 테두리와 안개 걷힘 글 · 3구역 상점 값 · 전용 보상 0.85 · 탑 층별 적 · 도감 셋 · 누군가의 기억 이펙트 · 글 다듬기", "big": 0},
  {"b": 42, "v": "0.7", "d": "2026-10-12", "t": "금단의 고서 40% · 정화 열 마리 · 상급 보상만큼 적 강화 · 종탑 조여 오는 힘", "big": 0},
  {"b": 41, "v": "0.7", "d": "2026-10-12", "t": "수치·장신구·글 묶음 — 승리의 일격 너프 · 장신구 셋 괄호 수치 · 금단의 고서 · 적 의도 군더더기 · 종탑 3구역 배율 · 쉼터", "big": 0},
  {"b": 40, "v": "0.7", "d": "2026-10-12", "t": "경비견 상시 도발 · 메아리 정령 의도 · 기록 정정 잠금 · 지도에서 퀘스트 완료창", "big": 0},
@@ -18781,7 +18835,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=42;
+const BUILD_NO=43;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -20328,6 +20382,15 @@ function mapGridEl(peek){
       if(L.r===r&&L.c===c&&now-L.t<450){ MAP_CLK={t:0,r:-1,c:-1}; mapGo(r,c) } else { MAP_CLK={t:now,r:r,c:c}; mapSelect(r,c) } };
     g.appendChild(d);
   }
+  /* 마력의 탑 — 걷힌 층마다 그 층을 통째로 두르는 테두리 하나 (사용자 2026-10-12).
+     칸마다 붙이지 않는다 — 칸과 칸 사이에서 끊겨 점선으로 보인다. 층을 셈하는 곳은 towerFloor 하나다 */
+  if(!peek&&towerOn()){
+    const band={};
+    for(let r=0;r<S;r++){ const f=towerFloor(r); if(f&&floorSeen(f)) (band[f]=band[f]||[]).push(r) }
+    Object.keys(band).forEach(f=>{ const k=floorKind(+f); if(!k) return;
+      const rs=band[f], b=el(`<i class="flband fl-${k}"></i>`);
+      b.style.setProperty("--n",S); b.style.setProperty("--r1",rs[0]); b.style.setProperty("--r2",rs[rs.length-1]);
+      g.appendChild(b) }) }
   if(!peek){ const pl=mapRoutePlate(); if(pl) g.appendChild(pl) }
   if(goneSnd) setTimeout(()=>{ if(view==="map"&&sfxHas("건물 파괴")) SFX.play("건물 파괴") },380);   /* 잔해가 무너지는 녹음 */
   if(wagonSnd) setTimeout(()=>{ const k=sfxOr("죄수 호송 마차",sfxOr("마차 이동",null));   /* 받은 녹음 이름이 「죄수 호송 마차」다 (78) */
@@ -20547,7 +20610,7 @@ function mapInspector(at){
     if(kind==="fog") N.push([inkArt("fog")||"","가려짐",(towerOn()?"마력의 안개 — 그 층에 닿으면 걷힙니다":`안개 지대 — ${run.fog?Math.max(0,run.fog.until-run.day)+"일 뒤 걷힙니다":"곧 걷힙니다"}`)]);
     if(nestNear(r,c)&&kind!=="nest") N.push([inkArt("nest")||"","반딧불 둘레","반딧불 둥지 둘레 — 밤에도 습격이 일어나지 않습니다"]);
     else if(run.night&&kind==="empty"&&!here) N.push(["","밤길",`밤 — 빈 칸에서 습격당할 확률 ${Math.round(ambushChance({t:"empty"})*100)}%`]);
-    if(cell.visited) N.push(["","다시 들를 수 있음","들렀던 곳 — 떠나기 전에는 다시 들어갈 수 있습니다"]);
+    if(cell.visited) N.push(["","다시 방문 가능","들렀던 곳 — 떠나기 전에는 다시 들어갈 수 있습니다"]);
     if(N.length) b.appendChild(el(`<div class="misec"><div class="mil">특이사항</div><div class="min">${N.map(([ic2,t,d])=>`<span class="kw mino" data-kw="${esc(t)}" data-tip="${esc(d)}"><i>${ic2}</i>${esc(t)}</span>`).join("")}</div></div>`)); }
   /* 주둔지 — 시설을 판 안에 */
   if(kind==="camp"&&here&&run.restRes){   /* 쉼터 회복 결과 — 주둔지 판 안에. 「계속」 을 누르면 시설로 돌아온다 (사용자 2026-10-04: 판이 비어 주둔지를 못 썼다) */
@@ -22303,9 +22366,9 @@ function startDungeon(cell,r,c){
   if(cell.t==="ambush"&&!run.night){ const n=Math.min(3,Math.max(2,run.heroes.length)); run.dun.forceFoes=[]; for(let i=0;i<n;i++) run.dun.forceFoes.push(["감옥 경비병",i+1]) }   /* 낮 습격 = 간수 초소·순찰로의 경비병 */
   /* 여러 라운드 전투 — 절반은 짜여진 구성(ENC_SEQ), 절반은 라운드마다 무작위 (ppt 1장) */
   if(cell.seq){ run.dun.seq=cell.seq.slice(); run.dun.seqName=cell.seqName }   /* 칸을 놓을 때 정해 둔 구성 (encRoll) */
-  else if(!cell.enc){ const f=Math.min(run.field,2), cands=(ENC_SEQ[f]||[]).filter(q=>q.rounds.length===run.dun.waves);
+  else if(!cell.enc){ const f=Math.min(run.field,2), cands=(ENC_SEQ[f]||[]).filter(q=>q.rounds.length===run.dun.waves&&floorFit(encFoesOf(f,q),towerKindAtRow(r)));   /* 탑 — 그 층에 맞는 묶음만 (없으면 라운드마다 고른다) */
     if(run.dun.waves>1&&cands.length&&Math.random()<0.5&&(cell.t==="dungeon"||cell.t==="elite")){
-      const fk3=towerKindAtRow(r), q=fk3?wpick(cands,q=>themeMul(encTheme(encFoesOf(f,q)),fk3)):rnd(cands); run.dun.seq=q.rnd?q.rounds.slice().sort(()=>Math.random()-0.5):q.rounds.slice(); run.dun.seqName=q.n } }
+      const q=rnd(cands); run.dun.seq=q.rnd?q.rounds.slice().sort(()=>Math.random()-0.5):q.rounds.slice(); run.dun.seqName=q.n } }
   if(cell.force) run.dun.forceFoes=cell.force.map(x=>x.slice());   /* 정해진 상대 (미믹 · 시련의 문, 2026-10-05) */
   if(cell.winItem) run.dun.winItem=cell.winItem;                    /* 이기면 이 장신구 */
   if(cell.trial) run.dun.trial=cell.trial;                          /* 시련의 문 몇 단 */
@@ -22888,18 +22951,18 @@ function giveExp(exp,pool,each){
 
 /* ═══════════ 상점 ═══════════ */
 const SHOP_STOCK=[
- {n:"빵",              d:"아군 대상의 체력을 2 회복시키는 카드",           p:[1,2],  q:[1,4], k:"card", card:"빵"},
- {n:"소형 방패",        d:"아군 대원에게 보호막을 5 부여하는 카드",         p:[2,3],  q:[1,3], k:"card", card:"소형 방패"},
+ {n:"빵",              d:"아군 대상의 체력을 2 회복시키는 카드",           p:[1,2],  q:[1,4], k:"card", card:"빵", s3p:[3,5]},   /* 3구역 값 올림 (사용자 2026-10-12) */
+ {n:"소형 방패",        d:"아군 대원에게 보호막을 5 부여하는 카드",         p:[2,3],  q:[1,3], k:"card", card:"소형 방패", s3p:[5,8]},   /* 3구역 값 올림 (사용자 2026-10-12) */
  {n:"불덩이",           d:"대상 적에게 피해를 6 주는 카드",                p:[2,3],  q:[1,3], k:"card", card:"불덩이",
                         s2p:[2,4], s3p:[3,5], s3q:[2,4]},   /* 값 낮춤 (사용자 2026-10-05) */
- {n:"제련석",           d:"장신구을 제련할 때 씁니다.",                    p:[2,6],  q:[3,8], k:"stone"},
+ {n:"제련석",           d:"장신구을 제련할 때 씁니다.",                    p:[2,6],  q:[3,8], k:"stone", s2p:[4,8], s3p:[9,15], s3q:[2,5]},   /* 3구역 값 올림 (사용자 2026-10-12) */
  {n:"튼튼한 부츠",      d:"활동량을 1 얻습니다.",                          p:[2,4],  q:[1,2], k:"act"},   /* 활동량 3→1 · 값 3~6→2~4 (사용자 2026-10-08) */
- {n:"라이티늄 부적",    d:"오염도를 20 낮춥니다.",                         p:[4,8],  q:[1,2], k:"taint"},
- {n:"무작위 파편 장신구",d:"어떤 파편이 나올지는 열어봐야 압니다.",         p:[8,16], q:[1,1], k:"shard", s3q:[1,3]},
- {n:"무작위 하급 보상", d:"하급 보상 하나를 고릅니다.",                    p:[15,25],q:[1,1], k:"하급", s2q:[1,3], s3q:[1,5]},
- {n:"무작위 중급 보상", d:"중급 보상 하나를 고릅니다.",                    p:[25,40],q:[1,1], k:"중급", s3q:[1,3]},
- {n:"무작위 상급 보상", d:"상급 보상 하나를 고릅니다.",                    p:[80,120],q:[1,1],k:"상급", stage:1},
- {n:"무작위 일반 장신구",d:"어떤 일반 장신구이 나올지는 열어봐야 압니다.",  p:[25,40],q:[1,1], k:"normal", stage:2},
+ {n:"라이티늄 부적",    d:"오염도를 20 낮춥니다.",                         p:[4,8],  q:[1,2], k:"taint", s3p:[10,16]},   /* 3구역 값 올림 (사용자 2026-10-12) */
+ {n:"무작위 파편 장신구",d:"어떤 파편이 나올지는 열어봐야 압니다.",         p:[8,16], q:[1,1], k:"shard", s3q:[1,3], s3p:[16,28]},   /* 3구역 값 올림 (사용자 2026-10-12) */
+ {n:"무작위 하급 보상", d:"하급 보상 하나를 고릅니다.",                    p:[15,25],q:[1,1], k:"하급", s2q:[1,3], s3q:[1,5], s3p:[28,42]},   /* 3구역 값 올림 (사용자 2026-10-12) */
+ {n:"무작위 중급 보상", d:"중급 보상 하나를 고릅니다.",                    p:[25,40],q:[1,1], k:"중급", s3q:[1,3], s3p:[45,70]},   /* 3구역 값 올림 (사용자 2026-10-12) */
+ {n:"무작위 상급 보상", d:"상급 보상 하나를 고릅니다.",                    p:[80,120],q:[1,1],k:"상급", stage:1, s3p:[120,170]},   /* 3구역 값 올림 (사용자 2026-10-12) */
+ {n:"무작위 일반 장신구",d:"어떤 일반 장신구이 나올지는 열어봐야 압니다.",  p:[45,70],q:[1,1], k:"normal", stage:2},   /* 25~40 이었다 — 3구역 전용 (사용자 2026-10-12) */
  {n:"위장 망토",        d:"밤의 습격 전투에서 도망치는 카드",               p:[3,5],  q:[1,1], k:"card", card:"위장 망토",
                         s2q:[1,3], upto:1},
  {n:"귀환서",           d:"전투에서 벗어나 주둔지로 즉시 복귀하는 카드",    p:[8,12], q:[1,1], k:"card", card:"귀환서",
@@ -22918,9 +22981,9 @@ function makeShop(){
   if(run.shopKind==="weapon") pool=pool.filter(g=>["shard","normal","stone"].indexOf(g.k)>=0);
   /* 특정 파편 장신구 : 무엇인지 보이는 대신 조금 비싸다 */
   const named=rnd(ITEMS.filter(i=>i.g==="파편"));
-  pool.push({n:named.n,d:named.d,p:[10,20],q:[1,st>=2?3:1],k:"named",item:named});
+  pool.push({n:named.n,d:named.d,p:st>=2?[18,30]:[10,20],q:[1,st>=2?3:1],k:"named",item:named});   /* 3구역 값 올림 (사용자 2026-10-12) */
   if(st>=2){ const nm2=rnd(ITEMS.filter(i=>i.g==="일반"));
-    pool.push({n:nm2.n,d:nm2.d,p:[35,55],q:[1,1],k:"named2",item:nm2}); }
+    pool.push({n:nm2.n,d:nm2.d,p:st>=2?[60,90]:[35,55],q:[1,1],k:"named2",item:nm2}); }   /* 3구역 값 올림 (사용자 2026-10-12) */
   const goods=[], n=4+Math.floor(Math.random()*5);
   while(goods.length<n&&pool.length){
     const g=pool.splice(Math.floor(Math.random()*pool.length),1)[0];
@@ -23646,7 +23709,7 @@ const EVENTS=[
  {n:"격동하는 제련소",art:"ink_tw_mana_pillar", face:"마나 결정체", w:0.35,
   when:()=>typeof towerOn==="function"&&towerOn()&&curFloor()>0,
   t:"주변 바닥이 갈라지며, 마나 제련소가 폭주하고 있습니다.",
-  o:[{t:"제련소 폭발",d:"천장과 계단을 뺀 이 탑의 구역들이 무작위로 다시 배치됩니다.",
+  o:[{t:"제련소 폭발",d:"천장과 계단을 제외한 이 탑의 구역들이 무작위로 다시 배치됩니다.",
       f:()=>{ const n=forgeQuake(); SFX.play("danger");
         return n?`바닥이 뒤집히고 벽이 자리를 바꿉니다. 구역 ${n}곳이 다시 놓였습니다.`
                 :"굉음만 울릴 뿐, 자리를 바꿀 구역이 없었습니다." }},
@@ -24892,7 +24955,20 @@ const FOE_THEME={"책벌레":"library","떠드는 마도서":"library","장부�
   "마나 결정체":"mana","결정에 갇힌 잔영":"mana",
   "흘러나온 시간":"gears","시평선의 문지기":"gears","근위병의 갑옷":"gears",
   "모형 창병":"fairy","모형 기병":"fairy","모형 궁수":"fairy","모형 궁정 마법사":"fairy","모형 전략가":"fairy"};
-const THEME_W={on:3, off:0.3};
+const THEME_W={on:3, off:0.3};   /* ⚠️ 2026-10-12 부터 뽑는 데 안 쓴다 — 아래 FLOOR_FOES 가 못박는다. 도감 · 점검이 결을 물을 때만 남겨 둔다 */
+/* ═══ 층 종류마다 나올 수 있는 적 (사용자 2026-10-12 — 못박았다) ═══
+   조합에 이 목록 밖의 적이 하나라도 끼면 그 층에는 못 선다. 층 조합이 모자라 비면 그때만 전부 허용으로 풀린다(빈 판은 없다).
+   · 결정에 갇힌 잔영은 서재 · 마나 제련소 · 톱니 용광로 셋에 선다. 균열 공작은 정예로만 둔다(일반 조합에 넣지 않는다).
+   · 모형 기사단장은 조합에 직접 서지 않는다(모형 창병의 진급 · 열병식) — 동화의 방 목록에는 적어 둔다 */
+const FLOOR_FOES={
+  library:["시종","근위병의 갑옷","떠드는 마도서","책벌레","장부쟁이","결정에 갇힌 잔영","누군가의 기억"],
+  mana:["마나 결정체","흘러나온 시간","결정에 갇힌 잔영","마나 정제로"],
+  gears:["시평선의 문지기","결정에 갇힌 잔영","균열 공작"],
+  fairy:["모형 창병","모형 기병","모형 궁수","모형 궁정 마법사","모형 전략가","모형 기사단장","미치광이 인형사"]
+};
+function floorFit(foes,fk){ if(!fk||!FLOOR_FOES[fk]) return true; return (foes||[]).every(n=>FLOOR_FOES[fk].indexOf(n)>=0) }
+/* 층에 맞는 것만 남긴다 — 하나도 안 남으면 거르지 않는다 */
+function floorList(L,foesOf,fk){ if(!fk) return L; const A=L.filter(e=>floorFit(foesOf(e),fk)); return A.length?A:L }
 function encTheme(foes){
   const c={}; (foes||[]).forEach(nm=>{ const t=FOE_THEME[nm]; if(t) c[t]=(c[t]||0)+1 });
   let best=null; Object.keys(c).forEach(t=>{ if(!best||c[t]>c[best]) best=t }); return best;
@@ -24914,11 +24990,10 @@ function towerKindAtRow(r){ return (typeof towerOn==="function"&&towerOn())?floo
 function encRoll(kind,fi,waves,fk){
   const f=Math.min(fi||0,2), n=(run&&run.heroes&&run.heroes.length)||1;
   let enc=null, seq=null, seqName=null;
-  const wf=e=>(e.w||1)*themeMul(encTheme(encFoesOf(f,e)),fk);
-  if(kind==="elite"&&(ELITE_ENC[f]||[]).length){ const L=ELITE_ENC[f].filter(e=>(e.min||1)<=n&&!e.gim); enc=wpick(L.length?L:ELITE_ENC[f].filter(e=>!e.gim),e=>themeMul(encTheme(e.foes),fk)) }   /* gim — 기믹 구역 전용 (2026-09-30) */
+  if(kind==="elite"&&(ELITE_ENC[f]||[]).length){ const L=ELITE_ENC[f].filter(e=>(e.min||1)<=n&&!e.gim); enc=rnd(floorList(L.length?L:ELITE_ENC[f].filter(e=>!e.gim),e=>e.foes,fk)) }   /* gim — 기믹 구역 전용 (2026-09-30) */
   else {
-    const cands=(ENC_SEQ[f]||[]).filter(q=>q.rounds.length===(waves||1));
-    if((waves||1)>1&&cands.length&&Math.random()<0.5){ const q=wpick(cands,q=>themeMul(encTheme(encFoesOf(f,q)),fk)); seq=q.rnd?q.rounds.slice().sort(()=>Math.random()-0.5):q.rounds.slice(); seqName=q.n; enc=encByName(f,seq[0]) }
+    const cands=(ENC_SEQ[f]||[]).filter(q=>q.rounds.length===(waves||1)&&floorFit(encFoesOf(f,q),fk));   /* 탑 — 그 층에 맞는 묶음만 */
+    if((waves||1)>1&&cands.length&&Math.random()<0.5){ const q=rnd(cands); seq=q.rnd?q.rounds.slice().sort(()=>Math.random()-0.5):q.rounds.slice(); seqName=q.n; enc=encByName(f,seq[0]) }
     if(!enc) enc=pickEncounter(f,n,1,fk);
   }
   const foes=enc?(enc.foes||[]).filter(x=>FOE[x]):[];
@@ -24929,11 +25004,12 @@ function encRoll(kind,fi,waves,fk){
 function pickEncounter(f,n,round,fk){
   const rd=Math.max(1,Math.min(3,round||1));
   const ok=e=>(e.min||1)<=n && (!e.r||e.r.indexOf(rd)>=0);
-  let list=(ENCOUNTER[f]||[]).filter(ok);
+  const all=floorList(ENCOUNTER[f]||[],e=>e.foes,fk);   /* 탑 — 그 층에 나올 수 있는 적만 (FLOOR_FOES). 라운드 조건을 풀어도 층은 안 푼다 */
+  let list=all.filter(ok);
   /* 그 라운드에 맞는 것이 없으면 라운드 조건을 풀어 준다 — 빈 판은 없어야 한다 */
-  if(!list.length) list=(ENCOUNTER[f]||[]).filter(e=>(e.min||1)<=n);
+  if(!list.length) list=all.filter(e=>(e.min||1)<=n);
   if(!list.length) return null;
-  if(fk) return wpick(list,e=>(e.w||1)*themeMul(encTheme(e.foes),fk));   /* 탑 — 그 층 종류의 결로 */
+  if(fk) return wpick(list,e=>e.w||1);
   const pool=[];
   list.forEach(e=>{ for(let q=0;q<(e.w||1);q++) pool.push(e) });
   return rnd(pool);
@@ -24969,7 +25045,7 @@ function foeSet0(kind){
     const pre=run.dun&&run.dun.wave===1&&run.dun.cell&&run.dun.cell.enc&&ELITE_ENC[f].find(e=>e.n===run.dun.cell.enc);   /* 미리 정한 조합 — 힌트가 참이게 */
     const L2=ELITE_ENC[f].filter(e=>(e.min||1)<=n&&!e.gim);   /* gim — 기믹 구역 전용은 미리 정했을 때만 (2026-09-30) */
     const fk2=(run.dun&&run.dun.r!=null)?towerKindAtRow(run.dun.r):null;
-    const enc2=pre||(fk2?wpick(L2.length?L2:ELITE_ENC[f].filter(e=>!e.gim),e=>themeMul(encTheme(e.foes),fk2)):rnd(L2.length?L2:ELITE_ENC[f].filter(e=>!e.gim))); B_ENC=enc2.n;
+    const enc2=pre||(fk2?rnd(floorList(L2.length?L2:ELITE_ENC[f].filter(e=>!e.gim),e=>e.foes,fk2)):rnd(L2.length?L2:ELITE_ENC[f].filter(e=>!e.gim))); B_ENC=enc2.n;
     encLayout(enc2).forEach(x=>out.push(x)); return out;
   }
   if(run.dun&&run.dun.seq){ enc=encByName(f,run.dun.seq[((run.dun.wave||1)-1)%run.dun.seq.length]) }   /* 짜여진 구성 */
@@ -25775,7 +25851,6 @@ function canAim(a){ return !tauntWall(a) }
    그래서 몸에 걸린 것을 떨쳐내는 패턴을 여럿 가지고 있다. */
 const BOSS_PURGE={
  "간수장":   {shake:"사슬 끊기",    roar:"간수의 호통", ward:"쇠창살 두르기"},
- "고철 거인":{shake:"부품 털어내기", roar:"과부하 포효", ward:"고철 갑주"},
  "서리 군주":{shake:"서릿결 정화",  roar:"혹한의 노호", ward:"서리 결계"}
 };
 const PURGE_DEF={shake:"떨쳐내기",roar:"포효",ward:"결계"};
@@ -25803,7 +25878,7 @@ function foePurge(f){
 const FOE_RACE={
  /* 핏빛 감옥 */
  "작은 죄수":"악마","사슬 광인":"악마","억울한 죄수":"인간",   /* 작은 죄수·사슬 광인 악마 (사용자 2026-09-30) */"감옥 경비병":"인간","사슬 간수":"인간","고문 기술자":"인간",
- "대포병":"인간","첨탑 관리자":"인간","간수장":"골렘","사슬 처형자":"인간",   /* 간수장 인간 → 골렘 (사용자 2026-10-08) — 죽음 소리는 「골렘 죽음」이 올 때까지 기계 */
+ "대포병":"인간","첨탑 관리자":"인간","간수장":"골렘",   /* 간수장 인간 → 골렘 (사용자 2026-10-08) — 죽음 소리는 「골렘 죽음」이 올 때까지 기계 */
  "굶주린 그림자":"망자","오염된 갑주":"망자",
  "피 먹는 자":"악마","감옥의 눈":"악마","경비견":"악마","폭도":"악마",
  "풀려난 장군":"악마","간수의 손":"악마","사슬에 묶인 마귀":"악마","정체 모를 주술사":"망자",
@@ -25816,9 +25891,9 @@ const FOE_RACE={
  "균열 군체":"악마","악마 차원문":"악마","굶주린 자":"악마","균열 공작":"악마","미치광이 인형사":"인간","마나 정제로":"기계","누군가의 기억":"망자","꼭두각시":"망령",
  /* 그밖 */
  "시종":"기계","근위병의 갑옷":"망자","책벌레":"야수","장부쟁이":"망자",
- "마나 결정체":"정령","흘러나온 시간":"정령",   /* 마력의 탑 — 떠드는 마도서는 종족이 없다 (사용자 2026-10-07) */
+ "마나 결정체":"정령","흘러나온 시간":"정령","결정에 갇힌 잔영":"정령",   /* 마력의 탑 — 떠드는 마도서는 종족이 없다 (사용자 2026-10-07) */
  "균열 벌레":"악마","떠도는 불씨":"정령","술집 난동꾼":"인간","늑대치기":"인간","무시무시한 늑대":"야수",
- "고철 거인":"기계","서리 군주":"악마",
+ "서리 군주":"악마",
  "콜로서스":"기계","콜로서스의 여분팔":"기계","콜로서스의 여분발":"기계"};
 /* 전투에서 적을 한 번 눌렀을 때만 이름 아래에 종족 한 줄 (사용자 2026-09-30).
    아이콘은 대원 조합 그림을 빌린다 — 야수는 아직 그림이 없어 글자만 */
@@ -26563,7 +26638,11 @@ function skExec0(f,I){
       rollIntents(true) } }
   if(s.dimNext){   /* 흐려진 의지 — 다음 내 턴 동안 모든 상대(대원 + 소환물)의 능력치를 깎는다 */
     const L=allUnits().filter(u=>u.hp>0);
-    L.forEach(u=>{ u.dimNext=(u.dimNext||0)+s.dimNext; fx({side:"mine",slot:u.slot,s:"mag",ring:"#7a4ab0",txt:"의지 흐려짐",cls:"miss",gap:80}) });
+    L.forEach(u=>{ u.dimNext=(u.dimNext||0)+s.dimNext;
+      /* 기억의 의지 약화 — 받은 여덟 칸 띠. 도미니코 weaken 과 같은 판형 (사용자 2026-10-12) */
+      if(f.name==="누군가의 기억") fx({side:"mine",slot:u.slot,sheet:"fx_mem_weaken",
+        sheetOpt:{cellW:64,cellH:64,frames:8,z:1.25,dy:-10,frameMs:[85,80,75,80,90,100,110,130]},gap:0});
+      fx({side:"mine",slot:u.slot,s:"mag",ring:"#7a4ab0",txt:"의지 흐려짐",cls:"miss",gap:80}) });
     say(`${s.n} — 다음 턴 동안 모든 상대의 추가 능력치가 ${s.dimNext} 줄어듭니다.`,"t3");
     if(s.empBuff&&memEmp(f)){ foeAtkUp(f,s.empBuff); fx({side:"foe",slot:f.slot,s:"buffup",ring:"#6aa8e0",txt:"마법력 +"+s.empBuff,cls:"buf",gap:100}); say(`${f.name} 마법력 +${s.empBuff}`,"t2") } }
   if(s.heatDown){ const was=f.heat||0; f.heat=Math.max(0,was-s.heatDown);
@@ -26595,7 +26674,7 @@ function skExec0(f,I){
       fx({side:"mine",slot:u.slot,ring:"#8fa8c0",gap:100,fn:()=>buffSheetFX("mine",u.slot,"정지")}) });
     M.forEach(x=>{ x.stop=(x.stop||0)+s.stopAll+1;
       fx({side:"foe",slot:x.slot,ring:"#8fa8c0",gap:100,fn:()=>buffSheetFX("foe",x.slot,"정지")}) });
-    say(L.length+M.length?`${s.n} — ${f.name}${jo(f.name,"eul")} 뺀 모두가 ${s.stopAll}턴 동안 정지합니다 (대원 · 소환물 ${L.length}, 다른 적 ${M.length}) — 겨눌 수도, 움직일 수도 없습니다.`:`${s.n} — 멈출 대상이 없습니다.`,"t1") }
+    say(L.length+M.length?`${s.n} — ${f.name}${jo(f.name,"eul")} 제외한 모두가 ${s.stopAll}턴 동안 정지합니다 (대원 · 소환물 ${L.length}, 다른 적 ${M.length}) — 겨눌 수도, 움직일 수도 없습니다.`:`${s.n} — 멈출 대상이 없습니다.`,"t1") }
   if(s.giveEcho){   /* 갇힌 메아리 — 메아리 없는 다른 적 하나에게 */
     const L=B.foes.filter(x=>x.alive&&x!==f&&!x.echoGift&&!foePas(x,"echo")), t=L.length?rnd(L):null;
     if(t){ t.echoGift=1; t.echoUsed=0;
@@ -26695,7 +26774,12 @@ function skExec0(f,I){
     let v=skDmg(f,s);
     say(`${s.n} — ${seq.map(u=>u.name).join(" → ")}`,"t3");
     fx({side:"foe",slot:f.slot,pose:"atk",lunge:1,gap:0,s:foeSnd(f,"공격")});
-    seq.forEach(u=>{ if(u.hp>0){ fx({side:"mine",slot:u.slot,s:"mag",ring:"#a06ae0",hit:1,gap:90});
+    seq.forEach(u=>{ if(u.hp>0){
+        /* 기억의 참회 기류 — 받은 여덟 칸 띠(1024×128). 도미니코 penance-wave 와 같은 판형.
+           기류가 지나는 대상마다 한 번씩 (사용자 2026-10-12) */
+        if(f.name==="누군가의 기억") fx({side:"mine",slot:u.slot,sheet:"fx_mem_wave",
+          sheetOpt:{cellW:128,cellH:128,frames:8,z:1.1,frameMs:[105,85,70,65,70,80,95,125]},gap:0});
+        fx({side:"mine",slot:u.slot,s:"mag",ring:"#a06ae0",hit:1,gap:90});
         asSrc(f,()=>hurtAlly(f,u,foeDmg(f,v,I.el),s.n,I.el,`${s.n} — ${u.name} 회피!`)) }
       v+=s.windpath.up });
     return }
@@ -27846,7 +27930,12 @@ function intentHtml0(f,I2){   /* I2 — 여분 부품의 둘째 의도 (기절�
   if(I.t==="beer")  return `<span class="intent t-heal kw" data-fintn="맥주" data-fintd="맥주를 들이켭니다 — 체력을 되찾지만 스스로 보호약화를 얻습니다">${
       ic("hp")}<b>+${I.v}</b> 맥주</span>`;
   if(I.t==="curse") return `<span class="intent t-mag kw" data-fintn="저주" data-fintd="다음 턴 마나 -1">${ic("mag")} 저주</span>`;
-  if(I.t==="deb")   return `<span class="intent t-deb kw" data-fintn="${esc(DEBUFF[I.k].n)}" data-fintd="${esc(DEBUFF[I.k].d)}" style="color:${DEBUFF[I.k].c}">${esc(DEBUFF[I.k].n)} ${I.v} ${I.to}칸</span>`;
+  /* 디버프 — 이름 글자 대신 그 상태의 아이콘으로 (사용자 2026-10-12 : 떠도는 불씨의 화상이 글자로 떴다).
+     ⚠️ 화상만의 일이 아니었다 — 이 줄을 지나는 모든 디버프가 글자였다. 윗줄 기절(istun)과 같은 꼴로 맞춘다.
+     아이콘이 없는 상태는 전처럼 이름 글자로 떨어진다 */
+  if(I.t==="deb"){ const dn=DEBUFF[I.k].n,
+      di=(typeof KW_ICON!=="undefined")&&KW_ICON[dn]&&(typeof ICON_PNG!=="undefined")&&ICON_PNG[KW_ICON[dn]];
+    return `<span class="intent t-deb kw" data-fintn="${esc(dn)}" data-fintd="${esc(DEBUFF[I.k].d)}" style="color:${DEBUFF[I.k].c}">${di?`<img class="ci" src="${di}" alt="">`:esc(dn)} ${I.v} ${I.to}칸</span>`; }
   if(I.t==="purge") return `<span class="intent purge kw" data-fintn="${esc(purgeName(f,I.k))}" data-fintd="${
       I.k==="ward"?"미리 부정 보호막을 둘러 다음 상태 이상을 막습니다"
       :I.k==="roar"?"몸에 걸린 상태 이상을 모두 걷어내고, 걷어낸 만큼 공격력을 얻습니다"
@@ -34635,11 +34724,23 @@ function rewardIcon(r){
     if(sk){ const im=skillIcon(sk,1); if(im) return im } }
   if(r&&r.n&&typeof REW_ICON!=="undefined"){
     const k=rwKey(r);
-    const id=(r.own&&HERO_ICON[r.own+"|"+k])||REW_ICON[k];
+    /* 등급이 안 맞으면 이름으로 한 번 더 — 보상의 등급이 바뀌면 「등급|이름」 열쇠가 어긋나
+       아이콘이 조용히 사라진다 (탐험 정신이 하급에서 중급이 되며 그랬다, 2026-10-12).
+       표는 노트에서 나오는 생성물이라 여기서 받친다 */
+    const id=(r.own&&HERO_ICON[r.own+"|"+k])||REW_ICON[k]||REW_ICON[rewKeyByName(r.n)];
     const im=id?iconImg(id):"";
     if(im) return im;
   }
   return rewardIcon0(r);
+}
+/* 보상 이름만으로 아이콘 열쇠를 찾는다 — 「등급|이름」 에서 등급이 어긋났을 때의 받침 (2026-10-12).
+   한 번 찾으면 적어 둔다 (보상 칸을 그릴 때마다 표를 훑지 않게) */
+const REW_BY_NAME={};
+function rewKeyByName(n){
+  if(!n||typeof REW_ICON==="undefined") return "";
+  if(REW_BY_NAME[n]!=null) return REW_BY_NAME[n];
+  const tail="|"+n, k=Object.keys(REW_ICON).find(x=>x.slice(-tail.length)===tail);
+  return (REW_BY_NAME[n]=k||"");
 }
 /* 전용 보상 아이콘 — 사용자가 하나하나 정한 것 (2026-09-16). ic 그림 · sk 기술 그림 · spr 소환물 스프라이트. rewardIcon 맨 앞에서 본다 */
 const REW_FIX={"외톨이":{"ic":"syn_wanderer"},   /* 방랑자 조합 그림 (사용자 2026-10-07) */
@@ -34868,7 +34969,13 @@ function noRunRes(){
   const cur=pending.queue&&pending.queue[pending.idx];
   return !!(cur&&cur.noRun);
 }
-const OWN_W=0.7;   /* 전용 보상 한 장의 가중치 (공용은 1) */
+const OWN_W=0.85;   /* 전용 보상 한 장의 가중치 (공용은 1). 0.7 이었다 — 사용자 2026-10-12 「조금 상승」.
+   세 장에 전용이 하나라도 뜨는 확률 (대원 열 명을 모두 모은 값, 실제로 뽑아 센 것 — tools/q-ownrate.py · q-ownrate2.py)
+     하급 29.8 → 36.0% · 중급 41.9 → 48.0% · 상급 53.7 → 59.5%, 공용은 세 장 중 2.35 → 2.24장.
+   ⚠️ 재 보고 알아낸 것 — **상급이 가장 높고 하급이 가장 낮다.** 공용 풀이 하급 51장 · 중급 25장 · 상급 18장으로
+      등급이 오를수록 작아지는데 전용은 대원마다 8~12장으로 거의 안 줄어서다. 상급만 따로 올릴 까닭이 없다.
+   ⚠️ 대원 사이 차이는 이 값으로 안 메워진다 (상급: 쿠렘타이 37% ↔ 이테리오 72%) — 뿌리는 가중치가 아니라
+      rewardOk 걸림이다 (쿠렘타이는 전용 상급 여덟 중 넷만 풀에 남는다). 그쪽은 아직 손대지 않았다 */
 function offerCards(app,hero,grade,done,lvUp){
   const own=(HERO_REWARDS[hero.name]||[]).filter(r=>r.g===grade&&rewardOk(hero,r));
   let com=COMMON.filter(r=>r.g===grade&&rewardOk(hero,r));
