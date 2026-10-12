@@ -1,8 +1,9 @@
 /* ART:BEGIN */
 /* ── 여기부터 art-build.py 가 만들어 넣는다. 손으로 고치지 말 것 ──
    그림은 art/<분류>/<이름>/<자세>.png, 소리는 art/소리/<이름>.wav 에 있다.
-   소리와 이벤트 그림은 여기 심지 않는다 — 이름만 적고 파일로 나른다
-   (sfx/ · ev/). 이벤트 그림은 art/이벤트/_원본/ 에 넣고 ev-cut.py 를 돌린다.
+   소리 · 이벤트 그림 · 연대기 그림은 여기 심지 않는다 — 이름만 적고 파일로 나른다
+   (sfx/ · ev/ · chron/). 이벤트 그림은 art/이벤트/_원본/ 에 넣고 ev-cut.py 를 돌린다.
+   연대기 그림(640×384)은 art/연대기/ 에 열쇠 이름으로 그대로 둔다 — 자르지 않는다.
    더하거나 고치려면 그 폴더의 _원본/ 에 넣고
      python art-cut.py  →  python art-build.py  →  sh build.sh   */
 const PNG_SPRITE={
@@ -1084,5 +1085,19 @@ const EV_PNG={
  "행상인 수레":"행상인 수레.png",
  "현상 수배":"현상 수배.png",
  "희생의 제단":"희생의 제단.png"
+};
+const CHRON_PNG={
+ "chron_caretaker":"chron_caretaker.png",
+ "chron_corruption":"chron_corruption.png",
+ "chron_firstking":"chron_firstking.png",
+ "chron_golem_sleep":"chron_golem_sleep.png",
+ "chron_judges":"chron_judges.png",
+ "chron_keeper_flees":"chron_keeper_flees.png",
+ "chron_keeper_mold":"chron_keeper_mold.png",
+ "chron_keeper_void":"chron_keeper_void.png",
+ "chron_otto_rest":"chron_otto_rest.png",
+ "chron_primordial":"chron_primordial.png",
+ "chron_relic":"chron_relic.png",
+ "chron_war":"chron_war.png"
 };
 /* ART:END */
