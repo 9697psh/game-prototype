@@ -4766,6 +4766,9 @@ body.vnew #app .evopts .evres p{color:#e6d6b2;font-size:15px;line-height:1.7;tex
 @keyframes rootGrow{0%{opacity:0;transform:translate(calc(var(--dx) * 100%),calc(var(--dy) * 100%)) scale(.3);filter:brightness(2.2) drop-shadow(0 0 8px #b050d0)}
   30%{opacity:1}75%{transform:scale(1.12);filter:brightness(1.4) drop-shadow(0 0 6px #b050d0)}100%{transform:none;filter:none}}
 .gridmap .cell.rootsrc .cico{animation:rootPulse .55s ease-in-out var(--bd,0ms) 2}
+/* 고독의 동굴 — 수련을 마친 대원이 기다리는 칸이 금빛으로 맥동한다 (사용자 2026-10-12). 지도의 동굴 아이콘 그대로 */
+.gridmap .cell.caveglow .cico{animation:caveGlow 1.8s ease-in-out infinite}
+@keyframes caveGlow{0%,100%{filter:none}50%{filter:brightness(1.5) drop-shadow(0 0 9px #f0c060)}}
 @keyframes rootPulse{50%{transform:scale(1.14);filter:brightness(1.8) drop-shadow(0 0 10px #a040d0)}}
 /* 안개가 걷힌다 · 기계 잔해가 무너진다 (사용자 2026-10-07) — 지도의 안개 · 잔해 그림 그대로 */
 .gridmap .cell .cico.foggo,.gridmap .cell .cico.wreckgo{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:6}
@@ -10238,7 +10241,7 @@ const HEROES={
    {n:"베기",cost:1,el:"공격",tg:"foe",dmg:3,d:"피해 3"},
    {n:"막기",cost:1,el:"보호",tg:"self",shield:3,d:"보호막 3"},
    {n:"갑옷 장착",cost:2,el:"보호",tg:"self",card:"armor",d:"무작위 방어구 카드를 손에 넣음"},
-   {n:"승리의 일격",cost:3,el:"공격",tg:"foe",dmg:20,lock:1,exec:1,d:"피해 20, 잠금(1), 처치 후 베기 피해 영구 +1"}
+   {n:"승리의 일격",cost:3,el:"공격",tg:"foe",dmg:10,lock:2,exec:1,d:"피해 10, 잠금(2), 처치 후 베기 피해 영구 +1"}   /* 20·잠금1 → 10·잠금2 (사용자 2026-10-12) */
   ]},
  "카제":{title:"바람검사",role:"이동, 연속기",hp:20,mana:3,hpLv:1,
   focus:"공중으로 띄움, 바람 검술, 이동",
@@ -10363,7 +10366,7 @@ const SKILL_FULL={
  "수축 공격":"피해를 2(추가 ∴ ) 줍니다. *(거리 2)*",
  "숙주 폭발":"잠금(2). 적들에게 피해를 3(추가 ∴ + 감염 중첩의 2배 ) 주고, 감염 중첩을 모두 제거합니다.",
  "순환의 선율":"잠금(2). 이번 음율란은 리페가 _음율_을 모두 노래한 후, 역방향으로 _음율_을 한 번 더 노래합니다.",
- "승리의 일격":"잠금(1). 피해를 20(추가 † ≡ ) 줍니다.\n이 기술로 소환물이 아닌 적을 처치할때마다 베기의 피해량이 영구적으로 1 증가합니다.",
+ "승리의 일격":"잠금(2). 피해를 10(추가 † ≡ ) 줍니다.\n이 기술로 소환물이 아닌 적을 처치할때마다 베기의 피해량이 영구적으로 1 증가합니다.",
  "시공간 폭탄":"잠금(1). 모든 적에게 _정밀 표식_을 남기고, 위치를 무작위로 이동시킵니다.",
  "에너지 과부하":"사용한도(1). 이번 턴에 추가 마나를 2 얻고, 다음 턴 마나가 1 감소합니다.",
  "태초의 정령":"배치될 때, 플로우로 전투를 시작합니다.\n\n플로우가 나설 때, 추가 마법력을 모두 추가 보호력으로 전환합니다.\n플레어가 나설 때, 추가 보호력을 모두 추가 마법력으로 전환합니다.",
@@ -10692,8 +10695,8 @@ const SYN_FX={};
      효과를 꺼내 쓰는 자리는 coreFx() **한 곳**이다 — 기능마다 따로 박아 넣지 말 것. */
 const CORES=[
  {id:"real",  n:"현실의 세계핵", cond:"적 100회 처치",               need:{k:"kills",  n:100},
-  d:"이번 원정동안 날이 밝을 때 얻는 활동량이 1 증가합니다. 대신 주둔지나 쉼터에서 숙면하면 9시에 깨어납니다.",
-  fx:{dayAct:1, wakeAt:9}, icon:"world_core_reality"},
+  d:"이번 원정동안 날이 밝을 때 얻는 활동량이 2 증가합니다. 대신 주둔지나 쉼터에서 숙면하면 9시에 깨어납니다.",
+  fx:{dayAct:2, wakeAt:9}, icon:"world_core_reality"},   /* 1 → 2 (사용자 2026-10-12) */
  {id:"rift",  n:"균열 세계핵",   cond:"오염도 누적 5000 획득",        need:{k:"taint",  n:5000},
   d:"이번 원정동안 지도에서 이동할 때 얻는 오염도가 4 증가합니다.\n반복 퀘스트: 오염도를 누적 100 얻을 때마다 무작위 보상을 얻습니다.",
   fx:{moveTaint:4}, quest:{k:"taint",   n:100, do:"riftGift"}, icon:"world_core_rift"},   /* 5 → 4 (사용자 2026-10-12. 바탕 4 와 더해 한 칸 8) */
@@ -10979,7 +10982,8 @@ const COMMON=[
  R("전장의 바람","하급","대원 배치 후, 모든 적을 공중에 뜸 상태로 만듭니다.",h=>h.tag.startStorm=(h.tag.startStorm||0)+1,0.3),
  R("전장의 칼날","하급","대원 배치 후, 모든 적에게 피해를 4 줍니다.",
    h=>h.tag.startBlade=(h.tag.startBlade||0)+4),
- R("전장의 방패","하급","전투 시작 후, 모든 아군에게 에너지 보호막을 3 부여합니다.",
+ /* 도는 자리는 onSummon — 처음부터 **대원 배치 후**였고 글만 「전투 시작 후」였다 (사용자 2026-10-12) */
+ R("전장의 방패","하급","대원 배치 후, 모든 아군에게 에너지 보호막을 3 부여합니다.",
    h=>h.tag.startAura=(h.tag.startAura||0)+3),
  R("하급: 회피 기동","하급","전투 시작 후, 회피를 1 얻습니다.",
    h=>h.tag.startEvade=(h.tag.startEvade||0)+1,0.12),
@@ -10989,9 +10993,9 @@ const COMMON=[
    h=>h.tag.moveShield=(h.tag.moveShield||0)+1),
  R("간이 신발","하급","간이 신발 카드를 5장 얻습니다.",h=>{ addCard(run,"간이 신발",5) }),
  R("하급: 마나 흡입","하급","매 라운드 시작 후, 추가 마나를 1 얻습니다.",
-   h=>h.tag.roundMana=(h.tag.roundMana||0)+1),
+   h=>h.tag.roundMana=(h.tag.roundMana||0)+1,0.5),   /* 나오는 확률 반으로 (사용자 2026-10-12) */
  R("하급: 잔불","하급","대원 배치 후, 무작위 적 하나에게 화상을 4 부여합니다.",
-   h=>h.tag.placeBurn=(h.tag.placeBurn||0)+4),
+   h=>{ (h.tag.burns=h.tag.burns||[]).push(4) }),   /* 합치지 않는다 — 하나하나 제 몫을 돌린다 (2026-10-12) */
  R("곰팡이 빵","하급","빵 카드를 4장 얻습니다. 오염도가 4 증가합니다.",
    h=>{ addCard(run,"빵",4); addTaint(4) }),
  R("잔걸음","하급","전투 시작 후, 추진력을 5 얻습니다.",
@@ -11055,9 +11059,9 @@ const COMMON=[
  R("중급: 달리기","중급","내 턴이 끝날 때, 추진력을 최대 5만큼 소모하고 그 2배만큼 보호막을 얻습니다.",
    h=>{ (h.tag.dashes=h.tag.dashes||[]).push([5,2]) }),
  R("중급: 마나 흡입","중급","매 라운드 시작 후, 추가 마나를 2 얻습니다.",
-   h=>h.tag.roundMana=(h.tag.roundMana||0)+2),
+   h=>h.tag.roundMana=(h.tag.roundMana||0)+2,0.5),   /* 나오는 확률 반으로 (사용자 2026-10-12) */
  R("중급: 잔불","중급","대원 배치 후, 무작위 적 하나에게 화상을 8 부여합니다.",
-   h=>h.tag.placeBurn=(h.tag.placeBurn||0)+8),
+   h=>{ (h.tag.burns=h.tag.burns||[]).push(8) }),   /* 합치지 않는다 — 하나하나 제 몫을 돌린다 (2026-10-12) */
  R("중급: 꼭두각시 인형","중급","소환물 카드를 낸 후에, 그 소환물의 최대 체력이 40% 증가합니다.",
    h=>h.tag.minHp=(h.tag.minHp||0)+40),
  R("중급: 카드 마술","중급","카드를 낸 후에, 보호막을 4 얻습니다.",
@@ -11260,7 +11264,7 @@ const HERO_REWARDS={
   R("후미 준비 회복 강화","하급","후미 준비의 체력 회복량이 영구히 2 증가합니다.",h=>h.tag.rearHeal=(h.tag.rearHeal||5)+2),
   R("재빠른 수호자","하급","선두 방어와 후미 준비를 사용한 후, 추진력을 3 얻습니다.",h=>h.tag.guardMom=(h.tag.guardMom||0)+3),
   R("공성전 방패","중급","방패 밀치기가 모든 적을 대상으로 합니다.",h=>h.tag.pushAll=1),
-  R("가시 방패","중급","헥토가 도발 상태일때 가시를 4 얻습니다.",h=>h.tag.tauntThorn=(h.tag.tauntThorn||0)+4),   /* 도발 중에만 — 늘 붙던 것 (점검 2026-10-07) */
+  R("가시 방패","중급","헥토가 도발 상태일때 가시를 6 얻습니다.",h=>h.tag.tauntThorn=(h.tag.tauntThorn||0)+6),   /* 4 → 6 (사용자 2026-10-12) */   /* 도발 중에만 — 늘 붙던 것 (점검 2026-10-07) */
   R("든든함 추가","중급","든든한 아군이 내 턴이 시작할 때도 발동합니다.",h=>h.tag.allyTwice=1),
   R("방어 태세","중급","전투 시작 후, 헥토가 보호막을 8 얻습니다.",h=>h.tag.startShield=(h.tag.startShield||0)+8),
   R("성벽 쌓기","중급","굳건한 성벽의 사용한도가 1 증가합니다.",h=>h.sk[3].limit++),
@@ -11442,11 +11446,10 @@ const HERO_REWARDS={
   R("정화의 빛","하급","축복 상태가 된 후, 오염도가 1 감소합니다. (전투 당 최대 5)",h=>h.tag.purifyCap=(h.tag.purifyCap||0)+5,0.5),   /* 전투 당 한도 — 여러 번 고르면 5 · 10 · 15 (노트, 사용자 2026-10-06) */
   /* ── 중급 ── */
   R("참회의 기류 강화","중급","참회의 기류가 대상을 지날 때마다 늘어나는 보호막량과 피해량이 영구히 1 증가합니다.\n*[참회의 기류] 기술이 없을 때 등장하지 않음",(h,rn)=>addMod(h,"참회의 기류","inc",1,rn)),
-  R("어둠의 힘","중급","축복 상태의 라이티늄 지팡이가 부정 보호막도 1 부여합니다.",h=>h.tag.darkPower=(h.tag.darkPower||0)+1),
+  R("어둠의 힘","중급","축복 상태의 라이티늄 지팡이가 부정 보호막도 1 부여합니다.",h=>h.tag.darkPower=(h.tag.darkPower||0)+1,0.5),   /* 나오는 확률 반으로 (사용자 2026-10-12 : 「어둠의 지팡이」) */
   R("치명적인 족쇄","중급","영광의 족쇄가 치명타로 적중합니다.\n*획득시 보상에서 다시 등장하지 않음\n*[영광의 족쇄] 기술이 없을 때 등장하지 않음",h=>h.tag.critShackle=1,0.5),
   R("연쇄 족쇄","중급","영광의 족쇄가 뒤의 적 하나에게도 피해를 줍니다.\n*[영광의 족쇄] 기술이 없을 때 등장하지 않음",h=>h.tag.chainShackle=(h.tag.chainShackle||0)+1),   /* 뒤의 적은 기절하지 않는다 (노트) */
   R("왕실의 은총","중급","축복 상태가 된 후, 체력이 가장 낮은 아군의 체력을 2 회복시킵니다.",h=>h.tag.royalGrace=(h.tag.royalGrace||0)+2),
-  R("왕자의 가호","중급","축복 상태가 된 후, 다른 왕실 대원에게 추가 보호력을 1 부여합니다.",h=>h.tag.princeAegis=(h.tag.princeAegis||0)+1),
   R("참회의 길","중급","참회의 기류가 지나간 아군의 부정적인 효과를 모두 제거합니다.\n*획득시 보상에서 다시 등장하지 않음\n*[참회의 기류] 기술이 없을 때 등장하지 않음",h=>h.tag.penanceCleanse=1),
   R("예습","중급","대원 배치 후, 비용 소모 없이 참회의 기류를 사용합니다.\n*[참회의 기류] 기술이 없을 때 등장하지 않음",h=>h.tag.prestudy=1,0.5),
   R("날카로운 지팡이","중급","라이티늄 지팡이의 피해량이 3 증가합니다.",(h,rn)=>addMod(h,"라이티늄 지팡이","dmg",3,rn)),
@@ -11454,6 +11457,7 @@ const HERO_REWARDS={
   R("의지 강화","중급","축복 상태일 때 의지 약화로 추가 보호력을 1 더 얻을 수 있습니다.",h=>h.tag.willUp=(h.tag.willUp||0)+1,0.25),   /* 더 낮은 확률 (노트 rarer, 사용자 2026-10-06) */
   R("왕실의 시곗바늘","중급","내 턴이 끝날 때, 아군 왕실 대원들에게 라이티늄 지팡이를 시전합니다. 이 효과로는 독서 중첩을 얻을 수 없습니다.",h=>h.tag.royalClock=(h.tag.royalClock||0)+1),   /* 겹친 수만큼 시전 (2026-10-11) */
   /* ── 상급 ── */
+  R("왕자의 가호","상급","축복 상태가 된 후, 다른 왕실 대원에게 추가 보호력을 1 부여합니다.",h=>h.tag.princeAegis=(h.tag.princeAegis||0)+1),   /* 중급 → 상급 (사용자 2026-10-12) */
   R("족쇄 난사","상급","영광의 족쇄가 모든 적에게 적중합니다.\n*[영광의 족쇄] 기술이 없을 때 등장하지 않음",h=>h.tag.shackleAll=1),   /* 사용자 2026-10-06 */
   R("깊은 통찰","상급","축복에 필요한 독서 중첩이 1 감소합니다.",h=>h.tag.readCut=(h.tag.readCut||0)+1),
   R("의지의 지팡이","상급","라이티늄 지팡이가 대상의 양옆 대상에게도 그만큼의 회복과 피해를 줍니다. \n*획득시 보상에서 다시 등장하지 않음",h=>h.tag.willWand=1),   /* 양옆은 독서 중첩을 늘려 주지 않는다 (노트) */
@@ -11465,7 +11469,7 @@ const HERO_REWARDS={
   R("매우매우 두꺼운 고서","상급","독서 중첩을 최대치를 초과하여 얻을 수 있습니다.",h=>h.tag.thickTome=1,0.5),
   R("죄수의 일기","상급","영광의 족쇄의 비용이 1 감소합니다. 의지 약화가 기절한 모든 적에게 시전됩니다.\n*[영광의 족쇄] 기술이 없을 때 등장하지 않음\n*획득시 보상에서 다시 등장하지 않음",
     h=>{ h.tag.prisonDiary=1; const k=h.sk.find(x=>x&&x.shackle); if(k) k.cost=Math.max(0,(k.cost||2)-1) },0.5),
-  R("금단의 고서에 손을 대다","상급","도미니코가 악마로 타락합니다.\n*획득시 보상에서 다시 등장하지 않음",h=>domCorrupt(h),0.5),
+  R("금단의 고서에 손을 대다","상급","도미니코가 악마로 타락합니다. 최대 체력을 30 잃습니다.\n*획득시 보상에서 다시 등장하지 않음",h=>domCorrupt(h),0.5),
   R("절실한 신앙","상급","퀘스트: 참회의 기류를 20번 사용해야 합니다. \n보상: 이번 원정에서 참회의 기류를 사용한 후, 추가로 2번 더 사용됩니다.\n*획득시 보상에서 다시 등장하지 않음\n*[참회의 기류] 기술이 없을 때 등장하지 않음",
     h=>{ if(!questHas("절실한 신앙")) questAccept("절실한 신앙","도미니코") },0.5)
  ],
@@ -12375,11 +12379,11 @@ const ITEMS=[
  IT("영광의 망토","희귀",["사파이어 수정","라이티늄 수정"],20,{maxMana:1},{endShield:4,startEvade:4},
    "대원 배치 후 회피를 4 얻습니다."),
  IT("검투사의 검","희귀",["사파이어 수정","전투 검"],20,{maxMana:1,atk:3},{manaBolt:"atk"},
-   "마나를 사용할 때마다 그만큼 가장 가까운 적에게 공격 피해*( )*를 줍니다."),
+   "마나를 사용할 때마다 가장 가까운 적에게 이 대원의 추가 공격력*( )*만큼 피해를 줍니다."),
  IT("기초 마법서: 마나","희귀",["사파이어 수정","전투 마법서"],20,{maxMana:1,mag:3},{manaBolt:"mag"},
-   "마나를 사용할 때마다 그만큼 가장 먼 적에게 마법 피해*( )*를 줍니다."),
+   "마나를 사용할 때마다 가장 먼 적에게 이 대원의 추가 마법력*( )*만큼 피해를 줍니다."),
  IT("전장의 함성","희귀",["사파이어 수정","전투 방패"],20,{maxMana:1,def:3},{manaShield:1},
-   "마나를 사용할 때마다 그만큼 보호막*( )*을 얻습니다."),
+   "마나를 사용할 때마다 이 대원의 추가 보호력*( )*만큼 보호막을 얻습니다."),
  /* ── 희귀 : 에메랄드 계열 ── */
  IT("질주","희귀",["에메랄드 수정","에메랄드 수정"],20,null,{moveMom:2,moveBlast:2},
    "내 턴에 이동할 때마다 모든 적에게 피해를 2 줍니다."),
@@ -12473,7 +12477,19 @@ function itemIco(name){
   return '<span class="iico kw" data-item="'+esc(name)+'" title="'+esc(name)+'">'
     +itemIcon(it,24)+'</span>';
 }
-function itemCard(it){
+/* 장신구 설명의 괄호에 **그 대원의 수치**를 넣는다 (사용자 2026-10-12 : 「괄호 지우지 말고 그 안에 수치」).
+   ⚠️ **임자를 알 때만** 채운다 — 상점 · 보상처럼 아직 아무도 안 찬 자리는 「이 대원의」가 없으니
+     빈 괄호 그대로 둔다 (사용자 : 「전투 화면만」).
+   기술 쪽은 richLive 가 기술마다 손으로 채운다 — 장신구에는 그런 길이 없어 여기 하나를 둔다. */
+function itemLive(h,it,txt){
+  let t=String(txt||"");
+  if(!h||!it||!it.bt) return t;
+  const k=it.bt.manaBolt;
+  if(k) t=t.replace("*( )*","*("+(k==="mag"?(h.mag||0):(h.atk||0))+")*");
+  if(it.bt.manaShield) t=t.replace("*( )*","*("+((h.def||0)*it.bt.manaShield)+")*");
+  return t;
+}
+function itemCard(it,own){
   if(!it) return "";
   const into=ITEMS.filter(x=>x.rc&&x.rc.indexOf(it.n)>=0);
   const rc=(it.rc||[]).map(itemIco).join('<span class="plus">+</span>');
@@ -12482,7 +12498,7 @@ function itemCard(it){
     <div>
       <div class="ic-n">${esc(it.n)}</div>
       <div class="ic-g">${esc(it.g)}</div>
-      <div class="ic-d">${rich(it.d)}</div>
+      <div class="ic-d">${rich(itemLive(own,it,it.d))}</div>
       ${it.rc?`<div class="ic-rowh">조합법, 제련석 ${it.cost}</div>
         <div class="ic-row">${rc}</div>`:""}
     </div>
@@ -13122,7 +13138,7 @@ function fdxCard(name){
   if(FDX_SUMMONER[name]) tags.push(`<span class="evdx-tag c">소환물 — ${esc(FDX_SUMMONER[name])}가 불러냅니다</span>`);
   if(FDX_GONE[name]) tags.push(`<span class="evdx-tag">${esc(FDX_GONE[name])}</span>`);
   const gim=Object.keys(D.gim||{}).map(k=>`<div class="evdx-opt"><b>${esc((FDX_GIM[k]||k).split(" —")[0])}</b><span>${esc((FDX_GIM[k]||k).split("— ")[1]||"")}</span></div>`).join("");
-  const pas=(D.pas||[]).map(p=>`<div class="evdx-opt"><b><span class="chip pass">${esc(p.n)}</span></b><span>${esc(p.d)}</span></div>`).join("");
+  const pas=(D.pas||[]).filter(p=>!p.hide).map(p=>`<div class="evdx-opt"><b><span class="chip pass">${esc(p.n)}</span></b><span>${esc((p.d||"").replace("{피해}",p.v))}</span></div>`).join("");
   const sk=fdxSkills(D).map(s=>`<div class="evdx-opt"><b>${esc(s.n)}</b><span>${s.d}</span></div>`).join("");
   const roles=(ROLE[name]||ROLE[D.of]||[]).map(r=>`<span class="evdx-tag c" title="${esc(r.d||"")}">${esc(r.t)}</span>`).join("");
   return `<div class="evdx-card fdx">
@@ -13677,8 +13693,8 @@ function gearRow(h){
     if(it){
       const fr=GRADE_FRAME[it.g]||GRADE_FRAME["일반"];
       const g={"파편":"g-frag","일반":"g-common","희귀":"g-rare","특수":"g-special","전설":"g-legend"}[it.g]||"g-common";   /* 등급마다 빛을 달리 (사용자 2026-09-29) */
-      out+='<span class="gs on kw '+g+'" data-item="'+esc(it.n)+'" style="--fr:'+fr+'">'
-          +itemIcon(it)+'</span>';
+      out+='<span class="gs on kw '+g+'" data-item="'+esc(it.n)+'" data-ih="'+esc(h.name||"")+'" style="--fr:'+fr+'">'
+          +itemIcon(it)+'</span>';   /* data-ih — 설명 창이 「이 대원의」 수치를 채울 수 있게 (2026-10-12) */
     } else out+='<span class="gs"></span>';
   }
   return out+"</div>";
@@ -13721,7 +13737,7 @@ const FOE={
    pas:[{k:"watchAtk",v:2,n:"멀리 보기",d:"손패의 감시 1장 당 공격력을 +2 얻습니다."}],   /* 2026-09-16: '차례대로' → 멀리 보기 (기술은 여전히 차례대로 돈다) */
    ai:{open:"def",near:8,any:5,def:6,weak:3,buff:2},
    sk:[
-    {n:"감시",w:1,tg:"self",open:1,giveCard:"감시",shield:4,d:"[감시] 카드 1장을 줍니다. 보호막을 4 얻습니다. (첫 턴에 시전)"},
+    {n:"감시",w:1,tg:"self",open:1,giveCard:"감시",shield:4,d:"[감시] 카드 1장을 줍니다. 보호막을 4 얻습니다."},
     {n:"찌르기",w:1,tg:"any",dmg:8,fwd:1,chase:1,d:"앞으로 한 칸 이동하고, 무작위 상대에게 공격 피해를 8 줍니다."},
     {n:"막기",w:1,tg:"self",shield:6,buff:2,d:"보호막을 6 얻고 공격력을 2 얻습니다."},
     {n:"두 번 찌르기",w:1,tg:"near",dmg:5,hits:2,chase:1,d:"가장 가까운 상대에게 공격 피해를 5씩 2번 줍니다."},
@@ -13783,7 +13799,7 @@ const FOE={
    pas:[{k:"gazeGrow",v:1,n:"오래 볼수록",d:"적 턴마다 마법력이 1씩 오릅니다. 공격하지 않는 턴에도 오릅니다. 오래 끌면 힘들어집니다."}],   /* 공격 범위 밖이면 바라보기를 못 해 안 올랐다 — 의도와 상관없이 늘 (사용자 2026-10-04) */
    sk:[
     {n:"응시",w:1,tg:"all",anyRng:1,open:1,deb:{atkDn:2,magDn:2},cd:3,
-      d:"모든 상대에게 공격약화와 마법약화를 2 부여합니다. (첫 번째 패턴)"},
+      d:"모든 상대에게 공격약화와 마법약화를 2 부여합니다."},
     {n:"바라보기",w:6,tg:"all",anyRng:1,dmg:1,buff:1,
       d:"모든 상대에게 마법 피해를 1 줍니다. (마법력은 「오래 볼수록」으로 턴마다 오릅니다)"}],
    hit:"바라보기"},
@@ -13833,7 +13849,7 @@ const FOE={
     {n:"도망",w:20,tg:"self",cond:"mobDied",once:1,flee:1,buff:2,d:"공격력을 2 얻고, 죽은 폭도의 자리에서 1칸 멀어집니다."},
     {n:"공격",w:5,tg:"near",dmg:2,hits:2,chase:1,d:"공격 범위 안 상대에게 공격 피해를 2씩 2번 줍니다."},
     {n:"막기",w:3,tg:"self",shield:4,d:"보호막을 4 얻습니다."},
-    {n:"폭동",w:1,tg:"none",riot:1,d:"다른 폭도들의 공격력을 1 올립니다. (낮은 확률)"},
+    {n:"폭동",w:1,tg:"none",riot:1,d:"다른 폭도들의 공격력을 1 올립니다."},
     {n:"투석",w:3,tg:"any",dmg:1,hits:2,chase:1,d:"무작위 상대에게 공격 피해를 1씩 2번 줍니다."}],
    hit:"공격"},
  /* ── 정예 다섯 (사용자 2026-09-16, 아트는 나중) ── */
@@ -13862,9 +13878,9 @@ const FOE={
    el:"마법",
    gim:{neg:5},
    pas:[{k:"info",n:"면역자",d:"부정 보호막을 5 얻은 채로 전투를 시작합니다."},
-        {k:"outRangeDmg",v:10,n:"감시관의 갑주",d:"적 턴이 끝날 때, 공격 범위 밖의 상대(대원과 소환물)들이 마법 피해를 입습니다. 피해는 10에 구역 배율 · 마법력이 곱해진 값입니다."}],
+        {k:"outRangeDmg",v:10,n:"감시관의 갑주",d:"적 턴이 끝날 때, 공격 범위 밖의 상대(대원과 소환물)들이 마법 피해를 {피해} 입습니다."}],
    sk:[
-    {n:"음산한 기운",w:2,tg:"all",open:1,deb:{magDn:2,atkDn:2},shield:6,cd:2,d:"공격 범위 안 상대에게 마법약화와 공격약화를 2 부여하고 보호막을 6 얻습니다. (첫 번째 패턴)"},
+    {n:"음산한 기운",w:2,tg:"all",open:1,deb:{magDn:2,atkDn:2},shield:6,cd:2,d:"공격 범위 안 상대에게 마법약화와 공격약화를 2 부여하고 보호막을 6 얻습니다."},
     {n:"엄벌",w:4,tg:"all",dmg:8,d:"공격 범위 안 모든 상대에게 마법 피해를 8 줍니다."},
     {n:"공방",w:3,tg:"far",dmg:6,shield:6,chase:1,d:"가장 먼 상대에게 마법 피해를 6 주고 보호막을 6 얻습니다."},
     {n:"오염폭발",w:3,tg:"all",anyRng:1,deb:{defDn:2},debOut:{stun:2},d:"공격 범위 안 상대에게 보호약화를 2, 밖의 상대에게 기절을 2 부여합니다."}],
@@ -13874,7 +13890,7 @@ const FOE={
    pas:[{k:"bound",n:"사슬에 묶임",d:"주변 사슬 간수를 처치하면 사슬을 풀고 각성합니다."},
         {k:"everyTwo",v:2,n:"풀려남!",d:"(풀려난 뒤) 2턴마다 공격력을 2 얻습니다."}],
    sk:[
-    {n:"부정의 기운",w:1,tg:"near",cond:"bound",deb:{magDn:1},chase:1,d:"(묶인 동안) 가장 가까운 상대에게 마법약화를 1 부여합니다. (낮은 가중치)"},
+    {n:"부정의 기운",w:1,tg:"near",cond:"bound",deb:{magDn:1},chase:1,d:"(묶인 동안) 가장 가까운 상대에게 마법약화를 1 부여합니다."},
     {n:"체력보존",w:4,tg:"self",cond:"bound",maxUp:2,d:"(묶인 동안) 최대 생명력을 2 얻습니다."},
     {n:"할퀴기",w:3,tg:"all",cond:"free",dmg:3,hits:2,d:"(풀려난 뒤) 공격 범위 안 모든 상대에게 공격 피해를 3씩 2번 줍니다."},
     {n:"파괴",w:3,tg:"near",cond:"free",dmg:8,chase:1,d:"(풀려난 뒤) 가장 가까운 상대에게 공격 피해를 8 줍니다."},
@@ -14013,7 +14029,7 @@ const FOE={
    el:"공격",
    pas:[{k:"death",kind:"root",n:"끈질긴 생명력",kw:"죽음",d:"죽음: 잔해가 남습니다. 다음 턴까지 살아있는 덩굴이 남아 있다면 절반의 체력으로 다시 살아납니다."}],
    sk:[
-    {n:"파종",w:2,tg:"none",cond:"fewVines",cd:2,summon:{n:"살아있는 덩굴",min:1,max:1},d:"(살아있는 덩굴이 하나 이하일 때) 빈 칸에 살아있는 덩굴을 부릅니다. (낮은 확률)"},
+    {n:"파종",w:2,tg:"none",cond:"fewVines",cd:2,summon:{n:"살아있는 덩굴",min:1,max:1},d:"(살아있는 덩굴이 하나 이하일 때) 빈 칸에 살아있는 덩굴을 부릅니다."},
     {n:"뿌리 후려치기",w:5,tg:"near",dmg:9,deb:{bind:1},chase:1,d:"가장 가까운 상대에게 공격 피해를 9 주고 속박을 1 부여합니다."},
     {n:"수액",w:3,tg:"none",healMate:{v:5,name:"살아있는 덩굴"},d:"살아있는 덩굴들의 체력을 5 회복시킵니다."},
     {n:"가시관",w:3,tg:"none",thornAll:{v:2,turns:1},d:"모든 적이 1턴 동안 가시를 2 얻습니다."},
@@ -14024,7 +14040,7 @@ const FOE={
    pas:[{k:"info",n:"삼켜짐!",d:"삼킨 대원은 전장에서 사라집니다. 늪의 왕이 피해를 30 받거나 2턴이 지나면 그 대원에게 피해를 10 주고 무작위 칸에 뱉습니다."},
         {k:"spitSplit",n:"침뱉기",d:"빈 칸을 쳐서 빗나가면, 그 피해를 무작위 대원들에게 1씩 나누어 줍니다."}],
    sk:[
-    {n:"삼키기",w:2,tg:"none",open:1,cd:4,swallow:{rng:2,turns:2,dmg:30},d:"거리 2 안의 대원을 삼킵니다. (처음 한 번, 그 뒤로는 낮은 확률)"},
+    {n:"삼키기",w:2,tg:"none",open:1,cd:4,swallow:{rng:2,turns:2,dmg:30},d:"거리 2 안의 대원을 삼킵니다."},
     {n:"끈적혀",w:4,tg:"any",pull:1,deb:{bind:1},chase:1,d:"무작위 상대를 가장 앞으로 당겨오고 속박을 1 부여합니다."},
     {n:"점액 분출",w:4,tg:"near",dmg:12,d:"가장 앞 상대에게 마법 피해를 12 줍니다."},
     {n:"혀 채찍",w:4,tg:"any",cell:1,dmg:15,d:"무작위 칸에 공격 피해를 15 줍니다.",el:"공격"},
@@ -14048,7 +14064,7 @@ const FOE={
    el:"마법",
    pas:[{k:"shift",n:"변화",d:"균열 군체가 피해를 받을 때마다 의도가 변합니다. (차원문 생성 제외)"}],
    sk:[
-    {n:"차원문 생성",w:2,tg:"none",open:1,cd:2,gate:2,d:"빈 칸에 악마 차원문을 둘 소환합니다. 잔해가 남아 있다면 대신 잔해를 다시 세웁니다. (첫 턴에 반드시)"},
+    {n:"차원문 생성",w:2,tg:"none",open:1,cd:2,gate:2,d:"빈 칸에 악마 차원문을 둘 소환합니다. 잔해가 남아 있다면 대신 잔해를 다시 세웁니다."},
     {n:"오염",w:3,tg:"none",taint:15,d:"오염도를 15 올립니다."},
     {n:"저주",w:3,tg:"all",deb:{atkDn:1,defDn:1,magDn:1},d:"공격 범위 안 모든 상대에게 공격약화, 보호약화, 마법약화를 1씩 부여합니다."},
     {n:"강한 저주",w:3,tg:"any",randDeb:{n:2,v:1},d:"무작위 상대에게 무작위 디버프 2개를 1씩 부여합니다."},
@@ -14059,8 +14075,8 @@ const FOE={
    el:"마법",
    pas:[{k:"info",n:"죽음",kw:"죽음",d:"죽음: 잔해가 남습니다. 균열 군체의 「차원문 생성」은 잔해가 있으면 그 잔해를 다시 세웁니다."}],
    sk:[
-    {n:"악마 소환",w:1,tg:"none",open:1,summon:{n:"굶주린 자",min:1,max:1},d:"빈 칸에 굶주린 자를 소환합니다. (처음 한 번, 그 뒤로는 낮은 확률)"},
-    {n:"악마 소환2",w:1,tg:"none",summonRace:"악마",d:"빈 칸에 무작위 일반 등급 악마를 소환합니다. (낮은 확률)"},
+    {n:"악마 소환",w:1,tg:"none",open:1,summon:{n:"굶주린 자",min:1,max:1},d:"빈 칸에 굶주린 자를 소환합니다."},
+    {n:"악마 소환2",w:1,tg:"none",summonRace:"악마",d:"빈 칸에 무작위 일반 등급 악마를 소환합니다."},
     {n:"균열의 기운",w:5,tg:"none",riftAura:2,d:"악마 종족 적들에게 무작위 추가 능력치를 2 부여합니다."}],
    hit:"균열의 기운"},
  "굶주린 자":{hp:30,atk:4,def:3,rng:4,exp:0,
@@ -14394,7 +14410,7 @@ const FOE={
     배율을 곱해 보니(철퇴 25, 연타 12×3) 예전 간수장보다 훨씬 어려웠다 (sim, 4명 lv9 42% → 10%) */
  "간수장":    {hp:300,fixHp:1,atkScale:0.12,phases:[200,100],atk:8,def:10,rng:4,exp:8,boss:1,   /* atkScale 0.25 → 0.12 (사용자 2026-10-05: 너무 세다 — 1스테이지 14 → 11, 기술 피해 모두 -3). 공격력은 적 강화도의 이 몫만큼 오른다 (사용자 2026-10-04: 1스테이지 +282% 에서 8 → 14, 기술 피해도 같은 몫만큼) */
    el:"공격",
-   pas:[{k:"info",n:"세 단계",d:"체력 200 이하에서 2단계, 100 이하에서 3단계로 넘어갑니다. 단계마다 쓰는 패턴이 바뀝니다."},
+   pas:[{k:"info",hide:1,n:"세 단계",d:"체력 200 이하에서 2단계, 100 이하에서 3단계로 넘어갑니다. 단계마다 쓰는 패턴이 바뀝니다."},
         {k:"discipline",v:5,ph:3,n:"규율",d:"(3단계) 한 대원이 한 턴에 기술을 3번 사용할 때마다, 그 대원에게 피해를 5 줍니다."}],
    sk:[
     {n:"쇠사슬 끌기",ph:1,w:3,open:1,tg:"far",pull:1,deb:{bind:2},cd:2,chase:1,d:"(1단계) 가장 먼 상대를 맨 앞으로 끌어오고 속박을 2 부여합니다."},
@@ -15028,7 +15044,8 @@ function debBadges(u){
 /* 적의 지속 능력 풀이 — 턴이 지나며 바뀌는 수치(진급까지 남은 턴 · 지능 상승 · 얻은 공격력 · 과열 중첩)를 따라간다 (사용자 2026-10-08) */
 function foePasD(f,x){
   let d=x.d||"";
-  if(x.k==="promote"){ const rem=Math.max(1,(x.turns||3)-(f.age||0)); d=d.replace(/^\d+턴 후에/,rem+"턴 후에") }
+  if(x.k==="outRangeDmg") d=d.replace("{피해}",foeDmg(f,x.v,"마법"));   /* 실제로 들어가는 값 — hurtAlly 로 가는 foeEndPassives 와 같은 foeDmg */
+  else if(x.k==="promote"){ const rem=Math.max(1,(x.turns||3)-(f.age||0)); d=d.replace(/^\d+턴 후에/,rem+"턴 후에") }
   else if(x.k==="death"&&x.kind==="grpMag"){ const v=(x.v||0)+(f.deathUp||0); d=d.replace(/마법력을 \d+ 부여/,`마법력을 ${v} 부여`) }
   else if(x.k==="death"&&x.kind==="passAtk"&&(f.atkUp||0)>0) d+=` (지금 추가 공격력 +${f.atkUp})`;
   else if(x.k==="gazeGrow"&&(f.atkUp||0)>0) d+=` (지금까지 +${f.atkUp})`;
@@ -15041,6 +15058,7 @@ function foeStatusRows(f){
   foePasOn(f).forEach(x=>{
     const cutting=x.k==="echo"&&f.echoCutAt&&Date.now()-f.echoCutAt<ECHO_CUT_MS;   /* 벌목도가 끊는 중 — 연출이 끝날 때까지 표식을 둔다 */
     if(x.k==="echo"&&f.echoUsed&&!cutting) return;   /* 메아리는 한 번 울리고 나면 표식도 걷는다 (사용자 2026-09-29) */
+    if(x.hide) return;   /* 글만 감추는 지속 능력 (간수장 세 단계, 2026-10-12) */
     if(x.k==="drain"){ g.push(bd("g","흡수",Math.round((x.v||1)*100)+"%",x.d)); return }
     if(x.k==="bounty"){ t.push(bd("t",x.n,`${x.n} ${Math.max(0,f.bounty||0)}`,`이 대상을 처치하면 금화를 ${Math.max(0,f.bounty||0)}개 얻습니다. 적 턴이 끝날 때마다 2씩 감소합니다.`,x.n)); return }   /* 흡수는 대원처럼 버프 칸에 '흡수 100%' (사용자 2026-10-05) */
     const h=bd("t",x.kw||x.n,x.n,foePasD(f,x),x.n);
@@ -15750,6 +15768,10 @@ function placeParade(g,fi,f){
   return false;
 }
 /* 열병식 칸 목록 */
+/* 열병식 칸을 모두 걷는다 — 대형 망치기로 이겼을 때 · 모형 토벌을 받았을 때 둘이 같이 쓴다 (사용자 2026-10-12) */
+function paradeClear(){ let n=0;
+  if(run&&run.grid) run.grid.forEach((row,r)=>row.forEach((x,c)=>{ if(x.t==="parade"){ run.grid[r][c]={t:"empty"}; n++ } }));
+  run.paradeAt=null; return n }
 function paradeCells(){ const L=[]; if(run&&run.grid) run.grid.forEach((row,r)=>row.forEach((x,c)=>{ if(x.t==="parade") L.push({r:r,c:c}) })); return L }
 /* 여섯 시간마다 한 칸 — **셋이 통째로** 같은 방향으로 (사용자 2026-10-10. 하나씩 옮기던 것을 고쳤다).
    밀려면 **세 칸이 갈 자리가 모두 비어 있어야** 한다 — 하나라도 막히면 그 방향으로는 못 간다
@@ -17524,6 +17546,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 41, "v": "0.7", "d": "2026-10-12", "t": "수치·장신구·글 묶음 — 승리의 일격 너프 · 장신구 셋 괄호 수치 · 금단의 고서 · 적 의도 군더더기 · 종탑 3구역 배율 · 쉼터", "big": 0},
  {"b": 40, "v": "0.7", "d": "2026-10-12", "t": "경비견 상시 도발 · 메아리 정령 의도 · 기록 정정 잠금 · 지도에서 퀘스트 완료창", "big": 0},
  {"b": 39, "v": "0.7", "d": "2026-10-12", "t": "소환물을 깔면 적이 헛손질하던 것 — 닿지 않게 된 의도만 다시 정한다", "big": 0},
  {"b": 38, "v": "0.7", "d": "2026-10-12", "t": "카드가 날아가는 자리를 적 몸으로 (의도 줄 아이콘이 잡히던 것)", "big": 0},
@@ -18756,7 +18779,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=40;
+const BUILD_NO=41;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -20281,6 +20304,8 @@ function mapGridEl(peek){
       const x=PARADE_MOVE.find(y=>y.k===r+"-"+c);
       if(x){ d.classList.add("parademove"); d.style.setProperty("--dx",x.dc); d.style.setProperty("--dy",x.dr);
         d.style.setProperty("--bd",(300-(RN-x.t0))+"ms") } }
+    /* 고독의 동굴 — 수련이 끝난 칸이 빛난다 (사용자 2026-10-12) */
+    if(!peek&&kind==="cave"&&run.cave&&run.cave.r===r&&run.cave.c===c&&run.day>=run.cave.until) d.classList.add("caveglow");
     if(!peek&&typeof WOLF_MOVE!=="undefined"&&WOLF_MOVE&&WOLF_MOVE.length){
       const x=WOLF_MOVE.find(y=>y.k===r+"-"+c);
       if(x){ d.classList.add("wolfmove"); d.style.setProperty("--dx",x.dc); d.style.setProperty("--dy",x.dr);
@@ -20839,7 +20864,8 @@ let MAP_BORN=[], MAP_BORN_QUIET=0;   /* QUIET — 새 날 채운 전투 칸은 �
    ⚠️ **땅굴(`tunnel`)만 일부러 뺐다 (사용자 2026-10-08).** 들어가는 구역이 아니라 **지나가는 길**이라,
    묶으면 올라선 순간 활동량을 내고 들어가 「나가기」를 눌러야 해서 성가시다. **넣지 말 것.**
    (울타리 · 기력의 샘 · 빈 칸도 안 묶는다 — 들르는 구역이 아니다) */
-const LOCK_T={dungeon:1,elite:1,boss:1,tower:1,wagon:1,event:1,grove:1,thicket:1,nest:1,colony:1,croot:1,shop:1,dryshop:1,rest:1,forge:1,post:1,well:1,parade:1};
+const LOCK_T={dungeon:1,elite:1,boss:1,tower:1,wagon:1,event:1,grove:1,thicket:1,nest:1,colony:1,croot:1,shop:1,dryshop:1,forge:1,post:1,well:1,parade:1};
+/* 쉼터는 발을 묶지 않는다 — 활동량을 쓰지 않게 된 뒤로 「밟으면 반드시 들러야 하는 칸」이 되어 버렸다 (사용자 2026-10-12) */
 function mapLocked(){ const c=run&&run.grid[run.pos.r][run.pos.c];
   return !!(c&&LOCK_T[c.t]&&!c.done&&!c.visited&&canEnter(c)) }   /* 활동량이 넉넉하면 묶이고, 모자라면 지나간다 (사용자 2026-10-08 밤) */
 /* 발이 묶인 까닭 — 판 아래 글과 알림이 같이 쓴다 */
@@ -20878,6 +20904,7 @@ function mapGo(r,c){
    빈 칸 · 끝낸 칸 · 이미 들른 상점(다시 들어가기)은 셈하지 않는다.
    ⚠️ 덩굴 수풀(thicket)은 사용자 목록에 없어 다른 기믹처럼 1 로 두었다 — 확인받을 것 */
 const ENTER_FREE={boss:1,camp:1,fence:1,spring:1,croot:1,lockdoor:1,stair:1,hole:1,
+  rest:1,   /* 쉼터는 활동량을 쓰지 않는다 (사용자 2026-10-12). 시간 15분은 그대로 낸다 */
   tunnel:1};   /* 땅굴 — 들어가는 구역이 아니라 지나가는 길이라 올라서는 데는 안 낸다 (사용자 2026-10-08).
                   LOCK_T 에서도 빠져 있고 payEnter 를 거치지 않는다 — 여기까지 맞춰 둔다 (2026-10-10) */
 function enterCost(cell){
@@ -21107,8 +21134,8 @@ const MW_FOES=["부서진 파수병","고장난 수호기","수리 드론"];
 const KEY_TRIALS=[
  {id:"conf", n:"자신감의 시험", d:"일반 전투 구역에 3번 입장하면 계단 열쇠를 얻습니다. (퀘스트)", q:{k:"dungeon",n:3,lb:"일반 전투 구역 입장"}},
  {id:"curi", n:"호기심의 시험", d:"미지의 구역에 5번 입장하면 계단 열쇠를 얻습니다. (퀘스트)", q:{k:"event",n:5,lb:"미지의 구역 입장"}},
- {id:"greed",n:"탐욕의 시험",   d:"금화 20개를 잃고 계단 열쇠를 얻습니다.", gold:20},
- {id:"blood",n:"피의 시험",     d:"모든 대원이 최대 체력의 30% 피해를 받고 계단 열쇠를 얻습니다. (체력은 1 아래로 내려가지 않습니다)", blood:0.3},
+ {id:"greed",n:"탐욕의 시험",   d:"금화 35개를 잃고 계단 열쇠를 얻습니다.", gold:35},
+ {id:"blood",n:"피의 시험",     d:"모든 대원이 최대 체력의 40% 피해를 받고 계단 열쇠를 얻습니다. (체력은 1 아래로 내려가지 않습니다)", blood:0.4},
  {id:"elite",n:"정예로운 시험", d:"정예 전투 구역에 1번 입장하면 계단 열쇠를 얻습니다. (퀘스트)", q:{k:"elite",n:1,lb:"정예 전투 구역 입장"}}];
 function keyTrialPick(){ const L=KEY_TRIALS.map(t=>t.id); for(let i=L.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const x=L[i]; L[i]=L[j]; L[j]=x } return L.slice(0,3) }
 /* ═══ 마나 제련소 (사용자 2026-10-10) ═══
@@ -21214,7 +21241,7 @@ const GIM_EV={
     o:[{t:"종 울리기",d:"이 층의 빈 자리를 무작위 구역으로 가득 채웁니다. 종탑이 부서집니다.",end:1,
         f:()=>{ const n=bellFill(towerFloor(r)); run.grid[r][c]={t:"empty"}; SFX.play("danger");
           return `종이 크게 울립니다. 이 층의 빈 자리 ${n}곳에 구역들이 솟아납니다. 종탑이 무너져 내립니다.` }},
-       {t:"태엽 감기",d:"과거의 우두머리 영혼들과 싸웁니다. 1라운드는 1구역 우두머리, 2라운드는 2구역 우두머리 — 대신 체력 70%로 시작합니다. 이기면 상급 보상 2개. 종탑이 부서집니다.",
+       {t:"태엽 감기",d:"과거의 강력한 우두머리 영혼들과 싸웁니다. 승리하면 상급 보상을 2개 얻습니다.",
         f:()=>{ run.gimBattle={r:r,c:c,gears:1}; return "" }},
        {t:"나가기",d:"지도로 돌아갑니다.",leave:1,f:()=>""}]}),
   mana_pillar:(cell,r,c)=>{ const st=pillarState(towerFloor(r)), L=pillarLeft(cell);
@@ -21225,7 +21252,8 @@ const GIM_EV={
         f:()=>{ cell.until=tClock()+PILLAR_HOURS; SFX.play("unlock"); const s2=pillarState(towerFloor(r));
           return `기둥이 푸르게 타오릅니다. 이 층의 기둥 ${s2.on}/${s2.total} 활성화.`+(s2.total>0&&s2.on===s2.total?" 이 층의 모든 기둥이 켜져 모든 대원이 전투에서 추가 마나 +1을 얻습니다.":"") }},
        {t:"부수기",d:"기둥을 부수고 마나 장신구를 얻습니다. 사파이어 파편 50%, 사파이어 수정 40%, 마나석 10%. 부순 기둥은 이 층의 셈에서 빠집니다.",end:1,
-        f:()=>{ const nm=manaLoot(), it=ITEMS.find(i=>i.n===nm); run.grid[r][c]={t:"empty"}; SFX.play("danger");
+        f:()=>{ const nm=manaLoot(), it=ITEMS.find(i=>i.n===nm); run.grid[r][c]={t:"empty"};
+          if(sfxHas("건물 파괴")) SFX.play("건물 파괴"); else SFX.play("danger");   /* 고문실 · 사형장과 같은 녹음 (사용자 2026-10-12) */
           if(it) (run.after=run.after||[]).push({item:it});
           return `기둥이 산산이 부서지며 ${nm}${jo(nm,"ig")} 굴러 나옵니다.` }},
        {t:"나가기",d:"지도로 돌아갑니다.",leave:1,f:()=>""}]} },
@@ -21345,11 +21373,13 @@ const GIM_EV={
     t:"모형 병사들이 일렬로 서 열병식을 진행하고 있습니다.\n나무와 쇠로 깎은 병사들이 한 치도 어긋나지 않게 발을 맞춥니다.",
     o:[{t:"대형 망치기",d:"열병식 한가운데로 뛰어듭니다. 모형 전략가가 이끄는 정예 전투입니다. 이기면 상급 보상 1개와 다른 보상을 얻고, 모형 열병식 칸이 모두 사라집니다.",
         f:()=>{ run.gimBattle={r:r,c:c,parade:1}; return "" }},
-       {t:"모형 토벌",d:"퀘스트 — 모형 병사를 10회 처치합니다. (보상: 특수 장신구 「모형 창」)",end:1,
+       {t:"모형 토벌",d:"퀘스트 — 모형 병사를 10회 처치합니다. (보상: 특수 장신구 「모형 창」) 모형 열병식 칸이 모두 사라집니다.",end:1,
         when:()=>!(run.keyQ||[]).some(q=>q.id==="parade"),
         f:()=>{ (run.keyQ=run.keyQ||[]).push({id:"parade",n0:"모형 토벌",k:"모형 병사",n:10,have:0,lb:"모형 병사 처치",give:"모형 창"});
-          SFX.play("unlock"); return "대열을 눈에 담아 둡니다. 모형 병사를 열 번 쓰러뜨리면 되겠습니다." }},
-       {t:"나가기",d:"지도로 돌아갑니다.",leave:1,f:()=>""}]}),
+          const gone=paradeClear(); SFX.play("unlock");   /* 칸도 모두 걷는다 (사용자 2026-10-12) */
+          return `대열을 눈에 담아 둡니다. 모형 병사를 열 번 쓰러뜨리면 되겠습니다. 열병식 칸 ${gone}곳이 흩어집니다.` }},
+       {t:"나가기",d:"주변 무작위 열병식을 제외한 1칸 이내 구역으로 밀려납니다.",end:1,
+        f:()=>{ gimPush(r,c,["parade"]); return "대열에 휩쓸리지 않게 옆으로 비켜 섭니다." }}]}),
   spring:(cell,r,c)=>({n:"기력의 샘",art:"ink_sp_spring",face:"샘의 잔영",gim:1,
     t:`맑은 샘에서 푸른 기운이 솟습니다. 수정을 대면 빛이 돌아올 것 같습니다.\n푸른 수정 ${run.crystal==null?CRYSTAL_MAX:run.crystal}/${CRYSTAL_MAX}`,
     o:[{t:"기력 충전",d:"푸른 수정을 1회 충전합니다.",end:1,
@@ -21481,13 +21511,13 @@ function gimFenceBattle(){
     say("간수 초소 — 경비병을 모두 쓰러뜨리면 초소가 무너집니다.","t3");
     return;
   }
-  if(g.gears){   /* 톱니 용광로 종탑 — 과거의 우두머리 영혼 둘 (1라운드 1구역 · 2라운드 2구역 우두머리, 체력 70%) */
+  if(g.gears){   /* 톱니 용광로 종탑 — 과거의 우두머리 영혼 둘. 둘 다 3구역 우두머리 배율, 체력은 그대로, 에너지 보호막 300 (사용자 2026-10-12) */
     startDungeon({t:"elite",waves:2,gears:1},g.r,g.c);
     run.dun.waveFoes=[0,1].map(i=>[[BOSSES[i],(FOE[BOSSES[i]]||{}).bossSlot||1]]);
-    run.dun.souls=[0,1]; run.dun.hpPct=0.7;
+    run.dun.souls=[2,2]; run.dun.foeEsh=300;   /* [0,1] 이었다 — 3구역 한복판인데 1·2구역 배율(3.40 · 6.46)이라 되레 약했다 (사용자 2026-10-12) */
     startBattle("elite");
     setTimeout(()=>stepBanner("종 탑","과거의 우두머리들이 깨어납니다"),40);
-    say("종탑 — 과거의 우두머리 영혼들이 차례로 나섭니다. 체력은 70% 입니다.","t3");
+    say("종탑 — 과거의 우두머리 영혼들이 차례로 나섭니다. 에너지 보호막 300 을 두르고 있습니다.","t3");
     return;
   }
   startDungeon({t:"dungeon",waves:1,fence:1},g.r,g.c);
@@ -21653,9 +21683,7 @@ function gimBattleWon(d){
     (run.after=run.after||[]).push({grade:"중급"},{grade:"중급"},{item:rnd(ITEMS.filter(i=>i.g==="일반"))});
     title="첨탑"; sub="첨탑 관리자를 쓰러뜨렸습니다"; msg="첨탑이 무너지고 울타리가 걷힙니다. 관리자의 금고에서 나온 것들입니다." }
   else if(d.cell.parade){   /* 모형 열병식 (사용자 2026-10-10) */
-    let gone=0;
-    run.grid.forEach((row,r)=>row.forEach((x,c)=>{ if(x.t==="parade"){ run.grid[r][c]={t:"empty"}; gone++ } }));
-    run.paradeAt=null;
+    const gone=paradeClear();
     (run.after=run.after||[]).push({grade:"상급"},{grade:"중급"});
     title="모형 열병식"; sub="모형 전략가를 쓰러뜨렸습니다";
     msg=`대열이 무너지고 모형들이 흩어집니다. 열병식 칸 ${gone}곳이 사라집니다.`;
@@ -23331,8 +23359,8 @@ const EVENTS=[
  {n:"죄수의 떠도는 영혼",art:"fx_soul", face:"굶주린 그림자",
   when:()=>run.field===0,
   t:"길을 지나가는 당신 등을 갑자기 나타난 영혼이 두드립니다.\n깜짝 놀란 당신은 뒤를 돌아봅니다.\n<wave>\"내 말을 들어주게...\"</wave>",
-  o:[{t:"이야기 들어주기",d:"따분한 이야기를 3시간 동안 듣습니다. 모든 대원이 경험치를 12 얻습니다.",
-      f:()=>{ spend(3,0); giveExp(12,run.heroes.filter(h=>!h.down),true); return "길고 긴 이야기였습니다. 3시간이 흘렀습니다. 모든 대원이 경험치를 12 얻었습니다." }},
+  o:[{t:"이야기 들어주기",d:"따분한 이야기를 3시간 동안 듣습니다. 모든 대원이 경험치를 30 얻습니다.",
+      f:()=>{ spend(3,0); giveExp(30,run.heroes.filter(h=>!h.down),true); return "길고 긴 이야기였습니다. 3시간이 흘렀습니다. 모든 대원이 경험치를 30 얻었습니다." }},
      {t:"정신차리기",d:"고개를 휘젓습니다. 뒤에는 아무도 없었습니다. 오염도가 15 감소합니다.",
       f:()=>{ addTaint(-15); return "고개를 휘젓습니다. 뒤에는 아무도 없었습니다. 오염도가 15 내려갔습니다." }},
      {t:"영혼 거두기",d:"하하하! 썩 괜찮은 영혼이구나! (대원 중 쿠렘타이가 있다면 선택할 수 있습니다.)",
@@ -25114,7 +25142,7 @@ function startBattle(kind,pinned){
       taunt:0,thorn:0,evade:0,negShield:0,hide:0,deb:{}});
   });
   B.foes.forEach(f=>foeFix(f));   /* 체력을 못 박은 우두머리 (간수장 300) */
-  if(run.dun&&run.dun.hpPct) B.foes.forEach(f=>{ f.hp=Math.max(1,Math.round(f.maxHp*run.dun.hpPct)) });   /* 종탑 — 체력 70% 로 시작 */
+  if(run.dun&&run.dun.foeEsh) B.foes.forEach(f=>{ f.eshield=(f.eshield||0)+run.dun.foeEsh });   /* 종탑 — 에너지 보호막 300 으로 시작 (사용자 2026-10-12) */
   B.foes.forEach(f=>{ const b=foePas(f,"bounty"); if(b) f.bounty=b.v });   /* 미믹 — 쥔 금화 (2026-10-05) */
   /* 사슬에 묶인 마귀 — 묶여 있는 동안은 속박 99 (사용자 2026-09-29). 사슬 간수가 다 죽어 각성하면 boundCheck 가 푼다 */
   B.foes.forEach(f=>{ if(foePas(f,"bound")&&!f.awake){ f.deb=f.deb||{}; f.deb.bind=99 } });
@@ -25831,7 +25859,7 @@ function foePeekHtml(f){
     </div>
     ${bits.length?`<div class="pfrow"><span class="pl">지닌 것</span>${
       bits.map(b=>`<span class="chip on">${esc(b)}</span>`).join("")}</div>`:""}
-    ${(D.pas&&D.pas.length)?`<div class="pfrow"><span class="pl">지속 기술</span>${passChips(f)}</div>`:""}
+    ${(D.pas&&D.pas.some(p=>!p.hide))?`<div class="pfrow"><span class="pl">지속 기술</span>${passChips(f)}</div>`:""}
     ${ails.length?`<div class="pfrow"><span class="pl">걸린 것</span>${
       ails.map(b=>`<span class="chip">${esc(b)}</span>`).join("")}</div>`:""}
     <div class="pfrow"><span class="hint">${esc(D.hit||"공격")}${jo(D.hit||"공격","eu")}로 때립니다, ${foeNo(f.slot)}번 칸에 서 있습니다 — 거리는 <b>${foeNo(f.slot)} − 내 칸 번호</b>, 적 칸을 다시 누르면 닫힙니다</span></div>
@@ -25919,7 +25947,7 @@ function foePasOn(f){ const D=FOE[f.name]; const L=((D&&D.pas)||[]).filter(p=>(!
 function foePas(f,k){ return foePasOn(f).find(p=>p.k===k)||null }
 function passChips(f){
   const P=foePasOn(f);
-  return P.map(p=>`<span class="chip pass" title="${esc(p.d||"")}">${esc(p.n)}</span>`).join("");
+  return P.filter(p=>!p.hide).map(p=>`<span class="chip pass" title="${esc(foePasD(f,p))}">${esc(p.n)}</span>`).join("");
 }
 /* 그 적의 충전 턱 — FOE 에 chgMax 를 적으면 그 수, 없으면 둘 (사용자 2026-10-07) */
 function chgMax(f){ return ((FOE[(f&&f.name)||""]||{}).chgMax)||2 }
@@ -28726,7 +28754,7 @@ function skShort(h,s){
   if(!h||!s||h.name!=="도미니코") return null;
   const dm=domDemon(h);
   if(s.wand) return "아군이면 체력을 1 회복시킵니다.\n적이면 피해를 2(추가 "+(dm?"†":"¤")+" ) 줍니다.";
-  if(s.shackle) return dm?"가장 가까운 적에게 공포를 부여하고 피해를 8(추가 † ) 줍니다.":"잠금(1). 가장 가까운 적을 속박시키고 피해를 8(추가 ¤ ) 줍니다.";
+  if(s.shackle) return dm?"잠금(1). 가장 가까운 적에게 보호약화를 1 부여하고 피해를 8(추가 † ) 줍니다.":"잠금(1). 가장 가까운 적을 속박시키고 피해를 8(추가 ¤ ) 줍니다.";
   return null;
 }
 function shortDesc(t){
@@ -29141,7 +29169,9 @@ function pickCount(n){
     if(el2.dataset.item){
       const it=itemDef(el2.dataset.item);
       if(!it) return;
-      b.innerHTML=itemCard(it);
+      /* 임자를 알면 괄호에 그 대원의 수치가 들어간다 (전투 화면). 모르면 빈 괄호 그대로 */
+      const own=el2.dataset.ih?((run&&run.heroes)||[]).find(x=>x.name===el2.dataset.ih):null;
+      b.innerHTML=itemCard(it,own);
       b.classList.add("wide");
       b.style.display="block";
       const ri=el2.getBoundingClientRect(), wi=b.offsetWidth, hi=b.offsetHeight;
@@ -29684,11 +29714,12 @@ function onSummon(h){
       fx({side:"foe",slot:f.slot,sheet:"fx_poison_break",sheetOpt:{z:1.6,ms:470},gap:i?90:160}) });
     say(`독이 담긴 병 — ${h.name}${jo(h.name,"ig")} 나서며 모든 적에게 공격약화, 마법약화, 보호약화 ${v}`,"t2");
   }
-  if(t.placeBurn){
+  { const BL=placeBurns(h);   /* 잔불 — **몫마다 적을 다시 뽑는다** (사용자 2026-10-12) */
     const live=B.foes.filter(f=>f.alive);
-    if(live.length){ const f=rnd(live); const nb=negCut(f,"burn",t.placeBurn); f.burn=(f.burn||0)+nb; if(nb) f.burnBy=h.name;
+    if(BL.length&&live.length) BL.forEach(v=>{
+      const f=rnd(live); const nb=negCut(f,"burn",v); f.burn=(f.burn||0)+nb; if(nb) f.burnBy=h.name;
       fx({side:"foe",slot:f.slot,debIc:"burn",txt:"화상"+f.burn,cls:"dmg",gap:60});
-      say(`잔불 — ${f.name} 화상 ${f.burn}`,"t2") } }
+      say(`잔불 — ${f.name} 화상 ${f.burn}`,"t2") }) }
   if(t.genMark){
     B.foes.forEach(f=>{ f.gmark=0 });
     const gm=nearestFoe(h);
@@ -30259,6 +30290,15 @@ function predictSelf(h,s){
    하급 [한도 3 · 배율 2] · 중급 [5 · 2] · 상급 [99 · 3(남은 추진력 전부)]. 같은 보상을 여럿 고를 수 있다(공용 보상은 횟수 제한이 없다) —
    하급 둘 + 중급 둘이면 6 + 6 + 10 + 10. **작은 한도부터** 돈다 — 하급 · 중급이 제 몫을 쓰고 **남은 것을 상급이 전부** 먹는다.
    추진력이 모자라면 있는 만큼 차례로 쓰고 모자란 몫은 0. h.tag.dashes = [[한도,배율],…]. 옛 저장의 dashMax · dashMul 은 한 몫으로 읽는다 */
+/* 잔불 — 고른 보상 하나하나가 **제 몫을 따로** 돌린다 (달리기와 같은 결, 사용자 2026-10-12).
+   숫자를 합치면 적 하나에게 한꺼번에 가서, 적이 둘이어도 나뉘지 않는다.
+   h.tag.burns = [양,…]. 옛 저장의 placeBurn 은 한 몫으로 읽는다. */
+function placeBurns(h){
+  const T=(h&&h.tag)||{};
+  const L=(T.burns||[]).slice();
+  if(!L.length&&T.placeBurn) L.push(T.placeBurn);
+  return L;
+}
 function dashRuns(h){
   const T=(h&&h.tag)||{}; let L=(T.dashes||[]).map(x=>x.slice());
   if(!L.length&&T.dashMul) L=[[T.dashMax||3,T.dashMul]];
@@ -31216,13 +31256,14 @@ function doSkill(target){
     else { h.mana-=s.cost; h.manaUsed=(h.manaUsed||0)+s.cost;
       if(s.cost){
         const mm=itemBt(h,"manaMom"); if(mm) h.mom+=mm;   /* '마나를 소모할 때마다 추진력 +1' — 쓴 마나만큼 주던 것 (점검 2026-10-07) */
-        const ms2=itemBt(h,"manaShield"); if(ms2) addShield(h,s.cost*ms2);
+        const ms2=itemBt(h,"manaShield"); if(ms2) addShield(h,(h.def||0)*ms2);   /* 전장의 함성 — 쓴 마나가 아니라 **추가 보호력**만큼 (사용자 2026-10-12) */
         (h.items||[]).forEach(it=>{ const k=it.bt&&it.bt.manaBolt; if(!k) return;
           const list=B.foes.filter(f=>f.alive);
           if(!list.length) return;
           const t2=(k==="mag")?list.reduce((a,b)=>a.slot>=b.slot?a:b)
                               :list.reduce((a,b)=>a.slot<=b.slot?a:b);
-          asSrc(h,()=>hurt(t2,s.cost+(k==="mag"?h.mag:h.atk),k==="mag"?"기초 마법서: 마나":"검투사의 검",k==="mag"?"mag":"slash")) });   /* 처치 주인 (점검 2026-10-07) */
+          /* 쓴 마나는 안 더한다 — **이 대원의 추가 공격력 · 추가 마법력**만큼 (사용자 2026-10-12) */
+          asSrc(h,()=>hurt(t2,(k==="mag"?(h.mag||0):(h.atk||0)),k==="mag"?"기초 마법서: 마나":"검투사의 검",k==="mag"?"mag":"slash")) });   /* 처치 주인 (점검 2026-10-07) */
       }
       if(h.name==="이테리오"&&s.cost){
         const v=s.cost+2*(h.tag.manaLeap||0);   /* 마나 도약 — 마나 과충전이 한 번 걸릴 때마다 +2 */
@@ -31511,18 +31552,20 @@ function domChgTake(h){ const v=h.wandChg||0; h.wandChg=0; return v }   /* 충�
 const DOM_DEMON_FULL={
  "라이티늄 지팡이":"아군이면 체력을 1(추가 ) 회복시킵니다.\n적이면 피해를 2(추가 † ) 줍니다.\n\n_독서 중첩_을 1 얻습니다.\n\n_축복 상태_라면 치명타로 적중합니다. (체력도 2배 회복)",
  "의지 약화":"다음 턴 동안 선택한 적의 모든 추가 능력치를 3(추가 ) 감소시킵니다.\n\n_독서 중첩_을 2 얻습니다.\n\n_축복 상태_라면 도미니코가 추가 공격력을 3 얻습니다.",
- "영광의 족쇄":"추가 보호력과 마법력을 공격력으로 변환합니다. \n가장 가까운 적에게 공포를 부여하고 피해를 8(추가 † ) 줍니다.\n\n_독서 중첩_을 1 얻습니다.\n\n_축복 상태_라면 추가 공격력도 1 얻습니다.",
- "참회의 기류":"잠금(2). 아군에게 추가 공격력을 1, 적에게 피해를 1(추가  ) 주는 기류를 날립니다.\n\n기류는 가장 먼 적에게 날아갔다가 돌아오고, 캐릭터를 지날 때마다 공격력 부여량과 피해량이 1(추가 ) 증가합니다."};
+ "영광의 족쇄":"잠금(1). 추가 보호력과 마법력을 공격력으로 변환합니다. \n가장 가까운 적에게 보호약화를 1 부여하고 피해를 8(추가 † ) 줍니다.\n\n_독서 중첩_을 1 얻습니다.\n\n_축복 상태_라면 공포도 1 부여합니다.",
+ "참회의 기류":"잠금(3). 사용한도(2). 아군에게 추가 공격력을 1, 적에게 피해를 1(추가  ) 주는 기류를 날립니다.\n\n기류는 가장 먼 적에게 날아갔다가 돌아오고, 캐릭터를 지날 때마다 공격력 부여량과 피해량이 1(추가 ) 증가합니다."};
 /* 금단의 고서에 손을 대다 — 종족 악마 · 직업 학살자(unitTags), 기술 넷의 글과 값이 바뀐다. 외형 · 얼굴 · 지도 손은 domDemonRun 이 본다 */
 function domCorrupt(h){
   const T=h.tag; T.demon=1; T.demonShown=0;
+  /* 타락의 값 — 최대 체력 30 (사용자 2026-10-12). 다른 「깎는」 보상들과 같은 한 줄 */
+  h.maxHp=Math.max(1,h.maxHp-30); h.hp=Math.min(h.hp,h.maxHp);
   (h.sk||[]).forEach(k=>{ if(!k) return;
     if(k.wand) k.full=DOM_DEMON_FULL["라이티늄 지팡이"];
     if(k.weaken) k.full=DOM_DEMON_FULL["의지 약화"];
-    if(k.shackle){ k.full=DOM_DEMON_FULL["영광의 족쇄"]; k.cost=Math.max(0,3-(T.prisonDiary?1:0)); k.lock=0; k.d="공포 + 피해 8, 보호력 · 마법력을 공격력으로" }   /* 비용 3 · 잠금 없음 (노트 글 그대로) */
-    if(k.penance){ k.full=DOM_DEMON_FULL["참회의 기류"]; k.lock=2; k.d="잠금(2), 아군 공격력 · 적 피해가 지날 때마다 커진다" } });
+    if(k.shackle){ k.full=DOM_DEMON_FULL["영광의 족쇄"]; k.cost=Math.max(0,3-(T.prisonDiary?1:0)); k.lock=1; k.d="잠금(1), 보호약화 + 피해 8, 보호력 · 마법력을 공격력으로" }   /* 잠금 0→1 · 공포 → 보호 약화 (사용자 2026-10-12) */   /* 비용 3 (노트 글 그대로) */
+    if(k.penance){ k.full=DOM_DEMON_FULL["참회의 기류"]; k.lock=3; k.limit=2; k.d="잠금(3), 사용한도(2), 아군 공격력 · 적 피해가 지날 때마다 커진다" } });   /* 잠금 2→3 · 사용 한도 2 (사용자 2026-10-12) */
   try{ if(typeof document!=="undefined"&&document.body&&typeof ICON_PNG!=="undefined"&&ICON_PNG.fx_dom_scene){ T.demonShown=1; domCorruptScene() } }catch(e){}   /* 고른 자리에서 변신 장면 (사용자 2026-10-06) — 그러면 전투 첫 배치의 변신은 건너뛴다 */
-  if(typeof toast==="function") toast("금단의 고서 — 도미니코가 악마로 타락합니다.");
+  if(typeof toast==="function") toast("금단의 고서 — 도미니코가 악마로 타락합니다. 최대 체력 −30");
 }
 /* 금단의 고서 장면 — 사제가 서 있다가(1) 책을 펼쳐 읽고(2), 균열이 번지며 떨리고(3~5) "이게 무슨 일이지?" · "안돼!",
    뿔과 붉은 피부가 돋아(6 · 7) 악마로 깨어난다(8) "마침내 깨어났다!". 누르면 건너뛴다 (tools/dominico-scene.py, 사용자 2026-10-06) */
@@ -31625,10 +31668,11 @@ function domShackle(h,s){
   const ctl=tgts;
   ctl.forEach((f,k)=>{ const sl=f.slot;   /* 족쇄를 던진다 — 빙글 돌며 날아가 대상에게 채워진다 (사용자 2026-10-06) */
     fx({side:"mine",slot:h.slot,fn:()=>domThrowFX(h,sl,()=>{ domSheet(h,"shackle","foe",sl,{px:150,y:.5,from:1,k:2.1,lock:700}); if(!k) SFX.play(sfxOr("도미니코 족쇄 기절","block")) }),gap:k<ctl.length-1?90:1650});   /* 축복이면 모두에게 거의 함께 던지고, 마지막 뒤에 기다린다. 던짐 0.36초 + 채워짐 1.3초 — 다 채워진 뒤에 기절 · 피해 */
-    if(dem) addDeb(f,"fear",1,h);
+    if(dem){ addDeb(f,"defDn",1,h);                 /* 악마판 — 공포 대신 보호 약화 (사용자 2026-10-12) */
+      if(bl) addDeb(f,"fear",1,h) }                  /* 축복이면 공포도 1 (전에는 도미니코가 공격력 +1 이었다) */
     else if(bl) addDeb(f,"stun",1,h);   /* 부정 보호막을 거친다 (점검 2026-10-07) */   /* 축복 — 속박 대신 기절 (사용자 2026-10-06) */
     else addDeb(f,"bind",1,h) });
-  if(bl&&dem){ bumpRnd(h,"atk",1); fx({side:"mine",slot:h.slot,ring:"#e0705a",txt:"공격력 +1",cls:"buf",gap:80}); say("축복 — 추가 공격력 +1","t1") }   /* 악마판 축복 (사용자 2026-10-06) */
+  if(bl&&dem){ say("축복 — 공포도 1","t1") }   /* 악마판 축복 — 공포는 위에서 적마다 걸었다 (사용자 2026-10-12) */   /* 악마판 축복 (사용자 2026-10-06) */
   else if(bl) say("축복 — 속박 대신 기절","t1");
   const crit=!!T.critShackle;
   let v=domShackleDmg(h,s,near,1); if(crit) v*=2;   /* 연쇄 족쇄가 쓰는 값 — 가까운 적 기준 */
@@ -34704,7 +34748,7 @@ function heroPanel(h){
   if(h.items&&h.items.length){
     box.appendChild(el(`<div class="hp-h">장비</div>`));
     box.appendChild(el(`<div class="hp-tk">${h.items.map(t=>
-      `<span class="kw" data-item="${esc(t.n)}">${esc(t.n)}</span>`).join("")}</div>`));
+      `<span class="kw" data-item="${esc(t.n)}" data-ih="${esc(h.name||"")}">${esc(t.n)}</span>`).join("")}</div>`));
   }
   return box;
 }
@@ -34780,7 +34824,8 @@ function offerCards(app,hero,grade,done,lvUp){
   }
   let rrBtn=null;
   { const hum=lvUp?(synOn("인간",3)?2:synOn("인간",2)?1:0):0;
-    const gam=run.heroes.some(h=>itemBt(h,"gambleRR"))?1:0;   /* 도박용 기계 파편 — 보상 화면마다 한 번 더 (2026-10-05) */
+    const gam=itemBt(hero,"gambleRR")?1:0;   /* 도박용 기계 파편 — **장착한 대원이 고를 때만** (사용자 2026-10-12).
+      전에는 run.heroes.some 이라 남이 차고 있어도 새로고침이 생겼다. 가방은 itemBt 가 애초에 안 센다 */
     const used=(pending&&pending.rrUsed&&pending.rrUsed[pkey])||0, left=hum+gam-used;
     if(left>0&&pending){ const useGam=used>=hum;   /* 인간 몫을 먼저 쓰고 파편 몫은 끝에 */
       const icon=useGam&&gam?(iconImg(ITEM_ICON["도박용 기계 파편"]||"item_special_gambling_shard")||synIcon("인간")):synIcon("인간");
