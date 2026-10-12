@@ -10778,6 +10778,22 @@ function coreQuestNow(){ const c=coreNow(), q=c&&c.quest;
    금화 · 제련석 · 최대 체력은 CORE_GIFT 가 그 자리에서 넣지만, 등급 보상 · 장신구는 run.after 에 쌓인다.
    ⚠️ 걷는 중(run.walkTo) · 전투 중 · 이벤트 중에는 열지 않는다 — 그 활동을 다 마치고 열린다.
    render0 이 그릴 때마다 들여다보므로 조건이 맞는 첫 순간에 열린다 (안 맞으면 backToMap 이 받는다) */
+/* 끝낸 퀘스트의 완료 화면 — 지도에 멈춰 섰으면 그 자리에서 연다 (사용자 2026-10-12).
+   세계핵 반복 퀘스트와 보통 퀘스트가 같은 줄(run.qDone)을 타므로 둘 다 여기서 열린다.
+   ⚠️ 전투 중에 찬 것은 여기서 안 열린다 — 아래 조건이 막고, 전투가 끝나면 backToMap 이 받는다.
+   ⚠️ coreGiftOpen 보다 먼저 불러야 한다. 완료창이 보상 상자보다 앞이다 */
+let QDONE_T=0;
+function qDoneOpen(){
+  if(QDONE_T) return;
+  if(typeof run==="undefined"||!run||typeof view==="undefined") return;
+  if(view!=="map"||run.walkTo) return;                               /* 지도에 멈춰 섰을 때만 */
+  if(typeof B!=="undefined"&&B&&!B.over) return;                     /* 전투 중 */
+  if(run.ev||run.gimRes||run.pendingLv||run.lost) return;            /* 이벤트 · 기믹 결과 · 레벨업 중 */
+  if(!(run.qDone||[]).length) return;
+  QDONE_T=setTimeout(()=>{ QDONE_T=0;
+    try{ if(view==="map"&&!run.walkTo&&(run.qDone||[]).length){
+      run.qShow=run.qDone.shift(); view="questdone"; render() } }catch(e){ console.error(e) } },320);
+}
 let CORE_GIFT_T=0;
 function coreGiftOpen(){
   if(CORE_GIFT_T) return;
@@ -10799,7 +10815,8 @@ function coreQuestTick(k,n){
   /* 「퀘스트 완료」 화면 — 보통 퀘스트와 같은 줄(run.qDone)에 태운다 (사용자 2026-10-12).
      전투 중에 차도 그 자리에서 안 띄운다 — 전투가 끝나 지도로 돌아갈 때 backToMap 이 받는다.
      ⚠️ 한 번에 여러 번 차면 한 화면에 모은다 — 위 while 이 최대 50번까지 터지므로 창을 그만큼 띄울 수 없다 */
-  if(fired&&!run.sandbox) (run.qDone=run.qDone||[]).push({core:c.id, nm:c.n, icon:c.icon, n:fired, got:got});
+  if(fired&&!run.sandbox){ (run.qDone=run.qDone||[]).push({core:c.id, nm:c.n, icon:c.icon, n:fired, got:got});
+    try{ qDoneOpen() }catch(e){} }   /* 지도에 서 있으면 그 자리에서 연다 (사용자 2026-10-12) */
   /* 보통 퀘스트와 같은 연출로 알린다 (사용자 2026-10-09) —
      퀘스트 칸에서 목록이 펼쳐지는 것(questPopFX)은 questProgress 와 같은 줄(run.qPend)에 태우고,
      소리와 전투 말풍선은 questCompleteFX 가 맡는다 */
@@ -14144,7 +14161,7 @@ const FOE={
     {n:"정지",w:9,tg:"self",stop:1,cond:"low30",once:1,must:1,d:"1턴 동안 정지 상태가 됩니다."}],
    hit:"모래폭풍"},
  /* 시간의 틈을 지키는 문지기 골렘. 앞을 막고, 대원의 앞뒤를 뒤바꾸고, 선고로 모두를 멈춘다 (체력 100 고정) */
- "시평선의 문지기":{hp:100,fixHp:1,atk:8,def:9,rng:6,exp:16,
+ "시평선의 문지기":{hp:100,fixHp:1,atk:8,def:9,rng:6,exp:16,strong:1,
    chgMax:3,
    el:"공격",
    gim:{armor:5},
@@ -15034,7 +15051,7 @@ function foeStatusRows(f){
     `죽음: ${f.dthTag.who||""}${f.dthTag.who?jo(f.dthTag.who,"eul"):""} 소환합니다. 살아있는 덩굴이 심어 둔 것입니다.`,
     f.dthTag.n||"기생"));   /* 특징 — 이름 밑에 늘 보이는 줄 (사용자 2026-09-19), 커서 올리면 풀이 */
   if(f.taunt) g.push(bd("g","도발",f.tauntTurn?`${Math.max(1,f.tauntTurn-1)}턴`:"","겨눌 수 있는 대상이 있으면 이 적부터 겨눠야 합니다"));
-  if(f.thorn) g.push(bd("g","가시",`${f.thorn}${f.thornTurn?` (${Math.max(1,f.thornTurn-1)}턴)`:""}`,"맞을 때마다 되받아칩니다"));
+  if(f.thorn) g.push(bd("g","가시",`${f.thorn}${f.thornTurn?` (${thornLeft(f)}턴)`:""}`,"맞을 때마다 되받아칩니다"));
   if(f.evade) g.push(bd("g","회피",f.evade,"다음 공격 한 번을 통째로 흘립니다"));
   if(f.rew>0) g.push(bd("g","되감기",f.rew,"쌓인 만큼 이번 턴에 한 번 더 행동합니다"));
   if(f.armor>0) g.push(bd("g","갑피",f.armor,"한 번에 받는 피해를 이 수치까지로 잘라냅니다"));
@@ -16823,6 +16840,7 @@ function render(){
   if(run&&run.mapPeek&&view!=="map"&&view!=="title") drawMapPeek();
   flushFX();
   try{ BGM.sync() }catch(e){}
+  try{ qDoneOpen() }catch(e){}      /* 끝낸 퀘스트가 있고 지도에 멈춰 섰으면 완료 화면부터 */
   try{ coreGiftOpen() }catch(e){}   /* 세계핵 보상이 쌓여 있고 지도에 멈춰 섰으면 연다 */
   saveSoon();
 }
@@ -17506,6 +17524,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 40, "v": "0.7", "d": "2026-10-12", "t": "경비견 상시 도발 · 메아리 정령 의도 · 기록 정정 잠금 · 지도에서 퀘스트 완료창", "big": 0},
  {"b": 39, "v": "0.7", "d": "2026-10-12", "t": "소환물을 깔면 적이 헛손질하던 것 — 닿지 않게 된 의도만 다시 정한다", "big": 0},
  {"b": 38, "v": "0.7", "d": "2026-10-12", "t": "카드가 날아가는 자리를 적 몸으로 (의도 줄 아이콘이 잡히던 것)", "big": 0},
  {"b": 37, "v": "0.7", "d": "2026-10-12", "t": "이동 오염도 5→4 · 균열 세계핵 5→4 · 카드를 못 내는 까닭을 말해 준다", "big": 0},
@@ -18737,7 +18756,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=39;
+const BUILD_NO=40;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -20765,7 +20784,7 @@ function ambushChance(cell,r,c){ return ambushChance0(cell,r,c)*(synOn("망자",
 function ambushChance0(cell,r,c){
   if(!cell) return 0;
   if(r!=null&&nestNear(r,c)) return 0;   /* 반딧불 둥지 둘레 2칸 — 밤에도 습격 없음 (2026-10-01) */
-  const night=run.night?Math.min(0.85, 0.45+nightDepth()*0.05):0;
+  const night=run.night?Math.min(0.85, 0.30+nightDepth()*0.05):0;   /* 기본 45% → 30% (사용자 2026-10-12: 55% → 40%. 밤이 깊을수록 5%p 씩 오르는 것은 그대로) */
   /* 간수 초소 둘레 2칸 — 빈 칸이 아니어도 25%. 순찰로의 빈 칸 — 낮에도 25% (사용자 2026-09-15) */
   if(r!=null&&postNear(r,c)&&cell.t!=="camp"&&cell.t!=="boss"&&cell.t!=="wall"&&cell.t!=="post") return Math.max(night,0.25);
   if(cell.t!=="empty") return 0;
@@ -24314,6 +24333,7 @@ function questProgress(kind,hero){
       else if(!run.sandbox) (run.qPend=run.qPend||[]).push(u) }   /* 지도로 돌아오면 퀘스트 아이콘에서 (questPendPlay) */
     if(q.cur<q.need) questSnd("퀘스트 스택 달성");   /* 한 칸 — 적 처치 · 미지의 구역 도착마다 (사용자 2026-10-06) */
     if(q.cur>=q.need){ q.done=1; (run.qDone=run.qDone||[]).push(q.id); questCompleteFX(q.id);
+      try{ qDoneOpen() }catch(e){}   /* 지도에 서 있으면 그 자리에서 연다 (사용자 2026-10-12) */
       if(Q.reward&&Q.reward.chestTwice) run.chestTwice=1 }   /* 현상 수배 — 이 전투의 상자를 한 번 더 */
   });
 }
@@ -25776,7 +25796,7 @@ function foePeekHtml(f){
   const race=foeRace(f);
   const bits=[];
   if(f.taunt)     bits.push(`도발`);
-  if(f.thorn)     bits.push(`가시 ${f.thorn}${f.thornTurn?` (${Math.max(1,f.thornTurn-1)}턴)`:""}`);
+  if(f.thorn)     bits.push(`가시 ${f.thorn}${f.thornTurn?` (${thornLeft(f)}턴)`:""}`);
   if(f.evade)     bits.push(`회피 ${f.evade}`);
   if(f.negShield) bits.push(`부정 보호막 ${f.negShield}`);
   if(foeHidden(f))bits.push(`은신`);
@@ -26944,14 +26964,24 @@ function skTurnStart(){
     boundCheck(f);
     { const et=foePas(f,"everyTwo"); if(et&&f.awake){ f.awakeTurns=(f.awakeTurns||0)+1;
         if(f.awakeTurns%2===0){ f.atk+=et.v; f.atkUp=(f.atkUp||0)+et.v; fx({side:"foe",slot:f.slot,s:"buffup",ring:"#e0705a",txt:"공격력 +"+et.v,cls:"buf",gap:120}); say(`풀려남! — ${f.name} 공격력 +${et.v}`,"t2") } } }
-    const tw=foePas(f,"tauntWith");
-    if(tw&&!f.tauntTurn){
-      const on=B.foes.some(x=>x.alive&&x.name===tw.who);
-      if(on&&!f.taunt){ f.taunt=99; say(`${f.name}${jo(f.name,"ig")} 주인의 명령에 앞을 막아섭니다.`,"t2") }
-      else if(!on&&f.taunt){ f.taunt=0; say(`${f.name} — 주인이 없어 도발이 풀립니다.`,"t2") }
-    }
+    tauntWithOne(f);
   });
 }
+/* 주인의 명령 (경비견) — 감옥 경비병이 전장에 있는 동안 **상시로** 도발한다. 행동으로 얻는 것이 아니다.
+   예전에는 적 차례 머리(skTurnStart)에서만 맞춰 첫 내 턴에는 도발이 없고, 경비병이 쓰러져도 다음 적 차례까지 남았다 (사용자 2026-10-12).
+   그래서 판이 바뀌는 자리(rollIntents — 전투 시작 · 소환 · 처치 뒤)에서도 맞춘다. */
+function tauntWithOne(f){
+  const tw=foePas(f,"tauntWith");
+  if(tw&&!f.tauntTurn&&f.alive){
+    const on=B.foes.some(x=>x.alive&&x.name===tw.who);
+    if(on&&!f.taunt){ f.taunt=99; say(`${f.name}${jo(f.name,"ig")} 주인의 명령에 앞을 막아섭니다.`,"t2") }
+    else if(!on&&f.taunt){ f.taunt=0; say(`${f.name} — 주인이 없어 도발이 풀립니다.`,"t2") }
+  }
+}
+/* 가시가 앞으로 몇 번의 내 턴에 남는가 (표시) — 걸 때 +1 을 얹고 내 턴 머리에 하나씩 줄이므로, 내 턴에는 thornTurn 이 곧 남은 턴이고
+   적이 막 건 적 차례에는 아직 안 줄었으니 -1 이다 (사용자 2026-10-12: 2턴 가시가 「1턴」으로 보였다) */
+function thornLeft(f){ return Math.max(1,(B&&B.foeAct)?f.thornTurn-1:f.thornTurn) }
+function tauntWithSync(){ if(B&&B.foes) B.foes.forEach(tauntWithOne) }
 /* 사슬에 묶인 마귀 — 살아 있는 사슬 간수가 하나도 없으면 사슬을 풀고 각성 */
 function boundCheck(f){
   if(!f.alive||f.awake||!foePas(f,"bound")) return;
@@ -27098,6 +27128,7 @@ function rollIntents(onlyIdle){
 }
 function rollIntents0(onlyIdle){
   grpHideSync();
+  tauntWithSync();   /* 주인의 명령 — 도발은 의도를 고르기 전에 맞춰 둔다 (도발이 서면 겨눌 수 있는 대상이 달라진다) */
   const USED={};
   /* 은신 — 전장에 혼자 남으면 숨을 곳이 없다 */
   if(allUnits().length<=1) allUnits().forEach(a=>{ if(a.hide){ a.hide=0;
@@ -31326,9 +31357,18 @@ function doSkill(target){
       target=alt.slot; say(`대상이 쓰러져 ${alt.name}(${foeNo(alt.slot)}번)으로 옮깁니다.`,"t2");
     }
   }
+  if(!h.isMin&&!B.over) actReroll();   /* 메아리 정령 — 대원이 한 짓에 따라 의도가 바뀌어야 한다 */
   checkEnd();
   keepSel();          /* 기술을 쓰고 나서도 그 대원의 기술 창은 열어 둔다 */
   render();
+}
+/* 대원이 마지막으로 한 짓(B.lastAct)을 보고 고르는 수(cond: act…)를 가진 적은, 대원이 기술을 쓸 때마다 의도를 다시 정한다.
+   예전에는 내 턴 머리에서 한 번만 굴려 「직전 턴의 마지막 행동」으로 굳어 있었다 (사용자 2026-10-12). 다른 적의 의도는 건드리지 않는다 */
+function actReroll(){
+  const L=B.foes.filter(f=>f.alive&&FOE[f.name]&&(FOE[f.name].sk||[]).some(s=>s.cond&&/^act/.test(s.cond)));
+  if(!L.length) return;
+  L.forEach(f=>{ f.intent={t:"wait"} });
+  rollIntents(true);
 }
 /* ═══ 이동 기술의 목적지 판정 ═══
    '이동' 속성으로 칸을 고르는 기술은, 특별한 예외가 없는 한
@@ -33727,7 +33767,7 @@ function disciplineTick(h,si){
   /* 장부쟁이 「기록 정정」 — 세 번째 기술을 그 턴 동안 잠근다 (사용자 2026-10-07) */
   { const c=B.foes.find(f=>f.alive&&foePas(f,"recordFix"));
     if(c&&si!=null&&h.sk&&h.sk[si]&&!h.lock[si]){
-      h.lock[si]=1; (h.lockNew=h.lockNew||{})[si]=1;
+      h.lock[si]=1;   /* lockNew 를 달지 않는다 — 다음 내 턴 머리(startMyTurn)에서 풀려야 「그 턴 동안」이다. 달면 한 턴 더 잠겼다 (사용자 2026-10-12) */
       fx({side:"mine",slot:h.slot,ring:"#9c8d77",txt:"기록 정정",cls:"miss",gap:140});
       say(`기록 정정 — ${h.name}${jo(h.name,"ig")} 이번 턴 세 번째로 쓴 ${h.sk[si].n}${jo(h.sk[si].n,"ig")} 이번 턴 동안 잠깁니다.`,"t1") } }
   const w=B.foes.find(f=>f.alive&&foePas(f,"discipline")&&(f.ph||1)>=3); if(!w) return;
@@ -33761,7 +33801,8 @@ function startMyTurn(){
   if(!run.heroes.some(h=>h.hp>0)&&!lifeLeft()){ B.over=1; battleLost(); render(); return }
   if(!run.heroes.some(h=>!h.down)&&!lifeLeft()){ B.over=1; battleLost(); render(); return }
   B.turn++;
-  if(B.turn>20&&!(run&&run.sandbox)){ B.over=1; say("20턴이 지나 물러납니다.","t3");
+  const TLIM=B.kind==="boss"?25:20;   /* 우두머리 전투만 25턴 (사용자 2026-10-12) */
+  if(B.turn>TLIM&&!(run&&run.sandbox)){ B.over=1; say(`${TLIM}턴이 지나 물러납니다.`,"t3");
     { const d=run.dun, c=d&&d.r!=null&&run.grid[d.r]&&run.grid[d.r][d.c];   /* 그 전투 칸은 지도에서 없앤다 (사용자 2026-10-05) */
       if(c&&(c.t==="dungeon"||c.t==="elite")&&!d.trial){ run.grid[d.r][d.c]={t:"empty"}; say("전투 구역이 흩어져 지도에서 사라집니다.","t3") } }
     battleLost(); render(); return }   /* 연습장은 턴 제한 없음 (사용자 2026-09-29) */
