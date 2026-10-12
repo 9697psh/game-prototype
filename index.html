@@ -611,6 +611,7 @@ body.colhide #foeSide img.pxs[data-nm="콜로서스"]{visibility:hidden}
 .dbcnt{text-align:center;font-size:11px;color:#6b4226;margin:-3px 0 5px;letter-spacing:.04em;flex:0 0 auto}
 .dbcnt b{color:#8a5a33}
 .dbtile.dexlock .dbart img,.dbtile.dexlock .dbart svg{filter:brightness(0) opacity(.5)}
+.iico.dexlock img,.iico.dexlock svg{filter:brightness(0) opacity(.5)}
 .dbtile.dexlock .dbname{color:#8d8372;letter-spacing:.1em}
 /* 아직 못 만난 도감 칸 — 그림을 검은 실루엣으로 (사용자 2026-10-12) */
 .evdx-card.dexlock .evdx-art img,.evdx-card.dexlock .evdx-art svg{filter:brightness(0) opacity(.55)}
@@ -10983,6 +10984,20 @@ try{ if(typeof location!=="undefined"){
   } } }catch(e){}
 /* 다 열어 둔 판이면 무엇이든 본 것으로 친다 */
 function dexOpen(kind,name){ return !!DEX_ST.allOpen||dexSeen(kind,name) }
+/* 지금 판에서 겪고 있는 것을 적는다 — 화면을 그릴 때마다 훑는다 (사용자 2026-10-12).
+   ⚠️ 자리를 하나하나 찾아 심지 않는 까닭 — dexSee 는 이미 적힌 것이면 바로 돌아와 가볍고,
+      새 카드 · 새 장신구가 생겨도 저절로 걸린다. 적은 drawBattle 에서 따로 훑는다 */
+function dexTick(){
+  if(typeof run==="undefined"||!run||run.sandbox) return;
+  try{
+    /* ⚠️ c.n 은 쌓인 장수(숫자)다 — 이름으로 쓰면 안 된다. 대원 카드(type hero)는 도감에 없다.
+       적이 끼워 넣는 카드(감시 따위)와 방어구 카드는 c.name 을 그대로 쓰니 여기로 걸린다 */
+    if(typeof B!=="undefined"&&B&&B.hand) B.hand.forEach(c=>{ if(c&&c.type!=="hero"&&c.name) dexSee("card",c.name) });
+    (run.heroes||[]).forEach(h=>(h.items||[]).forEach(it=>{ if(it&&it.n) dexSee("item",it.n) }));
+    (run.bag||[]).forEach(it=>{ if(it&&it.n) dexSee("item",it.n) });
+    if(run.ev&&run.ev.n) dexSee(run.ev.gim?"gim":"ev",run.ev.n);
+  }catch(e){}
+}
 
 /* 오염도 최대량 — 정령숲 2 · 3 (+25 · +50) */
 function taintMax(){ const c=synCount("정령숲"); return 100+(c>=3?50:c>=2?25:0) }
@@ -12583,6 +12598,9 @@ function itemTip(it){ return it.n+" — "+it.d+"\n"+recipeLines(it).join("\n") }
 function itemIco(name){
   const it=itemDef(name);
   if(!it) return '<span class="iico" title="'+esc(name)+'">?</span>';
+  /* 아직 못 얻은 특수 장신구는 이름도 가린다 — 재료 카드의 「이것으로 만들 수 있는 것」 줄에서 샌다 (2026-10-12) */
+  if(it.g==="특수"&&!dexOpen("item",name))
+    return '<span class="iico dexlock">'+itemIcon(it,24)+'</span>';
   return '<span class="iico kw" data-item="'+esc(name)+'" title="'+esc(name)+'">'
     +itemIcon(it,24)+'</span>';
 }
@@ -12602,6 +12620,11 @@ function itemCard(it,own){
   if(!it) return "";
   const into=ITEMS.filter(x=>x.rc&&x.rc.indexOf(it.n)>=0);
   const rc=(it.rc||[]).map(itemIco).join('<span class="plus">+</span>');
+  /* 특수 등급만 잠근다 (사용자 2026-10-12). 파편 : 일반 : 희귀는 전처럼 다 보인다 */
+  if(it.g==="특수"&&!dexOpen("item",it.n)) return `<div class="icard g${esc(it.g)} dexlock">
+    <div class="ic-art">${itemIcon(it,52)}</div>
+    <div><div class="ic-n">? ? ?</div><div class="ic-g">${esc(it.g)}</div>
+      <div class="ic-d">아직 만나지 못했습니다.</div></div></div>`;
   return `<div class="icard g${esc(it.g)}">
     <div class="ic-art">${itemIcon(it,52)}</div>
     <div>
@@ -12651,6 +12674,11 @@ function cardCard(nm,have){
   const tags=[];
   if(M.gone) tags.push("소멸성");
   if(L.foe) tags.push("적 대상");
+  if(!dexOpen("card",nm)) return `<div class="ccard cf dexlock">
+    <div class="cc-top"></div>
+    <div class="cc-art">${cardArt(nm)}</div>
+    <div class="cc-n">? ? ?</div>
+    <div class="cc-d"><div class="cc-di">아직 만나지 못했습니다.</div></div></div>`;
   return `<div class="ccard cf">
     <div class="cc-top">${have!=null?`<span class="cc-own">${have}/10</span>`:""}</div>
     <div class="cc-art">${cardArt(nm)}</div>
@@ -12694,7 +12722,8 @@ function drawCoreDex(app){
 }
 function drawItemDex(app){
   app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">장 신 구 도 감</div>
-    <div class="sub">조합법의 그림에 손을 올리면 그 장신구가 펼쳐집니다</div></div>`));
+    <div class="sub">조합법의 그림에 손을 올리면 그 장신구가 펼쳐집니다</div>
+    <div class="dexcnt">특수 ${dexCount(ITEMS.filter(x=>x.g==="특수").map(x=>x.n),"item")}</div></div>`));
   const wrap=el(`<div class="dexwrap"></div>`);
   ITEM_GRADES.forEach(g=>{
     const list=ITEMS.filter(x=>x.g===g);
@@ -12715,7 +12744,8 @@ function drawItemDex(app){
 /* ── 카드 도감 ───────────────────────────────────────── */
 function drawCardDex(app){
   app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">카 드 도 감</div>
-    <div class="sub">얻는 곳으로 묶었습니다</div></div>`));
+    <div class="sub">얻는 곳으로 묶었습니다</div>
+    <div class="dexcnt">${dexCount(cardAll(),"card")}</div></div>`));
   const wrap=el(`<div class="dexwrap"></div>`);
   const names=cardAll();
   const by={};
@@ -12881,7 +12911,8 @@ function evDexPlay(card,op,e,oi){
 function drawEventDex(app){
   const n=EVENTS.length;
   app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">이 벤 트 도 감</div>
-    <div class="sub">미지의 구역 ${n}가지 — 언제 나오고, 무엇을 고를 수 있는지</div></div>`));
+    <div class="sub">미지의 구역 — 언제 나오고, 무엇을 고를 수 있는지</div>
+    <div class="dexcnt">${dexCount(EVENTS.map(e=>e.n),"ev")}</div></div>`));
   const wrap=el(`<div class="dexwrap"></div>`);
   wrap.appendChild(el(`<div class="evdx-rule">
     <b>미지의 구역에 들어서면</b> 먼저 ${Math.round(UNKNOWN_ODDS.shop*100)}% 는 뜻밖의 상점, ${Math.round(UNKNOWN_ODDS.forge*100)}% 는 버려진 제련소(재료가 있을 때)가 됩니다.
@@ -12897,6 +12928,13 @@ function drawEventDex(app){
   L.forEach(e=>{
     const d=e.dex||{};
     const pic=evImg(e.n)||(e.art&&iconImg(e.art))||"";
+    if(!dexOpen("ev",e.n)){   /* 아직 못 겪은 이벤트 (사용자 2026-10-12) */
+      grid.appendChild(el(`<div class="evdx-card dexlock">
+        <div class="evdx-art${pic&&evImg(e.n)?" wide":""}">${pic||figure(e.face||"작은 죄수")}</div>
+        <div class="evdx-body"><div class="evdx-name">? ? ?</div>
+          <div class="evdx-t">아직 만나지 못했습니다.</div></div></div>`));
+      return;
+    }
     const tags=[`<span class="evdx-tag">${esc(evZone(e))}</span>`];
     if(d.cond) tags.push(`<span class="evdx-tag c">${esc(d.cond)}</span>`);
     if(d.rate) tags.push(`<span class="evdx-tag r">${esc(d.rate)}</span>`);
@@ -13134,7 +13172,8 @@ function gdxFill(e){
 function drawGimDex(app){ KW_SKIP=GIM_KW_SKIP; try{ drawGimDex0(app) } finally{ KW_SKIP=null } }
 function drawGimDex0(app){
   app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">전 용 구 역 도 감</div>
-    <div class="sub">구역마다 개성을 더하는 칸 ${GIM_DEX.length}가지 — 어디에 놓이고, 무엇을 고를 수 있는지</div></div>`));
+    <div class="sub">구역마다 개성을 더하는 칸 — 어디에 놓이고, 무엇을 고를 수 있는지</div>
+    <div class="dexcnt">${dexCount(GIM_DEX.map(e=>e.n),"gim")}</div></div>`));
   const wrap=el(`<div class="dexwrap"></div>`);
   wrap.appendChild(el(`<div class="evdx-rule">
     <b>전용 구역은 구역을 만들 때 먼저 놓이고</b>, 빈자리에 전투, 상점, 쉼터 같은 보통 칸이 들어갑니다. 확률이 낮아 판마다 있는 것도 없는 것도 있습니다.
@@ -13145,6 +13184,13 @@ function drawGimDex0(app){
   wrap.appendChild(el(`<div class="dexhd" style="margin-top:14px">${esc(fn)} ${GIM_DEX.filter(e=>e.field===fn).length}가지</div>`));
   const grid=el(`<div class="evdx-grid"></div>`);
   GIM_DEX.filter(e=>e.field===fn).forEach(e0=>{
+    if(!dexOpen("gim",e0.n)){   /* 아직 못 들어가 본 전용 구역 (사용자 2026-10-12) */
+      grid.appendChild(el(`<div class="evdx-card dexlock">
+        <div class="evdx-art gdx">${iconImg(e0.icon)}</div>
+        <div class="evdx-body"><div class="evdx-name">? ? ?</div>
+          <div class="evdx-t">아직 만나지 못했습니다.</div></div></div>`));
+      return;
+    }
     const e=gdxFill(e0);
     const tags=[`<span class="evdx-tag">${esc(e.field)}</span>`,`<span class="evdx-tag r">등장 ${esc(e.odds)}</span>`,`<span class="evdx-tag">칸 ${esc(e.cells)}</span>`,
       `<span class="evdx-tag c">${esc(e.refresh)}</span>`,`<span class="evdx-tag">${e.camp?"주둔지 곁 가능":"주둔지 곁 ×"}</span>`];
@@ -14599,12 +14645,13 @@ const FOE={
  /* 고철 거인 — 적으로는 지웠다 (사용자 2026-10-12: 옛 2구역 우두머리, 콜로서스로 바뀐 뒤 어디에도 안 섰다). 그림 표 · 대사는 그대로 둔다 (얼음 정령과 같은 꼴) */
  /* 탑의 주인 — 3구역 우두머리 1페이즈 (사용자 2026-10-12, 문서/작업중-탑의주인.md). 체력 900 고정 · 마법 · 사거리 9 · 인간. 죽으면 초월한다(마력의 초월체, 다음 덩이).
     ⚠️ 숫자는 사용자가 글에 적은 것만 확정이다 — atk(마법력 바닥) · def · exp 는 임시, 재서 맞춘다. 패턴 글은 사용자가 적은 그대로다.
-    ⚠️ 새 능력은 지속 능력 배열의 맨 뒤에 붙인다(글 고침 표가 번호로 찾는다). 아직 짜지 않은 패턴: 시간의 정령 */
- "탑의 주인":  {hp:900,fixHp:1,atkScale:0,atk:6,def:10,rng:9,exp:40,boss:1,dexHide:1,   /* atkScale 0 — 구역 배율로 기술 숫자를 안 올린다: 사용자가 글에 적은 8 · 1x3 · 2x2 가 그대로 들어간다 (2026-10-12, 재서 맞춘다) */
+    ⚠️ 새 능력은 지속 능력 배열의 맨 뒤에 붙인다(글 고침 표가 번호로 찾는다). 죽음(초월)과 마력의 초월체는 다음 덩이 */
+ "탑의 주인":  {hp:900,fixHp:1,atkScale:0,atk:6,def:10,rng:9,exp:40,boss:1,dexHide:1,transcendTo:"마력의 초월체",   /* atkScale 0 — 구역 배율로 기술 숫자를 안 올린다: 사용자가 글에 적은 8 · 1x3 · 2x2 가 그대로 들어간다 (2026-10-12, 재서 맞춘다) */
    el:"마법",
    gim:{neg:10},
    pas:[{k:"mpAbsorb",per:20,atk:1,n:"마력 흡수",kw:"마력",d:"상대가 마나를 사용할 때마다 그만큼 마력을 얻습니다. 마력을 20 얻으면 마법력을 1 얻습니다."},
-        {k:"info",n:"차단막",d:"부정 보호막을 10 얻은 채로 전투를 시작합니다."}],
+        {k:"info",n:"차단막",d:"부정 보호막을 10 얻은 채로 전투를 시작합니다."},
+        {k:"death",kind:"transcend",who:"마력의 초월체",n:"초월",kw:"죽음",d:"죽음: 초월합니다."}],
    sk:[
     {n:"방출",w:4,tg:"all",dmg:8,d:"모든 상대에게 마법 피해를 8 줍니다."},
     {n:"마력의 지팡이",w:4,tg:"near",dmg:1,hits:3,chase:1,d:"가장 가까운 상대에게 마법 피해를 1x3 줍니다."},
@@ -14615,10 +14662,18 @@ const FOE={
     {n:"후퇴",w:3,tg:"self",back:2,evade:3,d:"2칸 뒤로 이동합니다. 회피를 3 얻습니다."},
     {n:"수련",w:3,tg:"none",capMana:3,mp:10,d:"다음 턴에 모든 상대의 최대 마나가 3이 됩니다. 마력을 10 얻습니다."},
     {n:"시간 역행",w:3,tg:"none",rewindPos:1,mp:5,d:"모든 대원을 전투 시작 후 처음 배치했던 위치로 되돌립니다. 마력을 5 얻습니다."},
-    {n:"기억 저장",w:1,tg:"none",cond:"memStart",chg:1,memSave:1,d:"2턴 동안 충전 상태가 됩니다. 충전이 끝나면 충전 상태가 되었을 때의 체력으로 돌아옵니다."},
-    {n:"기억 저장",w:3,tg:"none",cond:"charging",must:1,chg:1,d:"2턴 동안 충전 상태가 됩니다. 충전이 끝나면 충전 상태가 되었을 때의 체력으로 돌아옵니다."},
-    {n:"기억 저장",w:3,tg:"none",cond:"charged",must:1,spend:1,memBack:1,d:"2턴 동안 충전 상태가 됩니다. 충전이 끝나면 충전 상태가 되었을 때의 체력으로 돌아옵니다."}],
+    {n:"기억 저장",w:1,tg:"none",cond:"memStart",chg:1,chgClamp:1,memSave:1,d:"2턴 동안 충전 상태가 됩니다. 충전이 끝나면 충전 상태가 되었을 때의 체력으로 돌아옵니다."},
+    {n:"기억 저장",w:3,tg:"none",cond:"charging",must:1,chg:1,chgClamp:1,d:"2턴 동안 충전 상태가 됩니다. 충전이 끝나면 충전 상태가 되었을 때의 체력으로 돌아옵니다."},
+    {n:"기억 저장",w:3,tg:"none",cond:"charged",must:1,spend:1,memBack:1,d:"2턴 동안 충전 상태가 됩니다. 충전이 끝나면 충전 상태가 되었을 때의 체력으로 돌아옵니다."},
+    {n:"시간의 정령",w:1,tg:"none",summon:{pool:["마나 결정체","흘러나온 시간","결정에 갇힌 잔영"],min:1,max:2},holdUntilDead:1,d:"탑의 정령을 소환합니다. 소환한 정령들이 죽을 때까지 정지 상태가 됩니다."}],
    hit:"마력의 지팡이"},
+ /* 마력의 초월체 — 3구역 우두머리 2페이즈 (탑의 주인이 죽으면 그 자리에 선다, 사용자 2026-10-12). 체력 900 고정 · 마법과 공격 · 사거리 9 · 초월체.
+    마력의 고리 · 불안정한 변신(지속)과 패턴 열둘은 다음 덩이. ⚠️ 새 능력은 지속 능력 배열의 맨 뒤에 붙인다. atk · def · exp 는 임시(탑의 주인과 같다) */
+ "마력의 초월체":  {hp:900,fixHp:1,atkScale:0,atk:6,def:10,rng:9,exp:60,boss:1,dexHide:1,
+   el:"마법",
+   pas:[{k:"mpAbsorb",per:20,atk:4,n:"마력 흡수",kw:"마력",d:"상대가 마나를 사용할 때마다 그만큼 마력을 얻습니다. 마력을 20 얻으면 마법력을 4 얻습니다."}],
+   sk:[],
+   hit:"태초의 마력"},
  "서리 군주":  {hp:95,atk:11,def:14,rng:5,exp:18,boss:1,demon:1,dexHide:1,   /* 도감에서만 감춘다 (사용자 2026-10-12) — 지금 3구역 우두머리(BOSSES)라 표에서는 못 뺀다. 탑의 주인이 3구역 우두머리를 대신하는 때에 표에서 뺀다 */
    el:"마법",
    gim:{neg:3},
@@ -15226,7 +15281,7 @@ function foeStatusRows(f){
   { const mp=foePas(f,"mpAbsorb"); if(mp){ const per=mp.per||20;
       g.push(bd("g","마력",`${f.mp||0}`,`상대가 마나를 쓸 때마다 그만큼 쌓입니다. ${per}이 쌓일 때마다 마법력을 ${mp.atk||1} 얻습니다. (지금 ${(f.mp||0)%per}/${per})`,"마력")) } }
   if(foePas(f,"memory")&&(f.mem||0)>0) g.push(bd("g","기억",`${f.mem}/3`,memEmp(f)?"기억이 가득 찼습니다 — 다음 행동이 강화됩니다":"행동할 때마다 쌓입니다. 3번 쌓인 뒤의 행동이 강화됩니다"));
-  if(f.stop>0) o.push(bd("o","정지",`${Math.max(1,f.stop-(B&&B.foeAct?1:0))}턴`,"겨눌 수도, 피해를 줄 수도 없습니다. 그동안 아무것도 하지 않습니다"));
+  if(f.stop>0) o.push(bd("o","정지",holdActive(f)?"정령":`${Math.max(1,f.stop-(B&&B.foeAct?1:0))}턴`,holdActive(f)?"소환한 정령들이 죽을 때까지 정지합니다. 겨눌 수도, 피해를 줄 수도 없고 그동안 아무것도 하지 않습니다":"겨눌 수도, 피해를 줄 수도 없습니다. 그동안 아무것도 하지 않습니다"));
   /* 충전 — 콜로서스는 제 아이콘(빔 광선 충전)이 따로 있다 (사용자 2026-10-07) */
   if(f.chg>0&&f.name!=="콜로서스") g.push(bd("g","충전",`${f.chg}/${chgMax(f)}`,"충전을 다 채우면 큰 수가 나갑니다"));
   if(f.negShield) g.push(bd("g","부정 보호막",f.negShield,"부정적인 효과를 그만큼 걷어냅니다 (얻을 때는 이미 걸린 것부터)"));
@@ -17016,6 +17071,7 @@ function render(){
   if(run&&run.mapPeek&&view!=="map"&&view!=="title") drawMapPeek();
   flushFX();
   try{ BGM.sync() }catch(e){}
+  try{ dexTick() }catch(e){}        /* 겪고 있는 것을 도감에 적는다 */
   try{ qDoneOpen() }catch(e){}      /* 끝낸 퀘스트가 있고 지도에 멈춰 섰으면 완료 화면부터 */
   try{ coreGiftOpen() }catch(e){}   /* 세계핵 보상이 쌓여 있고 지도에 멈춰 섰으면 연다 */
   saveSoon();
@@ -17702,6 +17758,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 47, "v": "0.7", "d": "2026-10-12", "t": "도감 해금 다섯 · 탑의 주인 1페이즈와 초월 · 장신구는 특수만 잠김", "big": 0},
  {"b": 46, "v": "0.7", "d": "2026-10-12", "t": "탑의 주인 1페이즈(패턴 열) · 도감 해금 뼈대와 적 도감 · 보상 목록 차례 · 마나 표시", "big": 0},
  {"b": 45, "v": "0.7", "d": "2026-10-12", "t": "퀘스트 완료창 넷 · 기술 창 쪽 넘김 · 지도 보기 가운데 · 가방에 넣기 · 탑의 주인 마력 셈", "big": 0},
  {"b": 44, "v": "0.7", "d": "2026-10-12", "t": "치명 — 기술을 쌓은 뒤 아이템 카드가 안 나가던 것 (되돌릴 때 함수가 지워짐)", "big": 0},
@@ -18940,7 +18997,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=46;
+const BUILD_NO=47;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -26035,7 +26092,7 @@ const FOE_RACE={
  "균열 군체":"악마","악마 차원문":"악마","굶주린 자":"악마","균열 공작":"악마","미치광이 인형사":"인간","마나 정제로":"기계","누군가의 기억":"망자","꼭두각시":"망령",
  /* 그밖 */
  "시종":"기계","근위병의 갑옷":"망자","책벌레":"야수","장부쟁이":"망자",
- "마나 결정체":"정령","흘러나온 시간":"정령","결정에 갇힌 잔영":"정령","탑의 주인":"인간",   /* 마력의 탑 — 떠드는 마도서는 종족이 없다 (사용자 2026-10-07) */
+ "마나 결정체":"정령","흘러나온 시간":"정령","결정에 갇힌 잔영":"정령","탑의 주인":"인간","마력의 초월체":"초월체",   /* 마력의 탑 — 떠드는 마도서는 종족이 없다 (사용자 2026-10-07) */
  "균열 벌레":"악마","떠도는 불씨":"정령","술집 난동꾼":"인간","늑대치기":"인간","무시무시한 늑대":"야수",
  "서리 군주":"악마",
  "콜로서스":"기계","콜로서스의 여분팔":"기계","콜로서스의 여분발":"기계"};
@@ -26708,7 +26765,7 @@ function skExec0(f,I){
       say(`${s.n} — ${t.name}에게 「죽음: ${s.parasite.who}을 소환합니다」가 붙습니다.`,"t3") }
     else say(`${s.n} — 기생할 곳이 없습니다.`,"t2");
   }
-  if(s.chg){ f.chg=(f.chg||0)+s.chg;
+  if(s.chg){ f.chg=(f.chg||0)+s.chg; if(s.chgClamp) f.chg=Math.min(chgMax(f),f.chg);   /* chgClamp — 되감기로 한 차례에 두 번 이어 가도 충전이 최대를 넘지 않는다 (탑의 주인 기억 저장, 2026-10-12) */
     if(f.name==="고장난 수호기") fx({side:"foe",slot:f.slot,guardChg:f.chg,gap:0});   /* 충전 8칸 (사용자 2026-10-07) */
     fx({side:"foe",slot:f.slot,pose:f.name==="고장난 수호기"?null:"bless",ring:"#c9a227",glow:1,txt:"충전 "+f.chg+"/"+chgMax(f),cls:"shd",gap:f.name==="고장난 수호기"?520:160});
     say(`${f.name} — ${f.name==="고장난 수호기"?"포신이 달아오릅니다":"기운이 차오릅니다"} (충전 ${f.chg}/${chgMax(f)})`,"t3") }
@@ -26722,6 +26779,7 @@ function skExec0(f,I){
     for(let i=0;i<k;i++){ let sl=1; while(sl<=SLOTS&&foeBlock(sl)) sl++; if(sl>SLOTS) break;
       const nm=s.summon.pool?rnd(s.summon.pool):s.summon.n;   /* 풀에서 하나씩 (간수장 호출, 2026-10-03) */
       const m=spawnFoeNamed(nm,sl,{summoned:s.summon.real?0:1,kind:s.summon.kind}); if(m&&s.summon.pow) foeWeaken(m,s.summon.pow);
+      if(m&&s.holdUntilDead) (f.holdIds=f.holdIds||[]).push(m.id);   /* 시간의 정령 — 부른 정령이 다 죽을 때까지 정지 (holdSync) */
       if(m&&s.colArm){ n++; got.push(nm); m.formWait=Date.now()+5000;   /* 콜로서스 — 위에서 팔이 들고 와 내려놓는다. 그때까지 숨김 (사용자 2026-10-07) */
         fx({side:"foe",slot:sl,colFx:"place",colU:m,colName:nm,s2:sfxOr("콜로서스 "+(nm.indexOf("여분팔")>=0?"여분팔":"여분발")+" 소환",null),gap:1250}) }
       else if(m&&nm==="꼭두각시"){ n++; got.push(nm);   /* 줄에 매달려 흔들거리다 떨어진다 (62) */
@@ -26732,7 +26790,11 @@ function skExec0(f,I){
           fx({side:"foe",slot:f.slot,s:"미치광이인형사_꼭두각시소환시가끔출력",gap:0}) }
       else if(m){ n++; got.push(nm); fx({side:"foe",slot:sl,s:"summon",ring:"#a06ae0",txt:"소환",cls:"shd",gap:120}) } }
     say(s.summon.pool?(n?`${s.n} — ${got.join(", ")}${jo(got[got.length-1],"ig")} 달려옵니다.`:`${s.n} — 부를 자리가 없습니다.`)
-                     :`${f.name} — ${s.summon.n} ${n}마리를 부릅니다.`,"t3"); if(n) rollIntents(true) }
+                     :`${f.name} — ${s.summon.n} ${n}마리를 부릅니다.`,"t3");
+    if(n&&s.holdUntilDead){ f.stop=99;   /* 99 는 자리표시 — 턴마다 줄지 않고(holdActive) 정령이 다 죽는 순간 풀린다 */
+      fx({side:"foe",slot:f.slot,ring:"#8fa8c0",gap:100,fn:()=>buffSheetFX("foe",f.slot,"정지")});
+      say(`${f.name}${jo(f.name,"eun")} 소환한 정령들이 죽을 때까지 정지합니다 — 겨눌 수도, 움직일 수도 없습니다.`,"t2") }
+    if(n) rollIntents(true) }
   if(s.rollcall){   /* 점호 — 소환물 모두에게 공격력과 보호막 */
     const L=B.foes.filter(x=>x.alive&&x.summoned);
     L.forEach(m=>{ m.atk+=s.rollcall.atk; m.atkUp=(m.atkUp||0)+s.rollcall.atk; addShield(m,s.rollcall.shield);
@@ -27106,8 +27168,21 @@ function echoUp(f){
     say(`울리는 메아리 — ${x.name} 마법력 +${p.v}`,"t2") });
 }
 /* ── 죽음 (사용자 2026-09-29) — 쓰러지는 순간에 터진다. 잔해(wreck)는 FOE 쪽 값이 맡는다 ── */
+/* 시간의 정령 — 부른 정령(f.holdIds)이 하나라도 살아 있는 동안은 정지가 풀리지 않는다 (턴으로 줄지도 않는다).
+   마지막 정령이 죽는 순간(foeDeath) 풀고 의도를 다시 정한다 */
+function holdActive(f){ return !!(f&&f.holdIds&&f.holdIds.length&&B&&B.foes&&f.holdIds.some(id=>B.foes.some(x=>x.id===id&&x.alive))) }
+function holdSync(){
+  if(!B||!B.foes) return;
+  let freed=false;
+  B.foes.forEach(f=>{ if(f.holdIds&&f.holdIds.length&&!holdActive(f)){ f.holdIds=null;
+      if(f.alive&&f.stop>=90){ f.stop=0; freed=true;
+        fx({side:"foe",slot:f.slot,ring:"#8fa8c0",txt:"정지 풀림",cls:"buf",gap:90});
+        say(`${f.name}의 정지가 풀립니다 — 소환한 정령이 모두 쓰러졌습니다.`,"t2") } } });
+  if(freed&&!B.over){ try{ rollIntents(true) }catch(e){} }
+}
 function foeDeath(f){
   if(!B||f.isPhantom) return;
+  holdSync();
   if(f.morphBack&&!B.over){   /* 변신한 꼭두각시가 쓰러지면 인형사가 변신 전의 체력으로 다시 선다 (버프 · 디버프 · 추가 능력치는 사라진다) */
     const mb=f.morphBack; let sl=f.slot; if(foeBlock(sl)){ sl=1; while(sl<=SLOTS&&foeBlock(sl)) sl++ }
     if(sl<=SLOTS){ const m=spawnFoeNamed(mb.name,sl);
@@ -27213,6 +27288,15 @@ function foeDeath(f){
         if(m){ fx({side:"foe",slot:sl,fn:()=>vineRiseFX(sl),s:sfxOr("오토 새싹 심기",null),gap:760});   /* 땅을 가르고 기어 나온다 (사용자 2026-10-05) */
           fx({side:"foe",slot:sl,ring:"#9640c8",txt:d.who,cls:"crit",gap:140});
           say(`${d.n} — ${d.who}${jo(d.who,"ig")} 자라납니다.`,"t3"); rollIntents(true) } }
+    }
+    else if(d.kind==="transcend"){            /* 탑의 주인 — 죽으면 초월한다 (소환물이 아니다). 마법력은 이어지고 마력은 0 에서 다시 */
+      let sl=f.slot; if(foeBlock(sl)){ sl=1; while(sl<=SLOTS&&foeBlock(sl)) sl++ }
+      if(sl<=SLOTS){ const m=spawnFoeNamed(d.who,sl);
+        if(m){ const up=f.atkUp||0; if(up>0){ m.atk+=up; m.atkUp=(m.atkUp||0)+up }
+          mpReset(m);
+          fx({side:"foe",slot:sl,s:"summon",ring:"#6aa8e0",glow:1,txt:d.who,cls:"crit",gap:260});
+          say(`${d.n} — ${f.name}${jo(f.name,"ig")} 초월합니다. ${d.who}${jo(d.who,"ig")} 모습을 드러냅니다.${up>0?` (마법력 +${up}을 이어받습니다)`:""}`,"t1");
+          rollIntents(true) } }
     }
     else if(d.kind==="release"){              /* 결정에 갇힌 잔영 — 수정이 깨지며 갇혀 있던 것이 풀려난다 (소환물이 아니다) */
       let sl=f.slot; if(foeBlock(sl)){ sl=1; while(sl<=SLOTS&&foeBlock(sl)) sl++ }
@@ -31196,7 +31280,7 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
     if(FOE[f.name]&&FOE[f.name].wreck){ f.wreck=1; say(`${f.name}${jo(f.name,"ig")} 부서졌습니다 — 잔해가 자리에 남습니다.`,"t2") }
     if(run&&!f.isPhantom&&!f.summoned&&!run.sandbox&&f.bounty>0){ run.gold+=f.bounty;   /* 미믹 — 죽음 */
       fx({side:"foe",slot:f.slot,txt:"금화 +"+f.bounty,cls:"crit",gap:90}); say(`죽음 — ${f.name}이 쥐고 있던 금화 ${f.bounty}개를 얻습니다.`,"t1"); f.bounty=0 }
-    if(run&&!f.isPhantom&&!f.summoned&&!run.sandbox){ run.kills=(run.kills||0)+1; if(f.boss) run.bossKills=(run.bossKills||0)+1;
+    if(run&&!f.isPhantom&&!f.summoned&&!run.sandbox){ run.kills=(run.kills||0)+1; if(f.boss&&!(FOE[f.name]&&FOE[f.name].transcendTo)) run.bossKills=(run.bossKills||0)+1;   /* transcendTo — 초월하는 1페이즈는 우두머리 처치로 안 센다 (2026-10-12) */
       coreKillTick();   /* 세계핵 — 전투가 끝날 때 통산 처치 수에 더한다 (사용자 2026-10-09) */
       if(/^모형 /.test(f.name)&&f.name!=="모형 전략가") try{ keyQuestTick("모형 병사") }catch(e){}   /* 모형 토벌 (2026-10-10) */
       try{ skinKillCheck(f.name) }catch(e){}   /* 스킨 — 간수장 처치 따위 (2026-10-01) */
@@ -34324,7 +34408,7 @@ function startMyTurn(){
       say(`${f.name}의 사슬이 늘어집니다 — 가시가 풀렸습니다.`,"t2") }
     if(f.tauntTurn>0&&--f.tauntTurn<=0){ f.taunt=0;
       say(`${f.name}의 도발이 풀립니다.`,"t2") }
-    if(f.stop>0&&--f.stop<=0){ f.stop=0;
+    if(f.stop>0&&!holdActive(f)&&--f.stop<=0){ f.stop=0;
       fx({side:"foe",slot:f.slot,ring:"#8fa8c0",txt:"정지 풀림",cls:"buf",gap:90});
       say(`${f.name}의 정지가 풀립니다.`,"t2") }
     if(f.alive&&!f.stop) foePromoteTick(f);   /* 진급 (모형 창병) */
