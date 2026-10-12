@@ -17506,6 +17506,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 39, "v": "0.7", "d": "2026-10-12", "t": "소환물을 깔면 적이 헛손질하던 것 — 닿지 않게 된 의도만 다시 정한다", "big": 0},
  {"b": 38, "v": "0.7", "d": "2026-10-12", "t": "카드가 날아가는 자리를 적 몸으로 (의도 줄 아이콘이 잡히던 것)", "big": 0},
  {"b": 37, "v": "0.7", "d": "2026-10-12", "t": "이동 오염도 5→4 · 균열 세계핵 5→4 · 카드를 못 내는 까닭을 말해 준다", "big": 0},
  {"b": 36, "v": "0.7", "d": "2026-10-12", "t": "연대기 열여섯 칸 — 파수꾼·심판자·평행 차원, 그림 열둘", "big": 0},
@@ -18736,7 +18737,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=38;
+const BUILD_NO=39;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -25325,7 +25326,24 @@ const lifeLeft=()=>liveMins().some(m=>m.revive)
 const allUnits=()=>onField().concat(liveMins());
 /* 적의 공격 범위 — 내 전장에 하나만 서 있으면 범위를 따지지 않는다. 다가가려고 '앞으로' 만 되풀이하지 않고 공격한다 (사용자 2026-10-06).
    '공격 범위 밖' 에 거는 효과(감시관의 갑주 · debOut)와 화면의 범위 표시는 원래 f.rng 그대로 */
-function foeRng(f){ return (B&&allUnits().filter(u=>u.hp>0).length===1)?99:(f.rng||1) }
+/* 혼자 남은 유닛은 어디 있든 닿는다 — foeRng 와 의도 점검(rangeStale)이 이 한 곳을 본다 */
+function loneNow(){ return !!(B&&allUnits().filter(u=>u.hp>0).length===1) }
+function foeRng(f){ return loneNow()?99:(f.rng||1) }
+/* 정한 뒤에 「혼자」 규칙이 뒤집혔을 때, 그 의도를 다시 정해야 하는가 (사용자 2026-10-12: 혼자 선 먼 대원을 겨눈 의도가
+   하수인이 서자 사거리가 돌아와 「거리 밖」 헛손질 + 예고 사라짐). 정할 때의 셈과 쓸 때의 셈이 달랐던 것이 뿌리다.
+   · 혼자가 풀렸다 : 때리는 수(atk · sk)의 대상이 이제 사거리 밖이면 다시 정한다. 아직 닿는 수는 건드리지 않는다
+   · 혼자가 되었다 : 사거리 때문에 무리했거나(far) 다가서려던(move) 수는 다시 정한다
+   · 내 턴에 대원이 걸어 나가 사거리 밖이 된 것은 여기 해당하지 않는다 (의도에 적힌 lone 이 그대로면 false) — 그건 피하기라서 헛손질이 맞다 */
+function rangeStale(f,lone){
+  const I=f&&f.intent; if(!I||I.lone==null||I.lone===lone) return false;
+  if(!lone){
+    if(I.t!=="atk"&&I.t!=="sk") return false;
+    const s=I.t==="sk"?((FOE[f.name]&&FOE[f.name].sk)||[])[I.i]:null;
+    if(I.t==="sk"&&!s) return false;
+    try{ const R=foeTarget(f,I,s); return R.why==="far"||R.why==="chaseFar" }catch(e){ return false }
+  }
+  return !!I.far||I.t==="move";
+}
 /* 꼭두각시 인형 — 대원들이 가진 것 중 가장 큰 비율만큼 소환물이 튼튼해진다 */
 function minHpBonus(){
   let v=0;
@@ -27090,10 +27108,12 @@ function rollIntents0(onlyIdle){
   const open=allies.filter(canAim);
   if(open.length) allies=open;
   const ALLIES0=allies;
+  const LONE=loneNow();
+  const OLD_INT=new Map(B.foes.map(f=>[f,f.intent]));   /* 새로 정한 수에만 lone 을 적는다 — 둔 수는 정할 때의 값 그대로 */
   B.foes.forEach(f=>{
     let allies=ALLIES0;   /* 적마다 새로 — 공포로 거른 목록이 다음 적에게 번지지 않게 (점검 2026-10-07) */
     if(!f.alive) return;
-    if(onlyIdle&&f.intent&&f.intent.t!=="wait"){ USED[intentKey(f.intent)]=(USED[intentKey(f.intent)]||0)+1; return }
+    if(onlyIdle&&f.intent&&f.intent.t!=="wait"&&!rangeStale(f,LONE)){ USED[intentKey(f.intent)]=(USED[intentKey(f.intent)]||0)+1; return }
     f.intent2=null;
     if(f.name==="억울한 죄수"&&f.alive&&!f.stop){   /* 죄수 호송 마차 — 짝수 턴에 경비병이 앞세워 도발을 건다 · 홀수 턴에 풀어 준다. foePhase 머리의 그 셈을 미리 보인다 (사용자 2026-10-08) */
       const guard=B.foes.some(x=>x.alive&&x.name==="감옥 경비병"), up=guard&&(B.turn||1)%2===0;
@@ -27220,6 +27240,7 @@ function rollIntents0(onlyIdle){
       f.lastKey=bk; }
     f.intent=best;
   });
+  B.foes.forEach(f=>{ if(f.intent&&OLD_INT.get(f)!==f.intent) f.intent.lone=LONE });
   cannonIntents(allies);   /* 대포병이 장전하면 대포에 쏠 피해를 보인다 (사용자 2026-09-15) */
 }
 const tierCrown=()=>'<svg viewBox="0 0 24 24"><path d="M3 8l4 5 5-8 5 8 4-5-2 12H5Z" fill="currentColor"/></svg>';
