@@ -10695,8 +10695,8 @@ const CORES=[
   d:"이번 원정동안 날이 밝을 때 얻는 활동량이 1 증가합니다. 대신 주둔지나 쉼터에서 숙면하면 9시에 깨어납니다.",
   fx:{dayAct:1, wakeAt:9}, icon:"world_core_reality"},
  {id:"rift",  n:"균열 세계핵",   cond:"오염도 누적 5000 획득",        need:{k:"taint",  n:5000},
-  d:"이번 원정동안 지도에서 이동할 때 얻는 오염도가 5 증가합니다.\n반복 퀘스트: 오염도를 누적 100 얻을 때마다 무작위 보상을 얻습니다.",
-  fx:{moveTaint:5}, quest:{k:"taint",   n:100, do:"riftGift"}, icon:"world_core_rift"},
+  d:"이번 원정동안 지도에서 이동할 때 얻는 오염도가 4 증가합니다.\n반복 퀘스트: 오염도를 누적 100 얻을 때마다 무작위 보상을 얻습니다.",
+  fx:{moveTaint:4}, quest:{k:"taint",   n:100, do:"riftGift"}, icon:"world_core_rift"},   /* 5 → 4 (사용자 2026-10-12. 바탕 4 와 더해 한 칸 8) */
  {id:"storm", n:"폭풍 세계핵",   cond:"미지의 구역 100회 방문",       need:{k:"unknown",n:100},
   d:"이번 원정동안 날이 밝을 때 지도의 빈 구역에 미지의 구역을 하나 추가합니다.\n반복 퀘스트: 미지의 구역을 2번 방문할 때마다 지도의 빈 구역에 미지의 구역을 하나 추가합니다.",
   fx:{dayUnknown:1}, quest:{k:"unknown", n:2,   do:"stormZone"}, icon:"world_core_storm"},
@@ -17506,6 +17506,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 37, "v": "0.7", "d": "2026-10-12", "t": "이동 오염도 5→4 · 균열 세계핵 5→4 · 카드를 못 내는 까닭을 말해 준다", "big": 0},
  {"b": 36, "v": "0.7", "d": "2026-10-12", "t": "연대기 열여섯 칸 — 파수꾼·심판자·평행 차원, 그림 열둘", "big": 0},
  {"b": 35, "v": "0.7", "d": "2026-10-12", "t": "보상 쌓기 41 · 호흡 줄이기와 경험치 · 지도 액자 되돌림 · 연대기 그림 · 퀘스트 완료창 · 귀환서 · 밤의 습격과 골렘 너프", "big": 0},
  {"b": 34, "v": "0.7", "d": "2026-10-11", "t": "액자는 종이 가장자리에, 손은 액자 위로", "big": 0},
@@ -18734,7 +18735,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=36;
+const BUILD_NO=37;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -20175,7 +20176,9 @@ function pickPanel(nm){
 
 /* ═══════════ 필드 지도 ═══════════ */
 const NL1=String.fromCharCode(10);
-const MOVE_TAINT=5;                 /* 한 칸 옮길 때 오르는 오염도 */
+const MOVE_TAINT=4;                 /* 한 칸 옮길 때 오르는 오염도 — 5 → 4 (사용자 2026-10-12).
+                                       활동량이 늘어 더 걷게 되면서 오염도가 도로 올랐던 몫을 되돌린다.
+                                       ⚠️ 균열의 세계핵이 얹는 +5 는 따로다 (coreFx("moveTaint")) — 그것은 안 건드렸다 */
 /* 가벼운 발걸음 — 대원이 가진 만큼 줄어든다 (최소 1) */
 function moveTaint(){
   let cut=0;
@@ -29512,7 +29515,7 @@ function startDrag(card,i){
          그래서 먼저 쓸 수 있는지만 본다(canPlayCard). 소환물·대원 카드는 빈 칸에 서는 것이라 바로 쓴다 */
       const c0=B.hand[i], late=!!(c0&&c0.type==="item");
       if(hit&&moved){
-        if(late) used=canPlayCard(i,hit,side);
+        if(late){ const w=cardWhy(i,hit,side); used=!w; if(w) cardSayWhy(w) }
         else { const fp=()=>JSON.stringify([B.hand.map(x=>[x.name||x.type,x.n||1,x.d||""]),(run.cards||[]).map(x=>x.c),(B.mins||[]).length,run.heroes.map(h=>h.slot)]);
           const f0=fp(); playCard(i,hit,side); used=(B&&fp()!==f0) } }
       const hand=document.querySelector(`#hand .card[data-i="${i}"]`)||card;
@@ -29868,17 +29871,26 @@ function cardStealCheck(){
 }
 /* playCard 가 받아 줄 자리인지만 본다 — 쓰지는 않는다 (카드 끌기 연출이 먼저 돌고 나서 쓰려고, 2026-10-01).
    use 가 "keep" 을 돌려주는 경우(쓸 수 없는 물건)는 써 봐야 알아 여기서는 통과시킨다 */
-function canPlayCard(i,slot,side){
-  if(!B||B.busy) return false;
-  const c=B.hand[i]; if(!c) return false;
+function canPlayCard(i,slot,side){ return !cardWhy(i,slot,side) }
+/* 카드를 못 놓는 까닭 — 놓을 수 있으면 "". 끌어 놓는 길 · 눌러 고르는 길 · playCard 가 모두 여기서 말을 가져간다 (말이 두 곳에 흩어지면 한쪽만 고쳐진다, 2026-10-12) */
+function cardWhy(i,slot,side){
+  if(!B) return "지금은 카드를 낼 수 없습니다.";
+  if(B.busy) return "연출이 끝난 뒤에 낼 수 있습니다.";
+  const c=B.hand[i]; if(!c) return "그 카드는 이미 손패에 없습니다.";
   const wantFoe=!!(c.stock&&CARD_LIB[c.stock]&&CARD_LIB[c.stock].foe)||!!c.foe;
-  if(wantFoe) return side==="foe"&&!!foeAt(slot);
-  if(side==="foe") return c.type==="summon"&&!!(SUMMONS[c.name]||{}).foeOk&&!foeBlock(slot);   /* 저주받은 성벽 — 적 전장의 빈 칸 (사용자 2026-10-06) */
-  if(c.type==="summon"||c.type==="hero") return !occAt(slot);
-  { const u=unitAt(slot), L=CARD_LIB[c.stock||c.name]; if(u&&u.isMin&&L&&L.heroOnly) return false }   /* 대원에게만 내는 카드 (감시) */
-  if(cardNoTarget(c)) return true;   /* 귀환서 · 위장 망토 — 빈 칸에도 (적 칸은 위에서 걸러졌다) */
-  return !!unitAt(slot);
+  if(wantFoe){ if(side!=="foe") return `${c.name}${jo(c.name,"eun")} 적의 칸에 던져야 합니다.`;
+    return foeAt(slot)?"":"그 칸에는 적이 없습니다." }
+  if(side==="foe"){
+    if(c.type==="summon"&&(SUMMONS[c.name]||{}).foeOk) return foeBlock(slot)?"그 칸에는 이미 무엇인가 있습니다.":"";   /* 저주받은 성벽 — 적 전장의 빈 칸 (사용자 2026-10-06) */
+    return c.type==="summon"?"적 전장에는 놓을 수 없습니다.":"아군 칸에 놓아야 합니다." }
+  if(c.type==="summon"||c.type==="hero") return occAt(slot)?"그 칸에는 이미 누군가 있습니다.":"";
+  { const u=unitAt(slot), L=CARD_LIB[c.stock||c.name]; if(u&&u.isMin&&L&&L.heroOnly) return `${c.name}${jo(c.name,"eun")} 대원에게만 낼 수 있습니다.` }   /* 대원에게만 내는 카드 (감시) */
+  if(cardNoTarget(c)) return "";   /* 귀환서 · 위장 망토 — 빈 칸에도 (적 칸은 위에서 걸러졌다) */
+  return unitAt(slot)?"":"카드를 쓸 아군이 없는 칸입니다.";
 }
+/* 까닭을 말한다 — 같은 말은 짧은 사이 한 번만 */
+let _whyAt=0,_whyTx="";
+function cardSayWhy(w){ if(!w) return; const t=Date.now(); if(w===_whyTx&&t-_whyAt<1500) return; _whyTx=w; _whyAt=t; say(w,"t2") }
 /* 겨눌 것이 없는 카드 — 받은 대원을 효과에 안 쓰고 연출 자리에만 쓴다 (CARD_LIB 의 noTarget) */
 function cardNoTarget(c){ const L=c&&CARD_LIB[c.stock||c.name]; return !!(L&&L.noTarget) }
 /* 겨눌 것이 없는 카드의 연출 자리 — 맨 앞 대원(가장 큰 번호), 없으면 칸 그대로의 가짜 자리 (대원이 하나도 없는 순간에도 안 죽는다) */
@@ -29909,14 +29921,12 @@ function cardMagic(skip){
       say(`동전 마술 — 금화 +1 (${T.cardGold*10}%)`,"t2") } });
 }
 function playCard(i,slot,side){
-  if(B.busy) return;
+  { const w=cardWhy(i,slot,side); if(w){ cardSayWhy(w); render(); return } }   /* 못 놓는 자리 — 말하고, 흐려진 카드(집은 채 남은 것)를 되돌린다 */
   const c=B.hand[i]; if(!c) return;
   { const before=B.hand.length; setTimeout(()=>{ if(B&&B.hand.length<before) cardStealCheck() },0) }   /* 카드가 실제로 나갔을 때만 */
   const wantFoe=!!(c.stock&&CARD_LIB[c.stock]&&CARD_LIB[c.stock].foe)||!!c.foe;
   if(wantFoe){
-    if(side!=="foe"){ say(`${c.name}${jo(c.name,"eun")} 적의 칸에 던져야 합니다.`,"t2"); return }
-    const f=foeAt(slot);
-    if(!f){ say("그 칸에는 적이 없습니다.","t2"); return }
+    const f=foeAt(slot); if(!f) return;   /* cardWhy 가 이미 걸렀다 */
     B.lastAttacker=null;     /* 카드는 되받아칠 사람이 없다 */
     c.use(f);
     cardMagic();
@@ -29928,8 +29938,7 @@ function playCard(i,slot,side){
     checkEnd(); render(); return;
   }
   if(c.type==="summon"&&side==="foe"){   /* 저주받은 성벽 — 적 전장에 (도발 유지 · 잔해, 사용자 2026-10-06) */
-    const S=SUMMONS[c.name]; if(!S||!S.foeOk){ say("적 전장에는 놓을 수 없습니다.","t2"); return }
-    if(foeBlock(slot)){ say("그 칸에는 이미 무엇인가 있습니다.","t2"); return }
+    const S=SUMMONS[c.name]; if(!S||!S.foeOk) return;
     const ow=run.heroes.find(x=>x.name===S.owner); let hp=S.hp; if(ow&&ow.tag&&ow.tag.wallHp) hp+=ow.tag.wallHp;
     B.foes.push({name:c.name,slot:slot,maxHp:hp,hp:hp,atk:0,def:0,rng:0,exp:0,demon:0,boss:0,shield:0,air:0,alive:1,id:B.foes.length+300,
       infect:0,stun:0,weak:0,deb:{},isFoe:1,isPhantom:1,wallFoe:1,taunt:S.taunt?99:0,curseOnDeath:S.curseOnDeath||0,intent:{t:"wait"}});
@@ -29939,10 +29948,9 @@ function playCard(i,slot,side){
     say(`${c.name}${jo(c.name,"ig")} 적 전장 ${foeNo(slot)}번 칸에 섭니다.`,"t1");
     rollIntents(); render(); return;
   }
-  if(side==="foe"){ say("아군 칸에 놓아야 합니다.","t2"); return }
+  if(side==="foe") return;
 
   if(c.type==="summon"){
-    if(occAt(slot)){ say("그 칸에는 이미 누군가 있습니다.","t2"); return }
     const m=makeMin(c.name,slot);
     B.mins.push(m); lifeAuraSync();
     cardMagic();   /* 소환물 카드도 카드다 (악마 하수인 · 망자의 육체 …) */
@@ -29962,7 +29970,6 @@ function playCard(i,slot,side){
     rollIntents(!m.taunt); render(); return;
   }
   if(c.type==="hero"){
-    if(occAt(slot)){ say("그 칸에는 이미 누군가 있습니다.","t2"); return }
     c.hero.slot=slot; B.hand.splice(i,1);
     fx({side:"mine",slot:slot,s:"summon",ring:"#7fd39a",glow:1,gap:60});
     onSummon(c.hero); lifeAuraSync();   /* 대원이 설 때도 */
@@ -29974,7 +29981,7 @@ function playCard(i,slot,side){
   }else{
     let h=unitAt(slot);
     if(!h&&cardNoTarget(c)) h=cardAnchor(slot);   /* 겨눌 것이 없는 카드 — 빈 칸에 내려도 맨 앞 대원 자리에 연출 (사용자 2026-10-12: 귀환서가 빈 칸에서 안 나갔다) */
-    if(!h){ say("카드를 쓸 아군이 없는 칸입니다.","t2"); return }
+    if(!h) return;   /* cardWhy 가 이미 걸렀다 */
     /* use 가 "keep" 을 돌려주면 쓰지 못한 것이다 — 카드를 도로 넣어 둔다 */
     if(c.use(h)==="keep"){ render(); return }
     /* 낡은 투구끈 — 방어구 카드를 쓸 때마다 그 카드를 만든 대원이 회복한다 */
