@@ -4165,6 +4165,12 @@ kbd{display:inline-block;min-width:20px;text-align:center;padding:1px 7px;font-s
   83.33%  {background-position:-240px 0}
 }
 .art .portal{left:50%;bottom:1px;transform:translateX(-50%)}
+/* 두 칸 적 — 차원문은 두 칸 「사이」가 아니라 그 칸 하나에 (사용자 2026-10-12).
+   ⚠️ .art 는 칸(두 칸)보다 좁아서 25%/75% 로는 가운데로 몰린다. 재 보고 7%/93% 로 잡았다.
+   ⚠️ 차원문 한 짝이 한 칸보다 넓어(scale 3) 둘이 겹친다 — 두 칸 적에서만 2.4 로 줄인다 */
+.slot.big .art .portal{transform:translateX(-50%) scale(2.4)}
+.slot.big .art .portal.pl{left:7%}
+.slot.big .art .portal.pr{left:93%}
 /* ═══ 도감 — 책 (사용자 2026-09-30) ═══ 그림은 책 테두리 바로 바깥까지 자른 1472×920 (비 1.6).
    페이지 : 왼 8.4%·39.1% · 오른 52.2%·39.4% · 위 5.1%·86.4% (원본 1536 에서 왼 160~735 · 오른 805~1385 · 위아래 85~880) */
 .dexbook{position:relative;width:min(96vw,calc((100vh - 190px)*1.531));aspect-ratio:1482/968;margin:6px auto 0;
@@ -10999,6 +11005,31 @@ function dexTick(){
   }catch(e){}
 }
 
+/* ═══════════ 이번 원정에서 처음 만난 것 (사용자 2026-10-12) ═══════════
+   판을 시작할 때 열려 있던 것을 적어 두고, 승리할 때 견준다.
+   ⚠️ 세계핵은 이름으로(한 판에 하나뿐이다), 도감은 수로 — 적 여섯 종의 이름을 다 늘어놓으면 길다.
+      자세한 것은 도감에서 본다. */
+const DEX_KINDS=["foe","card","ev","gim","item"];
+function unlockSnap(){
+  const d={}; DEX_KINDS.forEach(k=>{ d[k]=Object.keys((typeof DEX_ST!=="undefined"&&DEX_ST[k])||{}).length });
+  return { cores:Object.keys((typeof CORE_ST!=="undefined"&&CORE_ST.own)||{}), dex:d };
+}
+/* 이번 판에 새로 열린 것 — 없으면 null (화면을 건너뛴다).
+   ⚠️ 이 장치가 없던 때 시작한 판은 run.unlock0 이 없다. 그때도 null 이다 — 「전부 새것」으로 뜨면 안 된다 */
+function unlockNew(){
+  if(typeof run==="undefined"||!run||!run.unlock0) return null;
+  const z=run.unlock0, now=unlockSnap();
+  const cores=now.cores.filter(id=>(z.cores||[]).indexOf(id)<0)
+    .map(id=>((typeof coreById==="function"&&coreById(id))||{}).n).filter(Boolean);
+  const dex={}; let any=0;
+  DEX_KINDS.forEach(k=>{ const n=(now.dex[k]||0)-((z.dex&&z.dex[k])||0); if(n>0){ dex[k]=n; any=1 } });
+  if(!cores.length&&!any) return null;
+  return { cores:cores, dex:dex };
+}
+/* 그 칸을 뭐라 부르는가 */
+const DEX_KIND_NAME={foe:"적", card:"카드", ev:"이벤트", gim:"전용 구역", item:"특수 장신구"};
+const DEX_KIND_UNIT={foe:"종", card:"가지", ev:"가지", gim:"가지", item:"개"};
+
 /* 오염도 최대량 — 정령숲 2 · 3 (+25 · +50) */
 function taintMax(){ const c=synCount("정령숲"); return 100+(c>=3?50:c>=2?25:0) }
 /* 날이 밝을 때 얻는 활동량 — 전 구역 6, 모험가 1 · 2 가 +1 · +3 (사용자 2026-10-08. 처음 5 에서 늘렸다 → 7 · 9).
@@ -14668,10 +14699,12 @@ const FOE={
     {n:"시간의 정령",w:1,tg:"none",summon:{pool:["마나 결정체","흘러나온 시간","결정에 갇힌 잔영"],min:1,max:2},holdUntilDead:1,d:"탑의 정령을 소환합니다. 소환한 정령들이 죽을 때까지 정지 상태가 됩니다."}],
    hit:"마력의 지팡이"},
  /* 마력의 초월체 — 3구역 우두머리 2페이즈 (탑의 주인이 죽으면 그 자리에 선다, 사용자 2026-10-12). 체력 900 고정 · 마법과 공격 · 사거리 9 · 초월체.
-    마력의 고리 · 불안정한 변신(지속)과 패턴 열둘은 다음 덩이. ⚠️ 새 능력은 지속 능력 배열의 맨 뒤에 붙인다. atk · def · exp 는 임시(탑의 주인과 같다) */
+    패턴 열둘은 다음 덩이(고리를 쓰는 다섯은 고리 그림을 붙인 뒤). ⚠️ 새 능력은 지속 능력 배열의 맨 뒤에 붙인다. atk · def · exp 는 임시(탑의 주인과 같다) */
  "마력의 초월체":  {hp:900,fixHp:1,atkScale:0,atk:6,def:10,rng:9,exp:60,boss:1,dexHide:1,
    el:"마법",
-   pas:[{k:"mpAbsorb",per:20,atk:4,n:"마력 흡수",kw:"마력",d:"상대가 마나를 사용할 때마다 그만큼 마력을 얻습니다. 마력을 20 얻으면 마법력을 4 얻습니다."}],
+   pas:[{k:"mpAbsorb",per:20,atk:4,n:"마력 흡수",kw:"마력",d:"상대가 마나를 사용할 때마다 그만큼 마력을 얻습니다. 마력을 20 얻으면 마법력을 4 얻습니다."},
+        {k:"ring",n:"마력의 고리",d:"반경 1의 마력의 고리를 지닙니다. 마력을 20 얻으면 고리의 반경이 1 증가합니다."},
+        {k:"unstable",n:"불안정한 변신",d:"마력의 초월체가 행동한 후에 거리 2 내의 무작위 위치로 이동합니다."}],
    sk:[],
    hit:"태초의 마력"},
  "서리 군주":  {hp:95,atk:11,def:14,rng:5,exp:18,boss:1,demon:1,dexHide:1,   /* 도감에서만 감춘다 (사용자 2026-10-12) — 지금 3구역 우두머리(BOSSES)라 표에서는 못 뺀다. 탑의 주인이 3구역 우두머리를 대신하는 때에 표에서 뺀다 */
@@ -15278,6 +15311,7 @@ function foeStatusRows(f){
   if(f.evade) g.push(bd("g","회피",f.evade,"다음 공격 한 번을 통째로 흘립니다"));
   if(f.rew>0) g.push(bd("g","되감기",f.rew,"쌓인 만큼 이번 턴에 한 번 더 행동합니다"));
   if(f.armor>0) g.push(bd("g","갑피",f.armor,"한 번에 받는 피해를 이 수치까지로 잘라냅니다"));
+  if(foePas(f,"ring")) g.push(bd("g","마력의 고리",`반경 ${ringR(f)}`,`마력을 20 얻을 때마다 반경이 1 늘어납니다. 고리 안의 상대가 노려집니다. (지금 반경 ${ringR(f)})`,"마력의 고리"));
   { const mp=foePas(f,"mpAbsorb"); if(mp){ const per=mp.per||20;
       g.push(bd("g","마력",`${f.mp||0}`,`상대가 마나를 쓸 때마다 그만큼 쌓입니다. ${per}이 쌓일 때마다 마법력을 ${mp.atk||1} 얻습니다. (지금 ${(f.mp||0)%per}/${per})`,"마력")) } }
   if(foePas(f,"memory")&&(f.mem||0)>0) g.push(bd("g","기억",`${f.mem}/3`,memEmp(f)?"기억이 가득 찼습니다 — 다음 행동이 강화됩니다":"행동할 때마다 쌓입니다. 3번 쌓인 뒤의 행동이 강화됩니다"));
@@ -16684,6 +16718,7 @@ function newRun(name,pack){
        pos:{r:S-1,c:mid}, day:1, time:6, act:f.act, actMax:f.act,
        taint:0, night:0, campDone:0, remapUsed:0, bonusLv:null, playMs:0,
        pack:pack?pack.n:null, packDesc:pack?pack.d:null, packIcon:pack?pack.i:null};
+  try{ run.unlock0=unlockSnap() }catch(e){}   /* 이번 판에 새로 열린 것을 끝에서 견주려고 (사용자 2026-10-12) */
   rollPatrol();                       /* 간수 순찰로 — 튜토리얼이 아닌 새 판에서도 (사용자 2026-09-15 — 안 나오던 버그) */
   if(pack) pack.fx(run);
   const q=run.bonusLv; run.bonusLv=null;
@@ -17758,6 +17793,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 48, "v": "0.7", "d": "2026-10-12", "t": "2칸 적 차원문 · 승리 화면 틀 · 마력의 고리 셈과 불안정한 변신 · 태초 그림 v3", "big": 0},
  {"b": 47, "v": "0.7", "d": "2026-10-12", "t": "도감 해금 다섯 · 탑의 주인 1페이즈와 초월 · 장신구는 특수만 잠김", "big": 0},
  {"b": 46, "v": "0.7", "d": "2026-10-12", "t": "탑의 주인 1페이즈(패턴 열) · 도감 해금 뼈대와 적 도감 · 보상 목록 차례 · 마나 표시", "big": 0},
  {"b": 45, "v": "0.7", "d": "2026-10-12", "t": "퀘스트 완료창 넷 · 기술 창 쪽 넘김 · 지도 보기 가운데 · 가방에 넣기 · 탑의 주인 마력 셈", "big": 0},
@@ -18997,7 +19033,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=47;
+const BUILD_NO=48;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -25683,6 +25719,33 @@ function mpGain(f,n){
     fx({side:"foe",slot:f.slot,s:"buffup",ring:"#6aa8e0",glow:1,txt:"마법력 +"+v,cls:"buf",gap:120});
     say(`${p.n||"마력 흡수"} — ${f.name} 마력 ${f.mp}, 마법력 +${v} (누적 +${f.atkUp})`,"t2") }
 }
+/* ═══ 마력의 고리 (마력의 초월체, 사용자 2026-10-12) ═══
+   반경 1 에서 시작해 마력 20 을 얻을 때마다 1 씩 자란다 — **상한을 두지 않는다**(사용자 답: 더 키우고 그림은 네 번째 시트를 늘려 쓴다).
+   「고리 안의 상대」는 대원 · 소환물 가운데 dist(그 자리, 적의 자리) ≤ 반경 인 것. 고리를 쓰는 패턴은 모두 ringTargets 로 대상을 잡는다 */
+function ringR(f){ return 1+Math.floor(((f&&f.mp)||0)/20) }
+function ringTargets(f,units,slotOfU,slotOfF){
+  if(!f||!foePas(f,"ring")) return [];
+  const r=ringR(f), fs=slotOfF?slotOfF(f):f.slot;
+  return (units||allUnits()).filter(u=>u.hp>0&&dist(slotOfU?slotOfU(u):u.slot,fs)<=r);
+}
+/* 불안정한 변신 — 행동한 뒤 거리 2 내 무작위 위치로. **갈 자리를 의도를 정할 때 같이 정한다**(I.afterD, 옮길 칸 수 −2·−1·+1·+2).
+   정할 때와 쓸 때의 셈이 달라 예고와 실제가 어긋난 소환물 건(2026-10-12)의 교훈 — 실행(unstableMove)과 예고(incoming)가 같은 afterMoveSlot 을 본다.
+   cur 에서 거리 2 안(1~SLOTS)의 빈 칸 가운데 cur+d 에 가장 가까운 칸. 빈 칸이 하나도 없으면 제자리 */
+function afterMoveSlot(cur,d,blocked){
+  const want=cur+d; let best=null;
+  for(let q=Math.max(1,cur-2);q<=Math.min(SLOTS,cur+2);q++){ if(q===cur||blocked(q)) continue;
+    const dd=Math.abs(q-want); if(best===null||dd<best.dd||(dd===best.dd&&Math.abs(q-cur)>Math.abs(best.q-cur))) best={q:q,dd:dd} }
+  return best?best.q:cur;
+}
+function unstableMove(f){
+  const p=foePas(f,"unstable"); if(!p||!f.alive||B.over||foeBound(f)) return;
+  const d=f.intent&&f.intent.afterD; if(d==null) return;
+  const to=afterMoveSlot(f.slot,d,q=>!!foeBlock(q));
+  if(to===f.slot){ say(`${p.n} — ${f.name}${jo(f.name,"eun")} 옮겨 갈 빈 칸이 없습니다.`,"t2"); return }
+  f.slot=to; foeMoved(f);
+  fx({side:"foe",slot:to,s:"step",ring:"#6aa8e0",txt:"변신",cls:"moved",gap:110});
+  say(`${p.n} — ${f.name}${jo(f.name,"ig")} ${foeNo(to)}번으로 옮겨 갑니다.`,"t3");
+}
 /* 페이즈를 넘길 때 — 마법력은 이어지고 마력은 0 에서 다시 */
 function mpReset(f){ f.mp=0; f.mpSteps=0 }
 function foeRng(f){ return loneNow()?99:(f.rng||1) }
@@ -26584,6 +26647,11 @@ function skExec0(f,I){
     fx({side:"foe",slot:f.slot,pose:"atk",sheet:"fx_warden_swing",
         sheetOpt:{cellW:256,cellH:64,frames:8,z:1.6,dx:-114,frameMs:[80,70,65,60,75,90,110,140]},
         s:sfxOr("철퇴 공격",null),gap:300});
+  /* 균열 공작 — 발톱 휘두르기. 받은 여덟 칸 띠(2048×64, 한 칸 256px).
+     손이 그림 x240 자리라 거기서 왼쪽으로 민다 (사용자 2026-10-12) */
+  if(f.name==="균열 공작"&&s.n==="삼연 베기")
+    fx({side:"foe",slot:f.slot,pose:"atk",sheet:"fx_rift_duke_claw",
+        sheetOpt:{cellW:256,cellH:64,frames:8,z:1.5,dx:-112,frameMs:[90,75,65,60,70,85,110,140]},gap:420});
   if(f.name==="풀려난 장군"&&s.n==="두번찍기")
     fx({side:"foe",slot:f.slot,pose:"atk",sheet:"fx_general_sweep",
         sheetOpt:{cellW:256,cellH:64,frames:8,z:1.5,dx:-112,dy:4,frameMs:[95,110,130,160,95,110,135,215]},gap:480});   /* 손잡이가 그림 x240 — 거기서 왼쪽으로 */
@@ -27720,6 +27788,7 @@ function rollIntents0(onlyIdle){
     f.intent=best;
   });
   B.foes.forEach(f=>{ if(f.intent&&OLD_INT.get(f)!==f.intent) f.intent.lone=LONE });
+  B.foes.forEach(f=>{ if(f.alive&&f.intent&&f.intent.t!=="wait"&&f.intent.afterD==null&&foePas(f,"unstable")) f.intent.afterD=rnd([-2,-1,1,2]) });   /* 불안정한 변신 — 갈 자리를 정할 때 같이 */
   cannonIntents(allies);   /* 대포병이 장전하면 대포에 쏠 피해를 보인다 (사용자 2026-09-15) */
 }
 const tierCrown=()=>'<svg viewBox="0 0 24 24"><path d="M3 8l4 5 5-8 5 8 4-5-2 12H5Z" fill="currentColor"/></svg>';
@@ -28459,8 +28528,12 @@ function drawBattle(app){
       const dying=showHit&&willKill(sel.hero,preSkill,f,sel.count);
       if(dying) d.classList.add("willdie");
       if(showHit) d.innerHTML+=foeHitTag(sel.hero,preSkill,f,sel.count);
+      /* 두 칸 적 — 칸 하나가 슬롯 둘을 덮으므로 차원문도 둘 다 찾아 각자 제 자리에 그린다.
+         안 그러면 가운데(두 칸 사이)에 하나만 놓이고 옆 칸 것은 아예 안 보인다 (사용자 2026-10-12) */
       const pf=B.portals&&B.portals.find(p=>p.side==="foe"&&p.slot===s);
-      const pfk=(pf&&!pf.fresh)?`<i class="portal" style="background-image:url(${skinIcon("portal_idle")})"></i>`:"";
+      const pf2=f.big&&B.portals&&B.portals.find(p=>p.side==="foe"&&p.slot===s+1);
+      const pdoor=k=>`<i class="portal${f.big?" "+k:""}" style="background-image:url(${skinIcon("portal_idle")})"></i>`;
+      const pfk=((pf&&!pf.fresh)?pdoor("pl"):"")+((pf2&&!pf2.fresh)?pdoor("pr"):"");
       const fesW=f.eshield?Math.max(6,Math.min(45,f.eshield/f.maxHp*100)):0;
       const fshW=f.shield?Math.max(6,Math.min(60,f.shield/f.maxHp*100)):0;
       const tier=foeTier(f);
@@ -30953,7 +31026,10 @@ function incoming(){
     }
   };
   const incAll=(f,second)=>{ const I2=f.intent2; incOne(f,second);
-    if(I2&&f.alive){ const I1=f.intent; f.intent=I2; try{ incOne(f,1) } finally{ f.intent=I1 } } };
+    if(I2&&f.alive){ const I1=f.intent; f.intent=I2; try{ incOne(f,1) } finally{ f.intent=I1 } }
+    /* 불안정한 변신 — 행동했으면(기절 · 정지가 아니면) 의도에 적힌 칸 수만큼 옮긴다. 실행(unstableMove)과 같은 afterMoveSlot */
+    if(f.alive&&f.intent&&f.intent.afterD!=null&&foePas(f,"unstable")&&!vStopped(f)&&!(!second&&((f.stun||0)>0||deb(f,"stun")>0))&&!foeBound(f)){
+      const to=afterMoveSlot(fsl(f),f.intent.afterD,q=>!!foeBlockV(q)); if(to!==fsl(f)) vs[f.id]=to } };
   B.foes.forEach(f=>{ incAll(f,0);
     /* 되감기 — 쌓인 만큼 한 번 더 행동한다 (foePhase 의 rewRun 과 같은 셈, 한 턴 윗한도 REW_MAX).
        되감긴 행동은 기절이 안 막으므로 second 로 친다 (사용자 2026-10-09).
@@ -34094,6 +34170,7 @@ function foePhase(){
       f.stun=0; if(f.deb) f.deb.stun=0;   /* 적은 기절이 중첩되지 않는다 — 두 갈래(f.stun · deb)를 함께 걷는다 (점검 2026-10-07) */
       fx({side:"foe",slot:f.slot,trig:"기절",txt:"기절",cls:"miss",gap:130});
       say(`${f.name} 기절 — 움직이지 못합니다.`,"t2"); return }
+    f._acted=1;   /* 이번에 실제로 행동했다 — 불안정한 변신이 옮기는 때 */
     f.lastAct=Object.assign({},f.intent);      /* 망자들의 통솔자가 따라 할 '직전 턴의 실제 행동' */
     { const I0=f.intent;   /* 조여 오는 힘 — 처음 움직일 때만(되감긴 행동은 한 번 더 얻지 않는다). 그 뒤 직전 의도로 적어 둔다 */
       if(!I0._sqUsed){ I0._sqUsed=1;
@@ -34237,10 +34314,11 @@ function foePhase(){
     }
   };
   /* 여분 부품 (콜로서스, (사용자 2026-10-07)) — 의도 둘을 차례로. 기절이면 첫째만 막히고(기절이 걷힌다) 둘째는 나간다 */
-  const actTwice=f=>{ const I2=f.intent2, q0=FXQ.length; actOne(f);
+  const actTwice=f=>{ const I2=f.intent2, q0=FXQ.length; f._acted=0; actOne(f);
     if(I2&&f.alive&&!B.over){ const q1=FXQ.length, I1=f.intent; f.intent=I2; f._act2=1; try{ actOne(f) } finally{ f.intent=I1; f._act2=0 }
       /* 셈은 차례로, 연출은 함께 — 둘째 의도의 연출을 첫째와 같은 때에 시작하도록 엮는다 (사용자 2026-10-07) */
-      if(q1>=q0&&FXQ.length>=q1){ const A=FXQ.splice(q0,q1-q0), Z=FXQ.splice(q0); FXQ.push(...fxMerge(A,Z,140)) } } };
+      if(q1>=q0&&FXQ.length>=q1){ const A=FXQ.splice(q0,q1-q0), Z=FXQ.splice(q0); FXQ.push(...fxMerge(A,Z,140)) } }
+    if(f._acted&&f.alive&&!B.over) unstableMove(f) };   /* 불안정한 변신 — 되감긴 행동도 행동이라 그때마다 옮긴다 */
   /* 되감기 — 쌓인 만큼 같은 수를 한 번 더. 기절은 첫 행동만 막으므로(actOne 이 걷는다) 되감긴 행동은 나간다.
      같은 의도를 그대로 다시 쓰니 대상도 되도록 그대로다 (사용자 2026-10-07).
      한 턴 윗한도(REW_MAX)는 적마다 한 번 — 아래 두 번째 훑기와 합쳐서 센다 */
