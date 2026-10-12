@@ -17506,6 +17506,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 38, "v": "0.7", "d": "2026-10-12", "t": "카드가 날아가는 자리를 적 몸으로 (의도 줄 아이콘이 잡히던 것)", "big": 0},
  {"b": 37, "v": "0.7", "d": "2026-10-12", "t": "이동 오염도 5→4 · 균열 세계핵 5→4 · 카드를 못 내는 까닭을 말해 준다", "big": 0},
  {"b": 36, "v": "0.7", "d": "2026-10-12", "t": "연대기 열여섯 칸 — 파수꾼·심판자·평행 차원, 그림 열둘", "big": 0},
  {"b": 35, "v": "0.7", "d": "2026-10-12", "t": "보상 쌓기 41 · 호흡 줄이기와 경험치 · 지도 액자 되돌림 · 연대기 그림 · 퀘스트 완료창 · 귀환서 · 밤의 습격과 골렘 너프", "big": 0},
@@ -18735,7 +18736,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=37;
+const BUILD_NO=38;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -29497,7 +29498,7 @@ function startDrag(card,i){
         const r=s.getBoundingClientRect();
         if(ev.clientX>=r.left&&ev.clientX<=r.right&&ev.clientY>=r.top&&ev.clientY<=r.bottom){
           hit=+s.dataset.slot; side=s.closest("#foeSide")?"foe":"mine"; hitR=r;
-          const im=s.querySelector("img.pxs"), ir=im&&im.getBoundingClientRect();
+          const im=[...s.querySelectorAll("img.pxs")].find(x=>!x.closest(".intentbar")), ir=im&&im.getBoundingClientRect();   /* 의도 줄의 대원 아이콘(img.pxs)이 몸보다 먼저 잡혀 카드가 거기로 빨려들었다 (사용자 2026-10-12) */
           hitBody=(ir&&ir.width)?{x:ir.left+ir.width/2,y:ir.top+ir.height*0.55}:null;
         }
         s.classList.remove("drop");
