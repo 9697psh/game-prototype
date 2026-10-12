@@ -11469,7 +11469,7 @@ const HERO_REWARDS={
   R("매우매우 두꺼운 고서","상급","독서 중첩을 최대치를 초과하여 얻을 수 있습니다.",h=>h.tag.thickTome=1,0.5),
   R("죄수의 일기","상급","영광의 족쇄의 비용이 1 감소합니다. 의지 약화가 기절한 모든 적에게 시전됩니다.\n*[영광의 족쇄] 기술이 없을 때 등장하지 않음\n*획득시 보상에서 다시 등장하지 않음",
     h=>{ h.tag.prisonDiary=1; const k=h.sk.find(x=>x&&x.shackle); if(k) k.cost=Math.max(0,(k.cost||2)-1) },0.5),
-  R("금단의 고서에 손을 대다","상급","도미니코가 악마로 타락합니다. 최대 체력을 30 잃습니다.\n*획득시 보상에서 다시 등장하지 않음",h=>domCorrupt(h),0.5),
+  R("금단의 고서에 손을 대다","상급","도미니코가 악마로 타락합니다. 최대 체력이 40% 감소합니다.\n*획득시 보상에서 다시 등장하지 않음",h=>domCorrupt(h),0.5),
   R("절실한 신앙","상급","퀘스트: 참회의 기류를 20번 사용해야 합니다. \n보상: 이번 원정에서 참회의 기류를 사용한 후, 추가로 2번 더 사용됩니다.\n*획득시 보상에서 다시 등장하지 않음\n*[참회의 기류] 기술이 없을 때 등장하지 않음",
     h=>{ if(!questHas("절실한 신앙")) questAccept("절실한 신앙","도미니코") },0.5)
  ],
@@ -13734,7 +13734,7 @@ const FOE={
    el:"공격",
    /* 두 턴마다 [감시] 카드를 손패에 밀어 넣고 기술 하나를 두 턴 잠근다 (foePhase 의 gimWatch)
       기술은 차례대로 바뀐다 — 찌르기 → 막기 → 두 번 찌르기 → 멀리보기 → 휘두르기 → 무르기 (사용자 2026-09-15) */
-   pas:[{k:"watchAtk",v:2,n:"멀리 보기",d:"손패의 감시 1장 당 공격력을 +2 얻습니다."}],   /* 2026-09-16: '차례대로' → 멀리 보기 (기술은 여전히 차례대로 돈다) */
+   pas:[{k:"watchAtk",v:2,n:"멀리 보기",d:"손패의 감시 1장 당 공격력을 +2 얻습니다."},{k:"cycle",every:2,gain:"negShield",v:3,n:"정화",d:"2턴마다 부정 보호막을 3 얻습니다."}],   /* 2026-09-16: '차례대로' → 멀리 보기 (기술은 여전히 차례대로 돈다) */
    ai:{open:"def",near:8,any:5,def:6,weak:3,buff:2},
    sk:[
     {n:"감시",w:1,tg:"self",open:1,giveCard:"감시",shield:4,d:"[감시] 카드 1장을 줍니다. 보호막을 4 얻습니다."},
@@ -13878,7 +13878,7 @@ const FOE={
    el:"마법",
    gim:{neg:5},
    pas:[{k:"info",n:"면역자",d:"부정 보호막을 5 얻은 채로 전투를 시작합니다."},
-        {k:"outRangeDmg",v:10,n:"감시관의 갑주",d:"적 턴이 끝날 때, 공격 범위 밖의 상대(대원과 소환물)들이 마법 피해를 {피해} 입습니다."}],
+        {k:"outRangeDmg",v:10,n:"감시관의 갑주",d:"적 턴이 끝날 때, 공격 범위 밖의 상대(대원과 소환물)들이 마법 피해를 {피해} 입습니다."},{k:"cycle",every:2,gain:"negShield",v:3,n:"정화",d:"2턴마다 부정 보호막을 3 얻습니다."}],
    sk:[
     {n:"음산한 기운",w:2,tg:"all",open:1,deb:{magDn:2,atkDn:2},shield:6,cd:2,d:"공격 범위 안 상대에게 마법약화와 공격약화를 2 부여하고 보호막을 6 얻습니다."},
     {n:"엄벌",w:4,tg:"all",dmg:8,d:"공격 범위 안 모든 상대에게 마법 피해를 8 줍니다."},
@@ -13888,7 +13888,7 @@ const FOE={
  "사슬에 묶인 마귀":{hp:50,atk:4,def:4,rng:4,exp:12,demon:1,elite:1,
    el:"공격",
    pas:[{k:"bound",n:"사슬에 묶임",d:"주변 사슬 간수를 처치하면 사슬을 풀고 각성합니다."},
-        {k:"everyTwo",v:2,n:"풀려남!",d:"(풀려난 뒤) 2턴마다 공격력을 2 얻습니다."}],
+        {k:"everyTwo",v:2,n:"풀려남!",d:"(풀려난 뒤) 2턴마다 공격력을 2 얻습니다."},{k:"cycle",every:2,gain:"negShield",v:3,n:"정화",d:"2턴마다 부정 보호막을 3 얻습니다."}],
    sk:[
     {n:"부정의 기운",w:1,tg:"near",cond:"bound",deb:{magDn:1},chase:1,d:"(묶인 동안) 가장 가까운 상대에게 마법약화를 1 부여합니다."},
     {n:"체력보존",w:4,tg:"self",cond:"bound",maxUp:2,d:"(묶인 동안) 최대 생명력을 2 얻습니다."},
@@ -13900,7 +13900,7 @@ const FOE={
  "정체 모를 주술사":{ghostMove:1,hp:40,atk:4,def:3,rng:5,exp:12,demon:1,elite:1,
    el:"마법",
    pas:[{k:"retreat",n:"물러남",d:"보호되지 않은 피해를 받은 후, 정체 모를 주술사가 1칸 뒤로 이동합니다."},
-        {k:"dist4Double",n:"죽음과 저주",d:"정체 모를 주술사와 거리가 정확히 4칸이라면 주술사가 2번 공격합니다."}],
+        {k:"dist4Double",n:"죽음과 저주",d:"정체 모를 주술사와 거리가 정확히 4칸이라면 주술사가 2번 공격합니다."},{k:"cycle",every:2,gain:"negShield",v:3,n:"정화",d:"2턴마다 부정 보호막을 3 얻습니다."}],
    sk:[
     {n:"전진",w:3,tg:"near",fwd:1,deb:{stun:2},chase:1,d:"앞으로 1칸 이동하고, 가장 가까운 상대에게 기절을 2 부여합니다."},
     {n:"전진2",w:3,tg:"all",fwd:2,dmg:8,d:"앞으로 2칸 이동하고, 공격 범위 안 모든 상대에게 마법 피해를 8 줍니다."},
@@ -14015,7 +14015,7 @@ const FOE={
  "물길군주":{hp:60,atk:5,def:6,rng:3,exp:25,elite:1,
    el:"마법",
    pas:[{k:"echo",n:"메아리",kw:"메아리",d:"죽으면 절반의 생명력으로 1회 부활합니다."},
-        {k:"echoUp",v:3,n:"울리는 메아리",d:"메아리가 발동할 때마다 마법력을 3 얻습니다."}],
+        {k:"echoUp",v:3,n:"울리는 메아리",d:"메아리가 발동할 때마다 마법력을 3 얻습니다."},{k:"cycle",every:2,gain:"negShield",v:3,n:"정화",d:"2턴마다 부정 보호막을 3 얻습니다."}],
    sk:[
     {n:"샘의 정령들",w:2,tg:"none",cd:2,summon:{n:"샘의 잔영",min:1,max:1},d:"샘의 잔영을 부릅니다. (소환물)"},
     {n:"샘의 정령들",w:2,tg:"none",cd:2,summon:{n:"메아리 정령",min:1,max:1},d:"메아리 정령을 부릅니다. (소환물)"},
@@ -14049,7 +14049,7 @@ const FOE={
    hit:"혀 채찍"},
  "타락한 드루이드":{hp:70,atk:5,def:6,rng:4,exp:25,elite:1,
    el:"마법",
-   pas:[{k:"info",n:"오염된 씨앗",d:"심은 씨앗은 2턴 뒤에 오염된 덩굴로 자랍니다. 대원 전장에 심긴 씨앗, 덩굴은 잔해처럼 자리를 차지합니다."}],
+   pas:[{k:"info",n:"오염된 씨앗",d:"심은 씨앗은 2턴 뒤에 오염된 덩굴로 자랍니다. 대원 전장에 심긴 씨앗, 덩굴은 잔해처럼 자리를 차지합니다."},{k:"cycle",every:2,gain:"negShield",v:3,n:"정화",d:"2턴마다 부정 보호막을 3 얻습니다."}],
    sk:[
     {n:"오염된 창조",w:7,tg:"none",cd:1,cond:"fewSeeds",seed:{n:2,hp:40,turns:2},d:"적과 대원 전장의 빈 칸에 체력이 40인 오염된 씨앗을 둘 심습니다."},
     {n:"양분 흡수",w:3,tg:"none",lifeDrain:6,d:"모든 대상(적과 대원 모두)에게서 체력을 6씩 가져옵니다."},
@@ -14062,7 +14062,7 @@ const FOE={
  /* ── 균열 군체 (정예 · 사용자 2026-10-01) — 직접 때리지 않는다. 디버프와 차원문. 정령숲 '균열 군체' 칸에서만 ── */
  "균열 군체":{hp:100,atk:4,def:6,rng:5,exp:30,elite:1,noMove:1,
    el:"마법",
-   pas:[{k:"shift",n:"변화",d:"균열 군체가 피해를 받을 때마다 의도가 변합니다. (차원문 생성 제외)"}],
+   pas:[{k:"shift",n:"변화",d:"균열 군체가 피해를 받을 때마다 의도가 변합니다. (차원문 생성 제외)"},{k:"cycle",every:2,gain:"negShield",v:3,n:"정화",d:"2턴마다 부정 보호막을 3 얻습니다."}],
    sk:[
     {n:"차원문 생성",w:2,tg:"none",open:1,cd:2,gate:2,d:"빈 칸에 악마 차원문을 둘 소환합니다. 잔해가 남아 있다면 대신 잔해를 다시 세웁니다."},
     {n:"오염",w:3,tg:"none",taint:15,d:"오염도를 15 올립니다."},
@@ -14234,6 +14234,7 @@ const FOE={
    hit:"삼연 베기"},
  /* 꼭두각시를 부리는 인형사. 꼭두각시는 인형사의 명령으로만 움직이고, 인형사는 꼭두각시 사이로 숨기도 한다 */
  "미치광이 인형사":{hp:110,atk:7,def:6,rng:6,exp:30,elite:1,
+   pas:[{k:"cycle",every:2,gain:"negShield",v:3,n:"정화",d:"2턴마다 부정 보호막을 3 얻습니다."}],
    el:"마법",
    sk:[
     {n:"꼭두각시 소환",w:9,tg:"none",summon:{n:"꼭두각시",min:2,max:2},cond:"noPuppet",must:1,d:"꼭두각시를 2마리 소환합니다. (꼭두각시가 없을 때만) (소환물)"},
@@ -14250,7 +14251,7 @@ const FOE={
  "마나 정제로":{hp:130,atk:5,def:4,rng:9,exp:30,elite:1,
    el:"마법",
    pas:[{k:"flow",n:"마나 흐름 정제소",d:"적 턴이 끝날 때, 대원과 소환물이 서 있는 칸에 따라 약화를 부여합니다. 1칸: 마법약화 1 / 2칸: 공격약화 1 / 3칸: 마법약화 1 / 4칸: 공격약화 1 / 5칸: 보호약화 1"},
-        {k:"heat",v:12,n:"과열",d:"피해를 12번 받으면 과열 상태가 됩니다."}],
+        {k:"heat",v:12,n:"과열",d:"피해를 12번 받으면 과열 상태가 됩니다."},{k:"cycle",every:2,gain:"negShield",v:3,n:"정화",d:"2턴마다 부정 보호막을 3 얻습니다."}],
    sk:[
     {n:"마나 폭발",w:5,tg:"all",anyRng:1,dmg:10,heatDmg:30,d:"모든 상대에게 마법 피해를 10 줍니다. 과열 상태라면 마법 피해 30."},
     {n:"냉각수 유출",w:4,tg:"all",anyRng:1,deb:{chill:3},heatDeb:{burn:6},d:"모든 상대에게 냉각을 3 부여합니다. 과열 상태라면 화상도 6 부여합니다."},
@@ -14263,7 +14264,7 @@ const FOE={
  "누군가의 기억":{hp:100,atk:6,def:6,rng:9,exp:30,elite:1,
    el:"마법",
    pas:[{k:"memory",n:"떠오르는 기억",d:"행동할 때마다 기억 중첩을 얻습니다. 3번 중첩되면 다음 행동이 강화됩니다. (강화된 행동을 하면 중첩이 사라집니다)"},
-        {k:"lastWill",v:10,n:"최후의 의지",d:"전투당 1회, 체력이 30% 이하가 되면 모든 상대에게 보호막을 10 부여합니다."}],
+        {k:"lastWill",v:10,n:"최후의 의지",d:"전투당 1회, 체력이 30% 이하가 되면 모든 상대에게 보호막을 10 부여합니다."},{k:"cycle",every:2,gain:"negShield",v:3,n:"정화",d:"2턴마다 부정 보호막을 3 얻습니다."}],
    sk:[
     {n:"흐려진 의지",w:4,tg:"none",dimNext:5,empBuff:5,d:"다음 턴 동안 모든 상대의 추가 능력치를 5 감소시킵니다. 강화된 상태라면 마법력을 5 얻습니다."},
     {n:"흐릿한 족쇄",w:5,tg:"near",dmg:10,deb:{bind:1},empDeb:{stun:1},chase:1,d:"가장 앞 상대에게 마법 피해를 10 주고 속박시킵니다. 강화된 상태라면 대신 기절시킵니다."},
@@ -17546,6 +17547,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 42, "v": "0.7", "d": "2026-10-12", "t": "금단의 고서 40% · 정화 열 마리 · 상급 보상만큼 적 강화 · 종탑 조여 오는 힘", "big": 0},
  {"b": 41, "v": "0.7", "d": "2026-10-12", "t": "수치·장신구·글 묶음 — 승리의 일격 너프 · 장신구 셋 괄호 수치 · 금단의 고서 · 적 의도 군더더기 · 종탑 3구역 배율 · 쉼터", "big": 0},
  {"b": 40, "v": "0.7", "d": "2026-10-12", "t": "경비견 상시 도발 · 메아리 정령 의도 · 기록 정정 잠금 · 지도에서 퀘스트 완료창", "big": 0},
  {"b": 39, "v": "0.7", "d": "2026-10-12", "t": "소환물을 깔면 적이 헛손질하던 것 — 닿지 않게 된 의도만 다시 정한다", "big": 0},
@@ -18779,7 +18781,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=41;
+const BUILD_NO=42;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -25028,6 +25030,33 @@ function fieldMult(f){ return FIELD_MULT[Math.min(f, FIELD_MULT.length-1)] }
      1구역 5~7일차 평균 9.4 · 2구역 마지막 사흘 12.3 · 3구역 15.0  (하루 전투 1.4판 가정)
    능력치·체력은 그 레벨의 대원이 보상으로 쌓았을 만큼(능력치 0.7/레벨 · 체력 2.3/레벨)으로 어림잡았다. */
 const BOSS_LV=[9,12,15];
+/* ═══ 상급 보상 몫 (사용자 2026-10-12) ═══
+   사용자 말 — 「대원이 상급 보상을 획득한 후 시점에 승률이 급격하게 올라간다. 적 강화 조건에
+   상급 보상 개수도 넣어야 할 듯. 근데 너무 배율을 추가하면 불쾌하니 적절하게」
+   partyPower() 는 레벨 · 능력치 합 · 최대 체력만 본다. 상급 보상은 대부분 h.tag.* 로 들어가는
+   장치 보상(에너지 강화 · 기계화 성벽 · 기술 수치 고치기)이라 식에 들어갈 통로가 없다 —
+   재 보니 대원마다 상급 넷을 더 들려도 partyPower 는 2구역 +1.9% · 3구역 +0.5% 밖에 안 움직이는데
+   승률은 7~18%p 올랐다 (sim/probe-top-reward.js).
+   그 틈을 되돌리는 값은 개당 +1.65% 로 쟀고(sim/probe-top-offset.js), 사용자가 그 절반인 +0.8% 를 골랐다 —
+   보상을 든 보람은 남기고 기울기만 눕히는 쪽.
+   ⚠️ 판 전체 개수로 센다 — 대원이 넷이든 다섯이든 셈이 흔들리지 않게.
+   ⚠️ 상급을 받는 길(상자 · 기믹 · 상점 · 레벨)은 모두 h.tag.tk 에 rwKey = 「등급|이름」을 쌓는다.
+      그래서 한 자리만 세면 다 센다 — 갈래마다 따로 세지 말 것. */
+const TOP_RW_GAIN=0.008, TOP_RW_MAX=15;   /* 15개에서 멈춘다 (+12%) — 한 원정에 상급은 여덟 개쯤 모인다 */
+function topRewardN(){
+  if(typeof run==="undefined"||!run||!run.heroes) return 0;
+  if(run.sandbox) return 0;   /* 연습판은 사용자가 손으로 세기를 잡는 자리(run.sandScale) — 상급을 잔뜩 들려 세우면 적이 저절로 세져 「손으로 잡는다」가 깨진다 (사용자 2026-10-12) */
+  let n=0;
+  run.heroes.forEach(h=>{
+    const tk=h.tag&&h.tag.tk;
+    if(tk){ n+=tk.filter(k=>k.indexOf("상급|")===0).length; return }
+    /* tk 가 없는 옛 저장 — 이름으로 되찾는다 */
+    const all=(HERO_REWARDS[h.name]||[]).concat(typeof COMMON!=="undefined"?COMMON:[]);
+    n+=((h.tag&&h.tag.taken)||[]).filter(t=>{ const r=all.find(x=>x.n===t); return !!(r&&r.g==="상급") }).length;
+  });
+  return Math.min(n,TOP_RW_MAX);
+}
+function topRewardMult(){ return 1+topRewardN()*TOP_RW_GAIN }
 function bossPower(f){
   const lv=BOSS_LV[Math.min(f,BOSS_LV.length-1)];
   const st=(lv-1)*0.7, hp=22+2.3*(lv-1);
@@ -25046,7 +25075,9 @@ function foeScale(kind){
   /* 우두머리 : 날짜는 그 구역의 마지막 날, 대원의 세기는 못 박은 값 (위 BOSS_LV) */
   const l=boss?((FIELDS[Math.min(f,FIELDS.length-1)].days-1)+(run.dun?run.dun.wave-1:0))
               :((run.day-1)+(run.dun?run.dun.wave-1:0));
-  let m=fieldMult(f)*(1+l*FIELD_GROW)*(boss?bossPower(f):partyPower());
+  let m=fieldMult(f)*(1+l*FIELD_GROW)*(boss?bossPower(f):partyPower())*topRewardMult();
+  /* ↑ topRewardMult() 를 partyPower · bossPower 안에 각각 넣지 말 것 — 우두머리는 partyPower 를
+       아예 안 쓰고 bossPower 로 갈라지므로 한쪽만 넣으면 조용히 빠진다. 이 줄이 둘의 합류점이다 */
   if(kind==="elite")  m*=1.32;
   if(kind==="boss")   m*=1.45;
   if(kind==="ambush") m*=1.3+nightDepth()*0.05;
@@ -25143,6 +25174,7 @@ function startBattle(kind,pinned){
   });
   B.foes.forEach(f=>foeFix(f));   /* 체력을 못 박은 우두머리 (간수장 300) */
   if(run.dun&&run.dun.foeEsh) B.foes.forEach(f=>{ f.eshield=(f.eshield||0)+run.dun.foeEsh });   /* 종탑 — 에너지 보호막 300 으로 시작 (사용자 2026-10-12) */
+  if(run.dun&&run.dun.souls) B.foes.forEach(f=>{ f.soulSq=1 });   /* 종탑의 우두머리 영혼 — 2턴마다 조여 오는 힘 (라운드마다 여기를 지나니 2라운드도 받는다) */
   B.foes.forEach(f=>{ const b=foePas(f,"bounty"); if(b) f.bounty=b.v });   /* 미믹 — 쥔 금화 (2026-10-05) */
   /* 사슬에 묶인 마귀 — 묶여 있는 동안은 속박 99 (사용자 2026-09-29). 사슬 간수가 다 죽어 각성하면 boundCheck 가 푼다 */
   B.foes.forEach(f=>{ if(foePas(f,"bound")&&!f.awake){ f.deb=f.deb||{}; f.deb.bind=99 } });
@@ -25633,7 +25665,9 @@ function puppetAimOf(I,p,list){ const id=I&&I.pa&&I.pa[p.id], L=list||allUnits()
 const SQUEEZE_GAIN=[1,3,5], SQUEEZE_MAX=12, SQUEEZE_FROM=12, SQUEEZE_EVERY=2;   /* 한 적이 얻는 횟수의 윗한도 — 20턴 판에서 끝없이 오르지 않게 (내가 정한 값, 시뮬: 구역 3 승률 39.4 → 36.9) */
 function squeezeGain(){ return SQUEEZE_GAIN[Math.min((run&&run.field)||0,2)] }
 function squeezeSkip(f){ const D=FOE[f.name]||{};
-  return !!(f.boss||D.boss||D.still||f.isPhantom||(D.pas||[]).some(p=>p.k==="gazeGrow"||p.k==="everyTwo")||(D.sk||[]).some(x=>x.chg)) }
+  return !!(f.boss||D.boss||D.still||f.isPhantom||f.soulSq
+    ||(D.pas||[]).some(p=>p.k==="gazeGrow"||p.k==="everyTwo"||(p.k==="cycle"&&p.gain==="atk"))   /* cycle 로 공격력을 얻는 적은 두 번 얻지 않는다 (사용자 2026-10-12) */
+    ||(D.sk||[]).some(x=>x.chg)) }
 function squeezeAttack(f,I){
   if(!I) return false;
   if(I.t==="atk"||I.t==="volley") return (I.v||0)>0;
@@ -25941,8 +25975,16 @@ const SK_COND={
 function foeSK(f){ const D=FOE[f.name]; return (D&&D.sk&&D.sk.length)?D.sk:null }
 /* 지금 켜진 지속 능력 — ph 가 적힌 것은 그 단계가 된 뒤부터 (간수장 규율 3단계, 사용자 2026-10-06) */
 const ECHO_GIFT={k:"echo",n:"메아리",kw:"메아리",d:"죽으면 절반의 생명력으로 1회 부활합니다."};
+/* 종탑의 과거 우두머리 영혼만 지니는 「조여 오는 힘」 (사용자 2026-10-12: 「2턴에 한 번씩 조여오는 힘을 사용하도록」).
+   ⚠️ FOE["간수장"] · FOE["콜로서스"] 표에 달면 1 · 2구역 우두머리까지 번진다 — 그래서 그 판의 적에게만 붙인다.
+   v 는 재서 골랐다 — 원래 조여 오는 힘이 혼자 남은 적에게 20턴 판에서 주는 총량이 +20(12턴 뒤부터 2턴마다 ×4 ×5)이라,
+   처음부터 2턴마다 +2 면 열 번에 +20 으로 총량이 같고 고르게 퍼진다. max 24 = 12번 몫 (조여 오는 힘의 SQUEEZE_MAX 와 같은 횟수).
+   재는 자리 sim/probe-gears-cycle.js */
+const SOUL_SQUEEZE={k:"cycle",every:2,gain:"atk",v:2,max:24,from:0,n:"조여 오는 힘",
+  d:"2턴마다 공격력을 2 얻습니다. (이 전투에서 24까지)"};
 function foePasOn(f){ const D=FOE[f.name]; const L=((D&&D.pas)||[]).filter(p=>(!p.ph||(f.ph||1)>=p.ph)&&(!p.phTo||(f.ph||1)<=p.phTo));
   if(f.echoGift&&!L.some(p=>p.k==="echo")) L.push(ECHO_GIFT);   /* 「갇힌 메아리」로 받은 메아리 */
+  if(f.soulSq&&!L.some(p=>p.k==="cycle"&&p.gain==="atk")) L.push(SOUL_SQUEEZE);   /* 종탑의 우두머리 영혼 */
   return L }   /* phTo — 그 단계까지만 (콜로서스 보호 프로토콜, (사용자 2026-10-07)) */
 function foePas(f,k){ return foePasOn(f).find(p=>p.k===k)||null }
 function passChips(f){
@@ -26993,7 +27035,37 @@ function skTurnStart(){
     { const et=foePas(f,"everyTwo"); if(et&&f.awake){ f.awakeTurns=(f.awakeTurns||0)+1;
         if(f.awakeTurns%2===0){ f.atk+=et.v; f.atkUp=(f.atkUp||0)+et.v; fx({side:"foe",slot:f.slot,s:"buffup",ring:"#e0705a",txt:"공격력 +"+et.v,cls:"buf",gap:120}); say(`풀려남! — ${f.name} 공격력 +${et.v}`,"t2") } } }
     tauntWithOne(f);
+    cycleTick(f);
   });
+}
+/* ═══ 주기 능력 cycle (사용자 2026-10-12 「정화: 2턴마다 부정 보호막을 3 얻습니다」) ═══
+   지속 능력 {k:"cycle", every:N, gain:"<CYCLE_ACT 의 열쇠>", v:수치, n:이름, d:글} 을 적에 달면, 적 차례 머리마다 세어 N 번째마다 그 동작을 한다.
+   · 무엇을 하는지는 CYCLE_ACT 표에 **한 줄** — 새 동작(종탑의 조여 오는 힘 따위)은 거기만 더한다. 도는 자리는 여기 한 곳.
+   · 첫 동작은 N 번째 적 차례 (2턴마다면 둘째 적 차례). 지속 능력이 여럿이어도 저마다 따로 센다 (f.cycleN[이름]).
+   · 선택 인자 — from: 몇 턴 뒤부터 세기 시작 (B.turn 이 from 보다 커야 센다, 안 주면 처음부터)
+                 max: 이 능력으로 얻는 총량의 윗한도 (남은 몫만큼만 얻는다, 안 주면 끝없이). 예) 종탑의 조여 오는 힘: {every:2,gain:"atk",v:2,max:12,from:0}
+   · ⚠️ gain 이 **공격력 계열**(atk)이면 squeezeSkip 에 cycle 을 넣어야 한다 — 조여 오는 힘과 같은 힘을 두 번 얻지 않게.
+     부정 보호막(negShield)은 겹치지 않아 넣지 않았다. 옛 everyTwo(사슬에 묶인 마귀, 풀려난 뒤 2턴마다 공격력)는 그대로 두었다 — golden 이 움직인다. */
+const CYCLE_ACT={
+  negShield:(f,p)=>{ negGain(f,p.v);
+    fx({side:"foe",slot:f.slot,s:"buffup",ring:"#9aa7c9",txt:"부정 보호막 +"+p.v,cls:"buf",gap:110});
+    say(`${p.n||"정화"} — ${f.name} 부정 보호막 +${p.v}`,"t2") },
+  atk:(f,p)=>{ f.atk+=p.v; f.atkUp=(f.atkUp||0)+p.v;
+    fx({side:"foe",slot:f.slot,s:"buffup",ring:"#e0705a",txt:"공격력 +"+p.v,cls:"buf",gap:110});
+    say(`${p.n||"주기"} — ${f.name} 공격력 +${p.v} (누적 +${f.atkUp})`,"t2") }
+};
+function cycleTick(f){
+  if(!f||!f.alive) return;
+  foePasOn(f).forEach(p=>{
+    if(p.k!=="cycle"||!CYCLE_ACT[p.gain]) return;
+    if((B.turn||1)<=(p.from||0)) return;   /* from — 몇 턴 뒤부터 (안 주면 처음부터) */
+    f.cycleN=f.cycleN||{}; f.cycleGot=f.cycleGot||{};
+    const c=(f.cycleN[p.n]=(f.cycleN[p.n]||0)+1);
+    if(c%(p.every||2)!==0) return;
+    let v=p.v;   /* max — 이 능력으로 얻는 총량의 윗한도 (안 주면 끝없이). 남은 몫만큼만 얻는다 */
+    if(p.max!=null){ v=Math.min(v,p.max-(f.cycleGot[p.n]||0)); if(!(v>0)) return }
+    f.cycleGot[p.n]=(f.cycleGot[p.n]||0)+v;
+    CYCLE_ACT[p.gain](f,Object.assign({},p,{v:v})) });
 }
 /* 주인의 명령 (경비견) — 감옥 경비병이 전장에 있는 동안 **상시로** 도발한다. 행동으로 얻는 것이 아니다.
    예전에는 적 차례 머리(skTurnStart)에서만 맞춰 첫 내 턴에는 도발이 없고, 경비병이 쓰러져도 다음 적 차례까지 남았다 (사용자 2026-10-12).
@@ -31557,15 +31629,16 @@ const DOM_DEMON_FULL={
 /* 금단의 고서에 손을 대다 — 종족 악마 · 직업 학살자(unitTags), 기술 넷의 글과 값이 바뀐다. 외형 · 얼굴 · 지도 손은 domDemonRun 이 본다 */
 function domCorrupt(h){
   const T=h.tag; T.demon=1; T.demonShown=0;
-  /* 타락의 값 — 최대 체력 30 (사용자 2026-10-12). 다른 「깎는」 보상들과 같은 한 줄 */
-  h.maxHp=Math.max(1,h.maxHp-30); h.hp=Math.min(h.hp,h.maxHp);
+  /* 타락의 값 — 최대 체력 **40% 감소** (사용자 2026-10-12). 굳은 30 은 도미니코의 몸(기본 20)보다 커서
+     늘 1 로 떨어졌다 — 비율이라 레벨이 올라도 값어치가 유지된다. 잃는 쪽을 반올림한다 */
+  h.maxHp=Math.max(1,h.maxHp-Math.round(h.maxHp*0.4)); h.hp=Math.min(h.hp,h.maxHp);
   (h.sk||[]).forEach(k=>{ if(!k) return;
     if(k.wand) k.full=DOM_DEMON_FULL["라이티늄 지팡이"];
     if(k.weaken) k.full=DOM_DEMON_FULL["의지 약화"];
     if(k.shackle){ k.full=DOM_DEMON_FULL["영광의 족쇄"]; k.cost=Math.max(0,3-(T.prisonDiary?1:0)); k.lock=1; k.d="잠금(1), 보호약화 + 피해 8, 보호력 · 마법력을 공격력으로" }   /* 잠금 0→1 · 공포 → 보호 약화 (사용자 2026-10-12) */   /* 비용 3 (노트 글 그대로) */
     if(k.penance){ k.full=DOM_DEMON_FULL["참회의 기류"]; k.lock=3; k.limit=2; k.d="잠금(3), 사용한도(2), 아군 공격력 · 적 피해가 지날 때마다 커진다" } });   /* 잠금 2→3 · 사용 한도 2 (사용자 2026-10-12) */
   try{ if(typeof document!=="undefined"&&document.body&&typeof ICON_PNG!=="undefined"&&ICON_PNG.fx_dom_scene){ T.demonShown=1; domCorruptScene() } }catch(e){}   /* 고른 자리에서 변신 장면 (사용자 2026-10-06) — 그러면 전투 첫 배치의 변신은 건너뛴다 */
-  if(typeof toast==="function") toast("금단의 고서 — 도미니코가 악마로 타락합니다. 최대 체력 −30");
+  if(typeof toast==="function") toast("금단의 고서 — 도미니코가 악마로 타락합니다. 최대 체력 −40%");
 }
 /* 금단의 고서 장면 — 사제가 서 있다가(1) 책을 펼쳐 읽고(2), 균열이 번지며 떨리고(3~5) "이게 무슨 일이지?" · "안돼!",
    뿔과 붉은 피부가 돋아(6 · 7) 악마로 깨어난다(8) "마침내 깨어났다!". 누르면 건너뛴다 (tools/dominico-scene.py, 사용자 2026-10-06) */
