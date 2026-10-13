@@ -11815,6 +11815,10 @@ const RIFT_GIFT=[
  {gold:[10,16], stone:[2,3], grade:"중급", hp:[3,6], item:"일반", itemN:[1,1]},   /* 2 정령의 숲 */
  {gold:[16,24], stone:[3,5], grade:"상급", hp:[5,9], item:"희귀", itemN:[1,1]},   /* 3 마력의 탑 */
 ];
+/* 「무작위 보상」 — 균열 세계핵이 주는 것과 **같은 풀 하나**다 (사용자 2026-10-14).
+   퀘스트(탐험심 · 고철 수거 · 사냥 수첩)가 주는 「무작위 보상」도 여기로 온다.
+   구역이 깊을수록 값이 커진다 (RIFT_GIFT). 받은 것을 글로 돌려준다 — 부르는 쪽이 그대로 보인다 */
+function randomReward(){ try{ return CORE_GIFT.riftGift()||"" }catch(e){ console.error(e); return "" } }
 /* 지금 원정의 반복 퀘스트 — 화면이 진행도를 보일 때 (없으면 null) */
 function coreQuestNow(){ const c=coreNow(), q=c&&c.quest;
   return q?{k:q.k, n:q.n, have:Math.min(q.n,(run&&run.coreQ)||0), label:CORE_TALLY[q.k]||q.k}:null }
@@ -12096,6 +12100,10 @@ const R=(n,g,d,fx,w)=>({n:n,g:g,d:d,fx:fx,w:w});
    꼭두각시 인형(한 대원이 고른 것은 더한다 20 + 40 = 60%.
    다만 minHpBonus 는 **대원들 사이에서는** 「가장 큰 비율만큼」 — 그 설계는 그대로다) 도 사용자가 쌓으라 했다 (2026-10-11).
    */
+/* 현상금 표식을 붙일 수 있는 전투 칸 — 이벤트 「현상 수배」와 보상 「현상 수배지」가 같이 쓴다 (2026-10-14) */
+function bountySpots(){ const L=[];
+  ((run&&run.grid)||[]).forEach((row,r)=>row.forEach((c,ci)=>{ if(c.t==="dungeon"&&!c.done&&!c.bounty) L.push({r:r,c:ci}) }));
+  return L }
 const COMMON=[
  /* ── 하급 ── */
  R("장신구: 파편","하급","무작위 <b>파편 장신구</b>을 얻습니다.",
@@ -12189,6 +12197,27 @@ const COMMON=[
    h=>{ run.gold+=15; run.stone=(run.stone||0)+4; run.act=0; if(!run.night){ run.night=1; run.time=Math.max(run.time,18) } }),
  R("하급: 달리기","하급","내 턴이 끝날 때, 추진력을 최대 3만큼 소모하고 그 2배만큼 보호막을 얻습니다.",
    h=>{ (h.tag.dashes=h.tag.dashes||[]).push([3,2]) }),
+ /* ── 공용 하급 여섯 (사용자 2026-10-14) ── */
+ Object.assign(R("현상 수배지","하급","지도의 무작위 전투에 현상금 표식이 부여됩니다.\n해당 전투에서 금화를 50% 추가로 얻습니다.\n*표식이 없는 전투 칸이 있을 때만 등장",
+   h=>{ const L=bountySpots(); if(!L.length) return;
+     const p=rnd(L); run.grid[p.r][p.c].bounty=1;
+     toast("지도의 전투 하나에 현상금 표식이 붙었습니다.") }),{okf:()=>bountySpots().length>0}),
+ R("야전 병원","하급","이번 원정 동안 날이 밝을 때, 모든 대원이 체력을 4 회복합니다.",
+   h=>h.tag.dayHeal=(h.tag.dayHeal||0)+4),
+ R("보급선","하급","이번 원정 동안 날이 밝을 때, 금화를 3개 얻습니다.",
+   h=>h.tag.dayGold=(h.tag.dayGold||0)+3),
+ Object.assign(R("사냥 수첩","하급","퀘스트: 적 20회 처치\n보상: 무작위 보상",
+   h=>{ if(!questHas("사냥 수첩")) questAccept("사냥 수첩",null) }),{okf:()=>!questHas("사냥 수첩")}),
+ R("안개지대","하급","지도 위 무작위 위치에 안개로 가려진 무작위 구역 1곳을 추가합니다.\n해당 구역에 도착하면 금화를 12개 얻습니다.",
+   h=>{ const k=rnd(["event","shop","forge","rest","elite","dungeon","dungeon","dungeon"]);
+     let ex={fogged:1,giftGold:12};
+     if(k==="dungeon"){ const w=1+Math.floor(Math.random()*3); ex=Object.assign(ex,{waves:w},encRoll("dungeon",run.field,w)) }
+     else if(k==="elite") ex=Object.assign(ex,{waves:1},encRoll("elite",run.field,1));
+     const put=sprinkleCell(k,1,ex);
+     toast(put?"지도 어딘가에 안개가 깔립니다. 무엇이 가려졌는지는 닿아야 압니다.":"지도에 빈 자리가 없어 안개가 끼지 않았습니다.") }),
+ R("도박꾼의 상자","하급","50% 확률로 금화를 12개 얻거나, 오염도를 12 얻습니다.",
+   h=>{ if(Math.random()<0.5){ run.gold+=12; if(sfxHas("금화 얻기")) SFX.play("금화 얻기"); toast("도박꾼의 상자 — 금화 +12") }
+     else { addTaint(12); toast("도박꾼의 상자 — 오염도 +12") } }),
  /* ── 중급 ── */
  R("중급: 달리기","중급","내 턴이 끝날 때, 추진력을 최대 5만큼 소모하고 그 2배만큼 보호막을 얻습니다.",
    h=>{ (h.tag.dashes=h.tag.dashes||[]).push([5,2]) }),
@@ -12231,6 +12260,23 @@ const COMMON=[
  R("중급: 공격력 강화","중급","영구히 공격력을 1 얻습니다.",h=>h.atk+=1),
  R("장신구: 일반","중급","무작위 <b>일반 장신구</b>을 얻습니다.",
    h=>{ (run.after=run.after||[]).push({item:rnd(ITEMS.filter(i=>i.g==="일반"))}) }),
+ /* ── 공용 중급 다섯 (사용자 2026-10-14) ── */
+ Object.assign(R("수집가","중급","가방의 무작위 파편 장신구 3개를 무작위 일반 장신구 1개로 바꿉니다.\n*가방에 파편 장신구가 3개 이상일 때만 등장",
+   h=>{ for(let q=0;q<3;q++){ const idx=[];
+       (run.bag||[]).forEach((it,i)=>{ if(it.g==="파편") idx.push(i) });
+       if(!idx.length) break; run.bag.splice(rnd(idx),1) }
+     const L=ITEMS.filter(i=>i.g==="일반");
+     if(L.length){ (run.after=run.after||[]).push({item:rnd(L)}); toast("파편 셋을 녹여 일반 장신구 하나로 바꿉니다.") } }),
+   {okf:()=>((run&&run.bag)||[]).filter(i=>i.g==="파편").length>=3}),
+ R("대장장이 친구","중급","지도 위 무작위 위치에 제련소 1곳을 추가합니다.\n해당 제련소에 도착하면 제련석을 5개 얻습니다.",
+   h=>{ const put=sprinkleCell("forge",1,{giftStone:5});
+     toast(put?"지도에 제련소가 하나 들어섰습니다.":"지도에 빈 자리가 없어 제련소를 세우지 못했습니다.") }),
+ R("장인의 눈","중급","이번 원정 동안 제련소에서 제련할 때 제련석 비용이 1 감소합니다.",
+   h=>h.tag.forgeCut=(h.tag.forgeCut||0)+1),
+ R("쪽잠","중급","쉼터에 도착하면 활동량을 1 얻습니다.\n금화를 7개 얻습니다.",
+   h=>{ h.tag.restAct=(h.tag.restAct||0)+1; run.gold+=7 }),
+ Object.assign(R("부지런한 아침","중급","주둔지에서 하루 몫을 쓴 뒤, 활동량 1을 들여 시설을 한 곳 더 이용할 수 있습니다.\n같은 곳을 두 번 이용할 수 있습니다.",
+   h=>{ run.campExtra=1 }),{okf:()=>!(run&&run.campExtra)}),
  /* ── 상급 ── */
  R("상급: 달리기","상급","내 턴이 끝날 때, 추진력을 모두 소모하고 그 3배만큼 보호막을 얻습니다.",
    h=>{ (h.tag.dashes=h.tag.dashes||[]).push([99,3]) }),
@@ -12260,12 +12306,16 @@ const COMMON=[
  R("상급: 마법력 강화","상급","영구히 마법력을 4 얻습니다.",h=>h.mag+=4),
  R("상급: 공격력 강화","상급","영구히 공격력을 4 얻습니다.",h=>h.atk+=4),
  R("장신구: 희귀","상급","무작위 희귀 장신구을 얻습니다.",
-   h=>{ (run.after=run.after||[]).push({item:rnd(ITEMS.filter(i=>i.g==="희귀"))}) })
+   h=>{ (run.after=run.after||[]).push({item:rnd(ITEMS.filter(i=>i.g==="희귀"))}) }),
+ /* ── 공용 상급 하나 (사용자 2026-10-14) ── */
+ Object.assign(R("사치품","상급","이번 원정 동안 파편 장신구끼리 제련하면 일반 장신구 대신 무작위 희귀 장신구를 얻습니다.",
+   h=>{ run.luxForge=1 }),{okf:()=>!(run&&run.luxForge)})
 ];
 /* 판 전체 자원(오염도·활동량)에만 작용하는 보상.
    시작 꾸러미의 첫 레벨업이나 우두머리 보상처럼 곧 판이 새로 깔리는 자리에서는
    아무 값어치가 없으므로 후보에서 뺀다. */
-COMMON.forEach(r=>{ if(r.n==="오염 정화"||/발 마사지$/.test(r.n)) r.rr=1 });
+COMMON.forEach(r=>{ if(r.n==="오염 정화"||/발 마사지$/.test(r.n)
+  ||r.n==="현상 수배지"||r.n==="안개지대"||r.n==="대장장이 친구") r.rr=1 });   /* 지도에 놓는 셋도 — 판이 새로 깔리면 사라진다 (2026-10-14) */
 const HERO_REWARDS={
  "나이코스":[
   /* ── 하급 ── */
@@ -13455,6 +13505,14 @@ Object.assign(REW_COND,{
  "상급|무한 팽창":{once:1},"상급|터널링":{once:1},"상급|에너지 중첩":{once:1},"상급|반전화":{once:1},
  "상급|특이점":{need:["시공간 폭탄"]},"상급|마이스너 변환":{once:1,need:["자기장 변환"]},
  "상급|홀로그램 분신":{once:1},"상급|정밀 공학":{once:1}});
+/* 공용 보상 열둘 (사용자 2026-10-14) */
+Object.assign(REW_KIND,{
+ "하급|현상 수배지":"재화","하급|야전 병원":"주둔지 강화","하급|보급선":"재화","하급|사냥 수첩":"재화",
+ "하급|안개지대":"재화","하급|도박꾼의 상자":"재화",
+ "중급|수집가":"장신구","중급|대장장이 친구":"장신구","중급|장인의 눈":"장신구",
+ "중급|쪽잠":"주둔지 강화","중급|부지런한 아침":"주둔지 강화","상급|사치품":"장신구"});
+Object.assign(REW_COND,{
+ "하급|사냥 수첩":{once:1},"중급|부지런한 아침":{once:1},"상급|사치품":{once:1}});
 function rewCond(r){ return REW_COND[rwKey(r)]||null }
 /* 이 대원이 그 기술을 지금 가지고 있는가.
    아직 레벨이 모자라 잠긴 칸은 '없는 것' 으로 본다.
@@ -17114,7 +17172,7 @@ function nodeArt(t){
   return out+"</svg>";
 }
 /* 정찰대 보내기 — 전 구역 금화 5 (사용자 2026-10-08. 전에는 구역마다 5 · 10 · 20) */
-const REMAP_COST=[5,5,5];
+const REMAP_COST=[5,20,50];   /* 구역이 오를수록 비싸다 (사용자 2026-10-14) */
 const REST_PLACE=2;   /* 한 번에 놓는 쉼터 수 */
 /* SCOUT_ACT 는 걷었다 (사용자 2026-10-13 : 「활동량 2 얻는 것 빼줘」).
    ⚠️ 밭을 0 으로 두지 않고 **아예 없앴다** — 0 으로만 두면 글에 「활동량을 0 얻습니다」가 남는다 */
@@ -17549,8 +17607,11 @@ function rollFog(){
     run.fog={cells:L.map(([a,b])=>a+"-"+b),until:run.day+rr([2,3])}; return true }
   return false;
 }
-const fogAt=(r,c)=>!!(run&&run.fog&&run.fog.cells.indexOf(r+"-"+c)>=0)||(typeof floorHidden==="function"&&floorHidden(r,c));   /* 마력의 탑 — 아직 닿지 않은 층 */
-function fogLift(r,c){ if(run&&run.fog){ if(run.fog.cells.indexOf(r+"-"+c)>=0) mapGone("fog",[r+"-"+c]); run.fog.cells=run.fog.cells.filter(k=>k!==r+"-"+c); if(!run.fog.cells.length) run.fog=null } }
+const fogAt=(r,c)=>!!(run&&run.fog&&run.fog.cells.indexOf(r+"-"+c)>=0)||!!(run&&run.grid&&run.grid[r]&&run.grid[r][c]&&run.grid[r][c].fogged)||(typeof floorHidden==="function"&&floorHidden(r,c));   /* 마력의 탑 — 아직 닿지 않은 층 · 보상 「안개지대」가 깔은 한 칸(cell.fogged) */
+function fogLift(r,c){
+  { const cl=run&&run.grid&&run.grid[r]&&run.grid[r][c];   /* 안개지대 — 그 칸만 걷힌다 (2026-10-14) */
+    if(cl&&cl.fogged){ delete cl.fogged; mapGone("fog",[r+"-"+c]) } }
+  if(run&&run.fog){ if(run.fog.cells.indexOf(r+"-"+c)>=0) mapGone("fog",[r+"-"+c]); run.fog.cells=run.fog.cells.filter(k=>k!==r+"-"+c); if(!run.fog.cells.length) run.fog=null } }
 /* 지도에서 사라지는 것 — 다음 지도 그리기에서 사라지는 연출 (안개가 걷힘 · 기계 잔해가 무너짐) (사용자 2026-10-07) */
 function mapGone(t,keys,extra){ if(typeof MAP_GONE==="undefined") return; keys.forEach((k,i)=>MAP_GONE.push(Object.assign({t:t,k:k,i:i,t0:0},extra&&extra[i]||{}))) }
 /* 균열 군체 — 하루가 지나면 둘레 빈 칸에 오염된 뿌리 1~4, 그 뒤로는 뿌리마다 1~2 (칸마다 한 번만 퍼뜨린다) */
@@ -18126,11 +18187,17 @@ function nextDay(){
     lose(`${FIELDS[run.field].days}일이 지나도록 우두머리를 넘지 못했습니다.`); return;
   }
   run.time=coreFx("wakeAt")||6;   /* 세계핵 — 늦잠 (현실의 세계핵은 9시) */
-  run.act=Math.max(0,run.act||0)+dayAct(); run.night=0; run.campDone=0; run.route=null;   /* 초기화가 아니라 쌓인다 (사용자 2026-10-08) */
+  run.act=Math.max(0,run.act||0)+dayAct(); run.night=0; run.campDone=0; run.campExtra2=0; run.route=null;   /* 초기화가 아니라 쌓인다 (사용자 2026-10-08) */
   if(sfxHas("아침 종")) SFX.play("아침 종");   /* 날이 밝으면 종 (사용자 2026-10-06) */
   { const u=coreFx("dayUnknown");   /* 폭풍 세계핵 — 날이 밝을 때 빈 구역에 미지의 구역 */
     if(u){ const put=sprinkleCell("event",u);
       if(put) toast(`폭풍 세계핵 — 지도에 미지의 구역 ${put}곳이 나타납니다.`) } }
+  /* 야전 병원 · 보급선 (공용 하급, 2026-10-14) — 날이 밝을 때. 고른 만큼 더한다 */
+  { const v=tagSum("dayHeal");
+    if(v){ let n=0; run.heroes.forEach(h=>{ if(!h.down&&h.hp<h.maxHp){ healUp(h,v); n++ } });
+      if(n) toast(`야전 병원 — 대원들이 체력을 ${v} 회복했습니다.`) } }
+  { const g=tagSum("dayGold");
+    if(g){ run.gold+=g; if(sfxHas("금화 얻기")) SFX.play("금화 얻기"); toast(`보급선 — 금화 +${g}`) } }
   /* addTaint(10) — 2026-09-16 뺌: 날이 바뀌는 것만으로는 오염도가 오르지 않는다 (노숙의 +10 은 그대로) */
   respawn();
   const left=FIELDS[run.field].days-run.day;
@@ -19119,6 +19186,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 107, "v": "0.7", "d": "2026-10-14", "t": "공용 보상 열둘 추가 — 무작위 보상 풀 하나로, 정찰대 비용 5/20/50", "big": 0},
  {"b": 106, "v": "0.7", "d": "2026-10-13", "t": "등장 암전 · 초월 장면 · 파수꾼 대사", "big": 0},
  {"b": 105, "v": "0.7", "d": "2026-10-13", "t": "우두머리 전투 턴 한도 25 표기", "big": 0},
  {"b": 104, "v": "0.7", "d": "2026-10-13", "t": "정찰대 보내기 — 활동량 없앰", "big": 0},
@@ -20417,7 +20485,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=106;
+const BUILD_NO=107;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -22611,6 +22679,11 @@ function toMap(){
 }
 function enterCell0(r,c){
   const cell=run.grid[r][c];
+  /* 보상이 지도에 놓은 칸이 주는 것 — 칸의 갈래를 가리지 않는다 (공용 보상, 2026-10-14) */
+  if(cell.giftGold){ const g=cell.giftGold; delete cell.giftGold; run.gold+=g;
+    if(sfxHas("금화 얻기")) SFX.play("금화 얻기"); toast(`안개가 걷히며 금화 ${g}개를 찾았습니다.`) }
+  if(cell.giftStone){ const v=cell.giftStone; delete cell.giftStone; run.stone=(run.stone||0)+v;
+    toast(`대장장이 친구 — 제련석 +${v}`) }
   if(cell.done||cell.t==="empty"){ view="map"; render(); return }
   if(cell.t==="camp"){ view="map"; render(); return }   /* 주둔지는 지도 판 안에 (2026-09-18) */
   if(cell.t==="dungeon"||cell.t==="elite"||cell.t==="event") keyQuestTick(cell.t);   /* 열쇠방의 퀘스트 — 입장 수 */
@@ -23436,7 +23509,7 @@ function drawCamp(app){
      run.day>1,
      ()=>{ trainRecord(trainExp()); SFX.play(sfxHas("level")?"level":"click") }),   /* 결과 화면 — 경험치가 차오른다 (사용자 2026-10-05) */
    campAct("forge","제련소",`재료 두 개를 조합법대로 합칩니다. 제련석이 필요합니다. (보유 ${run.stone||0})`,
-     shards>=2&&(run.stone||0)>=5,
+     shards>=2&&(run.stone||0)>=Math.max(1,5-forgeCut()),
      ()=>{ run.smithMood=null; run.forgeMade=0; smithVoice("enter"); view="forge"; render(); return 1 })
   ];
   const lay=el(`<div class="camp"></div>`);
@@ -23486,15 +23559,21 @@ function drawCamp(app){
 
   /* ── 오른쪽 — 시설 목록. 하루 한 곳. 세로로 굴러간다 ── */
   const R=el(`<div class="camp-r campacts"></div>`);
-  const doneToday=run.campDone;
+  /* 부지런한 아침 (공용 중급, 2026-10-14) — 하루 몫을 쓴 뒤 활동량 1을 들여 한 곳 더. 날마다 한 번 */
+  const extraOk=!!(run.campExtra&&run.campDone&&!run.campExtra2&&(run.act||0)>=1);
+  const doneToday=run.campDone&&!extraOk;
   acts.forEach(a=>{
     const off=doneToday||!a.ok;
     const c=el(`<div class="cfac ${off?"off":""}" data-camp="${a.k}">
       <div class="fi">${campIcon(a.k)}</div>
       <div class="ft"><b>${esc(a.n)}</b><small>${rich(a.d)}</small>
       ${doneToday?`<span class="cnote">오늘 몫은 이미 썼습니다.</span>`
+            :extraOk?`<span class="cnote">부지런한 아침 — 활동량 1을 들여 이용합니다.</span>`
             :!a.ok?`<span class="cnote">지금은 할 일이 없습니다.</span>`:""}</div></div>`);
-    if(!off) c.onclick=()=>{ run.campDone=1; { const kt=document.getElementById("kwtip"); if(kt) kt.style.display="none" }   /* 누른 시설의 풍선이 결과 위에 남지 않게 */
+    if(!off) c.onclick=()=>{
+      if(extraOk){ run.act=Math.max(0,(run.act||0)-1); run.campExtra2=1;
+        toast("부지런한 아침 — 활동량 1을 들여 시설을 한 곳 더 이용합니다.") }
+      run.campDone=1; { const kt=document.getElementById("kwtip"); if(kt) kt.style.display="none" }   /* 누른 시설의 풍선이 결과 위에 남지 않게 */
       const stay=a.fx(); if(!stay) render() };
     R.appendChild(c);
   });
@@ -23772,6 +23851,11 @@ function drawForge(app){
   const both=pk[0]&&pk[1];
   let made=both?findRecipe(pk[0].it.n,pk[1].it.n):null;
   if(both&&!made&&forgeMix(pk[0].it,pk[1].it)) made=FORGE_MIX;
+  /* 사치품 — 파편 둘로 일반이 나올 자리를 희귀로 갈아 끼운다 (2026-10-14) */
+  if(both&&made&&made.g==="일반"&&run.luxForge&&pk[0].it.g==="파편"&&pk[1].it.g==="파편")
+    made=Object.assign({},FORGE_LUX,{cost:made.cost});
+  /* 장인의 눈 — 값을 깎은 사본을 쓴다. forgeRun 도 이 사본을 받으므로 값이 한 곳에서만 정해진다 */
+  if(made&&forgeCut()) made=Object.assign({},made,{cost:Math.max(0,made.cost-forgeCut())});
   const stock=forgeStock();
   /* 형편 — 브란이 무슨 말을 할지, 아래 한 줄에 무엇을 적을지 */
   let note="", ok=false, mood="idle";
@@ -23813,7 +23897,7 @@ function drawForge(app){
     if(run.here){ leaveNode(); return }        /* 지도의 제련소에서 왔다 */
     if(!m) run.campDone=0;                     /* 아무것도 안 만들고 그만두면 오늘 방문을 돌려준다 */
     view="map"; run.mapSel=null; render() };   /* 지도의 주둔지 판으로 */
-  if(made) bGo.onmouseenter=()=>shopTipShow(stage,bGo,`<b>${esc(made.n)}</b><i>${esc(made.g)} 장신구, 제련석 ${made.cost}${made.gold?`, 금화 ${made.gold}`:""}</i><p>${rich(made.d)}</p>${made.mix?"":recipeHtml(made)}`);
+  if(made) bGo.onmouseenter=()=>shopTipShow(stage,bGo,`<b>${esc(made.n)}</b><i>${esc(made.g)} 장신구, 제련석 ${made.cost}${made.gold?`, 금화 ${made.gold}`:""}</i><p>${rich(made.d)}</p>${(made.mix||made.lux)?"":recipeHtml(made)}`);
   bGo.onmouseleave=shopTipHide;
   bGo.onclick=()=>{ if(!ok) return; shopTipHide(); forgeRun(stage,pk,made) };
   /* 재료 칸 둘 */
@@ -23870,10 +23954,17 @@ function drawForge(app){
 /* 서로 다른 파편 둘 — 무작위 파편 하나 */
 const FORGE_MIX={n:"무작위 파편 장신구",g:"파편",cost:1,gold:2,mix:1,d:"서로 다른 파편 둘을 녹여 무작위 파편 장신구 하나를 만듭니다."};
 const forgeMix=(a,b)=>!!(a&&b&&a.g==="파편"&&b.g==="파편"&&a.n!==b.n);
+/* 장인의 눈 (공용 중급, 2026-10-14) — 제련석 값이 준다.
+   화면 미리보기 · 주둔지 입장 조건 · 실제 제련이 **이 함수 하나**를 본다 (값이 두 군데서 정해지지 않게) */
+const forgeCut=()=>tagSum("forgeCut");
+/* 사치품 (공용 상급, 2026-10-14) — 파편끼리 합쳐 일반이 나올 자리에 무작위 희귀 하나.
+   무엇이 나올지는 FORGE_MIX 처럼 **제련할 때** 굴린다 (미리보기가 render 마다 바뀌지 않게) */
+const FORGE_LUX={n:"무작위 희귀 장신구",g:"희귀",cost:5,lux:1,d:"사치품 — 파편 둘을 녹여 무작위 희귀 장신구 하나를 만듭니다."};
 function forgeRun(stage,pk,made){
   const matA=pk[0].it, matB=pk[1].it;
   run.stone-=made.cost;
   if(made.mix){ run.gold-=made.gold||0; made=rnd(ITEMS.filter(i=>i.g==="파편")) }
+  else if(made.lux){ made=rnd(ITEMS.filter(i=>i.g==="희귀")) }   /* 사치품 — 여기서 굴린다 */
   const bags=pk.filter(p=>p.bag).sort((a,b)=>b.i-a.i);
   const eqs =pk.filter(p=>!p.bag).sort((a,b)=>b.i-a.i);
   bags.forEach(p=>run.bag.splice(p.i,1));
@@ -24914,6 +25005,7 @@ function restPerkNote(){
   const L=[], big=k=>Math.max(0,...run.heroes.map(h=>(h.tag&&h.tag[k])||0));
   { const v=tagSum("campfire"); if(v) L.push(`모닥불 이야기: 다음 전투 에너지 보호막 ${v}`) }
   { const v=big("restHeal");    if(v) L.push(`반가운 휴식: 체력 ${v}`) }
+  { const v=tagSum("restAct");  if(v) L.push(`쪽잠: 활동량 ${v}`) }
   { const d=run.heroes.find(h=>h.name==="도미니코"&&!h.down&&h.tag&&h.tag.bedRead);
     if(d) L.push(`취침 전 독서: 경험치 ${d.tag.bedRead}`) }
   return L.length?`\n쉬기만 해도 받습니다 — ${L.join(" / ")}`:"";
@@ -24925,6 +25017,8 @@ function restPerks(again){
   const v=Math.max(0,...run.heroes.map(h=>(h.tag&&h.tag.restHeal)||0));
   if(v){ run.heroes.forEach(h=>{ if(!h.down) healUp(h,v) });
     toast(`반가운 휴식 — 대원들이 체력을 ${v} 회복했습니다.`) }
+  { const a=tagSum("restAct");   /* 쪽잠 (공용 중급, 2026-10-14) — 고른 만큼 더한다 */
+    if(a){ run.act=(run.act||0)+a; toast(`쪽잠 — 활동량 +${a}`) } }
 }
 function restHeal(amt,from){ restRecord(()=>run.heroes.forEach(h=>{ if(!h.down) healUp(h,amt(h)) }),from) }
 /* 회복 앞뒤를 적는다 — fn 이 실제로 회복시킨다. rev : 쓰러졌다가 일어선 대원 (치료소) */
@@ -25028,8 +25122,8 @@ const EVENTS=[
         run.evSub={t:"bounty",foes:pick};
         return `금화 ${cost}개를 판 아래 상자에 넣습니다. 누구의 목에 걸까요?` }},
      {t:"현상금 사냥꾼",d:"지도의 무작위 전투에 현상금 표식이 부여됩니다. 해당 전투에서 금화를 50% 추가로 얻습니다.",
-      when:()=>run.grid.some(row=>row.some(c=>c.t==="dungeon"&&!c.done&&!c.bounty)),
-      f:()=>{ const L=[]; run.grid.forEach((row,r)=>row.forEach((c,ci)=>{ if(c.t==="dungeon"&&!c.done&&!c.bounty) L.push({r:r,c:ci}) }));
+      when:()=>bountySpots().length>0,
+      f:()=>{ const L=bountySpots();
         const p=rnd(L); run.grid[p.r][p.c].bounty=1;
         return "수배지의 얼굴을 기억해 둡니다. 지도의 전투 하나에 현상금 표식이 붙었습니다." }}]},
 
@@ -25951,6 +26045,9 @@ const QUESTS={
   /* 파벨 하급 「탐험심」 (노트 2026-10-13) — 구역을 가리지 않는다 (주인 찾아주기와 달리 field 가 없다) */
   "탐험심":{kind:"visit",need:4,who:"hero",
     d:"미지의 구역 {n}번 방문",rd:"무작위 보상",reward:{scrap:1}},
+  /* 공용 하급 「사냥 수첩」 (사용자 2026-10-14) — 수락자를 가리지 않는다 (누가 죽여도 센다) */
+  "사냥 수첩":{kind:"kill",need:20,who:"all",
+    d:"적 {n}명 처치",rd:"무작위 보상",reward:{scrap:1}},
   "고철 수거":{kind:"scrapKill",need:12,who:"all",repeat:1,syn:"고철의 무덤",
     d:"고철의 무덤 대원이 적 {n}명 처치",rd:"무작위 보상 (구역이 깊을수록 더 좋다)",reward:{scrap:1}}
 };
@@ -25961,16 +26058,7 @@ function scrapQuestSync(){
   if(on&&!has){ questAccept("고철 수거",null); toast("고철의 무덤 — 반복 퀘스트 「고철 수거」"); synFlash("고철의 무덤") }
   else if(!on&&has){ run.quests=run.quests.filter(q=>q.id!=="고철 수거"||q.done) }
 }
-/* 고철 수거 보상 — 감옥의 우물처럼 하나를 굴린다. 2구역부터 더 좋다 */
-function scrapReward(){
-  const deep=(run.field||0)>=1, r=Math.random();
-  const smith=run.heroes.filter(h=>!h.down&&hasTag(h,"고철의 무덤")), up=run.heroes.filter(h=>!h.down);
-  const h=rnd(smith.length?smith:(up.length?up:run.heroes));   /* 보상 받을 이 — 고철의 무덤 대원 중 하나 */
-  if(r<0.30){ const g=deep?16+Math.floor(Math.random()*9):8+Math.floor(Math.random()*5); run.gold+=g; if(sfxHas("금화 얻기")) SFX.play("금화 얻기"); toast(`고철 수거 — 금화 +${g}`); return null }
-  if(r<0.50){ const n=deep?4:2; run.stone=(run.stone||0)+n; toast(`고철 수거 — 제련석 +${n}`); return null }
-  if(r<0.75){ (run.after=run.after||[]).push({item:rnd(ITEMS.filter(i=>i.g===(deep?"일반":"파편")))}); return "after" }
-  return {hero:h,grade:deep?"중급":"하급"};
-}
+/* 고철 수거 보상은 걷었다 (2026-10-14) — 「무작위 보상」은 randomReward() 한 곳(세계핵 풀)으로 모았다 */
 function questHas(id){ return !!(run&&(run.quests||[]).some(q=>q.id===id)) }
 function questMsg(id,msg){ return (msg?msg+" ":"")+`퀘스트 「${id}」를 받았습니다.` }
 function questAccept(id,hero){
@@ -26216,9 +26304,9 @@ function questClaim(id){
   if(!q||!Q){ backToMap(); return }
   const R=Q.reward||{};
   if(Q.repeat&&(!Q.syn||synOn(Q.syn,2))) questAccept(id,null);   /* 반복 퀘스트 — 다시 건다 */
-  if(R.scrap){ const x=scrapReward();
-    if(x==="after"){ afterChest(); return }
-    if(x&&x.hero){ pending={hero:x.hero,grade:x.grade,free:1,back:"chain"}; view="reward"; render(); return } }
+  if(R.scrap){ const t=randomReward();   /* 세계핵과 같은 풀 (사용자 2026-10-14) */
+    if(t) toast(`퀘스트 보상 — ${t}`);
+    if((run.after||[]).length){ afterChest(); return } }
   if(R.stone){ run.stone=(run.stone||0)+R.stone; toast(`퀘스트 보상 — 제련석 +${R.stone}`) }
   if(R.item){ const L=ITEMS.filter(i=>i.g===R.item); if(L.length) (run.after=run.after||[]).push({item:rnd(L)}) }
   if(R.allStat){ const h=run.heroes.find(x=>x.name===q.hero)||run.heroes.find(x=>!x.down)||run.heroes[0];
