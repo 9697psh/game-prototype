@@ -3720,7 +3720,8 @@ body.vbattle .bagbtn{bottom:auto;top:9px;right:auto;left:16px;padding:6px 10px;g
 .bfstage .slot.t-boss .art img.pxs{filter:drop-shadow(0 5px 0 rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(224,90,90,.55))}
 .bfstage .art,.bfstage .slot.foe .art{height:auto;min-height:62px;z-index:1}   /* .slot.foe .art{height:72px} 가 이겨 큰 적의 그림이 의도 밑으로 올라오던 것 */
 .bfstage .art img.pxs{height:calc(124px * var(--ph,1));filter:drop-shadow(0 3px 0 rgba(0,0,0,.6))} .bfstage .art svg{height:118px}
-.bfstage #mySide .art img.pxs[data-nm^="굴라"]{height:calc(124px * 1.15 * var(--ph,1))}   /* 굴라는 다른 대원보다 조금 크게 — 외형(굴라 (…))도 (사용자 2026-10-03) */   /* 무대가 화면을 채우니 그림도 2.2배 (사용자 2026-09-19) */
+.bfstage #mySide .art img.pxs[data-nm^="굴라"]{height:calc(124px * 1.15 * var(--ph,1))}
+.bfstage .slot.foe .art img.pxs[data-nm="늪 두꺼비"]{height:calc(124px * .85 * var(--ph,1))}   /* 두꺼비는 작아야 두꺼비다 — 기본도 피격도 (사용자 2026-10-13, 72 → 61px) */   /* 굴라는 다른 대원보다 조금 크게 — 외형(굴라 (…))도 (사용자 2026-10-03) */   /* 무대가 화면을 채우니 그림도 2.2배 (사용자 2026-09-19) */
 /* 정예·우두머리는 더 크게 — 임팩트 (사용자 2026-09-20) */
 .bfstage .slot.foe .art.lead img.pxs{height:calc(160px * var(--ph,1));filter:drop-shadow(0 4px 0 rgba(0,0,0,.65)) drop-shadow(0 0 10px rgba(224,140,80,.35))} .bfstage .slot.foe .art.lead svg{height:150px;transform:none}
 .bfstage .slot.foe .art.boss img.pxs{height:calc(190px * var(--ph,1));filter:drop-shadow(0 5px 0 rgba(0,0,0,.7)) drop-shadow(0 0 14px rgba(224,90,90,.45))} .bfstage .slot.foe .art.boss svg{height:180px;transform:none}
@@ -6666,7 +6667,8 @@ const IRA_READY_MS=[85,70,90,70,85,85,95,110];
 /* 충전인 동안의 **대기** 모션 — 사용자 2026-10-13 : 「1~7 이동 후 8에서 잠깐 멈춰서 부들대다가, 7~1 이동」.
    일정한 빠르기로 돌면 재미가 없다. 가는 길은 느릿하게, 8번 칸에서 **머물며 떨고**, 되돌아온다 */
 const IRA_IDLE_ORDER=[0,1,2,3,4,5,6, 7, 6,5,4,3,2,1,0];
-const IRA_IDLE_MS   =[130,120,115,115,120,130,140, 520, 120,110,110,110,115,125,150];
+/* 두 배 느리게 (사용자 2026-10-13 : 「2배정도 더 느리게」). 한 바퀴 4.3초 — 숨을 고르는 꼴 */
+const IRA_IDLE_MS   =[260,240,230,230,240,260,280, 900, 240,220,220,220,230,250,300];
 let IRA_READY_T=0;
 function iraReadyIdle(h){
   const on=!!(h&&h.name==="이라"&&!h.isMin&&h.hp>0&&h.slot>0&&B&&!B.over&&view==="battle"
@@ -6679,7 +6681,9 @@ function iraReadyIdle(h){
     const tick=()=>{
       const u=(run&&run.heroes||[]).find(x=>x.name==="이라");
       if(!u||!(u.hp>0)||!u.slot||!B||B.over||view!=="battle"||!(iraCharged(u)||u.chgOn)){ IRA_READY_T=0; return }
-      let 다음=Math.round((한바퀴+420)*배());   /* 한 바퀴 돌고 숨 한 번 */
+      /* ⚠️ 바퀴 사이에 **쉬지 않는다** — 쉬면 그 동안 기본 대기 자세가 끼어 나왔다
+         (사용자 2026-10-13 : 「기본 자세 나오지 않고 대기 자세 프레임 계속 반복되게」) */
+      let 다음=Math.max(200,Math.round(한바퀴*배())-40);   /* 한 칸 앞서 걸어 **되돌리는 타이머를 지우고** 잇는다 (poseStripFX 가 clearTimeout 한다) */
       if(B.busy) 다음=Math.round(300*배());     /* 다른 연출이 도는 동안은 비켜 섰다가 곧 다시 본다 */
       else poseStripFX("mine",u.slot,"readyA",IRA_IDLE_MS,{order:IRA_IDLE_ORDER,shakeAt:7});
       IRA_READY_T=setTimeout(tick,다음);
@@ -6745,13 +6749,14 @@ function ledgerLockFX(si){
   const btn=document.querySelectorAll(".sk.kw")[si]; if(!btn) return;
   const r=btn.getBoundingClientRect(); if(!r.width) return;
   const nd=spawn('<div class="shfx"></div>'); if(!nd) return;
-  const W=Math.max(40,Math.min(96,Math.round(r.width)));
+  const W=Math.max(72,Math.min(140,Math.round(r.width*1.4)));   /* 더 크게 (사용자 2026-10-13) */
   nd.style.cssText+=";position:fixed;z-index:9;pointer-events:none;image-rendering:pixelated;"
     +"width:64px;height:64px;background-repeat:no-repeat;background-size:512px 64px;"
     +"left:"+Math.round(r.left+r.width/2-32)+"px;top:"+Math.round(r.top+r.height/2-32)+"px;"
     +"transform:scale("+(W/64).toFixed(2)+")";
   nd.style.backgroundImage="url("+u+")";
-  const MS=[90,100,100,110,90,110,110,180]; let t=0;
+  /* 느리게 (사용자 2026-10-13) — 890ms 를 1425ms 로. 잠기는 것은 무거운 일이라 천천히 닫힌다 */
+  const MS=[145,160,160,175,145,175,175,290]; let t=0;
   MS.forEach((ms,i)=>{ setTimeout(()=>{ if(nd.isConnected) nd.style.backgroundPosition=(-64*i)+"px 0" },t); t+=ms });
   setTimeout(()=>nd.remove(),t+60);
 }
@@ -15083,7 +15088,7 @@ const FOE={
  /* 탑의 주인 — 3구역 우두머리 1페이즈 (사용자 2026-10-12, 문서/작업중-탑의주인.md). 체력 900 고정 · 마법 · 사거리 9 · 인간. 죽으면 초월한다(마력의 초월체, 다음 덩이).
     ⚠️ 숫자는 사용자가 글에 적은 것만 확정이다 — atk(마법력 바닥) · def · exp 는 임시, 재서 맞춘다. 패턴 글은 사용자가 적은 그대로다.
     ⚠️ 새 능력은 지속 능력 배열의 맨 뒤에 붙인다(글 고침 표가 번호로 찾는다). 죽음(초월)과 마력의 초월체는 다음 덩이 */
- "탑의 주인":  {hp:900,fixHp:1,atkScale:0,atk:6,def:10,rng:9,exp:40,boss:1,solo:1,bossSlot:3,dexHide:1,transcendTo:"마력의 초월체",   /* solo — 호위 없이 적 진영 가운데(5칸의 3번)에 혼자 선다. 졸개는 시간의 정령으로 스스로 부른다 (사용자 2026-10-13, 콜로서스와 같은 길) */   /* atkScale 0 — 구역 배율로 기술 숫자를 안 올린다: 사용자가 글에 적은 8 · 1x3 · 2x2 가 그대로 들어간다 (2026-10-12, 재서 맞춘다) */
+ "탑의 주인":  {hp:900,fixHp:1,atkScale:0,atk:6,def:10,rng:9,exp:40,boss:1,solo:1,bossSlot:3,transcendTo:"마력의 초월체",   /* 도감에 든다 (사용자 2026-10-13) */   /* solo — 호위 없이 적 진영 가운데(5칸의 3번)에 혼자 선다. 졸개는 시간의 정령으로 스스로 부른다 (사용자 2026-10-13, 콜로서스와 같은 길) */   /* atkScale 0 — 구역 배율로 기술 숫자를 안 올린다: 사용자가 글에 적은 8 · 1x3 · 2x2 가 그대로 들어간다 (2026-10-12, 재서 맞춘다) */
    el:"마법",
    gim:{neg:10},
    pas:[{k:"mpAbsorb",per:20,atk:1,n:"마력 흡수",kw:"마력",d:"상대가 마나를 사용할 때마다 그만큼 마력을 얻습니다. 마력을 20 얻으면 마법력을 1 얻습니다."},
@@ -15117,7 +15122,11 @@ const FOE={
     {n:"선고",w:3,tg:"far",dmg:1,hits:2,deb:{stun:1},chase:1,d:"가장 먼 상대에게 마법 피해를 1x2 주고, 기절을 1 부여합니다."},
     {n:"고대의 파편",w:3,tg:"none",cond:"shardOk",shard:{turns:2,v:50},d:"2턴 후에 터지는 파편을 무작위 위치에 떨어트립니다. 터질 때 양옆에 공격 피해를 50 줍니다."},
     {n:"시간 정지",w:3,tg:"none",stopOne:1,d:"무작위 대원 하나를 1턴 동안 정지 상태로 만듭니다."},
-    {n:"기억 저장",w:1,tg:"none",cond:"memStart",chg:1,chgClamp:1,memSave:1,d:"2턴 동안 충전 상태가 됩니다. 충전이 끝나면 충전 상태가 되었을 때의 체력으로 돌아옵니다."},
+    /* 기억 저장을 **시작하는** 칸이 둘이다 (사용자 2026-10-13 : 「체력이 좀 낮을 때 발동하고, 평상시에는 더 낮은 확률로」).
+       ⚠️ 무게(w)는 **정수 반복**이라 1 밑으로 못 내린다 — 그래서 평상시 쪽은 **쉬는 턴(cd)**으로 뜸하게 만든다.
+          시작 한 번에 뒤따르는 두 턴이 강제(must)라, 한 번이 **세 턴**을 먹는다는 것을 셈에 넣을 것 */
+    {n:"기억 저장",w:1,cd:16,tg:"none",cond:"memRare",chg:1,chgClamp:1,memSave:1,d:"2턴 동안 충전 상태가 됩니다. 충전이 끝나면 충전 상태가 되었을 때의 체력으로 돌아옵니다."},
+    {n:"기억 저장",w:2,cd:5,tg:"none",cond:"memHurt",chg:1,chgClamp:1,memSave:1,d:"2턴 동안 충전 상태가 됩니다. 충전이 끝나면 충전 상태가 되었을 때의 체력으로 돌아옵니다."},
     {n:"기억 저장",w:3,tg:"none",cond:"charging",must:1,chg:1,chgClamp:1,d:"2턴 동안 충전 상태가 됩니다. 충전이 끝나면 충전 상태가 되었을 때의 체력으로 돌아옵니다."},
     {n:"기억 저장",w:3,tg:"none",cond:"charged",must:1,spend:1,memBack:1,d:"2턴 동안 충전 상태가 됩니다. 충전이 끝나면 충전 상태가 되었을 때의 체력으로 돌아옵니다."},
     {n:"미래 예지",w:1,tg:"self",rew:1,d:"되감기를 1 얻습니다."},
@@ -17516,6 +17525,11 @@ function showFieldRules(){
 let _lastView=null, MAP_ENTER=0, MAP_UNF_TOK=0, MAP_BO_UNTIL=0;   /* MAP_BO_UNTIL — 날이 바뀌는 암전이 걷히는 때. 지도 펼침은 그 뒤에 */
 function render(){
   if(PRED_DRY) return;   /* 미리 돌려 보는 중 — 그리지 않는다. 안 막으면 되돌이로 화면이 멈춘다 */
+  /* 전투를 떠나면 되풀이 녹음을 끈다 (사용자 2026-10-13 : 훈련장에서 복수귀가 켜진 채 나오면 소리가 따라왔다).
+     ⚠️ 끄는 자리가 iraAuraHtml **안에만** 있었다 — 그 함수는 전투 화면을 그릴 때만 돈다.
+        켜는 자리가 어떤 화면 안에 있으면, **끄는 자리는 그 화면 밖에도** 있어야 한다 */
+  if(typeof iraRageSnd==="function"&&(view!=="battle"||typeof B==="undefined"||!B||B.over)) iraRageSnd(0);
+  if(typeof iraReadyIdle==="function"&&(view!=="battle"||typeof B==="undefined"||!B||B.over)) iraReadyIdle(null);
   B&&(B._prC=null);      /* 이번에 그리는 동안 쓸 「돌려 본 값」 쪽지를 비운다 */
   /* 카드 틀 (2026-10-01) — CSS 가 ICON_PNG 를 못 읽으니 변수로 건넨다. 아이콘 묶음(icon-build) 곁에 두면 다시 구울 때 지워진다 */
   if(!render.cf&&typeof ICON_PNG!=="undefined"&&ICON_PNG.ui_card_frame&&document.documentElement){ render.cf=1;
@@ -18234,6 +18248,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 54, "v": "0.7", "d": "2026-10-13", "t": "마력의 탑 다섯 — 처치 연출 · 제 발로 이동 · 잔해 1턴 · 기억 저장 · 도감", "big": 0},
  {"b": 53, "v": "0.7", "d": "2026-10-13", "t": "상태 딱지 셋 · 소리 크기 판 정리", "big": 0},
  {"b": 52, "v": "0.7", "d": "2026-10-13", "t": "이라 준비 자세 대기 모션 · 양손 할퀴기 · 할퀴기 소리", "big": 0},
  {"b": 51, "v": "0.7", "d": "2026-10-13", "t": "이라 연출 다섯 · 복수귀 · 고대의 파편 자리 · 초읽기 아이콘", "big": 0},
@@ -19479,7 +19494,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=53;
+const BUILD_NO=54;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -26185,6 +26200,15 @@ function afterMoveSlot(cur,d,blocked){
     const dd=Math.abs(q-want); if(best===null||dd<best.dd||(dd===best.dd&&Math.abs(q-cur)>Math.abs(best.q-cur))) best={q:q,dd:dd} }
   return best?best.q:cur;
 }
+/* 그 의도가 **제 발로 움직이는 수**인가 — 그렇다면 불안정한 변신이 그 위에 또 끼면 안 된다
+   (사용자 2026-10-13 : 「앞으로 이동하거나 뒤로 이동하는 행동을 직접 할 때는 무작위 1칸으로 이동하지 않게」).
+   ⚠️ 막는 자리는 **갈 자리를 정하는 한 곳**(afterD 를 적는 곳)이다 — 거기서 안 적으면
+      실행(unstableMove)과 예고(incAll)가 저절로 따라온다. 두 곳에 따로 적지 않는다 */
+function intentMovesSelf(f,o){
+  if(!o||o.t!=="sk") return false;
+  const D=FOE[f.name], s=D&&D.sk&&D.sk[o.i];
+  return !!(s&&(s.fwd||s.back||s.backMost||s.moveTo4));
+}
 function unstableMove(f){
   const p=foePas(f,"unstable"); if(!p||!f.alive||B.over||foeBound(f)) return;
   const d=f.intent&&f.intent.afterD; if(d==null) return;
@@ -26728,6 +26752,11 @@ const SK_COND={
   bound:     f=>!f.awake,                         /* 사슬에 묶인 마귀 — 아직 묶여 있을 때 */
   free:      f=>!!f.awake,
   memStart:  f=>!(f.chg>0)&&!(f.rew>0),             /* 탑의 주인 기억 저장 — 충전을 막 시작할 때, 되감기가 있으면 안 나온다 (사용자 2026-10-12) */
+  memLow:    f=>f.maxHp>0&&f.hp*100<=f.maxHp*40,    /* 체력 40% 밑 (2026-10-13) */
+  memRare:   f=>SK_COND.memStart(f)&&!SK_COND.memLow(f)&&f.maxHp>0&&f.hp*100<=f.maxHp*90,
+    /* 평상시 — 쉬는 턴이 길고, **성한 몸으로는 아예 안 쓴다**.
+       돌아갈 체력을 적어 두는 수라 가득 찬 때에 쓰면 아무것도 안 달라진다 (2026-10-13) */
+  memHurt:   f=>SK_COND.memStart(f)&&SK_COND.memLow(f),    /* 체력이 낮을 때 — 자주 */
   shardOk:   f=>{ for(let q=1;q<=SLOTS;q++) if(!occAt(q)) return true;
     return shardMins().length>0 },   /* 고대의 파편 — 빈 칸이 없으면 소환물을 부수고 그 자리에 (사용자 2026-10-13) */
   hasBad:    f=>foeAil(f)>0,                       /* 부정적인 효과가 걸려 있을 때 (탑의 주인 차단 — 확률 업) */
@@ -27938,6 +27967,14 @@ function skTurnStart(){
       say(`${b.n} — 잔해가 터집니다! 모든 상대에게 공격 피해 ${b.v}`,"t1");
       allUnits().filter(u=>u.hp>0).forEach(t=>{ if(src) asSrc(src,()=>hurtAlly(src,t,foeDmg(src,b.v,"공격"),b.n,"공격")) }) });
   }
+  /* 고대의 파편의 잔해는 **1턴만** 남고 흩어진다 (사용자 2026-10-13).
+     ⚠️ 저주받은 성벽의 잔해(rubble 만 있고 shardRub 이 없다)는 그대로 둔다 */
+  if(B.hz&&B.hz.length){
+    const 흩어질=B.hz.filter(x=>x.shardRub&&x.rubTurn&&x.rubTurn<=(B.turn||1));
+    흩어질.forEach(x=>{ fx({side:"mine",slot:x.slot,ring:"#6aa8e0",txt:"흩어짐",cls:"shd",gap:90});
+      say(`${x.slot}번 칸의 고대의 파편 잔해가 흩어집니다.`,"t3") });
+    if(흩어질.length) B.hz=B.hz.filter(x=>!(x.shardRub&&x.rubTurn&&x.rubTurn<=(B.turn||1)));
+  }
   /* 고대의 파편 — 때가 되면 터져 양옆 칸에 공격 피해, 그 자리에 잔해가 남는다 (사용자 2026-10-12) */
   (B.hz||[]).filter(x=>x.shard&&x.shardTurn<=(B.turn||1)).forEach(x=>{
     const src=B.foes.find(y=>y.name===x.by)||B.foes.find(y=>y.alive)||null;
@@ -27945,7 +27982,8 @@ function skTurnStart(){
         sheet:"fx_shard_burst",sheetOpt:{cell:64,frames:8,z:document.querySelector(".bfstage")?2.6:1.3,frameMs:[120,90,80,75,80,95,115,165]}});
     say(`고대의 파편 — ${x.slot}번 칸의 파편이 터집니다! 양옆에 공격 피해 ${x.v}`,"t1");
     [x.slot-1,x.slot+1].forEach(sl=>{ const u=unitAt(sl); if(u&&u.hp>0&&src) asSrc(src,()=>hurtAlly(src,u,foeDmg(src,x.v,"공격"),"고대의 파편","공격")) });
-    x.shard=0; x.rubble=1; x.shardRub=1; x.rubTip="터진 고대의 파편의 잔해가 칸을 막고 있습니다."; x.name="잔해" });
+    x.shard=0; x.rubble=1; x.shardRub=1; x.rubTurn=(B.turn||1)+1;   /* 1턴만 남는다 (사용자 2026-10-13) */
+    x.rubTip="터진 고대의 파편의 잔해가 칸을 막고 있습니다. 다음 턴에 흩어집니다."; x.name="잔해" });
   /* 오염된 씨앗 — 때가 되면 자란다 (2026-09-29). 적 전장은 살아있는 덩굴처럼 싸우는 오염된 덩굴,
      대원 전장은 잔해처럼 칸을 차지하며 옆 칸을 휘감는 오염된 덩굴 (사용자 2026-10-01) */
   B.foes.filter(x=>x.alive&&x.seedTurn&&x.seedTurn<=(B.turn||1)).forEach(x=>{
@@ -28319,7 +28357,8 @@ function rollIntents0(onlyIdle){
     f.intent=best;
   });
   B.foes.forEach(f=>{ if(f.intent&&OLD_INT.get(f)!==f.intent) f.intent.lone=LONE });
-  B.foes.forEach(f=>{ if(f.alive&&f.intent&&f.intent.t!=="wait"&&f.intent.afterD==null&&foePas(f,"unstable")) f.intent.afterD=rnd([-2,-1,1,2]) });   /* 불안정한 변신 — 갈 자리를 정할 때 같이 */
+  B.foes.forEach(f=>{ if(f.alive&&f.intent&&f.intent.t!=="wait"&&f.intent.afterD==null&&foePas(f,"unstable")
+      &&!intentMovesSelf(f,f.intent)) f.intent.afterD=rnd([-2,-1,1,2]) });   /* 불안정한 변신 — 갈 자리를 정할 때 같이. 제 발로 움직이는 수에는 안 붙인다 (2026-10-13) */
   cannonIntents(allies);   /* 대포병이 장전하면 대포에 쏠 피해를 보인다 (사용자 2026-09-15) */
 }
 const tierCrown=()=>'<svg viewBox="0 0 24 24"><path d="M3 8l4 5 5-8 5 8 4-5-2 12H5Z" fill="currentColor"/></svg>';
@@ -32107,8 +32146,10 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
     fx(f.summoned?{side:"foe",slot:f.slot,s:dsnd,gap:170}:{side:"foe",slot:f.slot,s:dsnd,txt:"경험치 +"+f.exp,cls:"crit",gap:170,expgain:1});
     fx({side:"foe",slot:f.slot,dieDone:f,gap:0});
     say(`${f.name} 처치.`,"t1");
-    /* 우두머리는 무너지는 순간을 크게 보여 준다 */
-    if(f.boss&&!f.isPhantom){
+    /* 우두머리는 무너지는 순간을 크게 보여 준다.
+       ⚠️ **초월하는 우두머리(탑의 주인)는 빼고** — 그 몸은 쓰러지는 것이 아니라 **다음 몸으로 넘어가는 것**이다.
+          연출은 마력의 초월체를 잡은 뒤에만 (사용자 2026-10-13). 처치 수(run.bossKills)와 **같은 기준**이다 */
+    if(f.boss&&!f.isPhantom&&!(FOE[f.name]&&FOE[f.name].transcendTo)){
       const nm=f.name;
       fx({side:"foe",slot:f.slot,quake:1,s:"quake",ring:"#ffd45e",gap:0});
       pillarFX("foe",f.slot,"rgba(255,214,110,.95)");
