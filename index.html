@@ -2357,6 +2357,14 @@ body:has(.rwq) .hpanel{top:auto;bottom:16px;max-height:min(52vh,calc(100vh - 100
   animation:barkA 2.4s cubic-bezier(.2,1.3,.4,1) forwards}
 .dcs-say::after{content:"";position:absolute;left:50%;bottom:-11px;transform:translateX(-50%);border:8px solid transparent;border-top-color:#0a0809}
 .dcs-say.big{background:#2a1416;color:#f0cfc6;font-size:20px;box-shadow:0 4px 0 rgba(0,0,0,.6),0 0 26px rgba(200,40,70,.6);animation:none}
+/* 초월 장면 — 금단의 고서 장면(.dcs)과 **같은 틀**을 쓰고 빛깔만 파랗게 (사용자 2026-10-13) */
+.dcs.tcs{background:rgba(4,6,14,.96)}
+.dcs.tcs .dcs-fig{filter:drop-shadow(0 0 22px rgba(96,124,232,.45))}
+.dcs.tcs.flash{animation:tcsFlash .35s ease-out}
+.dcs.tcs.flash2{animation:tcsFlash2 .9s ease-out}
+.dcs.tcs .dcs-say.big{background:#14203a;color:#cfe0ff;box-shadow:0 4px 0 rgba(0,0,0,.6),0 0 26px rgba(96,124,232,.6)}
+@keyframes tcsFlash{0%{background:rgba(70,110,220,.75)}100%{background:rgba(4,6,14,.96)}}
+@keyframes tcsFlash2{0%{background:rgba(120,160,255,.8)}100%{background:rgba(4,6,14,.96)}}
 @keyframes dcsIn{from{opacity:0}to{opacity:1}}
 @keyframes dcsFlash{0%{background:rgba(150,50,200,.75)}100%{background:rgba(6,3,8,.96)}}
 @keyframes dcsFlash2{0%{background:rgba(210,40,70,.8)}100%{background:rgba(6,3,8,.96)}}
@@ -19111,6 +19119,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 106, "v": "0.7", "d": "2026-10-13", "t": "등장 암전 · 초월 장면 · 파수꾼 대사", "big": 0},
  {"b": 105, "v": "0.7", "d": "2026-10-13", "t": "우두머리 전투 턴 한도 25 표기", "big": 0},
  {"b": 104, "v": "0.7", "d": "2026-10-13", "t": "정찰대 보내기 — 활동량 없앰", "big": 0},
  {"b": 103, "v": "0.7", "d": "2026-10-13", "t": "손패 상한 10장 · 산들바람 한 번만 · 탑 안개 메움", "big": 0},
@@ -20408,7 +20417,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=105;
+const BUILD_NO=106;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -23155,29 +23164,54 @@ function phFocusApply(){
    ⚠️ 변신하는 동안에는 칸의 몸을 감춘다(.morphing) — 받은 8칸 띠가 **두 모습을 다 들고 있다.**
    ⚠️ 판을 멈추지 않는다. 보이는 것만 건드린다 */
 const MORPH_SAY=["…이 그릇으로는, 담을 수 없다.","나는 시간이며, 마력 그 자체다."];
-function transcendFocusFX(m,sl){
-  if(typeof document==="undefined"||typeof B==="undefined"||!B||!m) return;
-  const K=(typeof SPD==="number"?SPD:1), D=Math.round(3900*K);
-  PHFOCUS={id:m.id,until:Date.now()+D}; try{ phFocusApply() }catch(e){}
-  try{ edgeGlow("rgba(96,124,232,.42)") }catch(e){}
-  const c=ctrOf("foe",sl); if(c&&typeof quakeFX==="function") quakeFX(c);
+/* 초월 — **화면 한가운데에 크게** 띄운다 (사용자 2026-10-13 : 「도미니코처럼 중앙에 크게, 그 후에 소환」).
+   금단의 고서 장면(domCorruptScene)과 **같은 틀**이다 — 두 벌을 만들지 않는다.
+   ⚠️ 몸은 **장면이 끝난 뒤에** 드러난다 — 그 전까지 칸은 `.morphing` 으로 감춰 둔다.
+      (판은 멈추지 않는다. 적은 이미 서 있고 보이는 것만 늦춘다 — 안 그러면 적이 0 이 되어 전투가 끝나 버린다)
+   ⚠️ 띠는 192×192 여덟 칸이다 — cell 을 64 로 두면 왼쪽 위 귀퉁이만 보인다 */
+function transcendScene(m,sl,onDone){
+  const src=(typeof ICON_PNG!=="undefined")&&ICON_PNG.fx_tower_transform;
+  const 끝 = ()=>{ try{ onDone&&onDone() }catch(e){ console.error(e) } };
+  if(!src||typeof document==="undefined"){ 끝(); return }
+  const CW=192, CH=192, Z=2.4, W=Math.round(CW*Z), H=Math.round(CH*Z);
+  const ov=el(`<div class="dcs tcs"><div class="dcs-st"><div class="dcs-fig" style="width:${W}px;height:${H}px;background-image:url(${src});background-size:${W*8}px ${H}px"></div></div></div>`);
+  if(!ov){ 끝(); return }
+  document.body.appendChild(ov);
+  const fig=ov.querySelector(".dcs-fig"), st=ov.querySelector(".dcs-st");
+  const F=i=>{ fig.style.backgroundPosition=`${-i*W}px 0` };
+  const say2=(t,big)=>{ st.querySelectorAll(".dcs-say").forEach(x=>x.remove());
+    const b=el(`<div class="dcs-say${big?" big":""}">${esc(t)}</div>`); if(b) st.appendChild(b) };
+  const shake=k=>{ fig.classList.remove("sh1","sh2"); if(k){ void fig.offsetWidth; fig.classList.add(k) } };
+  const K=(typeof SPD==="number"?SPD:1), ms=v=>Math.round(v*K), T=[]; let done=0;
+  const at=(t,fn)=>T.push(setTimeout(()=>{ if(!done) fn() },ms(t)));
+  const end=()=>{ if(done) return; done=1; T.forEach(clearTimeout);
+    ov.classList.add("out"); setTimeout(()=>ov.remove(),ms(420)); 끝() };
+  F(0);
   try{ SFX.play(sfxOr("bossfall","danger")) }catch(e){}
-  const 칸=()=>{ const q=ctrOf("foe",sl); return q&&q.e };
-  { const e=칸(); if(e) e.classList.add("morphing") }
-  try{ barkShow(m,MORPH_SAY[0],Date.now(),1) }catch(e){}
-  setTimeout(()=>{ if(!B) return;                                   /* ① 천천히 변한다 — 받은 8칸을 느리게 */
-    sheetFX("fx_tower_transform","foe",sl,{cellW:192,cellH:192,frames:8,z:1.5,feet:1,
-            frameMs:[250,240,230,230,240,250,270,360]});
-  },Math.round(320*K));
-  setTimeout(()=>{ if(!B) return; const q=ctrOf("foe",sl); if(q) quakeFX(q) },Math.round(1700*K));
-  setTimeout(()=>{ if(!B) return;                                   /* ② 다 변했다 — 몸을 드러내고 한 번 부푼다 */
-    const e=칸(); if(e) e.classList.remove("morphing");
+  at(500,()=>{ say2(MORPH_SAY[0]) });
+  at(1200,()=>{ F(1); shake("sh1") });
+  at(1800,()=>{ F(2) });
+  at(2400,()=>{ F(3); shake("sh2") });
+  at(3000,()=>{ F(4) });
+  at(3500,()=>{ st.querySelectorAll(".dcs-say").forEach(x=>x.remove()); F(5); ov.classList.add("flash") });
+  at(3900,()=>{ F(6); ov.classList.remove("flash") });
+  at(4300,()=>{ F(7); shake(null); void ov.offsetWidth; ov.classList.add("flash2"); fig.classList.add("dcs-pop");
+    try{ SFX.play(sfxOr("summon","danger")) }catch(e){}
+    say2(MORPH_SAY[1],1) });
+  at(6600,end);
+  setTimeout(()=>{ ov.onclick=end },ms(900));   /* 한참 뒤에야 눌러서 건너뛸 수 있다 */
+}
+/* 장면이 끝나고 **전장에 드러날 때** — 그 자리에서 한 번 부푼다 */
+function transcendLand(m,sl){
+  try{
+    if(m) m.morphing=0;
+    const c=ctrOf("foe",sl); if(c&&c.e) c.e.classList.remove("morphing");
+    try{ edgeGlow("rgba(96,124,232,.42)") }catch(e){}
+    if(c&&typeof quakeFX==="function") quakeFX(c);
     try{ pulseFX("foe",sl,"#7a9cff",3) }catch(e){}
     try{ stepBanner("초  월","마력의 초월체") }catch(e){}
-  },Math.round(2620*K));
-  setTimeout(()=>{ try{ if(B&&!B.over&&m.alive) barkShow(m,MORPH_SAY[1],Date.now(),1) }catch(e){} },Math.round(3000*K));
-  setTimeout(()=>{ const e=칸(); if(e) e.classList.remove("morphing");
-    if(PHFOCUS&&PHFOCUS.id===m.id){ PHFOCUS=null; try{ phFocusApply() }catch(e){} } },D);
+    render();
+  }catch(e){ console.error(e) }
 }
 function phaseFocusFX(f,p,D,S){
   if(!B||!f.alive) return;
@@ -26430,18 +26464,42 @@ function winNextView(){ return "winface" }
 function winGo(){
   const v=winNextView();
   if(v==="title"){ winEnd(); return }
+  WINFACE_DONE=0;   /* 들어설 때마다 처음부터 — 대사를 다시 보인다 */
   view=v; render();
 }
+/* 파수꾼의 마지막 말. 글을 고치려면 **이 한 줄**만 고치면 된다 */
+const WINFACE_SAY="다음 세계에서 보자꾸나…";
+/* 대사를 다 보였나 — **다시 그려도** 처음부터 되풀이하지 않게 (지도 보기 · 창 크기 따위로 render 가 또 돈다) */
+let WINFACE_DONE=0;
 function drawWinFace(app){
   winBg(app);
   /* 대사는 그림에 없다 — 아래가 비어 있고 거기에 얹는다 (/art 2026-10-12) */
-  app.appendChild(el(`<div class="center winface">
-    <div class="wfsay">다음 세계에서 보자꾸나…</div></div>`));
+  app.appendChild(el(`<div class="center winface"><div class="wfsay"></div></div>`));
+  const sayEl=app.querySelector(".wfsay");
   const b=el(`<div class="center wfgo" style="margin-top:22px"><button class="go">${WIN_NEW?"계속":"끝내기"}</button></div>`);
+  /* ⚠️ **대사가 다 나오기 전에는 못 넘긴다** (사용자 2026-10-13 : 「클릭이랑 스페이스바로 바로 넘기지 못하게」).
+     단추를 숨기는 것만으로 **클릭과 스페이스바가 둘 다** 막힌다 —
+     스페이스바는 단추에 초점이 있을 때 눌리는 것이고, 숨은 단추는 초점을 못 받는다.
+     ⚠️ 그래도 onclick 안에 문을 한 번 더 둔다 — 숨긴 것은 보이는 몫이고, 막는 것은 그 줄이다 */
+  b.style.visibility="hidden";
   b.querySelector("button").onclick=()=>{
+    if(!WINFACE_DONE) return;
     if(WIN_NEW){ view="winnew"; render() }
     else winEnd() };
   app.appendChild(b);
+  const 보이기=()=>{ if(sayEl) sayEl.textContent=WINFACE_SAY; b.style.visibility=""; WINFACE_DONE=1 };
+  if(WINFACE_DONE){ 보이기(); return }
+  /* 한 글자씩 — 다 나오면 단추가 뜬다 */
+  try{ if(document.activeElement&&document.activeElement.blur) document.activeElement.blur() }catch(e){}
+  const K=(typeof SPD==="number"?SPD:1), step=Math.round(95*K);
+  let i=0;
+  const tick=()=>{
+    if(!sayEl||!sayEl.isConnected) return;   /* 화면이 바뀌었다 — 옛 타이머는 조용히 멎는다 */
+    sayEl.textContent=WINFACE_SAY.slice(0,++i);
+    if(i<WINFACE_SAY.length){ setTimeout(tick,step); return }
+    보이기();
+  };
+  setTimeout(tick,Math.round(700*K));
 }
 function drawWinNew(app){
   const u=WIN_NEW;
@@ -26831,21 +26889,40 @@ let BSNAP=null;
    전투가 열리면 **상대편이 비어 있다가**, 화면이 **암전됐다 켜지면** 그 자리에 서 있다.
    ⚠️ 판을 멈추지 않는다 — 보이는 것만 건드린다. B.busy 를 잡으면 되감기와 시뮬이 엉킨다.
    ⚠️ 화면이 없는 곳(sim)에서는 .bfstage 가 없어 조용히 비켜 간다 */
+/* 어둠 속에서 나타나는 우두머리가 **하늘에서 천천히 내려오며** 한마디 한다 (사용자 2026-10-13).
+   ⚠️ 글을 고치려면 **이 한 줄**만 고치면 된다 (대사는 사용자가 정할 자리다) */
+const INTRO_SAY={"탑의 주인":"여기까지 올라온 자는, 네가 처음이다."};
 function bossIntroFX(){
   if(typeof document==="undefined"||typeof B==="undefined"||!B||view!=="battle") return;
-  if(!(B.foes||[]).some(f=>f.alive&&FOE[f.name]&&FOE[f.name].introDark)) return;
+  const boss=(B.foes||[]).find(f=>f.alive&&FOE[f.name]&&FOE[f.name].introDark);
+  if(!boss) return;
   const st=document.querySelector(".bfstage"); if(!st) return;
   const K=(typeof SPD==="number"?SPD:1);
   st.classList.add("foehide");
   const ov=el('<div class="introdark"></div>'); if(!ov) return;
   document.body.appendChild(ov);
-  setTimeout(()=>{ ov.classList.add("on") },Math.round(480*K));                 /* 어두워진다 */
-  setTimeout(()=>{ const q=document.querySelector(".bfstage"); if(q) q.classList.remove("foehide") },
-             Math.round(1120*K));                                              /* 깜깜한 사이에 세운다 */
+  /* 때 : 암전을 **더 오래** 끈다 (사용자 2026-10-13 : 「암전 시간이 더 길게」).
+     480 어두워짐 → 1900 깜깜한 사이에 세우고 **하늘에서 내려오기 시작** → 2500 걷힘 → 4600 치움.
+     전에는 1120/1320/2200 이라 눈 깜짝할 새였다 */
+  setTimeout(()=>{ ov.classList.add("on") },Math.round(480*K));
+  setTimeout(()=>{
+    const q=document.querySelector(".bfstage"); if(q) q.classList.remove("foehide");
+    /* 하늘에서 천천히 내려온다 — 골렘이 떨어지는 길과 같은 꼴(translate)이다.
+       ⚠️ transform 을 쓰지 않는다 — 적 그림의 scale · 뒤집기가 이미 쓰고 있다 */
+    try{
+      const c=ctrOf("foe",boss.slot), im=c&&c.e&&c.e.querySelector(".art img.pxs");
+      if(im&&im.animate) im.animate(
+        [{translate:"0 -340px",opacity:0},{translate:"0 -300px",opacity:1,offset:.12},{translate:"0 0"}],
+        {duration:Math.round(1700*K),easing:"cubic-bezier(.3,0,.4,1)"});
+    }catch(e){}
+  },Math.round(1900*K));
   setTimeout(()=>{ ov.classList.remove("on");
-    try{ if(sfxHas("마력의 탑 등장")) SFX.play("마력의 탑 등장") }catch(e){} },Math.round(1320*K));
+    try{ if(sfxHas("마력의 탑 등장")) SFX.play("마력의 탑 등장") }catch(e){} },Math.round(2500*K));
+  /* 다 내려선 뒤에 한마디 — 내려오는 동안 말풍선이 따라 내려가 보이지 않게 */
+  setTimeout(()=>{ const line=INTRO_SAY[boss.name];
+    try{ if(line&&B&&!B.over&&boss.alive) barkShow(boss,line,Date.now(),1) }catch(e){} },Math.round(3700*K));
   setTimeout(()=>{ ov.remove();
-    const q=document.querySelector(".bfstage"); if(q) q.classList.remove("foehide") },Math.round(2200*K));
+    const q=document.querySelector(".bfstage"); if(q) q.classList.remove("foehide") },Math.round(4600*K));
 }
 function startBattle(kind,pinned){
   if(run&&!run.sandbox&&!pinned) run.battles=(run.battles||0)+1;
@@ -28950,7 +29027,11 @@ function foeDeath(f){
              도미니코가 악마로 변하는 그 결로, **그 자리에서** 한 번 돈다 (사용자 2026-10-13).
              ⚠️ 몸이 192px 라 cell 도 192 다 — 64 로 두면 왼쪽 위 귀퉁이만 보인다 */
           if(d.who==="마력의 초월체"&&(typeof ICON_PNG!=="undefined")&&ICON_PNG.fx_tower_transform){
-            try{ transcendFocusFX(m,sl) }catch(e){} }
+            /* 장면이 끝난 **뒤에** 전장에 드러난다 (사용자 2026-10-13).
+               ⚠️ 몸은 **이미 섰다** — 보이는 것만 늦춘다. 정말 늦게 세우면 적이 0 이 되어 전투가 끝나 버린다 */
+            /* ⚠️ 깃발은 **몸(m.morphing)** 에 둔다 — DOM 에만 두면 다음 render 가 지운다 (재서 걸렸다) */
+            try{ m.morphing=1; const c=ctrOf("foe",sl); if(c&&c.e) c.e.classList.add("morphing");
+                 transcendScene(m,sl,()=>transcendLand(m,sl)); }catch(e){ console.error(e) } }
           /* 살아있는 덩굴의 부활 — 묶음 : 「숙주를 숨긴 뒤 같은 자리에」 · 110/100/90/90/90/90/100/150 */
           if(d.who==="살아있는 덩굴"&&(typeof ICON_PNG!=="undefined")&&ICON_PNG.fx_vine_rebirth){
             fx({side:"foe",slot:sl,sheet:"fx_vine_rebirth",
@@ -30111,6 +30192,7 @@ function drawBattle(app){
       dw.dataset.slot=s; fs.appendChild(dw); continue }
     const d=el(`<div class="slot ${f?"":"empty"}${f&&f.big?" big":""}"><span class="no">${foeNo(s)}${f&&f.big?""+foeNo(s+1):""}</span>${
       preSkill&&f?`<span class="reach">거리 ${dist(sel.hero.slot,s)}</span>`:""}</div>`);
+    if(f&&f.morphing) d.classList.add("morphing");   /* 변신 중 — 장면이 끝날 때까지 몸을 감춘다 (다시 그려도 이어진다) */
     if(f&&f.wallFoe) d.classList.add("wallflip");
     if(f&&f.willWeak) d.classList.add("wkshrink");   /* 의지 약화 — 그 턴 동안 작아진 몸 (사용자 2026-10-06) */
     else if(f&&f.wkGrowAt&&Date.now()-f.wkGrowAt<700){ d.classList.add("wkgrow"); d.style.setProperty("--wkd",-(Date.now()-f.wkGrowAt)+"ms") }   /* 풀리면 천천히 제 크기로 — 다시 그려도 이어서 */
