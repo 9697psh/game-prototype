@@ -467,6 +467,19 @@ img.pxs.face{image-rendering:pixelated;width:auto;filter:drop-shadow(0 2px 0 rgb
   border:1px solid var(--rule2);
   border-radius:3px;padding:0 5px;background:var(--raise)}
 
+/* 골렘 창조 — 전투 가운데에 부속 둘을 내놓고 하나를 고른다 (사용자 녹화 2026-10-13) */
+.golempick{position:fixed;left:50%;top:46%;transform:translate(-50%,-50%);z-index:60;
+  display:flex;flex-direction:column;align-items:center;gap:14px;pointer-events:none}
+.golempick .gpcards{display:flex;gap:30px;pointer-events:auto}
+.golempick .gpcard{width:156px;min-height:188px;box-sizing:border-box;background:var(--panel);
+  border:1px solid var(--rule);border-radius:7px;padding:11px 10px;cursor:pointer;text-align:center;
+  box-shadow:0 16px 34px rgba(0,0,0,.62);transition:transform .12s,border-color .12s}
+.golempick .gpcard:hover{border-color:var(--brass);transform:translateY(-5px)}
+.golempick .gpcard img{width:64px;height:64px;image-rendering:pixelated}
+.golempick .gpn{font-family:var(--serif);color:var(--brass);font-size:13px;margin-top:7px}
+.golempick .gpd{font-size:11px;color:var(--dim);line-height:1.45;margin-top:6px}
+.golempick .gpcap{font-family:var(--serif);font-size:15px;letter-spacing:.04em;color:#ece4d4;
+  background:rgba(14,11,8,.88);border:1px solid var(--rule);border-radius:6px;padding:7px 16px}
 .skwrap{margin-top:12px;border-style:solid;border-image:url("ui/skill-description-card-menu-card-1364x256.png") 22 fill / 22px round;background:none;border-radius:0;padding:12px 10px}
 /* 턴 종료 효과가 흐르는 동안 — 창은 그대로 두되 손대지 못한다는 것을 보여 준다 */
 .skwrap.waiting{opacity:.5;filter:saturate(.7);pointer-events:none;border-color:var(--rule2)}
@@ -10710,6 +10723,114 @@ HEROES["도미니코"]={title:"영광의 사제",role:"지원, 축복",hp:20,man
    {n:"영광의 족쇄",cost:2,el:"보호",tg:"self",lock:1,shackle:1,read:1,dmg:8,d:"잠금(1), 공격력, 마법력을 보호력으로, 가장 가까운 적 기절 + 피해 8"},
    {n:"참회의 기류",cost:3,el:"보호",tg:"self",lock:1,penance:1,shield:1,dmg:1,inc:1,d:"잠금(1), 기류가 가장 먼 적까지 오가며 지날 때마다 1씩 커진다"}
   ]};
+/* ── 파벨의 부속 (노트 카드 15~24, 2026-10-13) ──
+   재료 부속 = 골렘의 **체력과 지속 능력** · 영혼 부속 = **최대 마나와 기술**.
+   ⚠️ 고대석 · 별빛은 보상(「재료 부속: 고대석」 · 「영혼 부속: 별빛」)으로 목록에 들어온다 —
+      처음에는 넷씩이다. `rew:1` 이 그 표시다. */
+const PAVEL_MAT={
+ "라이티늄":{hp:24,taunt:1,endShield:4,
+   d:"체력 24\n항상 도발 상태입니다. 내 턴이 끝날 때, 보호막을 4 얻습니다."},
+ "균열석":{hp:30,taunt:1,deathNeg:4,
+   d:"체력 30\n항상 도발 상태입니다.\n죽음: 다른 모든 대원에게 부정 보호막을 4 부여합니다."},
+ "금속":{hp:20,critAlways:1,deathAll:8,
+   d:"체력 20\n이 소환물의 피해가 항상 치명타로 적중합니다.\n죽음: 모든 적에게 피해를 8 줍니다."},
+ "드론파편":{hp:15,endDeathUp:6,deathNear:6,
+   d:"체력 15\n내 턴이 끝날 때, 소환물의 죽음 피해량이 6 증가합니다.\n죽음: 가장 가까운 적에게 피해를 6 줍니다."},
+ "고대석":{hp:15,endAllStat:1,deathGive:1,rew:1,
+   d:"체력 15\n내 턴이 끝날 때, 모든 능력치를 1 얻습니다.\n죽음: 이 소환물의 추가 능력치를 무작위 아군에게 부여합니다."}
+};
+const PAVEL_SOUL={
+ "신성":{mana:1,sk:{n:"막아내기",cost:1,el:"보호",tg:"self",shield:4,d:"보호막을 4 얻습니다."},
+   d:"최대 마나 1\n막아내기 (비용 1, 보호막을 4 얻습니다.)"},
+ "정화":{mana:1,sk:{n:"정화하기",cost:1,el:"보호",tg:"self",negsh:3,d:"부정 보호막을 3 얻습니다."},
+   d:"최대 마나 1\n정화하기 (비용 1, 부정 보호막을 3 얻습니다.)"},
+ "분노":{mana:1,sk:{n:"찌르기",cost:1,el:"공격",tg:"foe",dmg:12,d:"공격 피해를 12 줍니다."},
+   d:"최대 마나 1\n찌르기 (마나 1, 공격 피해를 12 줍니다.)"},
+ "죽음":{mana:2,sk:{n:"영혼부르기",cost:1,el:"집중",tg:"self",soulCall:1,d:"이 소환물의 죽음 효과를 발동합니다."},
+   d:"최대 마나 2\n영혼부르기 (비용 1, 이 소환물의 죽음 효과를 발동합니다.)"},
+ "별빛":{mana:1,rew:1,sk:{n:"별똥별",cost:1,el:"마법",tg:"self",starfall:1,dmg:3,hits:3,d:"체력이 가장 낮은 적에게 마법 피해를 3 줍니다. 3번 반복합니다."},
+   d:"최대 마나 1\n별똥별 (마나 1, 체력이 가장 낮은 적에게 마법 피해를 3 줍니다. 3번 반복합니다.)"}
+};
+const partName=(kind,n)=>(kind==="mat"?"재료 부속: ":"영혼 부속: ")+n;
+/* 지금 고를 수 있는 부속 — 보상으로 얻은 것(tag.golemAdd)만 더해진다 */
+function pavelPool(h,kind){
+  const tbl=(kind==="mat")?PAVEL_MAT:PAVEL_SOUL, add=((h&&h.tag&&h.tag.golemAdd)||[]);
+  return Object.keys(tbl).filter(n=>!tbl[n].rew||add.indexOf(n)>=0);
+}
+/* 두 장을 내놓는다 — 「양손 작업」 보상이 들어오면 여기서 늘린다 (아직 없다) */
+function golemOpts(h,kind){
+  const L=pavelPool(h,kind), n=Math.min(2+((h&&h.tag&&h.tag.golemWide)||0),L.length), out=[];
+  const a=L.slice();
+  while(out.length<n&&a.length){ const x=rnd(a); out.push(x); a.splice(a.indexOf(x),1) }
+  return out;
+}
+function golemStart(h){
+  if(!B) return;
+  B.golem={by:h.name,kind:"mat",opts:golemOpts(h,"mat")};
+  say(`${h.name}${jo(h.name,"ig")} 골렘을 짓기 시작합니다 — 재료 부속을 고르세요.`,"t1");
+  render();
+}
+function golemPick(nm){
+  const G=B&&B.golem; if(!G) return;
+  const h=(run.heroes||[]).find(x=>x.name===G.by);
+  B.hand.push({type:"part",kind:G.kind,part:nm,name:partName(G.kind,nm),
+    d:((G.kind==="mat"?PAVEL_MAT:PAVEL_SOUL)[nm]||{}).d||"",gone:1,arrive:1});
+  say(`${partName(G.kind,nm)}${jo(partName(G.kind,nm),"eul")} 골랐습니다.`,"t2");
+  if(G.kind==="mat"){ B.golem={by:G.by,kind:"soul",opts:golemOpts(h,"soul")}; render(); return }
+  B.golem=null; golemMerge(h); render();
+}
+/* 손패에 재료와 영혼이 같이 있으면 **저절로** 하나로 합쳐진다 (노트 주석).
+   그래서 부속이 따로 들어와도(재조립 보상) 길은 하나다 — 여기 한 곳이다 */
+function golemMerge(h){
+  if(!B||!B.hand) return 0;
+  const m=B.hand.find(c=>c&&c.type==="part"&&c.kind==="mat");
+  const so=B.hand.find(c=>c&&c.type==="part"&&c.kind==="soul");
+  if(!m||!so) return 0;
+  B.hand=B.hand.filter(c=>c!==m&&c!==so);
+  B.hand.push({type:"summon",name:"하수인 골렘",mat:m.part,soul:so.part,gone:1,arrive:1});
+  const p=h&&h.slot>0?h.slot:null;
+  if(p) fx({side:"mine",slot:p,s:sfxOr("골렘 창조","summon"),ring:"#c9a227",glow:1,txt:"창조",cls:"shd",gap:120});
+  say(`${m.part}${jo(m.part,"gwa")} ${so.part}${jo(so.part,"ig")} 하나로 합쳐집니다 — 하수인 골렘.`,"t1");
+  return 1;
+}
+/* 골렘의 재료 부속이 쥔 값 — 선 골렘에서 꺼내 본다 (없으면 빈 것) */
+const golemMat=u=>(u&&u.golem&&PAVEL_MAT[u.golem.mat])||null;
+const golemSoul=u=>(u&&u.golem&&PAVEL_SOUL[u.golem.soul])||null;
+/* 내 턴이 끝날 때 도는 몫 — 라이티늄 · 드론파편 · 고대석 (노트 카드 글 그대로) */
+function golemEndTurn(){
+  if(!B||B.over) return 0;
+  let n=0;
+  (B.mins||[]).filter(u=>u.alive&&u.golem).forEach(u=>{
+    const M=golemMat(u); if(!M) return;
+    if(M.endShield){ addShield(u,M.endShield);
+      fx({side:"mine",slot:u.slot,s:"shield",txt:"보호막 +"+M.endShield,cls:"shd",gap:60});
+      say(`라이티늄 — ${u.name} 보호막 +${M.endShield}`,"t2"); n++ }
+    if(M.endDeathUp){ B.minDeathUp=(B.minDeathUp||0)+M.endDeathUp;
+      say(`드론파편 — 소환물의 죽음 피해량 +${M.endDeathUp} (모두 ${B.minDeathUp})`,"t2"); n++ }
+    if(M.endAllStat){ const v=M.endAllStat; u.atk+=v; u.mag+=v; u.def+=v;
+      fx({side:"mine",slot:u.slot,ring:"#c9a227",txt:"능력치 +"+v,cls:"shd",gap:60});
+      say(`고대석 — ${u.name} 모든 능력치 +${v}`,"t2"); n++ }
+  });
+  return n;
+}
+/* 죽음 — 영혼부르기(죽음 부속)도 **이 한 곳**을 부른다. 규칙 하나는 함수 하나 */
+function golemDeath(u,why){
+  const M=golemMat(u); if(!M||!B) return;
+  const up=B.minDeathUp||0;
+  const ow=(run.heroes||[]).find(x=>x.name==="파벨");
+  if(M.deathNeg){ const L=onField().filter(a=>a.hp>0&&a!==u&&!a.isMin);
+    L.forEach(a=>negGain(a,M.deathNeg));
+    if(L.length) say(`균열석 — ${L.map(a=>a.name).join(", ")} 부정 보호막 +${M.deathNeg}`,"t2") }
+  if(M.deathAll){ const v=M.deathAll+up, L=B.foes.filter(f=>f.alive);
+    if(L.length){ say(`금속 — 모든 적에게 피해 ${v}`,"t1");
+      L.forEach(f=>asSrc(ow,()=>hurt(f,v,why||"금속",null,0,0,1))) } }
+  if(M.deathNear){ const v=M.deathNear+up, f=nearestFoe(u);
+    if(f){ say(`드론파편 — ${f.name}에게 피해 ${v}`,"t2"); asSrc(ow,()=>hurt(f,v,why||"드론파편",null,0,0,1)) } }
+  if(M.deathGive){ const L=onField().filter(a=>a.hp>0&&a!==u);
+    const a=L.length?rnd(L):null;
+    if(a){ ["atk","mag","def"].forEach(k=>{ if(u[k]>0) bumpRnd(a,k,u[k]) });
+      if(u.atk||u.mag||u.def) say(`고대석 — ${a.name}${jo(a.name,"ig")} 추가 능력치를 물려받습니다 (공격 ${u.atk} 마법 ${u.mag} 보호 ${u.def}).`,"t2") } }
+}
 /* 기술 원문 — 기획노트 그대로. 고치려면 노트에서 고치세요 */
 const SKILL_FULL={
  /* 파벨 — 노트 17-0 ~ 17-2 (2026-10-13).
@@ -10717,6 +10838,7 @@ const SKILL_FULL={
        노트도 쉼표로 고치는 편이 좋다 (사용자에게 올려 둠) */
  "지면 내려치기":"모든 적에게 피해를 3(추가 †,∴ ) 줍니다. 거리 2 내의 적들은 공중에 뜸 상태가 됩니다.",
  "기동":"1칸 이동하고 보호막을 2(추가 ¤ ) 얻습니다. 해당 자리에 다른 아군이 있었다면, 그 아군에게도 보호막을 부여합니다.",
+ "골렘 창조":"잠금(2). 원하는 하수인 골렘을 창조합니다.",
  "파수꾼의 은총":"내 턴에 적이 공중에 뜸 상태가 된 후에, 추가 보호력만큼 보호막을 얻습니다.",
  /* 이라 — 노트 16-1 ~ 16-4 글 그대로 (2026-10-12). *( )* 는 richLive 가 총 피해량으로 채운다 */
  /* ⚠️ 기획 노트 글자 그대로다 (2026-10-13). 줄이거나 늘이거나 바꿔 쓰지 말 것.
@@ -10881,6 +11003,9 @@ const SUMMONS={
  /* 수목 너프 (사용자 2026-10-13) — 기술은 **에너지 보호막**을 주고,
     본래 기술이 주던 **능력치는 죽을 때로** 옮겼다. 셋이 같은 죽음 효과다 (gardenDeath 한 함수).
     ⚠️ 그 능력치는 **그 라운드에서만** 간다 (bumpRnd). 전에는 bumpTmp 라 전투 내내 쌓였다 */
+ /* 하수인 골렘 — 값은 **카드가 쥔 부속**이 정한다 (makeMin). 여기 수는 이름표일 뿐이다 */
+ "하수인 골렘":{hp:20,mana:1,owner:"파벨",
+   d:"파벨이 부속 둘을 합쳐 지은 골렘. 체력과 지속은 재료 부속이, 최대 마나와 기술은 영혼 부속이 맡는다.",sk:[]},
  "새싹":{hp:6,mana:0,owner:"오토",taunt:1,
    d:"도발, 죽음: 거리 1 내의 아군들에게 마법력, 보호력을 1 부여합니다.",sk:[]},
  "수목":{hp:12,mana:1,owner:"오토",taunt:1,
@@ -11011,7 +11136,8 @@ HEROES["파벨"]={title:"모험심 가득한 창조자",role:"보호, 소환",hp
   passive:{n:"파수꾼의 은총",d:"내 턴에 적이 공중에 뜸 상태가 된 후에, 추가 보호력만큼 보호막을 얻습니다."},
   skills:[
    {n:"지면 내려치기",cost:2,el:"공격",tg:"self",allHit:1,slam:1,dmg:3,d:"모든 적에게 피해 3(추가), 거리 2 내는 공중에 뜸"},
-   {n:"기동",cost:1,el:"이동",tg:"ally",mobil:1,shield:2,d:"1칸 이동, 보호막 2(추가), 자리를 바꾼 아군에게도"}
+   {n:"기동",cost:1,el:"이동",tg:"ally",mobil:1,shield:2,d:"1칸 이동, 보호막 2(추가), 자리를 바꾼 아군에게도"},
+   {n:"골렘 창조",cost:3,el:"집중",tg:"self",lock:2,makeGolem:1,d:"잠금(2), 부속 둘을 골라 하수인 골렘을 만든다"}
   ]};
 const START_PICKS=["나이코스","카제","굴라"];
 const HERO_POOL=["나이코스","카제","굴라","헥토","트리스탄","인비디아","도미니코",
@@ -18302,6 +18428,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 64, "v": "0.7", "d": "2026-10-13", "t": "골렘 창조 — 부속 둘을 골라 합치면 하수인 골렘", "big": 0},
  {"b": 63, "v": "0.7", "d": "2026-10-13", "t": "파벨 뼈대 — 대원과 그림, 지면 내려치기 · 기동 · 파수꾼의 은총", "big": 0},
  {"b": 62, "v": "0.7", "d": "2026-10-13", "t": "이라 타격음 넷 — 찢어발기기/할퀴기가 때릴 때마다", "big": 0},
  {"b": 61, "v": "0.7", "d": "2026-10-13", "t": "이라 타격음 — 찢어발기기/할퀴기가 때릴 때마다 (파일은 아직, 배선만)", "big": 0},
@@ -19557,7 +19684,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=63;
+const BUILD_NO=64;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -26476,7 +26603,22 @@ function lifeAuraSync(){
   if(got) say(`넘쳐나는 생명 — 소환물 ${liveMins().length}, ${was?"새로 선 아군도 ":"모든 아군의 "}추가 능력치 +${v}`,"t1");
 }
 function lifeAuraOff(){ (run.heroes||[]).concat(B&&B.mins||[]).forEach(u=>{ if(u._la){ u.atk-=u._la; u.mag-=u._la; u.def-=u._la; u._la=0 } }) }
-function makeMin(name,slot){
+function makeMin(name,slot,card){
+  /* 하수인 골렘 — 표에 박힌 값이 아니라 **고른 부속 둘**로 짠다 (노트 17-3).
+     체력 · 도발 따위는 재료 부속이, 최대 마나와 기술은 영혼 부속이 맡는다 */
+  if(name==="하수인 골렘"&&card&&card.mat&&card.soul){
+    const M=PAVEL_MAT[card.mat]||{}, S=PAVEL_SOUL[card.soul]||{};
+    let hp=M.hp||10;
+    { const b=minHpBonus(); if(b) hp=Math.round(hp*(1+b/100)) }   /* 꼭두각시 인형 */
+    return {name:name,slot:slot,isMin:1,alive:1,lv:99,
+      maxHp:hp,hp:hp,maxMana:S.mana||1,mana:S.mana||1,
+      sk:S.sk?[Object.assign({},S.sk)]:[],
+      taunt:M.taunt?1:0, perma:M.taunt?1:0, noMove:0,
+      owner:"파벨", revive:0, curseOnDeath:0,
+      atk:0,mag:0,def:0,shield:0,evade:0,armor:0,mom:0,free:0,windBuff:0,
+      lock:{},limitUsed:{},tag:{},items:[],first:{},minions:[],
+      golem:{mat:card.mat,soul:card.soul}};
+  }
   /* 악마 장군 소환 — 하수인 카드가 장군으로 선다 */
   if(name==="악마 하수인"){ const g=run&&run.heroes.find(x=>x.name==="굴라");
     if(g&&g.tag&&g.tag.general) name="악마 장군" }
@@ -29514,6 +29656,19 @@ function drawBattle(app){
     app.querySelector(".pkx").onclick=()=>{ B.pick=null; render() };
     stage.querySelector(".bftop").appendChild(app.querySelector(".pickbar"));   /* 무대 위 띠에 */
   }
+  /* 골렘 창조 — 부속 둘 가운데 하나 (사용자 녹화 2026-10-13). 고를 때까지 떠 있는다 */
+  if(B.golem&&B.golem.opts&&B.golem.opts.length){
+    const G=B.golem, TBL=(G.kind==="mat")?PAVEL_MAT:PAVEL_SOUL;
+    const box=el(`<div class="golempick"><div class="gpcards"></div>
+      <div class="gpcap">${G.kind==="mat"?"재료 부속을 선택하세요":"영혼 부속을 선택하세요"}</div></div>`);
+    const row=box.querySelector(".gpcards");
+    G.opts.forEach(n=>{ const T=TBL[n]||{};
+      const c=el(`<div class="gpcard"><div>${cardArt(partName(G.kind,n))}</div>
+        <div class="gpn">${esc(n)}</div><div class="gpd">${rich(T.d||"")}</div></div>`);
+      c.onclick=()=>{ SFX.play("click"); golemPick(n) };
+      row.appendChild(c) });
+    app.appendChild(box);
+  }
   const pr=el(`<div class="prompt">
     <span class="step ${!sel?"on":""}">1, 내 칸</span>
     <span class="step ${sel&&sel.step===2?"on":""}">2, 기술</span>
@@ -30728,6 +30883,9 @@ function drawInAnim(hand){
 function startDrag(card,i){
   card.addEventListener("pointerdown",e=>{
     if(B.over) return;
+    { const c0=B.hand[i];   /* 부속 카드는 **낼 수 없다** (노트 17-3 주석) — 둘이 모이면 저절로 합쳐진다 */
+      if(c0&&c0.type==="part"){ e.preventDefault();
+        say("부속 카드는 낼 수 없습니다 — 재료와 영혼이 모이면 저절로 합쳐집니다.","t2"); return } }
     e.preventDefault();
     const x0=e.clientX, y0=e.clientY; let moved=0;
     GHAND_HIDE=1; try{ gHandDraw() }catch(e){}   /* 손 커서는 카드를 놓을 때까지 감춘다 (사용자 2026-10-01) */
@@ -31408,6 +31566,8 @@ function cardMagic(skip){
 function playCard(i,slot,side){
   { const w=cardWhy(i,slot,side); if(w){ cardSayWhy(w); render(); return } }   /* 못 놓는 자리 — 말하고, 흐려진 카드(집은 채 남은 것)를 되돌린다 */
   const c=B.hand[i]; if(!c) return;
+  if(c.type==='part'){   /* 부속 카드는 낼 수 없다 (노트 17-3 주석) — 집는 것도 막지만 여기서도 막는다 */
+    say('부속 카드는 낼 수 없습니다 — 재료와 영혼이 모이면 저절로 합쳐집니다.','t2'); render(); return }
   { const before=B.hand.length; setTimeout(()=>{ if(B&&B.hand.length<before) cardStealCheck() },0) }   /* 카드가 실제로 나갔을 때만 */
   const wantFoe=!!(c.stock&&CARD_LIB[c.stock]&&CARD_LIB[c.stock].foe)||!!c.foe;
   if(wantFoe){
@@ -31436,7 +31596,7 @@ function playCard(i,slot,side){
   if(side==="foe") return;
 
   if(c.type==="summon"){
-    const m=makeMin(c.name,slot);
+    const m=makeMin(c.name,slot,c);   /* 카드가 쥔 부속 둘을 그대로 넘긴다 (하수인 골렘) */
     B.mins.push(m); lifeAuraSync();
     cardMagic();   /* 소환물 카드도 카드다 (악마 하수인 · 망자의 육체 …) */
     if(cardGone(c)) goneFX("mine",slot);
@@ -31509,6 +31669,7 @@ const PRED_OFF=["aim","armorUp","darkShadow","encore","frontal","fuse","grow","h
    tgt 를 주지 않으면 **대상과 상관없이 늘 치명타인가**를 묻는 꼴이 된다 — 기술 칸이 그렇게 쓴다.
    돌려주는 것 : 치명타면 그 까닭(글), 아니면 null */
 function critWhy(h,s,tgt){
+  { const M=(typeof golemMat==="function")&&golemMat(h); if(M&&M.critAlways) return "금속" }   /* 하수인 골렘 — 금속 부속 (노트 17-3) */
   if(!h||!s) return null;
   const T=h.tag||{};
   if(h.name==="트리스탄"){
@@ -33821,6 +33982,22 @@ function runEffect0(h,i,s,target){
     if(s.slam) B.foes.filter(f=>f.alive&&dist(h.slot,f.slot)<=2).forEach(f=>airborne(h,f));
     return;
   }
+  if(s.makeGolem){ golemStart(h); return }   /* 골렘 창조 (노트 17-3) — 고르는 화면은 render 가 그린다 */
+  if(s.negsh){   /* 정화하기 — 부정 보호막 (영혼: 정화) */
+    const v=(s.negsh||0)+mod(s,"negsh"); negGain(h,v);
+    say(`${s.n} — ${h.name} 부정 보호막 +${v}`,"t2"); return }
+  if(s.soulCall){   /* 영혼부르기 — **죽지 않고** 제 죽음 효과를 터뜨린다 (영혼: 죽음) */
+    fx({side:"mine",slot:h.slot,ring:"#a06ae0",glow:1,txt:"영혼",cls:"mag",gap:90});
+    say(`${s.n} — ${h.name}${jo(h.name,"ig")} 제 죽음을 불러냅니다.`,"t1");
+    golemDeath(h,s.n); return }
+  if(s.starfall){   /* 별똥별 — 체력이 가장 낮은 적에게, 때릴 때마다 다시 고른다 (영혼: 별빛) */
+    const v=(s.dmg||0)+mod(s,"dmg")+(h.mag||0), n0=s.hits||1;
+    for(let q=0;q<n0;q++){
+      const L=B.foes.filter(f=>f.alive); if(!L.length) break;
+      const f=L.reduce((a,b)=>a.hp<=b.hp?a:b);
+      fx({side:"foe",slot:f.slot,art:"star",ring:"#9ad8ff",gap:90});
+      hurt(f,v,s.n,"mag",0,0,1) }
+    return }
   if(s.overload){   /* 에너지 과부하 (노트 2026-09-30) */
     h.mana=(h.mana||0)+2; h.curse=(h.curse||0)+1;
     fx({side:"mine",slot:h.slot,ring:"#f4d67c",glow:1,txt:"추가 마나 +2",cls:"mag",gap:120,
@@ -35013,6 +35190,7 @@ function minDeathRun(t){
   if(minDeathTxt(t)) deathMarkFX("mine",t.slot,t);
   for(let k=0;k<times;k++){
     if(t.curseOnDeath) wallCurse("mine",t.slot,t.curseOnDeath);   /* 거리 1 안의 대상 모두 (노트 2026-10-06) */
+    if(t.golem) golemDeath(t);   /* 하수인 골렘의 죽음 — 재료 부속이 정한다 (노트 17-3) */
     gardenDeath(t) }
 }
 function unitDown(t){
@@ -35149,6 +35327,7 @@ function endPhase(){
     h.countUp=(h.countUp||0)+h.tag.countdown;
     say(`타락의 초읽기 — ${h.name}${jo(h.name,"ig")} 받는 피해가 ${h.tag.countdown} 늘어 모두 ${h.countUp}, 피해를 ${h.countUp} 받습니다.`,"t2");
     hurtAlly(h,h,h.countUp,"타락의 초읽기"); n++ });
+  n+=golemEndTurn();   /* 하수인 골렘의 재료 부속 — 라이티늄 · 드론파편 · 고대석 (노트 17-3) */
   /* 투기장의 감옥 — 내 턴이 끝날 때 **아군과 적 모두** 최대 체력의 N% (2026-10-12).
      이라 자신도 받는다 — 노트가 「아군과 적 모두」라 적었다 */
   { const ir=onField().find(h=>h.hp>0&&h.tag&&h.tag.arenaPrison);
