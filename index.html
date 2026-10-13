@@ -15666,6 +15666,11 @@ const KW_ICON={
   "되감기":"status_rewind","정지":"status_stop","충전":"status_charge","과열":"status_mana_refinery_overheat",
   "마력":"status_tower_master_mana",   /* 탑의 주인의 마력 (/art 가 ICON_PNG 에 넣으면 쓰인다 — 없으면 글자) */
   "복수귀":"status_ira_berserker",            /* 이라 지속 — 그림은 0319acc9 에서 구웠다 (2026-10-13) */
+  /* 글자 한 자로 떨어져 있던 딱지들 (사용자가 그림을 줬다, 2026-10-13).
+     ⚠️ 「마력의 고리」와 「마나 상한」은 둘 다 **「마」**로 떨어져 서로 가려지지 않았다 — 그래서 급했다 */
+  "마력의 고리":"status_transcendent_mana_ring",
+  "장군의 표식":"status_tristan_generals_mark",
+  "마나 상한":"status_mana_limit",
   "타락의 초읽기":"skill_ira_corruption_countdown_no_frame",   /* 이라 상급 보상 — 사용자가 고른 테두리 없는 쪽 (2026-10-13) */
   "기억":"status_someone_memory_stack",   /* 「누군가의 기억」의 기억 중첩 — 수는 따로 얹는다 (㊿) */
   "고통 감내":"sword"};   /* 다음 공격이 세진다 — 공격 아이콘 (사용자 2026-09-29) */   /* 대원 밑 소환물 표식 — 허수아비 · 공중에 뜸은 바람 (사용자 2026-09-16) */   /* 2026-09-15 추가 · 아이콘은 status-effects-v2 (64px) */
@@ -18229,6 +18234,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 53, "v": "0.7", "d": "2026-10-13", "t": "상태 딱지 셋 · 소리 크기 판 정리", "big": 0},
  {"b": 52, "v": "0.7", "d": "2026-10-13", "t": "이라 준비 자세 대기 모션 · 양손 할퀴기 · 할퀴기 소리", "big": 0},
  {"b": 51, "v": "0.7", "d": "2026-10-13", "t": "이라 연출 다섯 · 복수귀 · 고대의 파편 자리 · 초읽기 아이콘", "big": 0},
  {"b": 50, "v": "0.7", "d": "2026-10-13", "t": "빈 괄호 셋 — 굴라 식욕 · 불씨 폭발 · 화재 진압", "big": 0},
@@ -19473,7 +19479,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=52;
+const BUILD_NO=53;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -30375,40 +30381,9 @@ function setPanel(anchor){
   b.style.top=(r.bottom+6)+"px"; b.style.left=Math.max(6,Math.min(W-b.offsetWidth-6,r.right-b.offsetWidth))+"px";
   setTimeout(()=>{ const off=e=>{ if(!b.contains(e.target)){ b.remove(); document.removeEventListener("mousedown",off) } }; document.addEventListener("mousedown",off) },0);
 }
-/* 소리 크기 판 — ♪ 를 누르면 단추 아래에 붙어 열린다 */
-function volPanel(anchor){
-  const old=document.getElementById("volbox");
-  if(old){ old.remove(); return }
-  const pct=v=>Math.round(v*100);
-  const b=el(`<div id="volbox" class="volbox">
-    <div class="vrow"><span>효과음</span><input type="range" min="0" max="100" value="${pct(SFX.vol)}"><b>${pct(SFX.vol)}</b></div>
-    <div class="vrow"><span>배경음</span><input type="range" min="0" max="100" value="${pct(BGM.vol)}"><b>${pct(BGM.vol)}</b></div>
-    <button class="vmute">${SFX.on?"소리 끄기":"소리 켜기"}</button>
-  </div>`);
-  const rows=b.querySelectorAll(".vrow");
-  const bind=(row,get,set)=>{
-    const r=row.querySelector("input"), n=row.querySelector("b");
-    r.oninput=()=>{ set(r.value/100); n.textContent=r.value; volSave() };
-  };
-  bind(rows[0],()=>SFX.vol,v=>{ SFX.vol=v; SFX.play("click") });
-  bind(rows[1],()=>BGM.vol,v=>{ BGM.vol=v });
-  b.querySelector(".vmute").onclick=ev=>{
-    ev.stopPropagation();
-    BGM.on=SFX.toggle(); volSave(); b.remove(); render();
-  };
-  document.body.appendChild(b);
-  const r=anchor.getBoundingClientRect();
-  /* 창을 아직 못 잰 때(innerWidth 0)에도 엉뚱한 데로 가지 않게 */
-  const W=innerWidth||document.documentElement.clientWidth||9999;
-  b.style.top=(r.bottom+6)+"px";
-  b.style.left=Math.max(6,Math.min(W-b.offsetWidth-6,
-    r.left+r.width/2-b.offsetWidth/2))+"px";
-  setTimeout(()=>{
-    const away=e=>{ if(!b.contains(e.target)){ b.remove();
-      document.removeEventListener("pointerdown",away,true) } };
-    document.addEventListener("pointerdown",away,true);
-  },0);
-}
+/* ⚠️ 소리 크기 판(volPanel)은 2026-10-13 에 지웠다 — 머리띠 「설정」(setPanel) 이 그 일을 한다.
+   「소리 크기 판에 문이 없다」고 적혀 있던 것은 **이 죽은 짝**을 보고 적은 것이었다.
+   효과음 · 배경음 · 소리 끄기는 setPanel 안에 있고, 끈 값은 volSave 로 이 브라우저에 남는다 */
 /* 단축키를 어디에도 적어 두지 않았다. ? 나 머리줄 [도움말] 로 연다 */
 let HELP_ON=0;
 const HELP_ROWS=[
