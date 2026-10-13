@@ -1543,11 +1543,8 @@ body.vbattle .tornado{transform:scale(4.6);margin-top:14px}   /* 회오리도 �
 .art:has(>.kaura){isolation:isolate}
 @keyframes auraFade{0%{opacity:0}12%{opacity:1}80%{opacity:1}100%{opacity:0}}
 @keyframes tornadoMv{from{translate:0 0}to{translate:var(--dx,0px) var(--dy,0px)}}
-.lift{position:absolute;transform:translate(-50%,-50%);width:70px;height:110px;border-radius:50%;
-  background:linear-gradient(0deg,rgba(95,216,207,.55),transparent 72%);
-  animation:liftA .7s ease-out forwards;pointer-events:none;filter:blur(1px)}
-@keyframes liftA{0%{opacity:0;transform:translate(-50%,-20%) scaleY(.5)}
-  30%{opacity:1}100%{opacity:0;transform:translate(-50%,-95%) scaleY(1.25)}}
+/* .lift / liftA 는 걷었다 (사용자 2026-10-13) — 공중에 뜸의 바람은 이제 받은 8칸 띠(fx_deb_airborne)가 그린다.
+   ⚠️ 그림이 **떠오르는** .art.lifted / sprLift 는 그대로다 — 이름이 비슷할 뿐 다른 것이다 */
 .bark{position:absolute;transform:translate(-50%,-100%);z-index:120;
   max-width:190px;padding:6px 10px;border-radius:7px;pointer-events:none;
   background:#efe6d2;color:#1a1410;font-size:12px;font-weight:700;line-height:1.45;
@@ -18968,6 +18965,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 87, "v": "0.7", "d": "2026-10-13", "t": "마나 상한 딱지 · 초월체 종족 그림 · 공중에 뜸 8칸 띠", "big": 0},
  {"b": 86, "v": "0.7", "d": "2026-10-13", "t": "소환물 기술 아이콘 셋 · art 폴더 정리", "big": 0},
  {"b": 85, "v": "0.7", "d": "2026-10-13", "t": "이라 · 파벨 보상 아이콘 예순아홉", "big": 0},
  {"b": 84, "v": "0.7", "d": "2026-10-13", "t": "고대수목 — 축복과 죽음 글을 셈과 맞췄다", "big": 0},
@@ -20246,7 +20244,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=86;
+const BUILD_NO=87;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -27483,7 +27481,7 @@ const FOE_RACE={
  "콜로서스":"기계","콜로서스의 여분팔":"기계","콜로서스의 여분발":"기계"};
 /* 전투에서 적을 한 번 눌렀을 때만 이름 아래에 종족 한 줄 (사용자 2026-09-30).
    아이콘은 대원 조합 그림을 빌린다 — 야수는 아직 그림이 없어 글자만 */
-const RACE_ICON={"인간":"syn_human","악마":"syn_demon","기계":"syn_machine","망자":"syn_undead","정령":"syn_spirit","야수":"syn_beast","골렘":"syn_golem"};   /* 골렘 (사용자 2026-10-07) */   /* 종족 전용 그림 (2026-09-30) */
+const RACE_ICON={"인간":"syn_human","악마":"syn_demon","기계":"syn_machine","망자":"syn_undead","정령":"syn_spirit","야수":"syn_beast","골렘":"syn_golem","초월체":"syn_transcendent"};   /* 초월체 — 마력의 초월체 (사용자 2026-10-13) */   /* 골렘 (사용자 2026-10-07) */   /* 종족 전용 그림 (2026-09-30) */
 function raceLine(f){
   const r=foeRace(f); if(!r) return "";
   const k=RACE_ICON[r], u=k&&(typeof ICON_PNG!=="undefined")&&ICON_PNG[k];
@@ -33408,9 +33406,8 @@ function pavelMobil(h,s,target){
 function airborneAlly(f,h){
   if(!h||h.hp<=0||h.air) return;
   h.air=1;
-  { const p=ctrOf("mine",h.slot);
-    if(p){ const u=spawn('<div class="lift"></div>'); at(u,p); sparks(p,"#a8f0ea",7) } }
-  fx({side:"mine",slot:h.slot,lift:1,art:"wind",s:"gust",txt:"공중",cls:"shd",gap:130,
+  sheetFX("fx_deb_airborne","mine",h.slot,{cellW:64,cellH:64,frames:8,z:1.25,feet:1,frameMs:[75,75,75,70,95,90,85,100]});
+  fx({side:"mine",slot:h.slot,lift:1,s:"gust",txt:"공중",cls:"shd",gap:130,
       fn:()=>setTimeout(()=>{ h.air=0;                 /* 적과 같이 잠깐 떠 있다 내려온다 (사용자 2026-09-29) */
         const p=ctrOf("mine",h.slot);
         if(p&&p.e) p.e.querySelectorAll('.bd[data-kw="공중에 뜸"]').forEach(c=>c.remove());
@@ -33419,9 +33416,8 @@ function airborneAlly(f,h){
 }
 function airborne(h,f){
   if(!f.alive) return; f.air=1;
-  { const p=ctrOf("foe",f.slot);
-    if(p){ const u=spawn('<div class="lift"></div>'); at(u,p); sparks(p,"#a8f0ea",7) } }
-  fx({side:"foe",slot:f.slot,lift:1,art:"wind",s:(h&&h.name==="카제")?sfxOr("공중 띄움","gust"):"gust",txt:"공중",cls:"shd",gap:130,
+  sheetFX("fx_deb_airborne","foe",f.slot,{cellW:64,cellH:64,frames:8,z:1.25,feet:1,frameMs:[75,75,75,70,95,90,85,100]});
+  fx({side:"foe",slot:f.slot,lift:1,s:(h&&h.name==="카제")?sfxOr("공중 띄움","gust"):"gust",txt:"공중",cls:"shd",gap:130,
       fn:()=>setTimeout(()=>{ f.air=0;
         const p=ctrOf("foe",f.slot);
         if(p&&p.e){ p.e.querySelectorAll(".chip").forEach(c=>{ if(c.textContent==="공중") c.remove() });
@@ -36191,6 +36187,7 @@ function foePhase(){
       else if(pr.taunt){ pr.taunt=0; say("죄수가 뒤로 물러납니다.","t2") } } }
   fx({s:"turn",gap:220});
   B.foes.forEach(f=>{ f.shield=0 });   /* 지난 턴에 얻은 보호막은 여기서 사라진다 */
+  allUnits().forEach(u=>{ u.manaCap=null });   /* 마나 상한(수련) — 내 턴이 끝나면 풀린다. 적이 이 턴에 다시 걸면 아래에서 새로 선다 (사용자 2026-10-13) */
   /* 숨기(덩굴)의 은신은 1턴 — 내 턴 하나를 숨어 넘기고, 다음 적 차례가 열리면 풀린다 (사용자 2026-10-01) */
   B.foes.forEach(f=>{ if(f.alive&&f.hide&&f.hideAt!=null&&f.hideAt<(B.turn||1)){ f.hide=0; f.hideAt=null;
     say(`${f.name}${jo(f.name,"ig")} 모습을 드러냅니다.`,"t2") } });
@@ -36471,7 +36468,7 @@ function startMyTurn(){
       ["atk","mag","def"].forEach(k=>{ const c=Math.min(v,Math.max(0,m[k]||0)); if(c) bumpTurn(m,k,-c) });
       say(`${m.name} — 의지가 흐려져 이번 턴 추가 능력치가 ${v} 줄어듭니다.`,"t2") }
     m.mana=Math.max(0,m.maxMana-(m.curse||0)); m.curse=0;   /* 마나 흡수 — 소환물도 '상대' 다 (사용자 2026-10-07) */
-    if(m.manaCap!=null){ m.mana=Math.min(m.mana,m.manaCap); m.manaCap=null }   /* 수련 — 윗한도 (낮추기만) */
+    if(m.manaCap!=null) m.mana=Math.min(m.mana,m.manaCap);   /* 수련 — 윗한도 (낮추기만). 딱지가 이 턴 내내 보이게 지우지 않는다 — 비우는 곳은 foePhase 한 곳 (사용자 2026-10-13) */
     m.armor=0;
     if(m.perma) m.taunt=1; else if(m.taunt) m.taunt--; });
   try{ ottoTurnStart() }catch(e){ console.error(e) }   /* 대기 상태 돌입 · 넘쳐나는 생명 */
@@ -36485,7 +36482,8 @@ function startMyTurn(){
       say(`잔해 수집 — ${h.name} 추가 마나 +${h.scrapGot} (마나 ${h.mana})`,"t2"); h.scrapGot=0 }
     if(h.negManaNext){ h.negManaNext=0; const nm=itemBt(h,"negMana"); if(nm){ h.mana+=nm; say(`봉인된 어둠 — ${h.name} 이번 턴 마나 +${nm}`,"t2") } }   /* 턴 끝에 얻은 부정 보호막 — 다음 내 턴에 (점검 2026-10-07) */
 
-    if(h.manaCap!=null){ h.mana=Math.min(h.mana,h.manaCap); h.manaCap=null }   /* 수련 — 이 턴 마나의 윗한도 (낮추기만, 그보다 적으면 그대로) */
+    if(h.manaCap!=null) h.mana=Math.min(h.mana,h.manaCap);   /* 수련 — 이 턴 마나의 윗한도 (낮추기만, 그보다 적으면 그대로).
+       ⚠️ 여기서 지우면 **정작 마나가 깎인 그 턴에 딱지가 없다** (사용자 2026-10-13). 비우는 곳은 foePhase 한 곳이다 */
     h.headshotUsed=0; h.mobileGo=0;   /* 기동(h.mobile)은 턴을 넘어 남는다 — 물러설 때만 풀린다 (사용자 2026-10-01) */
     h.spentTurn=0; h.magnetTurn=0;   /* 이테리오 — 아크 방전 셈 · 마이스너 변환 한 턴 한 번 */
     if(h.spareNext&&h.tag&&h.tag.spareBat){ const v=3*h.tag.spareBat; h.eshield=(h.eshield||0)+v; h.spareNext=0;
