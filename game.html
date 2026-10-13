@@ -10879,6 +10879,33 @@ function pavelMakeIdle(){
    ① 부속이 **마구 돈다** (앞 여섯 칸을 세 바퀴, 갈수록 빠르게)
    ② 마지막 두 칸에서 맞물리고 ③ 빛난다 ④ 그 골렘이 **카드가 되어 손패로** 날아간다.
    끝나면 done() — 카드는 그때 손에 들어온다 (연출보다 먼저 들어오면 뜬금없다) */
+/* 부속 카드 한 장이 그 자리에서 손패로 날아온다 (재조립, 사용자 2026-10-13).
+   골렘 카드가 날아드는 길과 같은 꼴 — 끝나면 done() 에서 손에 넣는다 */
+function partFlyFX(slot,kind,nm,done){
+  const 배=()=>(typeof SPD==="number"?SPD:1);
+  let 끝남=0;
+  const 마치=()=>{ if(끝남) return; 끝남=1; if(done) done() };
+  try{ setTimeout(마치,Math.round(1600*배())) }catch(e){}
+  try{
+    if(typeof document==="undefined"){ 마치(); return }
+    const from=ctrOf("mine",slot), hand=document.querySelector(".hand");
+    const hr=hand&&hand.getBoundingClientRect();
+    if(!from){ 마치(); return }
+    const c=el('<div class="golemcard">'+partCardHtml(kind,nm)+'</div>');
+    document.body.appendChild(c);
+    const x0=from.x, y0=from.y-10;
+    const x1=hr?(hr.left+hr.width/2):x0, y1=hr?(hr.top+hr.height*0.5):(window.innerHeight-90);
+    const 자리=(x,y,s2,rot)=>`translate(${Math.round(x)}px,${Math.round(y)}px) translate(-50%,-50%) scale(${s2}) rotate(${rot}deg)`;
+    const a=c.animate([
+      {transform:자리(x0,y0,0.5,-12),opacity:0},
+      {transform:자리(x0,y0-50,1.2,-4),opacity:1,offset:.28},
+      {transform:자리((x0+x1)/2,(y0+y1)/2-40,1.0,2),opacity:1,offset:.62},
+      {transform:자리(x1,y1,.42,0),opacity:.1}
+    ],{duration:Math.round(820*배()),easing:"cubic-bezier(.3,.75,.4,1)"});
+    const 끝=()=>{ try{ c.remove() }catch(e){} 마치() };
+    a.onfinish=끝; setTimeout(끝,Math.round(1100*배()));
+  }catch(e){ 마치() }
+}
 function golemCreationFX(done){
   const 배=()=>(typeof SPD==="number"?SPD:1);
   /* ⚠️ 연출이 어떤 까닭으로 새더라도(화면이 없는 그물 · 그림이 빠짐) **카드는 반드시 들어온다**.
@@ -10981,6 +11008,18 @@ function itemCardHtml(n){
     <div class="sg">${esc(it.g||"희귀")} 장신구</div>
   </div>`;
 }
+/* 이른 창조 — 배치하면 골렘 창조를 비용 없이. **고르는 화면이 열려 있으면 기다렸다** 연다
+   (사용자 2026-10-13 : 「대원 배치해도 발동 안 되는 것 같다」 — 원천 분석 화면이 떠 있어 한 번 건너뛰고 끝났다) */
+function earlyMakeTry(h,wait){
+  if(!h||!h.earlyPend) return;
+  setTimeout(()=>{
+    if(!B||B.over||h.slot<=0||h.hp<=0){ return }
+    if(B.golem||B.srcPick){ earlyMakeTry(h,420); return }   /* 아직 고르는 중 — 다시 기다린다 */
+    h.earlyPend--;
+    say(`이른 창조 — ${h.name}${jo(h.name,"ig")} 비용 없이 짓기 시작합니다.`,"t1");
+    golemStart(h);
+  },Math.round((wait||420)*(typeof SPD==="number"?SPD:1)));
+}
 function srcAnalysisStart(h){
   if(!B||B.over||!h) return 0;
   const L=ITEMS.filter(i=>i&&i.g==="희귀");
@@ -11025,6 +11064,7 @@ function srcAnalysisPick(nm,from){
   const G=B&&B.srcPick; if(!G) return;
   const h=(run.heroes||[]).find(x=>x.name===G.by);
   B.srcPick=null; try{ BGM.onceOff() }catch(e){}
+  setTimeout(()=>{ const pv=(run.heroes||[]).find(x=>x.name==="파벨"); if(pv) earlyMakeTry(pv,300) },260);   /* 고르고 나면 이른 창조가 이어진다 */
   const it=evItem(nm);
   if(h&&it){
     it.tmpBattle=1;                                   /* 이번 전투 동안만 (노트 17-4) */
@@ -11132,6 +11172,9 @@ function golemSkillUsed(m,s){
   if(T.syncHit&&h.slot>0&&B&&!B.over){   /* 합맞추기 (상급) — 지면 내려치기를 비용 없이 */
     const i=(h.sk||[]).findIndex(k=>k&&k.slam);
     if(i>=0){ say(`합맞추기 — ${h.name}${jo(h.name,"ig")} 비용 없이 내려칩니다.`,"t1");
+      /* 값을 치르는 길을 지나지 않으니 **자세도 손으로** 잡아 준다 (사용자 2026-10-13) */
+      if(h.slot>0) fx({side:"mine",slot:h.slot,pose:"atk",poseMs:620,lunge:1,
+        s:sfxOr("파벨 지면 내려치기",null),gap:0});
       runEffect(h,i,h.sk[i],0) } }
 }
 /* 골렘의 재료 부속이 쥔 값 — 선 골렘에서 꺼내 본다 (없으면 빈 것) */
@@ -11175,11 +11218,13 @@ function golemDeath(u,why){
   if(ow&&ow.tag&&ow.tag.rebuild&&u.golem&&B&&B.hand&&!B.over){
     for(let q=0;q<ow.tag.rebuild;q++){
       const 재료=Math.random()<0.5;
-      const kind=재료?"mat":"soul", nm=재료?u.golem.mat:u.golem.soul;
-      B.hand.push({type:"part",kind:kind,part:nm,name:partName(kind,nm),
-        d:((kind==="mat"?PAVEL_MAT:PAVEL_SOUL)[nm]||{}).d||"",gone:1});
+      const kind=재료?"mat":"soul", nm=재료?u.golem.mat:u.golem.soul, sl=u.slot;
       say(`재조립 — ${partName(kind,nm)}${jo(partName(kind,nm),"eul")} 돌려받았습니다.`,"t2");
-      golemMerge(ow) } }
+      /* 부서진 자리에서 카드가 **날아와** 든다 (사용자 2026-10-13) */
+      partFlyFX(sl,kind,nm,()=>{ if(!B||B.over) return;
+        B.hand.push({type:"part",kind:kind,part:nm,name:partName(kind,nm),
+          d:((kind==="mat"?PAVEL_MAT:PAVEL_SOUL)[nm]||{}).d||"",gone:1});
+        golemMerge(ow); render() }) } }
   /* 창조의 고통 — 그 라운드 동안 보호력 (노트 : 「해당 라운드에서」 → bumpRnd) */
   if(ow&&ow.tag&&ow.tag.makePain&&ow.hp>0){ bumpRnd(ow,"def",ow.tag.makePain);
     say(`창조의 고통 — ${ow.name} 이번 라운드 보호력 +${ow.tag.makePain}`,"t2") }
@@ -18920,6 +18965,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 83, "v": "0.7", "d": "2026-10-13", "t": "재조립 · 이른 창조 · 다중 내려치기 · 합맞추기 손질", "big": 0},
  {"b": 82, "v": "0.7", "d": "2026-10-13", "t": "골렘 공격음 · 발톱 갈아놓기 수치 · 우두머리 둘의 이동 몸짓", "big": 0},
  {"b": 81, "v": "0.7", "d": "2026-10-13", "t": "받은 아트·소리 묶음 · 골렘 자동 행동 · 도발 띠 · 죽음 피해량 개체 몫", "big": 0},
  {"b": 80, "v": "0.7", "d": "2026-10-13", "t": "하수인 골렘 — 기술 딱지는 뺀다", "big": 0},
@@ -20194,7 +20240,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=82;
+const BUILD_NO=83;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -31595,8 +31641,7 @@ function onSummon(h){
   /* 이른 창조 — 배치하면 골렘 창조를 비용 없이 (노트 highRewards).
      ⚠️ 원천 분석과 겹치면 화면이 둘이 된다 — 원천 분석을 먼저 보내고 **그 뒤**에 연다 (고르기는 하나씩) */
   if(h.name==="파벨"&&h.tag&&h.tag.earlyMake&&B&&!B.over&&(h.sk||[]).some(k=>k&&k.makeGolem)){
-    setTimeout(()=>{ if(B&&!B.over&&!B.golem&&!B.srcPick&&h.slot>0&&h.hp>0){
-      say(`이른 창조 — ${h.name}${jo(h.name,"ig")} 비용 없이 짓기 시작합니다.`,"t1"); golemStart(h) } },900);
+    h.earlyPend=(h.earlyPend||0)+h.tag.earlyMake; earlyMakeTry(h,900);
   }
   /* 진동 — 대원 배치 후 모든 적을 띄우고 공격약화 (노트 midRewards) */
   if(h.tag&&h.tag.quake&&B&&B.foes&&!B.over){
@@ -34632,7 +34677,10 @@ function runEffect0(h,i,s,target){
       /* 다중 내려치기 — 한 번 더. 되돌이에 빠지지 않게 깃발로 막는다 */
       if(h.tag&&h.tag.slamTwice&&!B._slamAgain){
         B._slamAgain=1;
-        try{ for(let q=0;q<h.tag.slamTwice;q++) runEffect(h,i,s,target) }finally{ B._slamAgain=0 } } }
+        try{ for(let q=0;q<h.tag.slamTwice;q++){
+          B._slamFx=0;   /* 되풀이는 **제 아트**를 띄운다 (사용자 2026-10-13) */
+          if(h.slot>0) fx({side:"mine",slot:h.slot,pose:"atk",poseMs:520,lunge:1,gap:0});   /* 자세도 다시 */
+          runEffect(h,i,s,target) } }finally{ B._slamAgain=0 } } }
     return;
   }
   if(s.makeGolem){ golemStart(h); return }   /* 골렘 창조 (노트 17-3) — 고르는 화면은 render 가 그린다 */
