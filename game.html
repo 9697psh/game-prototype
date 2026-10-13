@@ -11208,9 +11208,14 @@ function golemEndTurn(){
 /* 죽음 — 영혼부르기(죽음 부속)도 **이 한 곳**을 부른다. 규칙 하나는 함수 하나 */
 function golemDeath(u,why){
   const M=golemMat(u); if(!M||!B) return;
-  /* 죽음 몫은 **주인(파벨) 이름으로** 때린다 — 그래서 B.lastAttacker 로는 골렘인 줄 모른다.
-     때리는 동안만 깃발을 세워 주먹 띠와 소리가 맞은 적 위에 뜨게 한다 (사용자 2026-10-13) */
-  B._golemHit=1; setTimeout(()=>{ if(B) B._golemHit=0 },0);
+  /* 죽음 몫은 **주인(파벨) 이름으로** 때린다 (처치 셈이 파벨에게 가야 한다) — 그래서
+     B.lastAttacker 로는 골렘인 줄 모른다. 때리는 동안만 깃발에 **때린 몸(골렘)** 을 담아 둔다.
+     ⚠️ 깃발이 하는 일이 **둘**이다 — ① 주먹 띠와 소리를 맞은 적 위에 (사용자 2026-10-13)
+        ② **가시가 되받아칠 몸** (사용자 2026-10-13 : 「골렘이 때렸는데 파벨이 가시를 맞는다」).
+        이름으로 때린 쪽(파벨)과 몸으로 때린 쪽(골렘)이 **다르다** — 되받는 것은 몸이 맞는다.
+        영혼부르기는 골렘이 **살아서** 제 죽음을 터뜨리는 길이라 골렘이 가시를 맞고,
+        정말 죽어서 터진 것이면 몸이 없으니 아무도 안 맞는다 (아래 src 문이 가린다) */
+  B._golemHit=u; setTimeout(()=>{ if(B) B._golemHit=0 },0);
   const up=u.deathUp||0;   /* 제 몫만 (2026-10-13) */
   const ow=(run.heroes||[]).find(x=>x.name==="파벨");
   if(M.deathNeg){ const L=onField().filter(a=>a.hp>0&&a!==u&&!a.isMin);
@@ -18975,6 +18980,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 89, "v": "0.7", "d": "2026-10-13", "t": "수락자 퀘스트 진척 · 골렘 죽음 피해의 가시", "big": 0},
  {"b": 88, "v": "0.7", "d": "2026-10-13", "t": "원천 분석 15레벨 잠금 · 지속 기술 표시 · 고르는 화면 어둠막 · 공중에 뜸 띠 크게", "big": 0},
  {"b": 87, "v": "0.7", "d": "2026-10-13", "t": "마나 상한 딱지 · 초월체 종족 그림 · 공중에 뜸 8칸 띠", "big": 0},
  {"b": 86, "v": "0.7", "d": "2026-10-13", "t": "소환물 기술 아이콘 셋 · art 폴더 정리", "big": 0},
@@ -20255,7 +20261,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=88;
+const BUILD_NO=89;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -25812,7 +25818,13 @@ function questProgress(kind,hero){
   if(!run||!run.quests||!run.quests.length) return;
   run.quests.forEach(q=>{
     const Q=QUESTS[q.id]; if(!Q||q.done||Q.kind!==kind) return;
-    if(q.hero&&q.hero!==hero) return;
+    /* ⚠️ **부르는 쪽이 대원을 대지 않았으면 수락자로 거르지 않는다** (사용자 2026-10-13 :
+       「정예 전투에서 이겼는데 지면 파훼가 안 오른다」).
+       `who:"hero"` 는 **보상을 누가 받나**를 뜻하지, 「그 대원이 해야 센다」가 아니다.
+       대원이 해야 세는 것(처치 · 골렘 창조 · 참회의 기류)은 부르는 쪽이 **이름을 댄다** —
+       전투 승리 · 미지의 구역 방문처럼 판 전체가 하는 일은 안 댄다.
+       이 한 줄이 없어 지면 파훼 · 파수꾼의 시험 · 탐험심 **셋이 통째로 안 올랐다.** */
+    if(hero&&q.hero&&q.hero!==hero) return;
     q.cur++;
     { const u={id:q.id,cur:q.cur,need:q.need,done:q.cur>=q.need?1:0};
       if(typeof view!=="undefined"&&view==="battle"&&typeof B!=="undefined"&&B&&B.foes&&!B.over) fx({questUp:u,gap:0});
@@ -33048,7 +33060,10 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
   say(`${tag} → ${f.name}(${foeNo(f.slot)}번) ${crit?"치명타 ":""}피해 ${amt}${
     pr?` (관통 ${pr}%${pr<100?`, 체력 ${thru}`:""})`:""}${s?` (보호막 ${s})`:""} 남은 ${Math.max(0,f.hp)}`,crit?"t1":undefined);
   if(f.thorn&&f.alive&&amt>0&&!f.thornBusy){   /* 보호막에 막혀도 맞은 것 — 대원 가시와 같게 (사용자 2026-10-07) */
-    const src=B.lastAttacker;
+    /* ⚠️ **되받는 것은 「이름」이 아니라 「몸」이다.** 하수인 골렘의 죽음 몫은 주인(파벨) 이름으로
+       때려서 B.lastAttacker 가 파벨이다 — 그대로 두면 **파벨이 가시를 맞는다** (사용자 2026-10-13).
+       때린 몸이 따로 있으면(B._golemHit) 그쪽이 맞는다. 몸이 죽어 없으면 아래 문에서 걸러져 아무도 안 맞는다 */
+    const src=B._golemHit||B.lastAttacker;
     if(src&&src.hp>0&&src.slot>0&&!src.isFoe){
       f.thornBusy=1;                 /* 가시끼리 무한히 주고받지 않게 */
       fx({side:"foe",slot:f.slot,trig:"가시",gap:0});
