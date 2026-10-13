@@ -10546,7 +10546,7 @@ function pxFigure(name,pose){
 /* 대원 정면 얼굴 (사용자 2026-09-30) — art/portraits-v1, 64×64. 없는 대원은 스프라이트로 물러선다.
    img.pxs 로 두어 자리마다 이미 있는 높이 규칙을 그대로 받는다 (정사각이라 너비는 따라온다) */
 const FACE={"도미니코":"face_dominico","헥토":"face_hecto","굴라":"face_gula","나이코스":"face_naikos","카제":"face_kaze","쿠렘타이":"face_kurem",
-  "트리스탄":"face_tristan","플레어와 플로우":"face_ff","이테리오":"face_iterio","오토":"face_otto","이라":"face_ira"};   /* 이라 초상 (사용자 묶음 portraits-v1-ira, 2026-10-12) */   /* 오토 (사용자 2026-10-04) */
+  "트리스탄":"face_tristan","플레어와 플로우":"face_ff","이테리오":"face_iterio","오토":"face_otto","이라":"face_ira","파벨":"face_pavel"};   /* 이라 초상 (사용자 묶음 portraits-v1-ira, 2026-10-12) */   /* 오토 (사용자 2026-10-04) */
 function faceArt(name){
   /* 외형을 바꿔도 정면 얼굴은 그대로 — 어느 대원인지 알아볼 수 있게 (사용자 2026-10-01) */
   const k=(name==="도미니코"&&domDemonRun())?"face_dominico_demon":FACE[name], u=k&&(typeof ICON_PNG!=="undefined")&&ICON_PNG[k];   /* 악마화 — 정면 얼굴도 (사용자 2026-10-06) */
@@ -10712,6 +10712,12 @@ HEROES["도미니코"]={title:"영광의 사제",role:"지원, 축복",hp:20,man
   ]};
 /* 기술 원문 — 기획노트 그대로. 고치려면 노트에서 고치세요 */
 const SKILL_FULL={
+ /* 파벨 — 노트 17-0 ~ 17-2 (2026-10-13).
+    ⚠️ 노트는 「3(추가 † + ∴ )」로 적혀 있는데 richLive 가 읽는 꼴은 **쉼표**다 — 여기서만 쉼표로 둔다.
+       노트도 쉼표로 고치는 편이 좋다 (사용자에게 올려 둠) */
+ "지면 내려치기":"모든 적에게 피해를 3(추가 †,∴ ) 줍니다. 거리 2 내의 적들은 공중에 뜸 상태가 됩니다.",
+ "기동":"1칸 이동하고 보호막을 2(추가 ¤ ) 얻습니다. 해당 자리에 다른 아군이 있었다면, 그 아군에게도 보호막을 부여합니다.",
+ "파수꾼의 은총":"내 턴에 적이 공중에 뜸 상태가 된 후에, 추가 보호력만큼 보호막을 얻습니다.",
  /* 이라 — 노트 16-1 ~ 16-4 글 그대로 (2026-10-12). *( )* 는 richLive 가 총 피해량으로 채운다 */
  /* ⚠️ 기획 노트 글자 그대로다 (2026-10-13). 줄이거나 늘이거나 바꿔 쓰지 말 것.
     비용은 **설명에 적지 않는다** — 기술 칸에 이미 적혀 있다 (사용자).
@@ -10995,6 +11001,18 @@ HEROES["보아"]={title:"균열의 짐승",role:"공중, 비늘",hp:20,mana:2,hp
    {n:"독소 침",cost:0,el:"지속",tg:"self",limit:1,venom:1,d:"적이 공중에 뜰 때마다 비늘 조각만큼 피해, 처치 후 비늘 +10"},
    {n:"비늘 폭발",cost:0,el:"마법",tg:"self",limit:1,scaleBoom:1,d:"사용한도(1), 비늘 조각을 모두 소모해 그만큼 모든 적에게 피해"}
   ]};
+/* ── 파벨 — 노트 17-0 ~ 17-4 (사용자가 적어 준 것, 2026-10-13) ──
+   그림 : art/영웅/파벨 (pavel-v2-128 · pavel-motions-v1), 정면 얼굴 face_pavel.
+   ⚠️ **기술 넷 가운데 둘만 들어와 있다.** 골렘 창조(17-3)와 원천 분석(17-4)은
+      전투 중에 고르는 화면이 있어야 해서 다음 덩이로 미뤘다 — 반쪽으로 세워 두지 않는다.
+   ⚠️ 파수꾼의 은총의 *( )* 가 **노트에서 비어 있다** — 배수를 1(추가 보호력 그대로)로 둔다. */
+HEROES["파벨"]={title:"모험심 가득한 창조자",role:"보호, 소환",hp:20,mana:3,hpLv:2,
+  focus:"골렘 창조, 공중에 띄우기, 소환물",
+  passive:{n:"파수꾼의 은총",d:"내 턴에 적이 공중에 뜸 상태가 된 후에, 추가 보호력만큼 보호막을 얻습니다."},
+  skills:[
+   {n:"지면 내려치기",cost:2,el:"공격",tg:"self",allHit:1,slam:1,dmg:3,d:"모든 적에게 피해 3(추가), 거리 2 내는 공중에 뜸"},
+   {n:"기동",cost:1,el:"이동",tg:"ally",mobil:1,shield:2,d:"1칸 이동, 보호막 2(추가), 자리를 바꾼 아군에게도"}
+  ]};
 const START_PICKS=["나이코스","카제","굴라"];
 const HERO_POOL=["나이코스","카제","굴라","헥토","트리스탄","인비디아","도미니코",
  "쿠렘타이","이테리오","그슨대","오토","플레어와 플로우","이라"];
@@ -11004,6 +11022,7 @@ const HERO_POOL=["나이코스","카제","굴라","헥토","트리스탄","인�
 const PLAYABLE=["나이코스","카제","트리스탄","굴라","쿠렘타이","플레어와 플로우","이테리오","오토","헥토","도미니코","이라"];   /* 카제 2026-09-16 · 이테리오 2026-09-30 · 오토 2026-10-04 · 헥토 · 도미니코 2026-10-06 (사용자) */
 /* 대원 고르기 화면의 난이도 — 사용자가 정한다. 여기 없는 대원은 표시하지 않는다 */
 const HERO_DIFF={"이라":"보통",   /* 사용자가 정했다 (2026-10-13) */
+ "파벨":"보통",   /* ⚠️ 임시 — 난이도는 사용자가 정한다 (2026-10-13) */
  "나이코스":"쉬움","카제":"어려움","쿠렘타이":"쉬움","트리스탄":"보통","굴라":"쉬움","플레어와 플로우":"어려움","이테리오":"어려움","오토":"보통","헥토":"쉬움","도미니코":"보통"};
 const DIFF_CLS={"쉬움":"d1","보통":"d2","어려움":"d3"};
 function diffChip(n){ const d=HERO_DIFF[n]; return d?`<span class="diff kw ${DIFF_CLS[d]||""}" data-kw="난이도" data-tip="이 대원을 다루기가 얼마나 어려운지입니다.">${esc(d)}</span>`:"" }
@@ -11011,7 +11030,11 @@ function playableHeroes(){ return HERO_POOL.filter(n=>PLAYABLE.indexOf(n)>=0) }
 /* 도감에는 서지만 아직 판에 올릴 수 없는 대원 — 그림은 왔고 기술의 셈이 안 왔다.
    사용자가 「아트가 기존 대원들하고 어울리는지 보게 도감에 먼저」라고 한 그 자리다 (2026-10-12).
    ⚠️ 기술이 다 되면 여기서 지우고 HERO_POOL · PLAYABLE 에 넣는다 — 그러면 판에도 오른다. */
-const CODEX_ONLY=[];   /* 이라는 기술의 셈이 들어와 HERO_POOL · PLAYABLE 로 옮겼다 (2026-10-12) */
+const CODEX_ONLY=["파벨"];   /* 이라는 기술의 셈이 들어와 HERO_POOL · PLAYABLE 로 옮겼다 (2026-10-12).
+   파벨은 **기술 넷 가운데 둘**만 들어와 있어 아직 여기다 (2026-10-13).
+   ⚠️ 여기 두는 또 한 가지 까닭 — `golden` 의 판은 `playableHeroes()` 의 **차례**로 짜인다.
+      목록에 하나를 더하면 짝짓기(H[(i+1)%len] · H[(i+5)%len])가 밀려 **172판이 통째로 어긋난다.**
+      골렘 창조와 원천 분석이 들어오는 날 HERO_POOL · PLAYABLE 로 옮기고 기준을 함께 다시 뜬다. */
 function codexHeroes(){ return playableHeroes().concat(CODEX_ONLY.filter(n=>HEROES[n])) }
 
 /* 조합 아이콘 — 받은 그림 (2026-09-19). 진영·직업·종족 이름 → 아이콘 id. 없는 것은 금빛 느낌표 */
@@ -11039,6 +11062,7 @@ const HERO_TAGS={
  "쿠렘타이":{fac:"사후",      job:["마법사","수확자"],    race:"망자"},
  "굴라":    {fac:"균열",      job:["수호자"],             race:"악마"},
  "이테리오":{fac:"고철의 무덤",job:["무기 전문가","방랑자"],race:"기계"},
+ "파벨":  {fac:"고철의 무덤",job:["모험가"],          race:"골렘"},
  "데린저":  {fac:"고철의 무덤",job:["약탈자","모험가"],    race:"인간"},
  "인비디아":{fac:"피의 투기장",job:["마법사"],             race:"악마"},
  "리페":    {fac:"정령숲",    job:["지원가","음악가"],    race:"정령"},
@@ -18278,6 +18302,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 63, "v": "0.7", "d": "2026-10-13", "t": "파벨 뼈대 — 대원과 그림, 지면 내려치기 · 기동 · 파수꾼의 은총", "big": 0},
  {"b": 62, "v": "0.7", "d": "2026-10-13", "t": "이라 타격음 넷 — 찢어발기기/할퀴기가 때릴 때마다", "big": 0},
  {"b": 61, "v": "0.7", "d": "2026-10-13", "t": "이라 타격음 — 찢어발기기/할퀴기가 때릴 때마다 (파일은 아직, 배선만)", "big": 0},
  {"b": 60, "v": "0.7", "d": "2026-10-13", "t": "타락의 초읽기 — 턴 끝 제 피해도 쌓인 만큼 받는다 (딱지 숫자와 같아진다)", "big": 0},
@@ -19532,7 +19557,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=62;
+const BUILD_NO=63;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -31557,7 +31582,7 @@ function predictDmg(h,s,tgt){
   }
   else if(s.allHit){
     if(h.tag.pressAtk&&dist(h.slot,tgt.slot)>2) return null;
-    dmg=bs("dmg")+ATK;
+    dmg=bs("dmg")+ATK+(s.slam?(h.mag||0):0);   /* 지면 내려치기 — 실제(runEffect)와 같은 셈 */
     if(h.name==="이테리오"&&s.n==="팽창 공격"&&(tgt.mark||0)>0&&h.tag.aimFix) dmg+=h.tag.aimFix;
     if(h.name==="이테리오"&&itCritEl(h,s)&&(tgt.mark||0)>0){ dmg=Math.round(dmg*itCritX(h)); crit=1 }
   }
@@ -32522,6 +32547,35 @@ function liftFX(side,slot){
    그때 다 일어나고, 표시는 그림이 내려올 때 같이 걷힌다. 턴 끝까지 남지 않는다. */
 /* 대원을 공중에 띄운다 (사용자 2026-09-29) — 적 쪽 airborne 의 짝.
    내 턴이 열릴 때까지 떠 있고, 그동안은 이동 기술을 쓸 수 없다. */
+/* ── 파벨 ──
+   파수꾼의 은총 — **내 턴에** 적이 공중에 뜬 뒤 추가 보호력만큼 보호막 (노트 17-0).
+   ⚠️ 노트의 *( )* 가 비어 있어 배수는 1 로 둔다. 적 턴에는 안 간다 (「내 턴에」).
+   ⚠️ 띄우는 길은 airborne() 하나뿐이다 — 그래서 여기 한 곳에만 적는다 (규칙 하나는 함수 하나) */
+function pavelGrace(){
+  if(!B||B.over||B.foeAct) return;
+  onField().filter(a=>a.hp>0&&!a.isMin&&a.name==="파벨").forEach(p=>{
+    const v=p.def||0; if(v<=0) return;
+    addShield(p,v);
+    fx({side:"mine",slot:p.slot,s:"shield",glow:1,txt:"보호막 +"+v,cls:"shd",gap:60});
+    say(`파수꾼의 은총 — ${p.name} 보호막 +${v}`,"t2") });
+}
+/* 기동 — 한 칸 움직이고 보호막. 그 칸에 아군이 있으면 moveTo 가 **자리를 바꾼다** — 그 아군도 받는다 */
+function pavelMobil(h,s,target){
+  const from=h.slot;
+  let to=0;
+  if(target&&target!==h.slot) to=Math.max(1,Math.min(SLOTS,h.slot+(target>h.slot?1:-1)));
+  const occ=to?unitAt(to):null;
+  if(to&&to!==h.slot) moveTo(h,to);
+  if(to&&h.slot===from) say("그쪽으로는 움직일 수 없습니다.","t2");
+  const v=(s.shield||0)+mod(s,"shield")+(h.def||0);
+  addShield(h,v);
+  fx({side:"mine",slot:h.slot,s:"shield",glow:1,txt:"보호막 +"+v,cls:"shd",gap:60});
+  say(`기동 — ${h.name} 보호막 +${v}`,"t2");
+  if(occ&&occ!==h&&occ.hp>0&&occ.slot===from){   /* 자리를 바꾼 아군 */
+    addShield(occ,v);
+    fx({side:"mine",slot:occ.slot,s:"shield",txt:"보호막 +"+v,cls:"shd",gap:60});
+    say(`기동 — ${occ.name} 보호막 +${v}`,"t2") }
+}
 function airborneAlly(f,h){
   if(!h||h.hp<=0||h.air) return;
   h.air=1;
@@ -32545,6 +32599,7 @@ function airborne(h,f){
           p.e.querySelectorAll('.bd[data-kw="공중에 뜸"]').forEach(c=>c.remove()) }   /* 디버프 칸의 표식도 (2026-09-16) */
       },900)});
   say(`${f.name}${jo(f.name,"ig")} 공중에 뜸.`,"t2");
+  pavelGrace();   /* 파수꾼의 은총 — 띄운 쪽이 누구든, 내 턴이면 파벨이 받는다 (노트 17-0) */
   run.heroes.forEach(b=>{
     if(b.name==="보아"&&b.slot>0&&b.venom&&f.alive&&(b.scale||0)>0)
       hurt(f,b.scale,"독소 침","mag");
@@ -32854,6 +32909,7 @@ function isMoveSkill(sk){ return !!(sk&&sk.el==="이동"&&sk.tg==="ally") }
 function moveStayOk(h,sk){ return !!(h&&h.tag&&h.tag.gustStay&&sk&&sk.el==="이동") }
 /* 고를 수 있는 거리 — 산들바람은 방향만 고르면 알아서 한 칸 나아간다 */
 function movePickRange(sk,h){
+  if(sk&&sk.mobil) return 1;   /* 파벨 기동 — 한 칸 */
   if(sk&&(sk.jumpback||sk.soothe)) return 2;
   if(h&&h.name==="카제"&&sk&&sk.el==="이동") return (h.tag&&h.tag.gustRange)||1;   /* 산들바람은 1칸(건들바람 +1) — 화살표도 그만큼만 (사용자 2026-09-16) */
   return SLOTS;
@@ -33730,7 +33786,7 @@ function runEffect0(h,i,s,target){
   }
   /* ── 이테리오 ── */
   if(s.allHit){
-    const base=s.dmg+mod(s,"dmg")+h.atk;
+    const base=s.dmg+mod(s,"dmg")+h.atk+(s.slam?(h.mag||0):0);   /* 지면 내려치기는 공격력 + 마법력 (노트 17-1) */
     /* 압축 공격 — 멀리까지 닿는 대신 가까이만 때리고 흡수를 얻는다 */
     const press=!!h.tag.pressAtk;
     let list=B.foes.filter(f=>f.alive);
@@ -33760,6 +33816,9 @@ function runEffect0(h,i,s,target){
       if(press) applyLeech(h,d);
       if(h.name==="이테리오"&&itMarksOn(h,s)&&f.alive) itMark(f,1);   /* 반전화 — 공격 피해가 표식을 남긴다 */
     });
+    /* 지면 내려치기 — 때린 뒤 **거리 2 내**가 공중에 뜬다 (노트 17-1).
+       띄우는 것은 airborne 한 곳이다 — 파수꾼의 은총도 거기서 따라온다 */
+    if(s.slam) B.foes.filter(f=>f.alive&&dist(h.slot,f.slot)<=2).forEach(f=>airborne(h,f));
     return;
   }
   if(s.overload){   /* 에너지 과부하 (노트 2026-09-30) */
@@ -34283,6 +34342,7 @@ function runEffect0(h,i,s,target){
   if(s.weaken){ domWeaken(h,s,target); return }   /* 도미니코 (노트 2026-10-06) */
   if(s.shackle){ domShackle(h,s); return }
   if(s.penance){ domPenance(h,s,1); return }
+  if(s.el==="이동"&&s.mobil){ pavelMobil(h,s,target); return }   /* 파벨 기동 — 아래 칸은 카제 몫이다 (추진력 · 진선풍도) */
   if(s.el==="이동"){
     h.gustFrom=h.slot;   /* 바람과 하나되어 — 어느 쪽으로 갔는지 */
     const reach=h.tag.gustRange||1;
