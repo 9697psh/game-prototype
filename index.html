@@ -13518,6 +13518,11 @@ function rwDescHtml(d,h){
   const reSyn=syn.length?new RegExp("("+syn.map(esc2).join("|")+")(?=\\s*(?:진영|직업|종족|대원))","g"):null;
   const skN=sks.map(x=>x.n).sort((a,b)=>b.length-a.length);
   const reSk=skN.length?new RegExp("("+skN.map(esc2).join("|")+")","g"):null;
+  /* 파벨의 부속 이름 — 「재료 부속 목록에 부유석을」의 '부유석' 에 밑줄과 카드 풍선 (사용자 2026-10-13).
+     앞말(재료/영혼)까지 함께 봐야 '금속' '죽음' 같은 여느 낱말을 잘못 집지 않는다 */
+  const pN=(typeof PAVEL_MAT!=="undefined")
+    ?Object.keys(PAVEL_MAT).concat(Object.keys(PAVEL_SOUL)).sort((a,b)=>b.length-a.length):[];
+  const rePt=pN.length?new RegExp("(재료|영혼)(\\s*부속\\s*목록에\\s*)("+pN.map(esc2).join("|")+")","g"):null;
   const walk=n=>{
     if(n.nodeType===1){ if(n.classList&&(n.classList.contains("kw")||n.tagName==="svg")) return; [...n.childNodes].forEach(walk); return }
     if(n.nodeType!==3) return;
@@ -13527,6 +13532,11 @@ function rwDescHtml(d,h){
       const sk=sks.find(x=>x.n===m2), id="rwsk-"+(h?h.name:"")+"-"+m2;
       TIP_HTML[id]=skTipHtml(h,sk);
       return `<u class="kw rwsk" data-tid="${esc(id)}">${m2}</u>` }));
+    if(rePt) out=out.replace(/(<[^>]*>)|([^<]+)/g,(m,tag,txt)=>tag?tag:txt.replace(rePt,(mm,k1,mid,pn)=>{ hit=1;
+      const kind=(k1==="재료")?"mat":"soul", id="rwpt-"+kind+"-"+pn;
+      /* 손패 카드의 .card 는 떼고 띄운다 — 카드 풍선(cardCard)과 같은 꼴이 된다 */
+      TIP_HTML[id]=partCardHtml(kind,pn).replace('class="card ccard cf"','class="ccard cf"');
+      return k1+mid+`<u class="kw rwsk" data-tid="${esc(id)}">${pn}</u>` }));
     if(!hit) return;
     const tmp=document.createElement("span"); tmp.innerHTML=out;
     [...tmp.childNodes].forEach(c=>n.parentNode.insertBefore(c,n)); n.remove();
@@ -19062,6 +19072,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 98, "v": "0.7", "d": "2026-10-13", "t": "보상 설명의 부속 이름에 밑줄과 부속 카드 풍선", "big": 0},
  {"b": 97, "v": "0.7", "d": "2026-10-13", "t": "포식의 주먹", "big": 0},
  {"b": 96, "v": "0.7", "d": "2026-10-13", "t": "조합 골렘 · 포식 카드 그림", "big": 0},
  {"b": 95, "v": "0.7", "d": "2026-10-13", "t": "파벨 영혼 부속 포식 · 부유석과 포식을 중급 보상으로", "big": 0},
@@ -20351,7 +20362,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=97;
+const BUILD_NO=98;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
