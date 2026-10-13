@@ -3722,6 +3722,7 @@ body.vbattle .bagbtn{bottom:auto;top:9px;right:auto;left:16px;padding:6px 10px;g
 .bfstage .art img.pxs{height:calc(124px * var(--ph,1));filter:drop-shadow(0 3px 0 rgba(0,0,0,.6))} .bfstage .art svg{height:118px}
 .bfstage #mySide .art img.pxs[data-nm^="굴라"]{height:calc(124px * 1.15 * var(--ph,1))}
 .bfstage.foehide .slot.foe{opacity:0;pointer-events:none}   /* 등장 연출 — 깜깜해지기 전까지 상대편이 비어 있다 */
+.slot.foe.morphing .art{visibility:hidden}   /* 변신하는 동안 — 몸 대신 변신 띠가 선다 (초월, 2026-10-13) */
 .introdark{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:64;transition:opacity .42s ease}
 /* 터지는 순간 — 무대가 한 번 하얗게 바랜다 (초월체의 마지막, 2026-10-13) */
 .bfstage.burstwhite::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 62% 46%,rgba(255,255,255,.92),rgba(190,160,255,.5) 38%,rgba(0,0,0,0) 72%);
@@ -18269,6 +18270,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 59, "v": "0.7", "d": "2026-10-13", "t": "초월 변신 — 둘레가 어두워지고 가운데서 천천히, 대사와 함께", "big": 0},
  {"b": 58, "v": "0.7", "d": "2026-10-13", "t": "초월체의 마지막 — 떨다 한마디 하고 뻥 터진다", "big": 0},
  {"b": 57, "v": "0.7", "d": "2026-10-13", "t": "초월체 분해 연출 · 탑의 주인 키를 대원과 비슷하게", "big": 0},
  {"b": 56, "v": "0.7", "d": "2026-10-13", "t": "마력의 탑 본체 아트 · 등장 연출 · 초월 변신", "big": 0},
@@ -19519,7 +19521,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=58;
+const BUILD_NO=59;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -22256,6 +22258,36 @@ function phFocusApply(){
   fld.classList.toggle("phfocus",on);
   fld.querySelectorAll(".slot.ph-on").forEach(x=>x.classList.remove("ph-on"));
   if(on){ const f=B.foes.find(x=>x.id===PHFOCUS.id&&x.alive); const c=f&&ctrOf("foe",f.slot); if(c&&c.e) c.e.classList.add("ph-on") }
+}
+/* 초월 — **도미니코 악마 타락과 같은 결** (사용자 2026-10-13).
+   둘레가 어두워지고, 가운데서 탑의 주인이 **천천히** 초월체로 변한다. 대사가 앞뒤로 하나씩.
+   ⚠️ 어둡게 하는 것은 간수장 단계 연출과 **같은 길**(PHFOCUS · phFocusApply)이다 — 두 벌을 만들지 않는다.
+   ⚠️ 변신하는 동안에는 칸의 몸을 감춘다(.morphing) — 받은 8칸 띠가 **두 모습을 다 들고 있다.**
+   ⚠️ 판을 멈추지 않는다. 보이는 것만 건드린다 */
+const MORPH_SAY=["…이 그릇으로는, 담을 수 없다.","나는 시간이며, 마력 그 자체다."];
+function transcendFocusFX(m,sl){
+  if(typeof document==="undefined"||typeof B==="undefined"||!B||!m) return;
+  const K=(typeof SPD==="number"?SPD:1), D=Math.round(3900*K);
+  PHFOCUS={id:m.id,until:Date.now()+D}; try{ phFocusApply() }catch(e){}
+  try{ edgeGlow("rgba(96,124,232,.42)") }catch(e){}
+  const c=ctrOf("foe",sl); if(c&&typeof quakeFX==="function") quakeFX(c);
+  try{ SFX.play(sfxOr("bossfall","danger")) }catch(e){}
+  const 칸=()=>{ const q=ctrOf("foe",sl); return q&&q.e };
+  { const e=칸(); if(e) e.classList.add("morphing") }
+  try{ barkShow(m,MORPH_SAY[0],Date.now(),1) }catch(e){}
+  setTimeout(()=>{ if(!B) return;                                   /* ① 천천히 변한다 — 받은 8칸을 느리게 */
+    sheetFX("fx_tower_transform","foe",sl,{cellW:192,cellH:192,frames:8,z:1.5,feet:1,
+            frameMs:[250,240,230,230,240,250,270,360]});
+  },Math.round(320*K));
+  setTimeout(()=>{ if(!B) return; const q=ctrOf("foe",sl); if(q) quakeFX(q) },Math.round(1700*K));
+  setTimeout(()=>{ if(!B) return;                                   /* ② 다 변했다 — 몸을 드러내고 한 번 부푼다 */
+    const e=칸(); if(e) e.classList.remove("morphing");
+    try{ pulseFX("foe",sl,"#7a9cff",3) }catch(e){}
+    try{ stepBanner("초  월","마력의 초월체") }catch(e){}
+  },Math.round(2620*K));
+  setTimeout(()=>{ try{ if(B&&!B.over&&m.alive) barkShow(m,MORPH_SAY[1],Date.now(),1) }catch(e){} },Math.round(3000*K));
+  setTimeout(()=>{ const e=칸(); if(e) e.classList.remove("morphing");
+    if(PHFOCUS&&PHFOCUS.id===m.id){ PHFOCUS=null; try{ phFocusApply() }catch(e){} } },D);
 }
 function phaseFocusFX(f,p,D,S){
   if(!B||!f.alive) return;
@@ -27951,9 +27983,7 @@ function foeDeath(f){
              도미니코가 악마로 변하는 그 결로, **그 자리에서** 한 번 돈다 (사용자 2026-10-13).
              ⚠️ 몸이 192px 라 cell 도 192 다 — 64 로 두면 왼쪽 위 귀퉁이만 보인다 */
           if(d.who==="마력의 초월체"&&(typeof ICON_PNG!=="undefined")&&ICON_PNG.fx_tower_transform){
-            fx({side:"foe",slot:sl,sheet:"fx_tower_transform",
-                sheetOpt:{cellW:192,cellH:192,frames:8,z:1.35,feet:1,
-                          frameMs:[120,120,120,120,120,120,120,160]},gap:0}); }
+            try{ transcendFocusFX(m,sl) }catch(e){} }
           /* 살아있는 덩굴의 부활 — 묶음 : 「숙주를 숨긴 뒤 같은 자리에」 · 110/100/90/90/90/90/100/150 */
           if(d.who==="살아있는 덩굴"&&(typeof ICON_PNG!=="undefined")&&ICON_PNG.fx_vine_rebirth){
             fx({side:"foe",slot:sl,sheet:"fx_vine_rebirth",
