@@ -10971,6 +10971,7 @@ function srcAnalysisOff(){
 function golemStart(h){
   if(!B) return;
   B.golem={by:h.name,kind:"mat",opts:golemOpts(h,"mat"),t0:Date.now()};
+  questProgress("golem",h.name);   /* 골렘 군단 — 쓴 횟수를 센다 */
   if(h.tag&&h.tag.makeShield){ addShield(h,h.tag.makeShield);
     fx({side:"mine",slot:h.slot,s:"shield",glow:1,txt:"보호막 +"+h.tag.makeShield,cls:"shd",gap:60});
     say(`보호막 창조 — ${h.name} 보호막 +${h.tag.makeShield}`,"t2") }
@@ -11015,6 +11016,19 @@ function golemPlaced(m){
   if(T.golemMag){ m.mag+=T.golemMag; say(`별똥별 파편 — ${m.name} 마법력 +${T.golemMag}`,"t2") }
   if(T.golemMana){ m.maxMana+=T.golemMana; m.mana+=T.golemMana;
     say(`마나석 끼워넣기 — ${m.name} 최대 마나 +${T.golemMana}`,"t2") }
+}
+/* 하수인 골렘이 기술을 쓴 **뒤** — 파벨이 받는 몫 (분업 · 합맞추기).
+   ⚠️ 길은 하나다 — 기술을 쓰는 자리에서 한 번만 부른다 */
+function golemSkillUsed(m,s){
+  const h=(run.heroes||[]).find(x=>x.name==="파벨"); if(!h||h.hp<=0||!h.tag) return;
+  const T=h.tag;
+  if(T.workShare){ addShield(h,T.workShare);
+    if(h.slot>0) fx({side:"mine",slot:h.slot,s:"shield",txt:"보호막 +"+T.workShare,cls:"shd",gap:60});
+    say(`분업 — ${h.name} 보호막 +${T.workShare}`,"t2") }
+  if(T.syncHit&&h.slot>0&&B&&!B.over){   /* 합맞추기 (상급) — 지면 내려치기를 비용 없이 */
+    const i=(h.sk||[]).findIndex(k=>k&&k.slam);
+    if(i>=0){ say(`합맞추기 — ${h.name}${jo(h.name,"ig")} 비용 없이 내려칩니다.`,"t1");
+      runEffect(h,i,h.sk[i],0) } }
 }
 /* 골렘의 재료 부속이 쥔 값 — 선 골렘에서 꺼내 본다 (없으면 빈 것) */
 const golemMat=u=>(u&&u.golem&&PAVEL_MAT[u.golem.mat])||null;
@@ -12379,7 +12393,34 @@ const HERO_REWARDS={
   R("탐험심","하급","퀘스트: 미지의 구역 4회 방문\n보상: 무작위 보상",
     h=>{ if(!questHas("탐험심")) questAccept("탐험심",h.name) },0.5),
   R("오래된 경험","하급","활동량을 1개 소모합니다. 경험치를 16 얻습니다.\n*활동량이 1개 이상일때만 등장",
-    h=>{ run.act=Math.max(0,(run.act||0)-1); giveExp(16,[h],true) })
+    h=>{ run.act=Math.max(0,(run.act||0)-1); giveExp(16,[h],true) }),
+  /* ── 중급 ── */
+  R("양손 작업","중급","골렘 창조로 부속을 고를 때, 선택지가 1개 늘어납니다.\n*[골렘 창조] 기술이 없을 때 등장하지 않음\n*획득시 보상에서 다시 등장하지 않음",
+    h=>h.tag.golemWide=(h.tag.golemWide||0)+1,0.5),
+  R("분업","중급","하수인 골렘이 기술을 사용한 후, 파벨이 보호막을 4 얻습니다.\n*[골렘 창조] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.workShare=(h.tag.workShare||0)+4),
+  R("진동","중급","대원 배치 후, 모든 적을 공중에 뜸 상태로 만들고 공격약화를 1 부여합니다.",
+    h=>h.tag.quake=(h.tag.quake||0)+1),
+  R("태초의 조합법","중급","제련석 5개와 무작위 동일한 파편 아이템 둘을 얻습니다.",
+    h=>{ run.stone=(run.stone||0)+5;
+         const it=rnd(ITEMS.filter(i=>i.g==="파편"));
+         if(it){ (run.after=run.after||[]).push({item:it},{item:it}) } },0.5),
+  R("재료 부속: 고대석","중급","재료 부속 목록에 고대석을 추가합니다.\n*획득시 보상에서 다시 등장하지 않음\n*[골렘 창조] 기술이 없을 때 등장하지 않음",
+    h=>{ h.tag.golemAdd=(h.tag.golemAdd||[]); if(h.tag.golemAdd.indexOf("고대석")<0) h.tag.golemAdd.push("고대석") },0.5),
+  R("영혼 부속: 별빛","중급","영혼 부속 목록에 별빛을 추가합니다.\n*획득시 보상에서 다시 등장하지 않음\n*[골렘 창조] 기술이 없을 때 등장하지 않음",
+    h=>{ h.tag.golemAdd=(h.tag.golemAdd||[]); if(h.tag.golemAdd.indexOf("별빛")<0) h.tag.golemAdd.push("별빛") },0.5),
+  R("은총의 폭발","중급","파수꾼의 은총이 추가 보호력만큼 모든 적에게 피해도 줍니다.",
+    h=>h.tag.graceBoom=(h.tag.graceBoom||0)+1,0.5),
+  R("무게추","중급","기동을 사용한 후, 다음 지면 내려치기가 강화되어 모든 적을 공중에 뜸 상태로 만듭니다.\n*획득시 보상에서 다시 등장하지 않음",
+    h=>h.tag.weight=(h.tag.weight||0)+1),
+  R("골렘 군단","중급","퀘스트: 골렘 창조 10회 사용\n보상: 제련석 15개, 무작위 일반 장신구 1개",
+    h=>{ if(!questHas("골렘 군단")) questAccept("골렘 군단",h.name) },0.5),
+  R("파수꾼의 시험","중급","퀘스트: 3라운드 일반 전투 2회 승리\n보상: 모든 추가 능력치 +1",
+    h=>{ if(!questHas("파수꾼의 시험")) questAccept("파수꾼의 시험",h.name) },0.5),
+  R("헤르메스의 신발","중급","내 턴이 끝날 때, 추진력을 5 소모하고 무작위 추가 능력치를 1 얻습니다.",
+    h=>h.tag.hermes=(h.tag.hermes||0)+1,0.5),
+  R("지면 파훼","중급","퀘스트: 정예 전투에서 2회 승리\n보상: 지면 내려치기의 피해량이 영구히 8 증가합니다.",
+    h=>{ if(!questHas("지면 파훼")) questAccept("지면 파훼",h.name) },0.5)
  ],
  "굴라":[
   /* 기획 노트(2026-09-11) 그대로. 옛 다섯(굶주림·두꺼운 가죽·탐식·차원 확장·포식자)은 노트에 없어 뺐다 */
@@ -18688,6 +18729,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 73, "v": "0.7", "d": "2026-10-13", "t": "파벨 중급 보상 열둘", "big": 0},
  {"b": 72, "v": "0.7", "d": "2026-10-13", "t": "파벨 하급 보상 열둘", "big": 0},
  {"b": 71, "v": "0.7", "d": "2026-10-13", "t": "장신구는 하급 보상 카드 틀로 · 충전된 대가 치르기에도 이라 타격음", "big": 0},
  {"b": 70, "v": "0.7", "d": "2026-10-13", "t": "고르는 화면 둘이 겹치지 않게 — 먼저 고른 뒤에 기술을 쓴다", "big": 0},
@@ -19952,7 +19994,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=72;
+const BUILD_NO=73;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -23486,6 +23528,9 @@ function winTaintAmount(d){
 }
 function dungeonCleared(){
   srcAnalysisOff();   /* 원천 분석 — 이번 전투 동안만 (노트 17-4) */
+  /* 파수꾼의 시험 — **3라운드 일반 전투**를 이겼을 때만 (노트 midRewards) */
+  { const d0=run.dun||{};
+    if(d0.kind==="battle"&&(d0.waves||1)>=3) questProgress("win3",null) }
   const d=run.dun;
   if(d.kind==="elite") questProgress("elite");           /* 현상 수배 */
   if(d.kind==="elite"&&run.field===0) coreTally("elite1",1);   /* 세계핵 — 핏빛 감옥 정예 승리 */
@@ -25433,6 +25478,13 @@ const QUESTS={
   /* 도미니코 상급 보상 (노트 2026-10-06) — 깨면 이번 게임 동안 참회의 기류가 두 번 더 */
   "절실한 신앙":{kind:"penance",need:20,who:"hero",
     d:"참회의 기류를 {n}번 사용",rd:"이번 원정에서 참회의 기류를 사용한 후, 추가로 2번 더 사용됩니다.",reward:{faith:2}},
+  /* 파벨 중급 셋 (노트 2026-10-13) */
+  "골렘 군단":{kind:"golem",need:10,who:"hero",
+    d:"골렘 창조 {n}번 사용",rd:"제련석 15개, 무작위 일반 장신구 1개",reward:{stone:15,item:"일반"}},
+  "파수꾼의 시험":{kind:"win3",need:2,who:"hero",
+    d:"3라운드 일반 전투에서 {n}번 승리",rd:"모든 추가 능력치 +1",reward:{allStat:1}},
+  "지면 파훼":{kind:"elite",need:2,who:"hero",
+    d:"정예 전투에서 {n}번 승리",rd:"지면 내려치기의 피해량이 영구히 8 증가합니다.",reward:{slamUp:8}},
   /* 파벨 하급 「탐험심」 (노트 2026-10-13) — 구역을 가리지 않는다 (주인 찾아주기와 달리 field 가 없다) */
   "탐험심":{kind:"visit",need:4,who:"hero",
     d:"미지의 구역 {n}번 방문",rd:"무작위 보상",reward:{scrap:1}},
@@ -25698,6 +25750,15 @@ function questClaim(id){
   if(R.scrap){ const x=scrapReward();
     if(x==="after"){ afterChest(); return }
     if(x&&x.hero){ pending={hero:x.hero,grade:x.grade,free:1,back:"chain"}; view="reward"; render(); return } }
+  if(R.stone){ run.stone=(run.stone||0)+R.stone; toast(`퀘스트 보상 — 제련석 +${R.stone}`) }
+  if(R.item){ const L=ITEMS.filter(i=>i.g===R.item); if(L.length) (run.after=run.after||[]).push({item:rnd(L)}) }
+  if(R.allStat){ const h=run.heroes.find(x=>x.name===q.hero)||run.heroes.find(x=>!x.down)||run.heroes[0];
+    if(h){ h.atk+=R.allStat; h.mag+=R.allStat; h.def+=R.allStat;
+      toast(`파수꾼의 시험 — ${h.name}의 모든 추가 능력치 +${R.allStat}`) } }
+  if(R.slamUp){ const h=run.heroes.find(x=>x.name===q.hero)||run.heroes.find(x=>x.name==="파벨");
+    if(h){ addMod(h,"지면 내려치기","dmg",R.slamUp,"지면 파훼");
+      toast(`지면 파훼 — 지면 내려치기 피해 +${R.slamUp}`) } }
+  if(R.item){ afterChest(); return }
   if(R.gold){ run.gold+=R.gold; if(sfxHas("금화 얻기")) SFX.play("금화 얻기"); toast(`퀘스트 보상 — 금화 +${R.gold}`) }
   if(R.faith){ const h=run.heroes.find(x=>x.name===q.hero)||run.heroes.find(x=>x.name==="도미니코"); if(h){ h.tag.faith=R.faith; toast(`절실한 신앙 — 참회의 기류가 ${R.faith}번 더 이어집니다.`) } }
   if(R.grade){
@@ -31308,6 +31369,11 @@ function onSummon(h){
       say(`${h.name} — 라운드 첫 턴 추가 마나 +${ex} (마나 ${h.mana})`,"t2");
     } }
   if(t.potWeak&&B&&!run.sandbox){ addDeb(h,"atkDn",t.potWeak); say(`붉은 물약 — ${h.name} 공격약화 ${t.potWeak}`,"t2"); t.potWeak=0 }   /* 어인 물약상 (2026-10-05) */
+  /* 진동 — 대원 배치 후 모든 적을 띄우고 공격약화 (노트 midRewards) */
+  if(h.tag&&h.tag.quake&&B&&B.foes&&!B.over){
+    const L=B.foes.filter(f=>f.alive);
+    if(L.length){ say("진동 — 모든 적이 떠오르고 휘청입니다.","t1");
+      for(let q=0;q<h.tag.quake;q++) L.forEach(f=>{ if(f.alive){ airborne(h,f); addDeb(f,"atkDn",1,h) } }) } }
   /* 원천 분석 — **그 전투에서 처음 배치될 때** 한 번 (노트 17-4). 라운드가 여럿이어도 한 번이다 */
   if(h.name==="파벨"&&(h.sk||[]).some(k=>k&&k.srcAnalysis)&&run.dun&&!run.dun.srcDone&&B&&!B.over){
     run.dun.srcDone=1; setTimeout(()=>{ if(B&&!B.over) srcAnalysisStart(h) },420);
@@ -33011,7 +33077,12 @@ function pavelGrace(){
     const v=(p.def||0)+((p.tag&&p.tag.graceUp)||0); if(v<=0) return;
     addShield(p,v);
     fx({side:"mine",slot:p.slot,s:"shield",glow:1,txt:"보호막 +"+v,cls:"shd",gap:60});
-    say(`파수꾼의 은총 — ${p.name} 보호막 +${v}`,"t2") });
+    say(`파수꾼의 은총 — ${p.name} 보호막 +${v}`,"t2");
+    /* 은총의 폭발 — 추가 보호력만큼 모든 적에게도 (노트 midRewards) */
+    if(p.tag&&p.tag.graceBoom&&(p.def||0)>0){
+      const dmg=p.def||0, L=B.foes.filter(f=>f.alive);
+      if(L.length){ say(`은총의 폭발 — 모든 적에게 피해 ${dmg}`,"t2");
+        L.forEach(f=>asSrc(p,()=>hurt(f,dmg,"은총의 폭발",null,0,0,1))) } } });
 }
 /* 기동 — 한 칸 움직이고 보호막. 그 칸에 아군이 있으면 moveTo 가 **자리를 바꾼다** — 그 아군도 받는다 */
 function pavelMobil(h,s,target){
@@ -33025,6 +33096,8 @@ function pavelMobil(h,s,target){
   addShield(h,v);
   fx({side:"mine",slot:h.slot,s:"shield",glow:1,txt:"보호막 +"+v,cls:"shd",gap:60});
   say(`기동 — ${h.name} 보호막 +${v}`,"t2");
+  if(h.tag&&h.tag.weight){ h.weightOn=1;   /* 무게추 — 다음 지면 내려치기 한 번 (쌓아 두지 않는다) */
+    say(`무게추 — 다음 지면 내려치기가 모든 적을 띄웁니다.`,"t2") }
   if(occ&&occ!==h&&occ.hp>0&&occ.slot===from){   /* 자리를 바꾼 아군 */
     addShield(occ,v);
     fx({side:"mine",slot:occ.slot,s:"shield",txt:"보호막 +"+v,cls:"shd",gap:60});
@@ -33217,6 +33290,7 @@ function doSkill(target){
         h.spentTurn=(h.spentTurn||0)+s.cost; } }
     if(s.ammo){ h.ammo=Math.max(0,(h.ammo||0)-1) }
     if(s.limit) h.limitUsed[i]=(h.limitUsed[i]||0)+1;
+    if(h.isMin&&h.golem) golemSkillUsed(h,s);   /* 분업 · 합맞추기 — 하수인 골렘이 기술을 쓴 뒤 (노트 2026-10-13) */
     /* 수호 활동 — 후미 준비는 더 이상 잠기지 않는다 */
     /* 잠금 3이면 3부터 세어 내려간다. 예전에는 4부터 시작해 한 턴 더 잠겼다 */
     if(s.lock&&!(h.tag.noRearLock&&s.rearguard)){
@@ -34286,7 +34360,9 @@ function runEffect0(h,i,s,target){
           const mid=L0[Math.floor(L0.length/2)];
           fx({side:"foe",slot:mid.slot,sheet:"fx_pavel_ground_slam",
               sheetOpt:{cellW:256,cellH:96,frames:1,z:1.5,frameMs:[420]},gap:0}) } }
-      B.foes.filter(f=>f.alive&&dist(h.slot,f.slot)<=2).forEach(f=>airborne(h,f)) }
+      /* 무게추 — 이번 한 번은 **거리를 가리지 않는다** (노트 midRewards) */
+      const 모두=!!h.weightOn; if(모두){ h.weightOn=0; say("무게추 — 땅이 통째로 솟구칩니다.","t2") }
+      B.foes.filter(f=>f.alive&&(모두||dist(h.slot,f.slot)<=2)).forEach(f=>airborne(h,f)) }
     return;
   }
   if(s.makeGolem){ golemStart(h); return }   /* 골렘 창조 (노트 17-3) — 고르는 화면은 render 가 그린다 */
@@ -35640,6 +35716,14 @@ function endPhase(){
     h.countUp=(h.countUp||0)+h.tag.countdown;
     say(`타락의 초읽기 — ${h.name}${jo(h.name,"ig")} 받는 피해가 ${h.tag.countdown} 늘어 모두 ${h.countUp}, 피해를 ${h.countUp} 받습니다.`,"t2");
     hurtAlly(h,h,h.countUp,"타락의 초읽기"); n++ });
+  /* 헤르메스의 신발 — 내 턴이 끝날 때 추진력 5 를 치르고 무작위 추가 능력치 1 (노트 midRewards).
+     ⚠️ 노트에 「이번 전투 동안」·「영구히」가 없다 — 집 규칙대로 **라운드 몫**(bumpRnd) 이다 */
+  onField().forEach(h=>{ if(h.hp<=0||!h.tag||!h.tag.hermes) return;
+    for(let q=0;q<h.tag.hermes;q++){
+      if((h.mom||0)<5) break;
+      h.mom-=5; const k=rnd(["atk","mag","def"]);
+      bumpRnd(h,k,1); n++;
+      say(`헤르메스의 신발 — 추진력 5 를 치르고 ${({atk:"공격력",mag:"마법력",def:"보호력"})[k]} +1`,"t2") } });
   n+=golemEndTurn();   /* 하수인 골렘의 재료 부속 — 라이티늄 · 드론파편 · 고대석 (노트 17-3) */
   /* 투기장의 감옥 — 내 턴이 끝날 때 **아군과 적 모두** 최대 체력의 N% (2026-10-12).
      이라 자신도 받는다 — 노트가 「아군과 적 모두」라 적었다 */
