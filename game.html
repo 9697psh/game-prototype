@@ -468,8 +468,8 @@ img.pxs.face{image-rendering:pixelated;width:auto;filter:drop-shadow(0 2px 0 rgb
   border-radius:3px;padding:0 5px;background:var(--raise)}
 
 /* 골렘 창조 — 전투 가운데에 부속 둘을 내놓고 하나를 고른다 (사용자 녹화 2026-10-13) */
-.golempick{position:fixed;left:50%;top:44%;transform:translate(-50%,-50%);z-index:60;
-  display:flex;flex-direction:column;align-items:center;gap:22px;pointer-events:none;
+.golempick{position:fixed;left:50%;top:41%;transform:translate(-50%,-50%);z-index:60;
+  display:flex;flex-direction:column;align-items:center;gap:30px;pointer-events:none;
   animation:golemin .55s cubic-bezier(.2,.8,.3,1) both}
 .golempick.shown{animation:none}   /* 다시 그려도 처음부터 떠오르지 않게 — 나이(t0)로 가른다 */
 @keyframes golemin{
@@ -481,15 +481,24 @@ img.pxs.face{image-rendering:pixelated;width:auto;filter:drop-shadow(0 2px 0 rgb
 .golempick .gpcard .ccard.cf{position:absolute;left:0;top:0;margin:0;
   transform:scale(1.5);transform-origin:0 0;transition:transform .12s,filter .12s}
 .golempick .cc-d.vlong{font-size:7.4px;line-height:1.18}
-/* 장신구는 **하급 보상 카드(.rw.g1)** 그대로 — 부속의 양피지 카드와 다르다 (사용자 2026-10-13) */
-.golempick.srcpick .gpcard{width:300px;height:372px}
-.golempick.srcpick .gpcard .rw{position:absolute;left:0;top:0;width:198px;min-height:244px;margin:0;
-  transform:scale(1.5);transform-origin:0 0;transition:transform .12s,border-color .12s,box-shadow .12s}
-/* 긴 글은 카드 밖으로 넘친다 (.rw 는 overflow:hidden) — 고르는 화면에서만 한 단계 줄인다 */
-.golempick.srcpick .rw.vlong .rwd p{font-size:10px;line-height:1.46}
-.golempick.srcpick .rw.vlong .rwd{padding:7px 8px}
-.golempick.srcpick .gpcard:hover .rw{transform:scale(1.56);border-color:var(--gc);
-  box-shadow:0 12px 26px rgba(0,0,0,.55),0 0 22px -8px var(--gc)}
+/* 장신구는 **menu-card 틀** 안에 (사용자 2026-10-13). 384×512 그림을 그대로 깐다 (web/ui 로 나른다) */
+.golempick.srcpick .gpcard{width:294px;height:392px}
+.srccard{position:absolute;left:0;top:0;width:294px;height:392px;box-sizing:border-box;
+  background:url("ui/menu-card-companion-384x512.png") center/100% 100% no-repeat;image-rendering:pixelated;
+  padding:42px 36px 34px;display:flex;flex-direction:column;align-items:center;text-align:center;
+  filter:drop-shadow(0 10px 20px rgba(0,0,0,.55));transition:transform .12s,filter .12s}
+.golempick.srcpick .gpcard:hover .srccard{transform:translateY(-6px) scale(1.02);
+  filter:drop-shadow(0 14px 26px rgba(0,0,0,.6)) drop-shadow(0 0 12px rgba(201,162,39,.5))}
+.srccard .si{width:104px;height:104px;display:flex;align-items:center;justify-content:center}
+.srccard .si img{width:96px;height:96px;image-rendering:pixelated}
+.srccard .sn{font-family:var(--serif);font-size:20px;color:#e8d8b0;margin-top:8px;letter-spacing:.02em;
+  text-shadow:0 2px 0 rgba(0,0,0,.6)}
+.srccard .sd{font-size:13px;line-height:1.6;color:#cdbb97;margin-top:12px;word-break:keep-all}
+.srccard .sd.long{font-size:11.5px;line-height:1.5}
+.srccard .sg{margin-top:auto;font-size:12px;color:var(--brass);letter-spacing:.08em}
+/* 고른 장신구가 장신구 칸으로 날아간다 */
+.srcfly{position:fixed;left:0;top:0;z-index:70;pointer-events:none;width:64px;height:64px;
+  image-rendering:pixelated;filter:drop-shadow(0 0 10px rgba(255,230,150,.9))}
 .golempick .gpcard:hover .ccard.cf{transform:scale(1.56) translateY(-5px);
   filter:drop-shadow(0 8px 14px rgba(0,0,0,.6)) drop-shadow(0 0 10px rgba(201,162,39,.55))}
 /* 고르는 동안 가장자리에 도는 오오라 — 1528x816 여덟 칸, **파일로** 나른다 (web/fx) */
@@ -9430,6 +9439,8 @@ function nonLiving(u){ const n=u&&(u.of||u.name)||""; return !!(NONLIVE[n]||isWa
 const DEATH_SND_FALL={"골렘":"기계","망령":"망자"};
 function deathSnd(u){
   if(nonLiving(u)) return sfxOr("건물 파괴","인간 죽음");
+  /* 하수인 골렘 — 아군 소환물이라 foeRace 가 안 본다. 종족 소리를 손으로 이어 준다 (2026-10-13) */
+  if(u&&u.golem&&sfxHas("골렘 죽음")) return "골렘 죽음";
   const n=u&&(u.of||u.name)||"";
   if(sfxHas(n+"_죽음")) return n+"_죽음";   /* 그 적만의 죽음 소리가 있으면 종족보다 먼저 (간수장, 80) */
   let r=(DEATH_PLANT[n]||(u&&!u.isFoe&&(isSprout(u)||isTree(u))))?"식물":((u&&u.isFoe)?foeRace(u):"");
@@ -9440,6 +9451,7 @@ function deathSnd(u){
    죽음 효과가 없는 적이 쓰러질 때의 소리 (녹음이 없는 종족은 예전처럼 공용 die) */
 function deathSndExact(u){
   if(nonLiving(u)) return null;
+  if(u&&u.golem&&sfxHas("골렘 죽음")) return "골렘 죽음";   /* 하수인 골렘 (2026-10-13) */
   const n=u&&(u.of||u.name)||"";
   if(sfxHas(n+"_죽음")) return n+"_죽음";
   let r=(DEATH_PLANT[n]||(u&&!u.isFoe&&(isSprout(u)||isTree(u))))?"식물":((u&&u.isFoe)?foeRace(u):"");
@@ -10947,15 +10959,14 @@ function partCardHtml(kind,n){
    전투 시작 후 파벨을 **처음 배치하면** 희귀 장신구 셋 가운데 하나를 골라 **이번 전투 동안만** 찬다.
    빈 칸이 없으면 forceEquip 가 가장 오른쪽 것을 가방에 넣고 그 자리를 차지한다 (노트 주석 그대로) */
 function itemCardHtml(n){
-  /* 틀은 **하급 보상 카드**(.rw.rwpick.g1) 를 그대로 쓴다 (사용자 2026-10-13).
-     글·그림 자리는 보상 카드의 것(.rwi · b · .rwd · .rwft) 이라 따로 꾸밀 것이 없다 */
+  /* 받은 **menu-card 틀** 안에 그린다 (사용자 2026-10-13) */
   const it=itemDef(n)||{}, d=String(it.d||"");
-  const 긺=(d.replace(/\n/g," ").length>52)?" vlong":"";   /* 차원 생성석처럼 긴 글은 넘친다 */
-  return `<div class="rw rwpick g1${긺}">
-    <div class="rwi">${itemIcon(it)}</div>
-    <b>${esc(it.n||n)}</b>
-    <div class="rwd"><p>${rich(d)}</p></div>
-    <div class="rwft"><span class="gd">${esc(it.g||"희귀")}</span><span class="ow">장신구</span></div>
+  const 긺=(d.replace(/\n/g," ").length>52)?" long":"";
+  return `<div class="srccard">
+    <div class="si">${itemIcon(it)}</div>
+    <div class="sn">${esc(it.n||n)}</div>
+    <div class="sd${긺}">${rich(d)}</div>
+    <div class="sg">${esc(it.g||"희귀")} 장신구</div>
   </div>`;
 }
 function srcAnalysisStart(h){
@@ -10970,7 +10981,34 @@ function srcAnalysisStart(h){
   say(`원천 분석 — ${h.name}${jo(h.name,"ig")} 쥘 장신구를 살핍니다.`,"t1");
   render(); return 1;
 }
-function srcAnalysisPick(nm){
+/* 고른 장신구가 **장신구 칸으로 날아간다** (사용자 2026-10-13).
+   ⚠️ 날아갈 자리는 **찬 뒤에** 생긴다 — 그래서 render() 다음에 잰다 */
+function srcFlyFX(from,it,idx){
+  try{
+    if(!from||!it) return;
+    const a=from.getBoundingClientRect();
+    const gs=document.querySelectorAll(".gear .gs");
+    const to=(gs[idx]||gs[gs.length-1]);
+    if(!to) return;
+    const b=to.getBoundingClientRect();
+    const d=el('<div class="srcfly"></div>');
+    d.innerHTML=itemIcon(it);
+    const im=d.querySelector("img"); if(im){ im.style.width="100%"; im.style.height="100%" }
+    document.body.appendChild(d);
+    const 배=(typeof SPD==="number"?SPD:1);
+    const 자리=(x,y,s)=>`translate(${Math.round(x)}px,${Math.round(y)}px) translate(-50%,-50%) scale(${s})`;
+    const an=d.animate([
+      {transform:자리(a.left+a.width/2,a.top+a.height*0.28,1.5),opacity:1},
+      {transform:자리((a.left+b.left)/2,Math.min(a.top,b.top)-40,1.1),opacity:1,offset:.55},
+      {transform:자리(b.left+b.width/2,b.top+b.height/2,0.5),opacity:.2}
+    ],{duration:Math.round(620*배),easing:"cubic-bezier(.3,.8,.4,1)"});
+    const 끝=()=>{ try{ d.remove() }catch(e){}
+      try{ to.classList.add("on"); const p=to.getBoundingClientRect();
+        fx({s:sfxOr("장신구 장착","equip"),gap:0}); flushFX() }catch(e){} };
+    an.onfinish=끝; setTimeout(끝,Math.round(900*배));
+  }catch(e){}
+}
+function srcAnalysisPick(nm,from){
   const G=B&&B.srcPick; if(!G) return;
   const h=(run.heroes||[]).find(x=>x.name===G.by);
   B.srcPick=null;
@@ -10979,7 +11017,10 @@ function srcAnalysisPick(nm){
     it.tmpBattle=1;                                   /* 이번 전투 동안만 (노트 17-4) */
     const out=forceEquip(h,it);
     if(out) say(`원천 분석 — 빈 칸이 없어 ${out.n}${jo(out.n,"eul")} 가방에 넣었습니다.`,"t2");
-    if(h.slot>0) fx({side:"mine",slot:h.slot,s:"equip",ring:"#c9a227",glow:1,txt:"장착",cls:"shd",gap:90});
+    if(h.slot>0) fx({side:"mine",slot:h.slot,ring:"#c9a227",glow:1,txt:"장착",cls:"shd",gap:90});
+    { const idx=Math.max(0,(h.items||[]).indexOf(it));
+      render();   /* 칸이 생긴 뒤에 날린다 */
+      srcFlyFX(from,it,idx) }
     say(`원천 분석 — ${h.name}${jo(h.name,"ig")} ${it.n}${jo(it.n,"eul")} 이번 전투 동안 착용합니다.`,"t1");
     /* 원천 복제 — 전장의 다른 대원들에게도 같은 것을 (노트 highRewards) */
     if(h.tag&&h.tag.srcCopy){
@@ -18866,6 +18907,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 79, "v": "0.7", "d": "2026-10-13", "t": "원천 분석 menu-card 틀 · 장신구가 칸으로 날아간다 · 파벨 소리 열둘", "big": 0},
  {"b": 78, "v": "0.7", "d": "2026-10-13", "t": "내려치기 아트가 파벨 발밑에서 뻗는다 · 창조 모션 이어 붙임 · 죽음 글에 지금 값", "big": 0},
  {"b": 77, "v": "0.7", "d": "2026-10-13", "t": "내려치기 이펙트 고정·흔들림 · 금속 치명타 · 은총 아이콘", "big": 0},
  {"b": 76, "v": "0.7", "d": "2026-10-13", "t": "골렘 카드가 그 턴에 들어온다 · 연출과 글 손질 여럿", "big": 0},
@@ -20136,7 +20178,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=78;
+const BUILD_NO=79;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -30159,7 +30201,7 @@ function drawBattle(app){
     const row=box.querySelector(".gpcards");
     G.opts.forEach(n=>{
       const c=el(`<div class="gpcard">${itemCardHtml(n)}</div>`);
-      c.onclick=()=>{ SFX.play("click"); srcAnalysisPick(n) };
+      c.onclick=()=>{ SFX.play("click"); srcAnalysisPick(n,c) };
       row.appendChild(c) });
     app.appendChild(box);
   }
@@ -33242,7 +33284,7 @@ function pavelGrace(){
   onField().filter(a=>a.hp>0&&!a.isMin&&a.name==="파벨").forEach(p=>{
     const v=(p.def||0)+((p.tag&&p.tag.graceUp)||0); if(v<=0) return;
     addShield(p,v);
-    fx({side:"mine",slot:p.slot,s:"shield",glow:1,txt:"보호막 +"+v,cls:"shd",gap:60});
+    fx({side:"mine",slot:p.slot,s:sfxOr("파수꾼의 은총","shield"),glow:1,txt:"보호막 +"+v,cls:"shd",gap:60});
     say(`파수꾼의 은총 — ${p.name} 보호막 +${v}`,"t2");
     /* 은총의 폭발 — 추가 보호력만큼 모든 적에게도 (노트 midRewards) */
     if(p.tag&&p.tag.graceBoom&&(p.def||0)>0){
@@ -34521,7 +34563,7 @@ function runEffect0(h,i,s,target){
            받은 그림이 「파벨 오른쪽 전방 적 구역의 바닥」이라 그 방향 그대로다.
            dx 는 그림 픽셀 — 반 칸(128)을 밀어 왼쪽 끝이 파벨에 닿는다 */
         fx({side:"mine",slot:h.slot,sheet:"fx_pavel_ground_slam",
-            sheetOpt:{cellW:256,cellH:96,frames:1,z:2.6,feet:1,dx:128,dy:6,frameMs:[460]},gap:0});
+            sheetOpt:{cellW:256,cellH:96,frames:1,z:2.6,feet:1,dx:128,dy:34,frameMs:[460]},gap:0});
         try{ document.body.classList.add("shakeall");
           setTimeout(()=>document.body.classList.remove("shakeall"),300) }catch(e){} } }
     list.forEach(f=>{
