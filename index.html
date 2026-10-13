@@ -10801,7 +10801,7 @@ const PAVEL_MAT={
    d:"체력 16\n이 소환물의 피해가 항상 치명타로 적중합니다.\n죽음: 모든 적에게 피해를 6 줍니다."},
  "드론파편":{hp:12,endDeathUp:4,deathNear:4,
    d:"체력 12\n내 턴이 끝날 때, 소환물의 죽음 피해량이 4 증가합니다.\n죽음: 가장 가까운 적에게 피해를 4 줍니다."},
- "부유석":{hp:14,airHit:1,deathAir:1,
+ "부유석":{hp:14,airHit:1,deathAir:1,rew:1,
    d:"체력 14\n이 골렘이 공격한 적은 공중에 뜸 상태가 됩니다.\n죽음: 모든 적을 공중에 뜸 상태로 만듭니다."},
  "고대석":{hp:12,endAllStat:1,deathGive:1,rew:1,
    d:"체력 12\n내 턴이 끝날 때, 모든 능력치를 1 얻습니다.\n죽음: 이 소환물의 추가 능력치를 무작위 아군에게 부여합니다."}
@@ -10815,6 +10815,12 @@ const PAVEL_SOUL={
    d:"최대 마나 1\n찌르기 (마나 1, 공격 피해를 8(추가 공격력) 줍니다.)"},
  "죽음":{mana:1,sk:{n:"영혼부르기",cost:1,el:"집중",tg:"self",soulCall:1,d:"이 소환물의 죽음 효과를 발동합니다."},
    d:"최대 마나 1\n영혼부르기 (비용 1, 이 소환물의 죽음 효과를 발동합니다.)"},
+ /* 포식 — 보호력으로 때리고, **보호막에 막히지 않은 몫**만큼 제가 회복한다 (사용자 2026-10-13).
+    ⚠️ 흡수는 이미 있는 길을 그대로 쓴다 — leechNow 가 addLeech 를 걸고 applyLeech 가 터뜨린다.
+       「보호막에 막히지 않은 피해」를 세는 것도 그 안(B._hpMark)이다. 여기서 또 세면 둘이 어긋난다 */
+ "포식":{mana:1,rew:1,sk:{n:"집어삼키기",cost:1,el:"공격",tg:"foe",dmg:7,defDmg:1,leechNow:100,
+   d:"피해를 7(추가 보호력) 줍니다. 보호막에 막히지 않은 피해만큼 이 골렘이 회복합니다."},
+   d:"최대 마나 1\n집어삼키기 (마나 1, 피해를 7(추가 보호력) 줍니다. 보호막에 막히지 않은 피해만큼 이 골렘이 회복합니다.)"},
  "별빛":{mana:1,rew:1,sk:{n:"별똥별",cost:1,el:"마법",tg:"self",starfall:1,dmg:2,hits:3,d:"체력이 가장 낮은 적에게 마법 피해를 2(추가 마법력) 줍니다. 3번 반복합니다."},
    d:"최대 마나 1\n별똥별 (마나 1, 체력이 가장 낮은 적에게 마법 피해를 2(추가 마법력) 줍니다. 3번 반복합니다.)"}
 };
@@ -10828,7 +10834,7 @@ const partName=(kind,n)=>(kind==="mat"?"재료 부속: ":"영혼 부속: ")+n;
       한 바퀴 4초쯤(이라의 준비 자세 대기와 같은 결)으로 늦췄다 */
 /* ⚠️ 끝에 0 을 두지 않는다 — 다음 바퀴가 0 에서 시작하니 같은 칸이 두 번 서서 **멈칫**해 보인다 */
 /* 하수인 골렘의 기술 아이콘 — 받은 한 장을 다섯 영혼 기술에 함께 건다 (2026-10-13) */
-["막아내기","정화하기","찌르기","영혼부르기","별똥별"].forEach(n=>{ SKILL_ICON[n]="skill_golem_minion_attack" });
+["막아내기","정화하기","찌르기","영혼부르기","별똥별","집어삼키기"].forEach(n=>{ SKILL_ICON[n]="skill_golem_minion_attack" });
 const PAVEL_MAKE_ORDER=[0,1,2,3,4,5,6,7,6,5,4,3,2,1];
 const PAVEL_MAKE_MS   =[290,265,250,250,265,290,330,980,330,290,265,250,250,265];
 const PAVEL_MAKE_HOLD=7;   /* 멈춰 서는 칸 — 여기서 빛난다 */
@@ -12598,6 +12604,10 @@ const HERO_REWARDS={
     h=>{ h.tag.golemAdd=(h.tag.golemAdd||[]); if(h.tag.golemAdd.indexOf("고대석")<0) h.tag.golemAdd.push("고대석") },0.5),
   R("영혼 부속: 별빛","중급","영혼 부속 목록에 별빛을 추가합니다.\n*획득시 보상에서 다시 등장하지 않음\n*[골렘 창조] 기술이 없을 때 등장하지 않음",
     h=>{ h.tag.golemAdd=(h.tag.golemAdd||[]); if(h.tag.golemAdd.indexOf("별빛")<0) h.tag.golemAdd.push("별빛") },0.5),
+  R("재료 부속: 부유석","중급","재료 부속 목록에 부유석을 추가합니다.\n*획득시 보상에서 다시 등장하지 않음\n*[골렘 창조] 기술이 없을 때 등장하지 않음",
+    h=>{ h.tag.golemAdd=(h.tag.golemAdd||[]); if(h.tag.golemAdd.indexOf("부유석")<0) h.tag.golemAdd.push("부유석") },0.5),
+  R("영혼 부속: 포식","중급","영혼 부속 목록에 포식을 추가합니다.\n*획득시 보상에서 다시 등장하지 않음\n*[골렘 창조] 기술이 없을 때 등장하지 않음",
+    h=>{ h.tag.golemAdd=(h.tag.golemAdd||[]); if(h.tag.golemAdd.indexOf("포식")<0) h.tag.golemAdd.push("포식") },0.5),
   R("은총의 폭발","중급","파수꾼의 은총이 추가 보호력만큼 모든 적에게 피해도 줍니다.",
     h=>h.tag.graceBoom=(h.tag.graceBoom||0)+1,0.5),
   R("무게추","중급","기동을 사용한 후, 다음 지면 내려치기가 강화되어 모든 적을 공중에 뜸 상태로 만듭니다.\n*획득시 보상에서 다시 등장하지 않음",
@@ -13368,6 +13378,8 @@ Object.assign(REW_COND,{
  "중급|분업":{need:["골렘 창조"]},
  "중급|재료 부속: 고대석":{once:1,need:["골렘 창조"]},
  "중급|영혼 부속: 별빛":{once:1,need:["골렘 창조"]},
+ "중급|재료 부속: 부유석":{once:1,need:["골렘 창조"]},
+ "중급|영혼 부속: 포식":{once:1,need:["골렘 창조"]},
  "중급|무게추":{once:1},
  "상급|재조립":{need:["골렘 창조"]},
  "상급|마나석 끼워넣기":{need:["골렘 창조"]},
@@ -19025,6 +19037,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 95, "v": "0.7", "d": "2026-10-13", "t": "파벨 영혼 부속 포식 · 부유석과 포식을 중급 보상으로", "big": 0},
  {"b": 94, "v": "0.7", "d": "2026-10-13", "t": "부유석 카드 그림", "big": 0},
  {"b": 93, "v": "0.7", "d": "2026-10-13", "t": "파벨 새 재료 부속 부유석", "big": 0},
  {"b": 92, "v": "0.7", "d": "2026-10-13", "t": "파벨 골렘 부속 수치 조정", "big": 0},
@@ -20311,7 +20324,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=94;
+const BUILD_NO=95;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -30475,6 +30488,7 @@ function breakdown(h,sk,key){
   if(key==="dmg"&&sk.lifeConv&&h){ const e=(h.eshield||0)*2; if(e){ total+=e; parts.push({n:"에너지 보호막의 2배",v:e}) } }
   if(key==="dmg"&&!skillFlat(sk)){
     const st=(h&&h.name==="도미니코"&&(sk.wand||sk.shackle))?(domDemon(h)?{v:h.atk,n:"추가 공격력"}:{v:h.def,n:"추가 보호력"})   /* 도미니코는 보호력으로 센다 (악마면 공격력) */
+      :sk.defDmg?{v:h.def,n:"추가 보호력"}                                   /* 포식 — 보호력으로 센다 */
       :(sk.el==="마법")?{v:h.mag,n:"추가 마법력"}:{v:h.atk,n:"추가 공격력"};
     if(st.v){ total+=st.v; parts.push(st) }
   }
@@ -32496,7 +32510,7 @@ function predictDmg(h,s,tgt){
   else {
     const RR=reachOf(h,s), OVER=(RR!=null&&dist(h.slot,tgt.slot)>RR);
     if(OVER&&!overReach(h,s,tgt.slot)) return null;
-    dmg=bs("dmg")+(skillFlat(s)?0:(s.el==="마법"?MAG:ATK*(s.n==="방패 밀치기"?(h.tag.pushAtkX||1):1)))+(s.exec?(h.mom||0):0);   /* 승리의 일격 — 추진력 */
+    dmg=bs("dmg")+(skillFlat(s)?0:(s.defDmg?(h.def||0):(s.el==="마법"?MAG:ATK*(s.n==="방패 밀치기"?(h.tag.pushAtkX||1):1))))+(s.exec?(h.mom||0):0);   /* 승리의 일격 — 추진력 */   /* defDmg — 보호력으로 오른다 (포식) */
     if(OVER) dmg=Math.max(1,Math.round(dmg*OVER_X));
     if(s.el==="마법"&&deb(h,"magDn")) dmg=Math.ceil(dmg*0.5);
     else if(s.el!=="마법"&&deb(h,"atkDn")) dmg=Math.ceil(dmg*0.5);
@@ -35545,7 +35559,9 @@ function runEffect0(h,i,s,target){
     /* 공격 범위 밖이라도 닿는 적이 하나도 없으면 무리해서 뻗는다 */
     const RR=reachOf(h,s), OVER=(RR!=null&&dist(h.slot,tgt.slot)>RR);
     if(OVER&&!overReach(h,s,tgt.slot)) return;
-    let dmg=s.dmg+mod(s,"dmg")+(skillFlat(s)?0:(s.el==="마법"?h.mag:h.atk*(s.n==="방패 밀치기"?(h.tag.pushAtkX||1):1)))+(s.exec?(h.mom||0):0);   /* 진지 구축은 추가 공격력으로 붙는다 (fortSync). 승리의 일격 — 추진력도 (노트 ≡, 사용자 2026-10-06) */
+    let dmg=s.dmg+mod(s,"dmg")+(skillFlat(s)?0:(s.defDmg?(h.def||0):(s.el==="마법"?h.mag:h.atk*(s.n==="방패 밀치기"?(h.tag.pushAtkX||1):1))))+(s.exec?(h.mom||0):0);
+    /* 포식 — 이 한 방만 흡수한다. 아래 applyLeech 가 터뜨리고 스스로 비운다 (겹쳐 남지 않는다) */
+    if(s.leechNow) addLeech(h,s.leechNow);   /* 진지 구축은 추가 공격력으로 붙는다 (fortSync). 승리의 일격 — 추진력도 (노트 ≡, 사용자 2026-10-06) */
     if(OVER) dmg=Math.max(1,Math.round(dmg*OVER_X));
     if(s.el==="마법"&&deb(h,"magDn")) dmg=Math.ceil(dmg*0.5);
     else if(s.el!=="마법"&&deb(h,"atkDn")) dmg=Math.ceil(dmg*0.5);
