@@ -481,6 +481,15 @@ img.pxs.face{image-rendering:pixelated;width:auto;filter:drop-shadow(0 2px 0 rgb
 .golempick .gpcard .ccard.cf{position:absolute;left:0;top:0;margin:0;
   transform:scale(1.5);transform-origin:0 0;transition:transform .12s,filter .12s}
 .golempick .cc-d.vlong{font-size:7.4px;line-height:1.18}
+/* 장신구는 **하급 보상 카드(.rw.g1)** 그대로 — 부속의 양피지 카드와 다르다 (사용자 2026-10-13) */
+.golempick.srcpick .gpcard{width:300px;height:372px}
+.golempick.srcpick .gpcard .rw{position:absolute;left:0;top:0;width:198px;min-height:244px;margin:0;
+  transform:scale(1.5);transform-origin:0 0;transition:transform .12s,border-color .12s,box-shadow .12s}
+/* 긴 글은 카드 밖으로 넘친다 (.rw 는 overflow:hidden) — 고르는 화면에서만 한 단계 줄인다 */
+.golempick.srcpick .rw.vlong .rwd p{font-size:10px;line-height:1.46}
+.golempick.srcpick .rw.vlong .rwd{padding:7px 8px}
+.golempick.srcpick .gpcard:hover .rw{transform:scale(1.56);border-color:var(--gc);
+  box-shadow:0 12px 26px rgba(0,0,0,.55),0 0 22px -8px var(--gc)}
 .golempick .gpcard:hover .ccard.cf{transform:scale(1.56) translateY(-5px);
   filter:drop-shadow(0 8px 14px rgba(0,0,0,.6)) drop-shadow(0 0 10px rgba(201,162,39,.55))}
 /* 고르는 동안 가장자리에 도는 오오라 — 1528x816 여덟 칸, **파일로** 나른다 (web/fx) */
@@ -10913,13 +10922,15 @@ function partCardHtml(kind,n){
    전투 시작 후 파벨을 **처음 배치하면** 희귀 장신구 셋 가운데 하나를 골라 **이번 전투 동안만** 찬다.
    빈 칸이 없으면 forceEquip 가 가장 오른쪽 것을 가방에 넣고 그 자리를 차지한다 (노트 주석 그대로) */
 function itemCardHtml(n){
-  const it=itemDef(n)||{}, d=String(it.d||""), n0=d.replace(/\n/g," ").length;
-  const 긺=(n0>70)?" long vlong":(n0>42)?" long":"";
-  return `<div class="card ccard cf">
-    <div class="cc-art">${itemIcon(it)}</div>
-    <div class="cc-n">${esc(it.n||n)}</div>
-    <div class="cc-type">${esc(it.g||"희귀")} 장신구</div>
-    <div class="cc-d${긺}"><div class="cc-di">${rich(d)}</div></div>
+  /* 틀은 **하급 보상 카드**(.rw.rwpick.g1) 를 그대로 쓴다 (사용자 2026-10-13).
+     글·그림 자리는 보상 카드의 것(.rwi · b · .rwd · .rwft) 이라 따로 꾸밀 것이 없다 */
+  const it=itemDef(n)||{}, d=String(it.d||"");
+  const 긺=(d.replace(/\n/g," ").length>52)?" vlong":"";   /* 차원 생성석처럼 긴 글은 넘친다 */
+  return `<div class="rw rwpick g1${긺}">
+    <div class="rwi">${itemIcon(it)}</div>
+    <b>${esc(it.n||n)}</b>
+    <div class="rwd"><p>${rich(d)}</p></div>
+    <div class="rwft"><span class="gd">${esc(it.g||"희귀")}</span><span class="ow">장신구</span></div>
   </div>`;
 }
 function srcAnalysisStart(h){
@@ -18627,6 +18638,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 71, "v": "0.7", "d": "2026-10-13", "t": "장신구는 하급 보상 카드 틀로 · 충전된 대가 치르기에도 이라 타격음", "big": 0},
  {"b": 70, "v": "0.7", "d": "2026-10-13", "t": "고르는 화면 둘이 겹치지 않게 — 먼저 고른 뒤에 기술을 쓴다", "big": 0},
  {"b": 69, "v": "0.7", "d": "2026-10-13", "t": "원천 분석 — 배치하면 희귀 장신구 셋, 이번 전투 동안 착용", "big": 0},
  {"b": 68, "v": "0.7", "d": "2026-10-13", "t": "골렘 창조 — 오오라와 카드가 서서히 떠오르고, 설명에서 체력 줄을 뺐다", "big": 0},
@@ -19889,7 +19901,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=70;
+const BUILD_NO=71;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -33885,7 +33897,12 @@ function iraPay(h,s){
        날 선 대가로 세 번이 되면 세 번 나간다 — 아래 반복 수(rep2)를 그대로 따른다 */
     for(let q=0;q<rep2;q++){
       const 늦게=Math.round(q*320*(typeof SPD==="number"?SPD:1)), 오른=q%2===1;   /* 왼 → 오른 → 왼 … */
-      if(!늦게) iraSweepFX(오른); else setTimeout(()=>{ if(B&&!B.over) iraSweepFX(오른) },늦게);
+      /* 타격음 — **때릴 때마다** 하나 (사용자 2026-10-13 : 충전된 대가 치르기도).
+         피해는 아래에서 한꺼번에 가지만 **보이는 때는 쓸어치는 이 순간**이라 여기서 운다.
+         적이 없으면 울리지 않는다 — 때린 것이 아니다 */
+      const 치기=()=>{ if(!B||B.over) return; iraSweepFX(오른);
+        if(L.length&&typeof SFX!=="undefined"&&typeof sfxHas==="function"&&sfxHas(IRA_HIT_SND)) SFX.play(IRA_HIT_SND) };
+      if(!늦게) 치기(); else setTimeout(치기,늦게);
     }
     { const k=sfxOr("이라 대가 치르기 충전",null); if(k) SFX.play(k) }   /* 충전 몫의 녹음 셋 (2026-10-13) */
     for(let q=0;q<rep2;q++) L.forEach(f=>{ if(!f.alive) return;
