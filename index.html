@@ -10801,6 +10801,8 @@ const PAVEL_MAT={
    d:"체력 16\n이 소환물의 피해가 항상 치명타로 적중합니다.\n죽음: 모든 적에게 피해를 6 줍니다."},
  "드론파편":{hp:12,endDeathUp:4,deathNear:4,
    d:"체력 12\n내 턴이 끝날 때, 소환물의 죽음 피해량이 4 증가합니다.\n죽음: 가장 가까운 적에게 피해를 4 줍니다."},
+ "부유석":{hp:14,airHit:1,deathAir:1,
+   d:"체력 14\n이 골렘이 공격한 적은 공중에 뜸 상태가 됩니다.\n죽음: 모든 적을 공중에 뜸 상태로 만듭니다."},
  "고대석":{hp:12,endAllStat:1,deathGive:1,rew:1,
    d:"체력 12\n내 턴이 끝날 때, 모든 능력치를 1 얻습니다.\n죽음: 이 소환물의 추가 능력치를 무작위 아군에게 부여합니다."}
 };
@@ -11243,6 +11245,12 @@ function golemDeath(u,why){
   /* 창조의 고통 — 그 라운드 동안 보호력 (노트 : 「해당 라운드에서」 → bumpRnd) */
   if(ow&&ow.tag&&ow.tag.makePain&&ow.hp>0){ bumpRnd(ow,"def",ow.tag.makePain);
     say(`창조의 고통 — ${ow.name} 이번 라운드 보호력 +${ow.tag.makePain}`,"t2") }
+  if(M.deathAir){   /* 부유석 — 모든 적이 떠오른다 (사용자 2026-10-13) */
+    const L=B.foes.filter(f=>f.alive);
+    if(L.length){ say(`부유석 — 모든 적이 떠오릅니다.`,"t1");
+      /* ⚠️ **이미 떠 있는 적은 건너뛴다.** airborne 은 부를 때마다 파수꾼의 은총 · 독소 침 ·
+         바람처럼 사라져라가 따라온다 — 용오름처럼 **일부러** 겹쳐 부르는 자리와는 다르다 */
+      L.slice().sort((a,b)=>a.slot-b.slot).forEach(f=>{ if(f.alive&&!f.air) airborne(ow||u,f) }) } }
   if(M.deathGive){ const L=onField().filter(a=>a.hp>0&&a!==u);
     const a=L.length?rnd(L):null;
     if(a){ ["atk","mag","def"].forEach(k=>{ if(u[k]>0) bumpRnd(a,k,u[k]) });
@@ -16522,6 +16530,7 @@ function golemPartLines(u){
   if(M.deathNeg) d.push(`다른 모든 대원에게 부정 보호막을 ${M.deathNeg} 부여합니다.`);
   if(M.deathAll) d.push(`모든 적에게 피해를 ${(M.deathAll+up)*곱} 줍니다.${치}`);
   if(M.deathNear) d.push(`가장 가까운 적에게 피해를 ${(M.deathNear+up)*곱} 줍니다.${치}`);
+  if(M.deathAir) d.push("모든 적을 공중에 뜸 상태로 만듭니다.");
   if(M.deathGive) d.push("이 소환물의 추가 능력치를 무작위 아군에게 부여합니다.");
   return {지속:live,죽음:d.join(" ")};
 }
@@ -19016,6 +19025,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 93, "v": "0.7", "d": "2026-10-13", "t": "파벨 새 재료 부속 부유석", "big": 0},
  {"b": 92, "v": "0.7", "d": "2026-10-13", "t": "파벨 골렘 부속 수치 조정", "big": 0},
  {"b": 91, "v": "0.7", "d": "2026-10-13", "t": "보상 상자 하나에 하나 · 파벨 보상 조건 · 모닥불 시간 · 장비 정리", "big": 0},
  {"b": 90, "v": "0.7", "d": "2026-10-13", "t": "수맥지기 자세 리뉴얼 · 샘의 잔영 죽음 비명 크게", "big": 0},
@@ -20300,7 +20310,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=92;
+const BUILD_NO=93;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -33123,6 +33133,14 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
       hurtAlly(f,src,f.thorn,`${f.name}의 가시`);
       f.thornBusy=0;
     } }
+  /* 부유석 — 이 골렘이 **몸으로** 때린 적은 공중에 뜬다 (사용자 2026-10-13).
+     ⚠️ 죽음 몫은 주인(파벨) 이름으로 때리니 B.lastAttacker 가 파벨이다 — 그쪽은 deathAir 가 따로 맡는다.
+        그래서 여기 문을 **B.lastAttacker.golem** 으로 연다 (B._golemHit 이 아니다).
+     ⚠️ **이미 떠 있으면 다시 안 띄운다.** airborne 안에서 독소 침 · 바람처럼 사라져라가 또 때리는데,
+        airborne 이 맨 처음 f.air=1 을 박으므로 그 되돌이가 여기서 걸러진다 */
+  if(amt>0&&f.alive&&!f.air&&B&&B.lastAttacker&&B.lastAttacker.golem){
+    const MA=golemMat(B.lastAttacker);
+    if(MA&&MA.airHit) airborne(B.lastAttacker,f) }
   if(f.hp>0&&d>0) bark(f,"hurt",f.name==="억울한 죄수");   /* 억울한 죄수는 맞을 때마다 */
   if(f.hp>0&&d>0&&f.isFoe) foeOnHurt(f,d);                  /* 고통 감내 · 물러남 (정예, 2026-09-16) */
   if(f.hp>0&&d>0&&f.isFoe) foePhaseCheck(f);                /* 단계 (간수장, 2026-10-03) */
