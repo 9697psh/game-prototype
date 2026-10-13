@@ -10971,6 +10971,9 @@ function srcAnalysisOff(){
 function golemStart(h){
   if(!B) return;
   B.golem={by:h.name,kind:"mat",opts:golemOpts(h,"mat"),t0:Date.now()};
+  if(h.tag&&h.tag.makeShield){ addShield(h,h.tag.makeShield);
+    fx({side:"mine",slot:h.slot,s:"shield",glow:1,txt:"보호막 +"+h.tag.makeShield,cls:"shd",gap:60});
+    say(`보호막 창조 — ${h.name} 보호막 +${h.tag.makeShield}`,"t2") }
   say(`${h.name}${jo(h.name,"ig")} 골렘을 짓기 시작합니다 — 재료 부속을 고르세요.`,"t1");
   render();
 }
@@ -10999,6 +11002,19 @@ function golemMerge(h){
     B.hand.push({type:"summon",name:"하수인 골렘",mat:m.part,soul:so.part,gone:1,arrive:1});
     render() });
   return 1;
+}
+/* 하수인 골렘을 놓은 **뒤** — 파벨의 보상이 골렘을 키운다 (노트 lowRewards 넷).
+   ⚠️ 한 곳에서만 얹는다 — 카드가 놓이는 길(playCard)이 그 자리다 */
+function golemPlaced(m){
+  if(!m||!m.golem||!B) return;
+  const h=(run.heroes||[]).find(x=>x.name==="파벨"); if(!h||!h.tag) return;
+  const T=h.tag;
+  if(T.golemHp){ m.maxHp+=T.golemHp; m.hp+=T.golemHp;
+    say(`골렘의 심장 — ${m.name} 최대 체력 +${T.golemHp}`,"t2") }
+  if(T.golemAtk){ m.atk+=T.golemAtk; say(`돌파편 — ${m.name} 공격력 +${T.golemAtk}`,"t2") }
+  if(T.golemMag){ m.mag+=T.golemMag; say(`별똥별 파편 — ${m.name} 마법력 +${T.golemMag}`,"t2") }
+  if(T.golemMana){ m.maxMana+=T.golemMana; m.mana+=T.golemMana;
+    say(`마나석 끼워넣기 — ${m.name} 최대 마나 +${T.golemMana}`,"t2") }
 }
 /* 골렘의 재료 부속이 쥔 값 — 선 골렘에서 꺼내 본다 (없으면 빈 것) */
 const golemMat=u=>(u&&u.golem&&PAVEL_MAT[u.golem.mat])||null;
@@ -12336,6 +12352,35 @@ const HERO_REWARDS={
   R("절실한 신앙","상급","퀘스트: 참회의 기류를 20번 사용해야 합니다. \n보상: 이번 원정에서 참회의 기류를 사용한 후, 추가로 2번 더 사용됩니다.\n*획득시 보상에서 다시 등장하지 않음\n*[참회의 기류] 기술이 없을 때 등장하지 않음",
     h=>{ if(!questHas("절실한 신앙")) questAccept("절실한 신앙","도미니코") },0.5)
  ],
+ "파벨":[
+  /* 기획 노트(2026-10-13) 그대로 — lowRewards 열둘. 글은 노트 문장을 그대로 옮긴다 */
+  /* ── 하급 ── */
+  R("지면 내려치기 강화","하급","지면 내려치기의 피해량이 영구히 1 증가합니다.",
+    (h,rn)=>addMod(h,"지면 내려치기","dmg",1,rn)),
+  R("기동 강화","하급","기동의 보호막량이 영구히 1 증가합니다.",
+    (h,rn)=>addMod(h,"기동","shield",1,rn)),
+  R("파수꾼의 은총 강화","하급","파수꾼의 은총으로 얻을 수 있는 보호막량이 영구히 1 증가합니다.",
+    h=>h.tag.graceUp=(h.tag.graceUp||0)+1,0.5),
+  R("살점 구체화","하급","최대 체력이 30% 감소합니다. 보호력을 1 얻습니다.",
+    h=>{ const cut=Math.floor(h.maxHp*0.3); h.maxHp=Math.max(1,h.maxHp-cut); h.hp=Math.min(h.hp,h.maxHp);
+         h.def+=1 },0.5),   /* 보호력 영구 — 공용 보상과 같은 길 (h.def 직접) */
+  R("골렘의 심장","하급","하수인 골렘 배치 후, 최대 체력을 6 부여합니다.\n*[골렘 창조] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.golemHp=(h.tag.golemHp||0)+6),
+  R("돌파편","하급","하수인 골렘 배치 후, 공격력을 2 부여합니다.\n*[골렘 창조] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.golemAtk=(h.tag.golemAtk||0)+2),
+  R("별똥별 파편","하급","하수인 골렘 배치 후, 마법력을 2 부여합니다.\n*[골렘 창조] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.golemMag=(h.tag.golemMag||0)+2),
+  R("보호막 창조","하급","골렘 창조를 사용한 후, 보호막을 8 얻습니다.\n*[골렘 창조] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.makeShield=(h.tag.makeShield||0)+8),
+  R("잔해 수집","하급","상대 턴에 아군 소환물이 죽은 후, 다음 내 턴에 파벨이 추가 마나를 1 얻습니다.",
+    h=>h.tag.scrapMana=(h.tag.scrapMana||0)+1,0.5),
+  R("모험 준비","하급","제련석을 2개 소모합니다. 경험치를 16 얻습니다.\n*제련석이 2개 이상일때만 등장",
+    h=>{ run.stone=Math.max(0,(run.stone||0)-2); giveExp(16,[h],true) }),
+  R("탐험심","하급","퀘스트: 미지의 구역 4회 방문\n보상: 무작위 보상",
+    h=>{ if(!questHas("탐험심")) questAccept("탐험심",h.name) },0.5),
+  R("오래된 경험","하급","활동량을 1개 소모합니다. 경험치를 16 얻습니다.\n*활동량이 1개 이상일때만 등장",
+    h=>{ run.act=Math.max(0,(run.act||0)-1); giveExp(16,[h],true) })
+ ],
  "굴라":[
   /* 기획 노트(2026-09-11) 그대로. 옛 다섯(굶주림·두꺼운 가죽·탐식·차원 확장·포식자)은 노트에 없어 뺐다 */
   /* ── 하급 ── */
@@ -13051,6 +13096,11 @@ const REW_COND={
 const rwKey=r=>(r&&r.g||"")+"|"+(r&&r.n||"");
 /* 전용 보상에는 주인 이름을 적어 둔다 — 아이콘 표가 주인별로 나뉘어 있다 */
 Object.keys(HERO_REWARDS).forEach(nm=>(HERO_REWARDS[nm]||[]).forEach(r=>{ r.own=nm }));
+/* 파벨 — 자원이 있어야 고를 수 있는 둘 (노트의 「*…일때만 등장」) */
+{ const P=HERO_REWARDS["파벨"]||[];
+  const f=(n,ok)=>{ const r=P.find(x=>x.n===n); if(r) r.okf=ok };
+  f("모험 준비",()=>(run&&run.stone||0)>=2);
+  f("오래된 경험",()=>(run&&run.act||0)>=1); }
 /* 이테리오 보상 (노트 2026-09-30) — 표가 이름순 생성물이라 여기서 덧붙인다 */
 Object.assign(REW_KIND,{
  "하급|수축 공격 강화":"기술 강화","하급|팽창 공격 강화":"기술 강화","하급|자기장 변환 강화":"기술 강화","하급|점프백 강화":"기술 강화",
@@ -18638,6 +18688,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 72, "v": "0.7", "d": "2026-10-13", "t": "파벨 하급 보상 열둘", "big": 0},
  {"b": 71, "v": "0.7", "d": "2026-10-13", "t": "장신구는 하급 보상 카드 틀로 · 충전된 대가 치르기에도 이라 타격음", "big": 0},
  {"b": 70, "v": "0.7", "d": "2026-10-13", "t": "고르는 화면 둘이 겹치지 않게 — 먼저 고른 뒤에 기술을 쓴다", "big": 0},
  {"b": 69, "v": "0.7", "d": "2026-10-13", "t": "원천 분석 — 배치하면 희귀 장신구 셋, 이번 전투 동안 착용", "big": 0},
@@ -19901,7 +19952,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=71;
+const BUILD_NO=72;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -25382,6 +25433,9 @@ const QUESTS={
   /* 도미니코 상급 보상 (노트 2026-10-06) — 깨면 이번 게임 동안 참회의 기류가 두 번 더 */
   "절실한 신앙":{kind:"penance",need:20,who:"hero",
     d:"참회의 기류를 {n}번 사용",rd:"이번 원정에서 참회의 기류를 사용한 후, 추가로 2번 더 사용됩니다.",reward:{faith:2}},
+  /* 파벨 하급 「탐험심」 (노트 2026-10-13) — 구역을 가리지 않는다 (주인 찾아주기와 달리 field 가 없다) */
+  "탐험심":{kind:"visit",need:4,who:"hero",
+    d:"미지의 구역 {n}번 방문",rd:"무작위 보상",reward:{scrap:1}},
   "고철 수거":{kind:"scrapKill",need:12,who:"all",repeat:1,syn:"고철의 무덤",
     d:"고철의 무덤 대원이 적 {n}명 처치",rd:"무작위 보상 (구역이 깊을수록 더 좋다)",reward:{scrap:1}}
 };
@@ -31835,6 +31889,7 @@ function playCard(i,slot,side){
 
   if(c.type==="summon"){
     const m=makeMin(c.name,slot,c);   /* 카드가 쥔 부속 둘을 그대로 넘긴다 (하수인 골렘) */
+    golemPlaced(m);   /* 파벨의 보상이 골렘을 키운다 — 세우기 전에 (노트 lowRewards) */
     B.mins.push(m); lifeAuraSync();
     cardMagic();   /* 소환물 카드도 카드다 (악마 하수인 · 망자의 육체 …) */
     if(cardGone(c)) goneFX("mine",slot);
@@ -32953,7 +33008,7 @@ function liftFX(side,slot){
 function pavelGrace(){
   if(!B||B.over||B.foeAct) return;
   onField().filter(a=>a.hp>0&&!a.isMin&&a.name==="파벨").forEach(p=>{
-    const v=p.def||0; if(v<=0) return;
+    const v=(p.def||0)+((p.tag&&p.tag.graceUp)||0); if(v<=0) return;
     addShield(p,v);
     fx({side:"mine",slot:p.slot,s:"shield",glow:1,txt:"보호막 +"+v,cls:"shd",gap:60});
     say(`파수꾼의 은총 — ${p.name} 보호막 +${v}`,"t2") });
@@ -35445,6 +35500,10 @@ function minDeathRun(t){
   for(let k=0;k<times;k++){
     if(t.curseOnDeath) wallCurse("mine",t.slot,t.curseOnDeath);   /* 거리 1 안의 대상 모두 (노트 2026-10-06) */
     if(t.golem) golemDeath(t);   /* 하수인 골렘의 죽음 — 재료 부속이 정한다 (노트 17-3) */
+    /* 잔해 수집 — **상대 턴에** 죽었을 때만, 다음 내 턴에 추가 마나 (노트 lowRewards) */
+    { const pv=(run.heroes||[]).find(x=>x.name==="파벨");
+      if(pv&&pv.tag&&pv.tag.scrapMana&&B&&B.foeAct){ pv.scrapGot=(pv.scrapGot||0)+pv.tag.scrapMana;
+        say(`잔해 수집 — 다음 턴에 ${pv.name}${jo(pv.name,"ig")} 추가 마나 ${pv.scrapGot}`,"t2") } }
     gardenDeath(t) }
 }
 function unitDown(t){
@@ -36002,6 +36061,11 @@ function startMyTurn(){
   run.heroes.forEach(h=>{
     if(h.hp<=0) return;
     h.mana=Math.max(0,h.maxMana-(h.curse||0)); h.curse=0;
+    /* 잔해 수집 — 상대 턴에 죽은 소환물 몫을 **다음 내 턴**에 (노트 lowRewards).
+       ⚠️ 마나를 **다시 채운 뒤**라야 한다 — 앞에 두면 이 줄이 덮어 지운다 (2026-10-13 그물이 잡았다) */
+    if(h.scrapGot){ h.mana+=h.scrapGot;
+      if(h.slot>0) fx({side:"mine",slot:h.slot,ring:"#7fd8ff",txt:"추가 마나 +"+h.scrapGot,cls:"mag",gap:120});
+      say(`잔해 수집 — ${h.name} 추가 마나 +${h.scrapGot} (마나 ${h.mana})`,"t2"); h.scrapGot=0 }
     if(h.negManaNext){ h.negManaNext=0; const nm=itemBt(h,"negMana"); if(nm){ h.mana+=nm; say(`봉인된 어둠 — ${h.name} 이번 턴 마나 +${nm}`,"t2") } }   /* 턴 끝에 얻은 부정 보호막 — 다음 내 턴에 (점검 2026-10-07) */
 
     if(h.manaCap!=null){ h.mana=Math.min(h.mana,h.manaCap); h.manaCap=null }   /* 수련 — 이 턴 마나의 윗한도 (낮추기만, 그보다 적으면 그대로) */
