@@ -468,16 +468,24 @@ img.pxs.face{image-rendering:pixelated;width:auto;filter:drop-shadow(0 2px 0 rgb
   border-radius:3px;padding:0 5px;background:var(--raise)}
 
 /* 골렘 창조 — 전투 가운데에 부속 둘을 내놓고 하나를 고른다 (사용자 녹화 2026-10-13) */
-.golempick{position:fixed;left:50%;top:46%;transform:translate(-50%,-50%);z-index:60;
+.golempick{position:fixed;left:57%;top:41%;transform:translate(-50%,-50%);z-index:60;   /* 파벨이 가리지 않게 오른쪽 위로 (사용자 녹화처럼) */
   display:flex;flex-direction:column;align-items:center;gap:14px;pointer-events:none}
-.golempick .gpcards{display:flex;gap:30px;pointer-events:auto}
-.golempick .gpcard{width:156px;min-height:188px;box-sizing:border-box;background:var(--panel);
-  border:1px solid var(--rule);border-radius:7px;padding:11px 10px;cursor:pointer;text-align:center;
-  box-shadow:0 16px 34px rgba(0,0,0,.62);transition:transform .12s,border-color .12s}
-.golempick .gpcard:hover{border-color:var(--brass);transform:translateY(-5px)}
-.golempick .gpcard img{width:64px;height:64px;image-rendering:pixelated}
-.golempick .gpn{font-family:var(--serif);color:var(--brass);font-size:13px;margin-top:7px}
-.golempick .gpd{font-size:11px;color:var(--dim);line-height:1.45;margin-top:6px}
+.golempick .gpcards{display:flex;gap:40px;pointer-events:auto}
+/* 카드는 손패 카드만 하게 (사용자 2026-10-13 : 더 크게) */
+.golempick .gpcard{width:244px;min-height:296px;box-sizing:border-box;background:var(--panel);
+  border:1px solid var(--rule);border-radius:9px;padding:16px 15px;cursor:pointer;text-align:center;
+  box-shadow:0 18px 40px rgba(0,0,0,.66);transition:transform .12s,border-color .12s}
+.golempick .gpcard:hover{border-color:var(--brass);transform:translateY(-6px)}
+.golempick .gpcard img{width:112px;height:112px;image-rendering:pixelated}
+.golempick .gpn{font-family:var(--serif);color:var(--brass);font-size:17px;margin-top:10px}
+.golempick .gpd{font-size:13px;color:var(--dim);line-height:1.55;margin-top:9px}
+/* 고르는 동안 가장자리에 도는 오오라 — 1528x816 여덟 칸, **파일로** 나른다 (web/fx) */
+.golemaura{position:fixed;inset:0;z-index:54;pointer-events:none;background-repeat:no-repeat;
+  background-image:url(fx/pavel-golem-edge-8f-12224x816.png);image-rendering:pixelated;opacity:.9}
+/* 합쳐지는 순간 — 가운데에서 부속 여섯이 맞물린다 (512x64 여덟 칸을 3배로) */
+.golemmake{position:fixed;left:50%;top:44%;width:192px;height:192px;margin:-96px 0 0 -96px;z-index:62;
+  pointer-events:none;background-repeat:no-repeat;background-size:1536px 192px;image-rendering:pixelated;
+  filter:drop-shadow(0 0 12px rgba(201,162,39,.55))}
 .golempick .gpcap{font-family:var(--serif);font-size:15px;letter-spacing:.04em;color:#ece4d4;
   background:rgba(14,11,8,.88);border:1px solid var(--rule);border-radius:6px;padding:7px 16px}
 .skwrap{margin-top:12px;border-style:solid;border-image:url("ui/skill-description-card-menu-card-1364x256.png") 22 fill / 22px round;background:none;border-radius:0;padding:12px 10px}
@@ -10752,6 +10760,55 @@ const PAVEL_SOUL={
    d:"최대 마나 1\n별똥별 (마나 1, 체력이 가장 낮은 적에게 마법 피해를 3 줍니다. 3번 반복합니다.)"}
 };
 const partName=(kind,n)=>(kind==="mat"?"재료 부속: ":"영혼 부속: ")+n;
+/* ── 골렘 창조의 연출 (사용자 녹화 2026-10-13) ──
+   고르는 동안 : 가장자리 오오라 + 파벨의 창조 자세 **1~8~1** 되풀이.
+   다 고르면   : 화면 가운데에서 부속 여섯이 맞물린다.
+   ⚠️ 큰 그림(오오라 600KB)은 심지 않고 **파일로** 나른다 — 소리 · 이벤트 그림과 같은 대접 */
+const PAVEL_MAKE_ORDER=[0,1,2,3,4,5,6,7,6,5,4,3,2,1];
+const PAVEL_MAKE_MS   =[90,80,80,80,85,95,110,150,110,95,85,80,80,90];
+const GOLEM_MAKE_MS=[80,75,75,75,80,90,100,150];   /* 묶음 usage.json 의 칸 길이 그대로 */
+let GOLEM_AURA_T=0, GOLEM_AURA_F=0, PAVEL_MAKE_T=0;
+function golemAuraSync(){
+  const on=!!(typeof B!=="undefined"&&B&&B.golem&&!B.over&&view==="battle");
+  const cur=document.getElementById("golemaura");
+  if(!on){ if(GOLEM_AURA_T){ clearInterval(GOLEM_AURA_T); GOLEM_AURA_T=0 } if(cur) cur.remove(); return }
+  const box=cur||(()=>{ const d=el('<div id="golemaura" class="golemaura"></div>'); document.body.appendChild(d); return d })();
+  const 칠=()=>{ const w=box.clientWidth||window.innerWidth;
+    box.style.backgroundSize=(w*8)+"px 100%";
+    box.style.backgroundPositionX=(-GOLEM_AURA_F*w)+"px" };
+  칠();
+  if(!GOLEM_AURA_T) GOLEM_AURA_T=setInterval(()=>{
+    const e2=document.getElementById("golemaura");
+    if(!e2){ clearInterval(GOLEM_AURA_T); GOLEM_AURA_T=0; return }
+    GOLEM_AURA_F=(GOLEM_AURA_F+1)%8;
+    const w=e2.clientWidth||window.innerWidth;
+    e2.style.backgroundSize=(w*8)+"px 100%"; e2.style.backgroundPositionX=(-GOLEM_AURA_F*w)+"px" },110);
+}
+function pavelMakeIdle(){
+  const on=!!(typeof B!=="undefined"&&B&&B.golem&&!B.over&&view==="battle"
+              &&!(typeof PRED_DRY!=="undefined"&&PRED_DRY));
+  if(!on){ if(PAVEL_MAKE_T){ clearTimeout(PAVEL_MAKE_T); PAVEL_MAKE_T=0 } return }
+  if(PAVEL_MAKE_T) return;
+  const 한바퀴=PAVEL_MAKE_MS.reduce((a,b)=>a+b,0);
+  const tick=()=>{
+    const h=(run&&run.heroes||[]).find(x=>x.name==="파벨");
+    if(!B||!B.golem||B.over||!h||h.slot<=0||h.hp<=0){ PAVEL_MAKE_T=0; return }
+    poseStripFX("mine",h.slot,"makeA",PAVEL_MAKE_MS,{order:PAVEL_MAKE_ORDER});
+    PAVEL_MAKE_T=setTimeout(tick,Math.round(한바퀴*(typeof SPD==="number"?SPD:1))+80);
+  };
+  tick();
+}
+function golemCreationFX(){
+  const u=(typeof ICON_PNG!=="undefined")&&ICON_PNG["fx_pavel_golem_creation"]; if(!u) return;
+  const d=el('<div class="golemmake"></div>');
+  d.style.backgroundImage="url("+u+")";
+  document.body.appendChild(d);
+  let i=0;
+  const step=()=>{ d.style.backgroundPositionX=(-i*192)+"px"; i++;
+    if(i<8) setTimeout(step,Math.round(GOLEM_MAKE_MS[i-1]*(typeof SPD==="number"?SPD:1)));
+    else setTimeout(()=>d.remove(),280) };
+  step();
+}
 /* 지금 고를 수 있는 부속 — 보상으로 얻은 것(tag.golemAdd)만 더해진다 */
 function pavelPool(h,kind){
   const tbl=(kind==="mat")?PAVEL_MAT:PAVEL_SOUL, add=((h&&h.tag&&h.tag.golemAdd)||[]);
@@ -10790,6 +10847,7 @@ function golemMerge(h){
   B.hand.push({type:"summon",name:"하수인 골렘",mat:m.part,soul:so.part,gone:1,arrive:1});
   const p=h&&h.slot>0?h.slot:null;
   if(p) fx({side:"mine",slot:p,s:sfxOr("골렘 창조","summon"),ring:"#c9a227",glow:1,txt:"창조",cls:"shd",gap:120});
+  golemCreationFX();   /* 화면 가운데에서 부속 여섯이 맞물린다 (사용자 녹화) */
   say(`${m.part}${jo(m.part,"gwa")} ${so.part}${jo(so.part,"ig")} 하나로 합쳐집니다 — 하수인 골렘.`,"t1");
   return 1;
 }
@@ -17710,6 +17768,7 @@ function render(){
         켜는 자리가 어떤 화면 안에 있으면, **끄는 자리는 그 화면 밖에도** 있어야 한다 */
   if(typeof iraRageSnd==="function"&&(view!=="battle"||typeof B==="undefined"||!B||B.over)) iraRageSnd(0);
   if(typeof iraReadyIdle==="function"&&(view!=="battle"||typeof B==="undefined"||!B||B.over)) iraReadyIdle(null);
+  if(typeof golemAuraSync==="function"){ golemAuraSync(); pavelMakeIdle() }   /* 골렘 창조 — 켜고 끄는 자리 하나 (화면 밖에서도 꺼진다) */
   B&&(B._prC=null);      /* 이번에 그리는 동안 쓸 「돌려 본 값」 쪽지를 비운다 */
   /* 카드 틀 (2026-10-01) — CSS 가 ICON_PNG 를 못 읽으니 변수로 건넨다. 아이콘 묶음(icon-build) 곁에 두면 다시 구울 때 지워진다 */
   if(!render.cf&&typeof ICON_PNG!=="undefined"&&ICON_PNG.ui_card_frame&&document.documentElement){ render.cf=1;
@@ -18428,6 +18487,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 65, "v": "0.7", "d": "2026-10-13", "t": "골렘 창조 연출 — 가장자리 오오라, 창조 자세, 가운데 맞물림 (카드도 크게)", "big": 0},
  {"b": 64, "v": "0.7", "d": "2026-10-13", "t": "골렘 창조 — 부속 둘을 골라 합치면 하수인 골렘", "big": 0},
  {"b": 63, "v": "0.7", "d": "2026-10-13", "t": "파벨 뼈대 — 대원과 그림, 지면 내려치기 · 기동 · 파수꾼의 은총", "big": 0},
  {"b": 62, "v": "0.7", "d": "2026-10-13", "t": "이라 타격음 넷 — 찢어발기기/할퀴기가 때릴 때마다", "big": 0},
@@ -19684,7 +19744,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=64;
+const BUILD_NO=65;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -33979,7 +34039,14 @@ function runEffect0(h,i,s,target){
     });
     /* 지면 내려치기 — 때린 뒤 **거리 2 내**가 공중에 뜬다 (노트 17-1).
        띄우는 것은 airborne 한 곳이다 — 파수꾼의 은총도 거기서 따라온다 */
-    if(s.slam) B.foes.filter(f=>f.alive&&dist(h.slot,f.slot)<=2).forEach(f=>airborne(h,f));
+    if(s.slam){
+      /* 받은 이펙트 한 칸(256x96) — 적 구역 바닥에 깔린다 (묶음 usage.json 의 자리) */
+      { const L0=B.foes.filter(f=>f.alive);
+        if(L0.length&&(typeof ICON_PNG!=="undefined")&&ICON_PNG["fx_pavel_ground_slam"]){
+          const mid=L0[Math.floor(L0.length/2)];
+          fx({side:"foe",slot:mid.slot,sheet:"fx_pavel_ground_slam",
+              sheetOpt:{cellW:256,cellH:96,frames:1,z:1.5,frameMs:[420]},gap:0}) } }
+      B.foes.filter(f=>f.alive&&dist(h.slot,f.slot)<=2).forEach(f=>airborne(h,f)) }
     return;
   }
   if(s.makeGolem){ golemStart(h); return }   /* 골렘 창조 (노트 17-3) — 고르는 화면은 render 가 그린다 */
