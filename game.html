@@ -17108,7 +17108,8 @@ function nodeArt(t){
 /* 정찰대 보내기 — 전 구역 금화 5 (사용자 2026-10-08. 전에는 구역마다 5 · 10 · 20) */
 const REMAP_COST=[5,5,5];
 const REST_PLACE=2;   /* 한 번에 놓는 쉼터 수 */
-const SCOUT_ACT=2;    /* 정찰대를 보내면 얻는 활동량 (사용자 2026-10-08) */
+/* SCOUT_ACT 는 걷었다 (사용자 2026-10-13 : 「활동량 2 얻는 것 빼줘」).
+   ⚠️ 밭을 0 으로 두지 않고 **아예 없앴다** — 0 으로만 두면 글에 「활동량을 0 얻습니다」가 남는다 */
 function remapCost(){
   return REMAP_COST[Math.min(run?run.field:0, REMAP_COST.length-1)];
 }
@@ -19110,6 +19111,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 104, "v": "0.7", "d": "2026-10-13", "t": "정찰대 보내기 — 활동량 없앰", "big": 0},
  {"b": 103, "v": "0.7", "d": "2026-10-13", "t": "손패 상한 10장 · 산들바람 한 번만 · 탑 안개 메움", "big": 0},
  {"b": 102, "v": "0.7", "d": "2026-10-13", "t": "재조립 무한 회수 · 과열 비움 · 기동은 한 번만", "big": 0},
  {"b": 101, "v": "0.7", "d": "2026-10-13", "t": "라이티늄 보호막에 추가 보호력", "big": 0},
@@ -20405,7 +20407,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=103;
+const BUILD_NO=104;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -20607,7 +20609,7 @@ const TXT_FIX={
  "tut:campForge:d": "파편이나 일반 장신구 <b>둘</b>을  합쳐 더 좋은 장신구를 만듭니다. <b>제련석</b>이 필요하겠지요?",
  "tut:campOne:d": "이 중 <b>하루에 한 곳</b>만 방문할 수 있기 때문에, 주둔지에서는 항상 신중한 결정을 내려야 됩니다.",
  "tut:campSleep:d": "18시가 지나면 잠에 들 수 있습니다. 밤을 넘기며 오염도를 <b>55</b>만큼 감소시킵니다. 밤엔 무시무시한 적들이 나타날 수 있으니, 꼭 잘 휴식하시길 바랍니다.",
- "tut:campRemap:d": "금화 <b>5</b>로 정찰대를 보내면 쉼터 <b>2곳</b>을 세우고 <b>활동량을 2</b> 얻습니다. 구역마다 <b>한 번</b>만 할 수 있습니다.",
+ "tut:campRemap:d": "금화 <b>5</b>로 정찰대를 보내면 쉼터 <b>2곳</b>을 세웁니다. 구역마다 <b>한 번</b>만 할 수 있습니다.",
  "tut:campRemap:t": "정찰대 보내기",
  "tut:campGear:d": "가방에 든 장신구를 대원에게 채우거나 빼낼 수 있습니다. 대원 한 명당 <b>3개</b>의 장신구를 보유할 수 있습니다. 알맞은 대원에게 장신구를 잘 전달해야겠네요.",
  "tut:campOut:t": "다시 밖으로",
@@ -21303,7 +21305,7 @@ const TUT_TXT={
   d:"18시가 지나야 잠자리에 들 수 있습니다. 밤을 넘기며 오염도를 <b>55</b> 씻어냅니다. "
    +"오염도를 줄이는 가장 큰 수단입니다.\n왼쪽 판의 것들은 하루 한 곳 제한에 들어가지 않습니다."},
  campRemap:{t:"정찰대 보내기",
-  d:"금화 <b>5</b>를 들여 정찰대를 풀면 쉼터 <b>2곳</b>을 세우고 <b>활동량을 2</b> 얻습니다. "
+  d:"금화 <b>5</b>를 들여 정찰대를 풀면 쉼터 <b>2곳</b>을 세웁니다. "
    +"구역마다 <b>한 번</b>뿐입니다."},
  campGear:{t:"장비 정리",
   d:"가방에 든 장신구를 대원에게 채우거나 빼냅니다. 대원 한 명당 <b>3칸</b>입니다.\n"
@@ -23422,7 +23424,7 @@ function drawCamp(app){
   const remap=el(`<div class="cbtn campremap ${remapOk?"":"off"}">
     <div class="ci">${uiPng("explore")}</div>
     <b>정찰대 보내기</b>
-    <small>정찰대를 풀어 쉼터 ${REST_PLACE}곳을 세웁니다. 활동량을 ${SCOUT_ACT} 얻습니다.<br>${resIcon("gold")} ${rcost} 구역마다 한 번</small>
+    <small>정찰대를 풀어 쉼터 ${REST_PLACE}곳을 세웁니다.<br>${resIcon("gold")} ${rcost} 구역마다 한 번</small>
     <span class="cnote">${run.remapUsed?"이번 구역에서는 이미 썼습니다."
       :run.gold<rcost?`금화가 ${rcost-run.gold} 부족합니다.`:""}</span></div>`);
   if(remapOk) remap.onclick=()=>{
@@ -23430,10 +23432,9 @@ function drawCamp(app){
     const put=sprinkleCell("rest",REST_PLACE);            /* 빈 칸에만 놓는다 — 지도는 그대로 (사용자 2026-09-29) */
     if(!put){ toast("쉼터를 세울 빈 칸이 없습니다."); return }
     run.gold-=rcost;
-    run.act=(run.act||0)+SCOUT_ACT;   /* 정찰대 — 활동량도 얻는다 (사용자 2026-10-08) */
     run.remapUsed=1;
     SFX.play("unlock");
-    toast(`금화를 ${rcost} 들여 쉼터 ${put}곳을 세우고 활동량을 ${SCOUT_ACT} 얻었습니다.`);
+    toast(`금화를 ${rcost} 들여 쉼터 ${put}곳을 세웠습니다.`);
     toMap();
   };
   const gear=el(`<div class="cbtn campgear">
