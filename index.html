@@ -11232,7 +11232,12 @@ function golemEndTurn(){
   return n;
 }
 /* 죽음 — 영혼부르기(죽음 부속)도 **이 한 곳**을 부른다. 규칙 하나는 함수 하나 */
-function golemDeath(u,why){
+/* 산채로 — **영혼부르기**로 터뜨린 것이다 (몸은 살아 있다).
+   ⚠️ **부속의 「죽음:」은 그래도 돈다** — 영혼부르기의 글이 「이 소환물의 죽음 효과를 발동합니다」다.
+      **보상의 「죽은 후」는 안 돈다** — 재조립 · 창조의 고통은 몸이 정말 부서져야 한다
+      (사용자 2026-10-13 : 「죽음 효과로 부속 카드를 마구마구 가져올 수 있다」).
+      영혼부르기는 마나만 차면 턴마다 쓸 수 있어, 막지 않으면 카드가 끝없이 나온다 */
+function golemDeath(u,why,산채로){
   const M=golemMat(u); if(!M||!B) return;
   /* 죽음 몫은 **주인(파벨) 이름으로** 때린다 (처치 셈이 파벨에게 가야 한다) — 그래서
      B.lastAttacker 로는 골렘인 줄 모른다. 때리는 동안만 깃발에 **때린 몸(골렘)** 을 담아 둔다.
@@ -11256,7 +11261,7 @@ function golemDeath(u,why){
     if(f){ say(`드론파편 — ${f.name}에게 피해 ${v}${치?" (치명타)":""}`,"t2"); asSrc(ow,()=>hurt(f,v,why||"드론파편",null,0,치,1)) } }
   /* 재조립 — 그 골렘의 부속 카드 하나를 돌려받는다 (노트 highRewards).
      손패에 짝이 있으면 golemMerge 가 바로 합친다 — 길은 그 한 곳이다 */
-  if(ow&&ow.tag&&ow.tag.rebuild&&u.golem&&B&&B.hand&&!B.over){
+  if(!산채로&&ow&&ow.tag&&ow.tag.rebuild&&u.golem&&B&&B.hand&&!B.over){
     for(let q=0;q<ow.tag.rebuild;q++){
       const 재료=Math.random()<0.5;
       const kind=재료?"mat":"soul", nm=재료?u.golem.mat:u.golem.soul, sl=u.slot;
@@ -11267,7 +11272,7 @@ function golemDeath(u,why){
           d:((kind==="mat"?PAVEL_MAT:PAVEL_SOUL)[nm]||{}).d||"",gone:1});
         golemMerge(ow); render() }) } }
   /* 창조의 고통 — 그 라운드 동안 보호력 (노트 : 「해당 라운드에서」 → bumpRnd) */
-  if(ow&&ow.tag&&ow.tag.makePain&&ow.hp>0){ bumpRnd(ow,"def",ow.tag.makePain);
+  if(!산채로&&ow&&ow.tag&&ow.tag.makePain&&ow.hp>0){ bumpRnd(ow,"def",ow.tag.makePain);
     say(`창조의 고통 — ${ow.name} 이번 라운드 보호력 +${ow.tag.makePain}`,"t2") }
   if(M.deathAir){   /* 부유석 — 모든 적이 떠오른다 (사용자 2026-10-13) */
     const L=B.foes.filter(f=>f.alive);
@@ -11589,7 +11594,7 @@ HEROES["파벨"]={title:"모험심 가득한 창조자",role:"보호, 소환",hp
   passive:{n:"파수꾼의 은총",d:"내 턴에 적이 공중에 뜸 상태가 된 후에, 추가 보호력만큼 보호막을 얻습니다."},
   skills:[
    {n:"지면 내려치기",cost:2,el:"공격",tg:"self",allHit:1,slam:1,dmg:3,d:"모든 적에게 피해 3(추가), 거리 2 내는 공중에 뜸"},
-   {n:"기동",cost:1,el:"이동",tg:"ally",mobil:1,shield:2,d:"1칸 이동, 보호막 2(추가), 자리를 바꾼 아군에게도"},
+   {n:"기동",cost:1,el:"이동",tg:"ally",mobil:1,one:1,shield:2,d:"1칸 이동, 보호막 2(추가), 자리를 바꾼 아군에게도"},
    {n:"골렘 창조",cost:3,el:"집중",tg:"self",lock:2,makeGolem:1,d:"잠금(2), 부속 둘을 골라 하수인 골렘을 만든다"},
    {n:"원천 분석",cost:0,el:"지속",tg:"self",limit:1,auto:1,srcAnalysis:1,d:"처음 배치하면 희귀 장신구 셋 중 하나를 이번 전투 동안 착용"}
   ]};
@@ -19081,6 +19086,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 102, "v": "0.7", "d": "2026-10-13", "t": "재조립 무한 회수 · 과열 비움 · 기동은 한 번만", "big": 0},
  {"b": 101, "v": "0.7", "d": "2026-10-13", "t": "라이티늄 보호막에 추가 보호력", "big": 0},
  {"b": 100, "v": "0.7", "d": "2026-10-13", "t": "그리모어 치명타 · 원천 분석 지속 · 보상 둘 상급 · 고대석의 아군", "big": 0},
  {"b": 99, "v": "0.7", "d": "2026-10-13", "t": "별똥별 치명타 · 골렘 군단 25회", "big": 0},
@@ -20374,7 +20380,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=101;
+const BUILD_NO=102;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -27452,6 +27458,9 @@ function grpHideSync(){ if(!B||!B.foes) return;
 function memEmp(f){ return !!(foePas(f,"memory")&&(f.mem||0)>=3) }
 /* 마나 정제로 — 과열. 피해를 맞는 횟수가 쌓여(윗한도 v) 다 차면 과열 상태 */
 function overheated(f){ const p=foePas(f,"heat"); return !!(p&&(f.heat||0)>=p.v) }
+/* 과열로 **강화되는** 기술인가 — 과열일 때 달라지는 밭을 하나라도 쥔 것.
+   ⚠️ 배기(heatDown)는 **식히는** 기술이라 여기 들지 않는다 — 제 수만큼 따로 줄인다 */
+const heatBoost=s=>!!(s&&(s.heatDmg||s.heatDeb||s.heatHits||s.heatAll));
 function skHits(f,s){ return (s.heatHits&&overheated(f))?s.heatHits:((s.empHits&&memEmp(f))?s.empHits:Math.max(1,s.hits||1)) }
 function heatRefresh(f){   /* 과열이 바뀌면 이미 고른 의도의 숫자도 바꾼다 */
   if(!f||!f.alive||!f.intent||f.intent.t!=="sk") return;
@@ -28723,6 +28732,13 @@ function skExec0(f,I){
   if(s.buff&&s.buffAfter&&f.alive){ f.atk+=s.buff; f.atkUp=(f.atkUp||0)+s.buff; f.buffs=(f.buffs||0)+1;
     fx({side:"foe",slot:f.slot,s:"buffup",ring:"#e0705a",glow:1,txt:"공격력 +"+s.buff,cls:"buf",gap:160});
     say(`${f.name} 공격력 +${s.buff} (누적 +${f.atkUp})`,"t2") }
+  /* 마나 정제로 — **과열로 강화된 행동을 하고 나면 중첩이 비워진다** (사용자 2026-10-13).
+     ⚠️ 이 줄은 기술 효과가 **다 끝난 뒤**라야 한다 — 먼저 비우면 그 기술 자신이 강화를 잃는다
+        (피해 · 겹침 · 겨눌 범위를 overheated 로 그때그때 묻기 때문이다).
+     ⚠️ 배기(heatDown)는 들어오지 않는다 — 식히는 기술이라 제 수만큼만 줄인다 */
+  if(heatBoost(s)&&overheated(f)){ const was=f.heat||0; f.heat=0;
+    fx({side:"foe",slot:f.slot,ring:"#9cc6ee",txt:"과열 풀림",cls:"shd",gap:140});
+    say(`${f.name} — 달아오른 열을 모두 쏟아냈습니다 (과열 중첩 ${was} → 0).`,"t2"); heatRefresh(f) }
 }
 /* 밀치기 (콜로서스 3단계, (사용자 2026-10-07)) — 모두를 한 칸 뒤로. 맨 뒤부터 옮겨 앞 사람이 비운 칸으로 물러선다.
    속박이거나 물러설 칸이 없으면(맨 뒤 · 막힘) 기절. 피해는 skExec 의 공격(대상 전원)이 이어서 준다 */
@@ -31176,7 +31192,12 @@ function pickSkill(i,count){
   if(h.lock[i]){ say(`${s.n}${jo(s.n,"eun")} ${h.lock[i]}턴 동안 잠금 상태입니다.`,"t2"); return }
   /* 이미 고른 기술을 다시 누르면 시전 횟수가 하나씩 늘어난다 */
   if(sel.skill===i&&sel.step===4){
-    if(s.lock){ say(`${s.n}${jo(s.n,"eun")} 잠금 기술이라 한 번만 쓸 수 있습니다.`,"t2"); return }
+    /* one — **한 번만 쓰는 기술**이다 (기동). 잠금(lock)과는 다르다 : 턴을 잠그지 않는다.
+       ⚠️ 기동은 자리를 **한 번** 바꾸는데 여러 번 고르면 파벨만 보호막을 겹쳐 받았다
+          (사용자 2026-10-13). 자리바꿈이 한 번이면 값도 한 번이어야 한다.
+       ⚠️ 막는 문은 **여기와 pickCount 둘**이다 — 기술 칸을 또 누르는 길과
+          숫자를 바로 넘기는 길이 갈라져 있다 */
+    if(s.lock||s.one){ say(`${s.n}${jo(s.n,"eun")} 한 번만 쓸 수 있습니다.`,"t2"); return }
     const n=(sel.count||1)+1;
     if(s.limit&&(h.limitUsed[i]||0)+n>skLimit(h,i,s)){
       say(`${s.n}의 사용한도를 넘습니다.`,"t2"); return }
@@ -31321,7 +31342,7 @@ function skPickMax(h,i){
 function pickCount(n){
   if(B.busy) return;
   const h=sel.hero, s=h.sk[sel.skill];
-  if(s.lock&&n>1){ say(`${s.n}${jo(s.n,"eun")} 잠금 기술이라 한 번만 쓸 수 있습니다.`,"t2"); n=1 }
+  if((s.lock||s.one)&&n>1){ say(`${s.n}${jo(s.n,"eun")} 한 번만 쓸 수 있습니다.`,"t2"); n=1 }
   if(!canPay(h,sel.skill,n)){ say(`${s.n} ${n}회를 쓸 자원이 부족합니다.`,"t2"); return }
   sel.count=n; sel.step=4;
   if(autoSk(h,s)){ const t=autoTarget(h,s);
@@ -34875,7 +34896,7 @@ function runEffect0(h,i,s,target){
   if(s.soulCall){   /* 영혼부르기 — **죽지 않고** 제 죽음 효과를 터뜨린다 (영혼: 죽음) */
     fx({side:"mine",slot:h.slot,ring:"#a06ae0",glow:1,txt:"영혼",cls:"mag",gap:90});
     say(`${s.n} — ${h.name}${jo(h.name,"ig")} 제 죽음을 불러냅니다.`,"t1");
-    golemDeath(h,s.n); return }
+    golemDeath(h,s.n,1); return }   /* 살아서 터뜨린 것 — 보상의 「죽은 후」는 안 돈다 */
   if(s.starfall){   /* 별똥별 — 체력이 가장 낮은 적에게, 때릴 때마다 다시 고른다 (영혼: 별빛) */
     const v0=(s.dmg||0)+mod(s,"dmg")+(h.mag||0), n0=s.hits||1;
     for(let q=0;q<n0;q++){
