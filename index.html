@@ -10735,7 +10735,7 @@ const HEROES={
   skills:[
    {n:"진선풍도",cost:1,el:"공격",tg:"foe",rng:2,dmg:2,wind:1,d:"피해 2, 거리 2, 두 번 쓰면 회오리로 전환",
     altBy:"wind",alt:{n:"회오리",cost:1,el:"공격",tg:"foe",rng:3,dmg:2,wind:1,whirl:1,altBy:"wind",d:"거리 3, 지나간 적 피해 2, 고른 적 공중에 뜸, 쓰면 진선풍도로"}},   /* 노트 2026-09-17: 둘은 별개 기술 */
-   {n:"산들바람",cost:1,el:"이동",tg:"ally",d:"1칸 이동, 추진력 +1, 다음 진선풍도의 거리와 피해량 +1"},
+   {n:"산들바람",cost:1,el:"이동",tg:"ally",one:1,d:"1칸 이동, 추진력 +1, 다음 진선풍도의 거리와 피해량 +1"},
    {n:"기류 흘리기",cost:3,costType:"mom",rise:1,el:"보호",tg:"self",evade:1,d:"회피 +1, 이번 턴 비용 1씩 상승"},
    {n:"잠재력 활성",cost:1,el:"집중",tg:"self",lock:2,potential:1,d:"잠금(2), 이번 턴 진선풍도가 거리 안 모든 적 타격, 회오리는 전부 공중, 산들바람 4회 무료"}
   ]},
@@ -11134,7 +11134,7 @@ function golemStart(h){
 function golemPick(nm){
   const G=B&&B.golem; if(!G) return;
   const h=(run.heroes||[]).find(x=>x.name===G.by);
-  B.hand.push({type:"part",kind:G.kind,part:nm,name:partName(G.kind,nm),
+  handAdd({type:"part",kind:G.kind,part:nm,name:partName(G.kind,nm),
     d:((G.kind==="mat"?PAVEL_MAT:PAVEL_SOUL)[nm]||{}).d||"",gone:1});
   say(`${partName(G.kind,nm)}${jo(partName(G.kind,nm),"eul")} 골랐습니다.`,"t2");
   if(G.kind==="mat"){ B.golem={by:G.by,kind:"soul",opts:golemOpts(h,"soul"),t0:Date.now()}; render(); return }
@@ -11153,7 +11153,7 @@ function golemMerge(h){
   say(`${m.part}${jo(m.part,"gwa")} ${so.part}${jo(so.part,"ig")} 하나로 합쳐집니다 — 하수인 골렘.`,"t1");
   /* 카드는 **연출이 끝난 뒤** 손에 들어온다 — 날아든 자리에서 카드가 생긴다 */
   golemCreationFX(()=>{ if(!B||B.over) return;
-    B.hand.push({type:"summon",name:"하수인 골렘",mat:m.part,soul:so.part,gone:1});   /* ⚠️ arrive 를 달지 않는다 — 날아드는 연출을 거치지 않는 카드라 다음 턴까지 안 보인다 */
+    handAdd({type:"summon",name:"하수인 골렘",mat:m.part,soul:so.part,gone:1});   /* ⚠️ arrive 를 달지 않는다 — 날아드는 연출을 거치지 않는 카드라 다음 턴까지 안 보인다 */
     render() });
   return 1;
 }
@@ -11268,7 +11268,7 @@ function golemDeath(u,why,산채로){
       say(`재조립 — ${partName(kind,nm)}${jo(partName(kind,nm),"eul")} 돌려받았습니다.`,"t2");
       /* 부서진 자리에서 카드가 **날아와** 든다 (사용자 2026-10-13) */
       partFlyFX(sl,kind,nm,()=>{ if(!B||B.over) return;
-        B.hand.push({type:"part",kind:kind,part:nm,name:partName(kind,nm),
+        handAdd({type:"part",kind:kind,part:nm,name:partName(kind,nm),
           d:((kind==="mat"?PAVEL_MAT:PAVEL_SOUL)[nm]||{}).d||"",gone:1});
         golemMerge(ow); render() }) } }
   /* 창조의 고통 — 그 라운드 동안 보호력 (노트 : 「해당 라운드에서」 → bumpRnd) */
@@ -12034,7 +12034,7 @@ function applySynergy(){
   /* 음악가 3 — 음악가 대원에게 메아리 */
   if(has("음악가",3)){ each("음악가",h=>{ h.echo=1 }); say("음악가 — 음악가 대원들에게 메아리","t1"); lit.push("음악가") }
   /* 악마 2 · 3 — 소멸성 악마 하수인 카드 2 · 4장 */
-  if(has("악마",2)&&B&&B.hand){ const n=has("악마",3)?4:2; for(let k=0;k<n;k++) B.hand.push({type:"summon",name:"악마 하수인",gone:1});
+  if(has("악마",2)&&B&&B.hand){ const n=has("악마",3)?4:2; for(let k=0;k<n;k++) handAdd({type:"summon",name:"악마 하수인",gone:1});
     say(`악마 — 소멸성 악마 하수인 카드 ${n}장`,"t1"); lit.push("악마") }
   /* 골렘 2 · 3 — 전투 시작 후 골렘을 1 · 2개 창조 (사용자 2026-10-13 : 「파벨의 골렘 창조와 동일」).
      ⚠️ 짓는 길은 golemStart 하나다 — 규칙 하나는 함수 하나. 부속 목록(tag.golemAdd)도 그 대원 것을 쓴다.
@@ -17138,6 +17138,16 @@ function floorHidden(r,c){
   if(run.grid[r][c].t==="boss") return false;
   const f=towerFloor(r); return f>0&&!floorSeen(f);
 }
+/* 지금 **서 있는 층**은 무조건 본 것으로 친다 — 어느 길로 왔든 (계단 · 부서진 구멍 · 그 밖).
+   ⚠️ 사용자가 「구멍으로 떨어지니 안개가 다시 생긴다」고 했는데 **재현을 못 했다** (2026-10-13).
+      계단 · 구멍 · 날 바뀜 · 지도 다시 그리기를 다 밟아 봐도 floorsSeen 이 멀쩡했다.
+      그래서 **원인을 못 짚은 채** 메워 둔다 — floorReveal 을 부르는 자리를 어디서 빠뜨려도
+      지도를 그릴 때 여기서 채워진다. floorReveal 은 이미 본 층이면 스스로 돌아간다.
+   ⚠️ 미리보기(peek)에서는 부르지 않는다 — 보기만 해도 걷히면 안 된다 */
+function floorTouch(){
+  if(!towerOn()||!run||!run.pos) return;
+  const f=curFloor(); if(f) floorReveal(f);
+}
 /* 층이 열린다 — 안개가 걷히는 연출을 그 층 칸마다 부른다 */
 function floorReveal(f){
   if(!towerOn()||!f||(run.floorsSeen&&run.floorsSeen[f])) return;
@@ -18932,6 +18942,20 @@ function setSlot(i){ SLOT=i; try{ localStorage.setItem(SLOT_KEY,String(i)) }catc
 function anySave(){ for(let i=0;i<SAVE_SLOTS;i++) if(savePeek(i)) return true; return false }
 function firstEmptySlot(){ for(let i=0;i<SAVE_SLOTS;i++) if(!savePeek(i)) return i; return -1 }
 
+/* 손패에 들고 있을 수 있는 **서로 다른 카드**의 수 (사용자 2026-10-13).
+   꽉 차 있으면 새로 들어오는 카드는 **그대로 사라진다**.
+   ⚠️ **대원 카드는 세되 버리지 않는다** — 버리면 그 대원을 영영 못 낸다.
+   ⚠️ 쌓이는 방어구 카드(giveArmor)는 손에 같은 것이 있으면 **장수만 올린다** — 그 길은 여기 안 온다.
+   ⚠️ 카드가 손에 들어오는 길은 **여기 하나**다 (B.hand.push 를 쓰지 말 것) */
+const HAND_MAX=10;
+function handAdd(c){
+  if(!B||!B.hand||!c) return false;
+  if(c.type!=="hero"&&B.hand.length>=HAND_MAX){
+    const nm=c.name||"카드";
+    say(`손패가 가득 차 ${nm}${jo(nm,"eul")} 들지 못했습니다. (${HAND_MAX}장)`,"t2");
+    return false }
+  B.hand.push(c); return true;
+}
 function handPack(){
   return (B.hand||[]).map(c=>{
     if(c.type==="hero")   return {t:"hero",n:c.hero.name};
@@ -19086,6 +19110,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 103, "v": "0.7", "d": "2026-10-13", "t": "손패 상한 10장 · 산들바람 한 번만 · 탑 안개 메움", "big": 0},
  {"b": 102, "v": "0.7", "d": "2026-10-13", "t": "재조립 무한 회수 · 과열 비움 · 기동은 한 번만", "big": 0},
  {"b": 101, "v": "0.7", "d": "2026-10-13", "t": "라이티늄 보호막에 추가 보호력", "big": 0},
  {"b": 100, "v": "0.7", "d": "2026-10-13", "t": "그리모어 치명타 · 원천 분석 지속 · 보상 둘 상급 · 고대석의 아군", "big": 0},
@@ -20380,7 +20405,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=102;
+const BUILD_NO=103;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -21199,7 +21224,7 @@ function sandRebuild(){
   run.heroes.forEach(sandRebuild1);
   /* 보유 카드가 생겼으면(임프 무리 등) 손에도 한 장 — 전투 시작 때와 같은 꼴 */
   (run.cards||[]).forEach(cd=>{ if(SUMMONS[cd.n]&&!B.hand.some(c=>c.stock===cd.n))
-    B.hand.push({type:"summon",name:cd.n,stock:cd.n}) });
+    handAdd({type:"summon",name:cd.n,stock:cd.n}) });
   sandboxTick(); sel=null;
 }
 function sandRebuild1(h){
@@ -21794,6 +21819,7 @@ const near=(a,b)=>Math.abs(a.r-b.r)+Math.abs(a.c-b.c)===1;
 /* 지도 칸 판 — 지도 화면과 [지도 보기](M) 가 같은 것을 쓴다 (사용자 2026-09-16: 미리보기가 옛 그림으로 그려지던 것).
    peek 이면 길 번호를 안 찍고 누르지 못한다. 풍선(mapTip)은 둘 다 뜬다 */
 function mapGridEl(peek){
+  if(!peek) try{ floorTouch() }catch(e){}   /* 서 있는 층은 본 것으로 — 빠뜨린 길을 메운다 */
   const S=run.size;
   const g=el(`<div class="gridmap pmap${peek?" peekgrid":""}" data-n="${S}" style="grid-template-columns:repeat(${S},1fr)"></div>`);
   const rstep={};
@@ -26866,7 +26892,7 @@ function startBattle(kind,pinned){
       const hpl=itemBt(h,'hpPerLv'); if(hpl&&canGainMaxHp(h)) bumpTmp(h,"maxHp",hpl*h.lv);   /* 쇠창살이면 아예 안 얹는다 (2026-10-13) */   /* 최대 체력 — 현재 체력만 올라 최대를 넘던 것 (점검 2026-10-07) */
       /* 사형 선고의 배치 잠금은 여기서 안 건다 — onSummon 이 배치할 때 건다 (손패에 있는 동안 줄어들면 안 된다) */
     }
-    if(!h.down) B.hand.push({type:"hero",hero:h});
+    if(!h.down) handAdd({type:"hero",hero:h});
   });
   if(fresh) applySynergy();   /* 조합 몫(wanderBonus · archerBonus …)은 BATTLE_RESET 이 먼저 비웠다 */
   if(curse){
@@ -26950,14 +26976,14 @@ function startBattle(kind,pinned){
     const L=CARD_LIB[cd.n];
     if(!L) return;
     if(L.summon){
-      if(!B.hand.some(c=>c.stock===cd.n)) B.hand.push({type:"summon",name:cd.n,stock:cd.n});
+      if(!B.hand.some(c=>c.stock===cd.n)) handAdd({type:"summon",name:cd.n,stock:cd.n});
       return }
-    B.hand.push({type:"item",name:cd.n,d:L.d+` (보유 ${cd.c})`,stock:cd.n,use:L.use});
+    handAdd({type:"item",name:cd.n,d:L.d+` (보유 ${cd.c})`,stock:cd.n,use:L.use});
   });
-  prevGone.forEach(c=>B.hand.push(c));
+  prevGone.forEach(c=>handAdd(c));
   { const n=run.heroes.filter(h=>!h.down).reduce((a,h)=>a+itemBt(h,"cheatCard"),0), got=[];   /* 사기꾼의 패 (2026-10-05) */
     for(let i=0;i<n;i++){ const nm=rnd(CHEAT_CARDS); got.push(nm);
-      B.hand.push(CARD_LIB[nm].summon?{type:"summon",name:nm,gone:1}:{type:"item",name:nm,d:CARD_LIB[nm].d,use:CARD_LIB[nm].use,foe:CARD_LIB[nm].foe,gone:1}) }   /* foe — 불덩이를 아군에게 던지던 것 (점검 2026-10-07) */
+      handAdd(CARD_LIB[nm].summon?{type:"summon",name:nm,gone:1}:{type:"item",name:nm,d:CARD_LIB[nm].d,use:CARD_LIB[nm].use,foe:CARD_LIB[nm].foe,gone:1}) }   /* foe — 불덩이를 아군에게 던지던 것 (점검 2026-10-07) */
     if(got.length){ say(`사기꾼의 패 — 소멸성 카드 ${got.join(", ")}`,"t2");
       /* 카드를 얻는 순간 (사용자 2026-10-13). 묶음 : 「카드 UI 위, 툴팁 아래」 · 80/80/80/90/90/100/110/140 */
       setTimeout(()=>{ const u=(typeof ICON_PNG!=="undefined")&&ICON_PNG.fx_cheat_card; if(!u) return;
@@ -28353,7 +28379,7 @@ function skExec0(f,I){
     say(`${f.name} — ${f.name==="고장난 수호기"?"포신이 달아오릅니다":"기운이 차오릅니다"} (충전 ${f.chg}/${chgMax(f)})`,"t3") }
   if(s.spend) f.chg=0;
   if(s.nextMust!=null) f.nextMust=s.nextMust;
-  if(s.giveCard&&CARD_LIB[s.giveCard]){ B.hand.push({type:"item",name:s.giveCard,d:CARD_LIB[s.giveCard].d,use:CARD_LIB[s.giveCard].use,gone:1,arrive:1});
+  if(s.giveCard&&CARD_LIB[s.giveCard]){ handAdd({type:"item",name:s.giveCard,d:CARD_LIB[s.giveCard].d,use:CARD_LIB[s.giveCard].use,gone:1,arrive:1});
     fx({side:"foe",slot:f.slot,ring:"#a06ae0",txt:s.giveCard,cls:"shd",gap:140});
     fx({side:"foe",slot:f.slot,cardGive:1,gap:1900});   /* 카드가 관리자에게서 떠올라 손패로 (2026-10-05) → 손패가 어두워지는 박자까지 (2026-10-09) */
     say(`${f.name} — 손패에 [${s.giveCard}] 카드가 끼어듭니다.`,"t3") }
@@ -33397,7 +33423,7 @@ function gimWatch(){
   const k=B.foes.find(f=>f.alive&&f.name==="첨탑 관리자"); if(!k) return;
   if(B.turn%2) return;
   const stunned=(k.stun||0)>0||deb(k,"stun")>0; if(stunned) return;
-  B.hand.push({type:"item",name:"감시",d:CARD_LIB["감시"].d,use:CARD_LIB["감시"].use,gone:1});
+  handAdd({type:"item",name:"감시",d:CARD_LIB["감시"].d,use:CARD_LIB["감시"].use,gone:1});
   fx({side:"foe",slot:k.slot,ring:"#a06ae0",txt:"감시",cls:"shd",gap:160});
   say(`${k.name}의 감시 — 손패에 [감시] 카드가 끼어듭니다.`,"t3");
   const hs=onField().filter(h=>h.hp>0&&h.sk&&h.sk.length);
@@ -34002,7 +34028,7 @@ function giveArmor(h,nm){
     say(`${nm}${jo(nm,"eun")} 이미 ${ARMOR_HOLD}장을 들고 있습니다.`,"t2"); return }
   if(have){ have.n=(have.n||1)+1;
     fx({side:"mine",slot:h.slot,cardGive:{to:B.hand.indexOf(have)},gap:300}) }   /* 그 카드 자리로 날아든다 (㉝) */
-  else { B.hand.push({type:"item",name:nm,n:1,d:A?A.d:"아군에게 보호막 10",by:h.name,arrive:1,
+  else { handAdd({type:"item",name:nm,n:1,d:A?A.d:"아군에게 보호막 10",by:h.name,arrive:1,
     use:a=>{ if(A) A.use(a,h); else { addShield(a,10); say(`${nm} — ${a.name} 보호막 +10`) } }});
     fx({side:"mine",slot:h.slot,cardGive:1,gap:300}); }   /* 갑옷 카드 날아드는 연출 (2026-10-08) */
   fx({side:"mine",slot:h.slot,s:"summon",ring:"#c9a227",glow:1,txt:nm,cls:"shd",gap:70});
@@ -35232,7 +35258,7 @@ function runEffect0(h,i,s,target){
   if(s.wall){
     const L=["성벽"];   /* 저주받은 성벽 — 겹친 수만큼 한 장씩 더 (노트 2026-10-06 · 2026-10-11) */
     for(let q=0;q<(h.tag.cursedWall||0);q++) L.push("저주받은 성벽");
-    L.forEach(nm=>B.hand.push({type:"summon",name:nm,arrive:1}));
+    L.forEach(nm=>handAdd({type:"summon",name:nm,arrive:1}));
     fx({side:"mine",slot:h.slot,s:"summon",ring:"#8fa2c9",gap:0});
     fx({side:"mine",slot:h.slot,cardGive:1,gap:1250+(L.length-1)*300});   /* 성벽 카드가 헥토에게서 떠올라 손패로 (사용자 2026-10-06) */
     say(`${L.join(", ")} 카드를 손에 넣었습니다. 빈 칸에 끌어다 소환하세요.`,"t1"); return;
@@ -35560,14 +35586,14 @@ function runEffect0(h,i,s,target){
          보유 카드(run.cards)에는 넣지 않는다 — 이 전투가 끝나면 사라진다. 보상으로 얻은 것은 여느 카드처럼 남는다. */
       const cn=impCardName();
       B.portals.splice(B.portals.indexOf(ex),1);
-      B.hand.push({type:"summon",name:cn,gone:1});
+      const 들어옴=handAdd({type:"summon",name:cn,gone:1});
       /* 칸에 놓을 때와 같은 소리 — 틈에서 나오는 놈이나 칸에 서는 놈이나 같은 놈이다 */
       fx({side:side,slot:slot,art:"rift",s:minionPlaceSnd(cn)||sfxOr("악마 하수인 배치","summon"),   /* 나오는 놈의 소리 — 장군은 예전 그대로 (사용자 2026-10-04) */
           txt:"하수인",cls:"crit"});
       /* 방금 손에 들어온 카드 위에도 같은 틈을 띄운다.
          둘을 이어서 보면 "저기서 나온 것이 이 카드가 되었다" 로 읽힌다.
          카드를 실제로 내려놓는 자리는 안 건드린다 — 세 번 보게 된다 */
-      riftOnCard(B.hand.length-1);
+      if(들어옴) riftOnCard(B.hand.length-1);   /* 안 들어왔으면 띄울 카드가 없다 */
       say(`차원문을 닫고 ${cn} 카드를 얻습니다 — 이 전투가 끝나면 사라집니다. 빈 칸에 끌어다 소환하세요.`,"t1");
       barkPick(h,["skill:균열 차원문:카드","atk"]);
     }else{
@@ -36167,7 +36193,7 @@ function unitDown(t){
     if(L.length){ say(`사후 — ${L.map(a=>a.name).join(", ")} 모든 능력치 +1`,"t1"); synFlash("사후",L) } }
   prideFall(t);                                   /* 나이코스 — 쓰러지면 자부심을 잃는다 */
   if(t.name==="트리스탄"&&!B.corpseUsed){
-    B.corpseUsed=1; B.hand.push({type:"summon",name:"망자의 육체",arrive:1});
+    B.corpseUsed=1; handAdd({type:"summon",name:"망자의 육체",arrive:1});
     fx({side:"mine",slot:t.downSlot,cardGive:1,gap:1250});   /* 쓰러진 몸에서 카드가 돋아 손패로 날아든다 (cardGiveFX, 사용자 2026-10-06) */
     say("저주받은 육체 — 망자의 육체 카드를 얻습니다.","t1");
   }
