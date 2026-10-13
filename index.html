@@ -480,6 +480,7 @@ img.pxs.face{image-rendering:pixelated;width:auto;filter:drop-shadow(0 2px 0 rgb
 .golempick .gpcard{position:relative;width:240px;height:336px;cursor:pointer}
 .golempick .gpcard .ccard.cf{position:absolute;left:0;top:0;margin:0;
   transform:scale(1.5);transform-origin:0 0;transition:transform .12s,filter .12s}
+.golempick .cc-d.vlong{font-size:7.4px;line-height:1.18}
 .golempick .gpcard:hover .ccard.cf{transform:scale(1.56) translateY(-5px);
   filter:drop-shadow(0 8px 14px rgba(0,0,0,.6)) drop-shadow(0 0 10px rgba(201,162,39,.55))}
 /* 고르는 동안 가장자리에 도는 오오라 — 1528x816 여덟 칸, **파일로** 나른다 (web/fx) */
@@ -10896,16 +10897,65 @@ function partCardHtml(kind,n){
   const T=((kind==="mat")?PAVEL_MAT:PAVEL_SOUL)[n]||{}, nm=partName(kind,n);
   /* 체력 · 최대 마나는 **카드 밑 칸**에 이미 있다 — 설명에서는 뺀다 (사용자 2026-10-13).
      표(PAVEL_MAT · PAVEL_SOUL)의 글은 노트 그대로 둔다 — 손패 카드는 그 글을 쓴다 */
-  const d=String(T.d||"").replace(/^\s*(체력\s*\d+|최대 마나\s*\d+)\s*\n?/,""), 긺=d.replace(/\n/g," ").length>42;
+  const d=String(T.d||"").replace(/^\s*(체력\s*\d+|최대 마나\s*\d+)\s*\n?/,""), n0=d.replace(/\n/g," ").length;
+  const 긺=(n0>70)?" long vlong":(n0>42)?" long":"";
   const st=(kind==="mat")?`<span class="hp">${ic("hp")} ${T.hp}</span>`
                          :`<span class="mn">${ic("mana")} ${T.mana}</span>`;
   return `<div class="card ccard cf">
     <div class="cc-art">${cardArt(nm)}</div>
     <div class="cc-n">${esc(n)}</div>
     <div class="cc-type">${kind==="mat"?"재료 부속":"영혼 부속"}</div>
-    <div class="cc-d${긺?" long":""}"><div class="cc-di">${rich(d)}</div></div>
+    <div class="cc-d${긺}"><div class="cc-di">${rich(d)}</div></div>
     <div class="cc-st">${st}</div>
   </div>`;
+}
+/* ── 원천 분석 (노트 17-4) ──
+   전투 시작 후 파벨을 **처음 배치하면** 희귀 장신구 셋 가운데 하나를 골라 **이번 전투 동안만** 찬다.
+   빈 칸이 없으면 forceEquip 가 가장 오른쪽 것을 가방에 넣고 그 자리를 차지한다 (노트 주석 그대로) */
+function itemCardHtml(n){
+  const it=itemDef(n)||{}, d=String(it.d||""), n0=d.replace(/\n/g," ").length;
+  const 긺=(n0>70)?" long vlong":(n0>42)?" long":"";
+  return `<div class="card ccard cf">
+    <div class="cc-art">${itemIcon(it)}</div>
+    <div class="cc-n">${esc(it.n||n)}</div>
+    <div class="cc-type">${esc(it.g||"희귀")} 장신구</div>
+    <div class="cc-d${긺}"><div class="cc-di">${rich(d)}</div></div>
+  </div>`;
+}
+function srcAnalysisStart(h){
+  if(!B||B.over||!h) return 0;
+  const L=ITEMS.filter(i=>i&&i.g==="희귀");
+  if(!L.length) return 0;
+  const a=L.slice(), opts=[];
+  while(opts.length<3&&a.length){ const x=rnd(a); opts.push(x.n); a.splice(a.indexOf(x),1) }
+  B.srcPick={by:h.name,opts:opts,t0:Date.now()};
+  { const i=(h.sk||[]).findIndex(k=>k&&k.srcAnalysis);   /* 저절로 돈 만큼 사용한도를 쓴다 — 손으로 또 열 수 없게 */
+    if(i>=0){ h.limitUsed=h.limitUsed||{}; h.limitUsed[i]=(h.limitUsed[i]||0)+1 } }
+  say(`원천 분석 — ${h.name}${jo(h.name,"ig")} 쥘 장신구를 살핍니다.`,"t1");
+  render(); return 1;
+}
+function srcAnalysisPick(nm){
+  const G=B&&B.srcPick; if(!G) return;
+  const h=(run.heroes||[]).find(x=>x.name===G.by);
+  B.srcPick=null;
+  const it=evItem(nm);
+  if(h&&it){
+    it.tmpBattle=1;                                   /* 이번 전투 동안만 (노트 17-4) */
+    const out=forceEquip(h,it);
+    if(out) say(`원천 분석 — 빈 칸이 없어 ${out.n}${jo(out.n,"eul")} 가방에 넣었습니다.`,"t2");
+    if(h.slot>0) fx({side:"mine",slot:h.slot,s:"equip",ring:"#c9a227",glow:1,txt:"장착",cls:"shd",gap:90});
+    say(`원천 분석 — ${h.name}${jo(h.name,"ig")} ${it.n}${jo(it.n,"eul")} 이번 전투 동안 착용합니다.`,"t1");
+  }
+  render();
+}
+/* 전투가 끝나면 걷는다 — 「이번 전투에서만」. 이긴 쪽 · 진 쪽 **둘 다**에서 부른다 */
+function srcAnalysisOff(){
+  let n=0;
+  ((typeof run!=="undefined"&&run&&run.heroes)||[]).forEach(h=>{
+    for(let i=((h.items||[]).length-1);i>=0;i--){
+      const it=h.items[i];
+      if(it&&it.tmpBattle){ unequip(h,i,1); n++ } } });
+  return n;
 }
 function golemStart(h){
   if(!B) return;
@@ -10985,6 +11035,7 @@ const SKILL_FULL={
  "지면 내려치기":"모든 적에게 피해를 3(추가 †,∴ ) 줍니다. 거리 2 내의 적들은 공중에 뜸 상태가 됩니다.",
  "기동":"1칸 이동하고 보호막을 2(추가 ¤ ) 얻습니다. 해당 자리에 다른 아군이 있었다면, 그 아군에게도 보호막을 부여합니다.",
  "골렘 창조":"잠금(2). 원하는 하수인 골렘을 창조합니다.",
+ "원천 분석":"전투 시작 후, 파벨을 처음 배치하면 3개의 무작위 희귀 장신구가 제시됩니다. 그 중 하나를 골라 이번 전투에서만 착용합니다.",
  "파수꾼의 은총":"내 턴에 적이 공중에 뜸 상태가 된 후에, 추가 보호력만큼 보호막을 얻습니다.",
  /* 이라 — 노트 16-1 ~ 16-4 글 그대로 (2026-10-12). *( )* 는 richLive 가 총 피해량으로 채운다 */
  /* ⚠️ 기획 노트 글자 그대로다 (2026-10-13). 줄이거나 늘이거나 바꿔 쓰지 말 것.
@@ -11283,7 +11334,8 @@ HEROES["파벨"]={title:"모험심 가득한 창조자",role:"보호, 소환",hp
   skills:[
    {n:"지면 내려치기",cost:2,el:"공격",tg:"self",allHit:1,slam:1,dmg:3,d:"모든 적에게 피해 3(추가), 거리 2 내는 공중에 뜸"},
    {n:"기동",cost:1,el:"이동",tg:"ally",mobil:1,shield:2,d:"1칸 이동, 보호막 2(추가), 자리를 바꾼 아군에게도"},
-   {n:"골렘 창조",cost:3,el:"집중",tg:"self",lock:2,makeGolem:1,d:"잠금(2), 부속 둘을 골라 하수인 골렘을 만든다"}
+   {n:"골렘 창조",cost:3,el:"집중",tg:"self",lock:2,makeGolem:1,d:"잠금(2), 부속 둘을 골라 하수인 골렘을 만든다"},
+   {n:"원천 분석",cost:0,el:"지속",tg:"self",limit:1,srcAnalysis:1,d:"처음 배치하면 희귀 장신구 셋 중 하나를 이번 전투 동안 착용"}
   ]};
 const START_PICKS=["나이코스","카제","굴라"];
 const HERO_POOL=["나이코스","카제","굴라","헥토","트리스탄","인비디아","도미니코",
@@ -18575,6 +18627,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 69, "v": "0.7", "d": "2026-10-13", "t": "원천 분석 — 배치하면 희귀 장신구 셋, 이번 전투 동안 착용", "big": 0},
  {"b": 68, "v": "0.7", "d": "2026-10-13", "t": "골렘 창조 — 오오라와 카드가 서서히 떠오르고, 설명에서 체력 줄을 뺐다", "big": 0},
  {"b": 67, "v": "0.7", "d": "2026-10-13", "t": "골렘 창조 — 카드 테두리 안에, 가운데, 돌다 맞물려 빛나고 카드가 되어 손패로", "big": 0},
  {"b": 66, "v": "0.7", "d": "2026-10-13", "t": "골렘 창조 — 카드 테두리, 가운데, 돌다 맞물리고 빛나 카드가 되어 손패로", "big": 0},
@@ -19835,7 +19888,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=68;
+const BUILD_NO=69;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -23368,6 +23421,7 @@ function winTaintAmount(d){
   return Array.isArray(v)?v[Math.min(v.length,Math.max(1,(d&&d.waves)||1))-1]:v;
 }
 function dungeonCleared(){
+  srcAnalysisOff();   /* 원천 분석 — 이번 전투 동안만 (노트 17-4) */
   const d=run.dun;
   if(d.kind==="elite") questProgress("elite");           /* 현상 수배 */
   if(d.kind==="elite"&&run.field===0) coreTally("elite1",1);   /* 세계핵 — 핏빛 감옥 정예 승리 */
@@ -29822,6 +29876,20 @@ function drawBattle(app){
       row.appendChild(c) });
     app.appendChild(box);
   }
+  /* 원천 분석 — 희귀 장신구 셋 가운데 하나 (노트 17-4). 골렘과 같은 화면 · 같은 카드 틀 */
+  if(B.srcPick&&B.srcPick.opts&&B.srcPick.opts.length){
+    const G=B.srcPick;
+    const box=el(`<div class="golempick"><div class="gpcards"></div>
+      <div class="gpcap">${esc(G.by)}에게 장착할 장신구를 선택하세요</div></div>`);
+    { const age=Date.now()-(G.t0||0);
+      if(age<700) box.style.animationDelay=(-age)+"ms"; else box.classList.add("shown") }
+    const row=box.querySelector(".gpcards");
+    G.opts.forEach(n=>{
+      const c=el(`<div class="gpcard">${itemCardHtml(n)}</div>`);
+      c.onclick=()=>{ SFX.play("click"); srcAnalysisPick(n) };
+      row.appendChild(c) });
+    app.appendChild(box);
+  }
   const pr=el(`<div class="prompt">
     <span class="step ${!sel?"on":""}">1, 내 칸</span>
     <span class="step ${sel&&sel.step===2?"on":""}">2, 기술</span>
@@ -31173,6 +31241,10 @@ function onSummon(h){
       say(`${h.name} — 라운드 첫 턴 추가 마나 +${ex} (마나 ${h.mana})`,"t2");
     } }
   if(t.potWeak&&B&&!run.sandbox){ addDeb(h,"atkDn",t.potWeak); say(`붉은 물약 — ${h.name} 공격약화 ${t.potWeak}`,"t2"); t.potWeak=0 }   /* 어인 물약상 (2026-10-05) */
+  /* 원천 분석 — **그 전투에서 처음 배치될 때** 한 번 (노트 17-4). 라운드가 여럿이어도 한 번이다 */
+  if(h.name==="파벨"&&(h.sk||[]).some(k=>k&&k.srcAnalysis)&&run.dun&&!run.dun.srcDone&&B&&!B.over){
+    run.dun.srcDone=1; setTimeout(()=>{ if(B&&!B.over) srcAnalysisStart(h) },420);
+  }
   /* ── 대원을 배치할 때마다 (라운드마다 다시) ── */
   if(h.name==="오토"){   /* 녹 제거 · 숲의 향기 · 씨앗 주머니 (노트 2026-10-04) */
     if(t.placeEsh){ h.eshield=(h.eshield||0)+t.placeEsh; skinProg("ottoEsh",t.placeEsh); say(`녹 제거 — ${h.name} 에너지 보호막 +${t.placeEsh}`,"t2") }
@@ -34143,6 +34215,7 @@ function runEffect0(h,i,s,target){
     return;
   }
   if(s.makeGolem){ golemStart(h); return }   /* 골렘 창조 (노트 17-3) — 고르는 화면은 render 가 그린다 */
+  if(s.srcAnalysis){ srcAnalysisStart(h); return }   /* 원천 분석 — 배치할 때 저절로 돈다. 손으로도 같은 길 */
   if(s.negsh){   /* 정화하기 — 부정 보호막 (영혼: 정화) */
     const v=(s.negsh||0)+mod(s,"negsh"); negGain(h,v);
     say(`${s.n} — ${h.name} 부정 보호막 +${v}`,"t2"); return }
@@ -35200,6 +35273,7 @@ function addUnknownCells(n){
 
 /* ─ 턴 ─ */
 function battleLost(){
+  srcAnalysisOff();   /* 진 판에서도 걷는다 */
   try{ coreBattleEnd() }catch(e){ console.error(e) }   /* 진 전투에서 벤 적도 통산에 든다 (2026-10-09) */
   coreGetLater();
   if(run.dun&&run.dun.trial){ trialLost(); return }   /* 시련의 문 — 판이 끝나지 않고 절반의 체력으로 벗어난다 */
