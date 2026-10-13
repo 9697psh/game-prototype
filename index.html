@@ -10920,7 +10920,7 @@ function golemCardText(c){
   if(!c||!c.mat||!c.soul) return "";
   const M=PAVEL_MAT[c.mat]||{}, S=PAVEL_SOUL[c.soul]||{};
   const 벗기기=t=>String(t||"").replace(/^\s*(체력\s*\d+|최대 마나\s*\d+)\s*\n?/,"");
-  return `${c.mat} + ${c.soul}\n${벗기기(M.d)}\n${벗기기(S.d)}`;
+  return `${벗기기(M.d)}\n${벗기기(S.d)}`;   /* 부속 이름 줄은 뺀다 (사용자 2026-10-13) */
 }
 function golemCardHp(c){ const M=(c&&c.mat&&PAVEL_MAT[c.mat])||null; return M?M.hp:null }
 function golemCardMana(c){ const S=(c&&c.soul&&PAVEL_SOUL[c.soul])||null; return S?S.mana:null }
@@ -11104,11 +11104,13 @@ function golemDeath(u,why){
   if(M.deathNeg){ const L=onField().filter(a=>a.hp>0&&a!==u&&!a.isMin);
     L.forEach(a=>negGain(a,M.deathNeg));
     if(L.length) say(`균열석 — ${L.map(a=>a.name).join(", ")} 부정 보호막 +${M.deathNeg}`,"t2") }
-  if(M.deathAll){ const v=M.deathAll+up, L=B.foes.filter(f=>f.alive);
-    if(L.length){ say(`금속 — 모든 적에게 피해 ${v}`,"t1");
-      L.forEach(f=>asSrc(ow,()=>hurt(f,v,why||"금속",null,0,0,1))) } }
-  if(M.deathNear){ const v=M.deathNear+up, f=nearestFoe(u);
-    if(f){ say(`드론파편 — ${f.name}에게 피해 ${v}`,"t2"); asSrc(ow,()=>hurt(f,v,why||"드론파편",null,0,0,1)) } }
+  /* 「이 소환물의 피해가 항상 치명타」는 **죽음 피해에도** 간다 (사용자 2026-10-13) */
+  const 치=M.critAlways?1:0, 곱=치?2:1;
+  if(M.deathAll){ const v=(M.deathAll+up)*곱, L=B.foes.filter(f=>f.alive);
+    if(L.length){ say(`금속 — 모든 적에게 피해 ${v}${치?" (치명타)":""}`,"t1");
+      L.forEach(f=>asSrc(ow,()=>hurt(f,v,why||"금속",null,0,치,1))) } }
+  if(M.deathNear){ const v=(M.deathNear+up)*곱, f=nearestFoe(u);
+    if(f){ say(`드론파편 — ${f.name}에게 피해 ${v}${치?" (치명타)":""}`,"t2"); asSrc(ow,()=>hurt(f,v,why||"드론파편",null,0,치,1)) } }
   /* 재조립 — 그 골렘의 부속 카드 하나를 돌려받는다 (노트 highRewards).
      손패에 짝이 있으면 golemMerge 가 바로 합친다 — 길은 그 한 곳이다 */
   if(ow&&ow.tag&&ow.tag.rebuild&&u.golem&&B&&B.hand&&!B.over){
@@ -18853,6 +18855,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 77, "v": "0.7", "d": "2026-10-13", "t": "내려치기 이펙트 고정·흔들림 · 금속 치명타 · 은총 아이콘", "big": 0},
  {"b": 76, "v": "0.7", "d": "2026-10-13", "t": "골렘 카드가 그 턴에 들어온다 · 연출과 글 손질 여럿", "big": 0},
  {"b": 75, "v": "0.7", "d": "2026-10-13", "t": "파벨을 고르기 화면에 (기술 넷 · 보상 서른넷)", "big": 0},
  {"b": 74, "v": "0.7", "d": "2026-10-13", "t": "파벨 상급 보상 열 — 보상 서른넷이 다 들어왔다", "big": 0},
@@ -20121,7 +20124,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=76;
+const BUILD_NO=77;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -34522,9 +34525,14 @@ function runEffect0(h,i,s,target){
       if(!B._slamFx){ const L0=B.foes.filter(f=>f.alive);
         if(L0.length&&(typeof ICON_PNG!=="undefined")&&ICON_PNG["fx_pavel_ground_slam"]){
           B._slamFx=1; setTimeout(()=>{ B._slamFx=0 },900);
-          const mid=L0[Math.floor(L0.length/2)];
-          fx({side:"foe",slot:mid.slot,sheet:"fx_pavel_ground_slam",
-              sheetOpt:{cellW:256,cellH:96,frames:1,z:1.6,frameMs:[460]},gap:0}) } }
+          /* ⚠️ 맞은 적을 따라가면 자리가 중구난방이다 (사용자 2026-10-13) —
+             **적 진영 한가운데 칸(3번 = 화면의 8번)**에 고정으로 깔고 넓게 늘인다. 적 바닥 6~10 을 가로지른다 */
+          fx({side:"foe",slot:3,sheet:"fx_pavel_ground_slam",
+              sheetOpt:{cellW:256,cellH:96,frames:1,z:2.8,frameMs:[460]},gap:0});
+          /* 땅을 내려찍었으니 화면도 한 번 흔들린다 (사용자 2026-10-13) */
+          setTimeout(()=>{ try{ document.body.classList.add("shakeall");
+            setTimeout(()=>document.body.classList.remove("shakeall"),300) }catch(e){} },
+            Math.round(180*(typeof SPD==="number"?SPD:1))) } }
       /* 무게추 — 이번 한 번은 **거리를 가리지 않는다** (노트 midRewards) */
       const 모두=!!h.weightOn; if(모두){ h.weightOn=0; say("무게추 — 땅이 통째로 솟구칩니다.","t2") }
       B.foes.filter(f=>f.alive&&(모두||dist(h.slot,f.slot)<=2)).forEach(f=>airborne(h,f));
@@ -35329,6 +35337,10 @@ function runEffect0(h,i,s,target){
         dmg*=2; CRIT=1; say("차원문 위의 적 — 씹어먹기 치명타!","t1") }
       if(T.chompLeech) addLeech(h,T.chompLeech);
     }
+    /* 하수인 골렘의 금속 부속 — **이 소환물의 피해는 늘 치명타** (노트 17-3).
+       ⚠️ 이 갈래는 치명타를 대원마다 따로 적어 두고 **critWhy 를 묻지 않았다** —
+          깃발(critWhy)은 서는데 값이 안 변하던 자리다 (사용자 2026-10-13 : 「기술로 피해를 줄 때도 치명타 안 됨」) */
+    if(!CRIT&&h&&h.isMin&&h.golem&&critWhy(h,s,tgt)){ dmg*=2; CRIT=1; say("금속 — 치명타!","t1") }
     /* 물량 공세 — 차원문 위에 선 악마 하수인은 더 세게 찌른다 */
     dmg+=portalImpAtk(h);
     if(!dmg){ say(`${tgt.name}${jo(tgt.name,"eun")} 조준 밖이라 상처 하나 없습니다.`,"t2"); return }
