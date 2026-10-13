@@ -12637,7 +12637,7 @@ const HERO_REWARDS={
     h=>h.tag.graceBoom=(h.tag.graceBoom||0)+1,0.5),
   R("무게추","중급","기동을 사용한 후, 다음 지면 내려치기가 강화되어 모든 적을 공중에 뜸 상태로 만듭니다.\n*획득시 보상에서 다시 등장하지 않음",
     h=>h.tag.weight=(h.tag.weight||0)+1),
-  R("골렘 군단","중급","퀘스트: 골렘 창조 10회 사용\n보상: 제련석 15개, 무작위 일반 장신구 1개",
+  R("골렘 군단","중급","퀘스트: 골렘 창조 25회 사용\n보상: 제련석 15개, 무작위 일반 장신구 1개",
     h=>{ if(!questHas("골렘 군단")) questAccept("골렘 군단",h.name) },0.5),
   R("파수꾼의 시험","중급","퀘스트: 3라운드 일반 전투 2회 승리\n보상: 모든 추가 능력치 +1",
     h=>{ if(!questHas("파수꾼의 시험")) questAccept("파수꾼의 시험",h.name) },0.5),
@@ -19072,6 +19072,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 99, "v": "0.7", "d": "2026-10-13", "t": "별똥별 치명타 · 골렘 군단 25회", "big": 0},
  {"b": 98, "v": "0.7", "d": "2026-10-13", "t": "보상 설명의 부속 이름에 밑줄과 부속 카드 풍선", "big": 0},
  {"b": 97, "v": "0.7", "d": "2026-10-13", "t": "포식의 주먹", "big": 0},
  {"b": 96, "v": "0.7", "d": "2026-10-13", "t": "조합 골렘 · 포식 카드 그림", "big": 0},
@@ -20362,7 +20363,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=98;
+const BUILD_NO=99;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -25862,7 +25863,7 @@ const QUESTS={
   "절실한 신앙":{kind:"penance",need:20,who:"hero",
     d:"참회의 기류를 {n}번 사용",rd:"이번 원정에서 참회의 기류를 사용한 후, 추가로 2번 더 사용됩니다.",reward:{faith:2}},
   /* 파벨 중급 셋 (노트 2026-10-13) */
-  "골렘 군단":{kind:"golem",need:10,who:"hero",
+  "골렘 군단":{kind:"golem",need:25,who:"hero",
     d:"골렘 창조 {n}번 사용",rd:"제련석 15개, 무작위 일반 장신구 1개",reward:{stone:15,item:"일반"}},
   "파수꾼의 시험":{kind:"win3",need:2,who:"hero",
     d:"3라운드 일반 전투에서 {n}번 승리",rd:"모든 추가 능력치 +1",reward:{allStat:1}},
@@ -34850,12 +34851,17 @@ function runEffect0(h,i,s,target){
     say(`${s.n} — ${h.name}${jo(h.name,"ig")} 제 죽음을 불러냅니다.`,"t1");
     golemDeath(h,s.n); return }
   if(s.starfall){   /* 별똥별 — 체력이 가장 낮은 적에게, 때릴 때마다 다시 고른다 (영혼: 별빛) */
-    const v=(s.dmg||0)+mod(s,"dmg")+(h.mag||0), n0=s.hits||1;
+    const v0=(s.dmg||0)+mod(s,"dmg")+(h.mag||0), n0=s.hits||1;
     for(let q=0;q<n0;q++){
       const L=B.foes.filter(f=>f.alive); if(!L.length) break;
       const f=L.reduce((a,b)=>a.hp<=b.hp?a:b);
+      /* ⚠️ **치명타를 여기서 따로 묻는다.** 이 길은 일반 피해 셈을 지나지 않아 critWhy 를 안 거쳤다 —
+         그래서 금속 부속(늘 치명타)이 **별똥별에만 안 걸렸다** (사용자 2026-10-13).
+         설명창(breakdown)은 critWhy 를 보고 이미 2배를 적고 있었으니 **보이는 숫자와 맞는 숫자가 어긋났다.**
+         ⚠️ 두 배는 **부르는 쪽**이 한다 — hurt 의 여섯째 자리는 연출·소리를 가르는 깃발이다 (찢어발기기와 같은 결) */
+      const CR=critWhy(h,s,f)?1:0, v=CR?v0*2:v0;
       fx({side:"foe",slot:f.slot,art:"star",ring:"#9ad8ff",gap:90});
-      hurt(f,v,s.n,"mag",0,0,1) }
+      hurt(f,v,s.n,"mag",0,CR,1) }
     return }
   if(s.overload){   /* 에너지 과부하 (노트 2026-09-30) */
     h.mana=(h.mana||0)+2; h.curse=(h.curse||0)+1;
