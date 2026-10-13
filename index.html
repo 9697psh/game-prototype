@@ -12273,7 +12273,7 @@ const COMMON=[
      toast(put?"지도에 제련소가 하나 들어섰습니다.":"지도에 빈 자리가 없어 제련소를 세우지 못했습니다.") }),
  R("장인의 눈","중급","이번 원정 동안 제련소에서 제련할 때 제련석 비용이 1 감소합니다.",
    h=>h.tag.forgeCut=(h.tag.forgeCut||0)+1),
- R("쪽잠","중급","쉼터에 도착하면 활동량을 1 얻습니다.\n금화를 7개 얻습니다.",
+ R("쪽잠","중급","주둔지를 제외한 쉼터에 도착하면 활동량을 1 얻습니다.\n금화를 7개 얻습니다.",
    h=>{ h.tag.restAct=(h.tag.restAct||0)+1; run.gold+=7 }),
  Object.assign(R("부지런한 아침","중급","주둔지에서 하루 몫을 쓴 뒤, 활동량 1을 들여 시설을 한 곳 더 이용할 수 있습니다.\n같은 곳을 두 번 이용할 수 있습니다.",
    h=>{ run.campExtra=1 }),{okf:()=>!(run&&run.campExtra)}),
@@ -19186,6 +19186,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 108, "v": "0.7", "d": "2026-10-14", "t": "쪽잠은 주둔지를 제외한 쉼터에서만", "big": 0},
  {"b": 107, "v": "0.7", "d": "2026-10-14", "t": "공용 보상 열둘 추가 — 무작위 보상 풀 하나로, 정찰대 비용 5/20/50", "big": 0},
  {"b": 106, "v": "0.7", "d": "2026-10-13", "t": "등장 암전 · 초월 장면 · 파수꾼 대사", "big": 0},
  {"b": 105, "v": "0.7", "d": "2026-10-13", "t": "우두머리 전투 턴 한도 25 표기", "big": 0},
@@ -20485,7 +20486,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=107;
+const BUILD_NO=108;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -22710,7 +22711,7 @@ function enterCell0(r,c){
     else if(cell.t==="rest"){ view="rest";
       if(!again) coreTally("rest",1);   /* 세계핵 — 쉼터 방문 (주둔지는 안 센다) */
       setTimeout(()=>stepBanner("쉼 터","잠깐 몸을 누입니다"),40);
-      restPerks(again);   /* 모닥불 이야기 · 반가운 휴식 — 주둔지 쉼터와 같은 자리에서 (사용자 2026-10-09) */
+      restPerks(again,"rest");   /* 모닥불 이야기 · 반가운 휴식 — 주둔지 쉼터와 같은 자리에서 (사용자 2026-10-09) */
     }
     else if(cell.t==="forge"){ run.forgePick=[]; run.forgeMade=0; view="forge"; run.smithMood=null; smithVoice("enter");
       setTimeout(()=>stepBanner("제 련 소","장신구 두 개를 합칩니다"),40);
@@ -23500,8 +23501,8 @@ function drawCamp(app){
    /* 다친 대원이 없어도 들어간다 (사용자 2026-10-09) — 쉼터는 회복만 하는 자리가 아니다. 지도의 휴식소와 결이 같다 */
    campAct("heal","쉼터",coreFx("noRest")?"잔혹한 세계핵 — 쉼터에서 휴식할 수 없습니다."
      :hurt>0?`다친 대원이 최대 체력의 ${restPct(40)}%를 회복합니다.${restUpV()?` (편안한 휴식 +${restUpV()}%)`:""}`
-     :`모두 멀쩡합니다. 잠시 숨을 돌립니다.${restPerkNote()}`,!coreFx("noRest"),
-     ()=>{ restPerks(false); restHeal(h=>Math.round(h.maxHp*restPct(40)/100),"camp"); SFX.play("heal") }),   /* 쉼터에 걸린 것은 여기서도 돈다 (사용자 2026-10-09) · 회복 결과 화면 (2026-10-04) */
+     :`모두 멀쩡합니다. 잠시 숨을 돌립니다.${restPerkNote("camp")}`,!coreFx("noRest"),
+     ()=>{ restPerks(false,"camp"); restHeal(h=>Math.round(h.maxHp*restPct(40)/100),"camp"); SFX.play("heal") }),   /* 쉼터에 걸린 것은 여기서도 돈다 (사용자 2026-10-09) · 회복 결과 화면 (2026-10-04) */
    campAct("train","훈련장",
      run.day<=1
        ? "몸을 풀 겨를도 없이 첫날이 밝았습니다. 둘째 날부터 쓸 수 있습니다."
@@ -25000,24 +25001,27 @@ function drawRest(app){
    again : 이미 들렀던 칸에 다시 들어온 것 (그때는 아무것도 주지 않는다) */
 /* 쉼터에서 쉬면 회복 말고도 받는 것 — 멀쩡해도 들어갈 까닭이 있다 (사용자 2026-10-09).
    restPerks() 와 취침 전 독서(restRecord)가 실제로 주는 것을 그대로 읽는다 */
-function restPerkNote(){
+function restPerkNote(where){
   if(!run||!run.heroes) return "";
   const L=[], big=k=>Math.max(0,...run.heroes.map(h=>(h.tag&&h.tag[k])||0));
   { const v=tagSum("campfire"); if(v) L.push(`모닥불 이야기: 다음 전투 에너지 보호막 ${v}`) }
   { const v=big("restHeal");    if(v) L.push(`반가운 휴식: 체력 ${v}`) }
-  { const v=tagSum("restAct");  if(v) L.push(`쪽잠: 활동량 ${v}`) }
+  { const v=where==="camp"?0:tagSum("restAct");   /* 쪽잠은 주둔지를 뺀다 (사용자 2026-10-14) */
+    if(v) L.push(`쪽잠: 활동량 ${v}`) }
   { const d=run.heroes.find(h=>h.name==="도미니코"&&!h.down&&h.tag&&h.tag.bedRead);
     if(d) L.push(`취침 전 독서: 경험치 ${d.tag.bedRead}`) }
   return L.length?`\n쉬기만 해도 받습니다 — ${L.join(" / ")}`:"";
 }
-function restPerks(again){
+/* where : "rest" 지도의 쉼터 · "camp" 주둔지의 쉼터.
+   ★ 「주둔지를 제외한」이 글에 **있는 것만** where 를 본다 — 나머지는 둘 다에서 돈다 (사용자 2026-10-09) */
+function restPerks(again,where){
   if(!run||again) return;
   if(tagSum("campfire")){ run.campfire=tagSum("campfire");
     toast(`모닥불 이야기 — 다음 전투에서 대원마다 에너지 보호막 ${run.campfire}`) }
   const v=Math.max(0,...run.heroes.map(h=>(h.tag&&h.tag.restHeal)||0));
   if(v){ run.heroes.forEach(h=>{ if(!h.down) healUp(h,v) });
     toast(`반가운 휴식 — 대원들이 체력을 ${v} 회복했습니다.`) }
-  { const a=tagSum("restAct");   /* 쪽잠 (공용 중급, 2026-10-14) — 고른 만큼 더한다 */
+  { const a=where==="camp"?0:tagSum("restAct");   /* 쪽잠 (공용 중급) — 주둔지 쉼터에서는 안 준다 (사용자 2026-10-14) */
     if(a){ run.act=(run.act||0)+a; toast(`쪽잠 — 활동량 +${a}`) } }
 }
 function restHeal(amt,from){ restRecord(()=>run.heroes.forEach(h=>{ if(!h.down) healUp(h,amt(h)) }),from) }
