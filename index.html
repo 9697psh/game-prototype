@@ -6647,10 +6647,11 @@ function mrfAuraHtml(slot){
       675ms 짜리를 411ms 로 줄였다 — 뒤 두 칸만 남겨 둔다(끝맺음이 무거워야 세게 보인다).
    사용자 2026-10-13 : 할퀴기는 「번갈아 4번」, 찢어발기기는 「랜덤하게 하나」.
    ⚠️ Math.random 을 쓰지 않는다 — 판의 주사위가 밀린다. 턴 수와 선 자리로 가른다 */
-function iraClawHit(slot,right,ms){
+function iraClawHit(slot,right,ms,snd){   /* snd — 그 발톱에 찢어발기기와 같은 녹음을 얹는다 (사용자 2026-10-13 : 할퀴기도 때릴 때마다) */
   const go=()=>{ if(!B||B.over) return;
     fx({side:"foe",slot:slot,sheet:right?"fx_ira_rend_r2l":"fx_ira_rend_l2r",
-        sheetOpt:{cellW:64,cellH:64,frames:8,z:1.5,frameMs:[48,42,40,38,45,52,66,80]},gap:0});
+        sheetOpt:{cellW:64,cellH:64,frames:8,z:1.5,frameMs:[48,42,40,38,45,52,66,80]},
+        s:snd?sfxOr("이라 찢어발기기",null):null,gap:0});
     flushFX() };
   if(ms>0) setTimeout(go,ms); else go();
 }
@@ -6660,20 +6661,31 @@ function iraClawHit(slot,right,ms){
 /* 준비 자세의 **전용 대기 모션** — 충전이 들어 있는 동안 되풀이한다 (사용자 2026-10-13 : 「출력이 아예 안 되고 있음」).
    지금까지는 기술을 쓰는 그 순간 한 바퀴 돌고 말았다.
    ⚠️ 켜짐의 기준은 iraCharged 하나다(오라·소리와 같은 결). 미리 돌려 보는 중(PRED_DRY)에는 돌지 않는다 */
+/* 쓰는 순간의 한 바퀴 — 빠르게 앞으로만 */
 const IRA_READY_MS=[85,70,90,70,85,85,95,110];
+/* 충전인 동안의 **대기** 모션 — 사용자 2026-10-13 : 「1~7 이동 후 8에서 잠깐 멈춰서 부들대다가, 7~1 이동」.
+   일정한 빠르기로 돌면 재미가 없다. 가는 길은 느릿하게, 8번 칸에서 **머물며 떨고**, 되돌아온다 */
+const IRA_IDLE_ORDER=[0,1,2,3,4,5,6, 7, 6,5,4,3,2,1,0];
+const IRA_IDLE_MS   =[130,120,115,115,120,130,140, 520, 120,110,110,110,115,125,150];
 let IRA_READY_T=0;
 function iraReadyIdle(h){
   const on=!!(h&&h.name==="이라"&&!h.isMin&&h.hp>0&&h.slot>0&&B&&!B.over&&view==="battle"
               &&!(typeof PRED_DRY!=="undefined"&&PRED_DRY)&&(iraCharged(h)||h.chgOn));   /* 충전 **중**(0/1)부터다 — 사용자 : 「사용 시 … 계속 반복」 */
   if(on&&!IRA_READY_T){
-    const 한바퀴=IRA_READY_MS.reduce((a,b)=>a+b,0);
-    IRA_READY_T=setInterval(()=>{
+    const 한바퀴=IRA_IDLE_MS.reduce((a,b)=>a+b,0);
+    const 배=()=>(typeof SPD==="number"?SPD:1);
+    /* ⚠️ setInterval 로 걸면 **첫 바퀴가 한 주기 뒤**에 온다 — 쓰는 순간의 띠가 끝나고 2초를 가만히 서 있었다.
+       이어 거는 setTimeout 으로 바꾼다 : 쓰는 띠(690ms)가 끝나자마자 대기로 잇는다 */
+    const tick=()=>{
       const u=(run&&run.heroes||[]).find(x=>x.name==="이라");
-      if(!u||!(u.hp>0)||!u.slot||!B||B.over||view!=="battle"||!(iraCharged(u)||u.chgOn)){ iraReadyIdle(null); return }
-      if(B.busy) return;   /* 다른 연출이 도는 동안은 비켜 준다 */
-      poseStripFX("mine",u.slot,"readyA",IRA_READY_MS);
-    },Math.round((한바퀴+260)*(typeof SPD==="number"?SPD:1)));
-  } else if(!on&&IRA_READY_T){ clearInterval(IRA_READY_T); IRA_READY_T=0 }
+      if(!u||!(u.hp>0)||!u.slot||!B||B.over||view!=="battle"||!(iraCharged(u)||u.chgOn)){ IRA_READY_T=0; return }
+      let 다음=Math.round((한바퀴+420)*배());   /* 한 바퀴 돌고 숨 한 번 */
+      if(B.busy) 다음=Math.round(300*배());     /* 다른 연출이 도는 동안은 비켜 섰다가 곧 다시 본다 */
+      else poseStripFX("mine",u.slot,"readyA",IRA_IDLE_MS,{order:IRA_IDLE_ORDER,shakeAt:7});
+      IRA_READY_T=setTimeout(tick,다음);
+    };
+    IRA_READY_T=setTimeout(tick,Math.round(760*배()));   /* 쓰는 순간의 한 바퀴가 끝난 바로 뒤 */
+  } else if(!on&&IRA_READY_T){ clearTimeout(IRA_READY_T); IRA_READY_T=0 }
 }
 let IRA_RAGE_SND=0;
 function iraRageSnd(on){
@@ -6689,14 +6701,17 @@ function iraAuraHtml(h){
   return `<i class="iraaura" style="background-image:url(${u})"></i>`;
 }
 /* 모든 적 피해 전방 할퀴기 한 번 — 적 구역의 왼쪽 끝에 맞춘다 (묶음 pivot 0, .5) */
-function iraSweepFX(){
+/* 왼쪽에서 한 번, 오른쪽에서 한 번 — **양손으로 할퀴는** 꼴 (사용자 2026-10-13).
+   오른쪽 몫은 같은 그림을 좌우로 뒤집어 반대쪽 끝에 붙인다 */
+function iraSweepFX(right){
   const u=(typeof ICON_PNG!=="undefined")&&skinIcon("fx_ira_allfoe_claw"); if(!u) return;
   const L=(B&&B.foes||[]).filter(f=>f.alive); if(!L.length) return;
   const R=L.map(f=>ctrOf("foe",f.slot)).filter(Boolean); if(!R.length) return;
   const x=Math.min(...R.map(p=>p.x)), y=R.reduce((a,p)=>a+p.y,0)/R.length;
   const w=Math.max(...R.map(p=>p.x))-x+120;
   const nd=spawn('<div class="irasweep"></div>'); if(!nd) return;
-  nd.style.left=Math.round(x-60)+"px"; nd.style.top=Math.round(y)+"px";
+  nd.style.left=Math.round(x-60+(right?34:0))+"px"; nd.style.top=Math.round(y)+"px";
+  if(right) nd.style.transform=(nd.style.transform||"")+" scaleX(-1)";   /* 반대쪽 손 */
   nd.style.backgroundImage="url("+u+")";
   nd.style.width=Math.max(160,Math.round(w))+"px";
   nd.style.backgroundSize=Math.max(160,Math.round(w))+"px 96px";
@@ -7599,7 +7614,7 @@ function playFX(o){
   if(o.soulg) soulGainFX(o.side,o.slot,o.soulg===2);
   if(o.sheet) sheetFX(o.sheet,o.side,o.slot,o.sheetOpt);
   if(o.eyeBeam) eyeBeamFX(o.slot);   /* 감옥의 눈 빔 (58) */
-  if(o.strip) poseStripFX(o.side,o.slot,o.strip.k,o.strip.ms);   /* 자세 띠 한 바퀴 (76) */
+  if(o.strip) poseStripFX(o.side,o.slot,o.strip.k,o.strip.ms,o.strip.opt);   /* 자세 띠 한 바퀴 (76) */
   if(o.flareShot) flareShotFX(o.side,o.slot,o.flareShot);
   if(o.spot!=null){ if(KIMP) spotFX(o.slot,o.spot,o.foeName,o.barkU,o.barkLine); else if(o.barkLine&&o.barkU) barkShow(o.barkU,o.barkLine,Date.now(),1) }
   if(o.fn) o.fn();
@@ -9430,7 +9445,7 @@ function setPose(side,slot,pose,ms){
 /* 자세 띠를 한 번 돌린다 (간수장 공격 · 끌기 — 76).
    낱장 배열(atkA · pullA)은 idleA 와 같은 꼴로 구워져 기본.png 의 몸에 맞춰져 있다.
    _pt 를 쥐고 있어야 대기 띠 ticker 가 끼어들지 않는다. 걸리는 시간(ms)을 돌려준다 */
-function poseStripFX(side,slot,key,frameMs){
+function poseStripFX(side,slot,key,frameMs,opt){
   const p=ctrOf(side,slot); if(!p) return 0;
   const img=p.e.querySelector("img.pxs[data-nm]"); if(!img) return 0;
   { const su=(side==="mine")?unitAt(slot):foeShownAt(slot); if(su&&stopped(su)) return 0 }   /* 정지 — 자세를 바꾸지 않는다 */
@@ -9440,13 +9455,19 @@ function poseStripFX(side,slot,key,frameMs){
   const back=poseOf(img.dataset.nm,img.dataset.pose||"idle");
   /* 칸 길이는 하나로 줄 수도, **칸마다 따로** 줄 수도 있다 (받은 띠는 길이가 들쭉날쭉하다, 2026-10-13).
      하나를 주면 앞과 똑같이 돈다 */
+  /* opt.order — 칸을 **어떤 차례로** 넘길지 (없으면 처음부터 끝까지 한 번).
+     되돌아오는 띠(1~8~1)나 한 칸에 머무는 것을 적을 수 있다. 길이는 frameMs 와 짝이다.
+     opt.shakeAt — 그 걸음에서 부들댄다 (멈춰 선 칸) */
+  const ORD=(opt&&Array.isArray(opt.order)&&opt.order.length)?opt.order.filter(i=>A[i]):A.map((u,i)=>i);
   const AR=Array.isArray(frameMs);
   const at=[]; let acc=0;
-  for(let i=0;i<A.length;i++){ at.push(Math.round(acc*SPD));
+  for(let i=0;i<ORD.length;i++){ at.push(Math.round(acc*SPD));
     acc+=AR?(frameMs[i]||frameMs[frameMs.length-1]||120):(frameMs||120) }
   const tot=Math.round(acc*SPD);
   img._strip=Date.now()+tot;   /* 이 동안은 setPose 가 비켜 간다 */
-  A.forEach((u,i)=>setTimeout(()=>{ if(img.isConnected) img.src=u },at[i]));
+  ORD.forEach((fi,i)=>setTimeout(()=>{ if(img.isConnected) img.src=A[fi] },at[i]));
+  if(opt&&opt.shakeAt!=null&&at[opt.shakeAt]!=null)
+    setTimeout(()=>poseShake(side,slot,Math.round((AR?(frameMs[opt.shakeAt]||200):frameMs||200)*SPD)),at[opt.shakeAt]);
   img._pt=setTimeout(()=>{ img._pt=0; img._strip=0;
     if(back&&img.isConnected){ img.src=back.u; img.style.setProperty("--ph",back.ph) } },tot);
   return tot;
@@ -18208,6 +18229,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 52, "v": "0.7", "d": "2026-10-13", "t": "이라 준비 자세 대기 모션 · 양손 할퀴기 · 할퀴기 소리", "big": 0},
  {"b": 51, "v": "0.7", "d": "2026-10-13", "t": "이라 연출 다섯 · 복수귀 · 고대의 파편 자리 · 초읽기 아이콘", "big": 0},
  {"b": 50, "v": "0.7", "d": "2026-10-13", "t": "빈 괄호 셋 — 굴라 식욕 · 불씨 폭발 · 화재 진압", "big": 0},
  {"b": 49, "v": "0.7", "d": "2026-10-13", "t": "이라 — 설명 글은 노트 글자 그대로, 충전 0/1, 딱지 넷", "big": 0},
@@ -19451,7 +19473,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=51;
+const BUILD_NO=52;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -29654,8 +29676,7 @@ const PASSIVE_INFO={
   {n:"복수귀",
    d:h=>{ const V=iraRageVals(h);
      return `체력이 ${V.pct}% 이하(${V.need})일 때 추가 공격력을 ${V.atk} 얻습니다.`
-       +(V.def?` 추가 보호력도 ${V.def} 얻습니다.`:``)
-       +` 지금 체력 ${h.hp}/${h.maxHp}, ${(h.rageOn||0)>0?"켜져 있습니다.":"꺼져 있습니다."}` }}]
+       +(V.def?` 추가 보호력도 ${V.def} 얻습니다.`:``) }}]
 };
 function passHtml(h){
   const list=PASSIVE_INFO[h.name];
@@ -33282,8 +33303,8 @@ function iraPay(h,s){
     /* 「모든 적 피해 전방 할퀴기」 — **때리는 수만큼** 나간다 (사용자 2026-10-13 : 「아트 한번밖에 출력 안되는데 2번 출력되게」).
        날 선 대가로 세 번이 되면 세 번 나간다 — 아래 반복 수(rep2)를 그대로 따른다 */
     for(let q=0;q<rep2;q++){
-      const 늦게=Math.round(q*320*(typeof SPD==="number"?SPD:1));
-      if(!늦게) iraSweepFX(); else setTimeout(()=>{ if(B&&!B.over) iraSweepFX() },늦게);
+      const 늦게=Math.round(q*320*(typeof SPD==="number"?SPD:1)), 오른=q%2===1;   /* 왼 → 오른 → 왼 … */
+      if(!늦게) iraSweepFX(오른); else setTimeout(()=>{ if(B&&!B.over) iraSweepFX(오른) },늦게);
     }
     { const k=sfxOr("이라 대가 치르기 충전",null); if(k) SFX.play(k) }   /* 충전 몫의 녹음 셋 (2026-10-13) */
     for(let q=0;q<rep2;q++) L.forEach(f=>{ if(!f.alive) return;
@@ -33305,7 +33326,7 @@ function iraReady(h,s){
   }
   /* 준비 자세 여덟 칸 — **기본 자세 그림을 대신해서** 선다 (사용자 2026-10-13).
      ⚠️ 몸 아래에 따로 띄우지 말 것 — 그 길(sheetFX)이 「개조그맣게 밑에」 나오던 그것이다 */
-  fx({side:"mine",slot:h.slot,strip:{k:"readyA",ms:IRA_READY_MS},gap:0});   /* 빠르게 (1090ms → 690ms) · 큐에 실어 소리와 같은 때에 */
+  fx({side:"mine",slot:h.slot,strip:{k:"readyA",ms:IRA_READY_MS},gap:0});   /* 쓰는 순간은 빠르게 앞으로만 (1090ms → 690ms). 그 뒤는 iraReadyIdle 이 되돌아오는 띠로 잇는다 */
   { const k=sfxOr("이라 준비 자세",null); if(k) SFX.play(k) }   /* 받은 녹음 셋 (2026-10-13) */
   iraChargeGain(h);
   const T=h.tag||{};
@@ -33344,7 +33365,7 @@ function iraClaw(h,s,target){
     setTimeout(()=>{ if(!B||B.over) return; poseStripFX("mine",h.slot,"clawA",CLAW) },Math.round(LAP*(typeof SPD==="number"?SPD:1)));
     fx({side:"mine",slot:h.slot,gap:왼});   /* 첫 할큄까지 */
     /* 적 위의 발톱 — 3번 칸에 왼쪽 · 7번 칸에 오른쪽, 두 바퀴라 왼·오른·왼·오른 네 번 */
-    [[왼,0],[오,1],[왼+LAP,0],[오+LAP,1]].forEach(([ms,right])=>iraClawHit(f.slot,right,Math.round(ms*(typeof SPD==="number"?SPD:1))));
+    [[왼,0],[오,1],[왼+LAP,0],[오+LAP,1]].forEach(([ms,right])=>iraClawHit(f.slot,right,Math.round(ms*(typeof SPD==="number"?SPD:1)),1));   /* 때릴 때마다 찢어발기기와 같은 소리 */
     CLAW_GAP=[왼,오-왼,(왼+LAP)-오,(오+LAP)-(왼+LAP)]; }
   /* 피해 넷을 **발톱이 서는 네 때**에 맞춰 보낸다 — 180 · 540 · 1010 · 1370ms.
      /art 와 따로 세서 같은 수가 나왔다. 아래 사이를 더하면 그 넷이다.
