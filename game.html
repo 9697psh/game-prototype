@@ -11201,6 +11201,9 @@ function golemEndTurn(){
 /* 죽음 — 영혼부르기(죽음 부속)도 **이 한 곳**을 부른다. 규칙 하나는 함수 하나 */
 function golemDeath(u,why){
   const M=golemMat(u); if(!M||!B) return;
+  /* 죽음 몫은 **주인(파벨) 이름으로** 때린다 — 그래서 B.lastAttacker 로는 골렘인 줄 모른다.
+     때리는 동안만 깃발을 세워 주먹 띠와 소리가 맞은 적 위에 뜨게 한다 (사용자 2026-10-13) */
+  B._golemHit=1; setTimeout(()=>{ if(B) B._golemHit=0 },0);
   const up=u.deathUp||0;   /* 제 몫만 (2026-10-13) */
   const ow=(run.heroes||[]).find(x=>x.name==="파벨");
   if(M.deathNeg){ const L=onField().filter(a=>a.hp>0&&a!==u&&!a.isMin);
@@ -18965,6 +18968,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 86, "v": "0.7", "d": "2026-10-13", "t": "소환물 기술 아이콘 셋 · art 폴더 정리", "big": 0},
  {"b": 85, "v": "0.7", "d": "2026-10-13", "t": "이라 · 파벨 보상 아이콘 예순아홉", "big": 0},
  {"b": 84, "v": "0.7", "d": "2026-10-13", "t": "고대수목 — 축복과 죽음 글을 셈과 맞췄다", "big": 0},
  {"b": 83, "v": "0.7", "d": "2026-10-13", "t": "재조립 · 이른 창조 · 다중 내려치기 · 합맞추기 손질", "big": 0},
@@ -20242,7 +20246,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=85;
+const BUILD_NO=86;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -33023,7 +33027,7 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
                    art==="chomp"?(sfxHas(gulaSnd("씹어먹기"))?null:"blunt"):
                    art==="claw"?"slash2":amt>=12?"blunt":"slash")});
   /* 하수인 골렘이 때릴 때 — 받은 여덟 칸 띠를 맞은 자리에 (사용자 2026-10-13) */
-  if(d>0&&B&&B.lastAttacker&&B.lastAttacker.golem&&(typeof ICON_PNG!=="undefined")&&ICON_PNG["fx_golem_punch"])
+  if(d>0&&B&&((B.lastAttacker&&B.lastAttacker.golem)||B._golemHit)&&(typeof ICON_PNG!=="undefined")&&ICON_PNG["fx_golem_punch"])
     fx({side:"foe",slot:f.slot,sheet:"fx_golem_punch",s:sfxOr("하수인 골렘 공격",null),
         sheetOpt:{cellW:64,cellH:64,frames:8,z:1.6,frameMs:[60,55,55,55,60,70,85,120]},gap:0});
   if(d>0&&!f.isPhantom){ const k=foeSnd(f,"피해받음"); if(k) fx({s:k,gap:0}) }   /* 적의 녹음 — 맞는 소리와 함께 (미믹) */
