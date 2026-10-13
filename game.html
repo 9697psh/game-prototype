@@ -10956,6 +10956,11 @@ function srcAnalysisPick(nm){
     if(out) say(`원천 분석 — 빈 칸이 없어 ${out.n}${jo(out.n,"eul")} 가방에 넣었습니다.`,"t2");
     if(h.slot>0) fx({side:"mine",slot:h.slot,s:"equip",ring:"#c9a227",glow:1,txt:"장착",cls:"shd",gap:90});
     say(`원천 분석 — ${h.name}${jo(h.name,"ig")} ${it.n}${jo(it.n,"eul")} 이번 전투 동안 착용합니다.`,"t1");
+    /* 원천 복제 — 전장의 다른 대원들에게도 같은 것을 (노트 highRewards) */
+    if(h.tag&&h.tag.srcCopy){
+      const L=onField().filter(a=>a!==h&&a.hp>0&&!a.isMin);
+      L.forEach(a=>{ const c2=evItem(nm); if(!c2) return; c2.tmpBattle=1; forceEquip(a,c2) });
+      if(L.length) say(`원천 복제 — ${L.map(a=>a.name).join(", ")}도 같은 장신구를 찹니다.`,"t2") }
   }
   render();
 }
@@ -11063,6 +11068,19 @@ function golemDeath(u,why){
       L.forEach(f=>asSrc(ow,()=>hurt(f,v,why||"금속",null,0,0,1))) } }
   if(M.deathNear){ const v=M.deathNear+up, f=nearestFoe(u);
     if(f){ say(`드론파편 — ${f.name}에게 피해 ${v}`,"t2"); asSrc(ow,()=>hurt(f,v,why||"드론파편",null,0,0,1)) } }
+  /* 재조립 — 그 골렘의 부속 카드 하나를 돌려받는다 (노트 highRewards).
+     손패에 짝이 있으면 golemMerge 가 바로 합친다 — 길은 그 한 곳이다 */
+  if(ow&&ow.tag&&ow.tag.rebuild&&u.golem&&B&&B.hand&&!B.over){
+    for(let q=0;q<ow.tag.rebuild;q++){
+      const 재료=Math.random()<0.5;
+      const kind=재료?"mat":"soul", nm=재료?u.golem.mat:u.golem.soul;
+      B.hand.push({type:"part",kind:kind,part:nm,name:partName(kind,nm),
+        d:((kind==="mat"?PAVEL_MAT:PAVEL_SOUL)[nm]||{}).d||"",gone:1,arrive:1});
+      say(`재조립 — ${partName(kind,nm)}${jo(partName(kind,nm),"eul")} 돌려받았습니다.`,"t2");
+      golemMerge(ow) } }
+  /* 창조의 고통 — 그 라운드 동안 보호력 (노트 : 「해당 라운드에서」 → bumpRnd) */
+  if(ow&&ow.tag&&ow.tag.makePain&&ow.hp>0){ bumpRnd(ow,"def",ow.tag.makePain);
+    say(`창조의 고통 — ${ow.name} 이번 라운드 보호력 +${ow.tag.makePain}`,"t2") }
   if(M.deathGive){ const L=onField().filter(a=>a.hp>0&&a!==u);
     const a=L.length?rnd(L):null;
     if(a){ ["atk","mag","def"].forEach(k=>{ if(u[k]>0) bumpRnd(a,k,u[k]) });
@@ -12420,7 +12438,29 @@ const HERO_REWARDS={
   R("헤르메스의 신발","중급","내 턴이 끝날 때, 추진력을 5 소모하고 무작위 추가 능력치를 1 얻습니다.",
     h=>h.tag.hermes=(h.tag.hermes||0)+1,0.5),
   R("지면 파훼","중급","퀘스트: 정예 전투에서 2회 승리\n보상: 지면 내려치기의 피해량이 영구히 8 증가합니다.",
-    h=>{ if(!questHas("지면 파훼")) questAccept("지면 파훼",h.name) },0.5)
+    h=>{ if(!questHas("지면 파훼")) questAccept("지면 파훼",h.name) },0.5),
+  /* ── 상급 ── */
+  R("재조립","상급","하수인 골렘이 죽은 후, 그 골렘의 부속 카드 중 하나를 가져옵니다.\n*[골렘 창조] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.rebuild=(h.tag.rebuild||0)+1),
+  R("마나석 끼워넣기","상급","하수인 골렘 배치 후, 골렘의 최대 마나가 1 증가합니다.\n*[골렘 창조] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.golemMana=(h.tag.golemMana||0)+1),
+  R("이른 창조","상급","대원 배치 후, 골렘 창조를 비용 없이 사용합니다.\n*[골렘 창조] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.earlyMake=(h.tag.earlyMake||0)+1),
+  R("창조의 고통","상급","하수인 골렘이 죽은 후, 파벨이 해당 라운드에서 보호력을 3 얻습니다.\n*[골렘 창조] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.makePain=(h.tag.makePain||0)+3),
+  R("석공의 주머니","상급","원천 분석이 별도의 장신구 칸에 장착됩니다.\n*획득시 보상에서 다시 등장하지 않음\n*[원천 분석] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.mason=1,0.5),
+  R("주문 제작","상급","골렘 창조의 잠금이 제거되고 비용이 1이 됩니다. 대신 사용한도(3)을 얻습니다.\n*획득시 보상에서 다시 등장하지 않음\n*[골렘 창조] 기술이 없을 때 등장하지 않음",
+    h=>{ const k=(h.sk||[]).find(x=>x&&x.makeGolem);
+         if(k){ k.lock=0; k.cost=1; k.limit=3 } h.tag.madeToOrder=1 },0.5),
+  R("다중 내려치기","상급","지면 내려치기가 1번 더 발동합니다.",
+    h=>h.tag.slamTwice=(h.tag.slamTwice||0)+1),
+  R("지진파","상급","지면 내려치기가 잠금(2)을 얻습니다. 대신 치명타로 적중하고, 모든 적을 기절시킵니다.\n*획득시 보상에서 다시 등장하지 않음",
+    h=>{ const k=(h.sk||[]).find(x=>x&&x.slam); if(k) k.lock=2; h.tag.quakeWave=1 },0.5),
+  R("원천 복제","상급","원천 분석이 전장의 다른 대원들에게도 동일한 장신구를 장착시킵니다.\n*획득시 보상에서 다시 등장하지 않음\n*[원천 분석] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.srcCopy=1,0.5),
+  R("합맞추기","상급","하수인 골렘이 기술을 사용한 후, 파벨이 지면 내려치기를 비용 없이 사용합니다.\n*[골렘 창조] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.syncHit=(h.tag.syncHit||0)+1)
  ],
  "굴라":[
   /* 기획 노트(2026-09-11) 그대로. 옛 다섯(굶주림·두꺼운 가죽·탐식·차원 확장·포식자)은 노트에 없어 뺐다 */
@@ -14384,6 +14424,11 @@ function findRecipe(a,b){
   return ITEMS.find(it=>it.rc&&it.rc.slice().sort().join("|")===key)||null;
 }
 const ITEM_MAX=3;
+/* 그 대원이 지금 쓸 수 있는 장신구 칸 수 — 석공의 주머니는 **전투 화면에서만** 한 칸 더 (노트 highRewards).
+   지도 · 대원 상세에서는 셋 그대로다 (노트 주석) */
+function itemMax(h){
+  return ITEM_MAX+((typeof view!=="undefined"&&view==="battle"&&h&&h.tag&&h.tag.mason)?1:0);
+}
 function equip(h,it){
   SFX.play("equip");
   h.items.push(it);
@@ -14424,7 +14469,7 @@ function healUp(u,v,quiet){
 function forceEquip(h,it){
   if(!h) return null;
   h.items=h.items||[];
-  if(h.items.length>=ITEM_MAX){
+  if(h.items.length>=itemMax(h)){
     let idx=-1;
     for(let i=h.items.length-1;i>=0;i--) if(!h.items[i].bind){ idx=i; break }
     if(idx<0) return null;              /* 전부 저주받은 물건이면 채우지 않는다 */
@@ -14780,7 +14825,7 @@ function itemIcon(it,px){
 /* 마나 칸 위에 놓이는 장비 세 칸 */
 function gearRow(h){
   let out='<div class="gear">';
-  for(let i=0;i<ITEM_MAX;i++){
+  for(let i=0;i<itemMax(h);i++){
     const it=(h.items||[])[i];
     if(it){
       const fr=GRADE_FRAME[it.g]||GRADE_FRAME["일반"];
@@ -18729,6 +18774,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 74, "v": "0.7", "d": "2026-10-13", "t": "파벨 상급 보상 열 — 보상 서른넷이 다 들어왔다", "big": 0},
  {"b": 73, "v": "0.7", "d": "2026-10-13", "t": "파벨 중급 보상 열둘", "big": 0},
  {"b": 72, "v": "0.7", "d": "2026-10-13", "t": "파벨 하급 보상 열둘", "big": 0},
  {"b": 71, "v": "0.7", "d": "2026-10-13", "t": "장신구는 하급 보상 카드 틀로 · 충전된 대가 치르기에도 이라 타격음", "big": 0},
@@ -19994,7 +20040,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=73;
+const BUILD_NO=74;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -31369,6 +31415,12 @@ function onSummon(h){
       say(`${h.name} — 라운드 첫 턴 추가 마나 +${ex} (마나 ${h.mana})`,"t2");
     } }
   if(t.potWeak&&B&&!run.sandbox){ addDeb(h,"atkDn",t.potWeak); say(`붉은 물약 — ${h.name} 공격약화 ${t.potWeak}`,"t2"); t.potWeak=0 }   /* 어인 물약상 (2026-10-05) */
+  /* 이른 창조 — 배치하면 골렘 창조를 비용 없이 (노트 highRewards).
+     ⚠️ 원천 분석과 겹치면 화면이 둘이 된다 — 원천 분석을 먼저 보내고 **그 뒤**에 연다 (고르기는 하나씩) */
+  if(h.name==="파벨"&&h.tag&&h.tag.earlyMake&&B&&!B.over&&(h.sk||[]).some(k=>k&&k.makeGolem)){
+    setTimeout(()=>{ if(B&&!B.over&&!B.golem&&!B.srcPick&&h.slot>0&&h.hp>0){
+      say(`이른 창조 — ${h.name}${jo(h.name,"ig")} 비용 없이 짓기 시작합니다.`,"t1"); golemStart(h) } },900);
+  }
   /* 진동 — 대원 배치 후 모든 적을 띄우고 공격약화 (노트 midRewards) */
   if(h.tag&&h.tag.quake&&B&&B.foes&&!B.over){
     const L=B.foes.filter(f=>f.alive);
@@ -32029,6 +32081,7 @@ const PRED_OFF=["aim","armorUp","darkShadow","encore","frontal","fuse","grow","h
    돌려주는 것 : 치명타면 그 까닭(글), 아니면 null */
 function critWhy(h,s,tgt){
   { const M=(typeof golemMat==="function")&&golemMat(h); if(M&&M.critAlways) return "금속" }   /* 하수인 골렘 — 금속 부속 (노트 17-3) */
+  if(h&&s&&s.slam&&h.tag&&h.tag.quakeWave) return "지진파";   /* 파벨 상급 — 지면 내려치기가 치명타로 (노트 highRewards) */
   if(!h||!s) return null;
   const T=h.tag||{};
   if(h.name==="트리스탄"){
@@ -32103,6 +32156,7 @@ function predictDmg(h,s,tgt){
   else if(s.allHit){
     if(h.tag.pressAtk&&dist(h.slot,tgt.slot)>2) return null;
     dmg=bs("dmg")+ATK+(s.slam?(h.mag||0):0);   /* 지면 내려치기 — 실제(runEffect)와 같은 셈 */
+    if(critWhy(h,s,tgt)){ dmg*=2; crit=1 }   /* 지진파 따위 — 실제와 같은 자리에서 (2026-10-13) */
     if(h.name==="이테리오"&&s.n==="팽창 공격"&&(tgt.mark||0)>0&&h.tag.aimFix) dmg+=h.tag.aimFix;
     if(h.name==="이테리오"&&itCritEl(h,s)&&(tgt.mark||0)>0){ dmg=Math.round(dmg*itCritX(h)); crit=1 }
   }
@@ -34342,6 +34396,9 @@ function runEffect0(h,i,s,target){
     list.forEach(f=>{
       /* 정밀 표식 — 공격 계열이므로 표식이 있으면 치명타 (반전화면 거꾸로) */
       let d=base, crit=0;
+      /* 보상으로 늘 치명타가 되는 것(지진파 …) — **critWhy 한 곳**에서 묻는다 (규칙-기술숫자.md).
+         여기서 안 묻던 탓에 기술 칸은 ×2 로 보이는데 실제 피해는 그대로였다 (2026-10-13) */
+      if(critWhy(h,s,f)){ d*=2; crit=1 }
       if(h.name==="이테리오"){
         if(s.n==="팽창 공격"&&(f.mark||0)>0&&h.tag.aimFix) d+=h.tag.aimFix;   /* 조준 보정 */
         if(itCritEl(h,s)&&(f.mark||0)>0){ d=Math.round(d*itCritX(h)); f.mark--; crit=1; itOnCrit(h) }
@@ -34362,7 +34419,15 @@ function runEffect0(h,i,s,target){
               sheetOpt:{cellW:256,cellH:96,frames:1,z:1.5,frameMs:[420]},gap:0}) } }
       /* 무게추 — 이번 한 번은 **거리를 가리지 않는다** (노트 midRewards) */
       const 모두=!!h.weightOn; if(모두){ h.weightOn=0; say("무게추 — 땅이 통째로 솟구칩니다.","t2") }
-      B.foes.filter(f=>f.alive&&(모두||dist(h.slot,f.slot)<=2)).forEach(f=>airborne(h,f)) }
+      B.foes.filter(f=>f.alive&&(모두||dist(h.slot,f.slot)<=2)).forEach(f=>airborne(h,f));
+      /* 지진파 — 모든 적을 기절시킨다 (치명타는 critWhy 가 쥔다) */
+      if(h.tag&&h.tag.quakeWave){ const L2=B.foes.filter(f=>f.alive);
+        if(L2.length){ say("지진파 — 땅이 갈라지며 모두 쓰러집니다.","t1");
+          L2.forEach(f=>addDeb(f,"stun",1,h)) } }
+      /* 다중 내려치기 — 한 번 더. 되돌이에 빠지지 않게 깃발로 막는다 */
+      if(h.tag&&h.tag.slamTwice&&!B._slamAgain){
+        B._slamAgain=1;
+        try{ for(let q=0;q<h.tag.slamTwice;q++) runEffect(h,i,s,target) }finally{ B._slamAgain=0 } } }
     return;
   }
   if(s.makeGolem){ golemStart(h); return }   /* 골렘 창조 (노트 17-3) — 고르는 화면은 render 가 그린다 */
