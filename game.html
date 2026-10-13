@@ -9179,6 +9179,8 @@ const POSE_MS={atk:520,hurt:620,bless:1200,stun:900,guard:520,jump:560,expand:62
 const POSE_FALL={plant:"atk",lifeconv:"atk",exploit:"atk",verdict:"atk",pain:"atk",fuse:"atk",pierceP:"atk"};
 /* 기술 전용 자세 (사용자 2026-09-30) — 「대원|기술」 : {p:자세, ms:머무는 동안, big:크게 빛남} */
 const SKILL_POSE={
+ /* 파벨 — 두 손을 내려찍는 자세. 이펙트는 아래에서 **이 자세가 땅에 닿는 때**에 맞춰 띄운다 (2026-10-13) */
+ "파벨|지면 내려치기":{p:"atk",ms:620},
  "이테리오|팽창 공격":{p:"expand",ms:620},
  "이테리오|시공간 폭탄":{p:"bomb",ms:2500,big:1},
  "이테리오|자기장 변환":{p:"magnet",ms:2500,big:1},
@@ -10793,9 +10795,15 @@ const partName=(kind,n)=>(kind==="mat"?"재료 부속: ":"영혼 부속: ")+n;
    고르는 동안 : 가장자리 오오라 + 파벨의 창조 자세 **1~8~1** 되풀이.
    다 고르면   : 화면 가운데에서 부속 여섯이 맞물린다.
    ⚠️ 큰 그림(오오라 600KB)은 심지 않고 **파일로** 나른다 — 소리 · 이벤트 그림과 같은 대접 */
-const PAVEL_MAKE_ORDER=[0,1,2,3,4,5,6,7,6,5,4,3,2,1];
-const PAVEL_MAKE_MS   =[90,80,80,80,85,95,110,150,110,95,85,80,80,90];
-const GOLEM_MAKE_MS=[80,75,75,75,80,90,100,150];   /* 묶음 usage.json 의 칸 길이 그대로 */
+/* 1~8 로 모으고 **8에서 잠깐 멈춰 빛난 뒤** 7~1 로 되돌아온다 (사용자 2026-10-13).
+   ⚠️ 받은 여덟 칸은 「녹빛 덩이를 모아 손을 드는」 한 호흡이다 — 빠르게 넘기면 깜빡임으로만 보인다.
+      한 바퀴 4초쯤(이라의 준비 자세 대기와 같은 결)으로 늦췄다 */
+const PAVEL_MAKE_ORDER=[0,1,2,3,4,5,6,7,6,5,4,3,2,1,0];
+const PAVEL_MAKE_MS   =[230,210,200,200,210,230,260,820,260,230,210,200,200,210,240];
+const PAVEL_MAKE_HOLD=7;   /* 멈춰 서는 칸 — 여기서 빛난다 */
+/* 묶음 usage.json 은 725ms 한 바퀴였다 — 눈으로 보니 **깜빡임**이라 두 배 가까이 늦췄다 (사용자 2026-10-13).
+   마지막 두 칸(맞물림)은 더 길게 둔다 — 거기서 골렘이 완성된다 */
+const GOLEM_MAKE_MS=[150,140,140,140,150,170,220,420];
 let GOLEM_AURA_T=0, GOLEM_AURA_F=0, PAVEL_MAKE_T=0;
 function golemAuraSync(){
   const on=!!(typeof B!=="undefined"&&B&&B.golem&&!B.over&&view==="battle");
@@ -10830,7 +10838,12 @@ function pavelMakeIdle(){
   const tick=()=>{
     const h=(run&&run.heroes||[]).find(x=>x.name==="파벨");
     if(!B||!B.golem||B.over||!h||h.slot<=0||h.hp<=0){ PAVEL_MAKE_T=0; return }
-    poseStripFX("mine",h.slot,"makeA",PAVEL_MAKE_MS,{order:PAVEL_MAKE_ORDER});
+    poseStripFX("mine",h.slot,"makeA",PAVEL_MAKE_MS,{order:PAVEL_MAKE_ORDER,shakeAt:PAVEL_MAKE_HOLD});
+    /* 멈춰 선 칸에서 빛난다 — 그 때에 맞춰 고리 하나 */
+    { let 때=0; for(let q=0;q<PAVEL_MAKE_HOLD;q++) 때+=PAVEL_MAKE_MS[q];
+      setTimeout(()=>{ if(!B||B.over||!B.golem||h.slot<=0) return;
+        fx({side:"mine",slot:h.slot,ring:"#9ad86a",glow:1,gap:0}); flushFX() },
+        Math.round(때*(typeof SPD==="number"?SPD:1))) }
     PAVEL_MAKE_T=setTimeout(tick,Math.round(한바퀴*(typeof SPD==="number"?SPD:1))+80);
   };
   tick();
@@ -10845,15 +10858,15 @@ function golemCreationFX(done){
      마치기는 한 번뿐이다 — 두 번 부르면 카드가 두 장 들어왔다 (2026-10-13 에 겪었다) */
   let 끝남=0;
   const 마치=()=>{ if(끝남) return; 끝남=1; if(done) done() };
-  try{ setTimeout(마치,Math.round(4000*배())) }catch(e){}
+  try{ setTimeout(마치,Math.round(6500*배())) }catch(e){}   /* 연출이 늦어졌다 — 안전줄도 뒤로 (2026-10-13) */
   const u=(typeof ICON_PNG!=="undefined")&&ICON_PNG["fx_pavel_golem_creation"];
   if(!u||typeof document==="undefined"){ 마치(); return }
   const d=el('<div class="golemmake"></div>');
   d.style.backgroundImage="url("+u+")";
   document.body.appendChild(d);
   const seq=[];
-  for(let r=0;r<3;r++) [0,1,2,3,4,5].forEach(i=>seq.push([i,Math.max(30,64-r*16)]));   /* ① 공전 — 점점 빠르게 */
-  seq.push([6,140]); seq.push([7,300]);                                                /* ② 맞물림 */
+  for(let r=0;r<3;r++) [0,1,2,3,4,5].forEach(i=>seq.push([i,Math.max(70,130-r*28)]));   /* ① 공전 — 점점 빠르게 (느리게 고침, 2026-10-13) */
+  seq.push([6,260]); seq.push([7,520]);                                                 /* ② 맞물림 — 여기서 멈춰 보인다 */
   let k=0;
   const step=()=>{
     if(k>=seq.length){ 빛(); return }
@@ -10902,6 +10915,15 @@ function golemOpts(h,kind){
   return out;
 }
 /* 부속 한 장을 **손패 카드와 같은 틀**로 그린다 (사용자 2026-10-13 : 카드 테두리 안에) */
+/* 합쳐진 하수인 골렘 카드의 글 — **조합한 부속 둘**의 지속·죽음을 그대로 적는다 (사용자 2026-10-13) */
+function golemCardText(c){
+  if(!c||!c.mat||!c.soul) return "";
+  const M=PAVEL_MAT[c.mat]||{}, S=PAVEL_SOUL[c.soul]||{};
+  const 벗기기=t=>String(t||"").replace(/^\s*(체력\s*\d+|최대 마나\s*\d+)\s*\n?/,"");
+  return `${c.mat} + ${c.soul}\n${벗기기(M.d)}\n${벗기기(S.d)}`;
+}
+function golemCardHp(c){ const M=(c&&c.mat&&PAVEL_MAT[c.mat])||null; return M?M.hp:null }
+function golemCardMana(c){ const S=(c&&c.soul&&PAVEL_SOUL[c.soul])||null; return S?S.mana:null }
 function partCardHtml(kind,n){
   const T=((kind==="mat")?PAVEL_MAT:PAVEL_SOUL)[n]||{}, nm=partName(kind,n);
   /* 체력 · 최대 마나는 **카드 밑 칸**에 이미 있다 — 설명에서는 뺀다 (사용자 2026-10-13).
@@ -10987,7 +11009,7 @@ function golemPick(nm){
   const G=B&&B.golem; if(!G) return;
   const h=(run.heroes||[]).find(x=>x.name===G.by);
   B.hand.push({type:"part",kind:G.kind,part:nm,name:partName(G.kind,nm),
-    d:((G.kind==="mat"?PAVEL_MAT:PAVEL_SOUL)[nm]||{}).d||"",gone:1,arrive:1});
+    d:((G.kind==="mat"?PAVEL_MAT:PAVEL_SOUL)[nm]||{}).d||"",gone:1});
   say(`${partName(G.kind,nm)}${jo(partName(G.kind,nm),"eul")} 골랐습니다.`,"t2");
   if(G.kind==="mat"){ B.golem={by:G.by,kind:"soul",opts:golemOpts(h,"soul"),t0:Date.now()}; render(); return }
   B.golem=null; golemMerge(h); render();
@@ -11005,14 +11027,33 @@ function golemMerge(h){
   say(`${m.part}${jo(m.part,"gwa")} ${so.part}${jo(so.part,"ig")} 하나로 합쳐집니다 — 하수인 골렘.`,"t1");
   /* 카드는 **연출이 끝난 뒤** 손에 들어온다 — 날아든 자리에서 카드가 생긴다 */
   golemCreationFX(()=>{ if(!B||B.over) return;
-    B.hand.push({type:"summon",name:"하수인 골렘",mat:m.part,soul:so.part,gone:1,arrive:1});
+    B.hand.push({type:"summon",name:"하수인 골렘",mat:m.part,soul:so.part,gone:1});   /* ⚠️ arrive 를 달지 않는다 — 날아드는 연출을 거치지 않는 카드라 다음 턴까지 안 보인다 */
     render() });
   return 1;
 }
 /* 하수인 골렘을 놓은 **뒤** — 파벨의 보상이 골렘을 키운다 (노트 lowRewards 넷).
    ⚠️ 한 곳에서만 얹는다 — 카드가 놓이는 길(playCard)이 그 자리다 */
+/* 하늘에서 떨어져 **쿵** 하고 선다 (사용자 2026-10-13).
+   ⚠️ 칸의 그림만 움직인다 — 몸(B.mins)은 이미 그 자리에 섰다 */
+function golemDropFX(slot){
+  try{
+    const p=ctrOf("mine",slot); if(!p||!p.e) return;
+    const img=p.e.querySelector("img.pxs[data-nm]"); if(!img||!img.animate) return;
+    const 배=(typeof SPD==="number"?SPD:1);
+    img.animate([{translate:"0 -260px",opacity:0},{translate:"0 -230px",opacity:1,offset:.08},
+                 {translate:"0 0",offset:.55},{translate:"0 -16px",offset:.7},{translate:"0 0"}],
+      {duration:Math.round(560*배),easing:"cubic-bezier(.4,0,.7,1)"});
+    setTimeout(()=>{ const q=ctrOf("mine",slot); if(!q) return;
+      try{ sparks(q,"#c9a227",9) }catch(e){}
+      fx({side:"mine",slot:slot,s:sfxOr("골렘 착지",sfxOr("성벽 건설","summon")),ring:"#c9a227",glow:1,gap:0});
+      try{ flushFX() }catch(e){}
+      try{ document.body.classList.add("shakeall"); setTimeout(()=>document.body.classList.remove("shakeall"),260) }catch(e){}
+    },Math.round(560*배*0.55));
+  }catch(e){}
+}
 function golemPlaced(m){
   if(!m||!m.golem||!B) return;
+  setTimeout(()=>golemDropFX(m.slot),30);   /* 칸이 그려진 뒤에 떨군다 */
   const h=(run.heroes||[]).find(x=>x.name==="파벨"); if(!h||!h.tag) return;
   const T=h.tag;
   if(T.golemHp){ m.maxHp+=T.golemHp; m.hp+=T.golemHp;
@@ -11075,7 +11116,7 @@ function golemDeath(u,why){
       const 재료=Math.random()<0.5;
       const kind=재료?"mat":"soul", nm=재료?u.golem.mat:u.golem.soul;
       B.hand.push({type:"part",kind:kind,part:nm,name:partName(kind,nm),
-        d:((kind==="mat"?PAVEL_MAT:PAVEL_SOUL)[nm]||{}).d||"",gone:1,arrive:1});
+        d:((kind==="mat"?PAVEL_MAT:PAVEL_SOUL)[nm]||{}).d||"",gone:1});
       say(`재조립 — ${partName(kind,nm)}${jo(partName(kind,nm),"eul")} 돌려받았습니다.`,"t2");
       golemMerge(ow) } }
   /* 창조의 고통 — 그 라운드 동안 보호력 (노트 : 「해당 라운드에서」 → bumpRnd) */
@@ -11730,7 +11771,7 @@ try{ if(typeof location!=="undefined"){
   const m=/[?&]dex=([a-z]+)(&|$)/.exec(location.search);
   if(m){
     if(m[1]==="all"){ DEX_ST.allOpen=1; dexSave(); setTimeout(()=>{ try{ toast("도감을 모두 열었습니다.") }catch(e){} },600) }
-    else if(m[1]==="reset"){ DEX_ST={foe:{},card:{},ev:{},gim:{},item:{}};
+    else if(m[1]==="reset"){ DEX_ST={foe:{},card:{},ev:{},gim:{},gimT:{},item:{}};
       try{ localStorage.removeItem(DEX_KEY) }catch(e){}
       setTimeout(()=>{ try{ toast("도감 기록을 지웠습니다.") }catch(e){} },600) }
     try{ history.replaceState(null,"",location.pathname+location.hash) }catch(e){}
@@ -11742,6 +11783,9 @@ function dexOpen(kind,name){ return !!DEX_ST.allOpen||dexSeen(kind,name) }
       새 카드 · 새 장신구가 생겨도 저절로 걸린다. 적은 drawBattle 에서 따로 훑는다 */
 function dexTick(){
   if(typeof run==="undefined"||!run||run.sandbox) return;
+  /* 지금 서 있는 칸의 종류도 적는다 — 「들어가기」가 없는 칸(장벽 · 안개)까지 (2026-10-13) */
+  try{ const p=run.pos, cl=p&&run.grid&&run.grid[p.r]&&run.grid[p.r][p.c];
+    if(cl&&cl.t&&typeof GIM_T!=="undefined"&&GIM_T[cl.t]) dexSee("gimT",cl.t) }catch(e){}
   try{
     /* ⚠️ c.n 은 쌓인 장수(숫자)다 — 이름으로 쓰면 안 된다. 대원 카드(type hero)는 도감에 없다.
        적이 끼워 넣는 카드(감시 따위)와 방어구 카드는 c.name 을 그대로 쓰니 여기로 걸린다 */
@@ -11944,7 +11988,7 @@ const COMMON=[
  R("각성제","하급","다음 1회의 전투에서 아군 대원들이 모든 능력치를 3 얻습니다.",h=>{ run.stimNext=(run.stimNext||0)+3 }),
  R("동전 마술","하급","카드를 낸 후에, 10% 확률로 금화를 1개 얻습니다.\n*선택할수록 확률이 10% 누적",
    h=>h.tag.cardGold=(h.tag.cardGold||0)+1),
- R("행운의 금화","하급","소환물이 아닌 적을 처치한 후에, 5% 확률로 금화를 1개 얻습니다.\n*선택할수록 확률이 10% 누적",
+ R("행운의 금화","하급","소환물이 아닌 적을 처치한 후에, 2% 확률로 금화를 1개 얻습니다.\n*선택할수록 확률이 10% 누적",
    h=>h.tag.luckGold=(h.tag.luckGold||0)+1),
  R("탐험 정신","중급","미지의 구역에 도착하면 활동량을 1 얻습니다. 금화를 4개 얻습니다.",   /* 하급 → 중급 (사용자 2026-10-08) */
    h=>{ h.tag.exploreAct=(h.tag.exploreAct||0)+1; run.gold+=4 }),
@@ -13950,6 +13994,24 @@ function drawEventDex(app){
 /* ═══════════ 전용 구역 도감 ═══════════
    지도 기믹을 '전용 구역' 으로 묶어 보여 준다. 글은 GIM_DEX 에 손으로 적는다 (코드의 GIM_EV·GIM_ODDS 를 고치면 여기도 같이).
    {n 이름, icon 아이콘 id, field 구역, odds 확률, cells 칸, refresh 새로고침, camp 주둔지 곁, t 설명, o 선택지[{t,d}], fight 전투 글} */
+/* ⚠️ 도감의 이름과 **칸의 이름이 다르다** — 「고문실과 사형장」 한 칸이 고문실·사형장 둘을 묶는다.
+   그래서 해금은 **칸의 종류(cell.t)** 로 적고(dexSee("gimT", t)), 여기 표로 묶어 본다.
+   (2026-10-13 사용자 : 「사형장을 들렸는데 아직 해금 안 되어 있네」 — 이름이 안 맞아 영영 안 열렸다) */
+const GDX_T={
+ "첨탑과 울타리":["tower","fence"], "고문실과 사형장":["torture","gallows"], "간수 초소":["post"],
+ "죄수 호송 마차":["wagon"], "땅굴":["tunnel"], "감옥 장벽":["wall"], "감옥의 우물":["well"],
+ "고목 덩굴":["grove","thicket","croot"], "반딧불 둥지":["nest"], "마른숲 상점":["dryshop"],
+ "고독의 동굴":["cave"], "균열 군체":["colony"], "거대한 기계의 잔해":["mwreck"], "안개 지대":["fog"],
+ "기력의 샘":["spring"], "천장과 잠금문, 계단":["lockdoor","stair"], "열쇠방":["keyroom"],
+ "부서진 구멍":["hole"], "도서관":["bookcase","tome_shelf"], "마나석 기둥":["mana_pillar"],
+ "종탑":["clocktower"], "모형 열병식":["parade"]
+};
+/* 이름으로 적힌 옛 기록도 그대로 본다 — 둘 가운데 하나라도 있으면 열린 것이다 */
+function gdxSeen(e){
+  if(!e) return false;
+  if(dexOpen("gim",e.n)) return true;
+  return (GDX_T[e.n]||[]).some(t=>dexOpen("gimT",t));
+}
 const GIM_DEX=[
  {n:"첨탑과 울타리",icon:"ink11_map_spire",icons:["ink11_map_fence"],field:"핏빛 감옥",odds:"60%",cells:"첨탑 1 + 울타리 4",refresh:"새로고침 불가 (재편성해도 그 자리)",camp:0,
   t:"중심 첨탑을 상하좌우 울타리가 두릅니다. 판 끝에 걸린 울타리는 빠집니다.",
@@ -14157,7 +14219,8 @@ function drawGimDex(app){ KW_SKIP=GIM_KW_SKIP; try{ drawGimDex0(app) } finally{ 
 function drawGimDex0(app){
   app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">전 용 구 역 도 감</div>
     <div class="sub">구역마다 개성을 더하는 칸 — 어디에 놓이고, 무엇을 고를 수 있는지</div>
-    <div class="dexcnt">${dexCount(GIM_DEX.map(e=>e.n),"gim")}</div></div>`));
+    <div class="dexcnt">${(()=>{ const all=GIM_DEX.length, got=GIM_DEX.filter(gdxSeen).length;
+      return `${all}종 가운데 <b>${got}</b>종` })()}</div></div>`));
   const wrap=el(`<div class="dexwrap"></div>`);
   wrap.appendChild(el(`<div class="evdx-rule">
     <b>전용 구역은 구역을 만들 때 먼저 놓이고</b>, 빈자리에 전투, 상점, 쉼터 같은 보통 칸이 들어갑니다. 확률이 낮아 판마다 있는 것도 없는 것도 있습니다.
@@ -14168,7 +14231,7 @@ function drawGimDex0(app){
   wrap.appendChild(el(`<div class="dexhd" style="margin-top:14px">${esc(fn)} ${GIM_DEX.filter(e=>e.field===fn).length}가지</div>`));
   const grid=el(`<div class="evdx-grid"></div>`);
   GIM_DEX.filter(e=>e.field===fn).forEach(e0=>{
-    if(!dexOpen("gim",e0.n)){   /* 아직 못 들어가 본 전용 구역 (사용자 2026-10-12) */
+    if(!gdxSeen(e0)){   /* 아직 못 들어가 본 전용 구역 (사용자 2026-10-12) — 칸 종류로 본다 (2026-10-13) */
       grid.appendChild(el(`<div class="evdx-card dexlock">
         <div class="evdx-art gdx">${iconImg(e0.icon)}</div>
         <div class="evdx-body"><div class="evdx-name">? ? ?</div>
@@ -14880,7 +14943,7 @@ const FOE={
     {n:"휘두르기",w:1,tg:"all",dmg:3,hits:2,d:"공격 범위 안 모든 상대에게 공격 피해를 3씩 2번 줍니다."},
     {n:"무르기",w:1,tg:"self",back:2,shield:12,d:"뒤로 두 칸 이동하고 보호막을 12 얻습니다."}],
    hit:"채찍질"},
- "울타리":{hp:36,atk:0,def:6,rng:0,exp:1,still:1,
+ "울타리":{hp:48,atk:0,def:6,rng:0,exp:1,still:1,   /* 36 → 48 (사용자 2026-10-13 : 더 단단하게). 1일차 판에서 24 → 32 로 선다 */
    el:"공격",
    ai:{open:"wait"},
    hit:""},
@@ -16264,7 +16327,7 @@ function foeStatusRows(f){
   if(f.evade) g.push(bd("g","회피",f.evade,"다음 공격 한 번을 통째로 흘립니다"));
   if(f.rew>0) g.push(bd("g","되감기",f.rew,"쌓인 만큼 이번 턴에 한 번 더 행동합니다"));
   if(f.armor>0) g.push(bd("g","갑피",f.armor,"한 번에 받는 피해를 이 수치까지로 잘라냅니다"));
-  if(foePas(f,"ring")) g.push(bd("g","마력의 고리",`반경 ${ringR(f)}`,`마력을 20 얻을 때마다 반경이 1 늘어납니다. 고리 안의 상대가 노려집니다. (지금 반경 ${ringR(f)})`,"마력의 고리"));
+  if(foePas(f,"ring")) g.push(bd("g","마력의 고리",`반경 ${ringR(f)}`,`마력을 20 얻을 때마다 반경이 1 늘어납니다.`,"마력의 고리"));
   { const mp=foePas(f,"mpAbsorb"); if(mp){ const per=mp.per||20;
       g.push(bd("g","마력",`${f.mp||0}`,`상대가 마나를 쓸 때마다 그만큼 쌓입니다. ${per}이 쌓일 때마다 마법력을 ${mp.atk||1} 얻습니다. (지금 ${(f.mp||0)%per}/${per})`,"마력")) } }
   if(foePas(f,"memory")&&(f.mem||0)>0) g.push(bd("g","기억",`${f.mem}/3`,memEmp(f)?"기억이 가득 찼습니다 — 다음 행동이 강화됩니다":"행동할 때마다 쌓입니다. 3번 쌓인 뒤의 행동이 강화됩니다"));
@@ -16290,6 +16353,18 @@ function foeStatusRows(f){
   o.push(...debBadges(f));
   return (t.length?`<div class="st t">${t.join("")}</div>`:"")+stRows(g,o);
 }
+/* 하수인 골렘이 쥔 글 둘 — 재료 부속의 **지속**과 **죽음** (사용자 2026-10-13).
+   노트 카드 글이 「체력 N / 지속 … / 죽음: …」 한 덩이라 여기서 갈라 쓴다 */
+function golemPartLines(u){
+  const M=(u&&u.golem&&PAVEL_MAT[u.golem.mat])||null;
+  if(!M) return {지속:"",죽음:""};
+  const L=String(M.d||"").split("\n").map(x=>x.trim()).filter(Boolean)
+    .filter(x=>!/^체력\s*\d+$/.test(x));
+  const dead=L.filter(x=>/^죽음\s*:/.test(x)).join(" ").replace(/^죽음\s*:\s*/,"");
+  const live=L.filter(x=>!/^죽음\s*:/.test(x)).join(" ");
+  return {지속:live,죽음:dead};
+}
+function golemDeathTxt(u){ return golemPartLines(u).죽음||"" }
 /* 아군 소환물의 죽음 효과 풀이 — 없으면 빈 글자 */
 function minDeathTxt(u){
   if(!u||!u.isMin) return "";
@@ -16299,11 +16374,17 @@ function minDeathTxt(u){
     +(T.sproutShield?` 보호막도 ${T.sproutShield} 부여합니다.`:"")+(T.sproutHeal?` 체력도 ${T.sproutHeal} 회복시킵니다.`:"");
   else if(u.name==="고대수목") t="모든 아군 대원들에게 회피를 1 부여합니다.";
   else if(u.curseOnDeath) t=`거리 1 내의 적에게 보호약화를 ${u.curseOnDeath} 부여합니다.`;
+  else if(u.golem) t=golemDeathTxt(u);   /* 하수인 골렘 — 재료 부속이 정한다 (2026-10-13) */
   if(!t) return "";
   return "죽음: "+t+((T.commune&&(isSprout(u)||isTree(u)))?` (교감: ${1+T.commune}번 발동)`:"");
 }
 function heroStatusRows(h){
   const g=[], o=[], t=[];
+  /* 하수인 골렘 — 쥔 **지속**을 느낌표 딱지로 (죽음은 바로 아래 줄이 맡는다, 사용자 2026-10-13) */
+  if(h&&h.golem){ const L=golemPartLines(h);
+    if(L.지속) t.push(bd("t","지속","!",`${h.golem.mat} — ${L.지속}`,"지속"));
+    { const sk=(h.sk||[])[0];
+      if(sk) t.push(bd("t","기술","",`${h.golem.soul} — ${sk.n} (비용 ${sk.cost}) ${sk.d||""}`,"기술")) } }
   { const dt=minDeathTxt(h); if(dt) t.push(bd("t","죽음","",dt,"죽음")) }
   if(h.echo) t.push(bd("t","메아리","","메아리: 쓰러질 때 한 번, 절반의 체력으로 다시 일어섭니다.","메아리"));   /* 생명의 메아리 */
   if(h.evade) g.push(bd("g","회피",h.evade,"다음 공격 한 번을 통째로 흘립니다"));
@@ -18772,6 +18853,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 76, "v": "0.7", "d": "2026-10-13", "t": "골렘 카드가 그 턴에 들어온다 · 연출과 글 손질 여럿", "big": 0},
  {"b": 75, "v": "0.7", "d": "2026-10-13", "t": "파벨을 고르기 화면에 (기술 넷 · 보상 서른넷)", "big": 0},
  {"b": 74, "v": "0.7", "d": "2026-10-13", "t": "파벨 상급 보상 열 — 보상 서른넷이 다 들어왔다", "big": 0},
  {"b": 73, "v": "0.7", "d": "2026-10-13", "t": "파벨 중급 보상 열둘", "big": 0},
@@ -20039,7 +20121,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=75;
+const BUILD_NO=76;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -22171,6 +22253,8 @@ function payEnter(cell,r,c){
 /* 서 있는 칸으로 들어간다 — 판의 [입장] */
 function mapEnter(){
   const r=run.pos.r, c=run.pos.c, cell=run.grid[r][c];
+  /* 전용 구역 도감 — **들어간 칸의 종류**를 적는다 (이름이 아니라). 이벤트가 안 열리는 칸도 여기로 걸린다 */
+  try{ if(cell&&cell.t&&typeof GIM_T!=="undefined"&&GIM_T[cell.t]) dexSee("gimT",cell.t) }catch(e){}
   if(cell.t==="empty"||cell.done||cell.t==="camp"||cell.t==="wall") return;
   run.mapSel=null; enterCell(r,c);
 }
@@ -29979,11 +30063,12 @@ function drawBattle(app){
         +(hero.mag?`<span class="mg">${ic("mag")} ${hero.mag}</span>`:"")
         +(hero.def?`<span class="df">${ic("def")} ${hero.def}</span>`:"")):"";
     const desc=hero?`${hst?`<div class="cc-hst">${hst}</div>`:""}빈 칸에 배치하세요`
+      :(c.type==="summon"&&c.mat&&c.soul)?rich(golemCardText(c))   /* 하수인 골렘 — 부속 둘의 글 (2026-10-13) */
       :c.type==="summon"?"빈 칸에 배치하세요":rich(c.d);
     const st=hero
       ? `<span class="hp">${ic("hp")} ${hero.hp}/${hero.maxHp}</span><span class="mn">${ic("mana")} ${hero.maxMana}</span>`
-      : S ? `<span class="hp">${ic("hp")} ${S.hp}</span>`
-            +(S.mana?`<span class="mn">${ic("mana")} ${S.mana}</span>`:"")
+      : S ? `<span class="hp">${ic("hp")} ${golemCardHp(c)||S.hp}</span>`
+            +((golemCardMana(c)||S.mana)?`<span class="mn">${ic("mana")} ${golemCardMana(c)||S.mana}</span>`:"")
       : "";
     /* 쌓아 둔 카드는 몇 장 남았는지 보여야 한다 — 소환물 카드는 설명 자리가
        "빈 칸에 배치하세요" 로 차 있어 여느 카드의 "(보유 N)" 이 들어갈 데가 없다.
@@ -30391,6 +30476,15 @@ const PASSIVE_INFO={
      return `체력이 ${V.pct}% 이하(${V.need})일 때 추가 공격력을 ${V.atk} 얻습니다.`
        +(V.def?` 추가 보호력도 ${V.def} 얻습니다.`:``) }}]
 };
+/* 파벨 — 지속 능력을 기술창에 띄운다 (사용자 2026-10-13 : 「기술창에도 누락」).
+   ⚠️ passHtml 은 **PASSIVE_INFO 에 있는 대원만** 그린다. HEROES.passive 만 적어 두면 전투 화면에는 한 줄도 안 뜬다 */
+/* 하수인 골렘 — 때리는 기술에는 공격 자세를 (받은 그림에 공격·피격이 있다).
+   ⚠️ SKILL_POSE 에 없으면 자세를 **아예 안 잡는다** — 소환물은 표에 한 줄씩 적어야 선다 */
+["찌르기","별똥별","영혼부르기"].forEach(n=>{ SKILL_POSE["하수인 골렘|"+n]={p:"atk",ms:420} });
+PASSIVE_INFO["파벨"]=[{n:"파수꾼의 은총",
+  d:h=>{ const v=(h.def||0)+((h.tag&&h.tag.graceUp)||0);
+    return `내 턴에 적이 공중에 뜸 상태가 된 후에, 추가 보호력만큼 보호막을 얻습니다. (지금 ${v})`
+      +((h.tag&&h.tag.graceBoom)?` 은총의 폭발 — 그만큼 모든 적에게 피해도 줍니다.`:``) }}];
 function passHtml(h){
   const list=PASSIVE_INFO[h.name];
   if(!list) return "";
@@ -30807,6 +30901,7 @@ const AUTO_SK={"성장":1,"축복":1,"중무장":1,"대가 치르기":1,"준비 
   "방패 막기":1,"방패 밀치기":1,"정의의 기운":1,"선두 방어":1,"후미 준비":1,"굳건한 성벽":1,"최후의 보루":1,   /* 헥토 — 한 번 눌러 바로 (사용자 2026-10-06) */
   "영광의 족쇄":1,"참회의 기류":1,   /* 도미니코 — 한 번 눌러 바로 (사용자 2026-10-06) */
   "시공간 폭탄":1,   /* 이테리오 — 겨눌 것이 없다. 한 번 눌러 바로 (사용자 2026-10-07) */
+  "지면 내려치기":1,"골렘 창조":1,   /* 파벨 — 겨눌 것이 없다. 한 번 눌러 바로 (사용자 2026-10-13) */
   "착취":h=>guideOn(h)};   /* 인도 — 영혼 300 부터 모든 적이라 고를 것이 없다 (사용자 2026-10-03) */
 /* 고르는 순간 나가는 기술인가 — 표(AUTO_SK) 에 있거나, 소환물의 기술 중 대상을 스스로 정하는 것
    (제자리 · 가장 먼 적 · 모든 적 · 가장 가까운 적). 소환물은 표를 따로 두지 않는다 (사용자 2026-10-05) */
@@ -32784,7 +32879,10 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
   const fBlock=(d<=0&&s>0&&!crit);
   f._hitAt=FXQ.length;   /* 처치 조명은 이 타격 바로 앞에 끼운다 (onKill) */
   fx({side:"foe",slot:f.slot,hit:1,block:fBlock?1:0,hpU:d>0?f:null,hpV:Math.max(0,f.hp),
-      art:(fBlock||ownFx)?null:(art||"slash"),txt:(fBlock?"막음 ":"-")+amt,
+      /* ⚠️ 코드로 그린 참격(ART.slash · slash2)은 **더 쓰지 않는다** (사용자 2026-10-13 : 「제발 다 지워줘」).
+         주지 않으면 스스로 채우던 자리라 여기서 끊는다 — 받은 그림이 있는 공격은 제 이펙트가 따로 돈다.
+         소리는 그대로다 (아래 s: 는 art 변수를 읽지, 이 칸을 읽지 않는다) */
+      art:(fBlock||ownFx||!art||art==="slash"||art==="slash2")?null:art,txt:(fBlock?"막음 ":"-")+amt,
       cls:crit?"critbig":(fBlock?"shd":(art==="mag"?"mag":(amt>=15?"crit":"dmg"))),
       gap:crit?170:undefined, recoil:1, pose:(d>0?"hurt":(s>0?"guard":null)),
       s:crit?null:hitSnd(fBlock?"block":
@@ -32828,10 +32926,10 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
       coreKillTick();   /* 세계핵 — 전투가 끝날 때 통산 처치 수에 더한다 (사용자 2026-10-09) */
       if(/^모형 /.test(f.name)&&f.name!=="모형 전략가") try{ keyQuestTick("모형 병사") }catch(e){}   /* 모형 토벌 (2026-10-10) */
       try{ skinKillCheck(f.name) }catch(e){}   /* 스킨 — 간수장 처치 따위 (2026-10-01) */
-      /* 행운의 금화 — 5% + 고른 수마다 10% 누적 (2026-09-16) */
-      const lg=tagSum("luckGold"); if(lg&&Math.random()<(0.05+0.10*(lg-1))){ run.gold+=1;
+      /* 행운의 금화 — **2%** + 고른 수마다 10% 누적 (5% → 2%, 사용자 2026-10-13) */
+      const lg=tagSum("luckGold"); if(lg&&Math.random()<(0.02+0.10*(lg-1))){ run.gold+=1;
         { const sl=f.slot; fx({side:"foe",slot:sl,s:sfxOr("금화 얻기",null),fn:()=>luckyCoinFX("foe",sl),txt:"금화 +1",cls:"crit",gap:90}) }
-        say(`행운의 금화 — 금화 +1 (${5+10*(lg-1)}%)`,"t2") } }
+        say(`행운의 금화 — 금화 +1 (${2+10*(lg-1)}%)`,"t2") } }
     /* f.exp 는 전투가 끝날 때 더해지는 바로 그 값이다 — 지금까지 안 보여 줬을 뿐이다. 소환물은 없다 */
     f.dieHold=Date.now();   /* 마지막 타격 연출까지 칸에 남는다 */
     const dsnd=(!(foePas(f,"death")||f.dthTag)&&deathSndExact(f))||"die";   /* 죽음 효과가 있는 적은 deathMarkFX 가 종족 소리를 내니 여기서는 공용 die */
@@ -33145,6 +33243,13 @@ function pavelMobil(h,s,target){
   const occ=to?unitAt(to):null;
   if(to&&to!==h.slot) moveTo(h,to);
   if(to&&h.slot===from) say("그쪽으로는 움직일 수 없습니다.","t2");
+  /* 파벨의 이동 — 무거운 몸이 한 번 솟았다 쿵 내려선다 (사용자 2026-10-13).
+     ⚠️ 받은 그림에 **이동 자세가 없다** — 기본 자세로 뛰고 착지에 먼지를 깐다.
+        전용 프레임을 받으면 pose 를 그 띠로 바꾸면 된다 */
+  if(h.slot!==from){
+    fx({side:"mine",slot:h.slot,hop:from,hopUp:26,poseMs:420,gap:0});
+    { const sl=h.slot; setTimeout(()=>{ const p=ctrOf("mine",sl);
+      if(p){ try{ sparks(p,"#c9a227",6) }catch(e){} } },Math.round(300*(typeof SPD==="number"?SPD:1))) } }
   const v=(s.shield||0)+mod(s,"shield")+(h.def||0);
   addShield(h,v);
   fx({side:"mine",slot:h.slot,s:"shield",glow:1,txt:"보호막 +"+v,cls:"shd",gap:60});
@@ -34410,12 +34515,16 @@ function runEffect0(h,i,s,target){
     /* 지면 내려치기 — 때린 뒤 **거리 2 내**가 공중에 뜬다 (노트 17-1).
        띄우는 것은 airborne 한 곳이다 — 파수꾼의 은총도 거기서 따라온다 */
     if(s.slam){
-      /* 받은 이펙트 한 칸(256x96) — 적 구역 바닥에 깔린다 (묶음 usage.json 의 자리) */
-      { const L0=B.foes.filter(f=>f.alive);
+      /* 받은 이펙트 한 칸(256x96) — 적 구역 바닥에 **한 번만** (사용자 2026-10-13 : 「2단 한번만 지면쪽에서」).
+         ⚠️ 한 번 쓸 때 두 번 이상 보이던 까닭 — 다중 내려치기·쌓아 쓰기로 이 갈래가 여러 번 돌면
+            그때마다 띄웠다. 이제 **한 번 쓰는 동안 한 번**만 띄운다 (B._slamFx 가 막는다).
+         ⚠️ 때도 맞춘다 — 공격 자세가 땅에 닿는 220ms 뒤에 (가만히 서 있는데 땅만 터지던 것) */
+      if(!B._slamFx){ const L0=B.foes.filter(f=>f.alive);
         if(L0.length&&(typeof ICON_PNG!=="undefined")&&ICON_PNG["fx_pavel_ground_slam"]){
+          B._slamFx=1; setTimeout(()=>{ B._slamFx=0 },900);
           const mid=L0[Math.floor(L0.length/2)];
           fx({side:"foe",slot:mid.slot,sheet:"fx_pavel_ground_slam",
-              sheetOpt:{cellW:256,cellH:96,frames:1,z:1.5,frameMs:[420]},gap:0}) } }
+              sheetOpt:{cellW:256,cellH:96,frames:1,z:1.6,frameMs:[460]},gap:0}) } }
       /* 무게추 — 이번 한 번은 **거리를 가리지 않는다** (노트 midRewards) */
       const 모두=!!h.weightOn; if(모두){ h.weightOn=0; say("무게추 — 땅이 통째로 솟구칩니다.","t2") }
       B.foes.filter(f=>f.alive&&(모두||dist(h.slot,f.slot)<=2)).forEach(f=>airborne(h,f));
