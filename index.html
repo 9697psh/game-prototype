@@ -10794,7 +10794,7 @@ HEROES["도미니코"]={title:"영광의 사제",role:"지원, 축복",hp:20,man
       처음에는 넷씩이다. `rew:1` 이 그 표시다. */
 const PAVEL_MAT={
  "라이티늄":{hp:20,taunt:1,endShield:4,
-   d:"체력 20\n항상 도발 상태입니다. 내 턴이 끝날 때, 보호막을 4 얻습니다."},
+   d:"체력 20\n항상 도발 상태입니다. 내 턴이 끝날 때, 보호막을 4(추가 보호력) 얻습니다."},
  "균열석":{hp:24,taunt:1,deathNeg:2,
    d:"체력 24\n항상 도발 상태입니다.\n죽음: 다른 모든 대원에게 부정 보호막을 2 부여합니다."},
  "금속":{hp:16,critAlways:1,deathAll:6,
@@ -11214,9 +11214,14 @@ function golemEndTurn(){
   let n=0;
   (B.mins||[]).filter(u=>u.alive&&u.golem).forEach(u=>{
     const M=golemMat(u); if(!M) return;
-    if(M.endShield){ addShield(u,M.endShield);
-      fx({side:"mine",slot:u.slot,s:"shield",txt:"보호막 +"+M.endShield,cls:"shd",gap:60});
-      say(`라이티늄 — ${u.name} 보호막 +${M.endShield}`,"t2"); n++ }
+    if(M.endShield){
+      /* 보호막은 **그 골렘의 추가 보호력**만큼 커진다 (사용자 2026-10-13).
+         ⚠️ 보호막에 보호력을 얹는 집안 결 그대로다 (기술 쪽 `s.shield + h.def` 와 같은 꼴).
+            골렘의 def 는 고대석(턴끝 모든 능력치) · 넘쳐나는 생명 따위로 자란다 */
+      const v=M.endShield+(u.def||0);
+      addShield(u,v);
+      fx({side:"mine",slot:u.slot,s:"shield",txt:"보호막 +"+v,cls:"shd",gap:60});
+      say(`라이티늄 — ${u.name} 보호막 +${v}`,"t2"); n++ }
     /* ⚠️ **그 골렘 하나**에만 쌓인다 (사용자 2026-10-13) — 전투 단위로 쌓으면 드론파편이 아닌 골렘까지 세졌다 */
     if(M.endDeathUp){ u.deathUp=(u.deathUp||0)+M.endDeathUp;
       say(`드론파편 — ${u.name}의 죽음 피해량 +${M.endDeathUp} (모두 ${u.deathUp})`,"t2"); n++ }
@@ -19076,6 +19081,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 101, "v": "0.7", "d": "2026-10-13", "t": "라이티늄 보호막에 추가 보호력", "big": 0},
  {"b": 100, "v": "0.7", "d": "2026-10-13", "t": "그리모어 치명타 · 원천 분석 지속 · 보상 둘 상급 · 고대석의 아군", "big": 0},
  {"b": 99, "v": "0.7", "d": "2026-10-13", "t": "별똥별 치명타 · 골렘 군단 25회", "big": 0},
  {"b": 98, "v": "0.7", "d": "2026-10-13", "t": "보상 설명의 부속 이름에 밑줄과 부속 카드 풍선", "big": 0},
@@ -20368,7 +20374,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=100;
+const BUILD_NO=101;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
