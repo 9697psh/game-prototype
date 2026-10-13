@@ -18627,6 +18627,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 70, "v": "0.7", "d": "2026-10-13", "t": "고르는 화면 둘이 겹치지 않게 — 먼저 고른 뒤에 기술을 쓴다", "big": 0},
  {"b": 69, "v": "0.7", "d": "2026-10-13", "t": "원천 분석 — 배치하면 희귀 장신구 셋, 이번 전투 동안 착용", "big": 0},
  {"b": 68, "v": "0.7", "d": "2026-10-13", "t": "골렘 창조 — 오오라와 카드가 서서히 떠오르고, 설명에서 체력 줄을 뺐다", "big": 0},
  {"b": 67, "v": "0.7", "d": "2026-10-13", "t": "골렘 창조 — 카드 테두리 안에, 가운데, 돌다 맞물려 빛나고 카드가 되어 손패로", "big": 0},
@@ -19888,7 +19889,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=69;
+const BUILD_NO=70;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -29864,7 +29865,7 @@ function drawBattle(app){
   /* 골렘 창조 — 부속 둘 가운데 하나 (사용자 녹화 2026-10-13). 고를 때까지 떠 있는다 */
   if(B.golem&&B.golem.opts&&B.golem.opts.length){
     const G=B.golem, TBL=(G.kind==="mat")?PAVEL_MAT:PAVEL_SOUL;
-    const box=el(`<div class="golempick"><div class="gpcards"></div>
+    const box=el(`<div class="golempick partpick"><div class="gpcards"></div>
       <div class="gpcap">${G.kind==="mat"?"재료 부속을 선택하세요":"영혼 부속을 선택하세요"}</div></div>`);
     /* 떠오르는 중이면 **나이만큼 뒤로 민 채** 이어 그린다 — 다시 그릴 때마다 처음부터 뜨지 않게 */
     { const age=Date.now()-(G.t0||0);
@@ -29879,7 +29880,7 @@ function drawBattle(app){
   /* 원천 분석 — 희귀 장신구 셋 가운데 하나 (노트 17-4). 골렘과 같은 화면 · 같은 카드 틀 */
   if(B.srcPick&&B.srcPick.opts&&B.srcPick.opts.length){
     const G=B.srcPick;
-    const box=el(`<div class="golempick"><div class="gpcards"></div>
+    const box=el(`<div class="golempick srcpick"><div class="gpcards"></div>
       <div class="gpcap">${esc(G.by)}에게 장착할 장신구를 선택하세요</div></div>`);
     { const age=Date.now()-(G.t0||0);
       if(age<700) box.style.animationDelay=(-age)+"ms"; else box.classList.add("shown") }
@@ -33008,6 +33009,8 @@ function airborne(h,f){
 }
 function doSkill(target){
   if(B.busy) return;
+  if(B.golem||B.srcPick){   /* 고르는 화면이 먼저다 — 둘이 겹쳐 뜨면 포개진다 */
+    say(B.srcPick?"먼저 장신구를 고르세요.":"먼저 부속을 고르세요.","t2"); return }
   const h=sel.hero,i=sel.skill,n=sel.count,s0=h.sk[i];
   alwaysSync(h);
   if(i===0&&(n||1)>=3&&target>0) B.tutTriple=1;   /* 튜토리얼 — 1번 기술을 적에게 3번 (btKeys) */
