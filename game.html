@@ -19111,6 +19111,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 105, "v": "0.7", "d": "2026-10-13", "t": "우두머리 전투 턴 한도 25 표기", "big": 0},
  {"b": 104, "v": "0.7", "d": "2026-10-13", "t": "정찰대 보내기 — 활동량 없앰", "big": 0},
  {"b": 103, "v": "0.7", "d": "2026-10-13", "t": "손패 상한 10장 · 산들바람 한 번만 · 탑 안개 메움", "big": 0},
  {"b": 102, "v": "0.7", "d": "2026-10-13", "t": "재조립 무한 회수 · 과열 비움 · 기동은 한 번만", "big": 0},
@@ -20407,7 +20408,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=104;
+const BUILD_NO=105;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -26575,6 +26576,10 @@ function drawOver(app){   /* 소리 · 연출은 앞의 defeatCard 가 맡는다
 
 /* ═══════════ 전투 ═══════════ */
 const SLOTS=5;
+/* 전투의 턴 한도 — **우두머리만 25**, 나머지는 20 (사용자 2026-10-12).
+   ⚠️ 규칙은 25 인데 **머리글만 「/ 20」으로 박혀 있어** 우두머리 판에서 「25턴 / 20」이 떴다
+      (사용자 2026-10-13). 머리글과 물러나는 셈이 **이 함수 하나**를 보게 묶었다 — 규칙 하나는 함수 하나 */
+const turnLimit=k=>(((k==null?(typeof B!=="undefined"&&B&&B.kind):k)==="boss")?25:20);
 const UNLOCK=[1,1,7,15];
 /* 기술 잠금을 볼 레벨 — 전투 중에는 그 전투를 시작할 때의 레벨(h._lvB). 전투 중에 레벨이 올라도 새 기술은 전투가 끝나야 열린다 (사용자 2026-10-04) */
 function skLv(h){ return (h&&h._lvB!=null)?h._lvB:(h?h.lv:1) }
@@ -29925,7 +29930,7 @@ function drawBattle(app){
   const stage=el(`<div class="bfstage${wbg?" wide":""}" style="--bfbg:url(${battleBg()})${battleLayStyle()}"><div class="bftop"></div><div class="bflog"></div><div class="bfsyn"></div><div class="bfq"></div><div class="bfwcore"></div></div>`);
   app.appendChild(stage);
   const head=el(`<div class="bfturn">
-    <div class="title" style="font-size:17px">${B.turn}턴${(run&&run.sandbox)?"":" / 20"}</div>
+    <div class="title" style="font-size:17px">${B.turn}턴${(run&&run.sandbox)?"":" / "+turnLimit()}</div>
     <span class="chip kw" data-kw="적 강화" data-tip="구역, 일차, 대원의 성장에 따라 적이 강해집니다.">적 강화 +${Math.round((foeScale(B.kind).m-1)*100)}%</span></div>`);
   stage.querySelector(".bftop").appendChild(head);
   { const qm=questMini(); if(qm) stage.querySelector(".bfq").appendChild(qm) }
@@ -36686,7 +36691,7 @@ function startMyTurn(){
   if(!run.heroes.some(h=>h.hp>0)&&!lifeLeft()){ B.over=1; battleLost(); render(); return }
   if(!run.heroes.some(h=>!h.down)&&!lifeLeft()){ B.over=1; battleLost(); render(); return }
   B.turn++;
-  const TLIM=B.kind==="boss"?25:20;   /* 우두머리 전투만 25턴 (사용자 2026-10-12) */
+  const TLIM=turnLimit();   /* 우두머리 전투만 25턴 (사용자 2026-10-12) — 머리글과 같은 함수를 본다 */
   if(B.turn>TLIM&&!(run&&run.sandbox)){ B.over=1; say(`${TLIM}턴이 지나 물러납니다.`,"t3");
     { const d=run.dun, c=d&&d.r!=null&&run.grid[d.r]&&run.grid[d.r][d.c];   /* 그 전투 칸은 지도에서 없앤다 (사용자 2026-10-05) */
       if(c&&(c.t==="dungeon"||c.t==="elite")&&!d.trial){ run.grid[d.r][d.c]={t:"empty"}; say("전투 구역이 흩어져 지도에서 사라집니다.","t3") } }
