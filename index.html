@@ -11270,7 +11270,10 @@ function golemDeath(u,why){
       /* ⚠️ **이미 떠 있는 적은 건너뛴다.** airborne 은 부를 때마다 파수꾼의 은총 · 독소 침 ·
          바람처럼 사라져라가 따라온다 — 용오름처럼 **일부러** 겹쳐 부르는 자리와는 다르다 */
       L.slice().sort((a,b)=>a.slot-b.slot).forEach(f=>{ if(f.alive&&!f.air) airborne(ow||u,f) }) } }
-  if(M.deathGive){ const L=onField().filter(a=>a.hp>0&&a!==u);
+  /* 고대석 — 「무작위 **아군**」은 **대원 + 내 진영의 소환물**이다 (사용자 2026-10-13).
+     onField() 는 대원만 돌려준다 — allUnits() 가 소환물까지 아우르는 자리다.
+     ⚠️ 바로 위 균열석(deathNeg)은 글이 「다른 모든 **대원**」이라 일부러 `!a.isMin` 으로 거른다. 둘은 다르다 */
+  if(M.deathGive){ const L=allUnits().filter(a=>a.hp>0&&a!==u);
     const a=L.length?rnd(L):null;
     if(a){ ["atk","mag","def"].forEach(k=>{ if(u[k]>0) bumpRnd(a,k,u[k]) });
       if(u.atk||u.mag||u.def) say(`고대석 — ${a.name}${jo(a.name,"ig")} 추가 능력치를 물려받습니다 (공격 ${u.atk} 마법 ${u.mag} 보호 ${u.def}).`,"t2") } }
@@ -11583,7 +11586,7 @@ HEROES["파벨"]={title:"모험심 가득한 창조자",role:"보호, 소환",hp
    {n:"지면 내려치기",cost:2,el:"공격",tg:"self",allHit:1,slam:1,dmg:3,d:"모든 적에게 피해 3(추가), 거리 2 내는 공중에 뜸"},
    {n:"기동",cost:1,el:"이동",tg:"ally",mobil:1,shield:2,d:"1칸 이동, 보호막 2(추가), 자리를 바꾼 아군에게도"},
    {n:"골렘 창조",cost:3,el:"집중",tg:"self",lock:2,makeGolem:1,d:"잠금(2), 부속 둘을 골라 하수인 골렘을 만든다"},
-   {n:"원천 분석",cost:0,el:"지속",tg:"self",limit:1,srcAnalysis:1,d:"처음 배치하면 희귀 장신구 셋 중 하나를 이번 전투 동안 착용"}
+   {n:"원천 분석",cost:0,el:"지속",tg:"self",limit:1,auto:1,srcAnalysis:1,d:"처음 배치하면 희귀 장신구 셋 중 하나를 이번 전투 동안 착용"}
   ]};
 const START_PICKS=["나이코스","카제","굴라"];
 const HERO_POOL=["나이코스","카제","굴라","헥토","트리스탄","인비디아","도미니코",
@@ -12615,8 +12618,6 @@ const HERO_REWARDS={
   R("오래된 경험","하급","활동량을 1개 소모합니다. 경험치를 16 얻습니다.\n*활동량이 1개 이상일때만 등장",
     h=>{ run.act=Math.max(0,(run.act||0)-1); giveExp(16,[h],true) }),
   /* ── 중급 ── */
-  R("양손 작업","중급","골렘 창조로 부속을 고를 때, 선택지가 1개 늘어납니다.\n*[골렘 창조] 기술이 없을 때 등장하지 않음\n*획득시 보상에서 다시 등장하지 않음",
-    h=>h.tag.golemWide=(h.tag.golemWide||0)+1,0.5),
   R("분업","중급","하수인 골렘이 기술을 사용한 후, 파벨이 보호막을 4 얻습니다.\n*[골렘 창조] 기술이 없을 때 등장하지 않음",
     h=>h.tag.workShare=(h.tag.workShare||0)+4),
   R("진동","중급","대원 배치 후, 모든 적을 공중에 뜸 상태로 만들고 공격약화를 1 부여합니다.",
@@ -12625,8 +12626,6 @@ const HERO_REWARDS={
     h=>{ run.stone=(run.stone||0)+5;
          const it=rnd(ITEMS.filter(i=>i.g==="파편"));
          if(it){ (run.after=run.after||[]).push({item:it},{item:it}) } },0.5),
-  R("재료 부속: 고대석","중급","재료 부속 목록에 고대석을 추가합니다.\n*획득시 보상에서 다시 등장하지 않음\n*[골렘 창조] 기술이 없을 때 등장하지 않음",
-    h=>{ h.tag.golemAdd=(h.tag.golemAdd||[]); if(h.tag.golemAdd.indexOf("고대석")<0) h.tag.golemAdd.push("고대석") },0.5),
   R("영혼 부속: 별빛","중급","영혼 부속 목록에 별빛을 추가합니다.\n*획득시 보상에서 다시 등장하지 않음\n*[골렘 창조] 기술이 없을 때 등장하지 않음",
     h=>{ h.tag.golemAdd=(h.tag.golemAdd||[]); if(h.tag.golemAdd.indexOf("별빛")<0) h.tag.golemAdd.push("별빛") },0.5),
   R("재료 부속: 부유석","중급","재료 부속 목록에 부유석을 추가합니다.\n*획득시 보상에서 다시 등장하지 않음\n*[골렘 창조] 기술이 없을 때 등장하지 않음",
@@ -12646,6 +12645,11 @@ const HERO_REWARDS={
   R("지면 파훼","중급","퀘스트: 정예 전투에서 2회 승리\n보상: 지면 내려치기의 피해량이 영구히 8 증가합니다.",
     h=>{ if(!questHas("지면 파훼")) questAccept("지면 파훼",h.name) },0.5),
   /* ── 상급 ── */
+  /* 양손 작업 · 재료 부속: 고대석 — 중급에서 올라왔다 (사용자 2026-10-13) */
+  R("양손 작업","상급","골렘 창조로 부속을 고를 때, 선택지가 1개 늘어납니다.\n*[골렘 창조] 기술이 없을 때 등장하지 않음\n*획득시 보상에서 다시 등장하지 않음",
+    h=>h.tag.golemWide=(h.tag.golemWide||0)+1,0.5),
+  R("재료 부속: 고대석","상급","재료 부속 목록에 고대석을 추가합니다.\n*획득시 보상에서 다시 등장하지 않음\n*[골렘 창조] 기술이 없을 때 등장하지 않음",
+    h=>{ h.tag.golemAdd=(h.tag.golemAdd||[]); if(h.tag.golemAdd.indexOf("고대석")<0) h.tag.golemAdd.push("고대석") },0.5),
   R("재조립","상급","하수인 골렘이 죽은 후, 그 골렘의 부속 카드 중 하나를 가져옵니다.\n*[골렘 창조] 기술이 없을 때 등장하지 않음",
     h=>h.tag.rebuild=(h.tag.rebuild||0)+1),
   R("마나석 끼워넣기","상급","하수인 골렘 배치 후, 골렘의 최대 마나가 1 증가합니다.\n*[골렘 창조] 기술이 없을 때 등장하지 않음",
@@ -13399,9 +13403,9 @@ Object.assign(REW_COND,{
  "하급|돌파편":{need:["골렘 창조"]},
  "하급|별똥별 파편":{need:["골렘 창조"]},
  "하급|보호막 창조":{need:["골렘 창조"]},
- "중급|양손 작업":{once:1,need:["골렘 창조"]},
+ "상급|양손 작업":{once:1,need:["골렘 창조"]},
  "중급|분업":{need:["골렘 창조"]},
- "중급|재료 부속: 고대석":{once:1,need:["골렘 창조"]},
+ "상급|재료 부속: 고대석":{once:1,need:["골렘 창조"]},
  "중급|영혼 부속: 별빛":{once:1,need:["골렘 창조"]},
  "중급|재료 부속: 부유석":{once:1,need:["골렘 창조"]},
  "중급|영혼 부속: 포식":{once:1,need:["골렘 창조"]},
@@ -19072,6 +19076,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 100, "v": "0.7", "d": "2026-10-13", "t": "그리모어 치명타 · 원천 분석 지속 · 보상 둘 상급 · 고대석의 아군", "big": 0},
  {"b": 99, "v": "0.7", "d": "2026-10-13", "t": "별똥별 치명타 · 골렘 군단 25회", "big": 0},
  {"b": 98, "v": "0.7", "d": "2026-10-13", "t": "보상 설명의 부속 이름에 밑줄과 부속 카드 풍선", "big": 0},
  {"b": 97, "v": "0.7", "d": "2026-10-13", "t": "포식의 주먹", "big": 0},
@@ -20363,7 +20368,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=99;
+const BUILD_NO=100;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -30923,7 +30928,7 @@ function skillPanel(h){
     const locked = skLocked(h,i);   /* 전투 중에 오른 레벨로는 안 열린다 */
     const lk=h.lock[i]||0;
     const used=s.limit?(h.limitUsed[i]||0):0;
-    const ok=!locked&&!lk&&canPay(h,i,1);
+    const ok=!locked&&!lk&&!s.auto&&canPay(h,i,1);   /* auto — 저절로만 도는 지속 기술은 누를 수 없다 (흐리게 보인다) */
     /* 지속 기술(원천 분석 · 독소 침 · 헤드샷)은 **손으로 치르는 것이 아니다** — 마나와 사용한도를 안 적는다
        (사용자 2026-10-13 : 「지속 능력이라서 … 다른 지속 능력이랑 유사하게」). 안의 limit 셈은 그대로 둔다 */
     const 지속=s.el==="지속";
@@ -31156,6 +31161,11 @@ function pickSkill(i,count){
   if(B.busy) return;          /* 턴 종료 효과가 흐르는 동안에는 손대지 못한다 */
   if(sel&&sel.optOpen!=null&&sel.optOpen!==i){ sel.optOpen=null }
   const h=sel.hero, s=h.sk[i];
+  /* ⚠️ auto — **저절로만 도는** 지속 기술이다 (원천 분석). 손으로 고를 수 없다 (사용자 2026-10-13).
+     문은 **여기 한 곳**이다 — 기술 칸을 누르는 길과 숫자 글쇠로 고르는 길이 둘 다 여기로 모인다.
+     (기술 칸이 흐려 보이는 것은 ok 가 따로 가린다 — 그것은 보이는 몫이고, 막는 것은 이 줄이다)
+     ⚠️ 독소 침 · 헤드샷은 **손으로 켜는** 지속이라 auto 를 달지 않는다 — el 로 뭉뚱그리면 안 된다 */
+  if(s&&s.auto){ say(`${s.n}${jo(s.n,"eun")} 저절로 도는 지속 기술입니다.`,"t2"); return }
   if(skLocked(h,i)){ say(h.lv>=UNLOCK[i]?"전투가 끝나면 열리는 기술입니다.":"아직 해제되지 않은 기술입니다.","t2"); return }
   if(h.lock[i]){ say(`${s.n}${jo(s.n,"eun")} ${h.lock[i]}턴 동안 잠금 상태입니다.`,"t2"); return }
   /* 이미 고른 기술을 다시 누르면 시전 횟수가 하나씩 늘어난다 */
@@ -33117,10 +33127,20 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
   if(!crit&&amt>0&&B&&B._ef&&B._efEl==="마법"&&B._efHero&&B.lastAttacker===B._efHero&&f&&B.foes&&B.foes.indexOf(f)>=0&&f.alive&&!(f.evade>0)&&critLeft(B._efHero,"critMag")>0){
     const H=B._efHero; H.critMagUsed=(H.critMagUsed||0)+1; amt*=2; crit=1;
     say(`치명적인 마법 — ${H.critMagUsed>1?H.critMagUsed+"번째 ":"첫 "}마법 피해가 치명타로 꽂힙니다!`,"t1") }
+  /* 관통 장신구(칼리번 · 검과 방패) — **보통 길은 제 자리에서 따로 챙기므로**(기술 셈의 PR)
+     여기서는 _wkDone 으로 막아 두 번 더하지 않는다. 따로 셈하는 기술(진선풍도 · 착취 …)만 여기서 받는다 */
   if(amt>0&&B&&B._ef&&B._efHero&&!B._wkDone&&B.lastAttacker===B._efHero&&f&&B.foes&&B.foes.indexOf(f)>=0&&pierce!==true){
     const H=B._efHero;
-    if(B._efEl==="공격"){ const ip=itemBt(H,"pierce")+(f.taunt?itemBt(H,"tauntPierce"):0); if(ip) pierce=(+pierce||0)+ip }   /* 칼리번 · 검과 방패 — 모든 공격 피해 (점검 2026-10-07) */
-    if(!crit&&B._efEl==="마법"&&f.markBy===H.name&&(f.mark||0)>0){ amt*=2; crit=1; say(`그리모어 — ${f.name}에게 치명타!`,"t1") } }   /* 그리모어 — 표식 대상에게 그 대원의 마법 피해는 치명타 */
+    if(B._efEl==="공격"){ const ip=itemBt(H,"pierce")+(f.taunt?itemBt(H,"tauntPierce"):0); if(ip) pierce=(+pierce||0)+ip } }   /* 칼리번 · 검과 방패 — 모든 공격 피해 (점검 2026-10-07) */
+  /* 그리모어 — 표식 대상에게 **그 대원의** 마법 피해는 치명타.
+     ⚠️ **_wkDone 문지기를 쓰면 안 된다.** 관통과 한 덩이로 묶여 있었는데, 관통과 달리
+        이것은 보통 길에서 따로 챙기는 데가 없다 — 보통 공격은 늘 _wkDone=1 이라
+        **그리모어 치명타가 통째로 안 걸렸다** (사용자 2026-10-13 : 「잘 작동하는지 확인해줘」).
+        바로 위 「치명적인 마법」이 같은 결인데 그 문지기가 없는 것이 본보기다.
+     ⚠️ pierce!==true 도 떼었다 — 관통을 **더하지 않으려던** 조건이지 치명타와는 상관이 없다 */
+  if(!crit&&amt>0&&B&&B._ef&&B._efEl==="마법"&&B._efHero&&B.lastAttacker===B._efHero
+     &&f&&B.foes&&B.foes.indexOf(f)>=0&&f.markBy===B._efHero.name&&(f.mark||0)>0){
+    amt*=2; crit=1; say(`그리모어 — ${f.name}에게 치명타!`,"t1") }
   if(f.armor>0&&amt>f.armor) amt=f.armor;   /* 갑피 — 한 번에 받는 피해를 이 수치까지로 (적도 같게, 사용자 2026-10-07 시평선의 문지기) */
   let d=amt,s=0;
   const pr=pierceRate(pierce);
