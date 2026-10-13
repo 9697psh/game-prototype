@@ -10798,8 +10798,9 @@ const partName=(kind,n)=>(kind==="mat"?"재료 부속: ":"영혼 부속: ")+n;
 /* 1~8 로 모으고 **8에서 잠깐 멈춰 빛난 뒤** 7~1 로 되돌아온다 (사용자 2026-10-13).
    ⚠️ 받은 여덟 칸은 「녹빛 덩이를 모아 손을 드는」 한 호흡이다 — 빠르게 넘기면 깜빡임으로만 보인다.
       한 바퀴 4초쯤(이라의 준비 자세 대기와 같은 결)으로 늦췄다 */
-const PAVEL_MAKE_ORDER=[0,1,2,3,4,5,6,7,6,5,4,3,2,1,0];
-const PAVEL_MAKE_MS   =[230,210,200,200,210,230,260,820,260,230,210,200,200,210,240];
+/* ⚠️ 끝에 0 을 두지 않는다 — 다음 바퀴가 0 에서 시작하니 같은 칸이 두 번 서서 **멈칫**해 보인다 */
+const PAVEL_MAKE_ORDER=[0,1,2,3,4,5,6,7,6,5,4,3,2,1];
+const PAVEL_MAKE_MS   =[290,265,250,250,265,290,330,980,330,290,265,250,250,265];
 const PAVEL_MAKE_HOLD=7;   /* 멈춰 서는 칸 — 여기서 빛난다 */
 /* 묶음 usage.json 은 725ms 한 바퀴였다 — 눈으로 보니 **깜빡임**이라 두 배 가까이 늦췄다 (사용자 2026-10-13).
    마지막 두 칸(맞물림)은 더 길게 둔다 — 거기서 골렘이 완성된다 */
@@ -10844,7 +10845,9 @@ function pavelMakeIdle(){
       setTimeout(()=>{ if(!B||B.over||!B.golem||h.slot<=0) return;
         fx({side:"mine",slot:h.slot,ring:"#9ad86a",glow:1,gap:0}); flushFX() },
         Math.round(때*(typeof SPD==="number"?SPD:1))) }
-    PAVEL_MAKE_T=setTimeout(tick,Math.round(한바퀴*(typeof SPD==="number"?SPD:1))+80);
+    /* ⚠️ poseStripFX 는 띠가 끝나면 **기본 자세로 되돌린다** — 틈을 두면 그 한 칸이 끼어 끊겨 보인다.
+       끝나기 조금 전에 다음 바퀴를 걸어 되돌림을 덮는다 (사용자 2026-10-13 : 「기본 자세가 중간에 껴 있다」) */
+    PAVEL_MAKE_T=setTimeout(tick,Math.max(60,Math.round(한바퀴*(typeof SPD==="number"?SPD:1))-70));
   };
   tick();
 }
@@ -16362,9 +16365,17 @@ function golemPartLines(u){
   if(!M) return {지속:"",죽음:""};
   const L=String(M.d||"").split("\n").map(x=>x.trim()).filter(Boolean)
     .filter(x=>!/^체력\s*\d+$/.test(x));
-  const dead=L.filter(x=>/^죽음\s*:/.test(x)).join(" ").replace(/^죽음\s*:\s*/,"");
   const live=L.filter(x=>!/^죽음\s*:/.test(x)).join(" ");
-  return {지속:live,죽음:dead};
+  /* 죽음 글은 **지금 값**으로 짓는다 — 드론파편이 올린 몫(B.minDeathUp)과 금속의 치명타까지
+     (사용자 2026-10-13 : 「죽음 설명에 수치 반영」). 노트 글을 그대로 베끼면 늘 처음 값이다 */
+  const up=(typeof B!=="undefined"&&B&&B.minDeathUp)||0, 곱=M.critAlways?2:1;
+  const 치=M.critAlways?" (치명타)":"";
+  const d=[];
+  if(M.deathNeg) d.push(`다른 모든 대원에게 부정 보호막을 ${M.deathNeg} 부여합니다.`);
+  if(M.deathAll) d.push(`모든 적에게 피해를 ${(M.deathAll+up)*곱} 줍니다.${치}`);
+  if(M.deathNear) d.push(`가장 가까운 적에게 피해를 ${(M.deathNear+up)*곱} 줍니다.${치}`);
+  if(M.deathGive) d.push("이 소환물의 추가 능력치를 무작위 아군에게 부여합니다.");
+  return {지속:live,죽음:d.join(" ")};
 }
 function golemDeathTxt(u){ return golemPartLines(u).죽음||"" }
 /* 아군 소환물의 죽음 효과 풀이 — 없으면 빈 글자 */
@@ -18855,6 +18866,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 78, "v": "0.7", "d": "2026-10-13", "t": "내려치기 아트가 파벨 발밑에서 뻗는다 · 창조 모션 이어 붙임 · 죽음 글에 지금 값", "big": 0},
  {"b": 77, "v": "0.7", "d": "2026-10-13", "t": "내려치기 이펙트 고정·흔들림 · 금속 치명타 · 은총 아이콘", "big": 0},
  {"b": 76, "v": "0.7", "d": "2026-10-13", "t": "골렘 카드가 그 턴에 들어온다 · 연출과 글 손질 여럿", "big": 0},
  {"b": 75, "v": "0.7", "d": "2026-10-13", "t": "파벨을 고르기 화면에 (기술 넷 · 보상 서른넷)", "big": 0},
@@ -20124,7 +20136,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=77;
+const BUILD_NO=78;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -34500,6 +34512,18 @@ function runEffect0(h,i,s,target){
     const cleave=(h.name==="이테리오"&&s.n==="팽창 공격"&&list.length)?1:0;
     if(cleave){ fx({gap:110});
       fx({side:"foe",cleave:{slots:press?list.map(f=>f.slot):null},gap:60}) }
+    /* 지면 내려치기 — 바닥 이펙트는 **피해보다 먼저** 깔린다 (사용자 2026-10-13 : 「조금만 더 빨리」).
+       ⚠️ 피해 뒤에 두면 맞는 연출이 다 지나간 뒤에야 떠서 한 박자 늦다 */
+    if(s.slam&&!B._slamFx){ const L0=B.foes.filter(f=>f.alive);
+      if(L0.length&&(typeof ICON_PNG!=="undefined")&&ICON_PNG["fx_pavel_ground_slam"]){
+        B._slamFx=1; setTimeout(()=>{ B._slamFx=0 },900);
+        /* **파벨의 발밑에서 시작해 적 쪽으로 뻗는다** (사용자 2026-10-13).
+           받은 그림이 「파벨 오른쪽 전방 적 구역의 바닥」이라 그 방향 그대로다.
+           dx 는 그림 픽셀 — 반 칸(128)을 밀어 왼쪽 끝이 파벨에 닿는다 */
+        fx({side:"mine",slot:h.slot,sheet:"fx_pavel_ground_slam",
+            sheetOpt:{cellW:256,cellH:96,frames:1,z:2.6,feet:1,dx:128,dy:6,frameMs:[460]},gap:0});
+        try{ document.body.classList.add("shakeall");
+          setTimeout(()=>document.body.classList.remove("shakeall"),300) }catch(e){} } }
     list.forEach(f=>{
       /* 정밀 표식 — 공격 계열이므로 표식이 있으면 치명타 (반전화면 거꾸로) */
       let d=base, crit=0;
@@ -34518,21 +34542,6 @@ function runEffect0(h,i,s,target){
     /* 지면 내려치기 — 때린 뒤 **거리 2 내**가 공중에 뜬다 (노트 17-1).
        띄우는 것은 airborne 한 곳이다 — 파수꾼의 은총도 거기서 따라온다 */
     if(s.slam){
-      /* 받은 이펙트 한 칸(256x96) — 적 구역 바닥에 **한 번만** (사용자 2026-10-13 : 「2단 한번만 지면쪽에서」).
-         ⚠️ 한 번 쓸 때 두 번 이상 보이던 까닭 — 다중 내려치기·쌓아 쓰기로 이 갈래가 여러 번 돌면
-            그때마다 띄웠다. 이제 **한 번 쓰는 동안 한 번**만 띄운다 (B._slamFx 가 막는다).
-         ⚠️ 때도 맞춘다 — 공격 자세가 땅에 닿는 220ms 뒤에 (가만히 서 있는데 땅만 터지던 것) */
-      if(!B._slamFx){ const L0=B.foes.filter(f=>f.alive);
-        if(L0.length&&(typeof ICON_PNG!=="undefined")&&ICON_PNG["fx_pavel_ground_slam"]){
-          B._slamFx=1; setTimeout(()=>{ B._slamFx=0 },900);
-          /* ⚠️ 맞은 적을 따라가면 자리가 중구난방이다 (사용자 2026-10-13) —
-             **적 진영 한가운데 칸(3번 = 화면의 8번)**에 고정으로 깔고 넓게 늘인다. 적 바닥 6~10 을 가로지른다 */
-          fx({side:"foe",slot:3,sheet:"fx_pavel_ground_slam",
-              sheetOpt:{cellW:256,cellH:96,frames:1,z:2.8,frameMs:[460]},gap:0});
-          /* 땅을 내려찍었으니 화면도 한 번 흔들린다 (사용자 2026-10-13) */
-          setTimeout(()=>{ try{ document.body.classList.add("shakeall");
-            setTimeout(()=>document.body.classList.remove("shakeall"),300) }catch(e){} },
-            Math.round(180*(typeof SPD==="number"?SPD:1))) } }
       /* 무게추 — 이번 한 번은 **거리를 가리지 않는다** (노트 midRewards) */
       const 모두=!!h.weightOn; if(모두){ h.weightOn=0; say("무게추 — 땅이 통째로 솟구칩니다.","t2") }
       B.foes.filter(f=>f.alive&&(모두||dist(h.slot,f.slot)<=2)).forEach(f=>airborne(h,f));
