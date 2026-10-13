@@ -6643,18 +6643,38 @@ function mrfAuraHtml(slot){
    켜짐의 기준은 iraRageSync 가 쥔 h.rageOn — 글이 아니라 **그 함수를 따른다**.
    체력이 절반 위로 오르면 rageOn 이 0 이 되고 오라도 저절로 걷힌다 */
 /* 이라의 발톱 한 번 — 적 **위에** 뜬다 (받은 띠 두 벌, 묶음 placement 「목표 64x64 칸」).
+   ⚠️ 칸 길이는 **빠르게** 잡는다 (사용자 2026-10-13 : 「야성적인 악마가 할퀴는 것처럼 빠르고 강하게」).
+      675ms 짜리를 411ms 로 줄였다 — 뒤 두 칸만 남겨 둔다(끝맺음이 무거워야 세게 보인다).
    사용자 2026-10-13 : 할퀴기는 「번갈아 4번」, 찢어발기기는 「랜덤하게 하나」.
    ⚠️ Math.random 을 쓰지 않는다 — 판의 주사위가 밀린다. 턴 수와 선 자리로 가른다 */
 function iraClawHit(slot,right,ms){
   const go=()=>{ if(!B||B.over) return;
     fx({side:"foe",slot:slot,sheet:right?"fx_ira_rend_r2l":"fx_ira_rend_l2r",
-        sheetOpt:{cellW:64,cellH:64,frames:8,z:1.5,frameMs:[80,70,65,60,75,85,110,130]},gap:0});
+        sheetOpt:{cellW:64,cellH:64,frames:8,z:1.5,frameMs:[48,42,40,38,45,52,66,80]},gap:0});
     flushFX() };
   if(ms>0) setTimeout(go,ms); else go();
 }
 /* 복수귀가 켜져 있는 동안 녹음을 되풀이한다 (사용자가 준 파일 이름이 「복수귀활성화시반복출력」).
    SFX.loop 로 켜고 SFX.stop 으로 끈다 — 콜로서스 빔 충전이 쓰는 그 길.
    켜짐의 기준은 오라와 같다 : /hero 의 h.rageOn. 전투 밖이거나 판이 끝나면 끈다 */
+/* 준비 자세의 **전용 대기 모션** — 충전이 들어 있는 동안 되풀이한다 (사용자 2026-10-13 : 「출력이 아예 안 되고 있음」).
+   지금까지는 기술을 쓰는 그 순간 한 바퀴 돌고 말았다.
+   ⚠️ 켜짐의 기준은 iraCharged 하나다(오라·소리와 같은 결). 미리 돌려 보는 중(PRED_DRY)에는 돌지 않는다 */
+const IRA_READY_MS=[85,70,90,70,85,85,95,110];
+let IRA_READY_T=0;
+function iraReadyIdle(h){
+  const on=!!(h&&h.name==="이라"&&!h.isMin&&h.hp>0&&h.slot>0&&B&&!B.over&&view==="battle"
+              &&!(typeof PRED_DRY!=="undefined"&&PRED_DRY)&&(iraCharged(h)||h.chgOn));   /* 충전 **중**(0/1)부터다 — 사용자 : 「사용 시 … 계속 반복」 */
+  if(on&&!IRA_READY_T){
+    const 한바퀴=IRA_READY_MS.reduce((a,b)=>a+b,0);
+    IRA_READY_T=setInterval(()=>{
+      const u=(run&&run.heroes||[]).find(x=>x.name==="이라");
+      if(!u||!(u.hp>0)||!u.slot||!B||B.over||view!=="battle"||!(iraCharged(u)||u.chgOn)){ iraReadyIdle(null); return }
+      if(B.busy) return;   /* 다른 연출이 도는 동안은 비켜 준다 */
+      poseStripFX("mine",u.slot,"readyA",IRA_READY_MS);
+    },Math.round((한바퀴+260)*(typeof SPD==="number"?SPD:1)));
+  } else if(!on&&IRA_READY_T){ clearInterval(IRA_READY_T); IRA_READY_T=0 }
+}
 let IRA_RAGE_SND=0;
 function iraRageSnd(on){
   const k="이라 복수귀"; if(typeof sfxHas!=="function"||!sfxHas(k)) return;
@@ -6663,7 +6683,7 @@ function iraRageSnd(on){
 }
 function iraAuraHtml(h){
   const on=!!(h&&h.name==="이라"&&!h.isMin&&h.rageOn>0&&h.hp>0&&B&&!B.over&&view==="battle");
-  if(h&&h.name==="이라"&&!h.isMin) iraRageSnd(on);   /* 되풀이 녹음도 같은 기준으로 (2026-10-13) */
+  if(h&&h.name==="이라"&&!h.isMin){ iraRageSnd(on); iraReadyIdle(h) }   /* 되풀이 녹음과 준비 자세 대기 모션도 여기서 (2026-10-13) */
   if(!on) return "";
   const u=(typeof ICON_PNG!=="undefined")&&skinIcon("fx_ira_aura"); if(!u) return "";
   return `<i class="iraaura" style="background-image:url(${u})"></i>`;
@@ -7394,7 +7414,7 @@ function ksoulAuraHtml(h,front){
   if(!h||h.name!=="쿠렘타이"||h.hp<=0||!run) return "";
   const t=ksoulTier(), u=t&&skinIcon("fx_ksoul_"+t); if(!u) return "";
   const per=KSOUL_AURA.ms*6, dl=-(Date.now()%per);   /* 다시 그려도 이어 돌게 */
-  return `<i class="ksaura${front?" front":""}" style="background-image:url(${u});--ksms:${per}ms;--ksop:${KSOUL_AURA.op};animation-delay:${dl}ms"${front?"":` title="영혼 ${run.souls||0}"`}></i>`;
+  return `<i class="ksaura kw${front?" front":""}" style="background-image:url(${u});--ksms:${per}ms;--ksop:${KSOUL_AURA.op};animation-delay:${dl}ms"${front?"":` data-kw="영혼" data-tip="쿠렘타이가 거둔 영혼 ${run.souls||0}개."`}></i>`;
 }
 function auraHtml(u){
   const t=u&&u.auraAt?Date.now()-u.auraAt:1e9; const img=(typeof ICON_PNG!=="undefined")&&ICON_PNG.fx_kaze_aura;
@@ -12822,7 +12842,7 @@ function skUpLines(h,sk,shown){
 function skUpsHtml(h,name,sk){
   const L=skillUps(h,name,sk);
   if(!L.length) return "";
-  return `<div class="skups">${L.map(u=>`<span class="skup" title="${esc(String(u.d||"").replace(/\n/g," "))}">▲ ${esc(u.n)}</span>`).join("")}</div>`;
+  return `<div class="skups">${L.map(u=>`<span class="skup kw" data-kw="${esc(u.n)}" data-tip="${esc(String(u.d||"").replace(/\n/g," "))}">▲ ${esc(u.n)}</span>`).join("")}</div>`;
 }
 function addMod(h,skName,key,v,label){
   /* 선택 기술은 고른 갈래를 복사해 h.sk 에 세운다 — 복사본과 갈래가 같은 mods 배열을 나눠 쥘 수 있다.
@@ -13016,7 +13036,7 @@ function itemTip(it){ return it.n+" — "+it.d+"\n"+recipeLines(it).join("\n") }
    도감에도, 제련소에도, 손을 올렸을 때 뜨는 쪽지에도 같은 것을 쓴다. */
 function itemIco(name){
   const it=itemDef(name);
-  if(!it) return '<span class="iico" title="'+esc(name)+'">?</span>';
+  if(!it) return '<span class="iico kw" data-kw="'+esc(name)+'" data-tip="표에 없는 장신구입니다.">?</span>';
   /* 아직 못 얻은 특수 장신구는 이름도 가린다 — 재료 카드의 「이것으로 만들 수 있는 것」 줄에서 샌다 (2026-10-12) */
   if(it.g==="특수"&&!dexOpen("item",name))
     return '<span class="iico dexlock">'+itemIcon(it,24)+'</span>';
@@ -13893,6 +13913,7 @@ function healUp(u,v,quiet){
     if(!quiet&&v2<v) say(`보호약화 — ${u.name} 회복 ${v} → ${v2}`,"t2"); v=v2 }
   const got=Math.min(v,u.maxHp-u.hp);
   u.hp+=got;
+  if(typeof alwaysSync==="function") alwaysSync(u);   /* 체력이 올라갔다 — 복수귀가 걷혀야 한다 (2026-10-13) */
   return got;
 }
 /* 강제 착용 — 칸이 없으면 가방으로 가지 않고 기존 것을 밀어낸다 */
@@ -15624,7 +15645,7 @@ const KW_ICON={
   "되감기":"status_rewind","정지":"status_stop","충전":"status_charge","과열":"status_mana_refinery_overheat",
   "마력":"status_tower_master_mana",   /* 탑의 주인의 마력 (/art 가 ICON_PNG 에 넣으면 쓰인다 — 없으면 글자) */
   "복수귀":"status_ira_berserker",            /* 이라 지속 — 그림은 0319acc9 에서 구웠다 (2026-10-13) */
-  "타락의 초읽기":"skill_ira_corruption_countdown",   /* 이라 상급 보상 */
+  "타락의 초읽기":"skill_ira_corruption_countdown_no_frame",   /* 이라 상급 보상 — 사용자가 고른 테두리 없는 쪽 (2026-10-13) */
   "기억":"status_someone_memory_stack",   /* 「누군가의 기억」의 기억 중첩 — 수는 따로 얹는다 (㊿) */
   "고통 감내":"sword"};   /* 다음 공격이 세진다 — 공격 아이콘 (사용자 2026-09-29) */   /* 대원 밑 소환물 표식 — 허수아비 · 공중에 뜸은 바람 (사용자 2026-09-16) */   /* 2026-09-15 추가 · 아이콘은 status-effects-v2 (64px) */
 function bdIcon(kind,key,label){
@@ -18187,6 +18208,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 51, "v": "0.7", "d": "2026-10-13", "t": "이라 연출 다섯 · 복수귀 · 고대의 파편 자리 · 초읽기 아이콘", "big": 0},
  {"b": 50, "v": "0.7", "d": "2026-10-13", "t": "빈 괄호 셋 — 굴라 식욕 · 불씨 폭발 · 화재 진압", "big": 0},
  {"b": 49, "v": "0.7", "d": "2026-10-13", "t": "이라 — 설명 글은 노트 글자 그대로, 충전 0/1, 딱지 넷", "big": 0},
  {"b": 48, "v": "0.7", "d": "2026-10-12", "t": "2칸 적 차원문, 승리 화면 틀, 마력의 고리 셈과 불안정한 변신, 태초 그림 v3", "big": 0},
@@ -19429,7 +19451,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=50;
+const BUILD_NO=51;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -20890,7 +20912,7 @@ function mapGridEl(peek){
       ${(cell.t!=="fog"&&enterCost(cell)>0)?`<span class="cact kw" ${pickTip("cact"+r+"-"+c,"<b>활동량</b><br>이 구역에 들어갈 때 활동량을 씁니다.")}>${resIcon("act")}</span>`:""}
       ${(run.wolf&&run.wolf.r===r&&run.wolf.c===c&&cell.t!=="fog")?`<span class="cico wolf">${iconImg("ink_tw_red_hood_wolf")}</span>`:""}
       ${risky?`<span class="crisk">!</span>`:""}
-      ${cell.bounty?`<span class="cbounty" title="현상금 — 전투 금화 +50%">${iconImg("bounty_bag")}</span>`:""}
+      ${cell.bounty?`<span class="cbounty kw" data-kw="현상금" data-tip="이 전투에서 얻는 금화가 50% 늘어납니다.">${iconImg("bounty_bag")}</span>`:""}
       ${cell.stair?`<span class="cl">계단</span>`:""}
       ${kind!=="empty"&&!cell.done?`<span class="cl">${esc(cell.ceil?"천장":NODE[kind].label)}</span>`:""}
     </div>`);
@@ -23797,7 +23819,7 @@ function partyStrip(note){
       const p=Math.max(0,Math.round(h.hp/h.maxHp*100));
       /* 이름은 대원 줄 전용이어야 한다 — 예전 "mid"는 전장 칸막이 규칙과 겹쳤다 */
       const cls=h.down?"p-down":p<=33?"p-low":p<=66?"p-mid":"";
-      return `<span class="ph ${cls}" title="${esc(h.name)} Lv.${h.lv} 체력 ${Math.max(0,h.hp)}/${h.maxHp}">
+      return `<span class="ph kw ${cls}" data-kw="${esc(h.name)}" data-tip="Lv.${h.lv} 체력 ${Math.max(0,h.hp)}/${h.maxHp}">
         <b>${esc(h.name)}</b>
         <i><u style="width:${h.down?0:p}%"></u></i>
         <em>${h.down?"쓰러짐":Math.max(0,h.hp)+"/"+h.maxHp}</em></span>`;
@@ -25460,7 +25482,7 @@ function drawRuns(app){
         <span class="rr-res">${win?"완주":"실패"}</span>
         <span class="rr-when">${runDate(r.at)}</span>
         <span class="rr-far">${esc(r.fieldN)} ${r.day}일차</span>
-        <span class="rr-time" title="붙잡고 있은 시간">${playTime(r.playMs)}</span>
+        <span class="rr-time kw" data-kw="원정 시간" data-tip="이번 원정을 붙잡고 있은 시간입니다. 창을 덮어 둔 동안은 세지 않습니다.">${playTime(r.playMs)}</span>
         <span class="rr-heroes">${r.heroes.map(h=>`<i class="${h.down?"dn":""}">${esc(h.n)} <b>${h.lv}</b></i>`).join("")}</span>
         <span class="rr-why">${esc(win?"균열을 닫았다":(r.killer?`${r.killer}에게 ${r.reason.indexOf("오염")>=0?"":"쓰러짐"}`:""))}${
           !win&&!r.killer?esc(r.reason.indexOf("오염")>=0?"오염 100":r.reason.indexOf("일이 지나")>=0?"기한 초과":r.reason):""}</span>
@@ -26112,6 +26134,12 @@ function mpGain(f,n){
 /* ═══ 마력의 고리 (마력의 초월체, 사용자 2026-10-12) ═══
    반경 1 에서 시작해 마력 20 을 얻을 때마다 1 씩 자란다 — **상한을 두지 않는다**(사용자 답: 더 키우고 그림은 네 번째 시트를 늘려 쓴다).
    「고리 안의 상대」는 대원 · 소환물 가운데 dist(그 자리, 적의 자리) ≤ 반경 인 것. 고리를 쓰는 패턴은 모두 ringTargets 로 대상을 잡는다 */
+/* 고대의 파편이 떨어질 자리를 내어 줄 소환물 — 「쓸 수 있는가(shardOk)」와 「어디에 떨어지나」가 같은 셈을 쓴다.
+   따로 적으면 한쪽만 고쳐져 「쓸 수 있다는데 떨어질 데가 없다」가 난다 (사용자 2026-10-13) */
+function shardMins(){
+  if(typeof B==="undefined"||!B||!B.mins) return [];
+  return B.mins.filter(m=>m&&m.alive&&m.hp>0&&m.slot>0&&!m.down);
+}
 /* 고대의 파편이 터지기까지 남은 내 턴 — 적 차례에 막 떨어졌으면 전부(2), 내 턴 중에는 그 턴까지 센다 */
 function shardLeft(hz){ return Math.max(1,hz.shardTurn-(B.turn||1)+((B&&B.foeAct)?0:1)) }
 function ringR(f){ return 1+Math.floor(((f&&f.mp)||0)/20) }
@@ -26672,7 +26700,8 @@ const SK_COND={
   bound:     f=>!f.awake,                         /* 사슬에 묶인 마귀 — 아직 묶여 있을 때 */
   free:      f=>!!f.awake,
   memStart:  f=>!(f.chg>0)&&!(f.rew>0),             /* 탑의 주인 기억 저장 — 충전을 막 시작할 때, 되감기가 있으면 안 나온다 (사용자 2026-10-12) */
-  shardOk:   f=>{ for(let q=1;q<=SLOTS;q++) if(!occAt(q)) return true; return false },   /* 고대의 파편 — 상대 칸이 남아 있을 때만 (사용자 2026-10-12) */
+  shardOk:   f=>{ for(let q=1;q<=SLOTS;q++) if(!occAt(q)) return true;
+    return shardMins().length>0 },   /* 고대의 파편 — 빈 칸이 없으면 소환물을 부수고 그 자리에 (사용자 2026-10-13) */
   hasBad:    f=>foeAil(f)>0,                       /* 부정적인 효과가 걸려 있을 때 (탑의 주인 차단 — 확률 업) */
   never:     f=>false,                            /* 스스로는 안 고른다 — nextMust 로만 (주술사의 사형) */
   /* ── 정령숲 (2026-09-29) ── */
@@ -27394,6 +27423,12 @@ function skExec0(f,I){
     else say(`${s.n} — 멈출 대원이 없습니다.`,"t2") }
   if(s.shard){   /* 고대의 파편 — 빈 칸에 타이머 잔해(B.hz)를 떨어트린다. 터지는 때는 skTurnStart 가 센다 */
     const free=[]; for(let q=1;q<=SLOTS;q++) if(!occAt(q)) free.push(q);
+    if(!free.length){   /* 칸이 꽉 찼다 — 소환물을 부수고 그 자리를 낸다 (사용자 2026-10-13). 둘 다 없으면 안 나간다 */
+      const M=shardMins();
+      if(M.length){ const m=rnd(M), sl0=m.slot;   /* ⚠️ unitDown 이 m.slot 을 0 으로 지운다 — 자리를 먼저 집어 둔다 */
+        say(`${s.n} — 파편이 ${m.name}${jo(m.name,"eul")} 부수고 그 자리에 떨어집니다.`,"t3");
+        m.echo=0; m.hp=0; unitDown(m);                /* 소환물 부서짐은 unitDown 한 곳 (34162 와 같은 길) */
+        if(!occAt(sl0)) free.push(sl0); } }           /* 저주받은 성벽은 잔해를 남겨 칸을 그대로 막는다 — 그때는 안 떨어진다 */
     if(free.length){ const sl=rnd(free);
       (B.hz=B.hz||[]).push({name:"고대의 파편",slot:sl,isHz:1,shard:1,shardTurn:(B.turn||1)+s.shard.turns,v:s.shard.v,by:f.name});
       fx({side:"mine",slot:sl,fn:()=>shardFly(sl),ring:"#6aa8e0",txt:"고대의 파편",cls:"shd",gap:Math.round(560*(typeof SPD==="number"?SPD:1))});
@@ -28770,10 +28805,7 @@ function drawBattle(app){
   if(run&&run.heroes) run.heroes.forEach(hectoSlotFix);   /* 공방전 — 지금 칸에 맞는 꼴로 */
   if(run&&run.heroes) run.heroes.forEach(fortSync);   /* 진지 구축 — 성벽 뒤면 추가 공격력 */
   if(run&&run.heroes) run.heroes.forEach(domHateSync);   /* 악마 혐오 — 상시 */
-  if(run&&run.heroes) run.heroes.forEach(hpMagSync);     /* 기초 마법서: 생명 — 상시 */
-  if(run&&run.heroes) run.heroes.forEach(iraRageSync);   /* 복수귀 — 체력을 늘 따라간다 (2026-10-12) */
-  if(run&&run.heroes) run.heroes.forEach(iraLeechSync);  /* 갈증 · 혈기 공유 — 늘 붙는 흡수 (2026-10-13) */
-  if(run&&run.heroes) run.heroes.forEach(taintSync);     /* 균열 · 오염된 피부 — 상시 */
+  if(run&&run.heroes) run.heroes.forEach(alwaysSync);   /* 늘 따라가는 몫 — 생명 · 복수귀 · 흡수 · 오염을 한 자리에서 (2026-10-13) */
   /* 전장 무대 — 받은 그림 위에 (2026-09-19). 위 띠(턴·단추) · 왼쪽 위 기록 · 왼쪽 조합 · 오른쪽 위 퀘스트 · 칸들 */
   { const floor=MAP_FLOOR[Math.min(run.field,MAP_FLOOR.length-1)];   /* 무대 양옆 — 그 구역 지도의 바닥 그림 (사용자 2026-09-19) */
     app.appendChild(el(`<div class="bfback"${floor?` style="--floor:url(${mapPng(floor)})"`:""}></div>`)); }
@@ -28911,7 +28943,7 @@ function drawBattle(app){
       if(h.isMin&&h.mimic&&h.mimic.act) d.innerHTML+=`<div class="intentbar">${mimicHtml(h)}</div>`;
       d.innerHTML+=`<div class="res">${manaPips(h)}${heroRes(h)}${
           h.mom?`<span class="rr">${ic("move")}${h.mom}</span>`:""}</div>${h.isMin?"":gearRow(h)}
-        <div class="art${(h.name==="카제"&&h.hp>0&&h.sk[0]&&h.sk[0].n==="회오리")?" charged":""}">${pmk}${mrf}${iraa}${auraHtml(h)[0]}${(h.mobile&&h.hp>0&&skinIcon("fx_it_aura"))?`<i class="mobaura" style="background-image:url(${skinIcon("fx_it_aura")})" title="기동 상태"></i>`:""}${ksoulAuraHtml(h)}${figure((h.artAs&&Date.now()-(h.artAsT||0)<5000)?h.artAs:h.name,poseNow(h),h)}${(h.mobile&&h.hp>0&&skinIcon("fx_it_aura"))?`<i class="mobaura front" style="background-image:url(${skinIcon("fx_it_aura")})"></i>`:""}${ksoulAuraHtml(h,1)}${auraHtml(h)[1]}${(h.name==="카제"&&h.hp>0&&h.sk[0]&&h.sk[0].n==="회오리")?`<i class="swglow kw" data-kw="회오리" data-tip="회오리가 찼습니다."></i>`:""}</div>
+        <div class="art${(h.name==="카제"&&h.hp>0&&h.sk[0]&&h.sk[0].n==="회오리")?" charged":""}">${pmk}${mrf}${iraa}${auraHtml(h)[0]}${(h.mobile&&h.hp>0&&skinIcon("fx_it_aura"))?`<i class="mobaura kw" style="background-image:url(${skinIcon("fx_it_aura")})" data-kw="기동 상태" data-tip="다른 기술을 쓴 뒤 1칸 물러서고 에너지 보호막을 얻습니다."></i>`:""}${ksoulAuraHtml(h)}${figure((h.artAs&&Date.now()-(h.artAsT||0)<5000)?h.artAs:h.name,poseNow(h),h)}${(h.mobile&&h.hp>0&&skinIcon("fx_it_aura"))?`<i class="mobaura front" style="background-image:url(${skinIcon("fx_it_aura")})"></i>`:""}${ksoulAuraHtml(h,1)}${auraHtml(h)[1]}${(h.name==="카제"&&h.hp>0&&h.sk[0]&&h.sk[0].n==="회오리")?`<i class="swglow kw" data-kw="회오리" data-tip="회오리가 찼습니다."></i>`:""}</div>
         <div class="nm">${esc(h.name)}</div>
         <div class="bar" data-hpk="${hpKey(h)}" data-hpv="${Math.max(0,h.hp/h.maxHp*100)}" data-hpn="${h.hp}"
           data-shv="${(h.shield||0)+(h.eshield||0)}" data-esw="${esW}" data-shw="${shW}">
@@ -29615,7 +29647,15 @@ const PASSIVE_INFO={
    d:h=>`도미니코는 기술을 사용할때마다 독서 중첩을 얻습니다. 독서 중첩이 ${readNeed(h)}이 되면 중첩을 모두 소모하고 축복 상태가 되어 다음 기술을 1회 강화합니다. `
         +`지금 독서 중첩 ${h.read||0}${h.blessed?", 축복 상태":""}.`},
   {n:"악마 혐오",
-   d:h=>`전장의 악마 종족 하나당 추가 ${domDemon(h)?"공격력":"보호력"}을 1 얻습니다. 지금 ${h.hateV||0}.`}]
+   d:h=>`전장의 악마 종족 하나당 추가 ${domDemon(h)?"공격력":"보호력"}을 1 얻습니다. 지금 ${h.hateV||0}.`}],
+ /* 이라 — 표에 아예 없어서 기술 창에 지속 줄이 **한 줄도 안 떴다** (사용자 2026-10-13).
+    수는 iraRageVals 하나에서 가져온다 — 실제로 켜는 셈과 같은 수다 */
+ "이라":[
+  {n:"복수귀",
+   d:h=>{ const V=iraRageVals(h);
+     return `체력이 ${V.pct}% 이하(${V.need})일 때 추가 공격력을 ${V.atk} 얻습니다.`
+       +(V.def?` 추가 보호력도 ${V.def} 얻습니다.`:``)
+       +` 지금 체력 ${h.hp}/${h.maxHp}, ${(h.rageOn||0)>0?"켜져 있습니다.":"꺼져 있습니다."}` }}]
 };
 function passHtml(h){
   const list=PASSIVE_INFO[h.name];
@@ -29808,7 +29848,7 @@ function skillPanel(h){
           ${locked?`<span class="v-lock lvl">${UNLOCK[i]}레벨</span>`:""}
           ${lk?`<span class="v-lock">${lockSvg()}<b>${lk}턴</b></span>`:(s.lock?`<span class="v-lock">${lockSvg()}<b>${s.lock}</b></span>`:"")}
         </div>
-        ${(s.opts&&sel.optOpen===i)?"":skUpsHtml(h,s.n,s)}${(s.opts&&sel.optOpen===i)?"":`<small>${lv.html}${canMore?` <a class="skmore" title="${open?"설명을 접습니다":"설명을 다 보여 줍니다"}">${open?"접기 ▴":"자세히 ▸"}</a>`:""}</small>`}
+        ${(s.opts&&sel.optOpen===i)?"":skUpsHtml(h,s.n,s)}${(s.opts&&sel.optOpen===i)?"":`<small>${lv.html}${canMore?` <a class="skmore kw" data-kw="${open?"접기":"더 보기"}" data-tip="${open?"설명을 접습니다":"설명을 다 보여 줍니다"}">${open?"접기 ▴":"자세히 ▸"}</a>`:""}</small>`}
         ${s.alt?`<div class="fullx"><span>전환, ${esc(s.alt.n)}</span>${rich(SKILL_FULL[s.alt.n]||s.alt.d||"")}</div>`:""}
       </div></div>`);
     { const mo=e.querySelector(".skmore");
@@ -30937,15 +30977,30 @@ function iraLeechSync(h){
   onField().forEach(a=>{ if(a!==h&&a.hp>0&&a.slot>0&&a.tag&&a.tag.shareLeech) 나눔+=a.tag.shareLeech });
   setLeechOn(h,갈증+나눔);
 }
+/* 복수귀의 턱과 부여량 — **한 곳**이다 (2026-10-13).
+   실제로 켜는 iraRageSync 와 기술 창의 지속 줄이 **같은 수**를 쓴다. 따로 적으면 설명창만 거짓말을 한다.
+   ⚠️ 턱은 **올림**이다 — 설명창이 띄우는 수(「40% 이하(16)」)가 곧 켜지는 수여야 한다 */
+/* 「늘 따라가는 몫」을 한 자리에 모은다 (2026-10-13).
+   ⚠️ 전에는 **drawBattle 안에서만** 돌았다 — 화면이 없는 sim 에서는 복수귀가 **한 번도 안 켜졌다.**
+      골든 172판에 복수귀가 0 이던 까닭이 「이라가 40% 밑으로 안 내려가서」가 아니라 이것이었다.
+   체력이 움직이는 문 둘(hurtAlly · healUp)과 기술을 쓸 때, 그리고 화면을 그릴 때 이 한 함수를 부른다 */
+function alwaysSync(u){
+  if(!u||u.isFoe||u.isMin||typeof B==="undefined"||!B) return;
+  hpMagSync(u); iraRageSync(u); iraLeechSync(u); taintSync(u);
+}
+function iraRageVals(h){
+  const t=(h&&h.tag)||{};
+  const pct=40+(t.ragePct||0);   /* 복수의 불씨 — 켜지는 체력 턱이 10%씩 올라간다 (2026-10-12) */
+  return { pct:pct, need:Math.ceil(((h&&h.maxHp)||0)*pct/100), atk:2+(t.rageUp||0), def:t.rageDef||0 };
+}
 function iraRageSync(h){
   if(!h||!B||h.isMin||h.name!=="이라") return;
-  /* 복수의 불씨 — 켜지는 체력 턱이 10%씩 올라간다 (2026-10-12) */
-  const pct=40+((h.tag&&h.tag.ragePct)||0);   /* ⚠️ 노트가 40% 다 (2026-10-13). 복수의 불씨가 여기에 더한다 */
-  const on=h.hp>0&&h.slot>0&&h.maxHp>0&&h.hp<=h.maxHp*pct/100;
-  const want=on?(2+((h.tag&&h.tag.rageUp)||0)):0, d=want-(h.rageOn||0);
+  const V=iraRageVals(h);
+  const on=h.hp>0&&h.slot>0&&h.maxHp>0&&h.hp<=V.need;
+  const want=on?V.atk:0, d=want-(h.rageOn||0);
   if(d){ bumpTmp(h,"atk",d); h.rageOn=want }
   /* 복수의 원동력 — 추가 보호력도 (2026-10-12). 공격력과 **따로** 센다 (부여량이 다르다) */
-  const wd=on?((h.tag&&h.tag.rageDef)||0):0, dd=wd-(h.rageDefOn||0);
+  const wd=on?V.def:0, dd=wd-(h.rageDefOn||0);
   if(dd){ bumpTmp(h,"def",dd); h.rageDefOn=wd }
   /* 쇠창살 — 갑피 10. 늘 따라간다 (barsArmorOn 에 붙인 몫을 적어 둔다) */
   { const ba=(h.tag&&h.tag.barsArmor)||0, wb=(ba&&h.hp>0&&h.slot>0)?ba:0, db=wb-(h.barsArmorOn||0);
@@ -32356,7 +32411,7 @@ function airborne(h,f){
 function doSkill(target){
   if(B.busy) return;
   const h=sel.hero,i=sel.skill,n=sel.count,s0=h.sk[i];
-  hpMagSync(h); taintSync(h);
+  alwaysSync(h);
   if(i===0&&(n||1)>=3&&target>0) B.tutTriple=1;   /* 튜토리얼 — 1번 기술을 적에게 3번 (btKeys) */
   /* 공격 자세가 둘(atk·atk2)이면 이번 시전에서 하나만 고른다 — 여러 번 쌓아 한 번에 쓸 때 자세가 마구 바뀌지 않게 (사용자 2026-10-02) */
   ATK_PICK[skinSprite(h.name)]=Math.random()<0.5;   /* 참이면 이번 시전은 둘째 갈래(atk2 · expand2 …) */
@@ -32539,9 +32594,9 @@ function doSkill(target){
             gap:sp.wind||sp.charge||0});   /* 강조 자세라도 이펙트는 바로 (사용자 2026-09-30). wind 가 있으면 겨누는 만큼 뒤에 (트리스탄, 2026-10-03) */
       if(h.slot>0&&sp){ if(sp.wind&&(own||ATK_SFX[h.name])) fx({s:own||ATK_SFX[h.name],gap:0}) }   /* 시위를 놓는 순간의 소리.
          ★ 기술 자세가 있으면 아래 '공격 자세' 갈래로 내려가지 않는다 — 내려가면 같은 순간 atk 가 그 자세를 덮는다 (2026-10-03) */
-      else if(h.slot>0&&hitsFoe(s,target)&&HERO_STRIKE[h.name])   /* 강조 공격 — 젖혔다 파고드는 순간에 이펙트·피해 (gap = wind) */
+      else if(h.slot>0&&hitsFoe(s,target)&&!iraOwnMotion(h,s)&&HERO_STRIKE[h.name])   /* 강조 공격 — 젖혔다 파고드는 순간에 이펙트·피해 (gap = wind) */
         fx({side:"mine",slot:h.slot,strike:HERO_STRIKE[h.name],s:own||ATK_SFX[h.name],gap:HERO_STRIKE[h.name].wind});
-      else if(h.slot>0&&hitsFoe(s,target))
+      else if(h.slot>0&&hitsFoe(s,target)&&!iraOwnMotion(h,s))
         fx({side:"mine",slot:h.slot,pose:"atk",s:own||ATK_SFX[h.name],lunge:1,gap:0});
       else if(own) fx({side:"mine",slot:h.slot,s:own,gap:0}); }
     /* 자기나 아군에게 거는 기술은 자세를 잡지 않는다 — 소리만 (위 갈래에서 함께 다룬다) */
@@ -33114,6 +33169,14 @@ function addRead(h,n){
 const FOE_HIT=["dmg","justice","thrust","dump","scaleBoom","lifeConv","phantomPain","burst",
   "shackle","verdict","allHit","penance","seed","drain","magnet","scaleGain",
   "farshot","nearest","shadow","strip"];
+/* 이라의 네 기술은 **제 연출을 스스로 쥔다** (2026-10-13).
+   공통 길이 pose:"atk" 를 같은 순간에 덮어 쓰면 —
+     · 충전이 아닌 대가 치르기에 **공격 모션이 나가고** (사용자 : 나가지 않게)
+     · 할퀴기는 제 띠(clawA)가 공통 자세에 밀려 **발톱보다 늦게** 보인다 (사용자 : 동시에)
+   그래서 이 넷은 공통 갈래를 타지 않는다. 몸짓은 iraRend · iraPay · iraReady · iraClaw 안에 있다 */
+function iraOwnMotion(h,s){
+  return !!(h&&s&&h.name==="이라"&&!h.isMin&&(s.rend||s.payPrice||s.claw||s.readyUp));
+}
 function hitsFoe(s,target){
   if(!s) return false;
   if(s.wand) return target>0;                 /* 지팡이는 아군에게도 쓴다 */
@@ -33216,7 +33279,12 @@ function iraPay(h,s){
     let 준것=0;
     fx({side:"mine",slot:h.slot,pose:"payPrice",poseMs:760,gap:0});   /* 대가 치르기 자세 (사용자 2026-10-13) */
     say(`대가 치르기 — 모든 적에게 피해 ${v}씩 ${rep2}번`,"t1");
-    iraSweepFX();   /* 「모든 적 피해 전방 할퀴기」 — 묶음 이름이 가리키는 그 자리 (2026-10-13) */
+    /* 「모든 적 피해 전방 할퀴기」 — **때리는 수만큼** 나간다 (사용자 2026-10-13 : 「아트 한번밖에 출력 안되는데 2번 출력되게」).
+       날 선 대가로 세 번이 되면 세 번 나간다 — 아래 반복 수(rep2)를 그대로 따른다 */
+    for(let q=0;q<rep2;q++){
+      const 늦게=Math.round(q*320*(typeof SPD==="number"?SPD:1));
+      if(!늦게) iraSweepFX(); else setTimeout(()=>{ if(B&&!B.over) iraSweepFX() },늦게);
+    }
     { const k=sfxOr("이라 대가 치르기 충전",null); if(k) SFX.play(k) }   /* 충전 몫의 녹음 셋 (2026-10-13) */
     for(let q=0;q<rep2;q++) L.forEach(f=>{ if(!f.alive) return;
       const hp0=f.hp+shieldSum(f);
@@ -33237,7 +33305,7 @@ function iraReady(h,s){
   }
   /* 준비 자세 여덟 칸 — **기본 자세 그림을 대신해서** 선다 (사용자 2026-10-13).
      ⚠️ 몸 아래에 따로 띄우지 말 것 — 그 길(sheetFX)이 「개조그맣게 밑에」 나오던 그것이다 */
-  poseStripFX("mine",h.slot,"readyA",[140,120,150,120,140,140,150,130]);
+  fx({side:"mine",slot:h.slot,strip:{k:"readyA",ms:IRA_READY_MS},gap:0});   /* 빠르게 (1090ms → 690ms) · 큐에 실어 소리와 같은 때에 */
   { const k=sfxOr("이라 준비 자세",null); if(k) SFX.play(k) }   /* 받은 녹음 셋 (2026-10-13) */
   iraChargeGain(h);
   const T=h.tag||{};
@@ -33260,18 +33328,28 @@ function iraClaw(h,s,target){
      칸 길이는 묶음 그대로 — 3번 칸은 180ms, 7번 칸은 540ms, 둘째 바퀴는 +830ms.
      ⚠️ 빠르게 돌리지 않는다 — 돌리면 /hero 가 맞춘 180·540 과 어긋난다.
         두 바퀴를 **쉬지 않고 잇는 것**이 「빠르게」다 */
-  { const CLAW=[110,70,120,70,100,70,140,150], LAP=830;
-    /* **기본 자세 그림을 대신해서** 두 바퀴 (사용자 2026-10-13).
-       ⚠️ 몸 아래에 따로 띄우지 말 것 — 그 길이 「개조그맣게 밑에」 나오던 그것이다 */
-    poseStripFX("mine",h.slot,"clawA",CLAW);
-    setTimeout(()=>{ if(!B||B.over) return; poseStripFX("mine",h.slot,"clawA",CLAW) },LAP);
-    fx({side:"mine",slot:h.slot,gap:180});   /* 첫 할큄까지 — 피해 나눔은 /hero 가 쥔다 */
-    /* 적 위의 발톱 — **3번 칸에 왼쪽 · 7번 칸에 오른쪽**, 두 바퀴라 왼·오른·왼·오른 네 번 */
-    [[180,0],[540,1],[180+LAP,0],[540+LAP,1]].forEach(([ms,right])=>iraClawHit(f.slot,right,ms)); }
+  /* 빠르게 다시 잰 칸 길이 (사용자 2026-10-13 : 「빠르고 강한 느낌」). 830ms → 495ms.
+     때리는 칸은 그대로 **3번 칸과 7번 칸**이다 — 앞 칸들을 더한 값이 곧 그 때다 :
+       3번 칸 = 65+45 = 110ms · 7번 칸 = 65+45+70+40+60+40 = 320ms · 한 바퀴 = 495ms
+     ⚠️ 셋(띠 · 적 위의 발톱 · 피해)이 **같은 수**에서 나와야 한다. 아래 세 줄이 다 이 표를 쓴다 */
+  let CLAW_GAP;
+  { const CLAW=[65,45,70,40,60,40,85,90];
+    const LAP=CLAW.reduce((a,b)=>a+b,0);                 /* 495 */
+    const 왼=CLAW[0]+CLAW[1];                             /* 3번 칸 = 110 */
+    const 오=왼+CLAW[2]+CLAW[3]+CLAW[4]+CLAW[5];          /* 7번 칸 = 320 */
+    /* **기본 자세 그림을 대신해서** 두 바퀴.
+       ⚠️ 큐에 실어 보낸다 (strip) — 손으로 부르면 공통 자세보다 먼저 서서
+          「발톱이 나간 뒤에 몸이 움직이는」 꼴이 됐다 (사용자 2026-10-13) */
+    fx({side:"mine",slot:h.slot,strip:{k:"clawA",ms:CLAW},gap:0});
+    setTimeout(()=>{ if(!B||B.over) return; poseStripFX("mine",h.slot,"clawA",CLAW) },Math.round(LAP*(typeof SPD==="number"?SPD:1)));
+    fx({side:"mine",slot:h.slot,gap:왼});   /* 첫 할큄까지 */
+    /* 적 위의 발톱 — 3번 칸에 왼쪽 · 7번 칸에 오른쪽, 두 바퀴라 왼·오른·왼·오른 네 번 */
+    [[왼,0],[오,1],[왼+LAP,0],[오+LAP,1]].forEach(([ms,right])=>iraClawHit(f.slot,right,Math.round(ms*(typeof SPD==="number"?SPD:1))));
+    CLAW_GAP=[왼,오-왼,(왼+LAP)-오,(오+LAP)-(왼+LAP)]; }
   /* 피해 넷을 **발톱이 서는 네 때**에 맞춰 보낸다 — 180 · 540 · 1010 · 1370ms.
      /art 와 따로 세서 같은 수가 나왔다. 아래 사이를 더하면 그 넷이다.
      ⚠️ 띠는 /art 가 두 바퀴로 돌린다 — 여기서 다시 부르면 **네 바퀴**가 된다 */
-  const CLAW_GAP=[180,360,470,360];
+  /* 피해 넷을 발톱이 서는 그 네 때에 맞춘다 — 위에서 잰 수를 그대로 쓴다 (두 곳에 따로 적지 않는다) */
   for(let q=0;q<n;q++){ if(!f.alive) break;
     hurt(f,가면?v*2:v,"할퀴기",null,0,가면?1:0,1);   /* 코드로 그린 SVG 를 안 쓴다 (2026-10-13) */
     if(q<n-1) fx({side:"mine",slot:h.slot,gap:CLAW_GAP[Math.min(q+1,CLAW_GAP.length-1)]}) }
@@ -34710,6 +34788,7 @@ function hurtAlly(f,t,raw,label,el,evMsg,pierce,ownFx){   /* evMsg — 회피했
     fx({side:"mine",slot:t.slot,ring:"#c9d8ff",txt:"회피 +3",cls:"shd",gap:80}); say(`야수 — ${t.name} 회피 +3`,"t1"); synFlash("야수",[t]) }
   if(t.hp<=0){ if(!t.isMin&&run){ t.downBy=f?f.name:label; run.lastKiller=t.downBy; run.lastKillerBy=label } unitDown(t) }
   else if(raw>0) bark(t,"hurt");
+  alwaysSync(t);   /* 체력이 내려갔다 — 늘 따라가는 몫이 따라와야 한다 (복수귀 · 갈증, 2026-10-13) */
 }
 /* 아군 소환물의 죽음 효과 — 교감이면 두 번 (메아리로 일어설 때도 먼저 터진다) */
 function minDeathRun(t){
