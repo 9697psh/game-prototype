@@ -467,8 +467,15 @@ img.pxs.face{image-rendering:pixelated;width:auto;filter:drop-shadow(0 2px 0 rgb
   border:1px solid var(--rule2);
   border-radius:3px;padding:0 5px;background:var(--raise)}
 
+/* 고르는 화면 뒤를 어둡게 — 전장과 글씨가 겹쳐 읽기 힘들었다 (사용자 2026-10-13).
+   ⚠️ .golempick 안에 ::before 로 넣으면 안 된다 — 그쪽은 transform 이 걸려 있어
+      position:fixed 가 화면이 아니라 **그 상자**를 잣대로 잡는다. 그래서 따로 한 장을 깐다 */
+.pickveil{position:fixed;inset:0;z-index:61;
+  background:radial-gradient(ellipse at 50% 41%,rgba(8,6,5,.58) 0%,rgba(7,5,4,.84) 52%,rgba(4,3,3,.93) 100%);
+  animation:pickveil .42s ease-out both}
+@keyframes pickveil{from{opacity:0}to{opacity:1}}
 /* 골렘 창조 — 전투 가운데에 부속 둘을 내놓고 하나를 고른다 (사용자 녹화 2026-10-13) */
-.golempick{position:fixed;left:50%;top:41%;transform:translate(-50%,-50%);z-index:60;
+.golempick{position:fixed;left:50%;top:41%;transform:translate(-50%,-50%);z-index:62;
   display:flex;flex-direction:column;align-items:center;gap:30px;pointer-events:none;
   animation:golemin .55s cubic-bezier(.2,.8,.3,1) both}
 .golempick.shown{animation:none}   /* 다시 그려도 처음부터 떠오르지 않게 — 나이(t0)로 가른다 */
@@ -11019,14 +11026,17 @@ function earlyMakeTry(h,wait){
 }
 function srcAnalysisStart(h){
   if(!B||B.over||!h) return 0;
+  /* ⚠️ **기술이 열려 있어야 돈다** (15레벨, 사용자 2026-10-13 : 「해금 안 했는데 배치하면 고르는 화면이 뜬다」).
+     배치할 때 저절로 도는 길과 손으로 쓰는 길이 **여기 하나로** 모인다 — 문은 여기 한 곳에만 둔다 */
+  const si=(h.sk||[]).findIndex(k=>k&&k.srcAnalysis);
+  if(si<0||skLocked(h,si)) return 0;
   const L=ITEMS.filter(i=>i&&i.g==="희귀");
   if(!L.length) return 0;
   const a=L.slice(), opts=[];
   while(opts.length<3&&a.length){ const x=rnd(a); opts.push(x.n); a.splice(a.indexOf(x),1) }
   B.srcPick={by:h.name,opts:opts,t0:Date.now()};
   try{ BGM.once("pick") }catch(e){}
-  { const i=(h.sk||[]).findIndex(k=>k&&k.srcAnalysis);   /* 저절로 돈 만큼 사용한도를 쓴다 — 손으로 또 열 수 없게 */
-    if(i>=0){ h.limitUsed=h.limitUsed||{}; h.limitUsed[i]=(h.limitUsed[i]||0)+1 } }
+  { h.limitUsed=h.limitUsed||{}; h.limitUsed[si]=(h.limitUsed[si]||0)+1 }   /* 저절로 돈 만큼 사용한도를 쓴다 — 손으로 또 열 수 없게 */
   say(`원천 분석 — ${h.name}${jo(h.name,"ig")} 쥘 장신구를 살핍니다.`,"t1");
   render(); return 1;
 }
@@ -18965,6 +18975,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 88, "v": "0.7", "d": "2026-10-13", "t": "원천 분석 15레벨 잠금 · 지속 기술 표시 · 고르는 화면 어둠막 · 공중에 뜸 띠 크게", "big": 0},
  {"b": 87, "v": "0.7", "d": "2026-10-13", "t": "마나 상한 딱지 · 초월체 종족 그림 · 공중에 뜸 8칸 띠", "big": 0},
  {"b": 86, "v": "0.7", "d": "2026-10-13", "t": "소환물 기술 아이콘 셋 · art 폴더 정리", "big": 0},
  {"b": 85, "v": "0.7", "d": "2026-10-13", "t": "이라 · 파벨 보상 아이콘 예순아홉", "big": 0},
@@ -20244,7 +20255,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=87;
+const BUILD_NO=88;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -30261,6 +30272,7 @@ function drawBattle(app){
       const c=el(`<div class="gpcard">${partCardHtml(G.kind,n)}</div>`);
       c.onclick=()=>{ SFX.play("click"); golemPick(n) };
       row.appendChild(c) });
+    app.appendChild(el(`<div class="pickveil"></div>`));   /* 뒤를 어둡게 — 상자보다 먼저 깐다 */
     app.appendChild(box);
   }
   /* 원천 분석 — 희귀 장신구 셋 가운데 하나 (노트 17-4). 골렘과 같은 화면 · 같은 카드 틀 */
@@ -30275,6 +30287,7 @@ function drawBattle(app){
       const c=el(`<div class="gpcard">${itemCardHtml(n)}</div>`);
       c.onclick=()=>{ SFX.play("click"); srcAnalysisPick(n,c) };
       row.appendChild(c) });
+    app.appendChild(el(`<div class="pickveil"></div>`));   /* 뒤를 어둡게 — 상자보다 먼저 깐다 */
     app.appendChild(box);
   }
   const pr=el(`<div class="prompt">
@@ -30782,6 +30795,9 @@ function skillPanel(h){
     const lk=h.lock[i]||0;
     const used=s.limit?(h.limitUsed[i]||0):0;
     const ok=!locked&&!lk&&canPay(h,i,1);
+    /* 지속 기술(원천 분석 · 독소 침 · 헤드샷)은 **손으로 치르는 것이 아니다** — 마나와 사용한도를 안 적는다
+       (사용자 2026-10-13 : 「지속 능력이라서 … 다른 지속 능력이랑 유사하게」). 안의 limit 셈은 그대로 둔다 */
+    const 지속=s.el==="지속";
     const cost = s.costType==="mom" ? ic("move")+" "+payCost(h,i)
                : s.costType==="hp" ? ic("hp")+" "+payCost(h,i)        /* 이라 — 체력으로 치른다 (2026-10-12). 이 자리만 payCost 를 쓰는 꼴이라 비용 훑기에서 빠져 있었다 */
                : s.costType==="scale" ? "비늘 "+payCost(h,i) : ic("mana")+" "+payCost(h,i);
@@ -30794,7 +30810,7 @@ function skillPanel(h){
     /* 선택 기술은 고른 갈래(s.n)의 그림을 먼저 찾고, 없으면 기술 자체의 그림 */
     const ico=skillIcon(s.n,0,h)||skillIcon(nm,0,h);
     const xN=(sel.skill===i&&sel.step===4&&sel.count>1)?sel.count:0;
-    const tipFull=`<b style="color:var(--brass)">${i+1}. ${esc(nm)}</b><span style="color:var(--faint);font-size:10.5px"> ${cost} ${esc(s.el)}${s.limit?` 사용한도 ${used}/${skLimit(h,i,s)}`:""}${locked?` ${UNLOCK[i]}레벨에 열림`:""}${lk?` 잠금 ${lk}턴`:""}</span><br>${richLive(h,s,fullT).html}${skUpLines(h,s,richLive(h,s,fullT).html)}${s.alt?`<br><span style="color:var(--faint)">전환, ${esc(s.alt.n)}</span><br>${rich(SKILL_FULL[s.alt.n]||s.alt.d||"")}`:""}`;
+    const tipFull=`<b style="color:var(--brass)">${i+1}. ${esc(nm)}</b><span style="color:var(--faint);font-size:10.5px"> ${지속?"":cost+" "}${esc(s.el)}${(s.limit&&!지속)?` 사용한도 ${used}/${skLimit(h,i,s)}`:""}${locked?` ${UNLOCK[i]}레벨에 열림`:""}${lk?` 잠금 ${lk}턴`:""}</span><br>${richLive(h,s,fullT).html}${skUpLines(h,s,richLive(h,s,fullT).html)}${s.alt?`<br><span style="color:var(--faint)">전환, ${esc(s.alt.n)}</span><br>${rich(SKILL_FULL[s.alt.n]||s.alt.d||"")}`:""}`;
     const e=el(`<div class="sk kw ${sel.skill===i?"on":""} ${ok?"":"off"} ${hot.length?"hot":""}" data-el="${esc(s.el||"")}" ${pickTip("bsk-"+i,tipFull)}>
       <div class="skL">
         <div class="skico">${ico||`<span class="noico">${esc(s.el||"")}</span>`}<span class="k">${i+1}</span></div>
@@ -30804,8 +30820,8 @@ function skillPanel(h){
       </div>
       <div class="skR">
         <div class="skv">
-          <span class="v-cost">${cost}</span>
-          ${s.limit?`<span class="v-lim">${skLimit(h,i,s)-used}/${skLimit(h,i,s)}</span>`:""}
+          ${지속?"":`<span class="v-cost">${cost}</span>`}
+          ${(s.limit&&!지속)?`<span class="v-lim">${skLimit(h,i,s)-used}/${skLimit(h,i,s)}</span>`:""}
           ${locked?`<span class="v-lock lvl">${UNLOCK[i]}레벨</span>`:""}
           ${lk?`<span class="v-lock">${lockSvg()}<b>${lk}턴</b></span>`:(s.lock?`<span class="v-lock">${lockSvg()}<b>${s.lock}</b></span>`:"")}
         </div>
@@ -33406,7 +33422,7 @@ function pavelMobil(h,s,target){
 function airborneAlly(f,h){
   if(!h||h.hp<=0||h.air) return;
   h.air=1;
-  sheetFX("fx_deb_airborne","mine",h.slot,{cellW:64,cellH:64,frames:8,z:1.25,feet:1,frameMs:[75,75,75,70,95,90,85,100]});
+  sheetFX("fx_deb_airborne","mine",h.slot,{cellW:64,cellH:64,frames:8,z:1.7,feet:1,frameMs:[75,75,75,70,95,90,85,100]});
   fx({side:"mine",slot:h.slot,lift:1,s:"gust",txt:"공중",cls:"shd",gap:130,
       fn:()=>setTimeout(()=>{ h.air=0;                 /* 적과 같이 잠깐 떠 있다 내려온다 (사용자 2026-09-29) */
         const p=ctrOf("mine",h.slot);
@@ -33416,7 +33432,7 @@ function airborneAlly(f,h){
 }
 function airborne(h,f){
   if(!f.alive) return; f.air=1;
-  sheetFX("fx_deb_airborne","foe",f.slot,{cellW:64,cellH:64,frames:8,z:1.25,feet:1,frameMs:[75,75,75,70,95,90,85,100]});
+  sheetFX("fx_deb_airborne","foe",f.slot,{cellW:64,cellH:64,frames:8,z:1.7,feet:1,frameMs:[75,75,75,70,95,90,85,100]});
   fx({side:"foe",slot:f.slot,lift:1,s:(h&&h.name==="카제")?sfxOr("공중 띄움","gust"):"gust",txt:"공중",cls:"shd",gap:130,
       fn:()=>setTimeout(()=>{ f.air=0;
         const p=ctrOf("foe",f.slot);
