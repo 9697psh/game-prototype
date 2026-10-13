@@ -468,26 +468,36 @@ img.pxs.face{image-rendering:pixelated;width:auto;filter:drop-shadow(0 2px 0 rgb
   border-radius:3px;padding:0 5px;background:var(--raise)}
 
 /* 골렘 창조 — 전투 가운데에 부속 둘을 내놓고 하나를 고른다 (사용자 녹화 2026-10-13) */
-.golempick{position:fixed;left:57%;top:41%;transform:translate(-50%,-50%);z-index:60;   /* 파벨이 가리지 않게 오른쪽 위로 (사용자 녹화처럼) */
-  display:flex;flex-direction:column;align-items:center;gap:14px;pointer-events:none}
-.golempick .gpcards{display:flex;gap:40px;pointer-events:auto}
-/* 카드는 손패 카드만 하게 (사용자 2026-10-13 : 더 크게) */
-.golempick .gpcard{width:244px;min-height:296px;box-sizing:border-box;background:var(--panel);
-  border:1px solid var(--rule);border-radius:9px;padding:16px 15px;cursor:pointer;text-align:center;
-  box-shadow:0 18px 40px rgba(0,0,0,.66);transition:transform .12s,border-color .12s}
-.golempick .gpcard:hover{border-color:var(--brass);transform:translateY(-6px)}
-.golempick .gpcard img{width:112px;height:112px;image-rendering:pixelated}
-.golempick .gpn{font-family:var(--serif);color:var(--brass);font-size:17px;margin-top:10px}
-.golempick .gpd{font-size:13px;color:var(--dim);line-height:1.55;margin-top:9px}
+.golempick{position:fixed;left:50%;top:44%;transform:translate(-50%,-50%);z-index:60;
+  display:flex;flex-direction:column;align-items:center;gap:22px;pointer-events:none}
+.golempick .gpcards{display:flex;gap:46px;pointer-events:auto}
+/* 부속도 **카드 테두리 안에** 든다 (사용자 2026-10-13) — 손패 카드(.ccard.cf)를 그대로 쓰고 1.5배로 */
+.golempick .gpcard{position:relative;width:240px;height:336px;cursor:pointer}
+.golempick .gpcard .ccard.cf{position:absolute;left:0;top:0;margin:0;
+  transform:scale(1.5);transform-origin:0 0;transition:transform .12s,filter .12s}
+.golempick .gpcard:hover .ccard.cf{transform:scale(1.56) translateY(-5px);
+  filter:drop-shadow(0 8px 14px rgba(0,0,0,.6)) drop-shadow(0 0 10px rgba(201,162,39,.55))}
 /* 고르는 동안 가장자리에 도는 오오라 — 1528x816 여덟 칸, **파일로** 나른다 (web/fx) */
 .golemaura{position:fixed;inset:0;z-index:54;pointer-events:none;background-repeat:no-repeat;
   background-image:url(fx/pavel-golem-edge-8f-12224x816.png);image-rendering:pixelated;opacity:.9}
 /* 합쳐지는 순간 — 가운데에서 부속 여섯이 맞물린다 (512x64 여덟 칸을 3배로) */
 .golemmake{position:fixed;left:50%;top:44%;width:192px;height:192px;margin:-96px 0 0 -96px;z-index:62;
   pointer-events:none;background-repeat:no-repeat;background-size:1536px 192px;image-rendering:pixelated;
-  filter:drop-shadow(0 0 12px rgba(201,162,39,.55))}
-.golempick .gpcap{font-family:var(--serif);font-size:15px;letter-spacing:.04em;color:#ece4d4;
-  background:rgba(14,11,8,.88);border:1px solid var(--rule);border-radius:6px;padding:7px 16px}
+  filter:drop-shadow(0 0 12px rgba(201,162,39,.55));transition:transform .12s}
+.golemmake.shine{animation:golemshine .42s ease-out forwards}
+@keyframes golemshine{
+  0%{filter:drop-shadow(0 0 12px rgba(201,162,39,.6)) brightness(1);transform:scale(1.12)}
+  35%{filter:drop-shadow(0 0 40px rgba(255,238,180,1)) brightness(2.6);transform:scale(1.3)}
+  100%{filter:drop-shadow(0 0 22px rgba(255,230,150,.7)) brightness(1.25);transform:scale(1.18)}}
+.golemring{position:fixed;left:50%;top:44%;width:40px;height:40px;margin:-20px 0 0 -20px;z-index:61;pointer-events:none;
+  border:3px solid rgba(255,236,170,.9);border-radius:50%;animation:golemring .46s ease-out forwards}
+@keyframes golemring{0%{opacity:0;transform:scale(.4)}25%{opacity:1}100%{opacity:0;transform:scale(9)}}
+.golemcard{position:fixed;left:0;top:0;z-index:63;pointer-events:none;will-change:transform}
+.golemcard .ccard.cf{margin:0;filter:drop-shadow(0 0 16px rgba(255,230,150,.8))}
+/* 문구는 크게, **상자 없이** (사용자 2026-10-13) */
+.golempick .gpcap{font-family:var(--serif);font-size:30px;letter-spacing:.06em;color:#f3ead8;
+  background:none;border:none;padding:0;
+  text-shadow:0 2px 0 rgba(0,0,0,.9),0 0 18px rgba(0,0,0,.95),0 0 6px rgba(0,0,0,.9)}
 .skwrap{margin-top:12px;border-style:solid;border-image:url("ui/skill-description-card-menu-card-1364x256.png") 22 fill / 22px round;background:none;border-radius:0;padding:12px 10px}
 /* 턴 종료 효과가 흐르는 동안 — 창은 그대로 두되 손대지 못한다는 것을 보여 준다 */
 .skwrap.waiting{opacity:.5;filter:saturate(.7);pointer-events:none;border-color:var(--rule2)}
@@ -10798,15 +10808,53 @@ function pavelMakeIdle(){
   };
   tick();
 }
-function golemCreationFX(){
-  const u=(typeof ICON_PNG!=="undefined")&&ICON_PNG["fx_pavel_golem_creation"]; if(!u) return;
+/* 만들어지는 연출 (사용자 2026-10-13) —
+   ① 부속이 **마구 돈다** (앞 여섯 칸을 세 바퀴, 갈수록 빠르게)
+   ② 마지막 두 칸에서 맞물리고 ③ 빛난다 ④ 그 골렘이 **카드가 되어 손패로** 날아간다.
+   끝나면 done() — 카드는 그때 손에 들어온다 (연출보다 먼저 들어오면 뜬금없다) */
+function golemCreationFX(done){
+  const 배=()=>(typeof SPD==="number"?SPD:1);
+  const u=(typeof ICON_PNG!=="undefined")&&ICON_PNG["fx_pavel_golem_creation"];
+  if(!u){ if(done) done(); return }
   const d=el('<div class="golemmake"></div>');
   d.style.backgroundImage="url("+u+")";
   document.body.appendChild(d);
-  let i=0;
-  const step=()=>{ d.style.backgroundPositionX=(-i*192)+"px"; i++;
-    if(i<8) setTimeout(step,Math.round(GOLEM_MAKE_MS[i-1]*(typeof SPD==="number"?SPD:1)));
-    else setTimeout(()=>d.remove(),280) };
+  const seq=[];
+  for(let r=0;r<3;r++) [0,1,2,3,4,5].forEach(i=>seq.push([i,Math.max(30,64-r*16)]));   /* ① 공전 — 점점 빠르게 */
+  seq.push([6,140]); seq.push([7,300]);                                                /* ② 맞물림 */
+  let k=0;
+  const step=()=>{
+    if(k>=seq.length){ 빛(); return }
+    const q=seq[k++];
+    d.style.backgroundPositionX=(-q[0]*192)+"px";
+    setTimeout(step,Math.round(q[1]*배()));
+  };
+  const 빛=()=>{
+    d.classList.add("shine");
+    const r=el('<div class="golemring"></div>'); document.body.appendChild(r);
+    setTimeout(()=>r.remove(),Math.round(500*배()));
+    if(typeof SFX!=="undefined"&&sfxHas("골렘 완성")) SFX.play("골렘 완성");
+    setTimeout(()=>{ d.remove(); 카드로() },Math.round(430*배()));
+  };
+  const 카드로=()=>{
+    const hand=document.querySelector(".hand"), hr=hand&&hand.getBoundingClientRect();
+    const c=el('<div class="golemcard"><div class="card ccard cf">'
+      +'<div class="cc-art">'+figure("하수인 골렘")+'</div>'
+      +'<div class="cc-n">하수인 골렘</div><div class="cc-type">소환물</div>'
+      +'<div class="cc-d"><div class="cc-di">빈 칸에 배치하세요</div></div></div>');
+    document.body.appendChild(c);
+    const x0=window.innerWidth*0.5, y0=window.innerHeight*0.44;
+    const x1=hr?(hr.left+hr.width/2):x0, y1=hr?(hr.top+hr.height*0.5):(window.innerHeight-90);
+    const 자리=(x,y,s,rot)=>`translate(${Math.round(x)}px,${Math.round(y)}px) translate(-50%,-50%) scale(${s}) rotate(${rot}deg)`;
+    const a=c.animate([
+      {transform:자리(x0,y0,1.5,-7),opacity:1},
+      {transform:자리((x0+x1)/2,(y0+y1)/2-50,1.05,3),opacity:1,offset:.55},
+      {transform:자리(x1,y1,.42,0),opacity:.1}
+    ],{duration:Math.round(640*배()),easing:"cubic-bezier(.3,.75,.4,1)"});
+    let 한번=0;   /* ⚠️ onfinish 와 늦은 setTimeout 이 **둘 다** 온다 — 한 번만 (카드가 두 장 들어왔다) */
+    const 끝=()=>{ if(한번) return; 한번=1; c.remove(); if(done) done() };
+    a.onfinish=끝; setTimeout(끝,Math.round(900*배()));   /* 애니메이션이 안 돌아도 카드는 들어온다 */
+  };
   step();
 }
 /* 지금 고를 수 있는 부속 — 보상으로 얻은 것(tag.golemAdd)만 더해진다 */
@@ -10820,6 +10868,20 @@ function golemOpts(h,kind){
   const a=L.slice();
   while(out.length<n&&a.length){ const x=rnd(a); out.push(x); a.splice(a.indexOf(x),1) }
   return out;
+}
+/* 부속 한 장을 **손패 카드와 같은 틀**로 그린다 (사용자 2026-10-13 : 카드 테두리 안에) */
+function partCardHtml(kind,n){
+  const T=((kind==="mat")?PAVEL_MAT:PAVEL_SOUL)[n]||{}, nm=partName(kind,n);
+  const d=String(T.d||""), 긺=d.replace(/\n/g," ").length>42;
+  const st=(kind==="mat")?`<span class="hp">${ic("hp")} ${T.hp}</span>`
+                         :`<span class="mn">${ic("mana")} ${T.mana}</span>`;
+  return `<div class="card ccard cf">
+    <div class="cc-art">${cardArt(nm)}</div>
+    <div class="cc-n">${esc(n)}</div>
+    <div class="cc-type">${kind==="mat"?"재료 부속":"영혼 부속"}</div>
+    <div class="cc-d${긺?" long":""}"><div class="cc-di">${rich(d)}</div></div>
+    <div class="cc-st">${st}</div>
+  </div>`;
 }
 function golemStart(h){
   if(!B) return;
@@ -10844,11 +10906,13 @@ function golemMerge(h){
   const so=B.hand.find(c=>c&&c.type==="part"&&c.kind==="soul");
   if(!m||!so) return 0;
   B.hand=B.hand.filter(c=>c!==m&&c!==so);
-  B.hand.push({type:"summon",name:"하수인 골렘",mat:m.part,soul:so.part,gone:1,arrive:1});
   const p=h&&h.slot>0?h.slot:null;
   if(p) fx({side:"mine",slot:p,s:sfxOr("골렘 창조","summon"),ring:"#c9a227",glow:1,txt:"창조",cls:"shd",gap:120});
-  golemCreationFX();   /* 화면 가운데에서 부속 여섯이 맞물린다 (사용자 녹화) */
   say(`${m.part}${jo(m.part,"gwa")} ${so.part}${jo(so.part,"ig")} 하나로 합쳐집니다 — 하수인 골렘.`,"t1");
+  /* 카드는 **연출이 끝난 뒤** 손에 들어온다 — 날아든 자리에서 카드가 생긴다 */
+  golemCreationFX(()=>{ if(!B||B.over) return;
+    B.hand.push({type:"summon",name:"하수인 골렘",mat:m.part,soul:so.part,gone:1,arrive:1});
+    render() });
   return 1;
 }
 /* 골렘의 재료 부속이 쥔 값 — 선 골렘에서 꺼내 본다 (없으면 빈 것) */
@@ -18487,6 +18551,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 66, "v": "0.7", "d": "2026-10-13", "t": "골렘 창조 — 카드 테두리, 가운데, 돌다 맞물리고 빛나 카드가 되어 손패로", "big": 0},
  {"b": 65, "v": "0.7", "d": "2026-10-13", "t": "골렘 창조 연출 — 가장자리 오오라, 창조 자세, 가운데 맞물림 (카드도 크게)", "big": 0},
  {"b": 64, "v": "0.7", "d": "2026-10-13", "t": "골렘 창조 — 부속 둘을 골라 합치면 하수인 골렘", "big": 0},
  {"b": 63, "v": "0.7", "d": "2026-10-13", "t": "파벨 뼈대 — 대원과 그림, 지면 내려치기 · 기동 · 파수꾼의 은총", "big": 0},
@@ -19744,7 +19809,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=65;
+const BUILD_NO=66;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -29722,9 +29787,8 @@ function drawBattle(app){
     const box=el(`<div class="golempick"><div class="gpcards"></div>
       <div class="gpcap">${G.kind==="mat"?"재료 부속을 선택하세요":"영혼 부속을 선택하세요"}</div></div>`);
     const row=box.querySelector(".gpcards");
-    G.opts.forEach(n=>{ const T=TBL[n]||{};
-      const c=el(`<div class="gpcard"><div>${cardArt(partName(G.kind,n))}</div>
-        <div class="gpn">${esc(n)}</div><div class="gpd">${rich(T.d||"")}</div></div>`);
+    G.opts.forEach(n=>{
+      const c=el(`<div class="gpcard">${partCardHtml(G.kind,n)}</div>`);
       c.onclick=()=>{ SFX.play("click"); golemPick(n) };
       row.appendChild(c) });
     app.appendChild(box);
