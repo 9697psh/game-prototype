@@ -15818,7 +15818,9 @@ function heroStatusRows(h){
   /* 복수귀 — 체력 턱 아래인 동안 (2026-10-13) */
   if(h.rageOn>0) g.push(bd("g","복수귀",h.rageOn));
   /* 타락의 초읽기 — 받는 피해가 턴마다 쌓인다 */
-  if(h.countUp>0) g.push(bd("g","타락의 초읽기",h.countUp,`내 턴이 끝날 때마다 피해를 받고, 받는 피해량이 ${h.countUp} 늘어나 있습니다`));
+  if(h.countUp>0){ const cd=(h.tag&&h.tag.countdown)||0;
+    g.push(bd("g","타락의 초읽기",h.countUp,
+      `받는 피해량이 ${h.countUp} 늘어나 있습니다. 내 턴이 끝날 때마다 ${cd} 더 늘어나고, 늘어난 만큼 피해를 받습니다 (다음은 ${h.countUp+cd})`)) }
   if(h.stop>0) o.push(bd("o","정지",`${Math.max(1,h.stop-(B&&B.foeAct?1:0))}턴`,"겨눌 수도, 피해를 받을 수도 없습니다. 그동안 아무것도 하지 못합니다"));
   /* ⚠️ 문을 **leechPct** 로 연다 (2026-10-13). 전에는 `h.leech`(한 번짜리)만 보아
      **늘 붙는 몫(갈증 · 혈기 공유)만 있으면 딱지가 아예 안 떴다.** applyLeech 안에서는 고쳤는데
@@ -18270,6 +18272,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 60, "v": "0.7", "d": "2026-10-13", "t": "타락의 초읽기 — 턴 끝 제 피해도 쌓인 만큼 받는다 (딱지 숫자와 같아진다)", "big": 0},
  {"b": 59, "v": "0.7", "d": "2026-10-13", "t": "초월 변신 — 둘레가 어두워지고 가운데서 천천히, 대사와 함께", "big": 0},
  {"b": 58, "v": "0.7", "d": "2026-10-13", "t": "초월체의 마지막 — 떨다 한마디 하고 뻥 터진다", "big": 0},
  {"b": 57, "v": "0.7", "d": "2026-10-13", "t": "초월체 분해 연출 · 탑의 주인 키를 대원과 비슷하게", "big": 0},
@@ -19521,7 +19524,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=59;
+const BUILD_NO=60;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -34889,7 +34892,7 @@ function hurtAlly(f,t,raw,label,el,evMsg,pierce,ownFx){   /* evMsg — 회피했
     fx({side:"mine",slot:t.slot,ring:"#c9a227",txt:"버팀",cls:"crit",gap:80});
     say(`영광 숭배자 — ${t.name}${jo(t.name,"ig")} 치명적인 일격을 한 번 흘려냅니다.`,"t1"); synFlash("영광 숭배자",[t]) }
   /* 타락의 초읽기 — 받는 피해량이 **턴마다 쌓여** 오른다 (사용자가 ⓑ 로 정함, 2026-10-13).
-     제 피해(턴 끝 6)는 빼고 센다 — 그러지 않으면 두 번 얹힌다 */
+     제 피해는 빼고 센다 — 부르는 쪽(endPhase)이 이미 **countUp 을 통째로** 넘기므로, 여기서 또 얹으면 두 벌이 된다 */
   if(d>0&&t.countUp&&label!=="타락의 초읽기") d+=t.countUp;
   /* 피의 서약 — **내 턴에** 이라가 받은 피해의 2배를 다른 모든 아군에게 보호막으로 (2026-10-13).
      받는 그 자리에서 — 쓰러져도 그 몫은 간다 */
@@ -35069,11 +35072,15 @@ function endPhase(){
   onField().forEach(h=>{ if(h.hp>0&&h.charge>0){ h.charge=0;
     say(`${h.name}의 충전이 풀렸습니다.`,"t3"); n++ } });
   /* 타락의 초읽기 — 내 턴이 끝날 때마다 **받는 피해량이 6 오르고** 피해를 6 받는다
-     (사용자가 ⓑ 로 정함, 2026-10-13 : 쌓인다). countUp 은 전투 단위다 (BATTLE_RESET) */
+     (사용자가 ⓑ 로 정함, 2026-10-13 : 쌓인다). countUp 은 전투 단위다 (BATTLE_RESET)
+     ⚠️ **제 피해도 늘어난 만큼 받는다** (사용자 2026-10-13 밤) — 전에는 `tag.countdown`(6) 을 그냥 넘겨
+     **딱지 숫자는 6 12 18 로 오르는데 실제로는 늘 6** 이었다. 「피해를 6 받고, 받는 피해량이 6 증가」라
+     제 피해 6 에도 **앞서 쌓인 몫**이 얹힌다 — 그 합이 곧 올린 뒤의 `countUp` 이다.
+     그래서 `hurtAlly` 에는 **countUp 을 통째로** 넘기고, 안에서는 label 로 걸러 두 번 얹히지 않게 한다 */
   onField().forEach(h=>{ if(h.hp<=0||!h.tag||!h.tag.countdown) return;
     h.countUp=(h.countUp||0)+h.tag.countdown;
-    say(`타락의 초읽기 — ${h.name}${jo(h.name,"ig")} 받는 피해가 ${h.countUp} 늘어납니다.`,"t2");
-    hurtAlly(h,h,h.tag.countdown,"타락의 초읽기"); n++ });
+    say(`타락의 초읽기 — ${h.name}${jo(h.name,"ig")} 받는 피해가 ${h.tag.countdown} 늘어 모두 ${h.countUp}, 피해를 ${h.countUp} 받습니다.`,"t2");
+    hurtAlly(h,h,h.countUp,"타락의 초읽기"); n++ });
   /* 투기장의 감옥 — 내 턴이 끝날 때 **아군과 적 모두** 최대 체력의 N% (2026-10-12).
      이라 자신도 받는다 — 노트가 「아군과 적 모두」라 적었다 */
   { const ir=onField().find(h=>h.hp>0&&h.tag&&h.tag.arenaPrison);
