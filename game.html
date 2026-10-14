@@ -14087,7 +14087,7 @@ const ITEMS=[
  IT("미믹의 이빨","특수",null,0,null,{mimicTooth:20},
    "소환물이 아닌 적을 처치한 후, 20% 확률로 금화를 1 얻습니다."),
  IT("사기꾼의 패","특수",null,0,null,{cheatCard:1},
-   "라운드 시작 후 무작위 소멸성 카드를 얻습니다."),
+   "라운드 시작 후 무작위 소멸성 상점 카드를 얻습니다."),
  /* 남은 횟수는 그 장신구 한 개에 붙는다(it.left) — 줄 때 사본을 준다 (evItem) */
  IT("고대의 펜던트","특수",null,0,null,{pendant:2},
    "정예 전투에서 승리하면, 이 장신구를 장착한 대원이 상급 보상을 1개 얻습니다. (남은 횟수 2/2)")
@@ -19443,6 +19443,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 130, "v": "0.7", "d": "2026-10-14", "t": "사기꾼의 패 — 무작위 소멸성 상점 카드", "big": 0},
  {"b": 129, "v": "0.7", "d": "2026-10-14", "t": "군체의 죽은 값 v:6 제거", "big": 0},
  {"b": 128, "v": "0.7", "d": "2026-10-14", "t": "정령숲 적 「균열 벌레」를 「균열 애벌레」로", "big": 0},
  {"b": 127, "v": "0.7", "d": "2026-10-14", "t": "침이 궤도를 따라 돌고 가는 쪽을 본다 · 바닥 터짐은 더 느리게", "big": 0},
@@ -20764,7 +20765,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=129;
+const BUILD_NO=130;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -24885,8 +24886,11 @@ const CARD_LIB={
             fx({side:"mine",slot:a.slot,s:"buffup",ring:"#e0c85a",txt:"모든 능력치 +2",cls:"buf",gap:80});
             say(`각성초 — ${a.name} 이번 턴에만 모든 추가 능력치 +2`,"t2") }}
 };
-/* 사기꾼의 패가 라운드마다 하나씩 끼워 넣는 소멸성 카드 */
-const CHEAT_CARDS=["빵","맥주","소형 방패","악마 하수인","불덩이","간이 신발"];
+/* 사기꾼의 패가 라운드마다 하나씩 끼워 넣는 소멸성 카드 — **상점이 파는 카드 그대로**
+   (사용자 2026-10-14 : 「무작위 소멸성 상점 카드」. 위장 망토와 귀환서까지 넣기로 못박았다).
+   ⚠️ 표를 손으로 베끼지 않는다 — SHOP_STOCK 에 카드가 늘면 저절로 따라온다.
+      SHOP_STOCK 이 이 아래에 있어 **부를 때** 읽는 함수로 둔다 */
+const cheatCards=()=>SHOP_STOCK.filter(x=>x.k==="card"&&x.card&&CARD_LIB[x.card]).map(x=>x.card);
 /* 굴라가 [악마 장군 소환] 을 얻었으면 하수인 카드 대신 장군 카드다 */
 function impCardName(){
   const g=run&&run.heroes&&run.heroes.find(x=>x.name==="굴라");
@@ -27613,7 +27617,7 @@ function startBattle(kind,pinned){
   });
   prevGone.forEach(c=>handAdd(c));
   { const n=run.heroes.filter(h=>!h.down).reduce((a,h)=>a+itemBt(h,"cheatCard"),0), got=[];   /* 사기꾼의 패 (2026-10-05) */
-    for(let i=0;i<n;i++){ const nm=rnd(CHEAT_CARDS); got.push(nm);
+    for(let i=0;i<n;i++){ const P=cheatCards(); if(!P.length) break; const nm=rnd(P); got.push(nm);
       handAdd(CARD_LIB[nm].summon?{type:"summon",name:nm,gone:1}:{type:"item",name:nm,d:CARD_LIB[nm].d,use:CARD_LIB[nm].use,foe:CARD_LIB[nm].foe,gone:1}) }   /* foe — 불덩이를 아군에게 던지던 것 (점검 2026-10-07) */
     if(got.length){ say(`사기꾼의 패 — 소멸성 카드 ${got.join(", ")}`,"t2");
       /* 카드를 얻는 순간 (사용자 2026-10-13). 묶음 : 「카드 UI 위, 툴팁 아래」 · 80/80/80/90/90/100/110/140 */
