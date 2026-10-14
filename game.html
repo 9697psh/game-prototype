@@ -10772,7 +10772,8 @@ function pxFigure(name,pose){
 }
 /* 대원 정면 얼굴 (사용자 2026-09-30) — art/portraits-v1, 64×64. 없는 대원은 스프라이트로 물러선다.
    img.pxs 로 두어 자리마다 이미 있는 높이 규칙을 그대로 받는다 (정사각이라 너비는 따라온다) */
-const FACE={"도미니코":"face_dominico","헥토":"face_hecto","굴라":"face_gula","나이코스":"face_naikos","카제":"face_kaze","쿠렘타이":"face_kurem",
+const FACE={"오리온":"face_orion","데린저":"face_derringer",   /* 받은 얼굴 (2026-10-14) */
+ "도미니코":"face_dominico","헥토":"face_hecto","굴라":"face_gula","나이코스":"face_naikos","카제":"face_kaze","쿠렘타이":"face_kurem",
   "트리스탄":"face_tristan","플레어와 플로우":"face_ff","이테리오":"face_iterio","오토":"face_otto","이라":"face_ira","파벨":"face_pavel"};   /* 이라 초상 (사용자 묶음 portraits-v1-ira, 2026-10-12) */   /* 오토 (사용자 2026-10-04) */
 function faceArt(name){
   /* 외형을 바꿔도 정면 얼굴은 그대로 — 어느 대원인지 알아볼 수 있게 (사용자 2026-10-01) */
@@ -11001,6 +11002,13 @@ const partName=(kind,n)=>(kind==="mat"?"재료 부속: ":"영혼 부속: ")+n;
 ["막아내기","정화하기","찌르기","영혼부르기","별똥별","포식의 주먹"].forEach(n=>{ SKILL_ICON[n]="skill_golem_minion_attack" });
 /* 데린저 — 받은 아이콘 묶음 (2026-10-14). 변형 넷은 보상이 들어오면 그 이름으로 바로 걸린다 */
 Object.assign(SKILL_ICON,{
+ /* 오리온 — 받은 아이콘 묶음 (2026-10-14) */
+ "악마뼈 쇠뇌":"skill_orion_silver_bolt_crossbow",
+ "사냥개 부리기":"skill_orion_command_hound",
+ "쇠사슬 올가미":"skill_orion_chain_lasso",
+ "미끼 던지기":"skill_orion_throw_bait",
+ "사냥의 기류":"skill_orion_hunting_current",
+ "상처 남기기":"skill_orion_hound_leave_wound",
  "자동변환단총":"skill_derringer_auto_transform_pistol",
  "탄알 장전":"skill_derringer_reload_bullets",
  "연막탄":"skill_derringer_smoke_grenade",
@@ -11816,7 +11824,8 @@ function playableHeroes(){ return HERO_POOL.filter(n=>PLAYABLE.indexOf(n)>=0) }
 /* 도감에는 서지만 아직 판에 올릴 수 없는 대원 — 그림은 왔고 기술의 셈이 안 왔다.
    사용자가 「아트가 기존 대원들하고 어울리는지 보게 도감에 먼저」라고 한 그 자리다 (2026-10-12).
    ⚠️ 기술이 다 되면 여기서 지우고 HERO_POOL · PLAYABLE 에 넣는다 — 그러면 판에도 오른다. */
-const CODEX_ONLY=[];   /* 이라는 2026-10-12 · 파벨은 2026-10-13 에 HERO_POOL · PLAYABLE 로 옮겼다
+const CODEX_ONLY=["데린저"];   /* 데린저 — 훈련장에서 써 보게 (사용자 2026-10-14). 기술과 변형은 다 들어왔고 하급·상급 보상만 아직이다.
+   HERO_POOL · PLAYABLE 로 옮기면 원정에도 오른다 — 그때 golden 을 함께 다시 뜬다 */   /* 이라는 2026-10-12 · 파벨은 2026-10-13 에 HERO_POOL · PLAYABLE 로 옮겼다
    (기술 넷 · 보상 서른넷이 다 들어와서). ⚠️ 여기에 넣고 빼면 `golden` 의 판 짜임이 밀린다 —
    `playableHeroes()` 의 **차례**로 짝을 짓기 때문이다. 옮기는 날 기준을 **함께** 다시 뜬다. */
 function codexHeroes(){ return playableHeroes().concat(CODEX_ONLY.filter(n=>HEROES[n])) }
@@ -16885,6 +16894,7 @@ const KW_ICON={
      되감기 art/status-rewind-v1/status_rewind-64.png (+ 발동 띠 art/status-rewind-apply-v1-64frames/) · 충전은 멈춘 아이콘 하나 */
   "되감기":"status_rewind","정지":"status_stop","충전":"status_charge","과열":"status_mana_refinery_overheat",
   "조준":"status_derringer_aim","탄알":"status_derringer_bullet",   /* 데린저 (2026-10-14) */
+  "사냥감 냄새":"status_orion_prey_scent",   /* 오리온 (2026-10-14) */
   "마력":"status_tower_master_mana",   /* 탑의 주인의 마력 (/art 가 ICON_PNG 에 넣으면 쓰인다 — 없으면 글자) */
   "복수귀":"status_ira_berserker",            /* 이라 지속 — 그림은 0319acc9 에서 구웠다 (2026-10-13) */
   /* 글자 한 자로 떨어져 있던 딱지들 (사용자가 그림을 줬다, 2026-10-13).
@@ -19580,6 +19590,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 139, "v": "0.7", "d": "2026-10-14", "t": "오리온 · 사냥개 그림 · 얼굴 둘 · 데린저를 훈련장에", "big": 0},
  {"b": 138, "v": "0.7", "d": "2026-10-14", "t": "데린저 — 처음 얻는 중급 보상은 항상 변형", "big": 0},
  {"b": 137, "v": "0.7", "d": "2026-10-14", "t": "데린저 연출 — 조준 자세·오라 · 총알/산탄/저격선 · 장전 · 연막", "big": 0},
  {"b": 136, "v": "0.7", "d": "2026-10-14", "t": "기관총 — (1+공격력)을 여덟 번", "big": 0},
@@ -20910,7 +20921,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=138;
+const BUILD_NO=139;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -35754,6 +35765,7 @@ function runEffect0(h,i,s,target){
     /* 미끼 던지기 — **기류가 흐르는 자리는 빼고** 나머지 모두 (노트 18-4, 2026-10-14).
        기류 자리는 이미 오리온의 치명타 자리라 둘이 겹치지 않게 짜였다 */
     if(s.bait){ const dz=B.drift||0; list=list.filter(f=>f.slot!==dz);
+      fx({side:"mine",slot:h.slot,pose:"bait",poseMs:900,gap:0});   /* 미끼를 던지는 자세 (2026-10-14) */
       if(!list.length) say(`${s.n} — 기류 밖에 적이 없습니다.`,"t2");
       else say(`${s.n} — 기류가 흐르지 않는 자리에 미끼를 던집니다.`,"t1") }
     if(press){
