@@ -2493,7 +2493,10 @@ header{align-items:center}
    ⚠️ 액자와 종이 사이에 보이는 것은 「틈」이 아니라 양피지 그림의 결이다. 메우려 하지 마라 */
 .pstage::after{content:"";position:absolute;
   inset:0;
-  box-sizing:border-box;border-style:solid;border-color:transparent;border-width:36px 48px 60px 48px;border-image-source:var(--frame,none);border-image-outset:3px 19px 35px 20px;border-image-slice:36 48 60 48;border-image-width:auto;border-image-repeat:round;image-rendering:pixelated;pointer-events:none;z-index:7}
+  /* 네모 틀을 통째로 늘려 두른다 (사용자 2026-10-15). 무대가 정사각이라 비율이 안 틀어진다.
+     ⚠️ border-image 로 쪼개 쓰던 때의 값(36 48 60 48 · outset 3 19 35 20)은 옛 액자 몫이었다 */
+  inset:-1.6%;background-image:var(--frame,none);background-size:100% 100%;background-repeat:no-repeat;
+  image-rendering:pixelated;pointer-events:none;z-index:7}
 .pstage.unfolding::after{display:none}
 /* ⚠️ 한때 여기서 양피지를 --pad 만큼 넓혀 액자 안쪽 틈을 메웠다가 되돌렸다 (사용자 2026-10-10).
    양피지가 액자 밖으로 나와 왼쪽 아래 손 그림이 튀어나왔고, 양피지만 커져 격자가 가운데로 몰려 보였다.
@@ -3691,14 +3694,16 @@ body.vmap .mtop .mtrow{justify-content:center}
 .mboard .mcoretop .corechip img{width:100%;height:auto;filter:drop-shadow(0 0 10px rgba(240,200,110,.5))}
 /* ② 자원 줄 — 아이콘을 키워 두 줄로, 오른쪽 끝에 시계 */
 .mb-rtop{justify-content:space-between;gap:1%;padding:0 2.4% 0 3.4%}
-.mb-rtop .mres{flex:1 1 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:3px 8px;
-  align-content:center;justify-content:start;margin:0}
-.mb-rtop .mres .mchip{width:auto;height:auto;justify-content:flex-start;gap:6px;font-size:14px}
-.mb-rtop .mres .mchip img.ri{width:26px;height:26px}
-.mb-rtop .mres .mchip:has(>u)::before,.mb-rtop .mres .mchip u{bottom:-4px;height:3px}
-.mb-rtop .mclock{position:relative;left:auto;top:auto;flex:0 0 auto;margin:0}
-.mb-rtop .mclock svg,.mb-rtop .mclock canvas{width:48px;height:48px}
-.mb-rtop .mclock b{font-size:12px}
+.mb-rtop .mres{flex:1 1 auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 22px;
+  align-content:center;justify-items:start;margin:0}
+.mb-rtop .mres .mchip{width:auto;height:auto;justify-content:flex-start;gap:9px;font-size:15px;white-space:nowrap;flex-wrap:nowrap}   /* .res 가 flex-wrap:wrap 이라 오염도의 「/100」이 두 줄로 접혔다 */
+.mb-rtop .mres .mchip img.ri{width:28px;height:28px}
+.mb-rtop .mres .mchip:has(>u)::before,.mb-rtop .mres .mchip u{bottom:-5px;height:3px}
+/* 시계 — 두르고 있던 상자(.clock 의 테·바탕)를 걷고 키운다 (사용자 2026-10-15) */
+.mb-rtop .mclock{position:relative;left:auto;top:auto;flex:0 0 auto;margin:0;
+  background:none;border:0;border-radius:0;padding:0;gap:3px}
+.mb-rtop .mclock svg,.mb-rtop .mclock canvas{width:64px;height:64px}
+.mb-rtop .mclock b{font-size:14px}
 /* ③ 주둔지 — 안쪽 액자(틀 안의 틀)를 걷고 칸을 그대로 쓴다 */
 .mb-right .minsp{border-image:none;border:0;padding:3% 7% 4%;max-width:none;width:100%;height:100%;aspect-ratio:auto}
 .mb-right .map-r{padding:0;height:100%}
@@ -3706,6 +3711,20 @@ body.vmap .mtop .mtrow{justify-content:center}
    ⚠️ .mbag img.npx · .mquest img.npx (44px) 가 더 센 규칙이라 칸 이름까지 적어야 이긴다 */
 .mb-btns .mbag img.npx,.mb-btns .mquest img.npx,.mb-btns .mledger img,
 .mb-btns img.npx,.mb-btns img,.mb-btns svg{width:63%;height:auto;max-width:63%;max-height:72%}
+/* ⓑ 오른쪽 구역 설명 (사용자 2026-10-15) — 흰 스크롤바를 걷고 단추를 칸 안에 붙든다.
+   칸(.mb-right)이 제 스크롤바를 내던 것이 그 흰 줄이었다. 글이 길면 안쪽(.mib)만 구른다 */
+.mb-right{overflow:hidden}
+.mb-right .minsp .mib{scrollbar-width:none}
+.mb-right .minsp .mib::-webkit-scrollbar{width:0;height:0;display:none}
+.mb-right .minsp .mifoot{position:sticky;bottom:0;z-index:2;margin-top:auto;padding-bottom:4px;
+  background:linear-gradient(180deg,rgba(20,15,10,0),rgba(20,15,10,.95) 60%)}
+/* ⓒ 퀘스트 단추의 알 둘 — 가진 수는 느낌표 오른쪽 위에, 받을 수 있는 수는 오른쪽 아래 붉은 알 */
+.mb-btns .mquest{position:relative}
+.mb-btns .mquest .qn{right:19%;top:17%;left:auto;bottom:auto;min-width:27px;height:27px;border-radius:14px;
+  padding:0 7px;font-size:16px;font-weight:800}
+.mb-btns .mquest .qrdyn{left:auto;top:auto;right:19%;bottom:17%;min-width:25px;height:25px;line-height:25px;
+  padding:0 5px;width:auto;border-radius:13px;font-size:15px;font-weight:800;
+  background:#b2321f;color:#ffe6da;border:1px solid #1a1408}
 /* 지도는 칸 높이에 맞춘다 — 넓은 화면에서 칸 밖으로 넘치지 않게 */
 .mb-mid .pstage{height:100%;width:auto;max-width:100%}
 .mapwrap.m3{display:grid;grid-template-columns:560px 190px minmax(0,1fr);gap:20px;align-items:start;margin-top:4px}
@@ -6458,12 +6477,14 @@ function battleLayStyle(){ const L=battleLay(); if(!L) return "";
   return ";"+v.join(";") }
 const battleBg=()=>(run&&run.sandbox)?"bg/battle-train.webp"   /* 연습장 — 훈련장 마당 (사용자 2026-10-01) */
   :(run&&BATTLE_BG[Math.min(run.field,BATTLE_BG.length-1)])||BATTLE_BG[0];
-/* 지도 테두리 — 양피지 무대를 두르는 철 틀 (사용자 2026-09-29) */
-const MAP_FRAME="menu-frame-inspector-768x1024.png";
+/* 지도 테두리 — 양피지 무대를 두르는 철 틀.
+   2026-10-15 사용자가 받은 네모 틀(MAP_FRAME_OUT.png, 512×512)로 바꿨다.
+   전에는 살펴보기 판과 같은 menu-frame-inspector-768x1024.png 를 border-image 로 잘라 썼다 */
+const MAP_FRAME="MAP_FRAME_OUT.png";
 /* 한 장짜리 구도(네 귀퉁이에 뿌리)인 바닥은 반복하지 않고 무대 전체로 키운다 (사용자 2026-10-01). 돌바닥처럼 이어지는 것은 그대로 반복 */
 const MAP_FLOOR_WHOLE={"바닥-정령숲.png":1};
 const stageSty=floor=>{ const a=[]; if(floor){ a.push(`--floor:url(${mapPng(floor)})`); if(MAP_FLOOR_WHOLE[floor]) a.push("--floorsz:100% 100%") }
-  if(MAP_FRAME) a.push(`--frame:url(ui/${MAP_FRAME})`);   /* 이 액자는 ui/ 에 있다 (map/ 로 찾다 404 가 났다) */
+  if(MAP_FRAME) a.push(`--frame:url(${mapPng(MAP_FRAME)})`);   /* 새 액자는 map/ 에 있다 (옛 액자는 ui/ 였다) */
   return a.length?` style="${a.join(";")}"`:"" };
 /* 양피지 위 아이콘 — 잉크 판 v7 (art/아이콘/map-ink-v7, 사용자 2026-09-14). 주둔지는 v7 에 없어 금빛 그대로. v2(검은 잉크)는 ink_* 로 남아 있다 */
 /* 지도 아이콘 — 64px 잉크 판 map-pixel-ink-v11 (사용자 2026-09-15). 기믹 넷(첨탑·울타리·고문실·사형장)도 같은 판 */
@@ -19745,6 +19766,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 143, "v": "0.7", "d": "2026-10-15", "t": "지도 다듬기 — 네모 액자 · 시계 · 자원 사이 · 설명 판 · 퀘스트 알", "big": 0},
  {"b": 142, "v": "0.7", "d": "2026-10-14", "t": "지도 UI 2단계 — 틀이 화면을 덮고 자원·시계·세계핵·대원 줄을 시안대로", "big": 0},
  {"b": 141, "v": "0.7", "d": "2026-10-14", "t": "지도 UI 리뉴얼 1 — 가죽 틀 무대와 대원장부", "big": 0},
  {"b": 140, "v": "0.7", "d": "2026-10-14", "t": "오리온 연출 — 기류 띠 · 볼트 · 이빨 자국 · 올가미 · 미끼와 거대벌레", "big": 0},
@@ -21079,7 +21101,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=142;
+const BUILD_NO=143;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -22712,7 +22734,7 @@ function drawMap(app){
   if(run.qNewFx&&run.qNewFx.length) setTimeout(questNewFX,550);   /* 새로 받은 퀘스트 — 아이콘이 흔들리며 빛나고 목록이 펼쳐져 들어온다 */
   if(run.qPend&&run.qPend.length) setTimeout(questPendPlay,500);   /* 밖에서 오른 퀘스트 — 지도의 퀘스트 칸에서 펼쳐 보인다 */
   { const L=questList(); const rdy=questReadyN();   /* 받을 수 있는 퀘스트 수 (사용자 2026-10-14) */
-    const qb=el(`<span class="clock mquest kw ${L.length?"":"none"}${rdy?" qrdy":""}" data-kw="퀘스트" data-tip="${rdy?`받을 수 있는 퀘스트가 ${rdy}개 있습니다. 목록에서 눌러 보상을 받으세요.`:"받아 둔 퀘스트를 봅니다. 숫자는 남은 수입니다."}">${uiPng("ui_quest")}${L.length?`<i class="qn">${L.length}</i>`:""}${rdy?`<i class="qrdyn">!</i>`:""}<div class="mqpop"></div></span>`);   /* 퀘스트 — 느낌표, 오른쪽 위 개수, 커서를 올리면 판 (사용자 2026-09-19) */
+    const qb=el(`<span class="clock mquest kw ${L.length?"":"none"}${rdy?" qrdy":""}" data-kw="퀘스트" data-tip="${rdy?`받을 수 있는 퀘스트가 ${rdy}개 있습니다. 목록에서 눌러 보상을 받으세요.`:"받아 둔 퀘스트를 봅니다. 숫자는 남은 수입니다."}">${uiPng("ui_quest")}${L.length?`<i class="qn">${L.length}</i>`:""}${rdy?`<i class="qrdyn">${rdy}</i>`:""}<div class="mqpop"></div></span>`);   /* 퀘스트 — 느낌표, 오른쪽 위 개수, 커서를 올리면 판 (사용자 2026-09-19) */
     const pop=qb.querySelector(".mqpop"), qp=questPanel();
     if(qp) pop.appendChild(qp); else pop.appendChild(el(`<div class="qpanel"><div class="qh">${uiPng("ui_quest")}퀘스트 목록</div><div class="hint" style="margin-top:6px">진행 중인 퀘스트가 없습니다.</div></div>`));
     /* 커서를 올렸을 때만 보이면 **보상을 누를 수가 없다** — 누르면 고정한다 (사용자 2026-10-14).
