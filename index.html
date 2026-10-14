@@ -5380,6 +5380,7 @@ const KW_TAB=[
  {n:"사용한도",c:"skill",d:"사용 한도의 횟수만큼 사용 후 그 라운드에서 기술이 사용 불가 상태가 됨"},
  {n:"보호막",c:"buff",d:"한 턴간 누적된 보호막만큼 피해를 막음. 턴이 끝나면 사라짐"},
  {n:"에너지 보호막",c:"buff",d:"한 턴간 누적된 보호막만큼 피해를 막음. 턴이 끝나도 사라지지 않음. 라운드가 바뀌면 사라짐"},
+ {n:"투기장의 감옥",c:"deb",d:"이라가 전장에 서 있는 동안, 내 턴이 끝날 때 아군과 적 모두가 최대 체력의 일부만큼 피해를 받습니다. 옆의 수는 이번에 받을 피해입니다."},
  {n:"부정 보호막",c:"buff",d:"부정적인 효과를 1회 제거. 이미 적용된 효과 먼저 제거. 화상, 냉각, 감전은 중첩을 모두 제거"},
  {n:"도발",c:"buff",d:"이 캐릭터의 뒤에 있는 대상들은 상대가 대상으로 지정할 수 없음"},
  {n:"회피",c:"buff",d:"다음 피해를 막음"},
@@ -16742,9 +16743,28 @@ function stRows(g,o){
   return (g.length?`<div class="st g">${g.join("")}</div>`:"")
        +(o.length?`<div class="st o">${o.join("")}</div>`:"");
 }
+/* ═══ 투기장의 감옥 — 이라의 중급 보상 (사용자 2026-10-12 · 표시 2026-10-14) ═══
+   내 턴이 끝날 때 **아군과 적 모두** 최대 체력의 N% 를 받는다.
+   ★ 보이는 수와 들어가는 수가 어긋나지 않게 **셈은 이 함수 하나**다 —
+     상태 줄(debBadges)과 실제(endPhase 의 턴 끝 셈)가 같이 쓴다. */
+function arenaPrisonPc(){
+  if(typeof B==="undefined"||!B||typeof onField!=="function") return 0;
+  const ir=onField().find(h=>h&&h.hp>0&&h.tag&&h.tag.arenaPrison);
+  return ir?(ir.tag.arenaPrison||0):0;
+}
+function arenaPrisonDmg(u){
+  const pc=arenaPrisonPc();
+  if(!pc||!u||!(u.maxHp>0)||!(u.hp>0)) return 0;
+  return Math.max(1,Math.round(u.maxHp*pc/100));
+}
 function debBadges(u){
   if(!u.deb) return [];
-  return DEB_KEYS.filter(k=>u.deb[k]>0).map(k=>bd("o",k,u.deb[k],DEBUFF[k].d,DEBUFF[k].n));
+  const L=DEB_KEYS.filter(k=>u.deb[k]>0).map(k=>bd("o",k,u.deb[k],DEBUFF[k].d,DEBUFF[k].n));
+  /* 모두에게 걸리는 것이라 상태 줄에도 모두에게 — 옆의 수는 **이 대상이 턴 끝에 받을 피해**다 */
+  { const v=arenaPrisonDmg(u);
+    if(v>0) L.push(bd("o","투기장의 감옥",v,
+      `내 턴이 끝날 때 최대 체력의 ${arenaPrisonPc()}%만큼 피해를 받습니다. 지금 ${v}.`,"투기장의 감옥")) }
+  return L;
 }
 /* 적의 지속 능력 풀이 — 턴이 지나며 바뀌는 수치(진급까지 남은 턴 · 지능 상승 · 얻은 공격력 · 과열 중첩)를 따라간다 (사용자 2026-10-08) */
 function foePasD(f,x){
@@ -19368,6 +19388,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 120, "v": "0.7", "d": "2026-10-14", "t": "투기장의 감옥 — 상태 줄에 받을 피해", "big": 0},
  {"b": 119, "v": "0.7", "d": "2026-10-14", "t": "퀘스트 목록을 눌러 고정", "big": 0},
  {"b": 118, "v": "0.7", "d": "2026-10-14", "t": "부정 보호막 중첩 · 아침 연출 · 도감 · 재배치 빛", "big": 0},
  {"b": 117, "v": "0.7", "d": "2026-10-14", "t": "세계핵 퀘스트도 손으로 · 덩굴 조절 · 성서 상시", "big": 0},
@@ -20679,7 +20700,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=119;
+const BUILD_NO=120;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -36857,12 +36878,13 @@ function endPhase(){
   /* 투기장의 감옥 — 내 턴이 끝날 때 **아군과 적 모두** 최대 체력의 N% (2026-10-12).
      이라 자신도 받는다 — 노트가 「아군과 적 모두」라 적었다 */
   { const ir=onField().find(h=>h.hp>0&&h.tag&&h.tag.arenaPrison);
-    if(ir){ const pc=ir.tag.arenaPrison;
+    if(ir){ const pc=arenaPrisonPc();
       say(`투기장의 감옥 — 아군과 적 모두 최대 체력의 ${pc}%`,"t1");
-      B.foes.filter(f=>f.alive).forEach(f=>{ const v=Math.max(1,Math.round(f.maxHp*pc/100));
-        hurt(f,v,"투기장의 감옥","mag",0,0,1) });
-      onField().filter(a=>a.hp>0).forEach(a=>{ const v=Math.max(1,Math.round(a.maxHp*pc/100));
-        hurtAlly(ir,a,v,"투기장의 감옥") });
+      /* 수는 arenaPrisonDmg 한 곳에서 — 상태 줄에 적힌 그 수가 그대로 들어간다 (2026-10-14) */
+      B.foes.filter(f=>f.alive).forEach(f=>{ const v=arenaPrisonDmg(f);
+        if(v>0) hurt(f,v,"투기장의 감옥","mag",0,0,1) });
+      onField().filter(a=>a.hp>0).forEach(a=>{ const v=arenaPrisonDmg(a);
+        if(v>0) hurtAlly(ir,a,v,"투기장의 감옥") });
       n++ } }
   /* 아크 방전 (이테리오 보상 2026-09-30) — 이번 턴에 마나를 4 이상 썼으면 턴이 끝날 때 팽창 공격 */
   onField().forEach(h=>{ if(h.name==="이테리오"&&h.tag&&h.tag.arc&&(h.spentTurn||0)>=4){
