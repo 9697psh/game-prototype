@@ -2387,6 +2387,11 @@ body:has(.rwq) .hpanel{top:auto;bottom:16px;max-height:min(52vh,calc(100vh - 100
 @keyframes dcsPop{0%{scale:.85}60%{scale:1.08}100%{scale:1}}
 .domaura{position:absolute;left:50%;bottom:30px;width:128px;height:128px;margin-left:-64px;background-size:800% 100%;background-repeat:no-repeat;image-rendering:pixelated;
   pointer-events:none;z-index:0;animation:domaura 1.1s steps(8) infinite}   /* 도미니코 축복 고리 — 여덟 칸을 되풀이 */
+.driftfx{position:absolute;left:50%;bottom:0;width:64px;height:64px;margin-left:-32px;
+  background-size:400% 100%;background-repeat:no-repeat;image-rendering:pixelated;
+  pointer-events:none;z-index:0;transform:scaleY(2.2);transform-origin:50% 100%;opacity:.9;
+  animation:driftfx .72s steps(4) infinite}   /* 사냥의 기류 — 수직으로 길게 (노트 18-0, 2026-10-14) */
+@keyframes driftfx{from{background-position:0 0}to{background-position:133.3333% 0}}
 .aimaura{position:absolute;left:50%;bottom:26px;width:128px;height:128px;margin-left:-64px;
   background-size:800% 100%;background-repeat:no-repeat;image-rendering:pixelated;
   pointer-events:none;z-index:0;animation:domaura 1.1s steps(8) infinite}   /* 데린저 조준 오라 — 여덟 칸 (2026-10-14) */
@@ -3082,6 +3087,11 @@ html.noscr, html.noscr body{overflow:hidden!important}   /* 가로만 숨기면 
 /* 산성 침 — 늪의 왕이 뱉는 침. 곧게 나는 화살과 달리 **포물선**을 그린다 (사용자 2026-10-14).
    --lift 가 한가운데서 들리는 높이다 (4·lift·t·(1-t) 를 네 칸으로 끊어 적었다).
    그림은 왼쪽을 보고 그려져 있고 적은 오른쪽에 서니 뒤집지 않는다 */
+/* 거대 균열벌레 — 아래끝에서 위끝까지 (사용자 2026-10-14) */
+.riftworm{position:absolute;top:0;width:128px;height:256px;background-size:800% 100%;
+  background-repeat:no-repeat;image-rendering:pixelated;pointer-events:none;z-index:9;
+  animation:riftworm 1.15s linear forwards}
+@keyframes riftworm{0%{transform:translateY(110vh);opacity:0}8%{opacity:1}92%{opacity:1}100%{transform:translateY(-120%);opacity:0}}
 .derrline{position:absolute;height:64px;background-repeat:no-repeat;background-size:100% 100%;
   image-rendering:pixelated;pointer-events:none;z-index:8;opacity:.95;
   animation:derrline .42s ease-out forwards}   /* 저격 겨냥선 (2026-10-14) */
@@ -7709,6 +7719,9 @@ function playFX(o){
   if(o.s) SFX.play(o.s);
   /* 화살비는 칸 하나에 매인 연출이 아니다 — slot 을 보기 전에 처리한다 */
   if(o.rain){ arrowRainFX(o.side,o.rain); return }
+  /* 거대 균열벌레 — 화면 아래끝에서 위끝까지 훑는다. 칸 하나에 매인 연출이 아니라
+     **slot 을 보기 전에** 받아야 한다 (아래에 두었더니 끝내 안 불렸다, 2026-10-14) */
+  if(o.worm){ riftWormFX(o.worm); return }
   if(o.cleave){ cleaveFX(o.side,o.cleave.slots); return }
   if(o.bomb){ const pt=bombThrowFX(o.bomb.from,o.bomb.slots);
     setTimeout(()=>bombBurstFX(pt,o.bomb.slots),pt?pt.ms:0); return }
@@ -7802,6 +7815,7 @@ function playFX(o){
   if(o.tongue) tongueFX(o.side,o.slot,o.tongue);   /* 두꺼비 혀 (2026-10-13) */
   if(o.spit) spitShotFX(o.side,o.slot,o.spit,o.spitBig);   /* 늪의 왕 산성 침 (2026-10-14) */
   if(o.derr) derrShotFX(o.side,o.slot,o.derr,o.derr.gun);   /* 데린저의 총 (2026-10-14) */
+  if(o.orion) orionShotFX(o.side,o.slot,o.orion,o.orion.kind);   /* 오리온 볼트 · 올가미 (2026-10-14) */
   /* chomp·ptl 은 ART 에 옛 SVG 가 없다. 문지기를 안 뚫어 주면 여기서 걸러져
      아무 오류 없이 아무것도 안 뜬다 */
   if(o.art&&(ART[o.art]||o.art==="chomp"||o.art==="ptl"||o.art==="rift")){
@@ -8599,6 +8613,37 @@ function flareShotFX(side,slot,from){
       setTimeout(()=>nd.remove(),290); wait=220 }
   }
   setTimeout(()=>{ sheetFX("fx_ff_hit",side,slot,{z:2.6,ms:520}); const k=sfxOr("플레어와 플로우 불덩이 명중",null); if(k) SFX.play(k) },wait);
+}
+/* 오리온의 날아가는 것 — 쇠뇌 볼트 · 올가미 (사용자 2026-10-14).
+   kind : "bolt" 볼트가 날아가 꽂힌다 · "lasso" 올가미가 날아가 감긴다 */
+function orionShotFX(side,slot,from,kind){
+  const p=bodyPoint(side,slot)||ctrOf(side,slot); if(!p) return;
+  const q=from&&(bodyPoint(from.side,from.slot)||ctrOf(from.side,from.slot)); if(!q) return;
+  const 올가미=(kind==="lasso");
+  const u=(typeof ICON_PNG!=="undefined")&&(올가미?ICON_PNG.fx_orion_lasso:ICON_PNG.fx_orion_bolt);
+  if(u){ const nd=spawn('<div class="arrowfly"></div>');
+    if(nd){ at(nd,q); nd.style.backgroundImage="url("+u+")";
+      nd.style.backgroundSize=(올가미?"64px 64px":"32px 32px");
+      nd.style.setProperty("--dx",(p.x-q.x)+"px"); nd.style.setProperty("--dy",(p.y-q.y)+"px");
+      nd.style.setProperty("--rot",(Math.atan2(p.y-q.y,p.x-q.x)*180/Math.PI)+"deg");
+      nd.style.setProperty("--z",올가미?1.4:1.5);
+      setTimeout(()=>nd.remove(),280) } }
+  const hk=올가미?"fx_orion_lasso_bind":"fx_orion_bolt_hit";
+  if((typeof ICON_PNG!=="undefined")&&ICON_PNG[hk])
+    setTimeout(()=>sheetFX(hk,side,slot,{frames:8,z:1.5,ms:520}),200);
+}
+/* 거대 균열벌레 — 미끼를 문 자리를 **화면 아래끝에서 위끝까지** 훑고 지나간다 (사용자 2026-10-14).
+   받은 띠는 여덟 칸 128×256 (세로로 긴 몸) */
+function riftWormFX(slot){
+  const u=(typeof ICON_PNG!=="undefined")&&ICON_PNG.fx_orion_worm; if(!u) return;
+  const p=ctrOf("foe",slot); if(!p) return;
+  const nd=spawn('<div class="riftworm"></div>'); if(!nd) return;
+  nd.style.backgroundImage="url("+u+")";
+  nd.style.left=(p.x-64)+"px";
+  let i=0; const FM=[70,70,75,80,85,90,100,120];
+  let t=0; for(let k=0;k<8;k++){ const x=-(128*k);
+    setTimeout(()=>{ nd.style.backgroundPosition=x+"px 0px" },t); t+=FM[k] }
+  setTimeout(()=>nd.remove(),1250);
 }
 /* 데린저의 총 — 총알 한 발이 곧게 날아가 터진다 (사용자 2026-10-14).
    저격소총은 **에임 선이 먼저 대상까지 이어진 뒤** 쏘고, 산탄총은 **총구에 산탄 연기**를 뿜으며 산탄알이 간다 */
@@ -19590,6 +19635,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 140, "v": "0.7", "d": "2026-10-14", "t": "오리온 연출 — 기류 띠 · 볼트 · 이빨 자국 · 올가미 · 미끼와 거대벌레", "big": 0},
  {"b": 139, "v": "0.7", "d": "2026-10-14", "t": "오리온 · 사냥개 그림 · 얼굴 둘 · 데린저를 훈련장에", "big": 0},
  {"b": 138, "v": "0.7", "d": "2026-10-14", "t": "데린저 — 처음 얻는 중급 보상은 항상 변형", "big": 0},
  {"b": 137, "v": "0.7", "d": "2026-10-14", "t": "데린저 연출 — 조준 자세·오라 · 총알/산탄/저격선 · 장전 · 연막", "big": 0},
@@ -20921,7 +20967,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=139;
+const BUILD_NO=140;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -30965,6 +31011,9 @@ function drawBattle(app){
                    : validTarget(sel.hero,sel.hero.sk[sel.skill],s);
       if(tgMode==="foe"||tgMode==="any"){ d.classList.add(canHit?"pick":"far") }
       if(B.lasso&&B.lasso.spots.includes(s)) d.classList.add("pick");   /* 쇠사슬 올가미 — 끌어갈 자리 (2026-10-14) */
+      /* 사냥의 기류 — 그 칸에 보랏빛이 수직으로 흐른다 (노트 18-0, 2026-10-14) */
+      if(B.drift===s&&typeof ICON_PNG!=="undefined"&&ICON_PNG.fx_orion_current)
+        d.appendChild(el(`<i class="driftfx" style="background-image:url(${ICON_PNG.fx_orion_current})"></i>`));
       if(selfFoe) d.classList.add("pick");
       /* 제 몸 기술이 때리는 적 — 그 적에게도 숫자와 해골을 띄운다 (사용자 2026-10-10).
          ⚠️ tg:"self" 를 통째로 열지 말 것. 적을 안 겨누는 기술 26가지 가운데 적이 드는 것은 여섯뿐이고,
@@ -35766,6 +35815,11 @@ function runEffect0(h,i,s,target){
        기류 자리는 이미 오리온의 치명타 자리라 둘이 겹치지 않게 짜였다 */
     if(s.bait){ const dz=B.drift||0; list=list.filter(f=>f.slot!==dz);
       fx({side:"mine",slot:h.slot,pose:"bait",poseMs:900,gap:0});   /* 미끼를 던지는 자세 (2026-10-14) */
+      /* 미끼가 칸마다 떨어지고, 그 자리를 거대 균열벌레가 아래에서 위로 훑는다 (사용자 2026-10-14) */
+      list.forEach((f,k)=>{
+        fx({side:"foe",slot:f.slot,sheet:"fx_orion_bait",sheetOpt:{frames:1,z:1.4,feet:1,frameMs:[520],fade:380},gap:k?60:260});
+        fx({worm:f.slot,gap:k?90:420});
+      });
       if(!list.length) say(`${s.n} — 기류 밖에 적이 없습니다.`,"t2");
       else say(`${s.n} — 기류가 흐르지 않는 자리에 미끼를 던집니다.`,"t1") }
     if(press){
@@ -36727,6 +36781,12 @@ function runEffect0(h,i,s,target){
       if(h.name==="나이코스"&&i===0) fx({side:"foe",slot:tgt.slot,slash:1,gap:0});
       /* 승리의 일격 — 나이코스의 궁극기 (기술 차례 3) */
       if(h.name==="나이코스"&&i===3) fx({side:"foe",slot:tgt.slot,ult:1,gap:0});
+      /* 오리온 — 쇠뇌는 볼트가, 올가미는 밧줄이 날아간다 (사용자 2026-10-14) */
+      if(h.name==="오리온"&&(s.scentUse||s.chainMove))
+        fx({side:"foe",slot:tgt.slot,orion:{side:"mine",slot:h.slot,kind:s.chainMove?"lasso":"bolt"},gap:0});
+      /* 사냥개가 물면 그 자리에 이빨 자국 (2026-10-14) */
+      if(s.scent)
+        fx({side:"foe",slot:tgt.slot,sheet:"fx_orion_hound_hit",sheetOpt:{frames:8,z:1.5,ms:520},gap:0});
       /* 데린저 — 총을 쏘면 총알이 날아간다 (사용자 2026-10-14) */
       if(h.name==="데린저"&&s.ammo)
         fx({side:"foe",slot:tgt.slot,derr:{side:"mine",slot:h.slot,gun:(h.tag&&h.tag.gun)||"자동변환단총"},gap:0});
