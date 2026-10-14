@@ -18768,10 +18768,20 @@ const SKIP2_LV=15, SKIP2_GOLD=40, SKIP2_STONE=5;
    2구역 단추가 sim 기준보다 3 높은 15 를 주니 3구역도 같은 여유로 18 (2026-10-10) */
 const SKIP_SET={1:{lv:SKIP2_LV,gold:SKIP2_GOLD,stone:SKIP2_STONE,item:1},
                 2:{lv:18,gold:80,stone:10,item:2}};
+/* 데린저 — 「처음 얻는 중급 보상은 항상 자동변환단총 변형으로 고정」 (노트 6-1 주석, 2026-10-14).
+   아직 총을 안 골랐으면 중급 풀을 **변형 넷만으로** 바꾼다. 하나를 고르면 okf 가 나머지를 닫는다 */
+function derrMidLock(hero,grade,own){
+  if(!hero||hero.name!=="데린저"||grade!=="중급") return null;
+  if(typeof derrGun==="function"&&derrGun()) return null;
+  const M=(own||[]).filter(r=>/^변형: /.test(r.n));
+  return M.length?M.map(r=>Object.assign({},r,{w:1})):null;
+}
 function autoLvReward(h,grade){
-  const own=(HERO_REWARDS[h.name]||[]).filter(r=>r.g===grade&&rewardOk(h,r)).map(r=>Object.assign({},r,{w:(r.w==null?1:r.w)*OWN_W}));
+  const own0=(HERO_REWARDS[h.name]||[]).filter(r=>r.g===grade&&rewardOk(h,r));
+  const own=own0.map(r=>Object.assign({},r,{w:(r.w==null?1:r.w)*OWN_W}));
   const com=COMMON.filter(r=>r.g===grade&&rewardOk(h,r));
-  const r=pickWeighted(own.concat(com),1)[0]; if(!r) return null;
+  const lock=derrMidLock(h,grade,own0);
+  const r=pickWeighted(lock||own.concat(com),1)[0]; if(!r) return null;
   r.fx(h,r.n);
   try{ skinRewardGot(h,r) }catch(e){}
   h.tag.taken=(h.tag.taken||[]).concat(r.n);
@@ -19570,6 +19580,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 138, "v": "0.7", "d": "2026-10-14", "t": "데린저 — 처음 얻는 중급 보상은 항상 변형", "big": 0},
  {"b": 137, "v": "0.7", "d": "2026-10-14", "t": "데린저 연출 — 조준 자세·오라 · 총알/산탄/저격선 · 장전 · 연막", "big": 0},
  {"b": 136, "v": "0.7", "d": "2026-10-14", "t": "기관총 — (1+공격력)을 여덟 번", "big": 0},
  {"b": 135, "v": "0.7", "d": "2026-10-14", "t": "데린저 변형 보상 넷 · 조준은 어떤 정화로도 안 풀린다", "big": 0},
@@ -20899,7 +20910,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=137;
+const BUILD_NO=138;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -38650,7 +38661,8 @@ function offerCards(app,hero,grade,done,lvUp){
     if(own.length+cut.length>=3) com=cut;
   }
   /* 전용 보상은 공용보다 덜 뜬다 — 가중치 ×OWN_W (사용자 2026-09-16: 전용이 뜰 확률을 낮춤). 맞춤 갑옷(ownOnly)이면 그대로 */
-  const pool=(ownOnly?own:own.map(r=>Object.assign({},r,{w:(r.w==null?1:r.w)*OWN_W}))).concat(com);
+  let pool=(ownOnly?own:own.map(r=>Object.assign({},r,{w:(r.w==null?1:r.w)*OWN_W}))).concat(com);
+  { const lock=derrMidLock(hero,grade,own); if(lock) pool=lock }   /* 데린저 첫 중급 — 변형만 (2026-10-14) */
   /* 지도를 보고 돌아오는 등으로 화면을 다시 그려도 고를 것이 바뀌면 안 된다.
      보상 객체에는 함수가 들어 있어 저장에 담을 수 없으므로 '등급|이름' 만 적어 둔다. */
   const pkey=hero.name+"|"+grade+"|"+((pending&&pending.idx!=null)?pending.idx:"f");
