@@ -3074,6 +3074,22 @@ html.noscr, html.noscr body{overflow:hidden!important}   /* 가로만 숨기면 
 .arrowfly.fire{--z:2.4;animation-duration:.24s;z-index:9}
 /* 화살비 — 화면 밖에서 오므로 같은 그림을 더 오래, 조금 크게 날린다 */
 .arrowfly.rain{animation-duration:.30s;z-index:8}
+/* 산성 침 — 늪의 왕이 뱉는 침. 곧게 나는 화살과 달리 **포물선**을 그린다 (사용자 2026-10-14).
+   --lift 가 한가운데서 들리는 높이다 (4·lift·t·(1-t) 를 네 칸으로 끊어 적었다).
+   그림은 왼쪽을 보고 그려져 있고 적은 오른쪽에 서니 뒤집지 않는다 */
+.spitfly{position:absolute;width:32px;height:32px;margin:-16px 0 0 -16px;
+  background-size:32px 32px;background-repeat:no-repeat;image-rendering:pixelated;
+  pointer-events:none;z-index:8;--z:1.5;animation:spitFly .30s linear forwards}
+.spitfly.big{width:64px;height:64px;margin:-32px 0 0 -32px;background-size:64px 64px;
+  --z:1.8;animation-duration:.36s;z-index:9}
+@keyframes spitFly{
+  0%  {transform:translate(0,0) scale(var(--z,1));opacity:0}
+  14% {opacity:1}
+  25% {transform:translate(calc(var(--dx) * .25),calc(var(--dy) * .25 - var(--lift,26px) * .75)) scale(var(--z,1))}
+  50% {transform:translate(calc(var(--dx) * .5),calc(var(--dy) * .5 - var(--lift,26px))) scale(var(--z,1))}
+  75% {transform:translate(calc(var(--dx) * .75),calc(var(--dy) * .75 - var(--lift,26px) * .75)) scale(var(--z,1))}
+  100%{transform:translate(var(--dx),var(--dy)) scale(var(--z,1));opacity:1}
+}
 /* 새 UI 그림은 32px 원본이다. 늘일 때는 정수 배율 + 또렷하게,
    줄일 때는 계단이 생기니 매끄럽게 그린다. */
 img.ri{width:14px;height:14px;vertical-align:-2px;image-rendering:auto}
@@ -7772,6 +7788,7 @@ function playFX(o){
   if(o.arrow) arrowFX(o.side,o.slot,o.arrow);
   if(o.ember) emberFX(o.side,o.slot,o.ember);   /* 떠도는 불씨 화염구 (2026-10-12) */
   if(o.tongue) tongueFX(o.side,o.slot,o.tongue);   /* 두꺼비 혀 (2026-10-13) */
+  if(o.spit) spitShotFX(o.side,o.slot,o.spit,o.spitBig);   /* 늪의 왕 산성 침 (2026-10-14) */
   /* chomp·ptl 은 ART 에 옛 SVG 가 없다. 문지기를 안 뚫어 주면 여기서 걸러져
      아무 오류 없이 아무것도 안 뜬다 */
   if(o.art&&(ART[o.art]||o.art==="chomp"||o.art==="ptl"||o.art==="rift")){
@@ -8569,6 +8586,24 @@ function flareShotFX(side,slot,from){
       setTimeout(()=>nd.remove(),290); wait=220 }
   }
   setTimeout(()=>{ sheetFX("fx_ff_hit",side,slot,{z:2.6,ms:520}); const k=sfxOr("플레어와 플로우 불덩이 명중",null); if(k) SFX.play(k) },wait);
+}
+/* 산성 침 — 늪의 왕이 뱉은 침이 궤도를 그리며 그 칸으로 날아간다 (사용자 2026-10-14).
+   큰 침(big)은 바닥에 닿아 여덟 칸 터짐띠가 한 번 돈다. 작은 침은 침뱉기로 흩어질 때라 터지지 않는다.
+   ⚠️ 칸 수(frames:8)를 꼭 넘긴다 — 안 넘기면 아직 디코드 전이라 naturalWidth 가 0 이다 (규칙-그림소리) */
+function spitShotFX(side,slot,from,big){
+  const u=(typeof ICON_PNG!=="undefined")&&(big?ICON_PNG.fx_spit_big:ICON_PNG.fx_spit_small);
+  const p=bodyPoint(side,slot)||ctrOf(side,slot); if(!p) return;
+  const q=from&&ctrOf(from.side,from.slot);
+  let wait=0;
+  if(u&&q){
+    const nd=spawn('<div class="spitfly'+(big?" big":"")+'"></div>');
+    if(nd){ at(nd,q); nd.style.backgroundImage="url("+u+")";
+      nd.style.setProperty("--dx",(p.x-q.x)+"px"); nd.style.setProperty("--dy",(p.y-q.y)+"px");
+      nd.style.setProperty("--lift",(big?44:26)+"px");
+      setTimeout(()=>nd.remove(),big?430:360); wait=big?350:290 }
+  }
+  /* 터짐은 **발밑**에 — 묶음의 pivot 이 0.92 로 바닥이다 (usage.json). 몸 한가운데 뜨면 땅에 떨어진 것으로 안 보인다 */
+  if(big) setTimeout(()=>sheetFX("fx_spit_burst",side,slot,{frames:8,feet:1,z:2,frameMs:[65,65,70,75,85,85,100,130]}),wait);
 }
 /* 영혼 수확 — 절규하는 유령들이 발치에서 솟아 몸을 지나 오른다 (art/이펙트/soulgain).
    매번은 셋(fx_soul), 40개째 마법력이 오를 때는 여섯(fx_soulmag).
@@ -15690,10 +15725,10 @@ const FOE={
     {n:"삼키기",w:2,tg:"none",open:1,cd:4,swallow:{rng:2,turns:2,dmg:30},d:"거리 2 안의 대원을 삼킵니다."},
     {n:"끈적혀",w:4,tg:"any",pull:1,deb:{bind:1},chase:1,d:"무작위 상대를 가장 앞으로 당겨오고 속박을 1 부여합니다."},
     {n:"점액 분출",w:4,tg:"near",dmg:12,d:"가장 앞 상대에게 마법 피해를 12 줍니다."},
-    {n:"혀 채찍",w:4,tg:"any",cell:1,dmg:15,d:"무작위 칸에 공격 피해를 15 줍니다.",el:"공격"},
+    {n:"산성 침",w:4,tg:"any",cell:1,dmg:15,spit:1,d:"무작위 칸에 공격 피해를 15 줍니다.",el:"공격"},
     {n:"먹이활동",w:2,tg:"none",eatToad:{heal:30,up:3},d:"늪 두꺼비를 잡아먹습니다. 체력을 30 회복하고 모든 능력치를 3 얻습니다."},
     {n:"부풀리기",w:3,tg:"self",shield:15,d:"보호막을 15 얻습니다."}],
-   hit:"혀 채찍"},
+   hit:"산성 침"},
  "타락한 드루이드":{hp:70,atk:5,def:6,rng:4,exp:25,elite:1,
    el:"마법",
    pas:[{k:"info",n:"오염된 씨앗",d:"심은 씨앗은 2턴 뒤에 오염된 덩굴로 자랍니다. 대원 전장에 심긴 씨앗, 덩굴은 잔해처럼 자리를 차지합니다."},{k:"cycle",every:2,gain:"negShield",v:2,n:"정화",d:"2턴마다 부정 보호막을 2 얻습니다."}],
@@ -19394,6 +19429,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 124, "v": "0.7", "d": "2026-10-14", "t": "늪의 왕 산성 침 — 큰 침이 궤도를 그려 칸에 떨어져 터지고, 침뱉기는 작은 침으로", "big": 0},
  {"b": 123, "v": "0.7", "d": "2026-10-14", "t": "늪의 왕 — 침뱉기를 사람 수대로 한 방씩, 삼켜진 동안은 정지와 같이", "big": 0},
  {"b": 122, "v": "0.7", "d": "2026-10-14", "t": "고정 피해(전장의 칼날 · 투기장의 감옥 · 꿰뚫는 화살)를 흰 숫자로, 소리는 여느 타격음", "big": 0},
  {"b": 121, "v": "0.7", "d": "2026-10-14", "t": "투기장의 감옥 아이콘", "big": 0},
@@ -20709,7 +20745,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=123;
+const BUILD_NO=124;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -28601,7 +28637,7 @@ function skRoll(f,allies,inR,far){
   f.lastSk=pick.i;
   const s=pick.s, t=pick.T[0]||null;
   let to=t?t.slot:0, toId=t?uid(t):null;
-  /* cell — 대원이 아니라 공격 범위 안의 칸 하나를 무작위로 (늪의 왕 혀 채찍 — 빈 칸이면 빗나가 침뱉기 (점검 2026-10-07)) */
+  /* cell — 대원이 아니라 공격 범위 안의 칸 하나를 무작위로 (늪의 왕 산성 침 — 빈 칸이면 빗나가 침뱉기 (점검 2026-10-07)) */
   if(s.cell){ const C=[]; for(let q=1;q<=SLOTS;q++) if(dist(q,f.slot)<=foeRng(f)) C.push(q); if(C.length){ to=rnd(C); toId=null } }
   return {t:"sk",i:pick.i,n:s.n,tg:s.tg||"near",forced:forcedRep,pa:(s.puppetHit||s.puppetBomb)?puppetAimRoll(f):null,
           to:to,toId:toId,chase:!!s.chase,
@@ -28730,7 +28766,7 @@ function skExec(f,I){
 /* 혀가 나가는 수 — 늪 두꺼비와 늪의 왕 (사용자 2026-10-13).
    「삼키기」도 사용자가 「먹는 패턴을 쓸 때도 혀가 나가게」라고 따로 짚었다 */
 const TONGUE_SK={"늪 두꺼비":{"혀 낚아채기":"far"},
-                 "늪의 왕":{"끈적혀":"far","혀 채찍":"near"}};   /* 삼키기는 그 자리에서 따로 (대원이 사라지기 전 칸으로) */
+                 "늪의 왕":{"끈적혀":"far"}};   /* 산성 침은 혀가 아니라 침이 날아간다 (사용자 2026-10-14) */   /* 삼키기는 그 자리에서 따로 (대원이 사라지기 전 칸으로) */
 function skExec0(f,I){
   const D=FOE[f.name], s=D&&D.sk&&D.sk[I.i]; if(!s) return;
   f.skCd=f.skCd||{}; f.skUsed=f.skUsed||{};
@@ -28867,12 +28903,15 @@ function skExec0(f,I){
       say(`${s.n} — 모두에게서 ${s.lifeDrain}씩 빨아들여 체력 +${got}`,"t3") }
   }
   /* 혀 — 늪 두꺼비와 늪의 왕이 혀를 쓰는 수 (사용자 2026-10-13 : ㉮ 입에서 바로).
-     당기는 수(혀 낚아채기 · 끈적혀)는 **가장 먼** 대원에게, 혀 채찍은 가장 앞에 (수의 겨냥과 같게) */
+     당기는 수(혀 낚아채기 · 끈적혀)는 **가장 먼** 대원에게 (산성 침은 2026-10-14 에 혀를 떼고 침으로 갈았다) */
   if(TONGUE_SK[f.name]&&TONGUE_SK[f.name][s.n]){
     const H=onField().filter(u=>u.hp>0&&!u.isMin).sort((a,b)=>a.slot-b.slot);
     const tg=TONGUE_SK[f.name][s.n]==="far"?H[H.length-1]:H[0];
     if(tg) fx({side:"mine",slot:tg.slot,tongue:{side:"foe",slot:f.slot},gap:420});
   }
+  /* 산성 침 — 겨눈 **칸**으로 큰 침이 날아가 바닥에서 터진다 (사용자 2026-10-14).
+     맞든 빗나가든 침은 그 칸에 떨어진다 — 아래 피해 갈래보다 먼저 큐에 든다 */
+  if(s.spit&&I.to) fx({side:"mine",slot:I.to,spit:{side:"foe",slot:f.slot},spitBig:1,gap:620});
   if(s.swallow){                       /* 삼키기 — 거리 안의 대원을 먹는다 */
     /* 전장에 대원이 하나뿐이면 삼키지 않는다 — 다 삼키면 판이 멈춘다 (2026-09-29) */
     const L=onField().filter(u=>dist(u.slot,f.slot)<=(s.swallow.rng||2)&&!u.isMin);
@@ -29279,8 +29318,9 @@ function skExec0(f,I){
           const n=L.length, base=Math.floor(total/n), add=new Map();
           { let rest=total-base*n, pool=L.slice();        /* 남는 몫은 무작위로 한 사람에 1씩 (rest < n 이라 겹치지 않는다) */
             while(rest>0&&pool.length){ const u=rnd(pool); pool.splice(pool.indexOf(u),1); add.set(u,1); rest-- } }
-          L.forEach(u=>{ const v=base+(add.get(u)||0);
-            if(v>0) asSrc(f,()=>hurtAlly(f,u,v,"침뱉기",I.el)) });
+          L.forEach((u,k)=>{ const v=base+(add.get(u)||0);
+            if(v>0){ fx({side:"mine",slot:u.slot,spit:{side:"foe",slot:f.slot},gap:k?150:380});   /* 작은 침이 하나씩 날아간다 (사용자 2026-10-14) */
+              asSrc(f,()=>hurtAlly(f,u,v,"침뱉기",I.el)) } });
         } }
       return }
     if(R.why==="fear"){ say(`${f.name}${jo(f.name,"ig")} 겁에 질려 ${t.name}${jo(t.name,"eul")} 겨누지 못합니다.`,"t2");
