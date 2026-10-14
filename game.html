@@ -3094,10 +3094,12 @@ html.noscr, html.noscr body{overflow:hidden!important}   /* 가로만 숨기면 
    --lift 가 한가운데서 들리는 높이다 (4·lift·t·(1-t) 를 네 칸으로 끊어 적었다).
    그림은 왼쪽을 보고 그려져 있고 적은 오른쪽에 서니 뒤집지 않는다 */
 /* 거대 균열벌레 — 아래끝에서 위끝까지 (사용자 2026-10-14) */
-.riftworm{position:absolute;top:0;width:128px;height:256px;background-size:800% 100%;
+/* 거대 균열벌레 — **바닥에 서서 화면 높이를 꽉 채운다** (사용자 2026-10-15, 받은 사진).
+   전에는 128×256 짜리가 아래에서 위로 지나갔다 — 작고 금방 사라졌다.
+   이제 제자리에서 칸을 넘기고(riftWormFX), 다 돌면 서서히 녹는다 */
+.riftworm{position:absolute;bottom:0;width:248px;height:100vh;background-size:800% 100%;
   background-repeat:no-repeat;image-rendering:pixelated;pointer-events:none;z-index:9;
-  animation:riftworm 1.15s linear forwards}
-@keyframes riftworm{0%{transform:translateY(110vh);opacity:0}8%{opacity:1}92%{opacity:1}100%{transform:translateY(-120%);opacity:0}}
+  opacity:0;transition:opacity .34s ease-in}
 .derrline{position:absolute;height:64px;background-repeat:no-repeat;background-size:100% 100%;
   image-rendering:pixelated;pointer-events:none;z-index:8;opacity:.95;
   animation:derrline .42s ease-out forwards}   /* 저격 겨냥선 (2026-10-14) */
@@ -8780,29 +8782,61 @@ function orionShotFX(side,slot,from,kind){
   const q=from&&(bodyPoint(from.side,from.slot)||ctrOf(from.side,from.slot)); if(!q) return;
   const 올가미=(kind==="lasso");
   const u=(typeof ICON_PNG!=="undefined")&&(올가미?ICON_PNG.fx_orion_lasso:ICON_PNG.fx_orion_bolt);
+  if(!올가미) SFX.play("쇠뇌 발사");   /* 받은 녹음 (2026-10-15) */
   if(u){ const nd=spawn('<div class="arrowfly"></div>');
     if(nd){ at(nd,q); nd.style.backgroundImage="url("+u+")";
-      nd.style.backgroundSize=(올가미?"64px 64px":"32px 32px");
+      nd.style.backgroundSize=(올가미?"96px 96px":"32px 32px");   /* 올가미를 크게 (사용자 2026-10-15) */
       nd.style.setProperty("--dx",(p.x-q.x)+"px"); nd.style.setProperty("--dy",(p.y-q.y)+"px");
       nd.style.setProperty("--rot",(Math.atan2(p.y-q.y,p.x-q.x)*180/Math.PI)+"deg");
       nd.style.setProperty("--z",올가미?1.4:1.5);
       setTimeout(()=>nd.remove(),280) } }
   const hk=올가미?"fx_orion_lasso_bind":"fx_orion_bolt_hit";
   if((typeof ICON_PNG!=="undefined")&&ICON_PNG[hk])
-    setTimeout(()=>sheetFX(hk,side,slot,{frames:8,z:1.5,ms:520}),200);
+    setTimeout(()=>{ sheetFX(hk,side,slot,{frames:8,z:올가미?2.1:1.5,ms:520}); if(!올가미) SFX.play("쇠뇌 타격") },200);   /* 감기는 올가미를 크게 (2026-10-15) */
+  if(올가미) SFX.play("쇠사슬 올가미");
 }
 /* 거대 균열벌레 — 미끼를 문 자리를 **화면 아래끝에서 위끝까지** 훑고 지나간다 (사용자 2026-10-14).
    받은 띠는 여덟 칸 128×256 (세로로 긴 몸) */
 function riftWormFX(slot){
-  const u=(typeof ICON_PNG!=="undefined")&&ICON_PNG.fx_orion_worm; if(!u) return;
-  const p=ctrOf("foe",slot); if(!p) return;
-  const nd=spawn('<div class="riftworm"></div>'); if(!nd) return;
+  const u=(typeof ICON_PNG!=="undefined")&&ICON_PNG.fx_orion_worm; if(!u) return 0;
+  const p=ctrOf("foe",slot); if(!p) return 0;
+  const nd=spawn('<div class="riftworm"></div>'); if(!nd) return 0;
   nd.style.backgroundImage="url("+u+")";
-  nd.style.left=(p.x-64)+"px";
-  let i=0; const FM=[70,70,75,80,85,90,100,120];
-  let t=0; for(let k=0;k<8;k++){ const x=-(128*k);
-    setTimeout(()=>{ nd.style.backgroundPosition=x+"px 0px" },t); t+=FM[k] }
-  setTimeout(()=>nd.remove(),1250);
+  nd.style.left=(p.x-124)+"px";
+  requestAnimationFrame(()=>{ nd.style.opacity="1" });
+  SFX.play("균열벌레 돌진");
+  /* ⚠️ 칸 넘기기는 **백분율**이다 — 배경이 800% 라 한 칸이 100/7 % 다 (픽셀로 적으면 안 맞는다).
+     천천히 올라오게 앞 칸을 길게 (사용자 2026-10-15 : 「천천히 올라오며」) */
+  const FM=[170,165,165,170,180,190,210,250];
+  let t=0; for(let k=0;k<8;k++){ const x=(100/7*k).toFixed(4)+"% 0";
+    setTimeout(()=>{ nd.style.backgroundPosition=x },t); t+=FM[k] }
+  setTimeout(()=>{ nd.style.transition="opacity .62s ease-out"; nd.style.opacity="0" },t+120);
+  setTimeout(()=>nd.remove(),t+820);
+  return t+820;
+}
+/* 사냥개는 **화면 왼쪽 밖에서 달려 들어온다** (사용자 2026-10-15).
+   칸이 아니라 .art 를 움직인다 — 칸을 움직이면 체력줄까지 따라 달린다 */
+function houndRunInFX(slot){
+  const c=ctrOf("mine",slot); if(!c||!c.e) return 0;
+  const a=c.e.querySelector(".art"); if(!a||!a.animate) return 0;
+  const r=a.getBoundingClientRect();
+  const dx=-Math.max(240,r.left+r.width+60);
+  a.animate([{transform:"translateX("+dx+"px)"},{transform:"translateX(6px)",offset:.86},{transform:"translateX(0)"}],
+            {duration:560,easing:"cubic-bezier(.22,.7,.3,1)"});
+  return 560;
+}
+/* 미끼가 손끝에서 포물선을 그리며 날아가 그 자리에 떨어진다 (사용자 2026-10-15) */
+function baitThrowFX(fromSlot,toSlot){
+  const u=(typeof ICON_PNG!=="undefined")&&ICON_PNG.fx_orion_bait; if(!u) return 0;
+  const q=bodyPoint("mine",fromSlot)||ctrOf("mine",fromSlot);
+  const p=feetOf("foe",toSlot)||ctrOf("foe",toSlot);
+  if(!q||!p) return 0;
+  const nd=spawn('<div class="spitfly big"></div>'); if(!nd) return 0;
+  at(nd,q); nd.style.backgroundImage="url("+u+")";
+  nd.style.setProperty("--dx",(p.x-q.x)+"px"); nd.style.setProperty("--dy",(p.y-q.y)+"px");
+  nd.style.setProperty("--lift","104px");
+  setTimeout(()=>nd.remove(),640);
+  return 620;
 }
 /* 데린저의 총 — 총알 한 발이 곧게 날아가 터진다 (사용자 2026-10-14).
    저격소총은 **에임 선이 먼저 대상까지 이어진 뒤** 쏘고, 산탄총은 **총구에 산탄 연기**를 뿜으며 산탄알이 간다 */
@@ -19835,6 +19869,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 151, "v": "0.7", "d": "2026-10-15", "t": "데린저 열 가지 · 오리온 여섯 가지 연출과 효과음", "big": 0},
  {"b": 150, "v": "0.7", "d": "2026-10-15", "t": "지도 F11 전체화면 맞춤 · 데린저/오리온 연출과 소리", "big": 0},
  {"b": 149, "v": "0.7", "d": "2026-10-15", "t": "지도 왼쪽 단추 셋에 받은 효과음", "big": 0},
  {"b": 148, "v": "0.7", "d": "2026-10-15", "t": "지도 액자 아래끝을 옆 상자들과 나란히", "big": 0},
@@ -21177,7 +21212,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=150;
+const BUILD_NO=151;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -31344,6 +31379,10 @@ function drawBattle(app){
       d.onclick=()=>{ if(B.lasso&&lassoDrop(s)) return; doSkill(s) };
     }
     if(fdrop) d.onclick=()=>{ const k=B.pick; B.pick=null; playCard(k,s,"foe") };
+    /* 🔴 쇠사슬 올가미로 끌어갈 자리 — 올가미가 떠 있는 동안에는 **그 칸의 누름을 올가미가 가져간다.**
+       전에는 `tgMode==="any"` 가지에만 걸려 있어, 올가미를 쓴 뒤(겨눔이 풀린 뒤) 빈 칸을 눌러도
+       아무 일도 없었다 — 사용자가 「이동 효과가 없다」고 본 것이 이것이다 (2026-10-15) */
+    if(B.lasso&&B.lasso.spots.includes(s)) d.onclick=()=>{ lassoDrop(s) };
     fs.appendChild(d);
   }
 
@@ -33675,6 +33714,9 @@ function playCard(i,slot,side){
        서면 "악마 장군 배치" 가 운다. 그 녹음이 없으면 카드 이름으로, 그것도 없으면 합성음 */
     const mk=minionSkin(m.name), mks=mk&&sfxHas(mk.n+" 소환")?mk.n+" 소환":null;   /* 외형 소환물 — 그 외형의 소환 소리 (무패의 장군 소환, 사용자 2026-10-04) */
     if(isWallName(m.name)) fx({side:"mine",slot:slot,fn:()=>{ wallBuildFX("mine",slot,m.name!=="성벽"); setTimeout(()=>SFX.play(sfxOr("성벽 건설","summon")),Math.round(160*SPD)) },gap:700});   /* 카드 내는 소리 뒤에 (사용자 2026-10-06 — 묻혀 안 들렸다) */   /* 성벽 — 쌓아 올린다 (사용자 2026-10-06) */
+    else if(m.name==="사냥개")   /* 사냥개 — 왼쪽 밖에서 달려 들어온다 (사용자 2026-10-15) */
+      fx({side:"mine",slot:slot,fn:()=>{ houndRunInFX(slot); SFX.play("사냥개 소환") },
+          ring:"#c9a227",glow:1,txt:"소환",cls:"shd",gap:560});
     else fx({side:"mine",slot:slot,s:mks||minionPlaceSnd(m.name)||sfxOr(c.name+" 배치","summon"),
         ring:mks?"#e8c060":"#a06ae0",glow:1,txt:"소환",cls:"shd",gap:60});
     say(`${c.name}${jo(c.name,"ig")} ${slot}번 칸에 소환됩니다.`,"t1");
@@ -36100,12 +36142,23 @@ function runEffect0(h,i,s,target){
     /* 미끼 던지기 — **기류가 흐르는 자리는 빼고** 나머지 모두 (노트 18-4, 2026-10-14).
        기류 자리는 이미 오리온의 치명타 자리라 둘이 겹치지 않게 짜였다 */
     if(s.bait){ const dz=B.drift||0; list=list.filter(f=>f.slot!==dz);
-      fx({side:"mine",slot:h.slot,pose:"bait",poseMs:900,gap:0});   /* 미끼를 던지는 자세 (2026-10-14) */
-      /* 미끼가 칸마다 떨어지고, 그 자리를 거대 균열벌레가 아래에서 위로 훑는다 (사용자 2026-10-14) */
-      list.forEach((f,k)=>{
-        fx({side:"foe",slot:f.slot,sheet:"fx_orion_bait",sheetOpt:{frames:1,z:1.4,feet:1,frameMs:[520],fade:380},gap:k?60:260});
-        fx({worm:f.slot,gap:k?90:420});
-      });
+      fx({side:"mine",slot:h.slot,pose:"bait",poseMs:1100,gap:0});   /* 미끼를 던지는 자세 (2026-10-14) */
+      SFX.play("미끼 던지기");
+      /* 차례는 받은 메모(art/오리온효과음/미끼던지기참고.txt) 그대로 —
+         ㉠ 미끼가 포물선으로 날아가 ㉡ 떨어지며 진동음 + 화면 흔들림 ㉢ 돌진음과 함께 균열벌레.
+         ⚠️ 미끼는 **적이 없는 자리에도** 떨어진다 (노트 18-4 「기류가 흐르지 않는 모든 위치」).
+            전에는 적이 선 칸에만 떨어져 빈 자리는 아무 일도 없었다 (사용자 2026-10-15) */
+      { const spots=[]; for(let i=1;i<=SLOTS;i++) if(i!==dz) spots.push(i);
+        const hs=h.slot;
+        spots.forEach((sl,k)=>{
+          fx({fn:()=>baitThrowFX(hs,sl),gap:k?70:200});
+          /* 떨어진 미끼는 벌레가 지나갈 때까지 그 자리에 남는다 */
+          fx({side:"foe",slot:sl,sheet:"fx_orion_bait",
+              sheetOpt:{frames:1,z:1.6,feet:1,frameMs:[2600],fade:620},
+              fn:()=>{ fieldQuake("quake"); SFX.play("미끼 진동") },gap:k?70:620});
+        });
+        fx({fn:()=>{},gap:520});   /* 진동음이 끝날 틈 */
+        spots.forEach((sl,k)=>fx({worm:sl,gap:k?110:0})); }
       if(!list.length) say(`${s.n} — 기류 밖에 적이 없습니다.`,"t2");
       else say(`${s.n} — 기류가 흐르지 않는 자리에 미끼를 던집니다.`,"t1") }
     if(press){
@@ -36586,7 +36639,10 @@ function runEffect0(h,i,s,target){
     const 손=(B.hand||[]).some(c=>c.type==="summon"&&c.name==="사냥개");
     /* ⚠️ 이미 있으면 **가져오지 않는다** (사용자 2026-10-15). 전에는 늘 한 장씩 더 들어와
        전장에 사냥개를 두고도 손이 사냥개로 찼다 */
-    if(!섬&&!손){ handAdd({type:"summon",name:"사냥개",gone:1});
+    if(!섬&&!손){ handAdd({type:"summon",name:"사냥개",gone:1,arrive:1});
+      /* 카드가 오리온에게서 떠올라 손패에 꽂힌다 — 적이 카드를 끼워 넣는 길(cardGiveFX)을 그대로 쓴다 */
+      fx({side:"mine",slot:h.slot,cardGive:1,gap:820});
+      SFX.play("사냥개 부리기");
       say(`${s.n} — 사냥개 카드를 가져옵니다.`,"t2"); }
     /* 회복은 **사냥개가 받는다** (사용자 2026-10-14). 손에만 있고 전장에 없으면 받을 몸이 없다 */
     if(섬||손){ const v=(s.houndHeal||0)+mod(s,"houndHeal");
@@ -37086,11 +37142,14 @@ function runEffect0(h,i,s,target){
       /* 승리의 일격 — 나이코스의 궁극기 (기술 차례 3) */
       if(h.name==="나이코스"&&i===3) fx({side:"foe",slot:tgt.slot,ult:1,gap:0});
       /* 오리온 — 쇠뇌는 볼트가, 올가미는 밧줄이 날아간다 (사용자 2026-10-14) */
-      if(h.name==="오리온"&&(s.scentUse||s.chainMove))
-        fx({side:"foe",slot:tgt.slot,orion:{side:"mine",slot:h.slot,kind:s.chainMove?"lasso":"bolt"},gap:0});
+      if(h.name==="오리온"&&(s.scentUse||s.chainMove)){
+        /* 올가미는 **던지는 자세**로 (사용자 2026-10-15 : 미끼 던지기와 같은 모션). 쇠뇌는 그대로 공격 자세 */
+        if(s.chainMove) fx({side:"mine",slot:h.slot,pose:"bait",poseMs:760,gap:0});
+        fx({side:"foe",slot:tgt.slot,orion:{side:"mine",slot:h.slot,kind:s.chainMove?"lasso":"bolt"},gap:0}); }
       /* 사냥개가 물면 그 자리에 이빨 자국 (2026-10-14) */
       if(s.scent)
-        fx({side:"foe",slot:tgt.slot,sheet:"fx_orion_hound_hit",sheetOpt:{frames:8,z:1.5,ms:520},gap:0});
+        fx({side:"foe",slot:tgt.slot,sheet:"fx_orion_hound_hit",sheetOpt:{frames:8,z:1.5,ms:520},
+            fn:()=>SFX.play("사냥개 상처"),gap:0});   /* 받은 녹음 (2026-10-15) */
       /* 데린저 — 총을 쏘면 총알이 날아간다 (사용자 2026-10-14) */
       if(h.name==="데린저"&&s.ammo)
         fx({side:"foe",slot:tgt.slot,derr:{side:"mine",slot:h.slot,gun:(h.tag&&h.tag.gun)||"자동변환단총"},gap:0});
