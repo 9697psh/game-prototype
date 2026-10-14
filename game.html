@@ -2387,6 +2387,9 @@ body:has(.rwq) .hpanel{top:auto;bottom:16px;max-height:min(52vh,calc(100vh - 100
 @keyframes dcsPop{0%{scale:.85}60%{scale:1.08}100%{scale:1}}
 .domaura{position:absolute;left:50%;bottom:30px;width:128px;height:128px;margin-left:-64px;background-size:800% 100%;background-repeat:no-repeat;image-rendering:pixelated;
   pointer-events:none;z-index:0;animation:domaura 1.1s steps(8) infinite}   /* 도미니코 축복 고리 — 여덟 칸을 되풀이 */
+.aimaura{position:absolute;left:50%;bottom:26px;width:128px;height:128px;margin-left:-64px;
+  background-size:800% 100%;background-repeat:no-repeat;image-rendering:pixelated;
+  pointer-events:none;z-index:0;animation:domaura 1.1s steps(8) infinite}   /* 데린저 조준 오라 — 여덟 칸 (2026-10-14) */
 .domaura.dm{width:220px;height:220px;margin-left:-110px;bottom:-14px}   /* 악마판 고리는 칸 안에 작게 그려져 있어 키운다 (사용자 2026-10-06) */
 @keyframes domaura{from{background-position:0 0}to{background-position:114.2857% 0}}
 .dombeam{position:absolute;pointer-events:none;z-index:3;image-rendering:pixelated;background-repeat:no-repeat;background-size:100% 100%;transform-origin:0 50%}
@@ -3079,6 +3082,10 @@ html.noscr, html.noscr body{overflow:hidden!important}   /* 가로만 숨기면 
 /* 산성 침 — 늪의 왕이 뱉는 침. 곧게 나는 화살과 달리 **포물선**을 그린다 (사용자 2026-10-14).
    --lift 가 한가운데서 들리는 높이다 (4·lift·t·(1-t) 를 네 칸으로 끊어 적었다).
    그림은 왼쪽을 보고 그려져 있고 적은 오른쪽에 서니 뒤집지 않는다 */
+.derrline{position:absolute;height:64px;background-repeat:no-repeat;background-size:100% 100%;
+  image-rendering:pixelated;pointer-events:none;z-index:8;opacity:.95;
+  animation:derrline .42s ease-out forwards}   /* 저격 겨냥선 (2026-10-14) */
+@keyframes derrline{0%{opacity:0;transform:scaleX(.2)}30%{opacity:.95}100%{opacity:.35;transform:scaleX(1)}}
 .spitfly{position:absolute;width:32px;height:32px;margin:-16px 0 0 -16px;
   background-size:32px 32px;background-repeat:no-repeat;image-rendering:pixelated;
   pointer-events:none;z-index:8;--z:1.5;animation:spitFly .52s linear forwards}
@@ -7794,6 +7801,7 @@ function playFX(o){
   if(o.ember) emberFX(o.side,o.slot,o.ember);   /* 떠도는 불씨 화염구 (2026-10-12) */
   if(o.tongue) tongueFX(o.side,o.slot,o.tongue);   /* 두꺼비 혀 (2026-10-13) */
   if(o.spit) spitShotFX(o.side,o.slot,o.spit,o.spitBig);   /* 늪의 왕 산성 침 (2026-10-14) */
+  if(o.derr) derrShotFX(o.side,o.slot,o.derr,o.derr.gun);   /* 데린저의 총 (2026-10-14) */
   /* chomp·ptl 은 ART 에 옛 SVG 가 없다. 문지기를 안 뚫어 주면 여기서 걸러져
      아무 오류 없이 아무것도 안 뜬다 */
   if(o.art&&(ART[o.art]||o.art==="chomp"||o.art==="ptl"||o.art==="rift")){
@@ -8591,6 +8599,40 @@ function flareShotFX(side,slot,from){
       setTimeout(()=>nd.remove(),290); wait=220 }
   }
   setTimeout(()=>{ sheetFX("fx_ff_hit",side,slot,{z:2.6,ms:520}); const k=sfxOr("플레어와 플로우 불덩이 명중",null); if(k) SFX.play(k) },wait);
+}
+/* 데린저의 총 — 총알 한 발이 곧게 날아가 터진다 (사용자 2026-10-14).
+   저격소총은 **에임 선이 먼저 대상까지 이어진 뒤** 쏘고, 산탄총은 **총구에 산탄 연기**를 뿜으며 산탄알이 간다 */
+const DERR_FXK={"자동변환단총":"pistol","리볼버":"revolver","저격소총":"sniper","산탄총":"shotgun","기관총":"mg"};
+function derrShotFX(side,slot,from,gun){
+  const p=bodyPoint(side,slot)||ctrOf(side,slot); if(!p) return;
+  const q=from&&(bodyPoint(from.side,from.slot)||ctrOf(from.side,from.slot)); if(!q) return;
+  const 산탄=(gun==="산탄총"), 저격=(gun==="저격소총");
+  const u=(typeof ICON_PNG!=="undefined")&&(산탄?ICON_PNG.fx_derr_pellets:ICON_PNG.fx_derr_bullet);
+  let wait=0;
+  /* 저격 — 겨냥선이 먼저 뻗는다. 그림은 오른쪽을 보고 그려져 있어 대원 쪽에서 적 쪽으로 늘인다 */
+  if(저격&&(typeof ICON_PNG!=="undefined")&&ICON_PNG.fx_derr_line){
+    const len=Math.max(40,Math.abs(p.x-q.x)), nd=spawn('<div class="derrline"></div>');
+    if(nd){ nd.style.backgroundImage="url("+ICON_PNG.fx_derr_line+")";
+      nd.style.width=len+"px"; nd.style.left=Math.min(p.x,q.x)+"px"; nd.style.top=(q.y-16)+"px";
+      if(p.x>q.x) nd.style.transform="scaleX(-1)";
+      setTimeout(()=>nd.remove(),620); wait=380 }
+  }
+  /* 산탄 — 총구에서 연기가 퍼진다 (서른두 칸) */
+  if(산탄&&(typeof ICON_PNG!=="undefined")&&ICON_PNG.fx_derr_sgsmoke)
+    setTimeout(()=>sheetFX("fx_derr_sgsmoke",from.side,from.slot,{frames:32,z:1.4,ms:640}),wait);
+  if(!u) return;
+  setTimeout(()=>{
+    const nd=spawn('<div class="arrowfly"></div>'); if(!nd) return;
+    at(nd,q); nd.style.backgroundImage="url("+u+")";
+    nd.style.backgroundSize="32px 32px";
+    nd.style.setProperty("--dx",(p.x-q.x)+"px"); nd.style.setProperty("--dy",(p.y-q.y)+"px");
+    nd.style.setProperty("--rot",(Math.atan2(p.y-q.y,p.x-q.x)*180/Math.PI)+"deg");
+    nd.style.setProperty("--z",산탄?1.6:1.3);
+    setTimeout(()=>nd.remove(),260);
+  },wait);
+  /* 맞은 자리에서 터진다 (여덟 칸) */
+  if((typeof ICON_PNG!=="undefined")&&ICON_PNG.fx_derr_hit)
+    setTimeout(()=>sheetFX("fx_derr_hit",side,slot,{frames:8,z:1.5,ms:480}),wait+180);
 }
 /* 산성 침 — 늪의 왕이 뱉은 침이 궤도를 그리며 그 칸으로 날아간다 (사용자 2026-10-14).
    큰 침(big)은 바닥에 닿아 여덟 칸 터짐띠가 한 번 돈다. 작은 침은 침뱉기로 흩어질 때라 터지지 않는다.
@@ -10768,7 +10810,8 @@ function figure(name,pose,u){
   if(name==="고장난 수호기"&&u&&!pose&&(u.chg||0)>0&&typeof ICON_PNG!=="undefined"&&ICON_PNG["guard_chg_7"]&&PX_ON)
     return pxFigure(name,"charge").replace(/src="[^"]*"/,'src="'+ICON_PNG["guard_chg_"+((u.chg||0)>=2?7:3)]+'"');
   if(u&&!pose){ if((u.chg||0)>0&&poseOf(name,"charge")) pose="charge";
-                else if(u.swallow&&poseOf(name,"fed")) pose="fed" }
+                else if(u.swallow&&poseOf(name,"fed")) pose="fed"
+                else if(u.aimAt!=null&&poseOf(name,"aim")) pose="aim" }   /* 데린저 조준 상태 (사용자 2026-10-14) */
   if(PX_ON) return pxFigure(name,pose);
   const L=LOOK[name]||LOOK["작은 죄수"];
   const W={small:9,slim:10,wide:13,huge:15}[L.build];
@@ -19527,6 +19570,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 137, "v": "0.7", "d": "2026-10-14", "t": "데린저 연출 — 조준 자세·오라 · 총알/산탄/저격선 · 장전 · 연막", "big": 0},
  {"b": 136, "v": "0.7", "d": "2026-10-14", "t": "기관총 — (1+공격력)을 여덟 번", "big": 0},
  {"b": 135, "v": "0.7", "d": "2026-10-14", "t": "데린저 변형 보상 넷 · 조준은 어떤 정화로도 안 풀린다", "big": 0},
  {"b": 134, "v": "0.7", "d": "2026-10-14", "t": "데린저 그림 — 총 다섯의 자세 · 아이콘 열둘 · 탄알 줄", "big": 0},
@@ -20855,7 +20899,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=136;
+const BUILD_NO=137;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -30761,6 +30805,9 @@ function drawBattle(app){
     d.dataset.slot=s; if(B._wb&&B._wb["mine"+s]>Date.now()) d.classList.add("wbuild");
     if(h&&stopped(h)) d.classList.add("body");   /* 정지 — 쓰러진 대원과 같은 겉모습 (2026-10-07) */
     if(h&&h.name==="도미니코"&&h.blessed&&typeof ICON_PNG!=="undefined"&&ICON_PNG[domFx(h,"aura")]) d.appendChild(el(`<i class="domaura${domDemon(h)?" dm":""}" style="background-image:url(${ICON_PNG[domFx(h,"aura")]})"></i>`));   /* 축복 고리 (사용자 2026-10-06) */
+    /* 데린저 — 조준 중이면 뒤에 오라가 돈다 (사용자 2026-10-14) */
+    if(h&&h.name==="데린저"&&h.aimAt!=null&&typeof ICON_PNG!=="undefined"&&ICON_PNG.fx_derr_aura)
+      d.appendChild(el(`<i class="aimaura" style="background-image:url(${ICON_PNG.fx_derr_aura})"></i>`));
     /* 겹쳐 선 대원 — 앞 칸(적 쪽, 큰 번호)일수록 위에. 눌러 고른 대원은 맨 위 (사용자 2026-10-04) */
     if(h&&!h.isMin) d.style.zIndex=(sel&&sel.hero===h)?20:(2+s);
     else if(h&&sel&&sel.hero===h) d.style.zIndex=19;   /* 고른 소환물도 그 칸 대원들 위로 */
@@ -35862,6 +35909,10 @@ function runEffect0(h,i,s,target){
     const per=(s.ammoShield||0)+mod(s,"ammoShield")+(h.def||0);
     const got=n2*per;
     h.ammo=AMMO_MAX;
+    /* 장전 모션 — 든 총의 여덟 칸 (받은 묶음 140ms, 2026-10-14) */
+    { const g=(h.tag&&h.tag.gun)||"자동변환단총", k="fx_derr_reload_"+(DERR_FXK[g]||"pistol");
+      if((typeof ICON_PNG!=="undefined")&&ICON_PNG[k])
+        fx({side:"mine",slot:h.slot,sheet:k,sheetOpt:{cellW:128,cellH:128,frames:8,z:1.5,feet:1,frameMs:[140,140,140,140,140,140,140,160]},gap:1180}) }
     if(got>0){ addShield(h,got);
       fx({side:"mine",slot:h.slot,s:"shield",ring:"#e0c85a",txt:"보호막 +"+got,cls:"shd",gap:120});
       say(`${h.name} 탄알 ${n2}발을 쏟아 보호막 ${got}을 얻습니다. 탄알을 모두 채웁니다 (${AMMO_MAX}/${AMMO_MAX}).`,"t1") }
@@ -36385,6 +36436,10 @@ function runEffect0(h,i,s,target){
   if(s.smoke){
     h.hide=1; h.hideTurn=(B&&B.turn)||1;
     try{ hideFX(h.slot) }catch(e){}
+    /* 연막 — 한 장짜리 연기가 났다가 스르르 흩어진다 (사용자 2026-10-14) */
+    if((typeof ICON_PNG!=="undefined")&&ICON_PNG.fx_derr_smoke)
+      fx({side:"mine",slot:h.slot,sheet:"fx_derr_smoke",
+          sheetOpt:{cellW:128,cellH:128,frames:1,z:1.7,feet:1,frameMs:[900],fade:900},gap:420});
     say(`연막탄 — ${h.name}${jo(h.name,"ig")} 연기 속으로 사라집니다.`,"t1");
   }
   if(s.potential){ h.potential=1; h.free+=4+(h.tag.freePlus||0);
@@ -36649,6 +36704,9 @@ function runEffect0(h,i,s,target){
       if(h.name==="나이코스"&&i===0) fx({side:"foe",slot:tgt.slot,slash:1,gap:0});
       /* 승리의 일격 — 나이코스의 궁극기 (기술 차례 3) */
       if(h.name==="나이코스"&&i===3) fx({side:"foe",slot:tgt.slot,ult:1,gap:0});
+      /* 데린저 — 총을 쏘면 총알이 날아간다 (사용자 2026-10-14) */
+      if(h.name==="데린저"&&s.ammo)
+        fx({side:"foe",slot:tgt.slot,derr:{side:"mine",slot:h.slot,gun:(h.tag&&h.tag.gun)||"자동변환단총"},gap:0});
       /* 트리스탄은 활잡이다 — 적을 때리는 기술마다 화살이 날아간다 */
       if(isArcher(h))
         fx({side:"foe",slot:tgt.slot,arrow:{side:"mine",slot:h.slot,who:h.name,pow:h.name==="트리스탄"?(s.markKill?"snipe":s.pierce?"pierce":null):null},gap:0});
