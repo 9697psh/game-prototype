@@ -3112,7 +3112,16 @@ html.noscr, html.noscr body{overflow:hidden!important}   /* 가로만 숨기면 
   pointer-events:none;z-index:8;--z:1.5;animation:spitFly .52s linear forwards}
 .spitfly.big{width:64px;height:64px;margin:-32px 0 0 -32px;background-size:64px 64px;
   --z:1.8;animation-duration:.62s;z-index:9}
-.spitfly.bait{animation-duration:.66s}   /* 미끼 — 손에서 던지는 결 (2026-10-15) */
+.spitfly.bait{animation-duration:.64s}   /* 미끼 — 손에서 던지는 결 (2026-10-15) */
+/* 떨어진 미끼 — 바닥에 놓여 잠깐 흔들린다 (사용자 2026-10-15) */
+.baitdrop{position:absolute;width:64px;height:64px;margin:-56px 0 0 -32px;
+  background-size:64px 64px;background-repeat:no-repeat;image-rendering:pixelated;
+  pointer-events:none;z-index:8;transform-origin:50% 100%;opacity:1;
+  transition:opacity .62s ease-out;animation:baitWob .62s ease-in-out}
+@keyframes baitWob{
+  0%{transform:scale(1.9) rotate(0deg)} 18%{transform:scale(1.9) rotate(-9deg)}
+  38%{transform:scale(1.9) rotate(7deg)} 58%{transform:scale(1.9) rotate(-4deg)}
+  78%{transform:scale(1.9) rotate(2deg)} 100%{transform:scale(1.9) rotate(0deg)}}
 /* 코끝이 가는 쪽을 보게 — 칸마다 그 자리의 기울기(--r0 … --r4)를 JS 가 재어 박는다.
    ⚠️ 변형은 **오른쪽부터** 걸린다 : scale → scaleX(뒤집기) → rotate(세상 기준) → translate.
       rotate 를 뒤집기 **바깥**에 두어야 뒤집어도 각도가 거꾸로 돌지 않는다 */
@@ -8825,7 +8834,8 @@ function riftWormFX(slot){
   /* 기둥의 **아래끝을 그 적의 발끝에** 둔다 (사용자 2026-10-15 : 「적 발밑에서 나오도록」).
      전에는 화면 아래끝에 세워 적보다 한참 밑에서 솟았다 */
   { const ft=(typeof feetOf==="function"&&feetOf("foe",slot))||p;
-    nd.style.top="0px"; nd.style.height=Math.max(240,Math.round(ft.y))+"px" }
+    /* 발끝보다 **조금 더 아래**에서 올라온다 (사용자 2026-10-15) */
+    nd.style.top="0px"; nd.style.height=Math.max(240,Math.round(ft.y)+76)+"px" }
   requestAnimationFrame(()=>{ nd.style.opacity="1" });
   SFX.play("균열벌레 돌진");
   /* ⚠️ 칸 넘기기는 **백분율**이다 — 배경이 800% 라 한 칸이 100/7 % 다 (픽셀로 적으면 안 맞는다).
@@ -8850,18 +8860,32 @@ function houndRunInFX(slot){
             {duration:560,easing:"cubic-bezier(.22,.7,.3,1)"});
   return 560;
 }
-/* 미끼가 손끝에서 포물선을 그리며 날아가 그 자리에 떨어진다 (사용자 2026-10-15) */
-function baitThrowFX(fromSlot,toSlot){
+/* 미끼가 **손끝에서** 포물선을 그리며 날아가 그 자리에 떨어지고, 떨어진 자리에서 **잠깐 흔들린다**.
+   (사용자 2026-10-15). 날리기 · 떨구기 · 흔들기 · 치우기를 한 함수가 다 맡는다 —
+   ⚠️ 연출 줄에 올릴 때 **칸(side·slot)을 꼭 적어라.** 칸이 없는 줄은 ctrOf 에서 통째로 버려진다 */
+function baitThrowFX(fromSlot,toSlot,stay){
   const u=(typeof ICON_PNG!=="undefined")&&ICON_PNG.fx_orion_bait; if(!u) return 0;
   const q=bodyPoint("mine",fromSlot)||ctrOf("mine",fromSlot);
   const p=feetOf("foe",toSlot)||ctrOf("foe",toSlot);
   if(!q||!p) return 0;
-  const nd=spawn('<div class="spitfly big bait"></div>'); if(!nd) return 0;
-  at(nd,q); nd.style.backgroundImage="url("+u+")";
-  nd.style.setProperty("--dx",(p.x-q.x)+"px"); nd.style.setProperty("--dy",(p.y-q.y)+"px");
-  nd.style.setProperty("--lift","150px");   /* 손에서 던지는 결로 더 높이 (사용자 2026-10-15) */
-  setTimeout(()=>nd.remove(),700);
-  return 660;
+  const FLY=640;
+  const nd=spawn('<div class="spitfly big bait"></div>',FLY+80);
+  if(nd){ at(nd,q); nd.style.backgroundImage="url("+u+")";
+    nd.style.setProperty("--dx",(p.x-q.x)+"px"); nd.style.setProperty("--dy",(p.y-q.y)+"px");
+    nd.style.setProperty("--lift","150px"); }
+  /* 떨어진 자리 — 흔들렸다가 벌레가 지나갈 때까지 남는다 */
+  const KEEP=stay||2200;
+  setTimeout(()=>{
+    const bd=spawn('<div class="baitdrop"></div>',KEEP+700);
+    if(!bd) return;
+    bd.style.backgroundImage="url("+u+")";
+    bd.style.left=p.x+"px"; bd.style.top=p.y+"px";
+    setTimeout(()=>{ bd.classList.remove("wob") },620);
+    setTimeout(()=>{ bd.style.opacity="0" },KEEP);
+    try{ fieldQuake("quake") }catch(e){}
+    SFX.play("미끼 진동");
+  },FLY);
+  return FLY;
 }
 /* 데린저의 총 — 총알 한 발이 곧게 날아가 터진다 (사용자 2026-10-14).
    저격소총은 **에임 선이 먼저 대상까지 이어진 뒤** 쏘고, 산탄총은 **총구에 산탄 연기**를 뿜으며 산탄알이 간다 */
@@ -11890,7 +11914,7 @@ const SKILL_FULL={
  "점프백":"최대 2칸 이동하고 _기동 상태_에 돌입합니다.\n_기동 상태_에서는 다른 기술을 시전한 후 1칸 뒤로 이동하고 에너지 보호막을 3 얻습니다.",
  "정밀 타격":"이테리오가 마법 피해를 주면 대상에게 _정밀 표식_을 남깁니다.\n_정밀 표식_이 있는 적에게는 이테리오의 공격 피해가 치명타로 적용되고 표식을 하나 제거합니다.",
  "정의의 기운":"잠금(2). 헥토의 보호막만큼 가장 가까운 적에게 피해를 *( )* 줍니다. ",
- "정확 조준":"적을 선택합니다. 데린저가 _조준 상태_가 되어 해당 적에게 입히는 피해가 치명타로 적용되고 다른 적은 100% 감소합니다.\n_조준 상태_에서는 속박되고, 재사용하거나 대상 적이 죽으면 해제됩니다.",
+ "정확 조준":"적을 선택합니다. 데린저가 _조준 상태_가 되어 해당 적에게 입히는 피해가 치명타로 적중되고 다른 대상을 공격할 수 없습니다.\n_조준 상태_에서는 속박되고, 재사용하거나 대상 적이 죽으면 해제됩니다.",
  "조각난 페일노트":"가장 멀리 있는 적에게 피해를 4(추가 † ) 줍니다.",
  "조화의 노래":"이로운 효과를 부여하는 _음율_을 선택하여 시전합니다.",
  "죄악의 기침":"가장 가까운 적에게 피해를 2(추가 ∴ ) 주고 감염시킵니다.\n감염이 3회 중첩된 적에게 사용 후 체력을 4 회복합니다.",
@@ -17364,7 +17388,7 @@ function heroStatusRows(h){
   if(h.name==="데린저"&&h.aimAt!=null){
     const tgt=(B&&B.foes||[]).find(x=>x.alive&&x.id===h.aimAt);
     g.push(bd("g","조준","",   /* 자리 표시(「8번」)는 뺐다 — 적 쪽에 딱지가 뜨니 겹친다 (사용자 2026-10-15) */
-      `조준한 적에게 주는 피해는 치명타가 되고, 다른 적에게는 피해를 주지 않습니다. 조준 중에는 이동할 수 없습니다. 다시 쓰거나 대상이 쓰러지면 풀립니다.`,"조준")) }
+      `조준한 적에게 주는 피해는 치명타가 되고, 다른 대상은 공격할 수 없습니다. 조준 중에는 이동할 수 없습니다. 다시 쓰거나 대상이 쓰러지면 풀립니다.`,"조준")) }
   /* 타락의 초읽기 — 받는 피해가 턴마다 쌓인다 */
   if(h.countUp>0){ const cd=(h.tag&&h.tag.countdown)||0;
     g.push(bd("g","타락의 초읽기",h.countUp,
@@ -19888,6 +19912,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 155, "v": "0.7", "d": "2026-10-15", "t": "미끼 날아가기 · 지속 아이콘 · 조준 잠금", "big": 0},
  {"b": 154, "v": "0.7", "d": "2026-10-15", "t": "치명타 한 곳에서 · 탄알 비용 · 기류 · 연막 · 소리", "big": 0},
  {"b": 153, "v": "0.7", "d": "2026-10-15", "t": "데린저·오리온 둘째 묶음 — 연출·소리·자리 고르기", "big": 0},
  {"b": 152, "v": "0.7", "d": "2026-10-15", "t": "균열벌레가 적 발밑에서 솟는다", "big": 0},
@@ -21234,7 +21259,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=154;
+const BUILD_NO=155;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -32388,6 +32413,13 @@ function nearestFoe(h){
 }
 function pinnedFoe(h,sk){
   if(!sk) return null;
+  /* 정확 조준 — 조준 중에는 **다른 적을 아예 못 고른다** (사용자 2026-10-15).
+     전에는 고를 수는 있고 피해만 0 이라 헛손질이 됐다.
+     ⚠️ 조준한 놈을 다시 누르면 조준이 풀리므로 그 칸은 열어 둔다 */
+  if(h&&h.aimAt!=null&&sk.tg==="foe"&&typeof B!=="undefined"&&B){
+    const a=(B.foes||[]).find(x=>x&&x.alive&&x.id===h.aimAt);
+    if(a) return a;
+  }
   if(sk.farshot) return (h.tag&&h.tag.nearShot)?nearestFoe(h):farthestFoe(h);
   if(sk.nearest) return nearestFoe(h);
   if(sk.pushNear||sk.justice) return nearestFoe(h);   /* 방패 밀치기 · 정의의 기운 — '가장 가까운 적' (pushNear 를 읽는 곳이 없었다) (점검 2026-10-07) */
@@ -36238,13 +36270,9 @@ function runEffect0(h,i,s,target){
             전에는 적이 선 칸에만 떨어져 빈 자리는 아무 일도 없었다 (사용자 2026-10-15) */
       { const spots=[]; for(let i=1;i<=SLOTS;i++) if(i!==dz) spots.push(i);
         const hs=h.slot;
-        spots.forEach((sl,k)=>{
-          fx({fn:()=>baitThrowFX(hs,sl),gap:k?70:200});
-          /* 떨어진 미끼는 벌레가 지나갈 때까지 그 자리에 남는다 */
-          fx({side:"foe",slot:sl,sheet:"fx_orion_bait",
-              sheetOpt:{frames:1,z:1.6,feet:1,frameMs:[2600],fade:620},
-              fn:()=>{ fieldQuake("quake"); SFX.play("미끼 진동") },gap:k?70:620});
-        });
+        /* ⚠️ **칸을 적어야 한다** — 칸 없는 줄은 ctrOf 에서 버려져 한 번도 안 불린다 (2026-10-15).
+           미끼는 날아가서 떨어지고 흔들리고 남는 것까지 baitThrowFX 한 곳이 맡는다 */
+        spots.forEach((sl,k)=>fx({side:"foe",slot:sl,fn:()=>baitThrowFX(hs,sl,2400),gap:k?90:240}));
         fx({fn:()=>{},gap:520});   /* 진동음이 끝날 틈 */
         spots.forEach((sl,k)=>fx({worm:sl,gap:k?110:0})); }
       if(!list.length) say(`${s.n} — 기류 밖에 적이 없습니다.`,"t2");
@@ -37257,7 +37285,7 @@ function runEffect0(h,i,s,target){
         /* 총알이 날아가는 동안 숫자가 먼저 뜨지 않게 — gap 이 「다음 연출까지의 틈」이다.
            기관총 150(여덟 발이 보이게) · 저격소총 880(겨냥선 560 + 총알) · 나머지는 바로 (2026-10-15) */
         fx({side:"foe",slot:tgt.slot,derr:{side:"mine",slot:h.slot,gun:_g},
-            gap:(_g==="기관총")?105:(_g==="저격소총")?880:0}); }
+            gap:(_g==="기관총")?78:(_g==="저격소총")?880:0}); }
       /* 트리스탄은 활잡이다 — 적을 때리는 기술마다 화살이 날아간다 */
       if(isArcher(h))
         fx({side:"foe",slot:tgt.slot,arrow:{side:"mine",slot:h.slot,who:h.name,pow:h.name==="트리스탄"?(s.markKill?"snipe":s.pierce?"pierce":null):null},gap:0});
@@ -37348,7 +37376,7 @@ function runEffect0(h,i,s,target){
          연출 줄이 차례대로 흐르니 총알과 숫자가 나란히 간다 */
       const gun=(h.tag&&h.tag.gun)||"자동변환단총";
       for(let q=1;q<s.hits&&tgt.alive;q++){
-        fx({side:"foe",slot:tgt.slot,derr:{side:"mine",slot:h.slot,gun:gun},gap:105});
+        fx({side:"foe",slot:tgt.slot,derr:{side:"mine",slot:h.slot,gun:gun},gap:78});
         asSrc(h,()=>hurt(tgt,dmg,s.n,"slash",0,CRIT,1));
       }
     }
