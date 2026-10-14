@@ -8838,20 +8838,31 @@ function riftWormFX(slot){
     nd.style.top="0px"; nd.style.height=Math.max(240,Math.round(ft.y)+76)+"px" }
   requestAnimationFrame(()=>{ nd.style.opacity="1" });
   SFX.play("균열벌레 돌진");
-  /* 미끼는 벌레가 올라오며 **먹는다** — 지나간 뒤까지 남지 않게 (사용자 2026-10-15) */
-  { const bd=document.querySelector('#fx .baitdrop[data-slot="'+slot+'"]');
-    if(bd) setTimeout(()=>{ bd.style.transition="opacity .16s ease-out"; bd.style.opacity="0";
-      setTimeout(()=>{ if(bd.isConnected) bd.remove() },220) },240) }
+  /* 미끼는 벌레가 올라오며 **먹는다** — 지나간 뒤까지 남지 않게 (사용자 2026-10-15).
+     ⚠️ 빠르게 돌리면 벌레가 미끼보다 먼저 올 수 있다 — 지나간 칸을 적어 두면
+        **늦게 떨어진 미끼도** 떨어지자마자 먹힌다 (baitThrowFX 가 이 자국을 본다) */
+  { if(B){ B._wormAt=B._wormAt||{}; B._wormAt[slot]=Date.now() }
+    const _k=(typeof SPD==="number"&&SPD>0)?SPD:1;
+    /* 한 번만 보면 **늦게 떨어진 미끼**를 놓친다 (빠르게 돌리면 벌레가 먼저 온다) —
+       올라오는 동안 몇 번 더 돌아본다 (사용자 2026-10-15) */
+    const eat=()=>{ const bd=document.querySelector('#fx .baitdrop[data-slot="'+slot+'"]');
+      if(!bd||bd.dataset.eaten) return;
+      bd.dataset.eaten="1";
+      bd.style.transition="opacity .14s ease-out"; bd.style.opacity="0";
+      setTimeout(()=>{ if(bd.isConnected) bd.remove() },200) };
+    [120,360,700,1100].forEach(d=>setTimeout(eat,Math.round(d*_k))) }
   /* ⚠️ 칸 넘기기는 **백분율**이다 — 배경이 800% 라 한 칸이 100/7 % 다 (픽셀로 적으면 안 맞는다).
      천천히 올라오게 앞 칸을 길게 (사용자 2026-10-15 : 「천천히 올라오며」) */
-  const FM=[170,165,165,170,180,190,210,250];
+  const K=(typeof SPD==="number"&&SPD>0)?SPD:1;   /* ⚠️ 연출 빠르기를 곱한다 */
+  const FM=[170,165,165,170,180,190,210,250].map(v=>Math.round(v*K));
   let t=0; for(let k=0;k<8;k++){ const x=(100/7*k).toFixed(4)+"% 0";
     setTimeout(()=>{ nd.style.backgroundPosition=x },t); t+=FM[k] }
   /* 올라오는 내내 화면이 흔들린다 (사용자 2026-10-15) */
-  for(let q=0;q<Math.ceil(t/420);q++) setTimeout(()=>fieldQuake("quake"),q*420);
-  setTimeout(()=>{ nd.style.transition="opacity .8s ease-out"; nd.style.opacity="0" },t+140);
-  setTimeout(()=>{ if(nd.isConnected) nd.remove() },t+1000);
-  return t+1000;
+  { const step=Math.round(420*K);
+    for(let q=0;q<Math.ceil(t/step);q++) setTimeout(()=>fieldQuake("quake"),q*step) }
+  setTimeout(()=>{ nd.style.transition="opacity "+Math.round(800*K)+"ms ease-out"; nd.style.opacity="0" },t+Math.round(140*K));
+  setTimeout(()=>{ if(nd.isConnected) nd.remove() },t+Math.round(1000*K));
+  return t+Math.round(1000*K);
 }
 /* 사냥개는 **화면 왼쪽 밖에서 달려 들어온다** (사용자 2026-10-15).
    칸이 아니라 .art 를 움직인다 — 칸을 움직이면 체력줄까지 따라 달린다 */
@@ -8872,23 +8883,30 @@ function baitThrowFX(fromSlot,toSlot,stay){
   const q=bodyPoint("mine",fromSlot)||ctrOf("mine",fromSlot);
   const p=feetOf("foe",toSlot)||ctrOf("foe",toSlot);
   if(!q||!p) return 0;
-  const FLY=640;
+  /* ⚠️ 연출 빠르기(SPD)를 곱한다 — 줄의 틈만 빨라지고 이 시계가 안 빨라지면 차례가 어긋난다 */
+  const K=(typeof SPD==="number"&&SPD>0)?SPD:1;
+  const FLY=Math.round(640*K);
   const nd=spawn('<div class="spitfly big bait"></div>',FLY+80);
   if(nd){ at(nd,q); nd.style.backgroundImage="url("+u+")";
     nd.style.setProperty("--dx",(p.x-q.x)+"px"); nd.style.setProperty("--dy",(p.y-q.y)+"px");
     nd.style.setProperty("--lift","150px"); }
   /* 떨어진 자리 — 흔들렸다가 벌레가 지나갈 때까지 남는다 */
-  const KEEP=stay||2200;
+  const KEEP=Math.round((stay||2200)*K);
   setTimeout(()=>{
     const bd=spawn('<div class="baitdrop"></div>',KEEP+700);
     if(!bd) return;
     bd.dataset.slot=toSlot;   /* 벌레가 이 칸의 미끼를 찾아 먹는다 (2026-10-15) */
     bd.style.backgroundImage="url("+u+")";
     bd.style.left=p.x+"px"; bd.style.top=p.y+"px";
-    setTimeout(()=>{ bd.classList.remove("wob") },620);
+    setTimeout(()=>{ bd.classList.remove("wob") },Math.round(620*K));
     setTimeout(()=>{ bd.style.opacity="0" },KEEP);
     try{ fieldQuake("quake") }catch(e){}
     SFX.play("미끼 진동");
+    /* 벌레가 **이미 지나간 칸**이면 떨어지자마자 먹힌다 — 빠르게 돌릴 때 차례가 뒤집힌다 */
+    { const t=(B&&B._wormAt&&B._wormAt[toSlot])||0;
+      if(t&&Date.now()-t<2600) setTimeout(()=>{ bd.dataset.eaten="1";
+        bd.style.transition="opacity .14s ease-out"; bd.style.opacity="0";
+        setTimeout(()=>{ if(bd.isConnected) bd.remove() },200) },Math.round(80*K)) }
   },FLY);
   return FLY;
 }
@@ -19917,6 +19935,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 161, "v": "0.7", "d": "2026-10-15", "t": "연출 빠르기에서도 미끼를 벌레가 먹는다", "big": 0},
  {"b": 160, "v": "0.7", "d": "2026-10-15", "t": "산탄총 둘째 발 틈 580ms", "big": 0},
  {"b": 159, "v": "0.7", "d": "2026-10-15", "t": "미끼를 벌레가 먹는다 · 산탄총 틈 480ms", "big": 0},
  {"b": 158, "v": "0.7", "d": "2026-10-15", "t": "조준 해제음 — 조준 소리를 거꾸로", "big": 0},
@@ -21269,7 +21288,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=160;
+const BUILD_NO=161;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
