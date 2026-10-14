@@ -842,6 +842,8 @@ button.dtl{padding:3px 10px;font-size:11.5px}
   border-top:1px solid var(--rule);align-items:center}
 .counts button{padding:2px 10px;font-size:12px}
 .prog{margin-top:4px}
+/* 자원 줄 왼쪽의 작은 그림 (데린저 탄알, 2026-10-14) — .bd 의 14px 과 달리 줄 글자에 맞춘다 */
+.prog .pl img.ci{width:11px;height:11px;vertical-align:-1px;margin-right:3px;image-rendering:pixelated;display:inline-block}
 .prog .pl{font-size:9.5px;color:var(--faint);display:flex;justify-content:space-between;gap:4px;white-space:nowrap;overflow:hidden}
 .prog .pl span:first-child{overflow:hidden;text-overflow:ellipsis;min-width:0}
 .prog .pl span:last-child{flex:0 0 auto}
@@ -10952,6 +10954,18 @@ const partName=(kind,n)=>(kind==="mat"?"재료 부속: ":"영혼 부속: ")+n;
 /* ⚠️ 끝에 0 을 두지 않는다 — 다음 바퀴가 0 에서 시작하니 같은 칸이 두 번 서서 **멈칫**해 보인다 */
 /* 하수인 골렘의 기술 아이콘 — 받은 한 장을 다섯 영혼 기술에 함께 건다 (2026-10-13) */
 ["막아내기","정화하기","찌르기","영혼부르기","별똥별","포식의 주먹"].forEach(n=>{ SKILL_ICON[n]="skill_golem_minion_attack" });
+/* 데린저 — 받은 아이콘 묶음 (2026-10-14). 변형 넷은 보상이 들어오면 그 이름으로 바로 걸린다 */
+Object.assign(SKILL_ICON,{
+ "자동변환단총":"skill_derringer_auto_transform_pistol",
+ "탄알 장전":"skill_derringer_reload_bullets",
+ "연막탄":"skill_derringer_smoke_grenade",
+ "정확 조준":"skill_derringer_precise_aim",
+ "보물 사냥꾼":"skill_derringer_treasure_hunter",
+ "탄알집 챙기기":"skill_derringer_ammo_pouch",
+ "리볼버":"skill_derringer_revolver",
+ "저격소총":"skill_derringer_sniper_rifle",
+ "산탄총":"skill_derringer_shotgun",
+ "기관총":"skill_derringer_machine_gun"});
 const PAVEL_MAKE_ORDER=[0,1,2,3,4,5,6,7,6,5,4,3,2,1];
 const PAVEL_MAKE_MS   =[290,265,250,250,265,290,330,980,330,290,265,250,250,265];
 const PAVEL_MAKE_HOLD=7;   /* 멈춰 서는 칸 — 여기서 빛난다 */
@@ -16802,6 +16816,7 @@ const KW_ICON={
   /* 마력의 탑 (사용자 2026-10-07) — 그림은 /art 세션이 data/icons.js 에 넣는다.
      되감기 art/status-rewind-v1/status_rewind-64.png (+ 발동 띠 art/status-rewind-apply-v1-64frames/) · 충전은 멈춘 아이콘 하나 */
   "되감기":"status_rewind","정지":"status_stop","충전":"status_charge","과열":"status_mana_refinery_overheat",
+  "조준":"status_derringer_aim","탄알":"status_derringer_bullet",   /* 데린저 (2026-10-14) */
   "마력":"status_tower_master_mana",   /* 탑의 주인의 마력 (/art 가 ICON_PNG 에 넣으면 쓰인다 — 없으면 글자) */
   "복수귀":"status_ira_berserker",            /* 이라 지속 — 그림은 0319acc9 에서 구웠다 (2026-10-13) */
   /* 글자 한 자로 떨어져 있던 딱지들 (사용자가 그림을 줬다, 2026-10-13).
@@ -16852,7 +16867,10 @@ function arenaPrisonDmg(u){
 }
 function debBadges(u){
   if(!u.deb) return [];
-  const L=DEB_KEYS.filter(k=>u.deb[k]>0).map(k=>bd("o",k,u.deb[k],DEBUFF[k].d,DEBUFF[k].n));
+  /* 데린저의 조준은 **속박 99 로** 스스로를 묶어 둔 것이라 그 딱지를 따로 띄우지 않는다 —
+     「조준」 딱지가 그 뜻을 이미 말한다 (사용자 2026-10-14) */
+  const aimLock=(u.name==="데린저"&&u.aimAt!=null);
+  const L=DEB_KEYS.filter(k=>u.deb[k]>0&&!(aimLock&&k==="bind")).map(k=>bd("o",k,u.deb[k],DEBUFF[k].d,DEBUFF[k].n));
   /* 모두에게 걸리는 것이라 상태 줄에도 모두에게 — 옆의 수는 **이 대상이 턴 끝에 받을 피해**다 */
   { const v=arenaPrisonDmg(u);
     if(v>0) L.push(bd("o","투기장의 감옥",v,
@@ -16969,6 +16987,11 @@ function heroStatusRows(h){
   else if(h.charge) g.push(bd("g","충전",h.charge>1?`완료 ${h.charge}`:"완료"));
   /* 복수귀 — 체력 턱 아래인 동안 (2026-10-13) */
   if(h.rageOn>0) g.push(bd("g","복수귀",h.rageOn));
+  /* 정확 조준 — 조준 상태인 동안 (데린저, 2026-10-14) */
+  if(h.name==="데린저"&&h.aimAt!=null){
+    const tgt=(B&&B.foes||[]).find(x=>x.alive&&x.id===h.aimAt);
+    g.push(bd("g","조준",tgt?(foeNo(tgt.slot)+"번"):"",
+      `조준한 적에게 주는 피해는 치명타가 되고, 다른 적에게는 피해를 주지 않습니다. 조준 중에는 이동할 수 없습니다. 다시 쓰거나 대상이 쓰러지면 풀립니다.`,"조준")) }
   /* 타락의 초읽기 — 받는 피해가 턴마다 쌓인다 */
   if(h.countUp>0){ const cd=(h.tag&&h.tag.countdown)||0;
     g.push(bd("g","타락의 초읽기",h.countUp,
@@ -19482,6 +19505,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 134, "v": "0.7", "d": "2026-10-14", "t": "데린저 그림 — 총 다섯의 자세 · 아이콘 열둘 · 탄알 줄", "big": 0},
  {"b": 133, "v": "0.7", "d": "2026-10-14", "t": "자동변환단총 거리 한도 없애기 · 사냥개 회복은 사냥개에게 · 데린저 탄알 가득 시작", "big": 0},
  {"b": 132, "v": "0.7", "d": "2026-10-14", "t": "데린저 리뉴얼 — 노트 6-0-1 ~ 6-4", "big": 0},
  {"b": 131, "v": "0.7", "d": "2026-10-14", "t": "오리온 — 기술 넷과 사냥개까지", "big": 0},
@@ -20807,7 +20831,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=133;
+const BUILD_NO=134;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -31582,8 +31606,13 @@ function progressOf(h){
     out.push({n:"영혼",c:(run.souls||0)%40,m:40,done:false});
   if(h.name==="트리스탄")
     out.push({n:"사명감",c:(h.duty||0)%2,m:2,done:false});
-  if(h.name==="데린저")
-    out.push({n:"보물 점수",c:(run.treasure||0)%6,m:6,done:false});
+  if(h.name==="데린저"){
+    /* 탄알 — 체력바 밑에, 왼쪽에 총알 아이콘 (사용자 2026-10-14) */
+    out.push({n:"탄알",c:h.ammo||0,m:AMMO_MAX,done:(h.ammo||0)>=AMMO_MAX,ic:"status_derringer_bullet"});
+    /* 보물 점수는 **전투 칸에는 안 띄운다** (사용자 2026-10-14).
+       기술창의 지속 줄(passHtml)과 대원 판이 같은 수를 그대로 쓰므로 여기서 지우면 안 되고,
+       전투 줄을 그리는 progHtml 에서만 거른다 */
+    out.push({n:"보물 점수",c:(run.treasure||0)%6,m:6,done:false,noSlot:1}); }
   if(h.name==="리페")
     out.push({n:"음율란",c:(h.tunes||[]).length,m:3,done:(h.tunes||[]).length>=3});
   if(h.name==="그슨대")
@@ -31596,8 +31625,8 @@ function progressOf(h){
   return out;
 }
 function progHtml(h){
-  return progressOf(h).map(p=>`<div class="prog ${p.done?"done":""}">
-    <div class="pl"><span>${esc(p.n)}</span><span>${p.c}/${p.m}</span></div>
+  return progressOf(h).filter(p=>!p.noSlot).map(p=>`<div class="prog ${p.done?"done":""}">
+    <div class="pl"><span>${p.ic&&(typeof ICON_PNG!=="undefined")&&ICON_PNG[p.ic]?`<img class="ci" src="${ICON_PNG[p.ic]}" alt="">`:""}${esc(p.n)}</span><span>${p.c}/${p.m}</span></div>
     <div class="pb"><i style="width:${Math.min(100,p.m?p.c/p.m*100:0)}%"></i></div></div>`).join("");
 }
 /* 지금 이 기술이 평소보다 세게 나가는가 — 그 이유를 짧게 돌려준다 */
