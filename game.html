@@ -3693,7 +3693,9 @@ body.vmap .mtop .mtrow{justify-content:center}
 .mboard .mcoretop{position:absolute;left:82.9%;top:1.2%;width:4.3%;z-index:7;display:flex;justify-content:center}
 .mboard .mcoretop .corechip img{width:100%;height:auto;filter:drop-shadow(0 0 10px rgba(240,200,110,.5))}
 /* ② 자원 줄 — 아이콘을 키워 두 줄로, 오른쪽 끝에 시계 */
-.mb-rtop{justify-content:space-between;gap:1%;padding:0 2.4% 0 3.4%}
+/* ⚠️ 이 칸의 % 는 **무대(1920) 기준**이다 — 칸(449) 기준이 아니다. 5.4% 를 넣었더니 104px 이 먹혀
+   재화가 가운데로 몰렸다 (2026-10-15). 양옆은 1% 남짓이면 20px 이다 */
+.mb-rtop{justify-content:space-between;gap:.6%;padding:0 1.1% 0 1.5%}
 .mb-rtop .mres{flex:1 1 auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 22px;
   align-content:center;justify-items:start;margin:0}
 .mb-rtop .mres .mchip{width:auto;height:auto;justify-content:flex-start;gap:9px;font-size:15px;white-space:nowrap;flex-wrap:nowrap}   /* .res 가 flex-wrap:wrap 이라 오염도의 「/100」이 두 줄로 접혔다 */
@@ -3725,8 +3727,16 @@ body.vmap .mtop .mtrow{justify-content:center}
 .mb-btns .mquest .qrdyn{left:auto;top:auto;right:19%;bottom:17%;min-width:25px;height:25px;line-height:25px;
   padding:0 5px;width:auto;border-radius:13px;font-size:15px;font-weight:800;
   background:#b2321f;color:#ffe6da;border:1px solid #1a1408}
-/* 지도는 칸 높이에 맞춘다 — 넓은 화면에서 칸 밖으로 넘치지 않게 */
-.mb-mid .pstage{height:100%;width:auto;max-width:100%}
+/* 지도는 칸보다 조금 크게 깔고 칸에서 자른다 (사용자 2026-10-15 : 「손이 조금 잘린다」).
+   양피지 손 그림은 256줄 가운데 239줄에서 끊긴다 — 틀이 그 자리를 가려 주라고 그린 그림이다.
+   1.10배 + 아래로 2% 면 끊긴 자리가 칸 바닥(틀)에 닿고, 위는 24px 만 잘려 양피지 윗동(52px 안쪽)에 안 닿는다 */
+.mb-mid{overflow:hidden}
+.mb-mid .pstage{height:110%;width:auto;max-width:none;transform:translateY(2%)}
+/* 받은 네모 액자는 **칸**이 두른다 (사용자 2026-10-15).
+   무대에 두면 무대가 칸보다 커진 뒤로 통째로 잘려 사라진다 — --frame 은 JS 가 칸에도 옮겨 적는다 */
+.mb-mid::after{content:"";position:absolute;inset:0;background-image:var(--frame,none);
+  background-size:100% 100%;background-repeat:no-repeat;image-rendering:pixelated;pointer-events:none;z-index:8}
+.mb-mid .pstage::after{display:none}
 .mapwrap.m3{display:grid;grid-template-columns:560px 190px minmax(0,1fr);gap:20px;align-items:start;margin-top:4px}
 .m3 .pstage{margin:0;width:560px}
 .m3 .map-l{position:relative}
@@ -19766,6 +19776,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 144, "v": "0.7", "d": "2026-10-15", "t": "지도 — 무대를 키워 손이 틀 뒤로, 재화 사이 벌리기", "big": 0},
  {"b": 143, "v": "0.7", "d": "2026-10-15", "t": "지도 다듬기 — 네모 액자 · 시계 · 자원 사이 · 설명 판 · 퀘스트 알", "big": 0},
  {"b": 142, "v": "0.7", "d": "2026-10-14", "t": "지도 UI 2단계 — 틀이 화면을 덮고 자원·시계·세계핵·대원 줄을 시안대로", "big": 0},
  {"b": 141, "v": "0.7", "d": "2026-10-14", "t": "지도 UI 리뉴얼 1 — 가죽 틀 무대와 대원장부", "big": 0},
@@ -21101,7 +21112,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=143;
+const BUILD_NO=144;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -22798,6 +22809,9 @@ function drawMap(app){
       if(qb){ qb.onclick=e=>{ e.stopPropagation(); run.qPin=0; MAP_PANEL=(MAP_PANEL==="quest")?"":"quest"; SFX.play("click"); render() };
         if(MAP_PANEL==="quest") qb.classList.add("on") } }
     mv(".map-l",".mb-mid");      /* 양피지 무대 */
+    /* 액자 그림을 칸으로 옮겨 적는다 — 무대가 칸보다 커서 제 ::after 는 잘린다 (2026-10-15) */
+    { const st=board.querySelector(".mb-mid .pstage"), md=board.querySelector(".mb-mid");
+      const v=st&&st.style.getPropertyValue("--frame"); if(v&&md) md.style.setProperty("--frame",v) }
     /* 왼쪽 판 — 켠 단추에 따라 (사용자 2026-10-14 : 「누르면 목록이 쭉 내려오면서」) */
     if(MAP_PANEL){
       const box=el(`<div class="ledger lg-${MAP_PANEL}"></div>`);
