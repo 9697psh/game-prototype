@@ -11519,7 +11519,7 @@ const SKILL_FULL={
  "응축 폭발":"잠금(2). 2턴 동안 도발과 보호막을 14(추가 ¤ ) 얻습니다.\n2턴 후에 모든 적에게 굴라의 현재 체력의 20%만큼의 피해를 줍니다.",
  "의지 약화":"다음 턴 동안 선택한 적의 모든 추가 능력치를 3(추가 ) 감소시킵니다.\n\n_독서 중첩_을 2 얻습니다.\n\n_축복 상태_라면 도미니코가 추가 보호력을 1 얻습니다.",
  "자기장 변환":"잠금(1). 적에게 피해를 8(추가 ∴ ) 줍니다. _정밀 표식_이 남겨진 적이라면 1칸 앞으로 이동시키고 속박시킵니다. 이동하지 못하는 상태라면, 대신 기절시킵니다.",
- "자동변환단총":"_탄알_을 1 소모하여 적에게 피해를 2(추가 † ) 줍니다.(거리 2)\n\n어떤 개조를 하더라도 제대로 작동하는 죽이는 총!",
+ "자동변환단총":"_탄알_을 1 소모하여 적에게 피해를 2(추가 † ) 줍니다.\n\n어떤 개조를 하더라도 제대로 작동하는 죽이는 총!",
  "잠재력 활성":"잠금(2). 이번 턴에 진선풍도가 거리 내의 모든 적에게 피해를 주고, 회오리는 모든 적을 공중으로 띄웁니다.\n다음 4번의 산들바람의 비용이 0이 됩니다.",
  "재능 시기":"적을 처치할 때마다 인비디아가 해당 전투에서 적들의 능력치를 얻습니다.\n\n적 처치 후 얻을 수 있는 능력치(각 25% 확률로)\n공격력 1, 마법력 1, 보호력 1, 체력 4",
  "저주받은 성벽":"이 소환물이 죽은 후, 거리 1 내의 대상에게 보호약화를 2 부여합니다. 이동할 수 없습니다.",
@@ -11656,7 +11656,7 @@ HEROES["데린저"]={title:"보물의 무법자",role:"원거리, 탄알",hp:20,
   focus:"보상을 통한 공격 방식 교체/보물 사냥꾼/유동적 공격",
   passive:{n:"보물 사냥꾼",d:"보상을 얻을 때마다 금화 2와 보물 점수. 6점마다 공격력 +1 (영구)"},
   skills:[
-   {n:"자동변환단총",cost:0,el:"공격",tg:"foe",rng:2,dmg:2,ammo:1,costType:"탄알",d:"탄알 1, 거리 2, 피해 2"},
+   {n:"자동변환단총",cost:0,el:"공격",tg:"foe",dmg:2,ammo:1,costType:"탄알",d:"탄알 1, 피해 2"},   /* 거리 한도 없음 (사용자 2026-10-14) */
    {n:"탄알 장전",cost:2,el:"공격",tg:"self",ammoShield:2,d:"남은 탄알을 모두 쓰고 그 수만큼 보호막 2, 모두 장전"},
    {n:"연막탄",cost:2,el:"지속",tg:"self",limit:1,evade:2,smoke:1,d:"사용한도(1), 회피 2와 1턴 은신"},
    {n:"정확 조준",cost:2,el:"집중",tg:"foe",aim:1,d:"그 적에게 치명타, 다른 적에게는 피해 없음. 이동할 수 없다"}
@@ -19482,6 +19482,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 133, "v": "0.7", "d": "2026-10-14", "t": "자동변환단총 거리 한도 없애기 · 사냥개 회복은 사냥개에게 · 데린저 탄알 가득 시작", "big": 0},
  {"b": 132, "v": "0.7", "d": "2026-10-14", "t": "데린저 리뉴얼 — 노트 6-0-1 ~ 6-4", "big": 0},
  {"b": 131, "v": "0.7", "d": "2026-10-14", "t": "오리온 — 기술 넷과 사냥개까지", "big": 0},
  {"b": 130, "v": "0.7", "d": "2026-10-14", "t": "사기꾼의 패 — 무작위 소멸성 상점 카드", "big": 0},
@@ -20806,7 +20807,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=132;
+const BUILD_NO=133;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -27658,6 +27659,8 @@ function startBattle(kind,pinned){
     handAdd({type:"item",name:cd.n,d:L.d+` (보유 ${cd.c})`,stock:cd.n,use:L.use});
   });
   prevGone.forEach(c=>handAdd(c));
+  /* 데린저 — 전투는 **탄알이 가득 찬 채로** 시작한다 (사용자 2026-10-14. 전에는 0 이라 장전부터 해야 했다) */
+  run.heroes.forEach(h=>{ if(h.name==="데린저") h.ammo=AMMO_MAX });
   { const n=run.heroes.filter(h=>!h.down).reduce((a,h)=>a+itemBt(h,"cheatCard"),0), got=[];   /* 사기꾼의 패 (2026-10-05) */
     for(let i=0;i<n;i++){ const P=cheatCards(); if(!P.length) break; const nm=rnd(P); got.push(nm);
       handAdd(CARD_LIB[nm].summon?{type:"summon",name:nm,gone:1}:{type:"item",name:nm,d:CARD_LIB[nm].d,use:CARD_LIB[nm].use,foe:CARD_LIB[nm].foe,gone:1}) }   /* foe — 불덩이를 아군에게 던지던 것 (점검 2026-10-07) */
@@ -36072,9 +36075,13 @@ function runEffect0(h,i,s,target){
     const 손=(B.hand||[]).some(c=>c.type==="summon"&&c.name==="사냥개");
     handAdd({type:"summon",name:"사냥개",gone:1});
     say(`${s.n} — 사냥개 카드를 가져옵니다.`,"t2");
-    if(섬||손){ const g=healUp(h,(s.houndHeal||0)+mod(s,"houndHeal"));
-      if(g){ fx({side:"mine",slot:h.slot,s:"heal",txt:"+"+g,cls:"heal",gap:80});
-        say(`${s.n} — 이미 사냥개가 있어 ${h.name} 체력 +${g}`,"t2") } }
+    /* 회복은 **사냥개가 받는다** (사용자 2026-10-14). 손에만 있고 전장에 없으면 받을 몸이 없다 */
+    if(섬||손){ const v=(s.houndHeal||0)+mod(s,"houndHeal");
+      const L=(B.mins||[]).filter(m=>m.alive&&m.name==="사냥개");
+      if(!L.length) say(`${s.n} — 전장에 사냥개가 없어 회복할 몸이 없습니다.`,"t2");
+      else L.forEach(m=>{ const g=healUp(m,v);
+        if(g){ fx({side:"mine",slot:m.slot,s:"heal",txt:"+"+g,cls:"heal",gap:80});
+          say(`${s.n} — ${m.name} 체력 +${g}`,"t2") } }) }
   }
   if(s.armorUp){
     const t=h.tag||{};
