@@ -3627,7 +3627,36 @@ body.vmap header #hBtns button:hover{border-color:#f4d67c;color:#f4d67c}
   to{opacity:1;transform:translateY(0);clip-path:inset(0 0 0 0)}}
 .ledger .lgh{font-family:var(--serif);font-size:13px;color:#e8d6ae;letter-spacing:.08em;
   text-align:center;margin:2px 0 8px;text-shadow:0 1px 0 #000}
-.ledger .mcards{width:100%} .ledger .mcard{width:100%;max-width:168px;margin:0 auto}
+.ledger .mcards{width:100%;gap:0}
+.mboard .mb-btns .mquest .mqpop{display:none}   /* ⑤ 퀘스트 목록은 왼쪽 판에서 (사용자 2026-10-14 밤).
+   ⚠️ .mquest:hover .mqpop · .mquest.pin .mqpop (3851줄) 가 뒤에 있어 같은 세기로는 진다 — .mboard 를 한 칸 더 */
+/* 가방을 판 안에 넣을 때 — 제 화면 크기를 벗는다 */
+.ledger .dexwrap.bagframe{width:100%;max-width:none;min-height:0;margin:0;padding:0;background:none;border:0}
+.ledger .bag-title{font-size:15px;letter-spacing:.12em;margin:2px 0 6px}
+.ledger .bag-res{gap:10px;font-size:12px;margin-bottom:8px}
+.ledger .mifoot,.ledger .bag-foot{padding-top:10px}
+.ledger .bag-foot .mgo{width:120px;height:46px;font-size:13px}
+.ledger .dexgrid,.ledger .dexcards{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.ledger .qpanel{width:100%;max-width:none;position:relative;left:auto;top:auto}
+/* ⑥ 대원 줄 — 받은 세로 카드틀을 걷고 시안대로 (사용자 2026-10-14 밤).
+   왼쪽에 얼굴과 이름, 오른쪽에 장신구 셋 · 체력 · 경험치. 줄 사이는 가는 선 하나 */
+.ledger .mcards .mcard{display:grid;grid-template-columns:30% minmax(0,1fr);
+  grid-template-areas:"face gear" "face hp" "name ex";
+  width:100%;max-width:none;height:auto;margin:0;padding:10px 4px 12px;gap:5px 12px;
+  background:none;border-radius:0;align-items:center;
+  border-bottom:1px solid rgba(240,212,136,.22)}
+.ledger .mcards .mcard:last-child{border-bottom:0}
+.ledger .mcards .mcard:hover{transform:none;filter:brightness(1.1)}
+.ledger .mcards .mcard .mca{grid-area:face;height:auto;align-items:center}
+.ledger .mcards .mcard .mca img.pxs,.ledger .mcards .mcard .mca svg{width:88%;height:auto;max-height:none}
+.ledger .mcards .mcard .mcn{grid-area:name;text-align:center;font-size:13px}
+.ledger .mcards .mcard .mcs{grid-area:face;align-self:end;justify-self:center}
+.ledger .mcards .mcard .gear{grid-area:gear;margin:0;display:flex;gap:5%;width:86%;justify-content:flex-start}
+.ledger .mcards .mcard .gear .gs{flex:0 1 auto;width:28%;height:auto;aspect-ratio:1}
+.ledger .mcards .mcard .mcb{height:clamp(16px,2.3vh,26px);width:86%}
+.ledger .mcards .mcard .mcb.hp{grid-area:hp} .ledger .mcards .mcard .mcb.ex{grid-area:ex}
+.ledger .mcards .mcard .mcb span{font-size:11px;line-height:inherit}
+.ledger .mcards .mcard.empty{display:none}
 .ledger .msyn{flex-direction:row;flex-wrap:wrap;width:100%;gap:8px;justify-content:center;padding-top:10px}
 /* 지도에서는 시험용 건너뛰기를 안 보인다 (사용자 2026-10-14). 다시 보려면 이 줄을 지운다 */
 body.vmap #hSkip{display:none}
@@ -3641,6 +3670,44 @@ body.vmap #hSkip{display:none}
 .mb-left .map-m{width:100%;height:100%;padding:8px 6px 0;overflow-y:auto;overflow-x:hidden}
 .mb-right .map-r{padding:8px 6px}
 .mb-rtop .mres{margin:0}
+/* ── 지도 UI 2단계 (사용자 2026-10-14 밤, 시안 두 장을 재서) ─────────────────
+   값은 시안(1313×701)을 보드 좌표(1528×816)로 늘려 잰 것이다
+   (scratchpad/measure-sian.py) : 세계핵 x1267 y10 65×69 · 원정시간 x30 y776
+   단추 아이콘 48 · 대원 줄 높이 161, 구분선 y397 y558 */
+/* ① 무대가 화면을 다 덮는다 — 전에는 1528 비율로 고정이라 둘레가 비었다 */
+.mboard{position:fixed;left:0;top:0;width:100vw;height:100vh;margin:0;z-index:0}
+body.vmap .wrap{padding:0}
+body.vmap .mtop{position:relative;z-index:6;margin:0;padding:6px 0 0}
+body.vmap .mtop .mtrow{justify-content:center}
+.mtop .mphase{font-family:var(--serif);font-size:15px;color:#e8d6ae;letter-spacing:.06em;text-shadow:0 1px 0 #000,0 0 6px #000}
+.mtop .mphase.night{color:#c9c0f0}
+/* 원정 시간 — 틀 왼쪽 아래 (시안) */
+.mboard .mptime{position:absolute;left:1.9%;bottom:2.1%;z-index:7;width:auto;height:auto;
+  display:flex;align-items:center;gap:6px;font-size:13px}
+.mboard .mptime i{font-style:normal;color:#b9a888}
+.mboard .mptime b{color:#f0e2c4;font-variant-numeric:tabular-nums;text-shadow:0 1px 0 #000}
+/* ② 세계핵 — 자원 줄 안이 아니라 틀 꼭대기 오른쪽으로 */
+.mboard .mcoretop{position:absolute;left:82.9%;top:1.2%;width:4.3%;z-index:7;display:flex;justify-content:center}
+.mboard .mcoretop .corechip img{width:100%;height:auto;filter:drop-shadow(0 0 10px rgba(240,200,110,.5))}
+/* ② 자원 줄 — 아이콘을 키워 두 줄로, 오른쪽 끝에 시계 */
+.mb-rtop{justify-content:space-between;gap:1%;padding:0 2.4% 0 3.4%}
+.mb-rtop .mres{flex:1 1 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:3px 8px;
+  align-content:center;justify-content:start;margin:0}
+.mb-rtop .mres .mchip{width:auto;height:auto;justify-content:flex-start;gap:6px;font-size:14px}
+.mb-rtop .mres .mchip img.ri{width:26px;height:26px}
+.mb-rtop .mres .mchip:has(>u)::before,.mb-rtop .mres .mchip u{bottom:-4px;height:3px}
+.mb-rtop .mclock{position:relative;left:auto;top:auto;flex:0 0 auto;margin:0}
+.mb-rtop .mclock svg,.mb-rtop .mclock canvas{width:48px;height:48px}
+.mb-rtop .mclock b{font-size:12px}
+/* ③ 주둔지 — 안쪽 액자(틀 안의 틀)를 걷고 칸을 그대로 쓴다 */
+.mb-right .minsp{border-image:none;border:0;padding:3% 7% 4%;max-width:none;width:100%;height:100%;aspect-ratio:auto}
+.mb-right .map-r{padding:0;height:100%}
+/* ④ 왼쪽 단추 아이콘 — 32px 짜리가 제 크기로 떠서 작았다. 칸에 맞춰 키운다.
+   ⚠️ .mbag img.npx · .mquest img.npx (44px) 가 더 센 규칙이라 칸 이름까지 적어야 이긴다 */
+.mb-btns .mbag img.npx,.mb-btns .mquest img.npx,.mb-btns .mledger img,
+.mb-btns img.npx,.mb-btns img,.mb-btns svg{width:63%;height:auto;max-width:63%;max-height:72%}
+/* 지도는 칸 높이에 맞춘다 — 넓은 화면에서 칸 밖으로 넘치지 않게 */
+.mb-mid .pstage{height:100%;width:auto;max-width:100%}
 .mapwrap.m3{display:grid;grid-template-columns:560px 190px minmax(0,1fr);gap:20px;align-items:start;margin-top:4px}
 .m3 .pstage{margin:0;width:560px}
 .m3 .map-l{position:relative}
@@ -6374,8 +6441,9 @@ setTimeout(()=>{ const L=["펼침-1.png","펼침-2.png","펼침-3.png","펼침-4
   Object.values(MAP_HANDS).forEach(h=>L.push(h.held,h.point.f,h.press.f));
   L.forEach(n=>{ const i=new Image(); i.src=mapPng(n); MAP_PRE.push(i) }) },0);
 /* 구역마다 다른 바닥 — 지금은 핏빛 감옥뿐. 없으면 어두운 바탕 */
-let MAP_LEDGER=false;   /* 지도의 대원 장부가 펼쳐져 있는가 (사용자 2026-10-14) */
-const MAP_FLOOR=["바닥-핏빛 감옥.png","바닥-정령숲.png",null];
+let MAP_PANEL="";   /* 지도 왼쪽 판에 무엇이 펼쳐져 있나 — "" · "ledger" · "bag" · "quest" (사용자 2026-10-14 밤).
+                       단추 셋이 한 자리를 나눠 쓴다. 가방은 제 화면으로 가지 않고 여기에 그려진다 */
+const MAP_FLOOR=["바닥-핏빛 감옥.png","바닥-정령숲.png","바닥-마력의 탑.png"];
 /* 전장 그림 — 구역마다 (art/배경/전투/_원본/<번호>-*.png → bg/). 없으면 1구역 것 (사용자 2026-09-29) */
 const BATTLE_BG=["bg/battle.webp","bg/battle-2.webp","bg/battle-3.webp"];
 /* 양옆 · 위아래를 더 그린 와이드 판 — 예전 그림(832×468)이 1280×720 으로 (124,30) 자리에 들어 있다 (사용자 2026-10-05).
@@ -19677,6 +19745,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 142, "v": "0.7", "d": "2026-10-14", "t": "지도 UI 2단계 — 틀이 화면을 덮고 자원·시계·세계핵·대원 줄을 시안대로", "big": 0},
  {"b": 141, "v": "0.7", "d": "2026-10-14", "t": "지도 UI 리뉴얼 1 — 가죽 틀 무대와 대원장부", "big": 0},
  {"b": 140, "v": "0.7", "d": "2026-10-14", "t": "오리온 연출 — 기류 띠 · 볼트 · 이빨 자국 · 올가미 · 미끼와 거대벌레", "big": 0},
  {"b": 139, "v": "0.7", "d": "2026-10-14", "t": "오리온 · 사냥개 그림 · 얼굴 둘 · 데린저를 훈련장에", "big": 0},
@@ -21010,7 +21079,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=141;
+const BUILD_NO=142;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -22245,7 +22314,7 @@ function coreGetShow(list){
 function coreGetLater(){ setTimeout(()=>{ try{ coreGetShow(coreNewTake()) }catch(e){} },Math.round(1400*SPD)) }
 function coreFly(from,id){
   const c=id&&coreById(id); if(!c||!from) return;
-  const to=document.querySelector(".mtop .mres .corechip img"); if(!to) return;   /* 지도가 아니면 (보상 화면 등) 날리지 않는다 */
+  const to=document.querySelector(".mcoretop .corechip img")||document.querySelector(".mtop .mres .corechip img"); if(!to) return;   /* 지도가 아니면 (보상 화면 등) 날리지 않는다 */
   const h=uiPng(c.icon); if(!h) return;
   const t=to.getBoundingClientRect(), fly=el(h);
   fly.classList.add("corefly");
@@ -22589,6 +22658,7 @@ function drawMap(app){
   app.appendChild(el(`<div class="mtop"><div class="mtrow">
     <span class="res rday mchip kw ${dLeft<=1?"bad":dLeft<=2?"warn":""}" data-kw="일차" data-tip="${run.day}일차 / ${f.days}일. 오늘까지 세어 ${dLeft}일 남았습니다. 다 쓰면 그 자리에서 끝납니다.">${resIcon("day")}<b>${run.day}</b><i>/${f.days}일</i></span>
     <span class="mfield">${esc(f.n)}</span>
+    <span class="mphase ${run.night?"night":""}">${run.night?"밤":"낮"} ${clock()}</span>
     <span class="res mchip kw" data-kw="원정 시간" data-tip="이번 원정을 붙잡고 있은 시간입니다. 창을 덮어 둔 동안은 세지 않습니다."><b id="ptv">${playTime(run.playMs)}</b></span>
   </div><div class="mres"></div></div>`));
   const g=mapGridEl(0);
@@ -22694,23 +22764,48 @@ function drawMap(app){
     { const bs=three.querySelector(".mbtns"), to=board.querySelector(".mb-btns");
       if(bs&&to) while(bs.firstChild) to.appendChild(bs.firstChild) }
     /* 대원장부 — 셋째 단추. 누르면 왼쪽 판에 대원 카드가 쭉 내려오고, 스크롤하면 조합이 나온다 */
-    { const lb=el(`<span class="clock mledger kw" data-kw="대원 장부" data-tip="대원과 조합을 봅니다. 스크롤하면 조합이 나옵니다.">${iconImg("item_common_spellbook")||uiPng("ui_quest")||""}</span>`);
-      lb.onclick=e=>{ e.stopPropagation(); MAP_LEDGER=!MAP_LEDGER; render() };
+    { const lb=el(`<span class="clock mledger kw" data-kw="대원 장부" data-tip="대원과 조합을 봅니다. 스크롤하면 조합이 나옵니다.">${iconImg("ui_party_ledger")||uiPng("ui_quest")||""}</span>`);
+      lb.onclick=e=>{ e.stopPropagation(); MAP_PANEL=(MAP_PANEL==="ledger")?"":"ledger"; SFX.play("click"); render() };
       board.querySelector(".mb-btns").appendChild(lb);
-      if(MAP_LEDGER) lb.classList.add("on") }
+      if(MAP_PANEL==="ledger") lb.classList.add("on") }
+    /* ⑤ 가방 · 퀘스트도 같은 판에서 — 제 화면으로 가거나 밑에 목록을 띄우지 않는다 (사용자 2026-10-14 밤) */
+    { const bg=board.querySelector(".mb-btns .mbag");
+      if(bg){ bg.onclick=e=>{ e.stopPropagation(); MAP_PANEL=(MAP_PANEL==="bag")?"":"bag"; SFX.play("click"); render() };
+        if(MAP_PANEL==="bag") bg.classList.add("on") } }
+    { const qb=board.querySelector(".mb-btns .mquest");
+      if(qb){ qb.onclick=e=>{ e.stopPropagation(); run.qPin=0; MAP_PANEL=(MAP_PANEL==="quest")?"":"quest"; SFX.play("click"); render() };
+        if(MAP_PANEL==="quest") qb.classList.add("on") } }
     mv(".map-l",".mb-mid");      /* 양피지 무대 */
-    /* 왼쪽 판 — 장부를 켰을 때만 (사용자 2026-10-14 : 「누르면 목록이 쭉 내려오면서」) */
-    if(MAP_LEDGER){
-      const box=el(`<div class="ledger"><div class="lgh">대원</div></div>`);
-      const m=three.querySelector(".map-m");
-      const cards=m&&m.querySelector(".mcards"), syn=m&&m.querySelector(".msyn");
-      if(cards) box.appendChild(cards);
-      box.appendChild(el(`<div class="lgh" style="margin-top:14px">조합</div>`));
-      if(syn) box.appendChild(syn);
+    /* 왼쪽 판 — 켠 단추에 따라 (사용자 2026-10-14 : 「누르면 목록이 쭉 내려오면서」) */
+    if(MAP_PANEL){
+      const box=el(`<div class="ledger lg-${MAP_PANEL}"></div>`);
+      if(MAP_PANEL==="ledger"){
+        box.appendChild(el(`<div class="lgh">대원</div>`));
+        const m=three.querySelector(".map-m");
+        const cards=m&&m.querySelector(".mcards"), syn=m&&m.querySelector(".msyn");
+        if(cards) box.appendChild(cards);
+        box.appendChild(el(`<div class="lgh" style="margin-top:14px">조합</div>`));
+        if(syn) box.appendChild(syn);
+      } else if(MAP_PANEL==="bag"){
+        drawBag(box);   /* 가방 화면을 그대로 판 안에 */
+        const go=box.querySelector(".bag-foot .mgo");
+        if(go) go.onclick=()=>{ MAP_PANEL=""; render() };   /* 닫기는 판만 접는다 — 화면을 옮기지 않는다 */
+      } else if(MAP_PANEL==="quest"){
+        box.appendChild(el(`<div class="lgh">퀘스트</div>`));
+        const qp=questPanel();
+        box.appendChild(qp||el(`<div class="hint" style="font-size:12px;padding:6px 0;text-align:center">진행 중인 퀘스트가 없습니다.</div>`));
+      }
       board.querySelector(".mb-left").appendChild(box);
     }
     mv(".map-r",".mb-right");    /* 주둔지 */
     { const r=app.querySelector(".mtop .mres"); if(r) board.querySelector(".mb-rtop").appendChild(r) }   /* 자원 줄 */
+    /* ② 시계는 자원 칸 오른쪽 끝, 세계핵은 틀 꼭대기, 원정 시간은 틀 왼쪽 아래 (사용자 2026-10-14 밤, 시안) */
+    { const ck=board.querySelector(".mclockbox .mclock")||three.querySelector(".mclockbox .mclock");
+      if(ck) board.querySelector(".mb-rtop").appendChild(ck) }
+    { const cc=board.querySelector(".mb-rtop .corechip");
+      if(cc){ const box=el(`<div class="mcoretop"></div>`); box.appendChild(cc); board.appendChild(box) } }
+    { const pt=app.querySelector(".mtop .mchip[data-kw='원정 시간']");
+      if(pt){ pt.classList.add("mptime"); pt.insertBefore(el(`<i>원정 시간</i>`),pt.firstChild); board.appendChild(pt) } }
     app.appendChild(board);
   }
   /* 구역 규칙 안내 — 들어선 직후 한 번, 그 뒤엔 지도 위 구역 이름을 누르면 (푸른 수정은 이제 쓰는 단추) */
