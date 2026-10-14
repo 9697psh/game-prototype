@@ -19394,6 +19394,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 123, "v": "0.7", "d": "2026-10-14", "t": "늪의 왕 — 침뱉기를 사람 수대로 한 방씩, 삼켜진 동안은 정지와 같이", "big": 0},
  {"b": 122, "v": "0.7", "d": "2026-10-14", "t": "고정 피해(전장의 칼날 · 투기장의 감옥 · 꿰뚫는 화살)를 흰 숫자로, 소리는 여느 타격음", "big": 0},
  {"b": 121, "v": "0.7", "d": "2026-10-14", "t": "투기장의 감옥 아이콘", "big": 0},
  {"b": 120, "v": "0.7", "d": "2026-10-14", "t": "투기장의 감옥 — 상태 줄에 받을 피해", "big": 0},
@@ -20708,7 +20709,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=122;
+const BUILD_NO=123;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -27675,7 +27676,11 @@ function say(t,c){ if(!B||!B.log) return;   /* 전투 밖(지도에서 보상을
   t=icoify(t); B.log.push({t,c}); if(!BARK_SHOW) return; const l=document.getElementById("log");
   if(l){ l.insertAdjacentHTML("beforeend",`<div class="${c||""}">${t}</div>`); l.scrollTop=l.scrollHeight } }
 /* 정지(u.stop) — 잔해처럼 겨눌 수도 때릴 수도 없다. 칸은 그대로 막는다(allyAt·minAt 은 거른 적이 없다) (사용자 2026-10-07) */
-function stopped(u){ return !!(u&&u.stop>0) }
+/* 정지 — 어떤 효과도 닿지 않는 상태. **삼켜진 대원도 같다** (사용자 2026-10-14 : 「먹힌 상태에서는
+   아무 효과를 받지 않도록(정지 상태랑 비슷)」). 뱃속에 있는 동안 피해 · 상태 이상 · 지속 피해가
+   쌓였다가 나오는 순간 한꺼번에 떨어지는 일이 없어진다.
+   ⚠️ spitOut 은 h.swallowed=0 을 **먼저** 박고 나서 뱉기 피해를 주므로 그 한 방은 그대로 들어간다 */
+function stopped(u){ return !!(u&&(u.stop>0||u.swallowed)) }
 const onField=()=>run.heroes.filter(h=>h.slot>0&&h.hp>0&&!h.stop);
 const foeAt=s=>B.foes.find(f=>f.alive&&(f.slot===s||(f.big&&f.slot+1===s)));   /* big 은 뒤 칸도 차지 */
 /* 화면에서만 적을 옛 자리에 붙잡아 둔다 (사용자 2026-09-30 · 시공간 폭탄·자기장 변환).
@@ -29267,8 +29272,15 @@ function skExec0(f,I){
         if(L.length&&total>0){
           say(`침뱉기 — 빗나간 ${total}이 사방으로 튑니다.`,"t1");
           fx({side:"foe",slot:f.slot,pose:"atk",lunge:1,gap:0});
-          for(let q=0;q<total;q++){ const u=rnd(onField()); if(!u) break;
-            asSrc(f,()=>hurtAlly(f,u,1,"침뱉기",I.el)); }
+          /* ⚠️ 1 씩 total 번이 아니라 **사람 수대로 갈라 한 방씩** 때린다 (사용자 2026-10-14).
+             1 짜리를 수십 번 때리면 — 혼자 남았을 때 그 전부가 한 사람에게 몰리는 데다
+             **회피 1 이 피해 1 만 막고**(한 방을 통째로 흘리라고 만든 것인데),
+             **타락의 초읽기가 때릴 때마다 얹혔다**(countUp 2 · 28방이면 84). 늪의 왕이 그걸로 풀체력 대원을 한 턴에 눕혔다 */
+          const n=L.length, base=Math.floor(total/n), add=new Map();
+          { let rest=total-base*n, pool=L.slice();        /* 남는 몫은 무작위로 한 사람에 1씩 (rest < n 이라 겹치지 않는다) */
+            while(rest>0&&pool.length){ const u=rnd(pool); pool.splice(pool.indexOf(u),1); add.set(u,1); rest-- } }
+          L.forEach(u=>{ const v=base+(add.get(u)||0);
+            if(v>0) asSrc(f,()=>hurtAlly(f,u,v,"침뱉기",I.el)) });
         } }
       return }
     if(R.why==="fear"){ say(`${f.name}${jo(f.name,"ig")} 겁에 질려 ${t.name}${jo(t.name,"eul")} 겨누지 못합니다.`,"t2");
@@ -33352,6 +33364,7 @@ function incoming(){
   /* 정지 — 움직이지도, 겨눠지지도, 맞지도 않는다. 실제 셈 세 곳과 짝이다 :
        움직이지 않는다  actOne  `if(f.stop>0) return`
        맞지 않는다      hurtAlly `if(stopped(t)) return` · hurt `if(stopped(f)) return 0`
+       ※ 삼켜진 대원(swallowed)도 stopped 로 쳐서 같은 길을 탄다 (2026-10-14)
        겨눠지지 않는다  V_NOW.at `stopped(u)?null:u`
      vstop — **이번 적 차례 안에서** 멈춘 것들. 선고(stopAll)는 적 차례 도중에 걸리니
      그 뒤에 서는 적의 몫은 0 이어야 한다 (사용자 2026-10-08 : 선고는 다른 적까지 멈춘다). */
