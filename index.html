@@ -3698,7 +3698,11 @@ body.vmap .bagbtn{display:none}   /* 지도에서는 무대 안 시계 밑의 .m
 .mquest.none img.npx{opacity:.4;filter:grayscale(1)}
 .mquest .qn{position:absolute;right:-6px;top:-6px;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;background:#c9a227;color:#1a1408;font-style:normal;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;border:1px solid #1a1408}
 .mquest .mqpop{display:none;position:absolute;left:calc(100% + 10px);top:0;width:300px;text-align:left;cursor:default;z-index:5}
-.mquest:hover .mqpop{display:block}
+.mquest:hover .mqpop,.mquest.pin .mqpop{display:block}   /* 눌러서 고정 (사용자 2026-10-14) */
+.mquest.pin{border-color:var(--brass)}
+.mquest .mqpop .qpanel{position:relative}
+.mquest .mqpop .qpinx{position:absolute;right:6px;top:4px;cursor:pointer;color:var(--dim);font-size:13px;line-height:1}
+.mquest .mqpop .qpinx:hover{color:var(--brass)}
 .mquest:hover{z-index:40}   /* 가리키는 손보다 위 */
 .mquest .mqpop .qpanel{margin:0;box-shadow:0 12px 26px rgba(0,0,0,.6)}
 .msy img{width:32px;height:32px;image-rendering:pixelated}
@@ -19364,6 +19368,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 119, "v": "0.7", "d": "2026-10-14", "t": "퀘스트 목록을 눌러 고정", "big": 0},
  {"b": 118, "v": "0.7", "d": "2026-10-14", "t": "부정 보호막 중첩 · 아침 연출 · 도감 · 재배치 빛", "big": 0},
  {"b": 117, "v": "0.7", "d": "2026-10-14", "t": "세계핵 퀘스트도 손으로 · 덩굴 조절 · 성서 상시", "big": 0},
  {"b": 116, "v": "0.7", "d": "2026-10-14", "t": "퀘스트 보상을 목록에서 눌러 받기", "big": 0},
@@ -20674,7 +20679,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=118;
+const BUILD_NO=119;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -22242,6 +22247,8 @@ function migrateCells(){
   for(let r=0;r<run.size;r++) for(let c=0;c<run.size;c++){ const x=run.grid[r][c];
     if((x.t==="dungeon"||x.t==="elite")&&!x.done&&!x.boost){ const e=encRoll(x.t,run.field,x.waves||1); Object.assign(x,{enc:e.enc,seq:e.seq,seqName:e.seqName,hint:e.hint,style:e.style,boost:e.boost,loot:e.loot}) } }
 }
+/* 지도를 누르면 퀘스트 목록 고정이 풀린다 (사용자 2026-10-14) */
+function qPinOff(){ if(typeof run!=="undefined"&&run&&run.qPin){ run.qPin=0; return true } return false }
 function drawMap(app){
   const f=FIELDS[run.field], S=run.size;
   migrateCells();
@@ -22307,7 +22314,16 @@ function drawMap(app){
     const qb=el(`<span class="clock mquest kw ${L.length?"":"none"}${rdy?" qrdy":""}" data-kw="퀘스트" data-tip="${rdy?`받을 수 있는 퀘스트가 ${rdy}개 있습니다. 목록에서 눌러 보상을 받으세요.`:"받아 둔 퀘스트를 봅니다. 숫자는 남은 수입니다."}">${uiPng("ui_quest")}${L.length?`<i class="qn">${L.length}</i>`:""}${rdy?`<i class="qrdyn">!</i>`:""}<div class="mqpop"></div></span>`);   /* 퀘스트 — 느낌표, 오른쪽 위 개수, 커서를 올리면 판 (사용자 2026-09-19) */
     const pop=qb.querySelector(".mqpop"), qp=questPanel();
     if(qp) pop.appendChild(qp); else pop.appendChild(el(`<div class="qpanel"><div class="qh">${uiPng("ui_quest")}퀘스트 목록</div><div class="hint" style="margin-top:6px">진행 중인 퀘스트가 없습니다.</div></div>`));
-    qb.onclick=e=>e.stopPropagation(); three.querySelector(".mbtns").appendChild(qb); }
+    /* 커서를 올렸을 때만 보이면 **보상을 누를 수가 없다** — 누르면 고정한다 (사용자 2026-10-14).
+       한 번 더 누르거나 판 밖을 누르면 접힌다. 판 안쪽 누름은 여기서 멈춘다 */
+    if(run.qPin) qb.classList.add("pin");
+    if(run.qPin){ const x=el(`<span class="qpinx" title="닫기">✕</span>`);
+      x.onclick=e=>{ e.stopPropagation(); run.qPin=0; render() };
+      const panel=pop.querySelector(".qpanel"); if(panel) panel.appendChild(x) }
+    qb.onclick=e=>{ e.stopPropagation();
+      if(pop.contains(e.target)) return;      /* 목록 안을 누른 것은 그 카드가 맡는다 */
+      run.qPin=!run.qPin; SFX.play("click"); render() };
+    three.querySelector(".mbtns").appendChild(qb); }
   const from=MAP_FROM; MAP_FROM=null;
   if(MAP_ENTER){ MAP_ENTER=0;
     const u=stage.querySelector(".unf"); let i=0; const tok=++MAP_UNF_TOK;
