@@ -197,6 +197,12 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
   filter:drop-shadow(0 2px 0 rgba(0,0,0,.55)) drop-shadow(0 0 7px rgba(201,162,39,.22))}
 /* 쓰러진 대원 — 그 자리에 그대로 남는다. 아무것도 주고받지 못한다 */
 .slot.wreck .art img.pxs,.slot.wreck .art svg{filter:saturate(.3) brightness(.6) drop-shadow(0 2px 0 rgba(0,0,0,.6))}
+/* 자폭 잔해 — 터지기까지 몇 턴 (사용자 2026-10-14) */
+.slot.wreck .bombcd{position:absolute;left:50%;top:-4px;transform:translateX(-50%);z-index:5;white-space:nowrap;
+  padding:2px 7px;border:1px solid #e0705a;border-radius:4px;background:rgba(22,11,9,.9);color:#ffbda8;font-size:11px;pointer-events:auto}
+.slot.wreck .bombcd b{color:#ff8e6a}
+@keyframes bombTick{0%,100%{opacity:1;filter:none}50%{opacity:.5;filter:brightness(1.4)}}
+.slot.wreck.bombing .bombcd{animation:bombTick 1.1s ease-in-out infinite}
 .slot.body{opacity:.72;border-style:dashed;border-color:rgba(74,62,49,.6);
   background:linear-gradient(180deg,rgba(30,24,21,.7),rgba(18,15,13,.7) 46%)}
 .slot.body .art img.pxs{filter:saturate(.45) brightness(.78) drop-shadow(0 2px 0 rgba(0,0,0,.6))}
@@ -6567,6 +6573,9 @@ function fleeFX(to,from){
     {transform:`translateX(0px) rotate(0deg)`,              offset:1}
   ],{duration:Math.round(520*(typeof SPD!=="undefined"?SPD:1)),easing:"cubic-bezier(.35,0,.15,1)"});
 }
+/* 벌목도가 베는 소리 — 메아리 끊기와 덩굴 수풀 헤치기가 **같은 소리**를 쓴다 (사용자 2026-10-14).
+   art/소리/벌목도.wav 를 두면 그것이, 없으면 나이코스 베기, 그것도 없으면 합성음 */
+function bladeSnd(){ return sfxHas("벌목도")?"벌목도":(sfxHas("나이코스 베기")?"나이코스 베기":"slash") }
 /* 벌목도로 메아리 끊기 (사용자 2026-10-01) — 메아리 표식 위로 벌목도가 휘둘러 내려와 베고, 표식이 두 쪽으로 갈라져 떨어진다.
    표식은 f.echoCutAt 부터 ECHO_CUT_MS 동안 남아 있다가 다시 그릴 때 걷힌다 */
 const ECHO_CUT_MS=1500;
@@ -6586,7 +6595,7 @@ function echoCutFX(side,slot,fid){
   setTimeout(()=>{ const sk=document.createElement("div"); sk.className="ecslash";
     sk.style.cssText=`left:${cx}px;top:${cy}px;width:${sz*1.6}px`;
     document.body.appendChild(sk); setTimeout(()=>sk.remove(),520);
-    SFX.play(sfxHas("벌목도")?"벌목도":sfxHas("나이코스 베기")?"나이코스 베기":"slash");   /* 나이코스 베기 소리를 빌린다 (사용자 2026-10-01). 벌목도.wav 를 두면 그것이 먼저 */
+    SFX.play(bladeSnd());   /* 나이코스 베기 소리를 빌린다 (사용자 2026-10-01). 벌목도.wav 를 두면 그것이 먼저 */
     if(badge){
       /* 표식을 두 쪽으로 — 같은 그림을 위·아래 반씩 잘라 떨어뜨린다 */
       const im=badge.querySelector("img"), br=(im||badge).getBoundingClientRect();
@@ -19315,6 +19324,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 115, "v": "0.7", "d": "2026-10-14", "t": "잔해 폭발 셈 · 벌목도 소리", "big": 0},
  {"b": 114, "v": "0.7", "d": "2026-10-14", "t": "상자 아트 · 알림이 남게 · 벌레 대기 크기 · 퀘스트 보상 글", "big": 0},
  {"b": 113, "v": "0.7", "d": "2026-10-14", "t": "이벤트 중에 보상 화면이 끼어들던 것", "big": 0},
  {"b": 112, "v": "0.7", "d": "2026-10-14", "t": "금속 부속 죽음 피해 6→4", "big": 0},
@@ -20621,7 +20631,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=114;
+const BUILD_NO=115;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -23173,9 +23183,11 @@ const GIM_EV={
   /* ── 정령숲 (사용자 2026-10-01) ── */
   thicket:(cell,r,c)=>({n:"덩굴 수풀",art:"ink_sp_thicket",face:"살아있는 덩굴",gim:1,
     t:"울창한 수목을 두른 덩굴이 길을 막고 있습니다. 가시 돋친 줄기가 발목을 감습니다.",
-    o:[{t:"수풀 헤치기",d:"'벌목도' 장신구를 지니고 있을 때 선택 가능. 선택 후 벌목도 장신구를 잃고 덩굴 수풀 구역을 지웁니다.",end:1,
+    o:[{t:"수풀 헤치기",d:"'벌목도' 장신구를 지니고 있을 때 선택 가능. 선택 후 벌목도 장신구를 잃고 덩굴 수풀 구역을 지웁니다.",end:1,snd:1,
         when:()=>!!fellingBlade(),
         f:()=>{ const b=fellingBlade(); if(!b) return "벌목도가 없습니다.";
+          /* 메아리를 끊을 때와 **같은 소리** (사용자 2026-10-14) — 고르는 길은 echoCutFX 와 한 줄로 */
+          SFX.play(bladeSnd());
           if(b.bag) run.bag.splice(b.i,1); else unequip(b.h,b.i,1);
           run.grid[r][c]={t:"empty"}; run.nodeCost=0;
           return `벌목도로 덩굴을 쳐 냅니다. 길이 트이고, 날이 부러집니다.${b.h?` (${b.h.name}의 벌목도)`:""}` }},
@@ -29445,7 +29457,7 @@ function skTurnStart(){
   if(B.bombs&&B.bombs.length){
     const now=B.turn||1, go=B.bombs.filter(b=>b.turn<=now); B.bombs=B.bombs.filter(b=>b.turn>now);
     go.forEach(b=>{ const src=B.foes.find(x=>x.name===b.by)||B.foes[0]||null;
-      fx({side:"foe",slot:b.slot,s:"boom",quake:1,ring:"#e0705a",txt:"폭발",cls:"crit",gap:200});
+      fx({side:"foe",slot:b.slot,s:"boom",quake:1,ring:"#e0705a",txt:"폭발",cls:"crit",gap:340});   /* 터지는 그림과 맞는 수가 겹치지 않게 (2026-10-14) */
       say(`${b.n} — 잔해가 터집니다! 모든 상대에게 공격 피해 ${b.v}`,"t1");
       allUnits().filter(u=>u.hp>0).forEach(t=>{ if(src) asSrc(src,()=>hurtAlly(src,t,foeDmg(src,b.v,"공격"),b.n,"공격")) }) });
   }
@@ -30536,10 +30548,14 @@ function drawBattle(app){
     const f=foeShownAt(s);
     if(f&&f.big&&heldSlot(f)+1===s){ fs.appendChild(el(`<div class="slot bigshadow"></div>`)); continue }   /* 두 칸짜리의 뒷칸 */
     if(!f&&wreckAt(s)){ const w=wreckAt(s);   /* 부서진 대포 — 대원의 쓰러짐처럼 자리에 남는다 · 저주받은 성벽은 잔해 */
-      const dw=el(`<div class="slot body wreck"><span class="no">${foeNo(s)}</span>
+      /* 자폭 잔해 — 터지기까지 몇 턴인지 잔해 위에 (사용자 2026-10-14 : 대비할 수 있게) */
+      const bmb=(B.bombs||[]).find(b=>b.slot===s);
+      const left=bmb?Math.max(0,(bmb.turn||0)-(B.turn||1)):0;
+      const dw=el(`<div class="slot body wreck${bmb?" bombing":""}"><span class="no">${foeNo(s)}</span>
         <div class="art">${w.wallFoe?rubbleArt(true):figure(w.name,"hurt")}</div>
+        ${bmb?`<div class="bombcd kw" data-kw="자폭" data-tip="${esc(bmb.n||"자폭")} — ${left?left+"턴 뒤":"이번 턴 끝"}에 잔해가 터져 모든 상대에게 공격 피해를 ${bmb.v} 줍니다.">${left?left+"턴 뒤 폭발":"이번 턴 끝 폭발"} <b>${bmb.v}</b></div>`:""}
         <div class="nm">${esc(w.wallFoe?"잔해":w.name)}</div>
-        <div class="mini"><span class="chip on">${w.wallFoe?"잔해":"부서짐"}</span></div></div>`);
+        <div class="mini"><span class="chip on">${bmb?(left?`째깍 ${left}`:"째깍"):(w.wallFoe?"잔해":"부서짐")}</span></div></div>`);
       dw.dataset.slot=s; fs.appendChild(dw); continue }
     const d=el(`<div class="slot ${f?"":"empty"}${f&&f.big?" big":""}"><span class="no">${foeNo(s)}${f&&f.big?""+foeNo(s+1):""}</span>${
       preSkill&&f?`<span class="reach">거리 ${dist(sel.hero.slot,s)}</span>`:""}</div>`);
