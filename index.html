@@ -3097,9 +3097,9 @@ html.noscr, html.noscr body{overflow:hidden!important}   /* 가로만 숨기면 
 /* 거대 균열벌레 — **바닥에 서서 화면 높이를 꽉 채운다** (사용자 2026-10-15, 받은 사진).
    전에는 128×256 짜리가 아래에서 위로 지나갔다 — 작고 금방 사라졌다.
    이제 제자리에서 칸을 넘기고(riftWormFX), 다 돌면 서서히 녹는다 */
-.riftworm{position:absolute;bottom:0;width:248px;height:100vh;background-size:800% 100%;
+.riftworm{position:absolute;top:0;width:248px;background-size:800% 100%;
   background-repeat:no-repeat;image-rendering:pixelated;pointer-events:none;z-index:9;
-  opacity:0;transition:opacity .34s ease-in}
+  opacity:0;transition:opacity .34s ease-in}   /* 높이와 자리는 riftWormFX 가 적 발끝에 맞춰 박는다 */
 .derrline{position:absolute;height:64px;background-repeat:no-repeat;background-size:100% 100%;
   image-rendering:pixelated;pointer-events:none;z-index:8;opacity:.95;
   animation:derrline .42s ease-out forwards}   /* 저격 겨냥선 (2026-10-14) */
@@ -8803,6 +8803,10 @@ function riftWormFX(slot){
   const nd=spawn('<div class="riftworm"></div>'); if(!nd) return 0;
   nd.style.backgroundImage="url("+u+")";
   nd.style.left=(p.x-124)+"px";
+  /* 기둥의 **아래끝을 그 적의 발끝에** 둔다 (사용자 2026-10-15 : 「적 발밑에서 나오도록」).
+     전에는 화면 아래끝에 세워 적보다 한참 밑에서 솟았다 */
+  { const ft=(typeof feetOf==="function"&&feetOf("foe",slot))||p;
+    nd.style.top="0px"; nd.style.height=Math.max(240,Math.round(ft.y))+"px" }
   requestAnimationFrame(()=>{ nd.style.opacity="1" });
   SFX.play("균열벌레 돌진");
   /* ⚠️ 칸 넘기기는 **백분율**이다 — 배경이 800% 라 한 칸이 100/7 % 다 (픽셀로 적으면 안 맞는다).
@@ -19869,6 +19873,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 152, "v": "0.7", "d": "2026-10-15", "t": "균열벌레가 적 발밑에서 솟는다", "big": 0},
  {"b": 151, "v": "0.7", "d": "2026-10-15", "t": "데린저 열 가지 · 오리온 여섯 가지 연출과 효과음", "big": 0},
  {"b": 150, "v": "0.7", "d": "2026-10-15", "t": "지도 F11 전체화면 맞춤 · 데린저/오리온 연출과 소리", "big": 0},
  {"b": 149, "v": "0.7", "d": "2026-10-15", "t": "지도 왼쪽 단추 셋에 받은 효과음", "big": 0},
@@ -21212,7 +21217,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=151;
+const BUILD_NO=152;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
