@@ -10548,6 +10548,8 @@ function skinTable(T,name){
 function skinOwnerIn(hero){ return !(typeof run!=="undefined"&&run&&run.heroes&&run.heroes.length)||run.heroes.some(x=>x.name===hero) }
 function skinSprite(name){
   if(name==="도미니코"&&domDemonRun()&&PNG_SPRITE["도미니코 (악마)"]) return "도미니코 (악마)";   /* 금단의 고서 — 그 판에서는 악마 외형 (사용자 2026-10-06) */
+  /* 데린저 — 든 총에 따라 자세 한 벌이 통째로 바뀐다 (노트 변형 보상, 2026-10-14) */
+  if(name==="데린저"){ const g=(typeof derrGun==="function")&&derrGun(); if(g&&PNG_SPRITE["데린저 ("+g+")"]) return "데린저 ("+g+")" }
   const k=skinOn(name); if(k&&PNG_SPRITE[k.sp]) return k.sp;
   /* 소환물 — 주인이 입은 외형의 소환물 그림 (폭식의 군주 → 차원문 악마군, 2026-10-03). 주인이 파티에 있을 때만 */
   for(const hero in SKINS){ const kk=skinOn(hero), m=kk&&kk.minionSp&&kk.minionSp[name]; if(m&&PNG_SPRITE[m]&&skinOwnerIn(hero)){
@@ -11558,6 +11560,10 @@ const SKILL_FULL={
  "커져가는 악몽":"그슨대가 공격 피해를 받을 때마다 어둠 조각을 얻습니다.\n어둠 조각을 3개 모을 때마다 그 전투 동안 공격력 +1을 얻습니다.\n\n아군 사후, 학살자 진영 대원도 공격력을 동일하게 얻습니다.",
  "탄알 장전":"남은 _탄알_을 모두 소비합니다. 소비한 탄알만큼 보호막을 2(추가 ¤ ) 얻습니다.\n\n_탄알_을 모두 장전합니다.",
  "연막탄":"사용한도(1). 회피를 2 얻고 1턴 동안 은신합니다.",
+ "리볼버":"_탄알_을 1 소모하여 적에게 피해를 4(추가 † ) 줍니다.",
+ "산탄총":"_탄알_을 2 소모하여 적에게 피해를 5(추가 † ) 줍니다. 대상이 거리 2 내에 있다면 1번 더 발동합니다.",
+ "저격소총":"_탄알_을 2 소모하여 적에게 피해를 2(추가 † + 대상과의 거리) 줍니다.",
+ "기관총":"_탄알_을 4 소모하여 적에게 피해를 1x8(추가 † ) 줍니다.",
  "탄알집 챙기기":"데린저는 _탄알_을 자원으로 사용합니다.\n현재 데린저의 최대 _탄알_ 개수는 4개 입니다.",
  "폭식의 악마":"전투에서 소환물이 아닌 아군 또는 적군이 죽을 때마다 최대 체력을 영구히 1 얻습니다. 한 전투당 최대 2의 최대 체력을 얻을 수 있습니다.",
  "튼튼한 방어구":"이 대원이 주둔지에 있을 동안, 전투 시작 후 무작위 방어구 카드를 얻습니다.",
@@ -13202,6 +13208,23 @@ const HERO_REWARDS={
     h=>h.tag.majesty=(h.tag.majesty||0)+20),
   R("영혼 둔갑","상급","대원 배치 후, 회피를 4 얻습니다. 쿠렘타이가 회피를 보유할 때, 공격한 대상에게 공포를 1 부여합니다.",
     h=>{ h.tag.ghostEvade=(h.tag.ghostEvade||0)+4; h.tag.ghostFear=1 })
+ ],
+ /* 데린저 — 노트 midRewards 의 「변형」 넷 (2026-10-14).
+    고르면 1번 기술이 그 총으로 바뀌고 **자세 한 벌도 통째로** 바뀐다 (skinSprite).
+    ⚠️ 노트의 「처음 얻는 중급 보상은 항상 변형으로 고정」은 아직 안 넣었다 — 보상 뽑는 자리를 손봐야 한다 */
+ "데린저":[
+  /* 변형 — 하나를 고르면 나머지 셋은 이 원정에서 다시 안 뜬다 (노트 주석) */
+  Object.assign(R("변형: 산탄총","중급","자동변환단총이 산탄총로 변형됩니다.\n\n산탄총(탄알 2): 적에게 피해를 5(추가 † ) 줍니다. 대상이 거리 2 내에 있다면 1번 더 발동합니다.",
+    h=>morphGun(h,"산탄총")),{okf:()=>!derrGun()}),
+  /* 변형 — 하나를 고르면 나머지 셋은 이 원정에서 다시 안 뜬다 (노트 주석) */
+  Object.assign(R("변형: 저격소총","중급","자동변환단총이 저격소총으로 변형됩니다.\n\n저격소총(탄알 2): 적에게 피해를 2(추가 † + 대상과의 거리) 줍니다.",
+    h=>morphGun(h,"저격소총")),{okf:()=>!derrGun()}),
+  /* 변형 — 하나를 고르면 나머지 셋은 이 원정에서 다시 안 뜬다 (노트 주석) */
+  Object.assign(R("변형: 리볼버","중급","자동변환단총이 리볼버로 변형됩니다.\n\n리볼버(탄알 1): 적에게 피해를 4(추가 † ) 줍니다.",
+    h=>morphGun(h,"리볼버")),{okf:()=>!derrGun()}),
+  /* 변형 — 하나를 고르면 나머지 셋은 이 원정에서 다시 안 뜬다 (노트 주석) */
+  Object.assign(R("변형: 기관총","중급","자동변환단총이 기관총으로 변형됩니다.\n\n기관총(탄알 4): 적에게 피해를 1x8(추가 † ) 줍니다.",
+    h=>morphGun(h,"기관총")),{okf:()=>!derrGun()}),
  ],
  /* 이라 — 노트 lowRewards 그대로 (2026-10-12). **중급 13 · 상급 13 은 아직 안 넣었다** —
     흡수 길 · 충전 틀 넓히기 · 반복 퀘스트처럼 새로 깔아야 하는 것이 섞여 있어 따로 간다 */
@@ -16867,10 +16890,7 @@ function arenaPrisonDmg(u){
 }
 function debBadges(u){
   if(!u.deb) return [];
-  /* 데린저의 조준은 **속박 99 로** 스스로를 묶어 둔 것이라 그 딱지를 따로 띄우지 않는다 —
-     「조준」 딱지가 그 뜻을 이미 말한다 (사용자 2026-10-14) */
-  const aimLock=(u.name==="데린저"&&u.aimAt!=null);
-  const L=DEB_KEYS.filter(k=>u.deb[k]>0&&!(aimLock&&k==="bind")).map(k=>bd("o",k,u.deb[k],DEBUFF[k].d,DEBUFF[k].n));
+  const L=DEB_KEYS.filter(k=>u.deb[k]>0).map(k=>bd("o",k,u.deb[k],DEBUFF[k].d,DEBUFF[k].n));
   /* 모두에게 걸리는 것이라 상태 줄에도 모두에게 — 옆의 수는 **이 대상이 턴 끝에 받을 피해**다 */
   { const v=arenaPrisonDmg(u);
     if(v>0) L.push(bd("o","투기장의 감옥",v,
@@ -19505,6 +19525,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 135, "v": "0.7", "d": "2026-10-14", "t": "데린저 변형 보상 넷 · 조준은 어떤 정화로도 안 풀린다", "big": 0},
  {"b": 134, "v": "0.7", "d": "2026-10-14", "t": "데린저 그림 — 총 다섯의 자세 · 아이콘 열둘 · 탄알 줄", "big": 0},
  {"b": 133, "v": "0.7", "d": "2026-10-14", "t": "자동변환단총 거리 한도 없애기 · 사냥개 회복은 사냥개에게 · 데린저 탄알 가득 시작", "big": 0},
  {"b": 132, "v": "0.7", "d": "2026-10-14", "t": "데린저 리뉴얼 — 노트 6-0-1 ~ 6-4", "big": 0},
@@ -20831,7 +20852,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=134;
+const BUILD_NO=135;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -27246,7 +27267,26 @@ function drawOver(app){   /* 소리 · 연출은 앞의 defeatCard 가 맡는다
 
 /* ═══════════ 전투 ═══════════ */
 const SLOTS=5;
-const AMMO_MAX=4;   /* 데린저의 최대 탄알 — 노트 6-0-2 「탄알집 챙기기」 (2026-10-14, 전엔 5) */
+const AMMO_MAX=4;
+/* 데린저의 변형 — 중급 보상을 고르면 1번 기술이 통째로 이 총으로 바뀐다 (노트 midRewards, 2026-10-14).
+   자세 다섯 벌도 같이 바뀐다 (skinSprite 가 「데린저 (리볼버)」 꼴을 고른다) */
+const DERR_GUNS={
+ "리볼버":  {ammo:1,dmg:4,                d:"탄알 1, 피해 4"},
+ "산탄총":  {ammo:2,dmg:5,near2x:1,       d:"탄알 2, 피해 5. 거리 2 안이면 한 번 더"},
+ "저격소총":{ammo:2,dmg:2,farAdd:1,       d:"탄알 2, 피해 2 + 대상과의 거리"},
+ "기관총":  {ammo:4,dmg:1,hits:8,         d:"탄알 4, 피해 1을 8번"}
+};
+/* 지금 든 총 — 없으면 자동변환단총이다 */
+function derrGun(){ const d=(typeof run!=="undefined"&&run&&run.heroes||[]).find(x=>x.name==="데린저");
+  return (d&&d.tag&&d.tag.gun)||null }
+function morphGun(h,g){
+  const D=DERR_GUNS[g]; if(!h||!D) return;
+  h.tag=h.tag||{}; h.tag.gun=g;
+  h.sk=h.sk||[];
+  h.sk[0]={n:g,cost:0,el:"공격",tg:"foe",dmg:D.dmg,ammo:D.ammo,costType:"탄알",
+           hits:D.hits||1,near2x:D.near2x||0,farAdd:D.farAdd||0,d:D.d};
+  if(typeof say==="function") say(`${h.name}의 자동변환단총이 ${g}으로 변형됩니다.`,"t1");
+}   /* 데린저의 최대 탄알 — 노트 6-0-2 「탄알집 챙기기」 (2026-10-14, 전엔 5) */
 /* 전투의 턴 한도 — **우두머리만 25**, 나머지는 20 (사용자 2026-10-12).
    ⚠️ 규칙은 25 인데 **머리글만 「/ 20」으로 박혀 있어** 우두머리 판에서 「25턴 / 20」이 떴다
       (사용자 2026-10-13). 머리글과 물러나는 셈이 **이 함수 하나**를 보게 묶었다 — 규칙 하나는 함수 하나 */
@@ -31934,7 +31974,7 @@ function canPay(h,i,n){
   /* 체력 비용은 **막지 않는다** — 사용자가 고른 광전사 결이다 (2026-10-12 : 「쓰고 쓰러진다」).
      그래서 모자라도 참이다. 치르고 쓰러지는 것은 payHpCost 가 맡는다 */
   if(s.costType==="hp") return true;
-  if(s.ammo) return (h.ammo||0)>=n;
+  if(s.ammo) return (h.ammo||0)>=n*(s.ammo||1);   /* 변형 총은 발당 2~4 를 쓴다 (2026-10-14) */
   let need=0,free=h.free,guard=h.guarded;
   /* 헥토 — 선두 방어 뒤의 방패 막기, 후미 준비 뒤의 방패 밀치기는 한 번 공짜 */
   let fb=(h.freeBlock&&s.n==="방패 막기")?1:0;
@@ -33408,6 +33448,9 @@ function predictDmg(h,s,tgt){
     if(!crit&&critWhy(h,s,tgt)){ dmg*=2; crit=1 }   /* 보상으로 걸리는 치명타 — 실제와 같은 자리에서 묻는다 (2026-10-09) */
     if(h.name==="그슨대"&&h.hide&&s.el==="공격"){ dmg*=2; crit=1 }
     if(h.name==="데린저"){
+      /* 저격소총 — 「2(추가 † + 대상과의 거리)」. runEffect 와 **같은 차례**여야 예고가 맞는다
+         (2026-10-14 에 한 번 어긋나 probe 가 아니라 그물이 잡았다) */
+      if(s.farAdd) dmg+=dist(h.slot,tgt.slot);
       if(h.aimAt!=null){ if(tgt.id===h.aimAt){ dmg*=2; crit=1 } else dmg=0 }
       if(s.ammo&&h.tag.headshot&&!h.headshotUsed){
         const add=8+ATK;
@@ -34604,7 +34647,7 @@ function doSkill(target){
         bumpTurn(h,"mag",v);
         if(h.tag.overlap) bumpTurn(h,"atk",v);   /* 에너지 중첩 */
         h.spentTurn=(h.spentTurn||0)+s.cost; } }
-    if(s.ammo){ h.ammo=Math.max(0,(h.ammo||0)-1) }
+    if(s.ammo){ h.ammo=Math.max(0,(h.ammo||0)-(s.ammo||1)) }   /* 변형 총은 발당 2~4 (2026-10-14) */
     if(s.limit) h.limitUsed[i]=(h.limitUsed[i]||0)+1;
     if(h.isMin&&h.golem) golemSkillUsed(h,s);   /* 분업 · 합맞추기 — 하수인 골렘이 기술을 쓴 뒤 (노트 2026-10-13) */
     /* 수호 활동 — 후미 준비는 더 이상 잠기지 않는다 */
@@ -34761,7 +34804,10 @@ function movePickRange(sk,h){
   return SLOTS;
 }
 /* 못 고르는 칸이면 그 이유를 돌려준다 */
+/* 조준 중인가 — 움직임을 막는 까닭. 상태가 아니라 **조준 그 자체**라 어떤 정화로도 안 풀린다 (2026-10-14) */
+function aimBound(h){ return !!(h&&h.name==="데린저"&&h.aimAt!=null) }
 function moveBlock(h,sk,to){
+  if(aimBound(h)) return `${h.name}${jo(h.name,"eun")} 조준 중이라 움직일 수 없습니다. 정확 조준을 다시 써서 푸세요.`;
   if(!isMoveSkill(sk)||to==null) return "";
   { const b=blockAt(to);
     if(b) return blockMsg(b,to) }
@@ -34824,6 +34870,7 @@ function giveArmor(h,nm){
   say(`${nm} 카드를 손에 넣었습니다.${have?` (${have.n}장)`:""}`,"t1");
 }
 function moveTo(h,to){
+  if(aimBound(h)){ say(`${h.name}${jo(h.name,"eun")} 조준 중이라 움직일 수 없습니다.`,"t3"); return }
   if(deb(h,"bind")){ say(`${h.name}${jo(h.name,"eun")} 속박되어 움직일 수 없습니다.`,"t3"); return }
   { const b=blockAt(to);
     if(b){ say(blockMsg(b,to),"t2"); return } }
@@ -35822,7 +35869,11 @@ function runEffect0(h,i,s,target){
     const f=foeAt(target);
     if(h.aimAt!=null){ h.aimAt=null; say(`${h.name} 조준을 풉니다.`); return }
     if(!f){ say("그 칸에는 적이 없습니다.","t2"); return }
-    h.aimAt=f.id; h.deb=h.deb||{}; h.deb.bind=(h.deb.bind||0)+99;   /* 스스로 거는 것 — 부정 보호막이 먹지 않게 (점검 2026-10-07) */
+    /* ⚠️ 전에는 **속박 99** 로 스스로를 묶었다. 두 가지가 어긋났다 (2026-10-14) —
+         ① 해독제(`a.deb={}`) 나 부정 보호막에 **벗겨진다** (사용자 : 「벗겨지면 안 돼」)
+         ② 조준을 풀 때 그 속박을 **안 걷어** 전투 내내 묶인 채로 남았다.
+       그래서 이제 **조준 그 자체**가 움직임을 막는다 (aimBound 한 곳에서 묻는다) */
+    h.aimAt=f.id;
     fx({side:"foe",slot:f.slot,ring:"#e0705a",txt:"조준",cls:"dmg"});
     say(`${h.name}${jo(h.name,"ig")} ${f.name}${jo(f.name,"eul")} 조준합니다.`,"t1");
     return;
@@ -36519,6 +36570,8 @@ function runEffect0(h,i,s,target){
     if(h.name==="그슨대"&&h.hide&&s.el==="공격"){ dmg*=2; h.hide=0; CRIT=1; say("급습 — 치명타!","t1") }
     /* 데린저 조준 · 헤드샷 */
     if(h.name==="데린저"){
+      /* 저격소총 — 「2(추가 † + 대상과의 거리)」. 치명타보다 **먼저** 얹어야 예고와 같다 */
+      if(s.farAdd) dmg+=dist(h.slot,tgt.slot);
       if(h.aimAt!=null){ if(tgt.id===h.aimAt){ dmg*=2; CRIT=1 } else dmg=0 }
       if(s.ammo&&h.tag.headshot&&!h.headshotUsed){
         h.headshotUsed=1;
@@ -36673,6 +36726,11 @@ function runEffect0(h,i,s,target){
       if(L.length){ B.lasso={id:uid(tgt),from:tgt.slot,by:h.name,spots:L};
         say(`쇠사슬 올가미 — ${tgt.name}${jo(tgt.name,"eul")} 끌어갈 자리를 고르세요 (거리 1).`,"t1") }
       else say(`쇠사슬 올가미 — 끌어갈 빈 자리가 없습니다.`,"t2");
+    }
+    /* 산탄총 — 「대상이 거리 2 내에 있다면 1번 더 발동」 (노트 변형 보상, 2026-10-14) */
+    if(s.near2x&&tgt&&tgt.alive&&dist(h.slot,tgt.slot)<=2){
+      say(`${s.n} — 가까워 한 번 더 쏩니다.`,"t2");
+      asSrc(h,()=>hurt(tgt,dmg,s.n,"slash",0,CRIT,1));
     }
     /* ── 오리온 — 사냥감 냄새 (노트 18-5 남기고 · 18-1 거둔다, 2026-10-14) ── */
     if(s.scent&&tgt&&tgt.alive){ tgt.scent=(tgt.scent||0)+1;
