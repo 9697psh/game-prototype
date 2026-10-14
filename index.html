@@ -4033,7 +4033,7 @@ body.vbattle .bagbtn{bottom:auto;top:9px;right:auto;left:16px;padding:6px 10px;g
 /* 비용 — 고른 대원만 */
 .bfstage .slot .res{display:none;position:absolute;left:50%;transform:translateX(-50%);bottom:calc(100% - 40px);background:rgba(10,9,10,.8);border:1px solid rgba(240,212,136,.35);border-radius:4px;padding:3px 8px;white-space:nowrap;z-index:5;flex-wrap:nowrap}
 .bfstage .slot.selh .res{display:flex;position:static;left:auto;bottom:auto;transform:none;margin:0 auto 3px;width:max-content;max-width:100%}   /* 버프 줄에 가리지 않게 흐름 안으로 (사용자 2026-09-29) */
-.bfstage .slot.selh .art img.pxs{filter:drop-shadow(0 3px 0 rgba(0,0,0,.6)) drop-shadow(0 0 8px rgba(244,214,124,.7));transform:scale(1.12);transform-origin:50% 100%;transition:transform .15s}   /* 고른 대원은 조금 크게 (사용자 2026-09-19) */
+.bfstage .slot.selh .art img.pxs{filter:drop-shadow(0 3px 0 rgba(0,0,0,.6)) drop-shadow(0 0 8px rgba(244,214,124,.7))}   /* 고르면 커지던 것(scale 1.12)은 걷었다 — 빛무리만 (사용자 2026-10-15) */   /* 고른 대원은 조금 크게 (사용자 2026-09-19) */
 /* 장신구 — 머리 위 */
 .bfstage .gear{margin:0 0 2px;z-index:2}
 /* 전투 — 장신구 칸 빛: 파편은 없음, 일반은 조금, 희귀부터 뚜렷 (사용자 2026-09-29) */
@@ -7290,9 +7290,12 @@ function guardChgFX(slot,n){
   const a=n>=2?4:0, k=colK();
   for(let i=0;i<4;i++) setTimeout(()=>{ const q=ctrOf("foe",slot), m=q&&q.e&&q.e.querySelector(".art img.pxs"), u=ICON_PNG["guard_chg_"+(a+i)]; if(m&&u) m.src=u },Math.round(i*120*k));
 }
-function spawn(html){
+/* life — 몇 ms 뒤에 치울지. 안 주면 1300 (여태 쓰던 값).
+   ⚠️ 1300 보다 긴 연출은 **반드시 life 를 넘겨라.** 안 넘기면 다 돌기도 전에 지워진다
+      (2026-10-15 에 연막탄과 균열벌레가 그렇게 잘렸다) */
+function spawn(html,life){
   const l=document.getElementById("fx"); if(!l) return null;
-  const nd=el(html); l.appendChild(nd); setTimeout(()=>nd.remove(),1300); return nd;
+  const nd=el(html); l.appendChild(nd); setTimeout(()=>{ if(nd.isConnected) nd.remove() },life||1300); return nd;
 }
 function at(nd,p){ if(nd){ nd.style.left=p.x+"px"; nd.style.top=p.y+"px" } }
 /* 상태 이상이 걸리는 순간 — 그 아이콘이 몸 위에 크게 떠올랐다가 몸 속으로 스며든다 (사용자 2026-10-06, 시안 1번).
@@ -8466,7 +8469,9 @@ function sheetFX(key,side,slot,o){
   if(!u) return;
   /* o.cell 96 — 96px 칸 띠 · o.feet — 발밑에 바닥을 붙인다 (뿌리모체의 심장 부활, 2026-10-01) */
   const p=o.at||(o.feet?feetOf(side,slot):ctrOf(side,slot)); if(!p) return;   /* at — 칸이 아닌 아무 자리 (㊸) */
-  const nd=spawn('<div class="shfx'+(o.cell===96?" s96":o.cell===128?" s128":"")+(o.feet?" feet":"")+'"></div>'); if(!nd) return;
+  /* 띠가 다 도는 데 걸리는 시간 + 스러지는 시간만큼 살려 둔다 (2026-10-15) */
+  const _life=((o.ms||(o.frameMs&&o.frameMs.length?o.frameMs.reduce((a,b)=>a+b,0):450))+120+(o.fade||0)+(o.fadeIn||0));
+  const nd=spawn('<div class="shfx'+(o.cell===96?" s96":o.cell===128?" s128":"")+(o.feet?" feet":"")+'"></div>',Math.max(1300,_life)); if(!nd) return;
   at(nd,p);
   if(o.cellW||o.cellH){ const CW=o.cellW||o.cell||64, CH=o.cellH||o.cell||64;   /* 정사각이 아닌 칸 — 도끼는 96×128 · 256×64 */
     nd.style.width=CW+"px"; nd.style.height=CH+"px";
@@ -11874,7 +11879,7 @@ const SKILL_FULL={
  "응축 폭발":"잠금(2). 2턴 동안 도발과 보호막을 14(추가 ¤ ) 얻습니다.\n2턴 후에 모든 적에게 굴라의 현재 체력의 20%만큼의 피해를 줍니다.",
  "의지 약화":"다음 턴 동안 선택한 적의 모든 추가 능력치를 3(추가 ) 감소시킵니다.\n\n_독서 중첩_을 2 얻습니다.\n\n_축복 상태_라면 도미니코가 추가 보호력을 1 얻습니다.",
  "자기장 변환":"잠금(1). 적에게 피해를 8(추가 ∴ ) 줍니다. _정밀 표식_이 남겨진 적이라면 1칸 앞으로 이동시키고 속박시킵니다. 이동하지 못하는 상태라면, 대신 기절시킵니다.",
- "자동변환단총":"_탄알_을 1 소모하여 적에게 피해를 2(추가 † ) 줍니다.\n\n어떤 개조를 하더라도 제대로 작동하는 죽이는 총!",
+ "자동변환단총":"적에게 피해를 2(추가 † ) 줍니다.\n\n어떤 개조를 하더라도 제대로 작동하는 죽이는 총!",
  "잠재력 활성":"잠금(2). 이번 턴에 진선풍도가 거리 내의 모든 적에게 피해를 주고, 회오리는 모든 적을 공중으로 띄웁니다.\n다음 4번의 산들바람의 비용이 0이 됩니다.",
  "재능 시기":"적을 처치할 때마다 인비디아가 해당 전투에서 적들의 능력치를 얻습니다.\n\n적 처치 후 얻을 수 있는 능력치(각 25% 확률로)\n공격력 1, 마법력 1, 보호력 1, 체력 4",
  "저주받은 성벽":"이 소환물이 죽은 후, 거리 1 내의 대상에게 보호약화를 2 부여합니다. 이동할 수 없습니다.",
@@ -11899,12 +11904,12 @@ const SKILL_FULL={
  "커져가는 악몽":"그슨대가 공격 피해를 받을 때마다 어둠 조각을 얻습니다.\n어둠 조각을 3개 모을 때마다 그 전투 동안 공격력 +1을 얻습니다.\n\n아군 사후, 학살자 진영 대원도 공격력을 동일하게 얻습니다.",
  "탄알 장전":"남은 _탄알_을 모두 소비합니다. 소비한 탄알만큼 보호막을 2(추가 ¤ ) 얻습니다.\n\n_탄알_을 모두 장전합니다.",
  "연막탄":"사용한도(1). 회피를 2 얻고 1턴 동안 은신합니다.",
- "리볼버":"_탄알_을 1 소모하여 적에게 피해를 4(추가 † ) 줍니다.",
- "산탄총":"_탄알_을 2 소모하여 적에게 피해를 5(추가 † ) 줍니다. 대상이 거리 2 내에 있다면 1번 더 발동합니다.",
- "저격소총":"_탄알_을 2 소모하여 적에게 피해를 2(추가 † + 대상과의 거리) 줍니다.",
+ "리볼버":"적에게 피해를 4(추가 † ) 줍니다.",
+ "산탄총":"적에게 피해를 5(추가 † ) 줍니다. 대상이 거리 2 내에 있다면 1번 더 발동합니다.",
+ "저격소총":"적에게 피해를 2(추가 † + 대상과의 거리) 줍니다.",
  /* ⚠️ 「1x8(추가 † )」로 적으면 richLive 가 괄호 앞의 **8** 을 집어 8+공격력 으로 읽는다.
       셈은 (1+공격력)을 여덟 번이다 (사용자 2026-10-14) — 글도 그 꼴로 적는다 */
- "기관총":"_탄알_을 4 소모하여 적에게 피해를 1(추가 † )씩 8번 줍니다.",
+ "기관총":"적에게 피해를 1(추가 † )씩 8번 줍니다.",
  "탄알집 챙기기":"데린저는 _탄알_을 자원으로 사용합니다.\n현재 데린저의 최대 _탄알_ 개수는 4개 입니다.",
  "폭식의 악마":"전투에서 소환물이 아닌 아군 또는 적군이 죽을 때마다 최대 체력을 영구히 1 얻습니다. 한 전투당 최대 2의 최대 체력을 얻을 수 있습니다.",
  "튼튼한 방어구":"이 대원이 주둔지에 있을 동안, 전투 시작 후 무작위 방어구 카드를 얻습니다.",
@@ -19883,6 +19888,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 154, "v": "0.7", "d": "2026-10-15", "t": "치명타 한 곳에서 · 탄알 비용 · 기류 · 연막 · 소리", "big": 0},
  {"b": 153, "v": "0.7", "d": "2026-10-15", "t": "데린저·오리온 둘째 묶음 — 연출·소리·자리 고르기", "big": 0},
  {"b": 152, "v": "0.7", "d": "2026-10-15", "t": "균열벌레가 적 발밑에서 솟는다", "big": 0},
  {"b": 151, "v": "0.7", "d": "2026-10-15", "t": "데린저 열 가지 · 오리온 여섯 가지 연출과 효과음", "big": 0},
@@ -21228,7 +21234,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=153;
+const BUILD_NO=154;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -32231,9 +32237,15 @@ function skillPanel(h){
     const ok=!locked&&!lk&&!s.auto&&canPay(h,i,1)&&skUsable(h,s);   /* auto — 저절로만 도는 지속 기술은 누를 수 없다 (흐리게 보인다) */
     /* 지속 기술(원천 분석 · 독소 침 · 헤드샷)은 **손으로 치르는 것이 아니다** — 마나와 사용한도를 안 적는다
        (사용자 2026-10-13 : 「지속 능력이라서 … 다른 지속 능력이랑 유사하게」). 안의 limit 셈은 그대로 둔다 */
-    const 지속=s.el==="지속";
+    /* ⚠️ 지속이라고 값을 통째로 감추면 **연막탄처럼 마나를 치르는 지속**의 값이 사라진다
+       (사용자 2026-10-15). 값이 0 인 참 지속만 감춘다 */
+    const 지속=s.el==="지속"&&!payCost(h,i)&&!s.ammo;
+    const 탄알아이콘=((typeof ICON_PNG!=="undefined")&&ICON_PNG.status_derringer_bullet)
+        ? '<img class="ri" src="'+ICON_PNG.status_derringer_bullet+'" alt="" draggable="false">' : "탄알 ";
     const cost = s.costType==="mom" ? ic("move")+" "+payCost(h,i)
                : s.costType==="hp" ? ic("hp")+" "+payCost(h,i)        /* 이라 — 체력으로 치른다 (2026-10-12). 이 자리만 payCost 를 쓰는 꼴이라 비용 훑기에서 빠져 있었다 */
+               /* 데린저의 총 — 마나가 아니라 **탄알**로 치른다 (사용자 2026-10-15). 전에는 마나 0 으로 보였다 */
+               : s.costType==="탄알" ? 탄알아이콘+" "+(s.ammo||0)
                : s.costType==="scale" ? "비늘 "+payCost(h,i) : ic("mana")+" "+payCost(h,i);
     const hot=ok?skillHot(h,i,s):[];
     const fullT=(s.full||SKILL_FULL[s.n])||s.d||"";
@@ -33802,6 +33814,9 @@ function playCard(i,slot,side){
     if(!c.hero.homeSlot) c.hero.homeSlot=slot;   /* 전투 시작 후 처음 배치한 자리 — 탑의 주인 시간 역행이 돌아가는 곳 (2026-10-12) */
     fx({side:"mine",slot:slot,s:"summon",ring:"#7fd39a",glow:1,gap:60});
     onSummon(c.hero); lifeAuraSync();   /* 대원이 설 때도 */
+    /* 사냥의 기류 — 오리온이 서면 **그 자리에서** 자리를 뽑는다 (사용자 2026-10-15).
+       내 턴 머리에서만 뽑던 때는 오리온을 세운 첫 턴에 기류가 없었다 */
+    if(!B.drift) B.drift=driftRoll();
     cardMagic(c.hero);   /* 대원 카드를 배치하는 것도 카드를 낸 것 (사용자 2026-10-05) — 카드를 낸 것이 먼저라 막 선 대원은 못 받는다 */
     bark(c.hero,"in",1);                      /* 대원이 설 때는 반드시 한 마디 (사용자 2026-09-12) */
     wanderCheck();
@@ -36955,7 +36970,7 @@ function runEffect0(h,i,s,target){
     if((typeof ICON_PNG!=="undefined")&&ICON_PNG.fx_derr_smoke_rise)
       fx({side:"mine",slot:h.slot,sheet:"fx_derr_smoke_rise",
           sheetOpt:{cellW:64,cellH:64,frames:8,z:3.5,feet:1,dy:4,
-                    frameMs:[90,90,95,100,110,130,160,420],fadeIn:260,fade:700},gap:520});
+                    frameMs:[90,90,95,100,110,130,160,900],fadeIn:260,fade:1500},gap:700});   /* 마지막 칸을 오래 두고 1.5초에 걸쳐 스러진다 (사용자 2026-10-15) */
     else if((typeof ICON_PNG!=="undefined")&&ICON_PNG.fx_derr_smoke)
       fx({side:"mine",slot:h.slot,sheet:"fx_derr_smoke",
           sheetOpt:{cellW:128,cellH:128,frames:1,z:1.7,feet:1,dy:18,frameMs:[1100],fadeIn:420,fade:900},gap:420});
@@ -37166,10 +37181,13 @@ function runEffect0(h,i,s,target){
         dmg*=2; CRIT=1; say("차원문 위의 적 — 씹어먹기 치명타!","t1") }
       if(T.chompLeech) addLeech(h,T.chompLeech);
     }
-    /* 하수인 골렘의 금속 부속 — **이 소환물의 피해는 늘 치명타** (노트 17-3).
-       ⚠️ 이 갈래는 치명타를 대원마다 따로 적어 두고 **critWhy 를 묻지 않았다** —
-          깃발(critWhy)은 서는데 값이 안 변하던 자리다 (사용자 2026-10-13 : 「기술로 피해를 줄 때도 치명타 안 됨」) */
-    if(!CRIT&&h&&h.isMin&&h.golem&&critWhy(h,s,tgt)){ dmg*=2; CRIT=1; say("금속 — 치명타!","t1") }
+    /* 🔴 치명타는 **여기 한 곳**에서 묻는다 (사용자 2026-10-15).
+       전에는 대원 이름마다 가지를 쳐 두어(골렘·트리스탄…) 거기 안 적힌 대원은 조용히 빠졌다 —
+       2026-10-13 골렘, 2026-10-15 오리온의 **사냥의 기류**가 그렇게 빠져 있었다.
+       critWhy 가 「왜 치명타인가」를 알고, 값은 여기서 한 번만 바뀐다.
+       ⚠️ 새 치명타 규칙을 더할 때는 critWhy 에만 적는다. 이 줄을 늘리지 말 것 */
+    if(!CRIT){ const _w=critWhy(h,s,tgt);
+      if(_w){ dmg*=2; CRIT=1; say(`${_w} — 치명타!`,"t1") } }
     /* 물량 공세 — 차원문 위에 선 악마 하수인은 더 세게 찌른다 */
     dmg+=portalImpAtk(h);
     if(!dmg){ say(`${tgt.name}${jo(tgt.name,"eun")} 조준 밖이라 상처 하나 없습니다.`,"t2"); return }
@@ -37239,7 +37257,7 @@ function runEffect0(h,i,s,target){
         /* 총알이 날아가는 동안 숫자가 먼저 뜨지 않게 — gap 이 「다음 연출까지의 틈」이다.
            기관총 150(여덟 발이 보이게) · 저격소총 880(겨냥선 560 + 총알) · 나머지는 바로 (2026-10-15) */
         fx({side:"foe",slot:tgt.slot,derr:{side:"mine",slot:h.slot,gun:_g},
-            gap:(_g==="기관총")?150:(_g==="저격소총")?880:0}); }
+            gap:(_g==="기관총")?105:(_g==="저격소총")?880:0}); }
       /* 트리스탄은 활잡이다 — 적을 때리는 기술마다 화살이 날아간다 */
       if(isArcher(h))
         fx({side:"foe",slot:tgt.slot,arrow:{side:"mine",slot:h.slot,who:h.name,pow:h.name==="트리스탄"?(s.markKill?"snipe":s.pierce?"pierce":null):null},gap:0});
@@ -37330,7 +37348,7 @@ function runEffect0(h,i,s,target){
          연출 줄이 차례대로 흐르니 총알과 숫자가 나란히 간다 */
       const gun=(h.tag&&h.tag.gun)||"자동변환단총";
       for(let q=1;q<s.hits&&tgt.alive;q++){
-        fx({side:"foe",slot:tgt.slot,derr:{side:"mine",slot:h.slot,gun:gun},gap:150});
+        fx({side:"foe",slot:tgt.slot,derr:{side:"mine",slot:h.slot,gun:gun},gap:105});
         asSrc(h,()=>hurt(tgt,dmg,s.n,"slash",0,CRIT,1));
       }
     }
@@ -37718,6 +37736,13 @@ function unitDown(t){
    겨눌 수 있는 가장 가까운 적에게 쓴다. 여느 시전과 같은 길(doSkill)이라 값도 치르고
    기록도 남는다. run.autoImp 로 켜고 끈다 (저장에 같이 실린다). */
 /* 처음엔 늘 켬 — 단추로 끈 것(0)만 꺼짐 (사용자 2026-10-04) */
+/* 사냥의 기류 자리를 새로 뽑는다 — **전투가 시작될 때와 내 턴이 시작될 때** 둘 다 여기로 온다
+   (사용자 2026-10-15 : 「전투 시작 후부터 생길 수 있게」. 전에는 둘째 턴부터 보였다).
+   ⚠️ 연출이 아니라 규칙이라 게임 주사위(Math.random)로 뽑는다 */
+function driftRoll(){
+  if(typeof onField!=="function"||!B) return 0;
+  return onField().some(h=>h&&h.name==="오리온"&&!h.isMin&&h.hp>0)?(1+Math.floor(Math.random()*SLOTS)):0;
+}
 function autoOn(){ return !!run&&run.autoImp!==0 }
 function autoImps(){
   if(!run||!autoOn()||!B||B.over) return 0;
@@ -38177,7 +38202,7 @@ function startMyTurn(){
   /* 사냥의 기류 — 오리온이 서 있는 동안, 매 턴 무작위 적 자리 하나에 기류가 흐른다 (노트 18-0, 2026-10-14).
      그 자리의 대상에게 주는 **오리온의** 피해는 치명타다 — 묻는 곳은 critWhy 한 군데다.
      ⚠️ 연출이 아니라 **규칙**이라 게임 주사위(Math.random)로 뽑는다 */
-  B.drift=onField().some(h=>h.name==="오리온"&&!h.isMin&&h.hp>0)?(1+Math.floor(Math.random()*SLOTS)):0;
+  B.drift=driftRoll();
   /* 연막탄의 은신은 **한 턴**이다 (노트 6-3) — 다음 내 턴 머리에서 걷는다 */
   onField().forEach(h=>{ if(h.hideTurn&&(B.turn||1)>h.hideTurn){ h.hide=0; h.hideTurn=0;
     say(`${h.name}의 연막이 걷힙니다.`,"t3") } });
@@ -38848,7 +38873,11 @@ function skillIcon(name,plain,u){
   let base=(typeof SKILL_ICON!=="undefined")&&SKILL_ICON[name];
   if(!base) return "";
   if(name==="물과 불"&&u&&typeof ffFlare==="function"&&ffFlare(u)) base="skill_primal_fire_pillar";
-  return iconImg(plain?base+"_no_frame":base);
+  /* 🔴 테두리 없는 쪽이 없으면 **테두리 있는 쪽**으로 떨어진다 (사용자 2026-10-15).
+     전에는 빈 글자라 지속 능력 자리가 통째로 비었고, 새 대원이 올 때마다 그랬다.
+     (tools/art-gap.py 가 「_no_frame 이 없다」를 잡아 주니, 받으면 그때 채우면 된다) */
+  if(plain){ const im=iconImg(base+"_no_frame"); if(im) return im }
+  return iconImg(base);
 }
 /* 이벤트 그림 — 이벤트 이름으로 찾는다. 없으면 빈 글자 */
 function evImg(name){
