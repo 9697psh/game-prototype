@@ -19293,6 +19293,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 113, "v": "0.7", "d": "2026-10-14", "t": "이벤트 중에 보상 화면이 끼어들던 것", "big": 0},
  {"b": 112, "v": "0.7", "d": "2026-10-14", "t": "금속 부속 죽음 피해 6→4", "big": 0},
  {"b": 111, "v": "0.7", "d": "2026-10-14", "t": "골렘 창조 잠금 2→3", "big": 0},
  {"b": 110, "v": "0.7", "d": "2026-10-14", "t": "원수 · 깨진 상자 아이콘", "big": 0},
@@ -20597,7 +20598,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=112;
+const BUILD_NO=113;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -24514,7 +24515,7 @@ function afterChest(){
     /* 상점에서 시작된 줄이었다면 상점으로 돌려보낸다 */
     const b=run.afterBack; run.afterBack=null;
     if(b==="shop"){ view="shop"; render(); return }
-    if(b==="gim"&&run.ev&&run.ev.gim){ view="relic"; render(); return }   /* 고문실·사형장 — 보상을 받고 그 화면으로 */
+    if(b==="gim"&&run.ev){ view="relic"; render(); return }   /* 보상을 받고 그 화면으로 — 기믹 칸이든 미지의 구역이든 (사용자 2026-10-14) */
     backToMap(); return;
   }
   const nx=q.shift();
@@ -26564,6 +26565,12 @@ function drawRelic(app){
 }
 function drawRelic0(app){
   evRevive();
+  /* 받을 보상이 쌓여 있으면 여기서도 알려 준다 — 모르고 지나치지 않게 (사용자 2026-10-14).
+     받는 중(afterList)이면 그 줄을, 아직 안 열었으면 몇 개가 기다리는지 한 줄 */
+  { const q=afterListPanel();
+    if(q) app.appendChild(q);
+    else if((run.after||[]).length) app.appendChild(el(
+      `<div class="evafter" style="text-align:center;color:var(--gold);opacity:.85;margin:6px 0 2px">받을 보상 ${run.after.length}개 — 이 칸을 나가면 받습니다.</div>`)); }
   const e=run.ev;
   /* 제 그림(art/이벤트/<이름>.png)이 첫째다. 없으면 예전처럼 아이콘 한 장,
      그것도 없으면 적 스프라이트를 빌린다 */
@@ -26661,7 +26668,9 @@ function drawRelic0(app){
           const cl=run.grid[run.here.r][run.here.c];
           if(GIM_EV[cl.t]){ run.ev=GIM_EV[cl.t](cl,run.here.r,run.here.c); run.ev.gimEv=1 }   /* 선택지 문구를 지금 값으로 (고문실 3→6→9) */
         }
-        if((run.after||[]).length){ run.afterBack="gim"; afterChest() } else render(); return }   /* 보상을 받고 이 화면으로 */
+        render(); return }   /* ⚠️ 여기서 보상 화면을 열지 않는다 (사용자 2026-10-14) —
+          선택지와 상관없는 것(세계핵 반복 퀘스트 따위)이 run.after 에 들어와도 이벤트를 가로채 버렸다.
+          받을 것은 줄에 쌓아 두고, 칸을 나가 지도에 서면 coreGiftOpen 이 연다 */
       if(o.quest){ questOffer(o.quest,msg); return }   /* 퀘스트 — 수락자를 고르거나 바로 받는다 */
       if(!o.snd) SFX.play("summon");   /* 제 소리가 있는 선택지(snd)는 그것만 */
       run.evMsg=msg||"…";
