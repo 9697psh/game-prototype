@@ -3082,13 +3082,16 @@ html.noscr, html.noscr body{overflow:hidden!important}   /* 가로만 숨기면 
   pointer-events:none;z-index:8;--z:1.5;animation:spitFly .52s linear forwards}
 .spitfly.big{width:64px;height:64px;margin:-32px 0 0 -32px;background-size:64px 64px;
   --z:1.8;animation-duration:.62s;z-index:9}
+/* 코끝이 가는 쪽을 보게 — 칸마다 그 자리의 기울기(--r0 … --r4)를 JS 가 재어 박는다.
+   ⚠️ 변형은 **오른쪽부터** 걸린다 : scale → scaleX(뒤집기) → rotate(세상 기준) → translate.
+      rotate 를 뒤집기 **바깥**에 두어야 뒤집어도 각도가 거꾸로 돌지 않는다 */
 @keyframes spitFly{
-  0%  {transform:translate(0,0) scale(var(--z,1));opacity:0}
+  0%  {transform:translate(0,0) rotate(var(--r0,0deg)) scaleX(var(--sx,1)) scale(var(--z,1));opacity:0}
   14% {opacity:1}
-  25% {transform:translate(calc(var(--dx) * .25),calc(var(--dy) * .25 - var(--lift,26px) * .75)) scale(var(--z,1))}
-  50% {transform:translate(calc(var(--dx) * .5),calc(var(--dy) * .5 - var(--lift,26px))) scale(var(--z,1))}
-  75% {transform:translate(calc(var(--dx) * .75),calc(var(--dy) * .75 - var(--lift,26px) * .75)) scale(var(--z,1))}
-  100%{transform:translate(var(--dx),var(--dy)) scale(var(--z,1));opacity:1}
+  25% {transform:translate(calc(var(--dx) * .25),calc(var(--dy) * .25 - var(--lift,26px) * .75)) rotate(var(--r1,0deg)) scaleX(var(--sx,1)) scale(var(--z,1))}
+  50% {transform:translate(calc(var(--dx) * .5),calc(var(--dy) * .5 - var(--lift,26px))) rotate(var(--r2,0deg)) scaleX(var(--sx,1)) scale(var(--z,1))}
+  75% {transform:translate(calc(var(--dx) * .75),calc(var(--dy) * .75 - var(--lift,26px) * .75)) rotate(var(--r3,0deg)) scaleX(var(--sx,1)) scale(var(--z,1))}
+  100%{transform:translate(var(--dx),var(--dy)) rotate(var(--r4,0deg)) scaleX(var(--sx,1)) scale(var(--z,1));opacity:1}
 }
 /* 새 UI 그림은 32px 원본이다. 늘일 때는 정수 배율 + 또렷하게,
    줄일 때는 계단이 생기니 매끄럽게 그린다. */
@@ -8598,14 +8601,23 @@ function spitShotFX(side,slot,from,big){
   if(u&&q){
     const nd=spawn('<div class="spitfly'+(big?" big":"")+'"></div>');
     if(nd){ at(nd,q); nd.style.backgroundImage="url("+u+")";
-      nd.style.setProperty("--dx",(p.x-q.x)+"px"); nd.style.setProperty("--dy",(p.y-q.y)+"px");
-      nd.style.setProperty("--lift",(big?92:62)+"px");   /* 궤도를 크게 — 작은 침도 눈에 띄게 포물선을 그린다 (사용자 2026-10-14) */
+      const dx=p.x-q.x, dy=p.y-q.y, lift=(big?92:62);    /* 궤도를 크게 — 작은 침도 눈에 띄게 포물선을 그린다 (사용자 2026-10-14) */
+      nd.style.setProperty("--dx",dx+"px"); nd.style.setProperty("--dy",dy+"px");
+      nd.style.setProperty("--lift",lift+"px");
+      /* 그림은 **왼쪽**을 보고 그려져 있다 — 오른쪽으로 날면 좌우를 뒤집어 가는 쪽을 보게 한다
+         (사용자 2026-10-14 : 터지는 자리보다 대상이 오른쪽이면) */
+      const flip=dx>0; nd.style.setProperty("--sx",flip?-1:1);
+      /* 날아가는 길의 기울기 — y(t)=dy·t − 4·lift·t(1−t) 를 t 로 미분한 것 */
+      [0,.25,.5,.75,1].forEach((t,i)=>{
+        const a=Math.atan2(dy-4*lift*(1-2*t),dx)*180/Math.PI;
+        nd.style.setProperty("--r"+i,(flip?a:a-180)+"deg") });
       setTimeout(()=>nd.remove(),big?700:600); wait=big?610:500 }   /* CSS 의 .62s · .52s 와 맞춘다 */
   }
   /* 터짐은 **발밑**에 — 묶음의 pivot 이 0.92 로 바닥이다 (usage.json). 몸 한가운데 뜨면 땅에 떨어진 것으로 안 보인다 */
   /* z 가 크면 발밑에서 위로 자라 **가슴께에서 터지는 것처럼** 보인다 (사용자 2026-10-14 : 「너무 위에서 터짐」).
      transform-origin 이 50% 100% 라 배율이 곧 높이다 — 1.3 이면 바닥에 깔린다 */
-  if(big) setTimeout(()=>sheetFX("fx_spit_burst",side,slot,{frames:8,feet:1,z:1.3,frameMs:[65,65,70,75,85,85,100,130]}),wait);
+  /* 터짐은 천천히 — 받은 묶음의 65~130ms 를 그대로 쓰면 눈에 안 들어온다 (사용자 2026-10-14) */
+  if(big) setTimeout(()=>sheetFX("fx_spit_burst",side,slot,{frames:8,feet:1,z:1.3,frameMs:[120,120,130,140,155,155,185,240]}),wait);
 }
 /* 영혼 수확 — 절규하는 유령들이 발치에서 솟아 몸을 지나 오른다 (art/이펙트/soulgain).
    매번은 셋(fx_soul), 40개째 마법력이 오를 때는 여섯(fx_soulmag).
@@ -19431,6 +19443,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 127, "v": "0.7", "d": "2026-10-14", "t": "침이 궤도를 따라 돌고 가는 쪽을 본다 · 바닥 터짐은 더 느리게", "big": 0},
  {"b": 126, "v": "0.7", "d": "2026-10-14", "t": "침뱉기 — 터진 자리에서 작은 침이 1씩 흩뿌려진다", "big": 0},
  {"b": 125, "v": "0.7", "d": "2026-10-14", "t": "산성 침 손보기 · 먹이활동은 두꺼비가 있을 때만 · 타락의 초읽기는 제 피해만 커진다", "big": 0},
  {"b": 124, "v": "0.7", "d": "2026-10-14", "t": "늪의 왕 산성 침 — 큰 침이 궤도를 그려 칸에 떨어져 터지고, 침뱉기는 작은 침으로", "big": 0},
@@ -20749,7 +20762,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=126;
+const BUILD_NO=127;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
