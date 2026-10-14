@@ -3600,6 +3600,47 @@ body.vmap header #hBtns button:hover{border-color:#f4d67c;color:#f4d67c}
 .mchip.bad u{animation:gaugeWarn 1.1s ease-in-out infinite}
 .mchip.res.bad{animation:none;box-shadow:none}   /* 지도 칩은 네모 맥박 대신 게이지가 깜빡인다 */
 @keyframes gaugeWarn{50%{opacity:.45}}
+/* ── 지도 판 (사용자 2026-10-14) — 받은 가죽 틀 MAP_BOARD(1528×816) 를 **고정 무대**로 깔고
+   그 안의 다섯 칸에 내용을 맞춘다. %  값은 그림을 재서 얻은 것이다 (scratchpad/measure2.py) :
+     단추 줄  x 52..411  y 62..205      왼쪽 판 x 62..421  y 218..752
+     가운데   x 414..1098 y 75..755     오른 위 x 1111..1468 y 111..210
+     오른 아래 x 1110..1490 y 256..752 */
+.mboard{position:relative;width:min(1528px,98vw);aspect-ratio:1528/816;margin:2px auto 0;
+  background-repeat:no-repeat;background-size:100% 100%;image-rendering:pixelated}
+.mboard>div{position:absolute;box-sizing:border-box;image-rendering:auto}
+.mb-btns {left:3.40%;top:7.60%;width:23.6%;height:17.5%;display:flex;align-items:center;justify-content:space-between}
+.mb-btns>*{flex:0 0 28%;height:100%;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;overflow:visible;background:none;border:0;border-radius:0;
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
+.mb-btns>*::before,.mb-btns>*::after{display:none}   /* 단추마다 달고 있던 제 테·바탕은 쓰지 않는다 — 틀 그림이 이미 칸이다 */
+.mb-btns .mquest,.mb-btns .mbag,.mb-btns .mledger{box-shadow:none;outline:0}
+.mb-btns .mbag,.mb-btns .mquest,.mb-btns .mledger{position:relative;left:auto;top:auto;width:auto;height:100%;padding:0;border:0}
+.mb-btns img.npx,.mb-btns img,.mb-btns svg{width:auto;max-width:72%;height:auto;max-height:66%;
+  image-rendering:pixelated;display:block;margin:0;max-width:80%;max-height:72%}
+.mb-btns .mquest .qn,.mb-btns .mquest .qrdyn{font-size:11px}
+.mb-btns .mquest .mqpop{left:0;top:calc(100% + 6px);z-index:30}
+.mb-btns .on{filter:brightness(1.25) drop-shadow(0 0 7px rgba(244,214,124,.6))}
+/* 쭉 내려오는 장부 — 아이콘을 누르면 목록이 위에서 흘러내린다 (사용자 2026-10-14) */
+.mb-left .ledger{height:100%;overflow-y:auto;overflow-x:hidden;padding:8px 8px 14px;
+  animation:ledgerDrop .34s cubic-bezier(.22,.9,.3,1)}
+@keyframes ledgerDrop{from{opacity:0;transform:translateY(-14px);clip-path:inset(0 0 100% 0)}
+  to{opacity:1;transform:translateY(0);clip-path:inset(0 0 0 0)}}
+.ledger .lgh{font-family:var(--serif);font-size:13px;color:#e8d6ae;letter-spacing:.08em;
+  text-align:center;margin:2px 0 8px;text-shadow:0 1px 0 #000}
+.ledger .mcards{width:100%} .ledger .mcard{width:100%;max-width:168px;margin:0 auto}
+.ledger .msyn{flex-direction:row;flex-wrap:wrap;width:100%;gap:8px;justify-content:center;padding-top:10px}
+/* 지도에서는 시험용 건너뛰기를 안 보인다 (사용자 2026-10-14). 다시 보려면 이 줄을 지운다 */
+body.vmap #hSkip{display:none}
+.mb-left {left:4.06%;top:26.7%;width:23.5%;height:65.4%;overflow:hidden}
+.mb-mid  {left:27.1%;top:9.20%;width:44.8%;height:83.3%;display:flex;align-items:center;justify-content:center}
+.mb-rtop {left:72.7%;top:13.6%;width:23.4%;height:12.1%;display:flex;align-items:center;justify-content:center;gap:10px}
+.mb-right{left:72.6%;top:31.4%;width:24.9%;height:60.8%;overflow:auto}
+/* 안에 들어가는 것들은 칸을 꽉 채운다 */
+.mb-mid .map-l{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.mb-mid .pstage{width:100%;max-width:100%;margin:0}
+.mb-left .map-m{width:100%;height:100%;padding:8px 6px 0;overflow-y:auto;overflow-x:hidden}
+.mb-right .map-r{padding:8px 6px}
+.mb-rtop .mres{margin:0}
 .mapwrap.m3{display:grid;grid-template-columns:560px 190px minmax(0,1fr);gap:20px;align-items:start;margin-top:4px}
 .m3 .pstage{margin:0;width:560px}
 .m3 .map-l{position:relative}
@@ -6333,6 +6374,7 @@ setTimeout(()=>{ const L=["펼침-1.png","펼침-2.png","펼침-3.png","펼침-4
   Object.values(MAP_HANDS).forEach(h=>L.push(h.held,h.point.f,h.press.f));
   L.forEach(n=>{ const i=new Image(); i.src=mapPng(n); MAP_PRE.push(i) }) },0);
 /* 구역마다 다른 바닥 — 지금은 핏빛 감옥뿐. 없으면 어두운 바탕 */
+let MAP_LEDGER=false;   /* 지도의 대원 장부가 펼쳐져 있는가 (사용자 2026-10-14) */
 const MAP_FLOOR=["바닥-핏빛 감옥.png","바닥-정령숲.png",null];
 /* 전장 그림 — 구역마다 (art/배경/전투/_원본/<번호>-*.png → bg/). 없으면 1구역 것 (사용자 2026-09-29) */
 const BATTLE_BG=["bg/battle.webp","bg/battle-2.webp","bg/battle-3.webp"];
@@ -19635,6 +19677,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 141, "v": "0.7", "d": "2026-10-14", "t": "지도 UI 리뉴얼 1 — 가죽 틀 무대와 대원장부", "big": 0},
  {"b": 140, "v": "0.7", "d": "2026-10-14", "t": "오리온 연출 — 기류 띠 · 볼트 · 이빨 자국 · 올가미 · 미끼와 거대벌레", "big": 0},
  {"b": 139, "v": "0.7", "d": "2026-10-14", "t": "오리온 · 사냥개 그림 · 얼굴 둘 · 데린저를 훈련장에", "big": 0},
  {"b": 138, "v": "0.7", "d": "2026-10-14", "t": "데린저 — 처음 얻는 중급 보상은 항상 변형", "big": 0},
@@ -20967,7 +21010,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=140;
+const BUILD_NO=141;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -22640,7 +22683,36 @@ function drawMap(app){
     rs.appendChild(el(`<span class="res gold mchip kw" data-kw="금화" data-tip="상점에서 물건을 사고 팔 때 씁니다.">${resIcon("gold")}<b>${run.gold}</b></span>`));
     rs.appendChild(el(`<span class="res stone mchip kw" data-kw="제련석" data-tip="주둔지 제련소에서 장신구 두 개를 합칠 때 씁니다.">${resIcon("stone")}<b>${run.stone||0}</b></span>`)); }
   R.appendChild(mapInspector());
-  app.appendChild(three);
+  /* 받은 가죽 틀로 옮겨 담는다 (사용자 2026-10-14).
+     three(.mapwrap.m3) 는 지금까지대로 지어 두고 **조각만 칸으로 옮긴다** —
+     붙이는 자리가 수십 곳이라 그쪽을 건드리면 조용히 빠지는 것이 생긴다 */
+  { const board=el(`<div class="mboard" style="background-image:url(${mapPng("MAP_BOARD.png")})">
+      <div class="mb-btns"></div><div class="mb-left"></div><div class="mb-mid"></div>
+      <div class="mb-rtop"></div><div class="mb-right"></div></div>`);
+    const mv=(from,to)=>{ const a=three.querySelector(from), b=board.querySelector(to); if(a&&b) b.appendChild(a) };
+    /* 가방 · 퀘스트는 .mbtns 라는 한 덩이에 묶여 있다 — 띠의 칸 셋에 하나씩 서야 하니 **풀어서** 넣는다 */
+    { const bs=three.querySelector(".mbtns"), to=board.querySelector(".mb-btns");
+      if(bs&&to) while(bs.firstChild) to.appendChild(bs.firstChild) }
+    /* 대원장부 — 셋째 단추. 누르면 왼쪽 판에 대원 카드가 쭉 내려오고, 스크롤하면 조합이 나온다 */
+    { const lb=el(`<span class="clock mledger kw" data-kw="대원 장부" data-tip="대원과 조합을 봅니다. 스크롤하면 조합이 나옵니다.">${iconImg("item_common_spellbook")||uiPng("ui_quest")||""}</span>`);
+      lb.onclick=e=>{ e.stopPropagation(); MAP_LEDGER=!MAP_LEDGER; render() };
+      board.querySelector(".mb-btns").appendChild(lb);
+      if(MAP_LEDGER) lb.classList.add("on") }
+    mv(".map-l",".mb-mid");      /* 양피지 무대 */
+    /* 왼쪽 판 — 장부를 켰을 때만 (사용자 2026-10-14 : 「누르면 목록이 쭉 내려오면서」) */
+    if(MAP_LEDGER){
+      const box=el(`<div class="ledger"><div class="lgh">대원</div></div>`);
+      const m=three.querySelector(".map-m");
+      const cards=m&&m.querySelector(".mcards"), syn=m&&m.querySelector(".msyn");
+      if(cards) box.appendChild(cards);
+      box.appendChild(el(`<div class="lgh" style="margin-top:14px">조합</div>`));
+      if(syn) box.appendChild(syn);
+      board.querySelector(".mb-left").appendChild(box);
+    }
+    mv(".map-r",".mb-right");    /* 주둔지 */
+    { const r=app.querySelector(".mtop .mres"); if(r) board.querySelector(".mb-rtop").appendChild(r) }   /* 자원 줄 */
+    app.appendChild(board);
+  }
   /* 구역 규칙 안내 — 들어선 직후 한 번, 그 뒤엔 지도 위 구역 이름을 누르면 (푸른 수정은 이제 쓰는 단추) */
   { const fn=app.querySelector(".mfield"); if(fn&&FIELD_RULES[run.field]){ fn.style.cursor="pointer";
       fn.classList.add("kw"); fn.dataset.kw=FIELDS[run.field].n; fn.dataset.tip="눌러서 이 구역의 규칙을 봅니다.";   /* 흰 풍선 대신 (2026-10-13) */
