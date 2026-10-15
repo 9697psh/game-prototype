@@ -20216,6 +20216,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 172, "v": "0.7", "d": "2026-10-15", "t": "변형 넷의 보상 그림 · 퀘스트 보상의 제련석 그림", "big": 0},
  {"b": 171, "v": "0.7", "d": "2026-10-15", "t": "보상 조건을 글에서 읽는다 · 전용 보상 그림 마흔여섯", "big": 0},
  {"b": 170, "v": "0.7", "d": "2026-10-15", "t": "도발 딱지 겹침", "big": 0},
  {"b": 169, "v": "0.7", "d": "2026-10-15", "t": "데린저를 대원 선택에 올렸다", "big": 0},
@@ -21579,7 +21580,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=171;
+const BUILD_NO=172;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -25377,9 +25378,9 @@ function openChest(kind){
 function chestIcon(t){
   const c={"금화":"#c9a227","경험치":"#7fd39a","파편":GRADE_FRAME["파편"],"일반":GRADE_FRAME["일반"],"희귀":GRADE_FRAME["희귀"],
            "하급":"#9c8d77","중급":"#e0a86a","상급":"#e0705a","동료":"#5fd8cf","회복":"#7fd39a","제련석":"#9c8d77","없음":"#6a6058"}[t]||"#c9a227";
-  { /* 무작위 장신구 — 상점의 무작위 품목 그림 (파편 · 일반, 사용자 2026-10-05) */ const id={"하급":"chest_bronze","중급":"chest_silver","상급":"chest_gold","파편":"fragment","일반":"chest","희귀":"chest","금화":"currency_gold","경험치":"exp_arrow","동료":"recruit_new","회복":"life"}[t], u=id&&(typeof ICON_PNG!=="undefined")&&ICON_PNG[id];   /* 등급 상자 그림 (사용자 2026-10-03) · 금화 그림 (2026-10-05) */
+  { /* 무작위 장신구 — 상점의 무작위 품목 그림 (파편 · 일반, 사용자 2026-10-05) */ const id={"하급":"chest_bronze","중급":"chest_silver","상급":"chest_gold","파편":"fragment","일반":"chest","희귀":"chest","금화":"currency_gold","경험치":"exp_arrow","동료":"recruit_new","회복":"life","제련석":"ore"}[t], u=id&&(typeof ICON_PNG!=="undefined")&&ICON_PNG[id];   /* 등급 상자 그림 (사용자 2026-10-03) · 금화 그림 (2026-10-05) */
     if(u) return '<img class="npx '+((t==="금화"||t==="경험치")?"gcoin":"gchest")+'" src="'+u+'" alt="" draggable="false">'; }   /* 금화는 상자 크기로 키우지 않는다 */
-  if(t==="제련석") return '<svg viewBox="0 0 64 64"><path d="M20 14 L44 14 L54 32 L44 50 L20 50 L10 32 Z" fill="none" stroke="'+c+'" stroke-width="5"/></svg>';
+  if(t==="제련석") return '<svg viewBox="0 0 64 64"><path d="M20 14 L44 14 L54 32 L44 50 L20 50 L10 32 Z" fill="none" stroke="'+c+'" stroke-width="5"/></svg>';   /* 받은 ore 그림이 없을 때의 뒷길 */
   const g=(t==="금화")?'<circle cx="32" cy="34" r="17" fill="none" stroke="@" stroke-width="5"/><path d="M32 24v20M26 30h12" stroke="@" stroke-width="4"/>'
     :(t==="경험치")?'<path d="M32 12 L52 34 H42 V54 H22 V34 H12 Z" fill="@"/>'
     :(t==="파편"||t==="일반")?'<path d="M32 12 L50 24 v18 L32 54 L14 42 V24 Z" fill="none" stroke="@" stroke-width="5"/>'
@@ -39754,6 +39755,11 @@ function rewKeyByName(n){
 const REW_FIX={
  /* ── 데린저 (사용자 2026-10-15 : 「안 넣어진 곳이 많음」) ──
     총에 붙는 부착물은 **그 총 그림**, 탄알·조준·은신 따위는 그 상태 그림을 빌린다 */
+ /* 변형 넷 — 설명 첫 줄의 「자동변환단총이 …」 때문에 넷 다 단총 그림으로 떨어졌다 (사용자 2026-10-15) */
+ "변형: 산탄총":{"sk":"산탄총"},
+ "변형: 저격소총":{"sk":"저격소총"},
+ "변형: 리볼버":{"sk":"리볼버"},
+ "변형: 기관총":{"sk":"기관총"},
  "부착: 경량탄창":{"ic":"status_derringer_bullet"},
  "기계화 탄약 상자":{"ic":"status_derringer_bullet"},
  "부착: 총열":{"sk":"자동변환단총"},
