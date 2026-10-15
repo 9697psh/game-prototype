@@ -12074,7 +12074,7 @@ HEROES["이테리오"]={title:"고철장의 구원자",role:"마법, 치명타",
    ⚠️ 중급 「변형」 보상 넷(산탄총 · 저격소총 · 리볼버 · 기관총)은 아직이다 — 보상은 사용자가 나중에 넣는다 */
 HEROES["데린저"]={title:"전리품 무법자",role:"원거리, 탄알",hp:20,mana:2,hpLv:2,
   focus:"보상을 통한 공격 방식 교체/보물 사냥꾼/유동적 공격",
-  passive:{n:"전리품 사냥꾼",d:"보상을 얻을 때마다 금화 1과 보물 점수. 8점마다 공격력 +1 (영구)"},
+  passive:{n:"전리품 사냥꾼",d:"보상을 얻을 때마다 금화 1과 보물 점수. 20점마다 공격력 +1 (영구)"},
   skills:[
    {n:"자동변환단총",cost:0,el:"공격",tg:"foe",dmg:2,ammo:1,costType:"탄알",d:"탄알 1, 피해 2"},   /* 거리 한도 없음 (사용자 2026-10-14) */
    {n:"탄알 장전",cost:2,el:"공격",tg:"self",ammoShield:2,d:"남은 탄알을 모두 쓰고 그 수만큼 보호막 2, 모두 장전"},
@@ -13628,12 +13628,13 @@ const HERO_REWARDS={
   /* ── 하급 (노트 2026-10-15) ───────────────────────────────────────────
      ⚠️ **기술 이름에 걸지 말 것** — 변형하면 1번 기술 이름이 통째로 바뀐다.
         무기에 붙는 덤은 derrGunAdd() 한 곳에서 읽는 꼬리표로 둔다 */
+  /* ⚠️ 아래 셋은 **덜 뜨게** 했다 (w 0.4, 사용자 2026-10-15) — 흔한 수치 보상이라 자주 겹쳤다 */
   R("부착: 경량탄창","하급","데린저의 최대 탄알 개수가 1개 늘어납니다.",
-    h=>{ h.tag.ammoMax=(h.tag.ammoMax||0)+1; h.ammo=(h.ammo||0)+1 }),
+    h=>ammoUp(h,1),0.4),
   R("부착: 총열","하급","데린저의 무기 피해량이 영구히 1 증가합니다.",
-    h=>h.tag.gunDmg=(h.tag.gunDmg||0)+1),
+    h=>h.tag.gunDmg=(h.tag.gunDmg||0)+1,0.4),
   R("탄알 장전 강화","하급","탄알 장전의 보호막량이 영구히 1 증가합니다.",
-    (h,rn)=>addMod(h,"탄알 장전","ammoShield",1,rn)),
+    (h,rn)=>addMod(h,"탄알 장전","ammoShield",1,rn),0.4),
   R("연막 주머니","하급","연막탄을 사용한 후, 소멸성인 섬광이 담긴 병을 1장 가져옵니다.\n*[연막탄] 기술이 없을 때 등장하지 않음",
     h=>h.tag.smokeCard=(h.tag.smokeCard||0)+1),
   R("전리품 사냥꾼 강화","하급","전리품 사냥꾼으로 얻을 수 있는 금화량이 1 늘어납니다.",
@@ -13675,16 +13676,16 @@ const HERO_REWARDS={
     h=>h.tag.mgPlus=(h.tag.mgPlus||0)+1),{okf:()=>derrGun()==="기관총"}),
   /* ── 중급 ── */
   /* 변형 — 하나를 고르면 나머지 셋은 이 원정에서 다시 안 뜬다 (노트 주석) */
-  Object.assign(R("변형: 산탄총","중급","자동변환단총이 산탄총로 변형됩니다.\n\n산탄총(탄알 2): 적에게 피해를 5(추가 † ) 줍니다. 대상이 거리 2 내에 있다면 1번 더 발동합니다.",
+  Object.assign(R("변형: 산탄총","중급","자동변환단총이 산탄총로 변형됩니다. 최대 탄알 개수가 1 증가합니다.\n\n산탄총(탄알 2): 적에게 피해를 5(추가 † ) 줍니다. 대상이 거리 2 내에 있다면 1번 더 발동합니다.",
     h=>morphGun(h,"산탄총")),{okf:()=>!derrGun()}),
   /* 변형 — 하나를 고르면 나머지 셋은 이 원정에서 다시 안 뜬다 (노트 주석) */
-  Object.assign(R("변형: 저격소총","중급","자동변환단총이 저격소총으로 변형됩니다.\n\n저격소총(탄알 2): 적에게 피해를 2(추가 † + 대상과의 거리) 줍니다.",
+  Object.assign(R("변형: 저격소총","중급","자동변환단총이 저격소총으로 변형됩니다. 최대 탄알 개수가 1 증가합니다.\n\n저격소총(탄알 2): 적에게 피해를 2(추가 † + 대상과의 거리) 줍니다.",
     h=>morphGun(h,"저격소총")),{okf:()=>!derrGun()}),
   /* 변형 — 하나를 고르면 나머지 셋은 이 원정에서 다시 안 뜬다 (노트 주석) */
   Object.assign(R("변형: 리볼버","중급","자동변환단총이 리볼버로 변형됩니다.\n\n리볼버(탄알 1): 적에게 피해를 4(추가 † ) 줍니다.",
     h=>morphGun(h,"리볼버")),{okf:()=>!derrGun()}),
   /* 변형 — 하나를 고르면 나머지 셋은 이 원정에서 다시 안 뜬다 (노트 주석) */
-  Object.assign(R("변형: 기관총","중급","자동변환단총이 기관총으로 변형됩니다.\n\n기관총(탄알 4): 적에게 피해를 1(추가 † )씩 8번 줍니다.",
+  Object.assign(R("변형: 기관총","중급","자동변환단총이 기관총으로 변형됩니다. 최대 탄알 개수가 1 증가합니다.\n\n기관총(탄알 4): 적에게 피해를 1(추가 † )씩 8번 줍니다.",
     h=>morphGun(h,"기관총")),{okf:()=>!derrGun()}),
   /* ── 중급 (노트 2026-10-15) ── */
   R("다중 연막탄","중급","연막탄의 사용한도가 1 증가합니다.\n*[연막탄] 기술이 없을 때 등장하지 않음",
@@ -20216,6 +20217,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 175, "v": "0.7", "d": "2026-10-15", "t": "데린저 너프 넷", "big": 0},
  {"b": 174, "v": "0.7", "d": "2026-10-15", "t": "사용한도 덤을 영구히 — 다중 연막탄이 아무 일도 안 하고 있었다", "big": 0},
  {"b": 173, "v": "0.7", "d": "2026-10-15", "t": "속사 탄창은 기술 한 번 · 박치기/작은 미끼 테두리 없는 판", "big": 0},
  {"b": 172, "v": "0.7", "d": "2026-10-15", "t": "변형 넷의 보상 그림 · 퀘스트 보상의 제련석 그림", "big": 0},
@@ -21582,7 +21584,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=174;
+const BUILD_NO=175;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -28074,10 +28076,16 @@ function drawOver(app){   /* 소리 · 연출은 앞의 defeatCard 가 맡는다
 
 /* ═══════════ 전투 ═══════════ */
 const SLOTS=5;
-const AMMO_MAX=4;
+const AMMO_MAX=3;   /* 4 → 3 (사용자 2026-10-15 너프) */
+/* 보물 점수 몇 점마다 공격력 1 인가 — ⚠️ 묻는 곳은 여기 하나다 (2026-10-15 : 8 → 20).
+   전에는 설명 두 줄 · 진행 막대 · 셈하는 자리 **네 군데**에 8 이 박혀 있었다 */
+const TREA_PER=20;
 /* 최대 탄알 — 부착물이 올린다 (노트 「부착: 경량탄창」 · 「확장 탄창」, 2026-10-15).
    ⚠️ 탄알 칸을 보는 곳은 다 이 함수로 묻는다. AMMO_MAX 를 그대로 쓰면 부착물이 조용히 빠진다 */
 function ammoMaxOf(h){ return AMMO_MAX+((h&&h.tag&&h.tag.ammoMax)||0) }
+/* 최대 탄알을 n 만큼 늘리고 그만큼 바로 채운다 — 부착물 · 변형이 같이 쓰는 길 (2026-10-15) */
+function ammoUp(h,n){ if(!h||!n) return;
+  h.tag.ammoMax=(h.tag.ammoMax||0)+n; h.ammo=Math.min(ammoMaxOf(h),(h.ammo||0)+n) }
 /* 데린저의 **무기 피해량** — 총을 바꿔도 남는 덤 (노트 「부착: 총열」의 주석 그대로).
    ⚠️ 기술 이름에 걸지 말 것 — 변형하면 1번 기술 이름이 통째로 바뀐다.
    새 부착물은 **여기 한 곳**에 한 줄씩 더한다 */
@@ -28169,9 +28177,16 @@ const DERR_GUNS={
 /* 지금 든 총 — 없으면 자동변환단총이다 */
 function derrGun(){ const d=(typeof run!=="undefined"&&run&&run.heroes||[]).find(x=>x.name==="데린저");
   return (d&&d.tag&&d.tag.gun)||null }
+/* 변형하면 탄창이 한 칸 커지는 총 (사용자 2026-10-15). 리볼버는 그대로 */
+const GUN_AMMO_UP={"산탄총":1,"저격소총":1,"기관총":1};
 function morphGun(h,g){
   const D=DERR_GUNS[g]; if(!h||!D) return;
   h.tag=h.tag||{}; h.tag.gun=g;
+  /* ⚠️ 탄창 한 칸은 **여기서** 올린다 — 보상 fx 에 두면 훈련장이나 그물에서 변형했을 때
+     기관총(한 발에 탄알 4)이 꽉 채워도 못 쏜다. 다시 변형하면 갈아 끼운다 */
+  { const up=GUN_AMMO_UP[g]||0, was=h.tag.gunAmmoUp||0;
+    if(up!==was){ h.tag.ammoMax=(h.tag.ammoMax||0)+(up-was); h.tag.gunAmmoUp=up;
+      if(up>was) h.ammo=Math.min(ammoMaxOf(h),(h.ammo||0)+(up-was)) } }
   h.sk=h.sk||[];
   h.sk[0]={n:g,cost:0,el:"공격",tg:"foe",dmg:D.dmg,ammo:D.ammo,costType:"탄알",
            hits:D.hits||1,near2x:D.near2x||0,farAdd:D.farAdd||0,d:D.d};
@@ -32489,7 +32504,7 @@ const PASSIVE_INFO={
  "데린저":[
   {n:"전리품 사냥꾼",p:"보물 점수",
    d:h=>`보상을 얻을 때마다 금화 1과 보물 점수를 모읍니다. (하급 1, 중급 2, 상급 3) `
-        +`8점마다 공격력을 영구히 1 얻습니다. 지금 ${run.treasure||0}점`},
+        +`${TREA_PER}점마다 공격력을 영구히 1 얻습니다. 지금 ${run.treasure||0}점`},
   {n:"탄알집 챙기기",d:h=>`탄알 ${h.ammo||0}/${ammoMaxOf(h)}. 탄알 장전으로 모두 채웁니다.`}],
  "리페":[
   {n:"화음과 리듬",p:"음율란",
@@ -32595,7 +32610,7 @@ function progressOf(h){
     /* 보물 점수는 **전투 칸에는 안 띄운다** (사용자 2026-10-14).
        기술창의 지속 줄(passHtml)과 대원 판이 같은 수를 그대로 쓰므로 여기서 지우면 안 되고,
        전투 줄을 그리는 progHtml 에서만 거른다 */
-    out.push({n:"보물 점수",c:(run.treasure||0)%8,m:8,done:false,noSlot:1}); }
+    out.push({n:"보물 점수",c:(run.treasure||0)%TREA_PER,m:TREA_PER,done:false,noSlot:1}); }
   if(h.name==="리페")
     out.push({n:"음율란",c:(h.tunes||[]).length,m:3,done:(h.tunes||[]).length>=3});
   if(h.name==="그슨대")
@@ -39912,7 +39927,7 @@ function heroStacks(h){
   const L=[];
   if(h.name==="쿠렘타이") L.push({n:"영혼",v:`${run.souls||0}`,x:`얻은 마법력 ${h.soulMag||0}`,c:"#8fb4ef"});
   if(h.name==="트리스탄") L.push({n:"사명감",v:`${h.duty||0}`,x:`얻은 공격력 ${h.dutyAtk||0}`,c:"#e0a86a"});
-  if(h.name==="데린저") L.push({n:"보물 점수",v:`${run.treasure||0}`,x:"8점마다 공격력 +1",c:"#e0c85a"});
+  if(h.name==="데린저") L.push({n:"보물 점수",v:`${run.treasure||0}`,x:`${TREA_PER}점마다 공격력 +1`,c:"#e0c85a"});
   if(h.name==="나이코스") L.push({n:"자부심",v:`${h.pride||0}/${prideCap(h)}`,x:`2개마다 공격력 +1, 얻은 공격력 ${h.prideAtk||0}${h.prideOver?` 초과 ${h.prideOver}`:""}`,c:"#e0705a"});
   if(h.name==="굴라") L.push({n:"폭식의 악마",v:`${h.greed||0}/${greedCapOf(h)}`,x:"이번 전투에 얻은 최대 체력",c:"#c9a227"});
   if(h.name==="도미니코") L.push({n:"독서",v:`${h.read||0}/${readNeed(h)}`,x:h.blessed?"축복 중":"차면 축복",c:"#a06ae0"});
@@ -40138,7 +40153,7 @@ function offerCards(app,hero,grade,done,lvUp){
         run.treasure=(run.treasure||0)+pts;
         run.gold=(run.gold||0)+1+((d0.tag&&d0.tag.goldPlus)||0);
         const d=d0;
-        const want=Math.floor(run.treasure/8);
+        const want=Math.floor(run.treasure/TREA_PER);
         if((d.treaAtk||0)<want){ const add=want-(d.treaAtk||0); d.treaAtk=want; d.atk+=add;
           toast(`전리품 사냥꾼 — ${d.name}의 공격력이 ${add} 올랐습니다.`) }
       }
