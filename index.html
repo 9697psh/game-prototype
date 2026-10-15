@@ -4009,6 +4009,7 @@ body.vbattle .bagbtn{bottom:auto;top:9px;right:auto;left:16px;padding:6px 10px;g
 .bfstage .slot.foe .art img.pxs.ph{transform-origin:50% 100%}
 .bfstage .slot.foe.pick .art img.pxs.ph{transform:scaleX(-1) scale(1.12)}   /* 환영은 겨눌 때도 왼쪽을 본다 (사용자 2026-10-05) */
 .bfstage .slot .mvarrow,.bfstage .slot .reach{position:absolute}
+.bfstage .slot .art.bigart img.pxs{transform:scale(1.22);transform-origin:50% 100%}
 /* 차원문 — 무대에선 3배 (사용자 2026-09-19) */
 .bfstage .art .portal{transform:translateX(-50%) scale(3);transform-origin:50% 100%;bottom:-6px}
 .bfstage .slot.empty > .portal{transform:translate(-50%,-50%) scale(3);top:auto;bottom:6px}
@@ -5594,6 +5595,7 @@ const KW_TAB=[
  {n:"회피",c:"buff",d:"다음 피해를 막음"},
  {n:"가시",c:"buff",d:"피해를 받으면 중첩된 가시만큼 그 대상에게 피해를 줌"},
  {n:"은신",c:"buff",d:"대상으로 지정할 수 없는 상태. 전장에 혼자 남으면 자동 해제"},
+ {n:"납탄",c:"deb",d:"데린저의 리볼버가 남긴 표식. 넷이 차면 리볼버가 비용 없이 한 발 더 나가고 표식이 모두 사라집니다"},   /* 사용자 2026-10-15 */
  {n:"성장력",c:"plain",d:"대원의 레벨과 동일한 수치 (⇧)"},
  {n:"갑피",c:"buff",d:"받을 수 있는 최대 피해량이 ( )로 제한됩니다."},
  {n:"냉각",c:"debuff",d:"기술 사용 후 중첩된 냉각만큼 피해. 턴 종료 후 초기화"},
@@ -8943,7 +8945,7 @@ function derrShotFX(side,slot,from,gun){
   let wait=0;
   /* 기관총의 여덟 발은 **연출 줄(fx)이** 150ms 씩 띄워 준다 (doSkill 쪽) — 여기서 또 밀지 않는다 */
   /* 쏘는 동안 공격 자세를 끌어 둔다 — 저격은 겨냥선이 뻗는 동안, 기관총은 발마다 다시 걸어 이어진다 */
-  if(from){ const hold=저격?1500:기관?700:0;
+  if(from){ const hold=저격?1500:기관?700:산탄?420:0;   /* 산탄도 발마다 자세를 잡는다 (사용자 2026-10-15 : 근접 난사) */
     if(hold) try{ setPose(from.side,from.slot,"atk",hold) }catch(e){} }
   /* 저격 — 겨냥선이 먼저 뻗는다. 그림은 오른쪽을 보고 그려져 있어 대원 쪽에서 적 쪽으로 늘인다 */
   if(저격&&(typeof ICON_PNG!=="undefined")&&ICON_PNG.fx_derr_line){
@@ -11351,6 +11353,9 @@ Object.assign(SKILL_ICON,{
  "미끼 던지기":"skill_orion_throw_bait",
  "사냥의 기류":"skill_orion_hunting_current",
  "상처 남기기":"skill_orion_hound_leave_wound",
+ /* 중급 추가 기술 둘 — 사용자가 2026-10-15 에 넣어 준 아이콘 */
+ "박치기":"skill_orion_hound_headbutt",
+ "작은 미끼":"skill_orion_small_bait",
  "자동변환단총":"skill_derringer_auto_transform_pistol",
  "탄알 장전":"skill_derringer_reload_bullets",
  "연막탄":"skill_derringer_smoke_grenade",
@@ -12694,6 +12699,17 @@ function remapAll(){
   if(typeof campSafe==="function") campSafe(run.grid);
 }
 /* 현상금 표식을 붙일 수 있는 전투 칸 — 이벤트 「현상 수배」와 보상 「현상 수배지」가 같이 쓴다 (2026-10-14) */
+/* 악마 차원문을 열 수 있는 일반 전투 칸 (오리온 중급, 노트 2026-10-15) */
+function gateSpots(){ const L=[];
+  ((run&&run.grid)||[]).forEach((row,r)=>row.forEach((c,ci)=>{ if(c.t==="dungeon"&&!c.done&&!c.gate) L.push({r:r,c:ci}) }));
+  return L }
+/* 무작위 일반 전투 n 곳에 차원문을 연다 — 연 곳 수를 돌려준다 */
+function openDemonGates(n){
+  const L=gateSpots(); let k=0;
+  for(let i=0;i<n&&L.length;i++){ const j=Math.floor(Math.random()*L.length), p=L.splice(j,1)[0];
+    run.grid[p.r][p.c].gate=1; k++ }
+  return k;
+}
 function bountySpots(){ const L=[];
   ((run&&run.grid)||[]).forEach((row,r)=>row.forEach((c,ci)=>{ if(c.t==="dungeon"&&!c.done&&!c.bounty) L.push({r:r,c:ci}) }));
   return L }
@@ -12726,7 +12742,6 @@ const COMMON=[
    h=>{ addCard(run,"빵",1); addCard(run,"소형 방패",1); addCard(run,"맥주",1) }),
  R("하급: 가죽 장화끈","하급","이동할 때마다 보호막을 1 얻습니다.",
    h=>h.tag.moveShield=(h.tag.moveShield||0)+1),
- R("간이 신발","하급","간이 신발 카드를 5장 얻습니다.",h=>{ addCard(run,"간이 신발",5) }),
  R("하급: 마나 흡입","하급","매 라운드 시작 후, 추가 마나를 1 얻습니다.",
    h=>h.tag.roundMana=(h.tag.roundMana||0)+1,0.5),   /* 나오는 확률 반으로 (사용자 2026-10-12) */
  R("하급: 잔불","하급","대원 배치 후, 무작위 적 하나에게 화상을 4 부여합니다.",
@@ -13706,7 +13721,7 @@ const HERO_REWARDS={
     h=>h.tag.killSmokeLim=(h.tag.killSmokeLim||0)+1),
   R("부착: 유탄 발사기","상급","데린저의 무기로 공격한 대상의 양옆 적에게도 50%의 피해를 줍니다.\n*획득시 보상에서 다시 등장하지 않음",
     h=>h.tag.grenade=1),
-  R("탄창: 장전 손잡이","상급","탄알 장전의 비용이 1 감소합니다.\n*획득시 보상에서 다시 등장하지 않음",
+  R("부착: 장전 손잡이","상급","탄알 장전의 비용이 1 감소합니다.\n*획득시 보상에서 다시 등장하지 않음",
     (h,rn)=>addMod(h,"탄알 장전","cost",-1,rn)),
   R("부착: 이중 조준경","상급","정확 조준으로 대상을 1명 더 지정할 수 있습니다.\n*획득시 보상에서 다시 등장하지 않음\n*[정확 조준] 기술이 없을 때 등장하지 않음",
     h=>h.tag.aim2=1),
@@ -13716,7 +13731,7 @@ const HERO_REWARDS={
   /* 변형 전용 */
   Object.assign(R("근접 난사","상급","거리 2 내의 적에게 산탄총이 1번 더 발사됩니다.\n*변형: 산탄총 선택 후에만 등장",
     h=>h.tag.sgMore=(h.tag.sgMore||0)+1),{okf:()=>derrGun()==="산탄총"}),
-  Object.assign(R("탄창: 충격 흡수 개머리판","상급","산탄총의 거리 제한 조건이 사라집니다.\n*변형: 산탄총 선택 후에만 등장",
+  Object.assign(R("부착: 충격 흡수 개머리판","상급","산탄총의 거리 제한 조건이 사라집니다.\n*변형: 산탄총 선택 후에만 등장",
     h=>h.tag.sgAnyDist=1),{okf:()=>derrGun()==="산탄총"}),
   Object.assign(R("탄막","상급","대원 배치 후, 비용없이 모든 적에게 기관총을 2번 발사합니다.\n*변형: 기관총 선택 후에만 등장",
     h=>h.tag.barrage=(h.tag.barrage||0)+1),{okf:()=>derrGun()==="기관총"}),
@@ -13728,6 +13743,90 @@ const HERO_REWARDS={
     h=>h.tag.gunPierce=1),{okf:()=>derrGun()==="저격소총"}),
   Object.assign(R("대물 저격소총","상급","저격소총이 탄알 2개를 더 소모합니다. 추가 공격력의 3배만큼 피해량이 증가합니다.\n*변형: 저격소총 선택 후에만 등장",
     h=>{ h.tag.antiMat=1; if(h.sk&&h.sk[0]&&h.sk[0].ammo) h.sk[0].ammo+=2 }),{okf:()=>derrGun()==="저격소총"}),
+ ],
+ /* ── 오리온 — 노트 2026-10-15 의 보상 서른넷 (하급 13 · 중급 11 · 상급 10) ──────────
+    사냥개의 몸집 · 이빨은 **makeMin 한 곳**이 읽고, 「소환 후」 붙는 것은 houndPlaced 가,
+    올가미로 끌어간 뒤는 lassoDrop 이, 턴이 끝날 때는 endTurn 이 맡는다 (규칙 하나는 함수 하나) */
+ "오리온":[
+  /* ── 하급 ── */
+  R("악마뼈 쇠뇌 강화","하급","악마뼈 쇠뇌의 피해량이 영구히 1 증가합니다.",
+    (h,rn)=>addMod(h,"악마뼈 쇠뇌","dmg",1,rn)),
+  R("사냥개 부리기 강화","하급","사냥개의 최대 체력과 사냥개 부리기의 회복량이 영구히 2 증가합니다.",
+    (h,rn)=>{ h.tag.houndHp=(h.tag.houndHp||0)+2; addMod(h,"사냥개 부리기","houndHeal",2,rn) }),
+  R("사냥개 강화","하급","사냥개의 최대 체력이 4 증가합니다.",
+    h=>h.tag.houndHp=(h.tag.houndHp||0)+4),
+  R("공격 훈련","하급","사냥개의 공격력이 영구히 1 증가합니다.",
+    h=>h.tag.houndAtk=(h.tag.houndAtk||0)+1),
+  R("기운 감지","하급","대원 배치 후, 모든 적에게 사냥감 냄새 표식을 부여합니다.",
+    h=>h.tag.placeScent=(h.tag.placeScent||0)+1),
+  R("쇠사슬 올가미 강화","하급","쇠사슬 올가미의 피해량이 영구히 3 증가합니다.\n*[쇠사슬 올가미] 기술이 없을 때 등장하지 않음",
+    (h,rn)=>addMod(h,"쇠사슬 올가미","dmg",3,rn)),
+  R("먹이 주기","하급","악마뼈 쇠뇌로 적을 처치한 후, 전장의 사냥개 체력을 2 회복시킵니다.",
+    h=>h.tag.boltFeed=(h.tag.boltFeed||0)+2),
+  R("미끼 던지기 강화","하급","미끼 던지기의 피해량이 영구히 10 증가합니다.\n*[미끼 던지기] 기술이 없을 때 등장하지 않음",
+    (h,rn)=>addMod(h,"미끼 던지기","dmg",10,rn)),
+  R("쇠사슬 목줄","하급","쇠사슬 올가미로 적을 이동시킨 후, 그 적에게 사냥감 냄새 표식을 남깁니다.\n*[쇠사슬 올가미] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.lassoScent=(h.tag.lassoScent||0)+1),
+  R("몰이","하급","적을 쇠사슬 올가미로 사냥의 기류가 흐르는 위치로 이동시키면, 오리온이 추가 공격력을 1 얻습니다.\n*[쇠사슬 올가미] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.lassoDriftAtk=(h.tag.lassoDriftAtk||0)+1),
+  R("날카로운 사슬","하급","쇠사슬 올가미로 자리를 옮긴 후, 양옆의 적에게 피해를 3 줍니다.\n*[쇠사슬 올가미] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.lassoSide=(h.tag.lassoSide||0)+3),
+  R("공허한 기류","하급","내 턴이 끝날 때, 사냥의 기류에 대상이 없으면, 오리온이 보호막을 3 얻습니다.",
+    h=>h.tag.driftEmptyShield=(h.tag.driftEmptyShield||0)+3),
+  R("균열의 오랜 생존자","하급","퀘스트: 오염도가 80이상인 상태에서 전투 구역 입장\n보상: 경험치를 30 얻습니다.",
+    h=>{ if(!questHas("균열의 오랜 생존자")) questAccept("균열의 오랜 생존자",h.name) },0.5),
+  /* ── 중급 ── */
+  R("활동량 증폭","중급","사냥개의 최대 마나가 영구히 1 증가합니다.",
+    h=>h.tag.houndMana=(h.tag.houndMana||0)+1),
+  R("더 많은 미끼","중급","미끼 던지기의 사용한도가 1 증가합니다.\n*[미끼던지기] 기술이 없을 때 등장하지 않음",
+    h=>{ const k=(h.sk||[]).find(x=>x&&x.n==="미끼 던지기"); if(k) k.limit=(k.limit||0)+1 }),
+  R("물어뜯기 훈련","중급","전장의 사냥개의 체력이 가득 차있을 때 사냥개 부리기를 사용하면, 사냥개에게 추가 공격력을 3 부여합니다.",
+    h=>h.tag.fullBite=(h.tag.fullBite||0)+3),
+  R("감각 증폭","중급","이번 원정동안 사냥의 기류가 1개 더 흐릅니다.",
+    h=>h.tag.driftPlus=(h.tag.driftPlus||0)+1),
+  R("호루라기","중급","대원 배치 후, 사냥개가 오리온의 앞에 소환됩니다.\n*획득시 보상에서 다시 등장하지 않음",
+    h=>h.tag.whistleHound=1),
+  R("냄새 뭍히기","중급","사냥감 냄새 표식이 있는 적을 처치한 후, 다른 무작위 적에게 사냥감 냄새 표식을 남깁니다.",
+    h=>h.tag.scentChain=(h.tag.scentChain||0)+1),
+  R("은총의 기류","중급","사냥의 기류 위치의 적을 공격한 후, 오리온과 사냥개가 보호막을 1 얻습니다.",
+    h=>h.tag.driftShield=(h.tag.driftShield||0)+1),
+  R("박치기","중급","사냥개 전용 [전투 기술]\n18-6. 박치기 (마나 : 0)\n사용한도(1). 적에게 추가 공격력의 3배만큼 피해를 주고, 공중에 뜸 상태로 만듭니다.\n*획득 후 보상에서 다시 등장하지 않음",
+    h=>{ h.tag.houndHead=1;
+      /* 이미 전장에 선 사냥개도 그 자리에서 배운다 */
+      if(typeof houndsOn==="function") houndsOn().forEach(m=>{ if(!m.sk.some(k=>k&&k.n==="박치기"))
+        m.sk.push({n:"박치기",cost:0,el:"공격",tg:"foe",limit:1,headbutt:1,dmg:0,
+          d:"사용한도(1), 적에게 추가 공격력의 3배만큼 피해를 주고 공중에 뜸 상태로 만듭니다"}) }) },0.5),
+  R("작은 미끼","중급","[전투 기술]\n18-7. 작은 미끼 (마나 : 1)\n사용한도(1). 적에게 미끼를 던져 피해를 20(추가 †)주고 기절시킵니다.\n*획득 후 보상에서 다시 등장하지 않음",
+    h=>{ if(!(h.sk||[]).some(k=>k&&k.n==="작은 미끼"))
+      h.sk.push({n:"작은 미끼",cost:1,el:"공격",tg:"foe",limit:1,smallBait:1,dmg:20,
+        d:"사용한도(1), 고른 자리에 미끼를 던져 피해 20과 기절"}) },0.5),
+  R("침흘리는 사냥개","중급","미끼 던지기로 피해받은 적에게 사냥개가 상처 남기기를 비용없이 2번 사용합니다.\n*[미끼 던지기] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.baitHound=(h.tag.baitHound||0)+2),
+  R("악마의 뼈로 만든 무기들","중급","지도 위 무작위 일반 전투 2곳에 악마 차원문이 열립니다.\n퀘스트: 악마 차원문이 열린 일반 전투 2곳에서 승리\n보상: 무작위 일반 장신구 2개",
+    h=>{ const n=openDemonGates(2);
+      if(!questHas("악마의 뼈로 만든 무기들")) questAccept("악마의 뼈로 만든 무기들",h.name);
+      toast(`악마의 뼈로 만든 무기들 — 전투 ${n}곳에 차원문이 열렸습니다.`) },0.5),
+  /* ── 상급 ── */
+  R("동료애","상급","사냥개도 사냥의 기류 위치의 대상에게 주는 피해가 치명타로 적중합니다.\n*획득시 보상에서 다시 등장하지 않음",
+    h=>h.tag.houndDriftCrit=1),
+  R("거대 사냥개","상급","사냥개 소환 후, 사냥개의 최대 체력이 2배가 됩니다.",
+    h=>h.tag.houndDouble=1),
+  R("전우애","상급","이번 원정동안 사냥개에게 '죽음: 이 소환물의 추가 능력치를 오리온에게 부여합니다.'를 부여합니다.\n*획득시 보상에서 다시 등장하지 않음",
+    h=>h.tag.houndWill=1),
+  R("무리 사냥","상급","사냥개를 최대 2마리까지 둘 수 있습니다. 사냥개 부리기가 사냥개가 이미 손이나 전장에 있어도 1장 더 가져옵니다.\n*획득시 보상에서 다시 등장하지 않음",
+    h=>h.tag.packHunt=1),
+  R("포식자의 표적","상급","내 턴이 끝날 때, 사냥감 냄새 표식이 있는 적들에게 피해를 4 줍니다. 표식의 수만큼 반복합니다.",
+    h=>h.tag.preyHit=(h.tag.preyHit||0)+4),
+  R("고단백 살점","상급","사냥개 부리기로 사냥개의 체력을 회복시킬 때마다, 그만큼 최대 체력도 부여합니다.\n*중복 가능, 2개 선택 시 2번 부여",
+    h=>h.tag.houndMeat=(h.tag.houndMeat||0)+1),
+  R("표적 확인","상급","쇠사슬 올가미로 대상을 사냥의 기류가 흐르는 위치로 이동시킨 후, 대상에게 악마뼈 쇠뇌를 비용없이 3번 사용합니다.\n*[쇠사슬 올가미] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.lassoDriftBolt=(h.tag.lassoDriftBolt||0)+3),
+  R("재빠른 본성","상급","사냥개를 소환한 후, 사냥개에게 회피를 3 부여합니다. 사냥개가 적을 처치할 때마다 회피를 2 얻습니다.",
+    h=>{ h.tag.houndEvade2=(h.tag.houndEvade2||0)+3; h.tag.houndKillEvade=(h.tag.houndKillEvade||0)+2 }),
+  R("탐욕의 이빨","상급","이번 원정동안 사냥개가 흡수 +30%를 얻습니다.",
+    h=>h.tag.houndLeech=(h.tag.houndLeech||0)+30),
+  R("균열 화살촉 보급","상급","전장의 다른 궁수 대원이 피해를 주면 대상에게 사냥감 냄새 표식을 부여합니다.\n*획득시 보상에서 다시 등장하지 않음\n*다른 궁수 대원이 원정대에 포함되어 있을 때 등장",
+    h=>h.tag.archerScent=1),
  ],
  /* 이라 — 노트 lowRewards 그대로 (2026-10-12). **중급 13 · 상급 13 은 아직 안 넣었다** —
     흡수 길 · 충전 틀 넓히기 · 반복 퀘스트처럼 새로 깔아야 하는 것이 섞여 있어 따로 간다 */
@@ -13954,7 +14053,6 @@ const REW_KIND={
  "중급|폭풍":"대원 강화",
  "중급|화살비":"추가 기술",
  "중급|활시위 당기기":"기술 강화",
- "하급|간이 신발":"카드",
  "하급|갑옷 장착 강화":"기술 강화",
  "하급|곰팡이 빵":"카드",
  "하급|관객의 응원":"대원 강화",
@@ -14298,6 +14396,30 @@ Object.assign(REW_KIND,{
  "중급|궁수 강화":"대원 강화","중급|무기 전문가 강화":"대원 강화","중급|피의 투기장 강화":"대원 강화","중급|학살자 강화":"대원 강화",
  "중급|경계 태세":"주둔지 강화","중급|새로운 지도":"주둔지 강화","중급|명성":"재화","중급|원수":"대원 강화",
  "상급|완전한 대형":"대원 강화"});
+/* 오리온 (노트 2026-10-15) — 「*[…] 기술이 없을 때 등장하지 않음」· 「획득시 다시 등장하지 않음」 */
+Object.assign(REW_COND,{
+ "하급|쇠사슬 올가미 강화":{need:["쇠사슬 올가미"]},
+ "하급|미끼 던지기 강화":{need:["미끼 던지기"]},
+ "하급|쇠사슬 목줄":{need:["쇠사슬 올가미"]},
+ "하급|몰이":{need:["쇠사슬 올가미"]},
+ "하급|날카로운 사슬":{need:["쇠사슬 올가미"]},
+ "하급|균열의 오랜 생존자":{once:1},
+ "중급|더 많은 미끼":{need:["미끼 던지기"]},
+ "중급|호루라기":{once:1},
+ "중급|박치기":{once:1},
+ "중급|작은 미끼":{once:1},
+ "중급|침흘리는 사냥개":{need:["미끼 던지기"]},
+ "중급|악마의 뼈로 만든 무기들":{once:1},
+ "상급|동료애":{once:1},"상급|전우애":{once:1},"상급|무리 사냥":{once:1},
+ "상급|거대 사냥개":{once:1},
+ "상급|표적 확인":{need:["쇠사슬 올가미"]},
+ "상급|균열 화살촉 보급":{once:1}});
+Object.assign(REW_KIND,{
+ "하급|기운 감지":"대원 강화","중급|감각 증폭":"대원 강화","중급|냄새 뭍히기":"대원 강화",
+ "중급|박치기":"추가 기술","중급|작은 미끼":"추가 기술",
+ "중급|악마의 뼈로 만든 무기들":"대원 강화",
+ "하급|균열의 오랜 생존자":"대원 강화",
+ "상급|포식자의 표적":"대원 강화","상급|균열 화살촉 보급":"대원 강화"});
 Object.assign(REW_COND,{
  "하급|사냥 수첩":{once:1},"중급|부지런한 아침":{once:1},"상급|사치품":{once:1},
  "중급|원수":{once:1},"상급|완전한 대형":{once:1}});
@@ -17344,6 +17466,7 @@ const KW_ICON={
   "되감기":"status_rewind","정지":"status_stop","충전":"status_charge","과열":"status_mana_refinery_overheat",
   "조준":"status_derringer_aim","탄알":"status_derringer_bullet",   /* 데린저 (2026-10-14) */
   "사냥감 냄새":"status_orion_prey_scent",   /* 오리온 (2026-10-14) */
+ "납탄":"status_derringer_lead",   /* 데린저 상급 「납탄」 표식 (사용자 2026-10-15) */
   "마력":"status_tower_master_mana",   /* 탑의 주인의 마력 (/art 가 ICON_PNG 에 넣으면 쓰인다 — 없으면 글자) */
   "복수귀":"status_ira_berserker",            /* 이라 지속 — 그림은 0319acc9 에서 구웠다 (2026-10-13) */
   /* 글자 한 자로 떨어져 있던 딱지들 (사용자가 그림을 줬다, 2026-10-13).
@@ -17441,6 +17564,7 @@ function foeStatusRows(f){
   /* 충전 — 콜로서스는 제 아이콘(빔 광선 충전)이 따로 있다 (사용자 2026-10-07) */
   if(f.chg>0&&f.name!=="콜로서스") g.push(bd("g","충전",`${f.chg}/${chgMax(f)}`,"충전을 다 채우면 큰 수가 나갑니다"));
   if(f.negShield) g.push(bd("g","부정 보호막",f.negShield,"부정적인 효과를 그만큼 걷어냅니다 (얻을 때는 이미 걸린 것부터)"));
+  if(f.lead>0) o.push(bd("o","납탄",`${f.lead}/4`,"데린저의 리볼버가 남긴 표식입니다. 넷이 차면 리볼버가 비용 없이 한 발 더 나가고 표식이 모두 사라집니다."));
   if(foeHidden(f)) g.push(bd("g","은신","","숨어 있어 겨눌 수 없습니다. 전장에 혼자 남으면 풀립니다"));
   if(f.eshield) g.push(bd("g","에너지 보호막",f.eshield,"보호막보다 먼저 깎이고, 턴이 지나도 남습니다"));
   if(f.painBonus) g.push(bd("g","고통 감내",`+${f.painBonus}`,"다음 공격의 피해가 그만큼 늘어납니다"));
@@ -17507,6 +17631,8 @@ function heroStatusRows(h){
   { const dt=minDeathTxt(h); if(dt) t.push(bd("t","죽음","",dt,"죽음")) }
   if(h.echo) t.push(bd("t","메아리","","메아리: 쓰러질 때 한 번, 절반의 체력으로 다시 일어섭니다.","메아리"));   /* 생명의 메아리 */
   if(h.evade) g.push(bd("g","회피",h.evade,"다음 공격 한 번을 통째로 흘립니다"));
+  /* 은신 — 그슨대만 보이던 것을 **누구든** 보이게 (사용자 2026-10-15 : 데린저 연막탄) */
+  if(h.hide) g.push(bd("g","은신","","숨어 있어 적이 겨눌 수 없습니다. 전장에 혼자 남으면 풀립니다"));
   if(h.rew>0) g.push(bd("g","되감기",h.rew,"다음에 쓰는 기술이 쌓인 만큼 한 번 더 발동합니다"));
   /* 충전 — **차는 중**이면 적 쪽처럼 0/1 로, **완료**면 횟수로 (사용자 2026-10-13).
      낱말표에 「충전」이 들어와 풀이는 KW_DESC 가 댄다 — 적 딱지와 **두 벌로 안 갈라진다** */
@@ -17707,7 +17833,8 @@ function mapTipFill(cell,r,c){
     if(wt&&(kind!=="empty"||!amb)) t+=`\n<b>낮 습격 확률 ${Math.round(Math.max(amb,0.25)*100)}%</b> — ${postNear(r,c)?"간수 초소 둘레":"간수 순찰로"}`;
     if(kind!=="well"&&wellNear(r,c)) t+=`\n<b>전투 금화 획득량 +50%</b> — 감옥의 우물 둘레`;
     if(nestNear(r,c)&&kind!=="nest") t+=`\n<b>밤에도 습격 없음</b> — 반딧불 둥지 둘레`;
-    if(cell.bounty) t+=`\n<b>전투 금화 획득량 +50%</b> — 현상금이 걸린 전투`; }
+    if(cell.bounty) t+=`\n<b>전투 금화 획득량 +50%</b> — 현상금이 걸린 전투`;
+    if(cell.gate) t+=`\n<b>악마 차원문</b> — 전투가 시작되면 적 전장에 차원문이 열립니다`; }
   /* 빈 줄은 접는다 */
   const lines=t.split("\n").map(x=>x.trim()).filter(Boolean);
   const head=lines.shift()||"";
@@ -20044,6 +20171,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 167, "v": "0.7", "d": "2026-10-15", "t": "오리온 보상 서른넷 · 간이 신발 상점 · 데린저 손보기", "big": 0},
  {"b": 166, "v": "0.7", "d": "2026-10-15", "t": "지도 무대 92% · 조금 오른쪽으로", "big": 0},
  {"b": 165, "v": "0.7", "d": "2026-10-15", "t": "지도 F11 양옆 넘침 바로잡기", "big": 0},
  {"b": 164, "v": "0.7", "d": "2026-10-15", "t": "은신탄 — 연막탄 5턴 은신, 쏴도 안 풀린다", "big": 0},
@@ -21402,7 +21530,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=166;
+const BUILD_NO=167;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -22871,6 +22999,7 @@ function mapGridEl(peek){
       ${(run.wolf&&run.wolf.r===r&&run.wolf.c===c&&cell.t!=="fog")?`<span class="cico wolf">${iconImg("ink_tw_red_hood_wolf")}</span>`:""}
       ${risky?`<span class="crisk">!</span>`:""}
       ${cell.bounty?`<span class="cbounty kw" data-kw="현상금" data-tip="이 전투에서 얻는 금화가 50% 늘어납니다.">${iconImg("bounty_bag")}</span>`:""}
+      ${cell.gate?`<span class="cbounty kw" data-kw="악마 차원문" data-tip="전투가 시작되면 적 전장의 빈 자리에 악마 차원문이 열립니다.">${iconImg("skill_gula_rift_portal")}</span>`:""}
       ${cell.stair?`<span class="cl">계단</span>`:""}
       ${kind!=="empty"&&!cell.done?`<span class="cl">${esc(cell.ceil?"천장":NODE[kind].label)}</span>`:""}
     </div>`);
@@ -23205,6 +23334,7 @@ function mapInspector(at){
   /* 특이사항 — 그림 + 짧은 글, 그림에 커서를 올리면 풀이 */
   { const N=[];
     if(cell.bounty) N.push([iconImg("bounty_bag"),"현상금","현상금이 걸린 전투 — 전투 금화 획득량 +50%"]);
+    if(cell.gate) N.push([iconImg("skill_gula_rift_portal"),"악마 차원문","전투 시작 시 적 전장에 악마 차원문이 열린다"]);
     if(cell.relay) N.push(["","재배치","전장 재배치로 1라운드가 된 전투입니다. 얻는 보상은 그대로입니다."]);
     if(kind!=="well"&&wellNear(r,c)) N.push([inkArt("well")||"","우물 둘레","감옥의 우물 둘레 — 전투 금화 획득량 +50%"]);
     { const wt=kind!=="wall"&&kind!=="camp"&&kind!=="boss"&&kind!=="post"&&(postNear(r,c)||(kind==="empty"&&onPatrol(r,c)));
@@ -25083,6 +25213,7 @@ function dungeonCleared(){
     if(d0.kind==="battle"&&(d0.waves||1)>=3) questProgress("win3",null) }
   const d=run.dun;
   if(d.kind==="elite") questProgress("elite");           /* 현상 수배 */
+  if(d.cell&&d.cell.gate) questProgress("demonGate",null);   /* 악마의 뼈로 만든 무기들 (오리온 중급, 2026-10-15) */
   if(d.kind==="elite"&&run.field===0) coreTally("elite1",1);   /* 세계핵 — 핏빛 감옥 정예 승리 */
   if(d.cell&&d.cell.bounty) run.bountyGold=1;             /* 현상금 사냥꾼 — 이 전투 상자 금화 +50% */
   run.heroes.forEach(h=>{ const w=itemBt(h,"winHeal");
@@ -25498,7 +25629,7 @@ const CARD_META={
  "귀환서":{src:"상점"}, "위장 망토":{src:"상점"},
  "불덩이":{src:"상점"}, "빵":{src:"상점"},
  "맥주":{src:"미지의 구역"}, "소형 방패":{src:"파수꾼의 선물"},
- "간이 신발":{src:"보상"}, "감시":{src:"첨탑 관리자",gone:1},
+ "간이 신발":{src:"상점"}, "감시":{src:"첨탑 관리자",gone:1},
  /* 상점 전투 카드 일곱 (사용자 2026-10-14) */
  "섬광이 담긴 병":{src:"상점"}, "산성 병":{src:"상점"}, "기름 항아리":{src:"상점"},
  "해독제":{src:"상점"}, "밧줄":{src:"상점"}, "마나 결정":{src:"상점"}, "각성초":{src:"상점"}
@@ -25539,7 +25670,7 @@ const CARD_LIB={
                        setTimeout(()=>fleeBattle(0,"습격에서 도망쳤습니다."),900) }},
  "악마 하수인":{d:"빈 칸에 악마 하수인을 소환합니다.",summon:1},
  "악마 장군":{d:"빈 칸에 악마 장군을 소환합니다.",summon:1},
- "간이 신발":{d:"거리 1을 이동합니다. 갈 자리를 고릅니다.",
+ "간이 신발":{d:"거리 1을 이동합니다.",
               /* 자리를 **고르게** 한다 (사용자 2026-10-15) — 쇠사슬 올가미와 같은 길(B.step) */
               use:a=>{ const L=stepSpots(a);
                        if(!L.length){ say("움직일 데가 없습니다.","t2"); return "keep" }
@@ -25681,6 +25812,8 @@ const SHOP_STOCK=[
  {n:"무작위 일반 장신구",d:"어떤 일반 장신구이 나올지는 열어봐야 압니다.",  p:[45,70],q:[1,1], k:"normal", stage:2},   /* 25~40 이었다 — 3구역 전용 (사용자 2026-10-12) */
  {n:"위장 망토",        d:"밤의 습격 전투에서 도망치는 카드",               p:[3,5],  q:[1,1], k:"card", card:"위장 망토",
                         s2q:[1,3], upto:1},
+ {n:"간이 신발",        d:"대원이 거리 1을 움직이는 카드",                  p:[2,4],  q:[1,3], k:"card", card:"간이 신발",
+                        s2p:[3,5], s3p:[4,7]},   /* 보상에서 상점으로 옮겼다 (사용자 2026-10-15) */
  {n:"귀환서",           d:"전투에서 벗어나 주둔지로 즉시 복귀하는 카드",    p:[8,12], q:[1,1], k:"card", card:"귀환서",
                         s2p:[8,10], s3p:[8,8], s3q:[1,2]},
  /* ── 전투 카드 일곱 (사용자 2026-10-14). w 는 뽑히는 가중치 — 적을수록 드물다 ── */
@@ -27158,6 +27291,11 @@ const QUESTS={
   /* 공용 하급 「사냥 수첩」 (사용자 2026-10-14) — 수락자를 가리지 않는다 (누가 죽여도 센다) */
   "사냥 수첩":{kind:"kill",need:20,who:"all",
     d:"적 {n}명 처치",rd:"무작위 보상",reward:{scrap:1}},
+  /* 오리온 (노트 2026-10-15) */
+  "균열의 오랜 생존자":{kind:"taintIn",need:1,who:"hero",
+    d:"오염도 80 이상으로 전투 구역에 {n}번 입장",rd:"경험치를 30 얻습니다.",reward:{exp:30}},
+  "악마의 뼈로 만든 무기들":{kind:"demonGate",need:2,who:"hero",
+    d:"악마 차원문이 열린 일반 전투에서 {n}번 승리",rd:"무작위 일반 장신구 2개",reward:{item:"일반",itemN:2}},
   "고철 수거":{kind:"scrapKill",need:12,who:"all",repeat:1,syn:"고철의 무덤",
     d:"고철의 무덤 대원이 적 {n}명 처치",rd:"무작위 보상 (구역이 깊을수록 더 좋다)",reward:{scrap:1}}
 };
@@ -27454,7 +27592,10 @@ function questClaim(id){
                gimResTiles((run.after||[]).slice(a0),extra),"after");
     return; }
   if(R.stone){ run.stone=(run.stone||0)+R.stone; toast(`퀘스트 보상 — 제련석 +${R.stone}`) }
-  if(R.item){ const L=ITEMS.filter(i=>i.g===R.item); if(L.length) (run.after=run.after||[]).push({item:rnd(L)}) }
+  if(R.item){ const L=ITEMS.filter(i=>i.g===R.item);
+    if(L.length) for(let q=0;q<(R.itemN||1);q++) (run.after=run.after||[]).push({item:rnd(L)}) }
+  if(R.exp){ const h=run.heroes.find(x=>x.name===q.hero)||run.heroes.find(x=>!x.down)||run.heroes[0];
+    if(h){ addExp(h,R.exp); toast(`${id} — ${h.name} 경험치 +${R.exp}`) } }
   if(R.allStat){ const h=run.heroes.find(x=>x.name===q.hero)||run.heroes.find(x=>!x.down)||run.heroes[0];
     if(h){ h.atk+=R.allStat; h.mag+=R.allStat; h.def+=R.allStat;
       toast(`파수꾼의 시험 — ${h.name}의 모든 추가 능력치 +${R.allStat}`) } }
@@ -27906,6 +28047,15 @@ function derrGunAdd(h,s,tgt){
 }
 /* 값을 치르지 않고 한 발 — 「대원 배치 후」 쏘는 보상들이 쓴다 (노트 2026-10-15).
    ⚠️ 셈은 여느 사격과 같은 길을 쓴다 (derrGunAdd · critWhy · derrAfterShot) */
+/* 기술을 **한 번 쓴 것**과 같게 쏜다 — 기관총이면 여덟 발이 다 나간다
+   (사용자 2026-10-15 : 「탄막은 2발이 아니라 기관총 기술을 2번」) */
+function derrFreeUse(h,f){
+  if(!h||h.name!=="데린저"||!f||!f.alive) return;
+  const s=(h.sk&&h.sk[0]); if(!s||!s.ammo) return;
+  let n=s.hits||1;
+  if(n>1&&h.tag&&h.tag.mgPlus) n+=h.tag.mgPlus;   /* 부착: 탄통 */
+  for(let q=0;q<n&&f.alive;q++) derrFreeShot(h,f);
+}
 function derrFreeShot(h,f){
   if(!h||h.name!=="데린저"||!f||!f.alive) return;
   const s=(h.sk&&h.sk[0]); if(!s||!s.ammo) return;
@@ -27925,11 +28075,13 @@ function derrAfterShot(h,tgt,dmg){
       if(f&&f.alive&&f!==tgt){ fx({side:"foe",slot:sl,sheet:"fx_derr_hit",sheetOpt:{frames:8,z:1.2,ms:420},gap:0});
         asSrc(h,()=>hurt(f,half,"유탄 발사기","slash",0,0,1)) } }) }
   /* 납탄 — 리볼버가 표식을 남기고, 넷이 되면 비용 없이 한 발 더 (노트 2026-10-15) */
-  if(t.lead&&tgt&&tgt.alive&&(t.gun==="리볼버")){
+  if(t.lead&&tgt&&tgt.alive&&(t.gun==="리볼버")&&!h._leadShot){
     tgt.lead=(tgt.lead||0)+1;
     if(tgt.lead>=4){ tgt.lead=0;
       say(`납탄 — 표식이 터집니다.`,"t1");
-      setTimeout(()=>{ try{ derrFreeShot(h,tgt) }catch(e){} },0) }
+      /* ⚠️ setTimeout 으로 미루면 연출 줄 밖에서 터져 **직접 쏜 것처럼** 보였다 (사용자 2026-10-15).
+         그 자리에서 쏘되, 그 한 발이 또 표식을 터뜨리지 않게 문을 하나 둔다 */
+      if(!h._leadShot){ h._leadShot=1; try{ derrFreeShot(h,tgt) } finally { h._leadShot=0 } } }
     else say(`납탄 — ${tgt.name}에게 표식 ${tgt.lead}/4`,"t3") }
   /* 부착: 관통총열 — 저격소총이 지나가는 길의 적도 때린다 (노트 2026-10-15) */
   if(t.pierceLine&&tgt&&(h.sk&&h.sk[0]&&h.sk[0].farAdd)){
@@ -28281,6 +28433,8 @@ function startBattle(kind,pinned){
   /* 전투(옛 던전) 하나는 여러 라운드로 이루어진다.
      "전투 시작" 효과는 첫 라운드에 딱 한 번만 걸리고, 그 결과는 라운드를 넘어 남는다. */
   const fresh=!run.dun||run.dun.wave<=1;
+  /* 균열의 오랜 생존자 (오리온 하급) — 오염도 80 이상으로 전투에 들어설 때 (노트 2026-10-15) */
+  if(fresh&&!run.sandbox&&(run.taint||0)>=80&&(kind==="battle"||kind==="elite")) questProgress("taintIn",null);
   if(fresh&&!run.sandbox){   /* 각성제 · 모닥불 이야기 — '다음 1회의 전투' (2026-09-16). 전투가 끝나면(backToMap·battleLost) 걷힌다 */
     if(run.stimNext){ run.stimOn=run.stimNext; run.stimNext=0 }
     if(run.campfire){ run.fireOn=run.campfire; run.campfire=0 }
@@ -28347,6 +28501,16 @@ function startBattle(kind,pinned){
       shield:0,air:0,alive:1,id:i,infect:0,stun:0,weak:0,
       taunt:0,thorn:0,evade:0,negShield:0,hide:0,deb:{}});
   });
+  /* 악마 차원문 — 그 칸에 차원문이 걸려 있으면 **빈 자리**에 하나 선다 (오리온 중급, 노트 2026-10-15) */
+  if(run.dun&&run.dun.cell&&run.dun.cell.gate&&FOE["악마 차원문"]){
+    const taken={}; B.foes.forEach(f=>{ taken[f.slot]=1 });
+    const free=[]; for(let i=1;i<=SLOTS;i++) if(!taken[i]) free.push(i);
+    if(free.length){ const d=FOE["악마 차원문"], sl=rnd(free);
+      B.foes.push({name:"악마 차원문",slot:sl,isFoe:1,maxHp:d.hp,hp:d.hp,
+        atk:d.atk,def:d.def,rng:d.rng,exp:0,demon:1,boss:0,
+        shield:0,air:0,alive:1,id:100+sl,infect:0,stun:0,weak:0,
+        taunt:0,thorn:0,evade:0,negShield:0,hide:0,deb:{}}) }
+  }
   B.foes.forEach(f=>foeFix(f));   /* 체력을 못 박은 우두머리 (간수장 300) */
   if(run.dun&&run.dun.foeEsh) B.foes.forEach(f=>{ f.eshield=(f.eshield||0)+run.dun.foeEsh });   /* 종탑 — 에너지 보호막 300 으로 시작 (사용자 2026-10-12) */
   if(run.dun&&run.dun.souls) B.foes.forEach(f=>{ f.soulSq=1 });   /* 종탑의 우두머리 영혼 — 2턴마다 조여 오는 힘 (라운드마다 여기를 지나니 2라운드도 받는다) */
@@ -28842,12 +29006,26 @@ function makeMin(name,slot,card){
   let matk=0;
   if(/^악마 (하수인|장군)$/.test(name)){ const ow=run&&run.heroes.find(x=>x.name==="굴라");
     if(ow&&ow.tag){ hp+=ow.tag.impHp||0; matk=ow.tag.impAtk||0 } }
+  /* 오리온의 사냥개 — 주인의 보상이 몸집 · 마나 · 이빨을 키운다 (노트 2026-10-15).
+     ⚠️ **여기 한 군데서만** 키운다. 보상이 늘어도 꼬리표만 더 읽으면 된다 */
+  let mleech=0;
+  if(name==="사냥개"){ const ow=run&&run.heroes.find(x=>x.name==="오리온");
+    if(ow&&ow.tag){ const T=ow.tag;
+      hp   += T.houndHp||0;
+      mana += T.houndMana||0;
+      matk += T.houndAtk||0;
+      ev   += T.houndEvade||0;
+      mleech= T.houndLeech||0;
+      /* 「박치기」(중급 추가 기술) — 사냥개에게 기술이 하나 더 생긴다 */
+      if(T.houndHead&&!sk.some(k=>k&&k.n==="박치기"))
+        sk.push({n:"박치기",cost:0,el:"공격",tg:"foe",limit:1,headbutt:1,dmg:0,
+          d:"사용한도(1), 적에게 추가 공격력의 3배만큼 피해를 주고 공중에 뜸 상태로 만듭니다"}) } }
   return {name:name,slot:slot,isMin:1,alive:1,lv:99,
     maxHp:hp,hp:hp,maxMana:mana,mana:mana,
     sk:sk,
     taunt:d.taunt?1:0, perma:d.taunt?1:0, noMove:d.noMove?1:0,
     owner:d.owner, revive:d.revive?1:0, curseOnDeath:d.curseOnDeath||0,
-    atk:matk,mag:0,def:0,shield:0,evade:ev,armor:0,mom:0,free:0,windBuff:0,
+    atk:matk,mag:0,def:0,shield:0,evade:ev,armor:0,mom:0,free:0,windBuff:0,leechOn:mleech,
     lock:{},limitUsed:{},tag:{},items:[],first:{},minions:[]};
 }
 
@@ -29063,7 +29241,7 @@ function foeAil(f){
   if(!f) return 0;
   let n=0;
   if(f.deb) DEB_KEYS.forEach(k=>{ n+=f.deb[k]||0 });
-  n+=(f.infect||0)+(f.burn||0)+(f.mark||0)+(f.scent||0)+(f.weak||0)+(f.stun||0)+(f.weakAtk?1:0)+(f.air?1:0);
+  n+=(f.infect||0)+(f.burn||0)+(f.mark||0)+(f.scent||0)+(f.lead||0)+(f.weak||0)+(f.stun||0)+(f.weakAtk?1:0)+(f.air?1:0);
   return n;
 }
 /* 전부 걷어낸다. 걷어낸 중첩 수를 돌려준다 */
@@ -29071,7 +29249,7 @@ function foePurge(f){
   const n=foeAil(f);
   if(f.deb) DEB_KEYS.forEach(k=>{ delete f.deb[k] });
   f.fearSrc=null; f.fearName=null;
-  f.infect=0; f.burn=0; f.mark=0; f.markBy=null; f.scent=0;
+  f.infect=0; f.burn=0; f.mark=0; f.markBy=null; f.scent=0; f.lead=0;
   f.weak=0; f.weakAtk=0; f.air=0; f.stun=0; if(f.willWeak) f.wkGrowAt=Date.now(); f.willWeak=0; f.willAtk=0; f.willDef=0;
   return n;
 }
@@ -29145,6 +29323,7 @@ function foePeekHtml(f){
   if(f.burn)   ails.push(`화상 ${f.burn}`);
   if(f.mark)   ails.push(`표식 ${f.mark}`);
   if(f.scent)  ails.push(`사냥감 냄새 ${f.scent}`);
+  if(f.lead)   ails.push(`납탄 ${f.lead}/4`);
   if(f.weak)   ails.push(`약화 ${f.weak}`);
   if(f.air)    ails.push(`공중`);
   if(f.deb) DEB_KEYS.forEach(k=>{ if(f.deb[k]>0) ails.push(`${(DEBUFF[k]||{}).n||k} ${f.deb[k]}`) });
@@ -31513,7 +31692,7 @@ function drawBattle(app){
       if(h.isMin&&h.mimic&&h.mimic.act) d.innerHTML+=`<div class="intentbar">${mimicHtml(h)}</div>`;
       d.innerHTML+=`<div class="res">${manaPips(h)}${heroRes(h)}${
           h.mom?`<span class="rr">${ic("move")}${h.mom}</span>`:""}</div>${h.isMin?"":gearRow(h)}
-        <div class="art${(h.name==="카제"&&h.hp>0&&h.sk[0]&&h.sk[0].n==="회오리")?" charged":""}">${pmk}${mrf}${iraa}${auraHtml(h)[0]}${(h.mobile&&h.hp>0&&skinIcon("fx_it_aura"))?`<i class="mobaura kw" style="background-image:url(${skinIcon("fx_it_aura")})" data-kw="기동 상태" data-tip="다른 기술을 쓴 뒤 1칸 물러서고 에너지 보호막을 얻습니다."></i>`:""}${ksoulAuraHtml(h)}${figure((h.artAs&&Date.now()-(h.artAsT||0)<5000)?h.artAs:h.name,poseNow(h),h)}${(h.mobile&&h.hp>0&&skinIcon("fx_it_aura"))?`<i class="mobaura front" style="background-image:url(${skinIcon("fx_it_aura")})"></i>`:""}${ksoulAuraHtml(h,1)}${auraHtml(h)[1]}${(h.name==="카제"&&h.hp>0&&h.sk[0]&&h.sk[0].n==="회오리")?`<i class="swglow kw" data-kw="회오리" data-tip="회오리가 찼습니다."></i>`:""}</div>
+        <div class="art${(h.name==="카제"&&h.hp>0&&h.sk[0]&&h.sk[0].n==="회오리")?" charged":""}${h.bigArt?" bigart":""}">${pmk}${mrf}${iraa}${auraHtml(h)[0]}${(h.mobile&&h.hp>0&&skinIcon("fx_it_aura"))?`<i class="mobaura kw" style="background-image:url(${skinIcon("fx_it_aura")})" data-kw="기동 상태" data-tip="다른 기술을 쓴 뒤 1칸 물러서고 에너지 보호막을 얻습니다."></i>`:""}${ksoulAuraHtml(h)}${figure((h.artAs&&Date.now()-(h.artAsT||0)<5000)?h.artAs:h.name,poseNow(h),h)}${(h.mobile&&h.hp>0&&skinIcon("fx_it_aura"))?`<i class="mobaura front" style="background-image:url(${skinIcon("fx_it_aura")})"></i>`:""}${ksoulAuraHtml(h,1)}${auraHtml(h)[1]}${(h.name==="카제"&&h.hp>0&&h.sk[0]&&h.sk[0].n==="회오리")?`<i class="swglow kw" data-kw="회오리" data-tip="회오리가 찼습니다."></i>`:""}</div>
         <div class="nm">${esc(h.name)}</div>
         <div class="bar" data-hpk="${hpKey(h)}" data-hpv="${Math.max(0,h.hp/h.maxHp*100)}" data-hpn="${h.hp}"
           data-shv="${(h.shield||0)+(h.eshield||0)}" data-esw="${esW}" data-shw="${shW}">
@@ -31577,7 +31756,7 @@ function drawBattle(app){
     /* 사냥의 기류 — 그 칸에 보랏빛이 수직으로 흐른다 (노트 18-0).
        ⚠️ 전에는 아래 `if(f){…}` 안에서 그려 **빈 칸에서는 안 보였다** (사용자 2026-10-15).
           기류는 적이 있든 없든 그 자리에 흐르는 것이다 — 칸을 만든 여기서 붙인다 */
-    if(B.drift===s&&typeof ICON_PNG!=="undefined"&&ICON_PNG.fx_orion_current)
+    if(driftHas(s)&&typeof ICON_PNG!=="undefined"&&ICON_PNG.fx_orion_current)
       d.appendChild(el(`<i class="driftfx" style="background-image:url(${ICON_PNG.fx_orion_current})"></i>`));
     /* 쇠사슬 올가미 — 끌어갈 자리는 밝히고 **화살표**를 띄운다 (사용자 2026-10-15 : 대원 이동과 같은 꼴) */
     if(B.lasso&&B.lasso.spots.includes(s)){ d.classList.add("pick");
@@ -32279,9 +32458,9 @@ const PASSIVE_INFO={
     수는 iraRageVals 하나에서 가져온다 — 실제로 켜는 셈과 같은 수다 */
  "오리온":[
   {n:"사냥의 기류",
-   d:h=>{ const d=(typeof B!=="undefined"&&B)?B.drift:0;
+   d:h=>{ const L=(typeof driftList==="function")?driftList():[];
      return `매 턴 무작위 적 자리에 기류가 흐릅니다. 그 자리의 대상에게 주는 오리온의 피해는 치명타입니다.`
-       +(d?` 지금 ${d}번 칸.`:``) }}],
+       +(L.length?` 지금 ${L.join("번, ")}번 칸.`:``) }}],
  "이라":[
   {n:"복수귀",
    d:h=>{ const V=iraRageVals(h);
@@ -32316,8 +32495,8 @@ function heroRes(h){
   const L=[];
   if(h.name==="데린저") L.push(`<span class="rr am">탄알 ${h.ammo||0}/${ammoMaxOf(h)}</span>`);
   if(h.name==="보아") L.push(`<span class="rr sc">비늘 ${h.scale||0}</span>`);
-  if(h.name==="그슨대"){ if(h.dark) L.push(`<span class="rr dk">어둠 ${h.dark}</span>`);
-    if(h.hide) L.push(`<span class="rr dk">은신</span>`) }
+  if(h.name==="그슨대"&&h.dark) L.push(`<span class="rr dk">어둠 ${h.dark}</span>`);
+  if(h.hide) L.push(`<span class="rr dk">은신</span>`);   /* 누구든 (사용자 2026-10-15) */
   if(h.name==="리페") L.push(`<span class="rr tn">음율 ${(h.tunes||[]).length}/3</span>`);
   if(h.name==="쿠렘타이") L.push(`<span class="rr so">영혼 ${run.souls||0}</span>`);
   if(isFF(h)) L.push(`<span class="rr ${h.stance==="flare"?"am":"so"}">${h.stance==="flare"?"플레어":"플로우"}</span>`);
@@ -32713,13 +32892,25 @@ function lassoDrop(slot){
   fx({side:"foe",slot:slot,s:sfxOr("사슬","step"),ring:"#c9a227",txt:"끌려감",cls:"moved",gap:140});
   if(!(other&&other!==f)) say(`쇠사슬 올가미 — ${f.name}${jo(f.name,"ig")} ${foeNo(slot)}번 칸으로 끌려갑니다.`,"t2");
   foeMoved(f,marked);
+  /* ── 오리온의 올가미 보상 (노트 2026-10-15) — 끌어간 **뒤**에 걸린다 ── */
+  { const o=orionOn(), T=(o&&o.tag)||{};
+    if(o){
+      if(T.lassoScent&&f.alive) scentMark(f,"쇠사슬 목줄",1);
+      if(T.lassoSide){ [slot-1,slot+1].forEach(sl=>{ const nb=foeAt(sl);
+          if(nb&&nb.alive&&nb!==f){ asSrc(o,()=>hurt(nb,T.lassoSide,"날카로운 사슬","slash")) } });
+        say(`날카로운 사슬 — 양옆의 적에게 피해 ${T.lassoSide}`,"t2") }
+      if(driftHas(slot)){
+        if(T.lassoDriftAtk){ bumpTmp(o,"atk",T.lassoDriftAtk);
+          say(`몰이 — ${o.name} 추가 공격력 +${T.lassoDriftAtk}`,"t2") }
+        if(T.lassoDriftBolt&&f.alive) orionFree(o,"악마뼈 쇠뇌",f,T.lassoDriftBolt,"표적 확인") }
+    } }
   rollIntents(true); render();
   return true;
 }
 function validTarget(h,sk,slot){
   if(!inReach(h,sk,slot)) return false;
   /* 정확 조준 — 조준한 적(들) 말고는 못 고른다 (노트 6-4 · 부착: 이중 조준경, 2026-10-15) */
-  if(h&&h.aimAt!=null&&sk&&sk.tg==="foe"){
+  if(h&&h.aimAt!=null&&sk&&sk.tg==="foe"&&!sk.aim){   /* 조준 기술 자체는 가리지 않는다 (사용자 2026-10-15) */
     const f2=foeAt(slot);
     if(!f2) return false;
     if(f2.id!==h.aimAt&&!(h.aimAt2!=null&&f2.id===h.aimAt2)) return false;
@@ -32738,14 +32929,18 @@ function validTarget(h,sk,slot){
 function skLimit(h,i,s){ s=s||h.sk[i]; return s&&s.limit?s.limit+((h.limBonus&&h.limBonus[i])||0):0 }
 function payCost(h,i){
   const s=h.sk[i];
-  if(h===0) return s.cost;
-  if(s.costType==="mom") return s.cost+(s.rise?h.airUp:0);
-  if(s.costType==="scale") return s.cost;
-  if(s.costType==="hp") return iraClawFree(h,s)?0:s.cost;   /* 이라 — 충전이면 할퀴기가 공짜 (2026-10-12) */
+  /* 비용에 붙는 덤 — 「부착: 장전 손잡이」처럼 값을 깎는 보상 (addMod 의 cost).
+     ⚠️ 치르는 값과 기술 칸에 보이는 값이 **여기 한 곳**에서 나와야 둘이 안 어긋난다
+        (사용자 2026-10-15 : 「스킬 창에서도 안 내려가고 실제로도 2 를 쓴다」) */
+  const C=Math.max(0,(s.cost||0)+mod(s,"cost"));
+  if(h===0) return C;
+  if(s.costType==="mom") return C+(s.rise?h.airUp:0);
+  if(s.costType==="scale") return C;
+  if(s.costType==="hp") return iraClawFree(h,s)?0:C;   /* 이라 — 충전이면 할퀴기가 공짜 (2026-10-12) */
   if(h.name==="카제"&&i===1&&h.free>0) return 0;
   if(h.tag.freeCut&&i===0&&h.guarded) return 0;
   if(i===0&&h.name==="트리스탄"&&(h.shotFree||0)>0) return 0;
-  return s.cost;
+  return C;
 }
 function canPay(h,i,n){
   const s=h.sk[i];
@@ -32770,7 +32965,7 @@ function canPay(h,i,n){
     if(fb){ fb=0; continue }
     if(fp){ fp=0; continue }
     if(sf>0){ sf--; continue }
-    need+=s.cost;
+    need+=Math.max(0,(s.cost||0)+mod(s,"cost"));   /* 비용 덤 (2026-10-15) */
   }
   return h.mana>=need;
 }
@@ -33444,7 +33639,7 @@ function onSummon(h){
     fx({side:"mine",slot:h.slot,s:"shield",ring:"#5fd8cf",txt:"에너지 보호막 +"+v,cls:"shd",gap:80});
     say(`기계화 탄약 상자 — ${h.name} 에너지 보호막 +${v}`,"t2") }
   if(h.name==="데린저"&&t.barrage){ const L=(B.foes||[]).filter(f=>f.alive);
-    L.forEach(f=>{ for(let q=0;q<2*t.barrage;q++) derrFreeShot(h,f) });
+    L.forEach(f=>{ for(let q=0;q<2*t.barrage;q++) derrFreeUse(h,f) });
     if(L.length) say(`탄막 — ${h.name}${jo(h.name,"ig")} 전장을 쓸어 버립니다.`,"t1") }
   if(h.name==="데린저"&&t.placeShot){ const f=(typeof nearestFoe==="function")&&nearestFoe(h);
     if(f) for(let i=0;i<t.placeShot;i++) derrFreeShot(h,f);
@@ -33596,6 +33791,22 @@ function onSummon(h){
   if(t.placeEvade){ h.evade+=t.placeEvade; say(`${h.name} 회피 +${t.placeEvade} (자취 감추기)`,"t2") }
   { const sm=itemBt(h,"startMom"); if(sm){ h.mom+=sm; say(`${h.name} 추진력 +${sm} (장비)`,"t2") } }   /* 에메랄드 파편 */
   if(t.placeShield){ addShield(h,t.placeShield); say(`살이 아니라 근육이라구 — ${h.name} 보호막 +${t.placeShield}`,"t2") }
+  /* ── 오리온 — 대원 배치 후 (노트 2026-10-15) ── */
+  if(h.name==="오리온"&&B&&!B.over){
+    /* 기운 감지 (하급) — 모든 적에게 냄새를 남긴다 */
+    if(t.placeScent){ const L=B.foes.filter(f=>f.alive);
+      if(L.length){ say(`기운 감지 — 모든 적에게 사냥감 냄새`,"t1");
+        L.forEach(f=>scentMark(f,"기운 감지",t.placeScent)) } }
+    /* 호루라기 (중급) — 사냥개가 **오리온의 앞**(적 쪽) 빈 칸에 선다 */
+    if(t.whistleHound&&houndsOn().length<houndCap(h)){
+      let sl=0;
+      for(let d=1;d<SLOTS&&!sl;d++){
+        if(h.slot+d<=SLOTS&&!unitAt(h.slot+d)) sl=h.slot+d;
+        else if(h.slot-d>=1&&!unitAt(h.slot-d)) sl=h.slot-d;
+      }
+      if(sl) summonHound(sl,"호루라기");
+      else say("호루라기 — 사냥개가 설 빈 칸이 없습니다.","t2") }
+  }
   if(h.name==="도미니코") domDeploy(h);   /* 속독 · 악마 처단 · 예습 — 대원 배치 후 */
   if(isFF(h)&&t.balFirst) h.balFirst=t.balFirst;   /* 적절한 균형 — 대원 배치 후 (점검 2026-10-07) */
   if(h.name==="이테리오"){   /* 반란군 결집 · 고철장의 구원자 — 대원 배치 후, 그 라운드 동안 */
@@ -34057,6 +34268,7 @@ function playCard(i,slot,side){
   if(c.type==="summon"){
     const m=makeMin(c.name,slot,c);   /* 카드가 쥔 부속 둘을 그대로 넘긴다 (하수인 골렘) */
     golemPlaced(m);   /* 파벨의 보상이 골렘을 키운다 — 세우기 전에 (노트 lowRewards) */
+    houndPlaced(m);   /* 오리온의 보상이 사냥개를 키운다 (노트 2026-10-15) */
     B.mins.push(m); lifeAuraSync();
     cardMagic();   /* 소환물 카드도 카드다 (악마 하수인 · 망자의 육체 …) */
     if(cardGone(c)) goneFX("mine",slot);
@@ -34084,7 +34296,7 @@ function playCard(i,slot,side){
     onSummon(c.hero); lifeAuraSync();   /* 대원이 설 때도 */
     /* 사냥의 기류 — 오리온이 서면 **그 자리에서** 자리를 뽑는다 (사용자 2026-10-15).
        내 턴 머리에서만 뽑던 때는 오리온을 세운 첫 턴에 기류가 없었다 */
-    if(!B.drift) B.drift=driftRoll();
+    if(!driftList().length) B.drifts=driftRoll();
     cardMagic(c.hero);   /* 대원 카드를 배치하는 것도 카드를 낸 것 (사용자 2026-10-05) — 카드를 낸 것이 먼저라 막 선 대원은 못 받는다 */
     bark(c.hero,"in",1);                      /* 대원이 설 때는 반드시 한 마디 (사용자 2026-09-12) */
     wanderCheck();
@@ -34152,10 +34364,55 @@ function critWhy(h,s,tgt){
   }
   /* 사냥의 기류 — 기류가 흐르는 자리의 적에게 주는 오리온의 피해 (노트 18-0, 2026-10-14).
      **대상에 걸린 규칙**이라 기술 칸에는 안 적힌다 (점화 · 대상 포착과 같은 결) */
-  if(h.name==="오리온"&&tgt&&typeof B!=="undefined"&&B&&B.drift&&tgt.slot===B.drift) return "사냥의 기류";
+  if(tgt&&typeof driftHas==="function"&&driftHas(tgt.slot)&&orionCrew(h)) return "사냥의 기류";
   if(h&&h.name==="데린저"&&tgt&&h.aimAt2!=null&&tgt.id===h.aimAt2) return "정확 조준";   /* 부착: 이중 조준경 (2026-10-15) */
   if(s.harmony&&(ffFlare(h)||T.disharmony)) return T.disharmony&&!ffFlare(h)?"부조화":"플레어";
   return null;
+}
+/* ── 오리온의 보상이 쓰는 길 (노트 2026-10-15) ──────────────────────────────
+   규칙 하나는 함수 하나 — 보상이 늘어도 아래 다섯만 부른다 */
+/* 전장의 오리온 (쓰러졌으면 null) */
+function orionOn(){ return (typeof onField==="function")
+  ? (onField().find(h=>h&&h.name==="오리온"&&!h.isMin&&h.hp>0)||null) : null }
+/* 전장의 사냥개들 */
+function houndsOn(){ return (typeof B!=="undefined"&&B&&B.mins)
+  ? B.mins.filter(m=>m&&m.alive&&m.name==="사냥개"&&m.slot>0) : [] }
+/* 사냥감 냄새를 남긴다 — 한 군데서 (표식 · 연출 · 기록) */
+function scentMark(f,why,n){
+  if(!f||!f.alive) return 0;
+  const v=Math.max(1,n||1); f.scent=(f.scent||0)+v;
+  fx({side:"foe",slot:f.slot,ring:"#9ad36a",txt:"사냥감 냄새",cls:"miss",gap:60});
+  say(`${why} — ${f.name}에게 사냥감 냄새가 뱁니다 (${f.scent}).`,"t2");
+  return v;
+}
+/* 「비용 없이 n 번 더」 — 기술 표의 값만 빌려 그대로 때린다 (표적 확인 · 침흘리는 사냥개).
+   값을 치르는 길(payCost)을 아예 지나가지 않는다 — 이라의 참을 수 없는 분노와 같은 결 */
+function orionFree(u,skName,tgt,times,why){
+  if(!u||!tgt||!tgt.alive||!B||B.over) return;
+  const sk=(u.sk||[]).find(k=>k&&k.n===skName); if(!sk) return;
+  for(let q=0;q<(times||1)&&tgt.alive;q++){
+    const dmg=(sk.dmg||0)+mod(sk,"dmg")+(u.atk||0);
+    const crit=critWhy(u,sk,tgt)?1:0;
+    say(`${why||skName} — ${u.name}${jo(u.name,"ig")} 비용 없이 ${skName}${jo(skName,"eul")} 씁니다.`,"t2");
+    if(u.name==="오리온") fx({side:"foe",slot:tgt.slot,orion:{side:"mine",slot:u.slot,kind:"bolt"},gap:0});
+    asSrc(u,()=>hurt(tgt,crit?dmg*2:dmg,skName,"slash",0,crit,1));
+    if(sk.scent&&tgt.alive) scentMark(tgt,skName,1);
+    if(sk.scentUse&&tgt.alive&&(tgt.scent||0)>0) tgt.scent--;
+  }
+}
+/* 피해를 준 뒤 — 기류 · 궁수 보상이 여기 한 곳에 걸린다 */
+function orionAfterHit(u,s0,tgt){
+  if(!u||!tgt||!B||B.over) return;
+  const o=orionOn(); if(!o) return;
+  const T=o.tag||{};
+  /* 은총의 기류 (중급) — 기류 자리의 적을 때린 뒤 오리온과 사냥개가 보호막 */
+  if(T.driftShield&&driftHas(tgt.slot)&&orionCrew(u)){
+    [o].concat(houndsOn()).forEach(a=>{ addShield(a,T.driftShield);
+      fx({side:"mine",slot:a.slot,s:"shield",ring:"#5fd8cf",txt:"보호막 +"+T.driftShield,cls:"shd",gap:60}) });
+    say(`은총의 기류 — 오리온과 사냥개가 보호막 +${T.driftShield}`,"t2") }
+  /* 균열 화살촉 보급 (상급) — **다른** 궁수 대원이 피해를 주면 냄새가 밴다 */
+  if(T.archerScent&&u!==o&&!u.isMin&&typeof hasTag==="function"&&hasTag(u,"궁수")&&tgt.alive)
+    scentMark(tgt,"균열 화살촉 보급",1);
 }
 /* 치명적인 공격 · 마법 — 이번 전투에 남은 치명타 수 (보상을 겹친 만큼, 2026-10-03) */
 function critLeft(h,key){ const done=key==="critMag"?"critMagUsed":"critAtkUsed"; return Math.max(0,((h&&h.tag&&h.tag[key])||0)-((h&&h[done])||0)) }
@@ -34220,7 +34477,7 @@ function predictDmg(h,s,tgt){
   }
   else if(s.allHit){
     if(h.tag.pressAtk&&dist(h.slot,tgt.slot)>2) return null;
-    if(s.bait&&tgt.slot===(B.drift||0)) return null;   /* 미끼 던지기 — 기류 자리는 안 맞는다 (2026-10-14) */
+    if(s.bait&&driftHas(tgt.slot)) return null;   /* 미끼 던지기 — 기류 자리는 안 맞는다 (2026-10-14) */
     dmg=bs("dmg")+ATK+(s.slam?(h.mag||0):0);   /* 지면 내려치기 — 실제(runEffect)와 같은 셈 */
     if(critWhy(h,s,tgt)){ dmg*=2; crit=1 }   /* 지진파 따위 — 실제와 같은 자리에서 (2026-10-13) */
     if(h.name==="이테리오"&&s.n==="팽창 공격"&&(tgt.mark||0)>0&&h.tag.aimFix) dmg+=h.tag.aimFix;
@@ -34992,6 +35249,7 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
     onDeath("foe",f);
     foeDeath(f);            /* 죽음 — 쓰러질 때 터지는 지속 능력 (2026-09-29) */
     skReact(f);
+    orionKill(B.lastAttacker,f,tag);   /* 소환물이 잡아도 센다 — onKill 은 대원만 본다 (2026-10-15) */
     onKill(B.lastAttacker,f,tag) }
   /* 영혼 둔갑 — 회피를 쥔 쿠렘타이가 때린 적은 공포에 질린다 */
   { const by=B.lastAttacker;
@@ -35005,6 +35263,50 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
 function asSrc(h,fn){
   const p=B.lastAttacker; if(h) B.lastAttacker=h;
   try{ fn() } finally { B.lastAttacker=p }
+}
+/* 사냥개를 몇 마리까지 둘 수 있나 — 기본 하나, 「무리 사냥」(상급) 이면 둘 (노트 2026-10-15).
+   ⚠️ 수를 묻는 곳은 여기 한 군데다 */
+function houndCap(o){ o=o||orionOn()||(run&&run.heroes.find(x=>x.name==="오리온"));
+  return 1+((o&&o.tag&&o.tag.packHunt)?1:0) }
+/* 사냥개가 전장에 설 때 — 주인의 상급 보상이 여기서 걸린다 (노트 2026-10-15).
+   ⚠️ **몸집은 makeMin 이 아니라 여기서** 키운다. 노트가 「소환 후」라 적었다 */
+function houndPlaced(m){
+  if(!m||m.name!=="사냥개") return;
+  const o=orionOn()||(run&&run.heroes.find(x=>x.name==="오리온"));
+  const T=(o&&o.tag)||{};
+  if(T.houndDouble){ m.maxHp*=2; m.hp=m.maxHp; m.bigArt=1;
+    say(`거대 사냥개 — ${m.name}의 최대 체력이 ${m.maxHp} 이 됩니다.`,"t1") }
+  if(T.houndEvade2){ m.evade=(m.evade||0)+T.houndEvade2;
+    say(`재빠른 본성 — ${m.name} 회피 +${T.houndEvade2}`,"t2") }
+}
+/* 호루라기 — 카드를 거치지 않고 **곧바로** 사냥개를 세운다 (중급, 노트 2026-10-15) */
+function summonHound(slot,why){
+  if(!B||B.over||!slot) return null;
+  const m=makeMin("사냥개",slot);
+  houndPlaced(m);
+  B.mins.push(m); if(typeof lifeAuraSync==="function") lifeAuraSync();
+  fx({side:"mine",slot:slot,fn:()=>{ houndRunInFX(slot); SFX.play("사냥개 소환") },
+      ring:"#c9a227",glow:1,txt:"소환",cls:"shd",gap:560});
+  say(`${why||"호루라기"} — 사냥개가 ${slot}번 칸에 섭니다.`,"t1");
+  return m;
+}
+/* 오리온 — 적이 쓰러진 뒤 (노트 2026-10-15).
+   ⚠️ onKill 은 **대원이 잡았을 때만** 돈다. 사냥개가 문 것도 세야 해서 따로 둔다 */
+function orionKill(by,f,tag){
+  const o=orionOn(); if(!o||!f) return;
+  const T=o.tag||{}, scented=(f.scent||0)>0;
+  /* 먹이 주기 (하급) — 악마뼈 쇠뇌로 잡으면 사냥개가 살을 뜯는다 */
+  if(T.boltFeed&&tag==="악마뼈 쇠뇌") houndsOn().forEach(m=>{ const g=healUp(m,T.boltFeed);
+    if(g){ fx({side:"mine",slot:m.slot,s:"heal",txt:"+"+g,cls:"heal",gap:60});
+      say(`먹이 주기 — ${m.name} 체력 +${g}`,"t2") } });
+  /* 냄새 뭍히기 (중급) — 냄새가 밴 적을 잡으면 다른 적에게 옮는다 */
+  if(T.scentChain&&scented){
+    const L=B.foes.filter(x=>x.alive&&x!==f);
+    if(L.length) scentMark(rnd(L),"냄새 뭍히기",1) }
+  /* 재빠른 본성 (상급) — 사냥개가 잡을 때마다 회피 */
+  if(T.houndKillEvade&&by&&by.isMin&&by.name==="사냥개"&&by.alive){
+    by.evade=(by.evade||0)+T.houndKillEvade;
+    say(`재빠른 본성 — ${by.name} 회피 +${T.houndKillEvade}`,"t2") }
 }
 /* 대원 by 의 피해로 적 f 가 죽었다. tag 는 피해 이름(기술 이름 등) */
 function onKill(by,f,tag){
@@ -35197,6 +35499,12 @@ function onDeath(kind,who){
   run.heroes.forEach(h=>{
     if(kind!=="min"&&!(who&&who.summoned)&&h.name==="굴라"&&h.slot>0&&h.greed<greedCapOf(h)){ h.greed++; h.maxHp++; h.hp++ }   /* 적의 소환물도 소환물이다 */
     /* 주인님을 받들어라 — 내 소환물이 죽으면 굴라가 회복 */
+    /* 전우애 (상급) — 사냥개가 죽으면 그 추가 능력치가 오리온에게 넘어온다 (노트 2026-10-15) */
+    if(kind==="min"&&h.name==="오리온"&&h.slot>0&&h.hp>0&&h.tag.houndWill&&who&&who.name==="사냥개"){
+      const got=[];
+      [["atk","공격력"],["mag","마법력"],["def","보호력"]].forEach(([k,label])=>{
+        const v=who[k]||0; if(v>0){ bumpTmp(h,k,v); got.push(`${label} +${v}`) } });
+      if(got.length) say(`전우애 — ${h.name}${jo(h.name,"ig")} ${got.join(", ")} 이어받습니다.`,"t1") }
     if(kind==="min"&&h.name==="굴라"&&h.slot>0&&h.hp>0&&h.tag.minDeathHeal){
       const got=healUp(h,h.tag.minDeathHeal);
       if(got){ fx({side:"mine",slot:h.slot,s:"heal",txt:"+"+got,cls:"heal",gap:60});
@@ -35439,8 +35747,9 @@ function doSkill(target){
       say("준비 후 밀치기 — 이번 방패 밀치기는 공짜입니다.","t2") }
     else if(freeArrow){ h.shotFree--;
       say("손아귀 강화 — 이번 페일노트는 공짜입니다.","t2") }
-    else { h.mana-=s.cost; h.manaUsed=(h.manaUsed||0)+s.cost; mpAbsorbHook(h,s.cost);   /* 마력 흡수 — 마나를 쓴 만큼 마력 (2026-10-12) */
-      if(s.cost){
+    else { const C=payCost(h,i);   /* 비용 덤(부착: 장전 손잡이)까지 셈한 값 — 기술 칸에 보이는 것과 같다 (2026-10-15) */
+      h.mana-=C; h.manaUsed=(h.manaUsed||0)+C; mpAbsorbHook(h,C);   /* 마력 흡수 — 마나를 쓴 만큼 마력 (2026-10-12) */
+      if(C){
         const mm=itemBt(h,"manaMom"); if(mm) h.mom+=mm;   /* '마나를 소모할 때마다 추진력 +1' — 쓴 마나만큼 주던 것 (점검 2026-10-07) */
         const ms2=itemBt(h,"manaShield"); if(ms2) addShield(h,(h.def||0)*ms2);   /* 전장의 함성 — 쓴 마나가 아니라 **추가 보호력**만큼 (사용자 2026-10-12) */
         (h.items||[]).forEach(it=>{ const k=it.bt&&it.bt.manaBolt; if(!k) return;
@@ -35451,11 +35760,11 @@ function doSkill(target){
           /* 쓴 마나는 안 더한다 — **이 대원의 추가 공격력 · 추가 마법력**만큼 (사용자 2026-10-12) */
           asSrc(h,()=>hurt(t2,(k==="mag"?(h.mag||0):(h.atk||0)),k==="mag"?"기초 마법서: 마나":"검투사의 검",k==="mag"?"mag":"slash")) });   /* 처치 주인 (점검 2026-10-07) */
       }
-      if(h.name==="이테리오"&&s.cost){
-        const v=s.cost+2*(h.tag.manaLeap||0);   /* 마나 도약 — 마나 과충전이 한 번 걸릴 때마다 +2 */
+      if(h.name==="이테리오"&&C){
+        const v=C+2*(h.tag.manaLeap||0);   /* 마나 도약 — 마나 과충전이 한 번 걸릴 때마다 +2 */
         bumpTurn(h,"mag",v);
         if(h.tag.overlap) bumpTurn(h,"atk",v);   /* 에너지 중첩 */
-        h.spentTurn=(h.spentTurn||0)+s.cost; } }
+        h.spentTurn=(h.spentTurn||0)+C; } }
     if(s.ammo){ h.ammo=Math.max(0,(h.ammo||0)-(s.ammo||1)) }   /* 변형 총은 발당 2~4 (2026-10-14) */
     if(s.limit) h.limitUsed[i]=(h.limitUsed[i]||0)+1;
     if(h.isMin&&h.golem) golemSkillUsed(h,s);   /* 분업 · 합맞추기 — 하수인 골렘이 기술을 쓴 뒤 (노트 2026-10-13) */
@@ -36495,6 +36804,26 @@ function runEffect0(h,i,s,target){
     say(`${nf.name}${jo(nf.name,"ig")} 죽었다가 다시 일어섭니다.`,"t1");
     return;
   }
+  /* 작은 미끼 (중급 추가 기술, 노트 2026-10-15) —
+     미끼 던지기와 연출도 능력도 같되 **고른 자리 하나**에만 던진다 */
+  if(s.smallBait){
+    const sl=target, f=foeAt(sl), hs=h.slot;
+    if(!sl){ say(`${s.n} — 던질 자리를 고르세요.`,"t2"); return }
+    fx({side:"mine",slot:h.slot,pose:"bait",poseMs:1100,gap:0});
+    SFX.play("미끼 던지기");
+    fx({side:"foe",slot:sl,fn:()=>baitThrowFX(hs,sl,2400),gap:240});
+    fx({fn:()=>{},gap:520});
+    fx({worm:sl,gap:0});
+    if(f&&f.alive){
+      let d=s.dmg+mod(s,"dmg")+h.atk, crit=0;
+      if(critWhy(h,s,f)){ d*=2; crit=1; say(`${s.n} — 치명타!`,"t1") }
+      B.lastAttacker=h;
+      hurt(f,d,s.n,"slash",0,crit,1);
+      if(f.alive) addDeb(f,"stun",1,h);
+      orionAfterHit(h,s,f);
+    } else say(`${s.n} — 그 자리에는 적이 없습니다. 미끼만 남습니다.`,"t2");
+    return;
+  }
   /* ── 이테리오 ── */
   if(s.allHit){
     const base=s.dmg+mod(s,"dmg")+h.atk+(s.slam?(h.mag||0):0);   /* 지면 내려치기는 공격력 + 마법력 (노트 17-1) */
@@ -36503,14 +36832,14 @@ function runEffect0(h,i,s,target){
     let list=B.foes.filter(f=>f.alive);
     /* 미끼 던지기 — **기류가 흐르는 자리는 빼고** 나머지 모두 (노트 18-4, 2026-10-14).
        기류 자리는 이미 오리온의 치명타 자리라 둘이 겹치지 않게 짜였다 */
-    if(s.bait){ const dz=B.drift||0; list=list.filter(f=>f.slot!==dz);
+    if(s.bait){ list=list.filter(f=>!driftHas(f.slot));
       fx({side:"mine",slot:h.slot,pose:"bait",poseMs:1100,gap:0});   /* 미끼를 던지는 자세 (2026-10-14) */
       SFX.play("미끼 던지기");
       /* 차례는 받은 메모(art/오리온효과음/미끼던지기참고.txt) 그대로 —
          ㉠ 미끼가 포물선으로 날아가 ㉡ 떨어지며 진동음 + 화면 흔들림 ㉢ 돌진음과 함께 균열벌레.
          ⚠️ 미끼는 **적이 없는 자리에도** 떨어진다 (노트 18-4 「기류가 흐르지 않는 모든 위치」).
             전에는 적이 선 칸에만 떨어져 빈 자리는 아무 일도 없었다 (사용자 2026-10-15) */
-      { const spots=[]; for(let i=1;i<=SLOTS;i++) if(i!==dz) spots.push(i);
+      { const spots=[]; for(let i=1;i<=SLOTS;i++) if(!driftHas(i)) spots.push(i);
         const hs=h.slot;
         /* ⚠️ **칸을 적어야 한다** — 칸 없는 줄은 ctrOf 에서 버려져 한 번도 안 불린다 (2026-10-15).
            미끼는 날아가서 떨어지고 흔들리고 남는 것까지 baitThrowFX 한 곳이 맡는다 */
@@ -36560,6 +36889,9 @@ function runEffect0(h,i,s,target){
       if(press) applyLeech(h,d);
       if(h.name==="이테리오"&&itMarksOn(h,s)&&f.alive) itMark(f,1);   /* 반전화 — 공격 피해가 표식을 남긴다 */
       if(s.bait&&f.alive) addDeb(f,"stun",1,h);   /* 미끼 던지기 — 지나간 자리의 적은 기절 (노트 18-4) */
+      /* 침흘리는 사냥개 (중급) — 미끼에 맞은 적을 사냥개가 비용 없이 두 번 문다 */
+      if(s.bait&&f.alive&&h.tag&&h.tag.baitHound)
+        houndsOn().forEach(m=>orionFree(m,"상처 남기기",f,h.tag.baitHound,"침흘리는 사냥개"));
     });
     /* 지면 내려치기 — 때린 뒤 **거리 2 내**가 공중에 뜬다 (노트 17-1).
        띄우는 것은 airborne 한 곳이다 — 파수꾼의 은총도 거기서 따라온다 */
@@ -36698,13 +37030,17 @@ function runEffect0(h,i,s,target){
         const opt={cellW:128,cellH:128,frames:8,z:1.03,feet:1,dy:6,frameMs:fm};
         /* 리볼버 — 7번 칸을 빼고 그 자리에 8번을 넣는다. 빛나던 것도 걷었다 (사용자 2026-10-15) */
         if(fk==="revolver") opt.order=[0,1,2,3,4,5,7];
+        /* ⚠️ 감추기를 **연출 줄에 실어** 띠와 같은 때에 켠다 (사용자 2026-10-15 :
+           「장전 모션 마지막 즈음에 대기 모션이 먼저 나와 겹쳐 보인다」).
+           그 자리에서 켜면 띠가 줄을 기다리는 동안 감추기만 먼저 흘러가 끝자락이 겹쳤다.
+           길이는 띠(tot×SPD)에서 한 칸만 모자라게 — 길면 아무도 없는 칸이 된다 */
+        const sl0=h.slot;
+        fx({side:"mine",slot:h.slot,fn:()=>{ const st=document.createElement("style");
+          st.textContent=`#mySide .slot[data-slot="${sl0}"] .art{visibility:hidden}`;
+          document.head.appendChild(st);
+          setTimeout(()=>st.remove(),Math.max(120,Math.round(tot*SPD)-40)) },gap:0});
         fx({side:"mine",slot:h.slot,sheet:k,sheetOpt:opt,gap:tot+60});
-        SFX.play(g+" 장전");   /* 받은 녹음 — 파일 이름이 곧 열쇠다 (2026-10-15) */
-        /* ⚠️ 감추는 길이는 띠보다 **짧아야** 한다 — 같거나 길면 띠가 꺼진 뒤에도 몸이 없어
-           한 순간 아무도 없는 칸이 된다 (기관총에서 눈에 띄었다, 사용자 2026-10-15) */
-        { const st=document.createElement("style");
-          st.textContent=`#mySide .slot[data-slot="${h.slot}"] .art{visibility:hidden}`;
-          document.head.appendChild(st); setTimeout(()=>st.remove(),Math.max(120,tot-90)) } } }
+        SFX.play(g+" 장전");   /* 받은 녹음 — 파일 이름이 곧 열쇠다 (2026-10-15) */ } }
     if(h.tag&&h.tag.reloadNext&&n2>0){ h.tag.gunOnce=(h.tag.gunOnce||0)+n2;
       say(`부착: 강화약실 — 다음 무기 피해 +${n2}`,"t2") }
     if(got>0){ addShield(h,got);
@@ -37009,8 +37345,14 @@ function runEffect0(h,i,s,target){
      **손이나 전장에** 이미 있으면 그 대신 체력을 회복한다.
      ⚠️ 손에 있는 카드는 체력이 없으니 회복을 받는 것은 **오리온 자신**으로 읽었다 — 사용자에게 물어 둠 */
   if(s.houndCard){
-    const 섬=(B.mins||[]).some(m=>m.alive&&m.name==="사냥개");
-    const 손=(B.hand||[]).some(c=>c.type==="summon"&&c.name==="사냥개");
+    /* 휘파람을 부는 자세 (사용자 2026-10-15 : art/orion-whistle-v1) */
+    fx({side:"mine",slot:h.slot,pose:"whistle",poseMs:980,gap:0});
+    const 섬수=houndsOn().length;
+    const 손수=(B.hand||[]).filter(c=>c.type==="summon"&&c.name==="사냥개").length;
+    /* 무리 사냥 (상급) — 사냥개를 둘까지 둘 수 있고, 이미 있어도 한 장 더 가져온다 */
+    const 무리=!!(h.tag&&h.tag.packHunt);
+    const 섬=무리?(섬수+손수>=houndCap(h)):(섬수>0);
+    const 손=무리?false:(손수>0);
     /* ⚠️ 이미 있으면 **가져오지 않는다** (사용자 2026-10-15). 전에는 늘 한 장씩 더 들어와
        전장에 사냥개를 두고도 손이 사냥개로 찼다 */
     if(!섬&&!손){ handAdd({type:"summon",name:"사냥개",gone:1,arrive:1});
@@ -37019,12 +37361,21 @@ function runEffect0(h,i,s,target){
       SFX.play("사냥개 부리기");
       say(`${s.n} — 사냥개 카드를 가져옵니다.`,"t2"); }
     /* 회복은 **사냥개가 받는다** (사용자 2026-10-14). 손에만 있고 전장에 없으면 받을 몸이 없다 */
-    if(섬||손){ const v=(s.houndHeal||0)+mod(s,"houndHeal");
-      const L=(B.mins||[]).filter(m=>m.alive&&m.name==="사냥개");
+    if(섬수||손수){ const v=(s.houndHeal||0)+mod(s,"houndHeal");
+      const L=houndsOn();
       if(!L.length) say(`${s.n} — 전장에 사냥개가 없어 회복할 몸이 없습니다.`,"t2");
-      else L.forEach(m=>{ const g=healUp(m,v);
+      else L.forEach(m=>{
+        /* 물어뜯기 훈련 (중급) — 체력이 가득 차 있으면 회복 대신 이빨이 날카로워진다 */
+        if(h.tag&&h.tag.fullBite&&m.hp>=m.maxHp){ m.atk=(m.atk||0)+h.tag.fullBite;
+          fx({side:"mine",slot:m.slot,ring:"#e0705a",txt:"공격력 +"+h.tag.fullBite,cls:"buf",gap:80});
+          say(`물어뜯기 훈련 — ${m.name} 추가 공격력 +${h.tag.fullBite}`,"t2"); return }
+        const g=healUp(m,v);
         if(g){ fx({side:"mine",slot:m.slot,s:"heal",txt:"+"+g,cls:"heal",gap:80});
-          say(`${s.n} — ${m.name} 체력 +${g}`,"t2") } }) }
+          say(`${s.n} — ${m.name} 체력 +${g}`,"t2");
+          /* 고단백 살점 (상급) — 회복한 만큼 최대 체력도 (겹쳐 고른 수만큼) */
+          const k=(h.tag&&h.tag.houndMeat)||0;
+          if(k){ m.maxHp+=g*k; m.hp+=g*k;
+            say(`고단백 살점 — ${m.name} 최대 체력 +${g*k}`,"t2") } } }) }
   }
   if(s.armorUp){
     const t=h.tag||{};
@@ -37429,6 +37780,7 @@ function runEffect0(h,i,s,target){
     if(OVER&&!overReach(h,s,tgt.slot)) return;
     let dmg=s.dmg+mod(s,"dmg")+(skillFlat(s)?0:(s.defDmg?(h.def||0):(s.el==="마법"?h.mag:h.atk*(s.n==="방패 밀치기"?(h.tag.pushAtkX||1):1))))+(s.exec?(h.mom||0):0);
     dmg+=derrGunAdd(h,s,tgt);   /* 데린저의 무기 피해량 — 부착물 (노트 2026-10-15) */
+    if(s.headbutt) dmg+=(h.atk||0)*2;   /* 박치기 — 추가 공격력의 **세 배** (위에서 한 번 더했다, 노트 2026-10-15) */
     /* 포식 — 이 한 방만 흡수한다. 아래 applyLeech 가 터뜨리고 스스로 비운다 (겹쳐 남지 않는다) */
     if(s.leechNow) addLeech(h,s.leechNow);   /* 진지 구축은 추가 공격력으로 붙는다 (fortSync). 승리의 일격 — 추진력도 (노트 ≡, 사용자 2026-10-06) */
     if(OVER) dmg=Math.max(1,Math.round(dmg*OVER_X));
@@ -37663,9 +38015,9 @@ function runEffect0(h,i,s,target){
       asSrc(h,()=>hurt(tgt,dmg,s.n,"slash",0,CRIT,1));
     }
     /* ── 오리온 — 사냥감 냄새 (노트 18-5 남기고 · 18-1 거둔다, 2026-10-14) ── */
-    if(s.scent&&tgt&&tgt.alive){ tgt.scent=(tgt.scent||0)+1;
-      fx({side:"foe",slot:tgt.slot,ring:"#9ad36a",txt:"사냥감 냄새",cls:"miss",gap:60});
-      say(`${s.n} — ${tgt.name}에게 사냥감 냄새가 뱁니다 (${tgt.scent}).`,"t2") }
+    if(s.scent&&tgt&&tgt.alive) scentMark(tgt,s.n,1);
+    if(s.headbutt&&tgt&&tgt.alive) airborne(h,tgt);   /* 박치기 — 들이받아 띄운다 (노트 2026-10-15) */
+    orionAfterHit(h,s,tgt);   /* 은총의 기류 · 균열 화살촉 보급 (노트 2026-10-15) */
     if(s.scentUse&&tgt&&(tgt.scent||0)>0){ tgt.scent--;
       say(`${s.n} — 사냥감 냄새를 하나 거둡니다 (남은 ${tgt.scent}).`,"t2") }
     /* ── 트리스탄 꿰뚫는 화살의 곁가지 ── */
@@ -38050,8 +38402,28 @@ function unitDown(t){
    (사용자 2026-10-15 : 「전투 시작 후부터 생길 수 있게」. 전에는 둘째 턴부터 보였다).
    ⚠️ 연출이 아니라 규칙이라 게임 주사위(Math.random)로 뽑는다 */
 function driftRoll(){
-  if(typeof onField!=="function"||!B) return 0;
-  return onField().some(h=>h&&h.name==="오리온"&&!h.isMin&&h.hp>0)?(1+Math.floor(Math.random()*SLOTS)):0;
+  if(typeof onField!=="function"||!B) return [];
+  const o=onField().find(h=>h&&h.name==="오리온"&&!h.isMin&&h.hp>0);
+  if(!o) return [];
+  /* 「감각 증폭」(중급) 을 고르면 한 줄기 더 흐른다 — 겹친 수만큼 (노트 2026-10-15) */
+  const n=1+((o.tag&&o.tag.driftPlus)||0), out=[];
+  for(let i=0;i<n&&out.length<SLOTS;i++){
+    for(let g=0;g<40;g++){ const sl=1+Math.floor(Math.random()*SLOTS);
+      if(out.indexOf(sl)<0){ out.push(sl); break } }
+  }
+  return out;
+}
+/* 기류가 흐르는 자리 — **묻는 곳은 여기 한 군데다.** 줄기가 늘어도 아래만 본다 (사용자 2026-10-15) */
+function driftList(){ const d=(typeof B!=="undefined"&&B)?B.drifts:null;
+  return Array.isArray(d)?d.filter(Boolean):(d?[d]:[]) }
+function driftHas(slot){ return slot!=null&&driftList().indexOf(slot)>=0 }
+/* 사냥의 기류를 타는 패거리 — 오리온, 그리고 「동료애」(상급) 를 고른 뒤의 그의 소환물 */
+function orionCrew(u){
+  if(!u) return false;
+  if(u.name==="오리온"&&!u.isMin) return true;
+  if(!u.isMin||u.owner!=="오리온") return false;
+  const o=(typeof run!=="undefined"&&run&&run.heroes)?run.heroes.find(x=>x.name==="오리온"):null;
+  return !!(o&&o.tag&&o.tag.houndDriftCrit);
 }
 function autoOn(){ return !!run&&run.autoImp!==0 }
 function autoImps(){
@@ -38064,24 +38436,29 @@ function autoImps(){
      전에는 악마 하수인 · 장군 · 수목 · 골렘만 적어 두어 **새 소환물(사냥개)이 가만히 서 있었다.**
      이제 규칙은 하나다 — **첫 기술을 가졌고, 값을 치를 수 있고, 멈춰 있지 않으면 쓴다.**
      저절로만 도는 지속(auto)과 잠긴 기술은 뺀다 */
-  liveMins().filter(m=>m&&m.sk&&m.sk[0]&&!m.sk[0].auto).forEach(m=>{
-    if(B.over||m.hp<=0||m.slot<=0) return;
-    if(typeof stopped==="function"&&stopped(m)) return;
-    if(m.lock&&m.lock[0]) return;
-    const s=m.sk[0];
-    if(typeof canPay==="function"){ if(!canPay(m,0,1)) return }
-    else if((m.mana||0)<(s.cost||0)) return;
-    if(s.tg==="ally") return;   /* 아군을 겨누는 기술은 저절로 쓰지 않는다 — 누구에게 걸지가 사람의 몫이다 */
-    if(s.tg==="self"||s.tg==="none"){   /* 겨눌 것 없이 제자리에서 (수목 성장 · 고대수목 축복 …) */
-      say(`자동 — ${m.name}(${m.slot}번)이 ${s.n}${jo(s.n,"eul")} 씁니다.`,"t2");
-      sel={hero:m,slot:m.slot,step:4,skill:0,count:1};
-      doSkill(null); n++; return }
-    const cands=B.foes.filter(f=>f.alive&&!foeBlockReason(f)&&inReach(m,s,f.slot))
-      .sort((a,b)=>dist(m.slot,a.slot)-dist(m.slot,b.slot));
-    if(!cands.length) return;
-    say(`자동공격 — ${m.name}(${m.slot}번)이 ${cands[0].name}${jo(cands[0].name,"eul")} 노립니다.`,"t2");
-    sel={hero:m,slot:m.slot,step:4,skill:0,count:1};
-    doSkill(cands[0].slot); n++;
+  liveMins().filter(m=>m&&m.sk&&m.sk.length).forEach(m=>{
+    /* 🔴 첫 기술만 보던 것을 **가진 기술 모두**로 넓혔다 (사용자 2026-10-15 : 사냥개의 「박치기」).
+       기술이 늘어도 여기를 다시 고칠 일이 없다 — 값을 치를 수 있는 것을 차례로 쓴다 */
+    for(let i=0;i<m.sk.length;i++){
+      if(B.over||m.hp<=0||m.slot<=0) return;
+      if(typeof stopped==="function"&&stopped(m)) return;
+      const s=m.sk[i]; if(!s||s.auto) continue;
+      if(m.lock&&m.lock[i]) continue;
+      if(s.limit&&(m.limitUsed&&m.limitUsed[i]||0)>=s.limit) continue;
+      if(typeof canPay==="function"){ if(!canPay(m,i,1)) continue }
+      else if((m.mana||0)<(s.cost||0)) continue;
+      if(s.tg==="ally") continue;   /* 아군을 겨누는 기술은 저절로 쓰지 않는다 — 누구에게 걸지가 사람의 몫이다 */
+      if(s.tg==="self"||s.tg==="none"){   /* 겨눌 것 없이 제자리에서 (수목 성장 · 고대수목 축복 …) */
+        say(`자동 — ${m.name}(${m.slot}번)이 ${s.n}${jo(s.n,"eul")} 씁니다.`,"t2");
+        sel={hero:m,slot:m.slot,step:4,skill:i,count:1};
+        doSkill(null); n++; continue }
+      const cands=B.foes.filter(f=>f.alive&&!foeBlockReason(f)&&inReach(m,s,f.slot))
+        .sort((a,b)=>dist(m.slot,a.slot)-dist(m.slot,b.slot));
+      if(!cands.length) continue;
+      say(`자동공격 — ${m.name}(${m.slot}번)이 ${cands[0].name}${jo(cands[0].name,"eul")} 노립니다.`,"t2");
+      sel={hero:m,slot:m.slot,step:4,skill:i,count:1};
+      doSkill(cands[0].slot); n++;
+    }
   });
   if(n) sel=(prev&&prev.slot>0&&prev.hp>0)?{hero:prev,slot:prev.slot,step:2,skill:null,count:1}:null;
   return n;
@@ -38094,6 +38471,20 @@ function endTurn(){
   onField().forEach(h=>{ const n=(h.name==="데린저"&&h.tag&&h.tag.endMomGun)||0;
     if(n&&(h.mom||0)>=2){ h.mom-=2; h.tag.gunOnce=(h.tag.gunOnce||0)+n;
       say(`부착: 개머리판 — 추진력 2 를 써 다음 무기 피해 +${n}`,"t2") } });
+  /* ── 오리온 — 내 턴이 끝날 때 (노트 2026-10-15) ── */
+  { const o=orionOn(), T=(o&&o.tag)||{};
+    if(o){
+      /* 공허한 기류 — 기류가 흐르는 자리에 적이 하나도 없으면 보호막 */
+      if(T.driftEmptyShield&&!driftList().some(sl=>{ const f=foeAt(sl); return !!(f&&f.alive) })){
+        addShield(o,T.driftEmptyShield);
+        fx({side:"mine",slot:o.slot,s:"shield",ring:"#5fd8cf",txt:"보호막 +"+T.driftEmptyShield,cls:"shd",gap:60});
+        say(`공허한 기류 — ${o.name} 보호막 +${T.driftEmptyShield}`,"t2") }
+      /* 포식자의 표적 — 냄새가 밴 적에게 **표식의 수만큼** 되풀이해 때린다 */
+      if(T.preyHit) B.foes.filter(f=>f.alive&&(f.scent||0)>0).forEach(f=>{
+        const n=f.scent;
+        say(`포식자의 표적 — ${f.name}에게 피해 ${T.preyHit} ×${n}`,"t2");
+        for(let q=0;q<n&&f.alive;q++) asSrc(o,()=>hurt(f,T.preyHit,"포식자의 표적","slash")) });
+    } }
   /* 연습장도 여느 전투와 같은 길을 탄다 — 적이 움직이는 것을 봐야
      보호막·회피·갑피를 시험할 수 있다. 판을 되돌리는 것은 startMyTurn 이 맡는다. */
   /* 삼켜진 대원은 쓰러진 것이 아니다 — 전장이 비어도 턴은 넘어간다 (사용자 2026-09-29) */
@@ -38517,7 +38908,7 @@ function startMyTurn(){
   /* 사냥의 기류 — 오리온이 서 있는 동안, 매 턴 무작위 적 자리 하나에 기류가 흐른다 (노트 18-0, 2026-10-14).
      그 자리의 대상에게 주는 **오리온의** 피해는 치명타다 — 묻는 곳은 critWhy 한 군데다.
      ⚠️ 연출이 아니라 **규칙**이라 게임 주사위(Math.random)로 뽑는다 */
-  B.drift=driftRoll();
+  B.drifts=driftRoll();
   /* 빠른 장전 — 탄알이 0이면 그 수만큼 장전한다 (노트 2026-10-15, 중복 가능) */
   onField().forEach(h=>{ if(h.name!=="데린저") return;
     const n=(h.tag&&h.tag.fastLoad)||0;
