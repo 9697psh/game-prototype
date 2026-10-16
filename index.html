@@ -2027,6 +2027,20 @@ html:has(body.shakeall.noscrY){overflow:hidden}   /* 평소 세로로 스크롤�
 .bag-res span{display:flex;align-items:center;gap:4px;color:#f4d67c}
 .bag-res img.ri,.bag-res svg.ri{width:16px;height:16px}
 .bag-foot{margin-top:18px;display:flex;justify-content:center}
+/* 가방의 장신구 줄 — 아이콘 · 이름 · 등급 · 수량만 (사용자 2026-10-16).
+   자세한 글(설명 · 조합법 · 이것으로 만들 수 있는 것)은 커서를 대면 설명창이 itemCard 를 띄운다 */
+.bagitems{display:flex;flex-direction:column;gap:5px;margin-top:4px}
+.bgi{--gc:#b87333;display:grid;grid-template-columns:38px minmax(0,1fr) auto;align-items:center;gap:9px;
+  border:1px solid var(--gc);border-radius:8px;background:var(--panel);padding:5px 9px 5px 6px;cursor:help;
+  box-shadow:inset 0 0 22px -14px var(--gc)}
+.bgi.g일반{--gc:#c3ccd6} .bgi.g희귀{--gc:#e0c85a} .bgi.g특수{--gc:#a06ae0} .bgi.g전설{--gc:#e05a5a}
+.bgi:hover{filter:brightness(1.14)}
+.bgi-a{width:38px;height:38px;display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--rule);border-radius:6px;background:rgba(0,0,0,.28)}
+.bgi-a img,.bgi-a svg{width:30px;height:30px;image-rendering:pixelated}
+.bgi-n{display:block;font-size:12.5px;font-weight:700;line-height:1.25;word-break:keep-all}
+.bgi-g{display:block;font-style:normal;font-size:10px;color:var(--gc);letter-spacing:.1em;margin-top:1px}
+.bgi-c{font-size:12px;color:#f4d67c;white-space:nowrap}
 @keyframes bagpop{0%{transform:scale(1)}40%{transform:scale(1.22);
   box-shadow:0 0 0 4px rgba(201,162,39,.25),0 6px 20px rgba(0,0,0,.5)}100%{transform:scale(1)}}
 .unlock{position:relative;overflow:hidden;margin:22px auto 4px;max-width:520px;
@@ -2615,6 +2629,10 @@ html.noscr, html.noscr body{overflow:hidden!important}   /* 가로만 숨기면 
 .pmap .cell.risk{background-color:rgba(120,30,30,.22);border-color:var(--pline)}
 .pmap .cell.risk:hover{background-color:rgba(160,60,60,.4)}
 .pmap .cell.watch{background-color:rgba(170,40,30,.28);box-shadow:0 0 0 1px rgba(170,50,40,.55) inset}          /* 간수 초소 둘레 · 순찰로 — 낮에도 습격 */
+/* 보상이 세운 칸 (대장장이 친구의 제련소 · 안개 속 금화) — **푸르게 밝게** (사용자 2026-10-16) */
+.pmap .cell.gift{background-color:rgba(90,170,255,.30);box-shadow:0 0 0 1px rgba(120,190,255,.8) inset,0 0 9px rgba(120,200,255,.45) inset}
+.pmap .cell.gift:hover{background-color:rgba(120,195,255,.44)}
+.pmap .cell.gift:not(.adj):not(.here):not(.onroute){opacity:1}
 .pmap .cell.glow{background-color:rgba(255,215,90,.34);box-shadow:0 0 0 1px rgba(230,180,60,.75) inset,0 0 8px rgba(255,210,90,.35) inset}   /* 우물 둘레 — 전투 금화 +50% */
 .pmap .cell.watch:not(.adj):not(.here):not(.onroute),.pmap .cell.glow:not(.adj):not(.here):not(.onroute){opacity:1}
 .pmap .cell.glow.watch{background-color:rgba(170,40,30,.28);box-shadow:0 0 0 1px rgba(170,50,40,.55) inset}   /* 겹치면 붉은 표시가 이긴다 (사용자 2026-09-15) */
@@ -3643,7 +3661,9 @@ body.vmap header #hBtns button:hover{border-color:#f4d67c;color:#f4d67c}
 .mb-btns .on{filter:brightness(1.25) drop-shadow(0 0 7px rgba(244,214,124,.6))}
 /* 쭉 내려오는 장부 — 아이콘을 누르면 목록이 위에서 흘러내린다 (사용자 2026-10-14) */
 .mb-left .ledger{height:100%;overflow-y:auto;overflow-x:hidden;padding:8px 8px 14px;
-  animation:ledgerDrop .34s cubic-bezier(.22,.9,.3,1)}
+  animation:ledgerDrop .34s cubic-bezier(.22,.9,.3,1);
+  scrollbar-width:none;-ms-overflow-style:none}   /* 슬라이드바는 숨긴다 — 바퀴로는 그대로 내려간다 (사용자 2026-10-16) */
+.mb-left .ledger::-webkit-scrollbar{width:0;height:0;display:none}
 @keyframes ledgerDrop{from{opacity:0;transform:translateY(-14px);clip-path:inset(0 0 100% 0)}
   to{opacity:1;transform:translateY(0);clip-path:inset(0 0 0 0)}}
 .ledger .lgh{font-family:var(--serif);font-size:13px;color:#e8d6ae;letter-spacing:.08em;
@@ -6540,6 +6560,7 @@ const INK_NODE={dungeon:"ink11_map_battle",elite:"ink11_map_elite",boss:"ink11_m
   bookcase:"ink_tw_library",tome_shelf:"ink_tw_tome_shelf",mana_pillar:"ink_tw_mana_pillar",clocktower:"ink_tw_clocktower",parade:"ink_tw_model_parade"};
 /* 칸마다 그림이 다른 것 — 장벽(가로/세로) · 우물(3×3 조각) */
 function gimCellArt(cell){
+  if(cell.t==="rest") return iconImg(restKindOf(cell).ink)||inkArt("rest");   /* 쉼터 셋 — 종류마다 다른 그림 (사용자 2026-10-16) */
   if(cell.t==="wall"&&cell.ceil) return inkArt("ceil");   /* 마력의 탑 천장 — 칸마다 같은 그림 자리 */
   if(cell.t==="empty"&&cell.stair) return inkArt("stair");
   if(cell.t==="wall") return iconImg(cell.dir==="h"?"ink11_prison_wall_h":"ink11_prison_wall_v");
@@ -6548,6 +6569,10 @@ function gimCellArt(cell){
   return inkArt(cell.t);
 }
 function inkArt(t){ if(t==="fog"&&typeof towerOn==="function"&&towerOn()) t="fog_tw"; return iconImg(INK_NODE[t]) }   /* 마력의 탑 안개는 제 그림(ink_tw_fog) */
+/* 칸 이름 — 쉼터만 종류 이름(천막 · 야영지 · 요새)으로 (사용자 2026-10-16). 그 밖은 NODE 의 이름 그대로 */
+function cellLabel(cell){ const t=cell&&cell.t;
+  if(t==="rest") return restKindOf(cell).n;
+  return ((typeof NODE!=="undefined"&&NODE[t])||{}).label||t||""; }
 /* ═══════════ 배경음악 ═══════════
    파일은 bgm/ 폴더에 따로 둔다. 한 파일 게임에 14MB 를 심을 수는 없다.
    곡을 더 넣을 때는 BGM_SRC 에 파일 이름을, sceneBgm() 에 어느 화면인지를
@@ -8495,6 +8520,7 @@ function sheetFX(key,side,slot,o){
   /* 띠가 다 도는 데 걸리는 시간 + 스러지는 시간만큼 살려 둔다 (2026-10-15) */
   const _life=((o.ms||(o.frameMs&&o.frameMs.length?o.frameMs.reduce((a,b)=>a+b,0):450))+120+(o.fade||0)+(o.fadeIn||0));
   const nd=spawn('<div class="shfx'+(o.cell===96?" s96":o.cell===128?" s128":"")+(o.feet?" feet":"")+'"></div>',Math.max(1300,_life)); if(!nd) return;
+  if(o.tag) nd.dataset.fxtag=o.tag;   /* 이름표 — 나중에 **끊을 수 있게** (장전 띠, 사용자 2026-10-16) */
   at(nd,p);
   if(o.cellW||o.cellH){ const CW=o.cellW||o.cell||64, CH=o.cellH||o.cell||64;   /* 정사각이 아닌 칸 — 도끼는 96×128 · 256×64 */
     nd.style.width=CW+"px"; nd.style.height=CH+"px";
@@ -8947,7 +8973,14 @@ function recoilFX(side,slot,px,ms){
             {duration:ms||240,easing:"ease-out"});
 }
 let DERR_MG_T=0;   /* 기관총 — 여덟 발이 겹치지 않게 뒤로 밀어 주는 시계 */
+/* 장전 띠를 끊는다 — 장전 중에 총을 쏘면 띠와 「대기 자세 감추기」를 그 자리에서 걷는다
+   (사용자 2026-10-16 : 「모션 중단하고 바로 공격 모션」). 쏘는 길 하나(derrShotFX)에서 부른다 */
+function derrReloadStop(){
+  document.querySelectorAll('.shfx[data-fxtag="derrReload"]').forEach(n=>n.remove());
+  const st=document.getElementById("derrHide"); if(st) st.remove();
+}
 function derrShotFX(side,slot,from,gun){
+  derrReloadStop();   /* 장전 중이었으면 띠를 끊는다 (사용자 2026-10-16) */
   const p=bodyPoint(side,slot)||ctrOf(side,slot); if(!p) return;
   const q=from&&(derrMuzzle(from.side,from.slot)||bodyPoint(from.side,from.slot)||ctrOf(from.side,from.slot)); if(!q) return;
   const 산탄=(gun==="산탄총"), 저격=(gun==="저격소총"), 기관=(gun==="기관총");
@@ -9771,6 +9804,15 @@ function minionSkin(name){ if(typeof SKINS==="undefined") return null;
 /* 소환물이 설 때의 녹음 — 외형이 바꾼 소환물이면 「<외형> <소환물> 배치」 가 먼저 (폭식의 군주 악마 하수인, 사용자 2026-10-04), 없으면 「<소환물> 배치」 */
 function minionPlaceSnd(name){ const mk=minionSkin(name), k=mk&&(mk.n+" "+name+" 배치");
   return (k&&sfxHas(k))?k:(sfxHas(name+" 배치")?name+" 배치":null) }
+/* 대원이 설 때의 녹음 — 「<대원> 배치」 (사용자 2026-10-16 : 데린저 셋).
+   **번호를 붙여 여럿 두면 SFX.play 가 그중 하나를 고른다** (「데린저 배치 1 · 2 · 3」).
+   외형을 입고 있으면 「<외형> 배치」 가 먼저. 녹음이 없으면 null — 부르는 쪽이 합성음으로 떨어진다 */
+function heroPlaceSnd(h){
+  const nm=(h&&h.name)||""; if(!nm) return null;
+  const sk=(typeof skinOn==="function")&&skinOn(nm), k=sk&&(sk.n+" 배치");
+  if(k&&sfxHas(k)) return k;
+  return sfxHas(nm+" 배치")?nm+" 배치":null;
+}
 /* 자세를 잡은 채 부들부들 — 그림 칸(.art)을 40ms 마다 ±2px (무패의 장군 명중, 2026-10-04). 끝나면 제자리 */
 function poseShake(side,slot,ms){ const c=ctrOf(side,slot), a=c&&c.e&&c.e.querySelector(".art"); if(!a) return;
   const end=Date.now()+ms, k=()=>{ if(!a.isConnected) return;
@@ -9945,14 +9987,27 @@ const DEATH_PLANT={"살아있는 덩굴":1};   /* 종족은 정령이지만 죽�
 function nonLiving(u){ const n=u&&(u.of||u.name)||""; return !!(NONLIVE[n]||isWallName(n)) }
 /* 제 녹음이 아직 없는 종족은 가까운 종족의 소리로 — 골렘은 「골렘 죽음」 이 올 때까지 기계 (사용자 2026-10-07) */
 const DEATH_SND_FALL={"골렘":"기계","망령":"망자"};
+/* 아군 소환물의 종족 — 적은 foeRace 가 본다. 소환물은 **SUMMONS 표의 race** 한 곳에서 본다 (사용자 2026-10-16).
+   환영만 베낀 적을 따른다 (makeMin 이 of 에 그 적의 이름을 적어 둔다) */
+function minRace(u){
+  if(!u) return "";
+  if(u.of) return foeRace({name:u.of});
+  return ((typeof SUMMONS!=="undefined"&&SUMMONS[u.name])||{}).race||"";
+}
+/* 죽음 소리의 종족 — deathSnd · deathSndExact 가 같이 쓴다 (규칙 하나는 함수 하나) */
+function deathRace(u){
+  const n=u&&(u.of||u.name)||"";
+  let r=(DEATH_PLANT[n]||(u&&!u.isFoe&&(isSprout(u)||isTree(u))))?"식물":((u&&u.isFoe)?foeRace(u):minRace(u));
+  if(r&&!sfxHas(r+" 죽음")&&DEATH_SND_FALL[r]) r=DEATH_SND_FALL[r];
+  return r;
+}
 function deathSnd(u){
   if(nonLiving(u)) return sfxOr("건물 파괴","인간 죽음");
   /* 하수인 골렘 — 아군 소환물이라 foeRace 가 안 본다. 종족 소리를 손으로 이어 준다 (2026-10-13) */
   if(u&&u.golem&&sfxHas("골렘 죽음")) return "골렘 죽음";
   const n=u&&(u.of||u.name)||"";
   if(sfxHas(n+"_죽음")) return n+"_죽음";   /* 그 적만의 죽음 소리가 있으면 종족보다 먼저 (간수장, 80) */
-  let r=(DEATH_PLANT[n]||(u&&!u.isFoe&&(isSprout(u)||isTree(u))))?"식물":((u&&u.isFoe)?foeRace(u):"");
-  if(r&&!sfxHas(r+" 죽음")&&DEATH_SND_FALL[r]) r=DEATH_SND_FALL[r];
+  const r=deathRace(u);
   return (r&&sfxHas(r+" 죽음"))?r+" 죽음":sfxOr("인간 죽음",null);
 }
 /* 그 종족(또는 그 적만)의 녹음이 **있을 때만** 이름을 돌려준다 — deathSnd 와 달리 없으면 「인간 죽음」으로 물러서지 않는다(null).
@@ -9962,8 +10017,7 @@ function deathSndExact(u){
   if(u&&u.golem&&sfxHas("골렘 죽음")) return "골렘 죽음";   /* 하수인 골렘 (2026-10-13) */
   const n=u&&(u.of||u.name)||"";
   if(sfxHas(n+"_죽음")) return n+"_죽음";
-  let r=(DEATH_PLANT[n]||(u&&!u.isFoe&&(isSprout(u)||isTree(u))))?"식물":((u&&u.isFoe)?foeRace(u):"");
-  if(r&&!sfxHas(r+" 죽음")&&DEATH_SND_FALL[r]) r=DEATH_SND_FALL[r];
+  const r=deathRace(u);
   return (r&&sfxHas(r+" 죽음"))?r+" 죽음":null;
 }
 function deathMarkFX(side,slot,u){ const snd=deathSnd(u);
@@ -11220,10 +11274,10 @@ const HEROES={
   passive:{n:"복수귀",d:"체력이 40% 이하*( )*일 때 추가 공격력을 2 얻습니다."},   /* ⚠️ 노트 글자 그대로 — 50% 가 아니라 40% 다 (2026-10-13) */
   skills:[
    /* ⚠️ 칸 글에 **비용을 적지 않는다** — 칸에 이미 적혀 있다 (사용자 2026-10-13) */
-   {n:"찢어발기기",cost:1,el:"공격",tg:"foe",dmg:3,rend:1,d:"피해 3(추가), 충전이면 가한 만큼 회복"},
+   {n:"찢어발기기",cost:1,el:"공격",tg:"foe",dmg:3,rend:1,d:"피해 3(추가), 충전이면 가한 **절반** 회복"},   /* 전부 → 절반 너프 (사용자 2026-10-16) */
    {n:"대가 치르기",cost:1,costType:"hp",el:"보호",tg:"self",shield:3,dmg:1,payPrice:1,d:"보호막 3(추가), 충전이면 모든 적에게 피해 1(추가)x2"},   /* dmg:1 — 충전일 때 적에게 가는 몫. 노트 글의 그 1 이다 (2026-10-12) */
    {n:"준비 자세 취하기",cost:1,el:"집중",tg:"self",lock:1,readyUp:1,d:"잠금(1), 1턴 동안 충전한다"},
-   {n:"할퀴기",cost:5,costType:"hp",el:"공격",tg:"foe",dmg:1,hits:4,claw:1,d:"피해 1(추가)x4, 충전이면 비용 없이"}
+   {n:"할퀴기",cost:5,costType:"hp",el:"공격",tg:"foe",dmg:1,hits:4,claw:1,clawUp:1,d:"피해 1(추가)x4, 이번 턴 비용 +1, 충전이면 비용 없이"}   /* 쓸 때마다 이번 턴 비용 +1 너프 (사용자 2026-10-16) */
   ]},
  "나이코스":{title:"승리의 전사",role:"근접, 방어구",hp:20,mana:3,hpLv:2,
   focus:"공격과 방어, 기본 전투",
@@ -11851,10 +11905,10 @@ const SKILL_FULL={
  /* ⚠️ 기획 노트 글자 그대로다 (2026-10-13). 줄이거나 늘이거나 바꿔 쓰지 말 것.
     비용은 **설명에 적지 않는다** — 기술 칸에 이미 적혀 있다 (사용자).
     「충전」에 밑줄을 넣지 않는다 — **노트에 없다.** */
- "찢어발기기":"피해를 3(추가 † ) 줍니다. \n충전 상태라면, 가한 피해량만큼 체력을 회복합니다.",
+ "찢어발기기":"피해를 3(추가 † ) 줍니다. \n충전 상태라면, 가한 피해량의 절반만큼 체력을 회복합니다.",
  "대가 치르기":"보호막을 3(추가 ¤ ) 얻습니다.\n충전 상태라면, 모든 적에게 피해를 1(추가 † )x2 줍니다. *( )* ",
  "준비 자세 취하기":"잠금(1). 1턴 동안 충전합니다. 충전 상태가 되면 다음 기술이 1회 강화됩니다.",
- "할퀴기":"피해를 1(추가 † )x4 줍니다. *( )* \n충전 상태라면, 비용 없이 사용할 수 있습니다.",
+ "할퀴기":"피해를 1(추가 † )x4 줍니다. *( )* \n이번 턴에 할퀴기의 비용이 1 증가합니다.\n충전 상태라면, 비용 없이 사용할 수 있습니다.",
  "복수귀":"체력이 40% 이하*( )*일 때 추가 공격력을 2 얻습니다.",
  "가시 꼬리":"피해를 1(추가 ∴ ) 줍니다. 대상과 떨어진 거리만큼 _비늘 조각_을 얻습니다. ",
  "감싸주기":"잠금(1). 아군에게 부정 보호막을 1 부여합니다.",
@@ -11999,23 +12053,24 @@ const SKILL_FULL={
 const SUMMONS={
  /* 오리온의 사냥개 (노트 카드, 2026-10-14) — 도발. 소멸성 카드로 들어온다.
     마나 2 에 기술이 1 이라 한 턴에 **두 번** 문다 — 표식이 쌓이는 자원이 된다 */
- "사냥개":{hp:8,mana:2,owner:"오리온",taunt:1,
+ "사냥개":{hp:8,mana:2,owner:"오리온",taunt:1,race:"악마",
    d:"도발. 오리온이 균열에서 길들인 악마 사냥개.",
    sk:[{n:"상처 남기기",cost:1,el:"공격",tg:"foe",dmg:2,scent:1,d:"적에게 피해 2, 사냥감 냄새 표식을 남긴다"}]},
- "악마 하수인":{hp:8,mana:1,owner:"굴라",
+ "악마 하수인":{hp:8,mana:1,owner:"굴라",race:"악마",
    d:"굴라가 균열 차원문을 재사용해 불러낸 하수인.",
    sk:[{n:"하급 찌르기",cost:1,el:"공격",tg:"foe",dmg:3,d:"적에게 피해 3"}]},
  /* 악마 장군 소환(상급) — 악마 하수인 카드를 내려놓으면 이것이 선다. 노트 카드 '악마 장군' 그대로 */
- "악마 장군":{hp:30,mana:1,owner:"굴라",
+ "악마 장군":{hp:30,mana:1,owner:"굴라",race:"악마",
    d:"악마 하수인을 대신해 서는 장군. 악마 하수인이 얻은 강화를 그대로 받는다.",
    sk:[{n:"상급 찌르기",cost:1,el:"공격",tg:"foe",dmg:15,pierce:true,d:"관통 피해 15"}]},
- "성벽":{hp:40,mana:0,owner:"헥토",taunt:1,noMove:1,
+ "성벽":{hp:40,mana:0,owner:"헥토",taunt:1,noMove:1,race:"건물",
    d:"도발. 굳건함: 헥토가 성벽이 있는 곳으로 이동하면, 성벽이 부서지고 성벽의 체력만큼 헥토가 보호막을 얻습니다.",sk:[]},
- "저주받은 성벽":{hp:10,mana:0,owner:"헥토",taunt:1,noMove:1,curseOnDeath:2,foeOk:1,
+ "저주받은 성벽":{hp:10,mana:0,owner:"헥토",taunt:1,noMove:1,curseOnDeath:2,foeOk:1,race:"건물",
    d:"죽음: 거리 1 내의 대상에게 보호약화를 2 부여합니다. 이동할 수 없습니다. 잔해가 남습니다. 적 전장에도 놓을 수 있습니다.",sk:[]},
- "환영":{hp:1,mana:0,owner:"쿠렘타이",noMove:1,
+ "환영":{hp:1,mana:0,owner:"쿠렘타이",noMove:1,   /* 종족은 베낀 적을 따른다 (of) */
+   
    d:"아무 행동도 하지 않는다. 부서지면 원래 적에게 되돌아간다.",sk:[]},
- "망자의 육체":{hp:12,mana:1,owner:"트리스탄",revive:1,
+ "망자의 육체":{hp:12,mana:1,owner:"트리스탄",revive:1,race:"망자",
    d:"전투가 끝날 때 살아 있으면 트리스탄을 부활시키고 최대 체력으로 회복시킵니다.",
    sk:[{n:"조각난 페일노트",cost:1,el:"공격",tg:"foe",farshot:1,dmg:4,d:"가장 먼 적에게 피해 4"}]},
  /* 오토의 정원 (노트 카드 2026-10-04) — 새싹 심기로 심고, 달래주기로 수목(보상이면 고대수목)으로 키운다 */
@@ -12023,14 +12078,14 @@ const SUMMONS={
     본래 기술이 주던 **능력치는 죽을 때로** 옮겼다. 셋이 같은 죽음 효과다 (gardenDeath 한 함수).
     ⚠️ 그 능력치는 **그 라운드에서만** 간다 (bumpRnd). 전에는 bumpTmp 라 전투 내내 쌓였다 */
  /* 하수인 골렘 — 값은 **카드가 쥔 부속**이 정한다 (makeMin). 여기 수는 이름표일 뿐이다 */
- "하수인 골렘":{hp:20,mana:1,owner:"파벨",
+ "하수인 골렘":{hp:20,mana:1,owner:"파벨",race:"골렘",
    d:"파벨이 부속 둘을 합쳐 지은 골렘. 체력과 지속은 재료 부속이, 최대 마나와 기술은 영혼 부속이 맡는다.",sk:[]},
- "새싹":{hp:6,mana:0,owner:"오토",taunt:1,
+ "새싹":{hp:6,mana:0,owner:"오토",taunt:1,race:"식물",
    d:"도발, 죽음: 거리 1 내의 아군들에게 마법력, 보호력을 1 부여합니다.",sk:[]},
- "수목":{hp:12,mana:1,owner:"오토",taunt:1,
+ "수목":{hp:12,mana:1,owner:"오토",taunt:1,race:"식물",
    d:"도발, 죽음: 거리 1 내의 아군들에게 마법력, 보호력을 1 부여합니다.",
    sk:[{n:"성장",cost:1,el:"마법",tg:"self",growNear:1,nearEsh:3,d:"거리 1 내의 다른 아군에게 에너지 보호막 3"}]},
- "고대수목":{hp:32,mana:1,owner:"오토",taunt:1,
+ "고대수목":{hp:32,mana:1,owner:"오토",taunt:1,race:"식물",
    d:"도발, 죽음: 거리 1 내의 아군들에게 마법력, 보호력을 1 부여합니다.",
    sk:[{n:"축복",cost:1,el:"마법",tg:"self",growNear:1,nearEsh:3,d:"거리 1 내의 다른 아군에게 에너지 보호막 3"}]}   /* 너프 (사용자 2026-10-13) — 마법력은 죽을 때로 옮겼다. 수목의 성장과 같은 결 */
 };
@@ -12244,7 +12299,7 @@ const SYNERGY=[
  {n:"정령숲",k:"진영",t:[{c:2,d:"오염도 최대량이 25 증가합니다."},{c:3,d:"오염도 최대량이 50 증가합니다."}]},
  {n:"사후",k:"진영",t:[{c:2,d:"아군이 쓰러질 때마다 사후 대원이 모든 능력치를 1 얻습니다."}]},
  {n:"균열",k:"진영",t:[{c:2,d:"오염도가 50 이상일 때, 균열 대원이 모든 능력치를 1 얻습니다."},{c:3,d:"오염도가 50 이상일 때, 균열 대원이 모든 능력치를 3 얻습니다."}]},
- {n:"고철의 무덤",k:"진영",t:[{c:2,d:"반복 퀘스트: 고철의 무덤 대원이 적을 12명 처치할 때마다 무작위 보상을 얻습니다."}]},
+ {n:"고철의 무덤",k:"진영",t:[{c:2,d:"반복 퀘스트: 고철의 무덤 대원이 적을 {SCRAP_N}명 처치할 때마다 무작위 보상을 얻습니다."}]},   /* 수는 QUESTS 표에서 채운다 (2026-10-16) */
  {n:"왕실",k:"진영",t:[{c:2,d:"내 턴이 끝날 때, 왕실 대원들이 보호막을 5 얻습니다."},{c:3,d:"내 턴이 끝날 때, 왕실 대원들이 보호막을 12 얻습니다."}]},
  {n:"초월체",k:"진영",t:[]},
  {n:"모래 바다",k:"진영",t:[]},
@@ -12826,8 +12881,8 @@ const COMMON=[
    h=>h.tag.dayHeal=(h.tag.dayHeal||0)+4),
  R("보급선","하급","이번 원정 동안 날이 밝을 때, 금화를 3개 얻습니다.",
    h=>h.tag.dayGold=(h.tag.dayGold||0)+3),
- Object.assign(R("사냥 수첩","하급","퀘스트: 적 20회 처치\n보상: 무작위 보상",
-   h=>{ if(!questHas("사냥 수첩")) questAccept("사냥 수첩",null) }),{okf:()=>!questHas("사냥 수첩")}),
+ Object.assign(R("사냥 수첩","하급","퀘스트: 수락자가 적 20회 처치\n보상: 무작위 보상",
+   h=>{ if(!questHas("사냥 수첩")) questAccept("사냥 수첩",h.name) }),{okf:()=>!questHas("사냥 수첩")}),   /* 고른 대원이 수락자 (2026-10-16) */
  R("안개지대","하급","지도 위 무작위 위치에 안개로 가려진 무작위 구역 1곳을 추가합니다.\n해당 구역에 도착하면 금화를 12개 얻습니다.",
    h=>{ const k=rnd(["event","shop","forge","rest","elite","dungeon","dungeon","dungeon"]);
      let ex={fogged:1,giftGold:12};
@@ -13335,7 +13390,7 @@ const HERO_REWARDS={
     h=>{ h.tag.prisonDiary=1; const k=h.sk.find(x=>x&&x.shackle); if(k) k.cost=Math.max(0,(k.cost||2)-1) },0.5),
   R("금단의 고서에 손을 대다","상급","도미니코가 악마로 타락합니다. 최대 체력이 40% 감소합니다.\n*획득시 보상에서 다시 등장하지 않음",h=>domCorrupt(h),0.5),
   R("절실한 신앙","상급","퀘스트: 참회의 기류를 20번 사용해야 합니다. \n보상: 이번 원정에서 참회의 기류를 사용한 후, 추가로 2번 더 사용됩니다.\n*획득시 보상에서 다시 등장하지 않음\n*[참회의 기류] 기술이 없을 때 등장하지 않음",
-    h=>{ if(!questHas("절실한 신앙")) questAccept("절실한 신앙","도미니코") },0.5)
+    h=>{ if(!questHas("절실한 신앙")) questAccept("절실한 신앙",h.name) },0.5)   /* 고른 대원이 수락자 (2026-10-16) */
  ],
  "파벨":[
   /* 기획 노트(2026-10-13) 그대로 — lowRewards 열둘. 글은 노트 문장을 그대로 옮긴다 */
@@ -13670,7 +13725,7 @@ const HERO_REWARDS={
     h=>{ run.backAlley=(run.backAlley||0)+1 }),
   R("부착: 반동 패드","하급","데린저가 무기를 사용한 후, 보호막을 1 얻습니다.",
     h=>h.tag.shotShield=(h.tag.shotShield||0)+1),
-  R("야전신발","하급","전투 시작 후, 간이 신발을 2장 얻습니다. 이번 원정 동안 데린저가 이동한 후 추진력을 1 얻습니다.",
+  R("야전신발","하급","전투 시작 후, 소멸성인 간이 신발을 2장 얻습니다. 이번 원정 동안 데린저가 이동한 후 추진력을 1 얻습니다.",
     h=>{ h.tag.startShoes=(h.tag.startShoes||0)+2; h.tag.moveMom=(h.tag.moveMom||0)+1 }),
   R("부착: 개머리판","하급","내 턴이 끝날 때, 추진력을 2 소모하고 내 다음 무기 피해량이 1 증가합니다.",
     h=>h.tag.endMomGun=(h.tag.endMomGun||0)+1),
@@ -16840,7 +16895,7 @@ const FOE={
  "간수장":    {hp:300,fixHp:1,atkScale:0.12,phases:[200,100],atk:8,def:10,rng:4,exp:8,boss:1,   /* atkScale 0.25 → 0.12 (사용자 2026-10-05: 너무 세다 — 1스테이지 14 → 11, 기술 피해 모두 -3). 공격력은 적 강화도의 이 몫만큼 오른다 (사용자 2026-10-04: 1스테이지 +282% 에서 8 → 14, 기술 피해도 같은 몫만큼) */
    el:"공격",
    pas:[{k:"info",hide:1,n:"세 단계",d:"체력 200 이하에서 2단계, 100 이하에서 3단계로 넘어갑니다. 단계마다 쓰는 패턴이 바뀝니다."},
-        {k:"discipline",v:5,ph:3,n:"규율",d:"(3단계) 한 대원이 한 턴에 기술을 3번 사용할 때마다, 그 대원에게 피해를 5 줍니다."}],
+        {k:"discipline",v:4,ph:3,n:"규율",d:"(3단계) 한 대원이 한 턴에 기술을 3번 사용할 때마다, 그 대원에게 피해를 4 줍니다."}],   /* 5 → 4 너프 (사용자 2026-10-16) */
    sk:[
     {n:"쇠사슬 끌기",ph:1,w:3,open:1,tg:"far",pull:1,deb:{bind:2},cd:2,chase:1,d:"(1단계) 가장 먼 상대를 맨 앞으로 끌어오고 속박을 2 부여합니다."},
     {n:"철퇴 내려찍기",ph:1,w:5,tg:"near",dmg:8,deb:{defDn:1},chase:1,d:"(1단계) 가장 가까운 상대에게 공격 피해를 8 주고 보호약화를 1 부여합니다."},
@@ -17885,7 +17940,7 @@ function mapTipFill(cell,r,c){
   const amb=ambushChance(cell,r,c);
   const dLeft=Math.max(0,((FIELDS[run.field]||{}).days||7)-run.day+1);
   const v={
-    "종류":(NODE[kind]||{}).label||"",
+    "종류":cellLabel(cell)||"",
     "라운드":cell.waves||1,
     "강화":(kind==="dungeon"||kind==="elite"||kind==="boss")?Math.round((foeScale(kind).m-1)*100):0,
     "설명":cell.style||"", "전리품":cell.loot||"",
@@ -18196,6 +18251,54 @@ function nodeArt(t){
 /* 정찰대 보내기 — 전 구역 금화 5 (사용자 2026-10-08. 전에는 구역마다 5 · 10 · 20) */
 const REMAP_COST=[5,20,50];   /* 구역이 오를수록 비싸다 (사용자 2026-10-14) */
 const REST_PLACE=2;   /* 한 번에 놓는 쉼터 수 */
+/* ═══ 쉼터 셋 (사용자 2026-10-16) ═══
+   **큰 분류는 그대로 「쉼터」(t:"rest") 다.** 쉼터에 걸리는 보상 · 퀘스트 · 세계핵(쉼터 방문) ·
+   모닥불 이야기 · 쪽잠은 모두 t 를 보므로, 종류를 나눠도 하나도 빠지지 않는다.
+   ⚠️ 묻는 곳은 **여기 하나다** — 활동량 · 단련하기 · 그림 · 이름을 다른 데 적지 말 것.
+   칸에는 `rk` 한 글자만 적힌다 (없으면 천막) */
+const REST_KIND={
+ tent:{n:"천막 쉼터", act:0, grade:"하급", give:1, ink:"ink11_map_shelter",      sub:"바람을 가릴 천막 하나가 서 있습니다"},
+ camp:{n:"야영지 쉼터", act:1, grade:"중급", give:1, ink:"ink11_map_camp_shelter", sub:"모닥불과 천막이 둘러선 야영지입니다"},
+ fort:{n:"요새 쉼터", act:1, grade:"중급", give:2, ink:"ink11_map_fort_shelter", sub:"돌로 쌓아 올린 작은 요새입니다"}
+};
+const restKind=k=>REST_KIND[k]||REST_KIND.tent;
+const restKindOf=cell=>restKind(cell&&cell.rk);
+/* 구역마다 어떤 쉼터가 서는가 (사용자 2026-10-16)
+     build  : 처음 지도를 깔 때 — [종류, 몇 개] 를 차례로 집고 나머지는 fill
+     day    : 날이 밝을 때 생기는 쉼터 — 저울(앞엣것부터 그 확률로)
+     scout  : 주둔지 정찰대가 세우는 두 곳 */
+const REST_MIX=[
+ {build:[],                          fill:"tent", day:[["tent",1]],              scout:["tent","tent"]},
+ {build:[["camp",2,3]],              fill:"tent", day:[["camp",0.5]],            scout:["camp","tent"]},
+ {build:[["fort",2,3],["camp",2,3]], fill:"tent", day:[["fort",0.5],["camp",1]], scout:["fort","camp"]}
+];
+const restMix=fi=>REST_MIX[Math.min(fi==null?((typeof run!=="undefined"&&run)?run.field:0):fi,REST_MIX.length-1)];
+/* 새로 서는 쉼터 하나의 종류 — 날이 밝을 때 쓴다 */
+function restKindNew(fi){
+  const M=restMix(fi); let x=Math.random();
+  for(const [k,p] of M.day){ x-=p; if(x<0) return k }
+  return M.fill;
+}
+/* 지도를 다 깔고 나서 — 선 쉼터들에게 종류를 나눠 준다 (towerFix 가 더 놓은 것까지 한 번에).
+   ⚠️ **Math.random 을 쓰지 않는다.** 시뮬레이터는 씨앗을 심은 Math.random 으로 208판을 똑같이
+      되돌리는데, 지도를 깔 때 주사위를 더 굴리면 그 뒤가 전부 밀려 **규칙을 하나도 안 고쳐도
+      판이 통째로 달라진다** (재 보니 140판). 그래서 **쉼터가 선 자리**에서 수를 만들어 나눈다 —
+      지도가 다르면 나뉨도 다르다 (지도는 이미 무작위다) */
+function restKindsSet(g,fi){
+  const M=restMix(fi);
+  const L=[];
+  for(let r=0;r<g.length;r++) for(let c=0;c<g.length;c++) if(g[r][c].t==="rest") L.push({x:g[r][c],r:r,c:c});
+  if(!L.length) return;
+  if(!M.build.length){ L.forEach(o=>{ o.x.rk=M.fill }); return }
+  let h=((fi+1)*2654435761+L.length*97)>>>0;
+  L.forEach((o,i)=>{ h=(h*31+(o.r*101+o.c)*7+i)>>>0 });
+  const rnd=()=>{ h=(h*1664525+1013904223)>>>0; return h/4294967296 };
+  for(let i=L.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); const t=L[i]; L[i]=L[j]; L[j]=t }   /* 섞는다 */
+  let i=0;
+  M.build.forEach(([k,lo,hi])=>{ const n=lo+Math.floor(rnd()*(hi-lo+1));
+    for(let q=0;q<n&&i<L.length;q++,i++) L[i].x.rk=k });
+  for(;i<L.length;i++) L[i].x.rk=M.fill;
+}
 /* SCOUT_ACT 는 걷었다 (사용자 2026-10-13 : 「활동량 2 얻는 것 빼줘」).
    ⚠️ 밭을 0 으로 두지 않고 **아예 없앴다** — 0 으로만 두면 글에 「활동량을 0 얻습니다」가 남는다 */
 function remapCost(){
@@ -18332,6 +18435,7 @@ function buildGrid0(fi,keep){
   campSafe(g);
   if(FIELDS[fi].ceil) towerFix(g,fi);
   campBattles(g,fi);   /* 전투 칸은 맨 마지막에 정한다 — towerFix 가 전투를 옮긴 뒤라야 수가 안 어긋난다 (2026-10-11) */
+  restKindsSet(g,fi);   /* 쉼터 셋 — towerFix 가 층마다 더 놓은 것까지 한 번에 나눈다 (사용자 2026-10-16) */
   return g;
 }
 /* 탑의 필수 칸 — 열쇠방(1 · 2층 하나씩) · 부서진 구멍(2 · 3층 하나씩). 빈 길에 먼저 놓는다 */
@@ -18649,8 +18753,10 @@ function colonyStep(){
   /* 뿌리가 하나도 남지 않으면(헤치거나 베어 다 걷었으면) 군체가 다시 처음처럼 1~4 (사용자 2026-10-07) */
   if(!run.grid.some(row=>row.some(x=>x.t==="croot"))) run.grid.forEach(row=>row.forEach(x=>{ if(x.t==="colony") x.spawned=0 }));
   run.grid.forEach((row,r)=>row.forEach((x,c)=>{
-    if(x.t==="colony"&&!x.spawned){ if(spread(r,c,rr([1,4]))) x.spawned=1 }
-    else if(x.t==="croot"&&!x.spawned&&(x.born||0)<run.day){ if(spread(r,c,rr([1,2]))) x.spawned=1 } }));
+    /* 하루에 뻗는 수 — 1~2 늘렸다 (사용자 2026-10-16 : 「더 빨리 퍼질 수 있도록」).
+       군체 1~4 → 2~6 · 뿌리 1~2 → 2~4 */
+    if(x.t==="colony"&&!x.spawned){ if(spread(r,c,rr([2,6]))) x.spawned=1 }
+    else if(x.t==="croot"&&!x.spawned&&(x.born||0)<run.day){ if(spread(r,c,rr([2,4]))) x.spawned=1 } }));
   add.forEach(([a,b,fr,fc])=>{ run.grid[a][b]={t:"croot",born:run.day};
     if(typeof ROOT_BORN!=="undefined") ROOT_BORN.push({k:a+"-"+b,src:fr+"-"+fc,dr:fr-a,dc:fc-b,t0:0}) });   /* 다음 지도 그리기에서 번지는 연출 */
 }
@@ -18983,7 +19089,7 @@ function respawn(){
     for(let i=have;i<want&&free.length;i++){
       if(Math.random()<0.45) continue;              /* 7일에 걸쳐 조금씩 */
       const k=Math.floor(Math.random()*free.length), rc=free.splice(k,1)[0];
-      run.grid[rc[0]][rc[1]]={t:t};
+      run.grid[rc[0]][rc[1]]=(t==="rest")?{t:t,rk:restKindNew(run.field)}:{t:t};   /* 쉼터는 종류까지 (사용자 2026-10-16) */
     }
   });
   /* 고문실과 사형장 — 새로고침 가능. 둘 다 없어졌으면 절반 확률로 다른 자리에 다시 */
@@ -19617,7 +19723,14 @@ function drawMapPeek(){
   const lg=ov.querySelector(".legend");
   { const seen=new Set(); (run.grid||[]).forEach(row=>(row||[]).forEach(c=>{ if(c&&c.t&&c.t!=="empty"&&NODE[c.t]&&NODE[c.t].label) seen.add(c.t) }));   /* 지도 칸과 같은 그림, 지금 지도에 있는 것만 (사용자 2026-10-06) */
     ["camp","dungeon","elite","shop","rest","forge","event","boss"].filter(t=>seen.has(t)).concat([...seen].filter(t=>!["camp","dungeon","elite","shop","rest","forge","event","boss"].includes(t)))
-      .forEach(t=>lg.appendChild(el(`<span><i>${gimCellArt({t:t})||nodeArt(t)}</i>${esc(NODE[t].label)}</span>`))) }
+      .forEach(t=>{
+        /* 쉼터만 **지도에 선 종류마다** 한 줄씩 (사용자 2026-10-16) — 그림도 이름도 다르다 */
+        if(t==="rest"){
+          const ks=[]; (run.grid||[]).forEach(row=>(row||[]).forEach(c=>{ if(c&&c.t==="rest"){ const k=c.rk||"tent"; if(ks.indexOf(k)<0) ks.push(k) } }));
+          ["tent","camp","fort"].filter(k=>ks.indexOf(k)>=0).forEach(k=>{ const K=restKind(k);
+            lg.appendChild(el(`<span><i>${gimCellArt({t:"rest",rk:k})}</i>${esc(K.n)}</span>`)) });
+          return }
+        lg.appendChild(el(`<span><i>${gimCellArt({t:t})||nodeArt(t)}</i>${esc(NODE[t].label)}</span>`)) }) }
   const rs=ov.querySelector(".roster");
   run.heroes.forEach((h,i)=>{ const c=el(`<div class="rost ${h.down?"down":""}" style="cursor:pointer">
     <div class="art">${figure(h.name)}</div>
@@ -20083,13 +20196,30 @@ function handAdd(c){
     return false }
   B.hand.push(c); return true;
 }
-/* 카드 한 장을 손에 — 글과 **쓰는 길**은 CARD_LIB 한 곳에서 가져온다 (사용자 2026-10-15).
+/* ═══ 카드를 손에 넣는 길은 **여기 하나다** ═══ (사용자 2026-10-15 · 쌓기는 2026-10-16)
+   글과 **쓰는 길**은 CARD_LIB 한 곳에서 가져온다.
    ⚠️ {type:"item",name:…} 만 손으로 밀어 넣으면 **글도 없고 써지지도 않는 빈 카드**가 된다.
-      야전신발의 「간이 신발」과 섬광탄의 「섬광이 담긴 병」이 그렇게 아무 일도 못 하고 있었다 */
-function handAddCard(nm,opt){
+      야전신발의 「간이 신발」과 섬광탄의 「섬광이 담긴 병」이 그렇게 아무 일도 못 하고 있었다.
+   🔑 **같은 카드는 한 장에 쌓는다** (보유량 N — 쓰면 한 장씩 준다. playCard 의 `c.n>1` 이 받는다).
+      여러 장을 줄 때는 **고리를 돌리지 말고 n 을 넘긴다** — `handAddCard("간이 신발",{gone:1},2)`.
+      앞으로 카드를 주는 보상 · 기술도 반드시 이 길로. 손패가 옆으로 늘어나지 않는다 */
+const HAND_STACK=10;   /* 한 장에 쌓이는 윗한도 (방어구는 ARMOR_HOLD 로 따로) */
+function handAddCard(nm,opt,n){
   const L=(typeof CARD_LIB!=="undefined"&&CARD_LIB[nm])||null;
   if(!L){ if(typeof say==="function") say(`${nm} 카드를 찾지 못했습니다.`,"t2"); return false }
-  return handAdd(Object.assign({type:"item",name:nm},L,opt||{}));
+  const want=Math.max(1,n||1);
+  const o=Object.assign({},opt||{});
+  /* 이미 손에 있는 같은 카드 — 쌓기만 한다 (소멸성 여부 · 임자가 같아야 한 장이다) */
+  const have=(typeof B!=="undefined"&&B&&B.hand||[]).find(c=>c&&c.type==="item"&&c.name===nm&&!c.stock
+    &&!!c.gone===!!o.gone&&(c.by||null)===(o.by||null));
+  if(have){
+    const cap=(typeof ARMOR_CARDS!=="undefined"&&ARMOR_CARDS[nm])?ARMOR_HOLD:HAND_STACK;
+    const was=have.n||1, now=Math.min(cap,was+want);
+    if(now<=was){ if(typeof say==="function") say(`${nm}${jo(nm,"eun")} 이미 ${cap}장을 들고 있습니다.`,"t2"); return false }
+    have.n=now; if(o.arrive) have.arrive=1;
+    return true;
+  }
+  return handAdd(Object.assign({type:"item",name:nm},L,o,{n:want}));
 }
 function handPack(){
   return (B.hand||[]).map(c=>{
@@ -20245,6 +20375,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 180, "v": "0.7", "d": "2026-10-16", "t": "클라우드 여덟 묶음 — 쉼터 셋 · 카드 보유량 · 이라/간수장 너프", "big": 0},
  {"b": 179, "v": "0.7", "d": "2026-10-15", "t": "이펙트 띠를 첫 화면 뒤로 — 들어오는 데 24.9초 → 2.5초", "big": 0},
  {"b": 178, "v": "0.7", "d": "2026-10-15", "t": "쇠뇌는 표식 수만큼만 나간다", "big": 0},
  {"b": 177, "v": "0.7", "d": "2026-10-15", "t": "클라우드 세션 열여섯 묶음 — 연출·소리·데린저 너프", "big": 0},
@@ -21616,7 +21747,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=179;
+const BUILD_NO=180;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -22051,6 +22182,21 @@ function txtFixApply(){
 /* 브라우저에 남은 옛 수정 — 게임 쪽 글이 그 뒤에 바뀌었으면 옛 수정이 새 글을 덮는다.
    여기 적힌 옛 값 그대로면 지운다 (사용자가 다시 고친 것은 값이 달라서 남는다). 사용자 2026-09-15 떨어진 금화 */
 const TXT_STALE={
+ /* 사냥 수첩 — 수락자가 생겼다 (사용자 2026-10-16) */
+ "common:하급:사냥 수첩": [
+  "퀘스트: 적 20회 처치\n보상: 무작위 보상"
+ ],
+ /* 야전신발 — 소멸성이라고 적는다 (사용자 2026-10-16) */
+ "hr:데린저:야전신발": [
+  "전투 시작 후, 간이 신발을 2장 얻습니다. 이번 원정 동안 데린저가 이동한 후 추진력을 1 얻습니다."
+ ],
+ /* 이라 너프 (사용자 2026-10-16) */
+ "full:찢어발기기": [
+  "피해를 3(추가 † ) 줍니다. \n충전 상태라면, 가한 피해량만큼 체력을 회복합니다."
+ ],
+ "full:할퀴기": [
+  "피해를 1(추가 † )x4 줍니다. *( )* \n충전 상태라면, 비용 없이 사용할 수 있습니다."
+ ],
  "full:산탄총": [
   "적에게 피해를 5(추가 † ) 줍니다. 대상이 거리 2 내에 있다면 1번 더 발동합니다."
  ],
@@ -23085,7 +23231,7 @@ function mapGridEl(peek){
     const glow=kind!=="well"&&wellNear(r,c);
     /* 칸 왼쪽 아래 .cact — 활동량을 내야 들어가는 칸에만. 어느 칸인지는 enterCost 가 안다 (사용자 2026-10-10).
        ⚠️ 아래는 템플릿 문자열이다. 그 안에 주석을 쓰면 글자로 들어가 칸이 벌어진다 */
-    const d=el(`<div class="cell k-${kind} ${cell.tutgo?"tutgo":""} ${cell.stair?"stair":""} ${cell.ceil?"ceil":""} ${kind==="empty"?"emp":""} ${here?"here":""} ${adj?"adj":""} ${cell.done?"done":""} ${risky?"risk":""} ${watch?"watch":""} ${glow?"glow":""} ${ffly?"ffly":""} ${kind==="wall"?"wall":""} ${(cell.boon||cell.weapon)?"boon":""} ${cell.relay?"relay":""} ${rn?"onroute":""} ${rn&&rn===(run.route?run.route.steps:0)?"rdest":""}">
+    const d=el(`<div class="cell k-${kind} ${cell.tutgo?"tutgo":""} ${cell.stair?"stair":""} ${cell.ceil?"ceil":""} ${kind==="empty"?"emp":""} ${here?"here":""} ${adj?"adj":""} ${cell.done?"done":""} ${risky?"risk":""} ${watch?"watch":""} ${glow?"glow":""} ${ffly?"ffly":""} ${kind==="wall"?"wall":""} ${(cell.boon||cell.weapon)?"boon":""} ${(cell.giftStone||cell.giftGold)?"gift":""} ${cell.relay?"relay":""} ${rn?"onroute":""} ${rn&&rn===(run.route?run.route.steps:0)?"rdest":""}">
       <span class="cbg"></span>
       ${(wpAt[r+"-"+c]||[]).map(w=>`<i class="wp${w.hz?" hz":""}" style="left:${w.x}%;top:${w.y}%;background-image:url(${ICON_PNG["map_wp"+w.v]})"></i>`).join("")}
       
@@ -23101,7 +23247,7 @@ function mapGridEl(peek){
       ${cell.bounty?`<span class="cbounty kw" data-kw="현상금" data-tip="이 전투에서 얻는 금화가 50% 늘어납니다.">${iconImg("bounty_bag")}</span>`:""}
       ${cell.gate?`<span class="cbounty kw" data-kw="악마 차원문" data-tip="전투가 시작되면 적 전장의 빈 자리에 악마 차원문이 열립니다.">${iconImg("skill_gula_rift_portal")}</span>`:""}
       ${cell.stair?`<span class="cl">계단</span>`:""}
-      ${kind!=="empty"&&!cell.done?`<span class="cl">${esc(cell.ceil?"천장":NODE[kind].label)}</span>`:""}
+      ${kind!=="empty"&&!cell.done?`<span class="cl">${esc(cell.ceil?"천장":cellLabel(cell))}</span>`:""}
     </div>`);
     d.dataset.rc=r+"-"+c;
     { const bi=peek?-1:MAP_BORN.indexOf(r+"-"+c);
@@ -23411,7 +23557,7 @@ function mapInspector(at){
   const r=sel.r, c=sel.c, cell=(fogAt(sel.r,sel.c)&&!(run.pos.r===sel.r&&run.pos.c===sel.c))?{t:"fog"}:run.grid[r][c], kind=cell.t||"empty";
   const here=run.pos.r===r&&run.pos.c===c, dist=Math.abs(r-run.pos.r)+Math.abs(c-run.pos.c), locked=mapLocked();
   const box=el(`<div class="minsp"><div class="mib"></div></div>`), b=box.querySelector(".mib");
-  const label=cell.stair?"계단":(cell.ceil?"천장":(kind==="empty"?(onPatrol(r,c)?"간수 순찰로":"빈 길"):((NODE[kind]||{}).label||kind)));
+  const label=cell.stair?"계단":(cell.ceil?"천장":(kind==="empty"?(onPatrol(r,c)?"간수 순찰로":"빈 길"):cellLabel(cell)));
   const battle=kind==="dungeon"||kind==="elite"||kind==="boss"||kind==="tower"||kind==="wagon"||kind==="grove";
   b.appendChild(el(`<div class="mih">${esc(label)}${cell.done?`<em>끝냄</em>`:""}</div>`));
   b.appendChild(el(`<div class="mii">${cell.stair?gimCellArt(cell):(kind==="empty"?(onPatrol(r,c)?iconImg("ink11_map_guard_footprints"):""):(gimCellArt(cell)||inkArt(kind)||nodeArt(kind)))}</div>`));
@@ -23436,6 +23582,9 @@ function mapInspector(at){
     if(cell.bounty) N.push([iconImg("bounty_bag"),"현상금","현상금이 걸린 전투 — 전투 금화 획득량 +50%"]);
     if(cell.gate) N.push([iconImg("skill_gula_rift_portal"),"악마 차원문","전투 시작 시 적 전장에 악마 차원문이 열린다"]);
     if(cell.relay) N.push(["","재배치","전장 재배치로 1라운드가 된 전투입니다. 얻는 보상은 그대로입니다."]);
+    /* 보상이 세운 칸 — 도착하면 주는 것 (사용자 2026-10-16 : 「특이사항에 적어놓도록」) */
+    if(cell.giftStone) N.push([resIcon("stone"),`제련석 ${cell.giftStone}`,`대장장이 친구 — 이 제련소에 도착하면 제련석을 ${cell.giftStone}개 얻습니다`]);
+    if(cell.giftGold) N.push([resIcon("gold"),`금화 ${cell.giftGold}`,`도착하면 금화를 ${cell.giftGold}개 얻습니다`]);
     if(kind!=="well"&&wellNear(r,c)) N.push([inkArt("well")||"","우물 둘레","감옥의 우물 둘레 — 전투 금화 획득량 +50%"]);
     { const wt=kind!=="wall"&&kind!=="camp"&&kind!=="boss"&&kind!=="post"&&(postNear(r,c)||(kind==="empty"&&onPatrol(r,c)));
       if(wt) N.push([iconImg("ink11_map_guard_footprints"),"습격 25%",postNear(r,c)?"간수 초소 둘레 — 낮에도 습격당할 수 있습니다(25%)":"간수 순찰로 — 낮에도 습격당할 수 있습니다(25%)"]); }
@@ -23800,11 +23949,13 @@ function mapGo(r,c){
    빈 칸 · 끝낸 칸 · 이미 들른 상점(다시 들어가기)은 셈하지 않는다.
    ⚠️ 덩굴 수풀(thicket)은 사용자 목록에 없어 다른 기믹처럼 1 로 두었다 — 확인받을 것 */
 const ENTER_FREE={boss:1,camp:1,fence:1,spring:1,croot:1,lockdoor:1,stair:1,hole:1,
-  rest:1,   /* 쉼터는 활동량을 쓰지 않는다 (사용자 2026-10-12). 시간 15분은 그대로 낸다 */
+  /* 쉼터는 **종류마다 다르다** (사용자 2026-10-16) — 천막 0 · 야영지 1 · 요새 1.
+     수는 REST_KIND 한 곳에서 읽는다 (아래 enterCost). 시간 15분은 어느 쉼터나 그대로 낸다 */
   tunnel:1};   /* 땅굴 — 들어가는 구역이 아니라 지나가는 길이라 올라서는 데는 안 낸다 (사용자 2026-10-08).
                   LOCK_T 에서도 빠져 있고 payEnter 를 거치지 않는다 — 여기까지 맞춰 둔다 (2026-10-10) */
 function enterCost(cell){
   if(!cell||cell.t==="empty"||cell.t==="wall"||cell.done||cell.visited) return 0;
+  if(cell.t==="rest") return restKindOf(cell).act;   /* 천막 0 · 야영지 1 · 요새 1 (사용자 2026-10-16) */
   return ENTER_FREE[cell.t]?0:1;
 }
 /* 구역에 들어갈 때 드는 **시간** — 활동량과 **같은 자리에서** 낸다 (사용자 2026-10-10: 「들어갈 때 시간이 지나게」).
@@ -23932,8 +24083,11 @@ function enterCell0(r,c){
       if(g){ run.gold+=g; toast(`반가운 상인 — 금화 +${g}`) }
     }
     else if(cell.t==="rest"){ view="rest";
-      if(!again) coreTally("rest",1);   /* 세계핵 — 쉼터 방문 (주둔지는 안 센다) */
-      setTimeout(()=>stepBanner("쉼 터","잠깐 몸을 누입니다"),40);
+      /* ⚠️ 바로 위에서 칸을 지웠다 — 종류를 여기서 적어 두어야 쉼터 화면이 안다 (사용자 2026-10-16) */
+      run.restKind=cell.rk||"tent";
+      if(!again) coreTally("rest",1);   /* 세계핵 — 쉼터 방문 (주둔지는 안 센다). 종류를 나눠도 셋 다 쉼터다 */
+      { const K=restKind(run.restKind);
+        setTimeout(()=>stepBanner(K.n.split("").join(" "),K.sub),40) }
       restPerks(again,"rest");   /* 모닥불 이야기 · 반가운 휴식 — 주둔지 쉼터와 같은 자리에서 (사용자 2026-10-09) */
     }
     else if(cell.t==="forge"){ run.forgePick=[]; run.forgeMade=0; view="forge"; run.smithMood=null; smithVoice("enter");
@@ -24781,7 +24935,9 @@ function drawCamp(app){
       :run.gold<rcost?`금화가 ${rcost-run.gold} 부족합니다.`:""}</span></div>`);
   if(remapOk) remap.onclick=()=>{
     if(run.remapUsed||run.gold<rcost) return;
-    const put=sprinkleCell("rest",REST_PLACE);            /* 빈 칸에만 놓는다 — 지도는 그대로 (사용자 2026-09-29) */
+    /* 쉼터 둘의 **종류가 다르다** (사용자 2026-10-16) — 표(REST_MIX.scout)가 정한다. 하나씩 놓는다 */
+    const put=restMix(run.field).scout.slice(0,REST_PLACE)
+      .reduce((a,k)=>a+sprinkleCell("rest",1,{rk:k}),0);            /* 빈 칸에만 놓는다 — 지도는 그대로 (사용자 2026-09-29) */
     if(!put){ toast("쉼터를 세울 빈 칸이 없습니다."); return }
     run.gold-=rcost;
     run.remapUsed=1;
@@ -26340,16 +26496,18 @@ function partyStrip(note){
 function restCl(){ return (typeof run!=="undefined"&&run&&!run.sandbox&&(FIELDS[run.field]||{}).restCleanse)||0 }
 function drawRest(app){
   if(run.restRes) return drawRestRes(app);
-  app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">휴 식 소</div>
-    <div class="sub">불씨가 아직 남아 있습니다. 잠깐 몸을 누일 수 있겠군요.</div></div>`));
+  const RK=restKind(run.restKind);   /* 쉼터 셋 — 들어설 때 적어 둔 종류 (사용자 2026-10-16) */
+  app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">${esc(RK.n.split("").join(" "))}</div>
+    <div class="sub">${esc(RK.sub)}. 잠깐 몸을 누일 수 있겠군요.</div></div>`));
   const wrap=app.querySelector(".center");
   wrap.appendChild(el(partyStrip(run.heroes.some(h=>h.down)
     ? "쓰러진 대원은 주둔지 치료소에서만 일어납니다" : null)));
-  const n=[1,1,2][Math.min(run.field,2)]+coreFx("trainMore");   /* 잔혹한 세계핵 — 하나 더 */
-  const grade=run.field===0?"하급":"중급";
+  /* 단련하기 — **쉼터 종류**가 정한다 (사용자 2026-10-16 : 전에는 구역이 정했다) */
+  const n=RK.give+coreFx("trainMore");   /* 잔혹한 세계핵 — 하나 더 */
+  const grade=RK.grade;
   const noRest=!!coreFx("noRest");   /* 잔혹한 세계핵 — 쉼터에서 휴식할 수 없다 */
   const row=el(`<div class="rewards"></div>`);
-  const a=el(`<div class="rw ${noRest?"no":""}"><div class="rwi">${nodeArt("rest")}</div>
+  const a=el(`<div class="rw ${noRest?"no":""}"><div class="rwi">${iconImg(RK.ink)||nodeArt("rest")}</div>
     <b>휴식하기</b><p>쓰러지지 않은 모든 대원이 최대 체력의 ${restPct(30)}%를 회복합니다.${restUpNote()}</p>
     <p style="color:var(--faint)">${noRest?"잔혹한 세계핵 — 쉼터에서 휴식할 수 없습니다.":"쓰러진 대원은 일어나지 않습니다."}</p></div>`);
   const restUp=Math.max(0,...run.heroes.map(h=>(h.tag&&h.tag.restPlus)||0));
@@ -27425,15 +27583,18 @@ const QUESTS={
   "탐험심":{kind:"visit",need:4,who:"hero",
     d:"미지의 구역 {n}번 방문",rd:"무작위 보상",reward:{scrap:1}},
   /* 공용 하급 「사냥 수첩」 (사용자 2026-10-14) — 수락자를 가리지 않는다 (누가 죽여도 센다) */
-  "사냥 수첩":{kind:"kill",need:20,who:"all",
-    d:"적 {n}명 처치",rd:"무작위 보상",reward:{scrap:1}},
+  /* 수락자는 **그 보상을 고른 대원**이다 (사용자 2026-10-16 : 전에는 전원이 수락자였다) */
+  "사냥 수첩":{kind:"kill",need:20,who:"hero",
+    d:"수락자가 적 {n}명 처치",rd:"무작위 보상",reward:{scrap:1}},
   /* 오리온 (노트 2026-10-15) */
   "균열의 오랜 생존자":{kind:"taintIn",need:1,who:"hero",
     d:"오염도 80 이상으로 전투 구역에 {n}번 입장",rd:"경험치를 30 얻습니다.",reward:{exp:30}},
   "악마의 뼈로 만든 무기들":{kind:"demonGate",need:2,who:"hero",
     d:"악마 차원문이 열린 일반 전투에서 {n}번 승리",rd:"무작위 일반 장신구 2개",reward:{item:"일반",itemN:2}},
-  "고철 수거":{kind:"scrapKill",need:12,who:"all",repeat:1,syn:"고철의 무덤",
-    d:"고철의 무덤 대원이 적 {n}명 처치",rd:"무작위 보상 (구역이 깊을수록 더 좋다)",reward:{scrap:1}}
+  "고철 수거":{kind:"scrapKill",need:20,who:"all",repeat:1,syn:"고철의 무덤",   /* 12 → 20 (사용자 2026-10-16) */
+    /* 「무작위 보상」은 **셋 다 같은 풀**이다 (randomReward → RIFT_GIFT, 구역이 깊을수록 값이 커진다).
+       덧말이 여기에만 붙어 있어 다른 것처럼 보였다 — 걷는다 (사용자 2026-10-16) */
+    d:"고철의 무덤 대원이 적 {n}명 처치",rd:"무작위 보상",reward:{scrap:1}}
 };
 /* 고철의 무덤 — 조합이 켜져 있으면 퀘스트를 걸어 두고, 꺼지면 걷는다 */
 function scrapQuestSync(){
@@ -28172,6 +28333,10 @@ SKILL_FULL["탄알집 챙기기"]=SKILL_FULL["탄알집 챙기기"].replace("{AM
 SKILL_FULL["전리품 사냥꾼"]=SKILL_FULL["전리품 사냥꾼"].replace("{GOLD_PER}",GOLD_PER);
 HEROES["데린저"].passive.d=HEROES["데린저"].passive.d.replace("{GOLD_PER}",GOLD_PER);
 HEROES["데린저"].passive.d=HEROES["데린저"].passive.d.replace("{TREA_PER}",TREA_PER);
+/* 조합 「고철의 무덤」 2 — 몇 명을 잡아야 하는지는 **퀘스트 표(QUESTS)** 가 쥔다 (사용자 2026-10-16 : 12 → 20).
+   글에 박아 두면 수를 고칠 때 글만 거짓이 된다 */
+{ const sy=SYNERGY.find(x=>x.n==="고철의 무덤"), n=((typeof QUESTS!=="undefined"&&QUESTS["고철 수거"])||{}).need;
+  if(sy&&n) sy.t.forEach(t=>{ t.d=String(t.d||"").replace("{SCRAP_N}",n) }) }
 /* 최대 탄알 — 부착물이 올린다 (노트 「부착: 경량탄창」 · 「확장 탄창」, 2026-10-15).
    ⚠️ 탄알 칸을 보는 곳은 다 이 함수로 묻는다. AMMO_MAX 를 그대로 쓰면 부착물이 조용히 빠진다 */
 function ammoMaxOf(h){ return AMMO_MAX+((h&&h.tag&&h.tag.ammoMax)||0) }
@@ -28193,7 +28358,7 @@ function derrGunAdd(h,s,tgt){
   if(t.gunOnce){ a+=t.gunOnce; }           /* 부착: 개머리판 · 강화약실 — 다음 한 방만 (쏜 뒤 비운다) */
   if(t.farAddPlus&&s.farAdd&&tgt) a+=t.farAddPlus*d;   /* 부착: 기계식 조준기 — 거리당 한 번 더 */
   if(t.antiMat&&s.farAdd) a+=(h.atk||0)*3;             /* 대물 저격소총 — 추가 공격력의 세 배 */
-  if(t.killGun) a+=t.killGun;              /* 무법의 쾌감 — 이번 전투에서만 */
+  if(h.killGun) a+=h.killGun;              /* 무법의 쾌감 — **이번 전투에서만** (BATTLE_RESET 이 비운다, 2026-10-16) */
   if(t.hideAtk&&h.hide) a+=t.hideAtk;      /* 은신 사격 — 숨은 동안 */
   if(t.magBullet) a+=(h.mag||0);           /* 마력탄환 — 무기 피해가 마법력의 영향을 받는다 (노트 2026-10-15) */
   return a;
@@ -28257,7 +28422,7 @@ function derrAfterShot(h,tgt,dmg){
 function derrAfterSmoke(h){
   if(!h||h.name!=="데린저") return;
   const t=h.tag||{};
-  if(t.smokeCard){ for(let i=0;i<t.smokeCard;i++) handAddCard("섬광이 담긴 병",{gone:1,arrive:1});
+  if(t.smokeCard){ handAddCard("섬광이 담긴 병",{gone:1,arrive:1},t.smokeCard);   /* 한 장에 쌓인다 (2026-10-16) */
     say(`연막 주머니 — 섬광이 담긴 병을 ${t.smokeCard}장 챙깁니다.`,"t2") }
   if(t.smokeEsh){ h.eshield=(h.eshield||0)+t.smokeEsh; say(`이테리오의 연막탄 — 에너지 보호막 +${t.smokeEsh}`,"t2") }   /* 에너지 보호막은 손으로 더한다 (전용 함수가 없다) */
   if(t.smokeWeak){ (B.foes||[]).filter(f=>f.alive&&dist(h.slot,f.slot)<=2).forEach(f=>{
@@ -28837,7 +29002,8 @@ const ROUND_RESET={
   portal:null, bomb:0, minions:[]};
 const BATTLE_RESET={
   summoned:0, purified:0, hpMagOn:0, taintOn:0, rageOn:0, rageDefOn:0, chainOn:0, soundOn:0, barsArmorOn:0,   /* 이라 — 늘 따라가는 몫 (2026-10-12 · 10-13) */
-  rendWar:0,                       /* 반격의 기억 — 「그 전투에서만」 */   /* purified — 정화의 빛 이번 전투에 줄인 오염도 (전투 당 최대 5) */
+  rendWar:0,                       /* 반격의 기억 — 「그 전투에서만」 */
+  killGun:0,                       /* 무법의 쾌감 — 「이번 전투에서만」 (사용자 2026-10-16 : 원정 내내 쌓이고 있었다) */   /* purified — 정화의 빛 이번 전투에 줄인 오염도 (전투 당 최대 5) */
   verdictUsed:0, lastStandUsed:0,
   first:{},                        /* 처음은 완벽하게 따위 — 전투당 한 번 */
   critAtkUsed:0, critMagUsed:0, soloOn:0,
@@ -29647,7 +29813,7 @@ function skDmg(f,s){ const D=FOE[f.name]||{}; const el=s.el||D.el||"공격";
   const mb=(D.mag!=null?D.mag:D.atk);   /* 마법력의 밑값 — 표에 없으면 공격력 밑값과 같다 */
   const gain=(el==="마법")?(f.mag-(mb||f.mag)):(f.atk-(D.atk||f.atk));
   let v=((s.heatDmg&&overheated(f))?s.heatDmg:(s.dmg||0))+gain;
-  { const w=foePas(f,"watchAtk"); if(w&&B&&B.hand){ const n=B.hand.filter(c=>c.name==="감시").length; if(n) v+=w.v*n } }   /* 멀리 보기 — 손패의 감시 1장당 +2 */
+  { const w=foePas(f,"watchAtk"); if(w&&B&&B.hand){ const n=handCount("감시"); if(n) v+=w.v*n } }   /* 멀리 보기 — 손패의 감시 1장당 +2 (쌓인 장수까지, 2026-10-16) */
   return Math.max(1,v) }
 function skShield(f,v){ const D=FOE[f.name]||{};
   const r=(D.fixHp&&f.def0)?Math.max(1,v+(f.def-f.def0)):Math.max(1,v+(f.def-(D.def||f.def)));   /* 적은 그대로 + 싸우며 얻은 보호력 */
@@ -32542,6 +32708,10 @@ function richLive(h,sk,txt){
   /* 거리 제한이 사라진 기술 — 「(거리 N)」 자리에 그렇게 뜬다. 무엇이 풀었는지는 reachOf 한 곳에서 가른다
      (무한 팽창 : rng 0 · 폭풍칼날 : noRange · 달래주기 다음 턴 : patFree). 사용자 2026-10-08 */
   if(h&&sk&&reachOf(h,sk)==null) txt0=txt0.replace(/\(거리 \d+\)/g,"(거리 제한 없음)");
+  /* 전리품 사냥꾼 — 「얻은 공격력 ( )」 에 **지금까지 얻은 몫**을 채운다 (사용자 2026-10-16).
+     ⚠️ 빈 괄호가 그대로 보이던 자리다. 수를 쥔 곳은 h.treaAtk 하나다 */
+  if(h&&sk&&sk.n==="전리품 사냥꾼")
+    txt0=txt0.replace(/얻은 공격력 \*\(\s*\)\s*\*/,"얻은 공격력 "+NUM_A+(h.treaAtk||0)+NUM_B+"지금까지 얻은 몫"+NUM_C);
   /* 마력탄환 — 무기 피해에 마법력이 얹힌다. 글의 기호에 ∴ 를 더해 기술 칸 숫자가 살아 보이게 (2026-10-15) */
   if(h&&sk&&sk.ammo&&h.tag&&h.tag.magBullet) txt0=txt0.replace(/\(추가 \u2020/g,"(추가 \u2020,\u2234");
   if(h&&sk&&sk.lifeConv){   /* 생명 에너지 전환 — 지금 쓰면 얼마인지 (사용자 2026-10-04, 응축 폭발처럼) */
@@ -33157,7 +33327,9 @@ function payCost(h,i){
   if(h===0) return C;
   if(s.costType==="mom") return C+(s.rise?h.airUp:0);
   if(s.costType==="scale") return C;
-  if(s.costType==="hp") return iraClawFree(h,s)?0:C;   /* 이라 — 충전이면 할퀴기가 공짜 (2026-10-12) */
+  /* 이라 — 충전이면 할퀴기가 공짜 (2026-10-12). 그 밖에는 **이번 턴에 쌓인 몫**(clawCost)이 얹힌다 (사용자 2026-10-16).
+     ⚠️ 치르는 자리(payHpCost)도 이 함수를 쓴다 — 보이는 값과 치르는 값이 한 곳에서 나온다 */
+  if(s.costType==="hp") return iraClawFree(h,s)?0:C+((s.claw&&h.clawCost)||0);
   if(h.name==="카제"&&i===1&&h.free>0) return 0;
   if(h.tag.freeCut&&i===0&&h.guarded) return 0;
   if(i===0&&h.name==="트리스탄"&&(h.shotFree||0)>0) return 0;
@@ -33865,8 +34037,8 @@ function onSummon(h){
   if(h.name==="데린저"&&t.placeShot){ const f=(typeof nearestFoe==="function")&&nearestFoe(h);
     if(f) for(let i=0;i<t.placeShot;i++) derrFreeUse(h,f);   /* 「발사」는 **기술을 한 번 쓰는 것** — 기관총이면 여덟 발 (사용자 2026-10-15) */
     if(f) say(`부착: 속사 탄창 — ${h.name}${jo(h.name,"ig")} 선제 사격`,"t2") }
-  if(h.name==="데린저"&&t.startShoes){ for(let i=0;i<t.startShoes;i++) handAddCard("간이 신발",{arrive:1});
-    say(`야전신발 — 간이 신발 ${t.startShoes}장`,"t2") }
+  if(h.name==="데린저"&&t.startShoes){ handAddCard("간이 신발",{gone:1,arrive:1},t.startShoes);   /* 소멸성 · 한 장에 쌓인다 (사용자 2026-10-16) */
+    say(`야전신발 — 소멸성 간이 신발 ${t.startShoes}장`,"t2") }
   if(B&&B.foes&&hasTag(h,"정령")&&synOn("정령",2)){   /* 정령 2 · 3 (노트 2026-10-04) */
     const ks=DEB_KEYS.slice().sort(()=>Math.random()-.5).slice(0,synOn("정령",3)?3:1);
     B.foes.filter(f=>f.alive).forEach(f=>ks.forEach(k=>addDeb(f,k,1,h)));
@@ -34148,7 +34320,9 @@ function iraMask(h){ return !!(h&&h.tag&&h.tag.demonMask&&iraCharged(h)) }
    보호막 · 부정 보호막 · 갑피가 끼지 않고, 가시 · 보복도 되돌아오지 않는다.
    ⚠️ 모자라도 막지 않는다 — 치르고 쓰러진다. 쓰러짐만 집안의 한 길(unitDown)로 보낸다. */
 function payHpCost(h,s){
-  const v=iraClawFree(h,s)?0:(s.cost||0);
+  /* 보이는 값과 치르는 값은 **payCost 한 곳**에서 (사용자 2026-10-16 : 할퀴기 비용이 턴 안에서 오른다) */
+  const i=(h.sk||[]).indexOf(s);
+  const v=(i>=0)?payCost(h,i):(iraClawFree(h,s)?0:(s.cost||0));
   if(!v) return;
   h.hp-=v;
   fx({side:"mine",slot:h.slot,txt:"-"+v,cls:"miss",gap:60});
@@ -34518,7 +34692,7 @@ function playCard(i,slot,side){
   if(c.type==="hero"){
     c.hero.slot=slot; B.hand.splice(i,1);
     if(!c.hero.homeSlot) c.hero.homeSlot=slot;   /* 전투 시작 후 처음 배치한 자리 — 탑의 주인 시간 역행이 돌아가는 곳 (2026-10-12) */
-    fx({side:"mine",slot:slot,s:"summon",ring:"#7fd39a",glow:1,gap:60});
+    fx({side:"mine",slot:slot,s:heroPlaceSnd(c.hero)||"summon",ring:"#7fd39a",glow:1,gap:60});   /* 제 녹음이 있으면 그것 (데린저 배치 1·2·3, 사용자 2026-10-16) */
     onSummon(c.hero); lifeAuraSync();   /* 대원이 설 때도 */
     /* 사냥의 기류 — 오리온이 서면 **그 자리에서** 자리를 뽑는다 (사용자 2026-10-15).
        내 턴 머리에서만 뽑던 때는 오리온을 세운 첫 턴에 기류가 없었다 */
@@ -36226,6 +36400,11 @@ function applyLeech(h,dmg){
 }
 /* 손패의 방어구 카드 장수 — 쌓인 것(c.n)까지 */
 function armorInHand(){ return (B.hand||[]).filter(c=>c.type==="item"&&ARMOR_CARDS[c.name]).reduce((a,c)=>a+(c.n||1),0) }
+/* 손패에 그 카드가 **몇 장** 있나 — 같은 카드는 한 장에 쌓이므로(보유량 c.n) 길이로 세면 안 된다.
+   ⚠️ 카드 장수를 세는 자리는 **여기 하나**를 쓴다 (사용자 2026-10-16 : 쌓기를 넣으며 감시가 한 장으로 세어졌다) */
+function handCount(nm){ return (B&&B.hand||[]).filter(c=>c&&c.name===nm).reduce((a,c)=>a+(c.n||1),0) }
+/* 같은 카드가 쌓인 것까지 풀어 **장마다 한 번씩** 돌린다 (감시의 턴 끝 피해처럼) */
+function handEach(nm,fn){ (B&&B.hand||[]).filter(c=>c&&c.name===nm).forEach(c=>{ const n=c.n||1; for(let i=0;i<n;i++) fn(c,i) }) }
 function giveArmor(h,nm){
   const A=ARMOR_CARDS[nm];
   pulseFX("mine",h.slot,"#e0c85a",2);
@@ -36737,11 +36916,14 @@ function iraRend(h,s,target){
   const dealt=Math.max(0,hp0-Math.max(0,f.hp)-shieldSum(f));
   applyLeech(h,dealt);   /* 흡수 — 얹어 둔 몫(타락의 초읽기 · 늘 붙는 갈증)을 여기서 터뜨린다 (2026-10-13) */
   if(ch&&iraChargeUse(h)){
-    const got=healUp(h,dealt);
+    /* 가한 피해의 **절반**만 회복한다 (사용자 2026-10-16 너프 — 전에는 가한 만큼 전부).
+       반올림은 흡수(applyLeech)와 같은 결로 Math.round */
+    const 회복할=Math.round(dealt/2);
+    const got=healUp(h,회복할);
     if(got){ fx({side:"mine",slot:h.slot,s:"heal",ring:"#7fd39a",txt:"+"+got,cls:"heal",gap:60});
-      say(`찢어발기기 — 가한 피해 ${dealt}만큼 ${h.name} 체력 +${got}`,"t2") }
+      say(`찢어발기기 — 가한 피해 ${dealt}의 절반인 ${회복할}만큼 ${h.name} 체력 +${got}`,"t2") }
     /* 넘치는 흡수 — **회복하려던 것에서 넘친 몫**만큼 보호막 (2026-10-13) */
-    if(h.tag&&h.tag.spillShield){ const 넘침=dealt-got;
+    if(h.tag&&h.tag.spillShield){ const 넘침=회복할-got;
       if(넘침>0){ addShield(h,넘침); say(`넘치는 흡수 — 넘친 ${넘침}만큼 보호막`,"t2") } }
     else say(`찢어발기기 — 회복할 체력이 없습니다. (가한 피해 ${dealt})`,"t3");
   }
@@ -36840,6 +37022,10 @@ function iraClaw(h,s,target){
   for(let q=0;q<n;q++){ if(!f.alive) break;
     hurt(f,가면?v*2:v,"할퀴기",null,0,가면?1:0,1);   /* 코드로 그린 SVG 를 안 쓴다 (2026-10-13) */
     if(q<n-1) fx({side:"mine",slot:h.slot,gap:CLAW_GAP[Math.min(q+1,CLAW_GAP.length-1)]}) }
+  /* 이번 턴 비용이 1 오른다 — **쓴 뒤에** (공짜로 쓴 때에도 오른다. 사용자 2026-10-16).
+     비우는 곳은 startMyTurn 한 곳이다 */
+  if(s.clawUp){ h.clawCost=(h.clawCost||0)+s.clawUp;
+    say(`할퀴기 — 이번 턴 할퀴기의 비용이 ${h.clawCost} 늘었습니다.`,"t2") }
   /* 강해지는 할퀴기 — 쓴 **뒤에** 오른다. 이번 턴에만 (startMyTurn 이 비운다) */
   if(h.tag&&h.tag.clawTurnUp){ h.clawTurn=(h.clawTurn||0)+h.tag.clawTurnUp;
     say(`강해지는 할퀴기 — 이번 턴 할퀴기 피해 +${h.clawTurn}`,"t2") }
@@ -37292,11 +37478,13 @@ function runEffect0(h,i,s,target){
         /* ⚠️ **SPD 를 곱하지 않는다.** sheetFX 는 frameMs 에 빠르기를 안 먹여 띠가 늘 tot 로 돈다 —
            여기에만 곱했더니 「빠르게」(SPD 0.5)에서 절반에 몸이 돌아와 겹쳤다 (사용자 2026-10-15).
            띠의 마지막 칸은 t=tot 에 opacity 0 이 되니 감추기도 **딱 tot** 이면 이음새가 없다 */
-        fx({side:"mine",slot:h.slot,fn:()=>{ const st=document.createElement("style");
+        fx({side:"mine",slot:h.slot,fn:()=>{ derrReloadStop();   /* 앞서 돌던 장전 띠가 있으면 걷고 (2026-10-16) */
+          const st=document.createElement("style"); st.id="derrHide";
           st.textContent=`#mySide .slot[data-slot="${sl0}"] .art{visibility:hidden}`;
           document.head.appendChild(st);
-          setTimeout(()=>st.remove(),Math.max(120,tot)) },gap:0});
+          setTimeout(()=>{ if(st.parentNode) st.remove() },Math.max(120,tot)) },gap:0});
         /* gap 은 줄이 SPD 를 곱해 쓰니 나눠 넘긴다 — 띠가 다 돌 때까지 다음 연출이 안 끼어들게 */
+        opt.tag="derrReload";   /* 쏘면 끊을 수 있게 이름표를 단다 (사용자 2026-10-16) */
         fx({side:"mine",slot:h.slot,sheet:k,sheetOpt:opt,gap:Math.round((tot+60)/(SPD>0?SPD:1))});
         SFX.play(g+" 장전");   /* 받은 녹음 — 파일 이름이 곧 열쇠다 (2026-10-15) */ } }
     if(h.tag&&h.tag.reloadNext&&n2>0){ h.tag.gunOnce=(h.tag.gunOnce||0)+n2;
@@ -37606,7 +37794,7 @@ function runEffect0(h,i,s,target){
     /* 휘파람을 부는 자세 (사용자 2026-10-15 : art/orion-whistle-v1) */
     fx({side:"mine",slot:h.slot,pose:"whistle",poseMs:980,gap:0});
     const 섬수=houndsOn().length;
-    const 손수=(B.hand||[]).filter(c=>c.type==="summon"&&c.name==="사냥개").length;
+    const 손수=(B.hand||[]).filter(c=>c.type==="summon"&&c.name==="사냥개").reduce((a,c)=>a+(c.n||1),0);   /* 쌓인 장수까지 (2026-10-16) */
     /* 무리 사냥 (상급) — 사냥개를 둘까지 둘 수 있고, 이미 있어도 한 장 더 가져온다 */
     const 무리=!!(h.tag&&h.tag.packHunt);
     const 섬=무리?(섬수+손수>=houndCap(h)):(섬수>0);
@@ -38205,8 +38393,9 @@ function runEffect0(h,i,s,target){
       }
       if(h.name==="이테리오"&&itMarksOn(h,s)&&tgt.alive) itMark(tgt,1);
       if(was&&!tgt.alive&&h.name==="데린저"){   /* 데린저의 처치 보상 (노트 2026-10-15) */
-        if(h.tag.killGunUp){ h.tag.killGun=(h.tag.killGun||0)+h.tag.killGunUp;
-          say(`무법의 쾌감 — 이번 전투 무기 피해 +${h.tag.killGun}`,"t1") }
+        /* ⚠️ 쌓는 자리는 **대원 몸**이다 — h.tag 에 두면 원정 내내 남는다 (사용자 2026-10-16) */
+        if(h.tag.killGunUp){ h.killGun=(h.killGun||0)+h.tag.killGunUp;
+          say(`무법의 쾌감 — 이번 전투 무기 피해 +${h.killGun}`,"t1") }
         if(h.tag.killSmokeLim){ (h.limBonus=h.limBonus||{})[2]=((h.limBonus||{})[2]||0)+h.tag.killSmokeLim;
           say(`파밍 — 이번 전투 연막탄의 사용한도가 늘어납니다.`,"t1") }
       }
@@ -38264,13 +38453,16 @@ function runEffect0(h,i,s,target){
     if(s.near2x&&tgt&&tgt.alive&&((h.tag&&h.tag.sgAnyDist)||dist(h.slot,tgt.slot)<=2)){
       const more=1+((h.tag&&h.tag.sgMore)||0);   /* 근접 난사 — 한 번 더 (노트 2026-10-15) */
       say(`${s.n} — 가까워 ${more}번 더 쏩니다.`,"t2");
-      for(let q=1;q<more;q++){
-        fx({side:"foe",slot:tgt.slot,derr:{side:"mine",slot:h.slot,gun:"산탄총"},gap:800});
-        asSrc(h,()=>hurt(tgt,dmg,s.n,"slash",0,CRIT,1)); }
-      /* 둘째 발 — 총알을 줄에 세우고 **앞에 틈을 둔다**. gap 은 「다음 연출까지의 틈」이라
-         이 한 줄이 둘째 발과 그 숫자를 함께 밀어 준다 (사용자 2026-10-15 : 「한 번 준 것처럼 보인다」) */
-      fx({side:"foe",slot:tgt.slot,derr:{side:"mine",slot:h.slot,gun:"산탄총"},gap:800});
-      asSrc(h,()=>hurt(tgt,dmg,s.n,"slash",0,CRIT,1));
+      /* 둘째 발 — **틈은 발 앞에, 숫자는 총알이 닿는 때에** (사용자 2026-10-16).
+         ⚠️ gap 은 「다음 연출까지의 틈」이다. 총알 줄에 800 을 걸어 두니 **숫자가 0.8초나 늦게** 떴다
+            (사용자 : 「총알 모션이랑 타이밍이 안 맞는다」). 빈 줄로 앞에 틈을 두고,
+            총알 뒤에는 **총알이 날아 닿는 만큼**(SG_FLY)만 둔다 — derrShotFX 의 터짐도 그 때다 */
+      const SG_WAIT=420, SG_FLY=180;
+      const sgShot=()=>{ fx({gap:SG_WAIT});
+        fx({side:"foe",slot:tgt.slot,derr:{side:"mine",slot:h.slot,gun:"산탄총"},gap:SG_FLY});
+        asSrc(h,()=>hurt(tgt,dmg,s.n,"slash",0,CRIT,1)) };
+      for(let q=1;q<more;q++) sgShot();
+      sgShot();
     }
     /* ── 오리온 — 사냥감 냄새 (노트 18-5 남기고 · 18-1 거둔다, 2026-10-14) ── */
     if(s.scent&&tgt&&tgt.alive) scentMark(tgt,s.n,1);
@@ -38596,7 +38788,11 @@ function unitDown(t){
     say(`메아리 — ${t.name}${jo(t.name,"ig")} 다시 일어섭니다. (체력 ${t.hp})`,"t1"); return }
   if(!t.isMin){ BONE_AT=Date.now(); setTimeout(()=>{ try{ wanderCheck() }catch(e){} },0) }
   setTimeout(()=>{ try{ bookSync() }catch(e){} },0);   /* 성서 — 주인이 쓰러지면 걷힌다 (2026-10-14) */
-  fx({side:"mine",slot:t.slot,s:t.isMin?(isWallName(t.name)?null:"down"):sfxOr("뼈 으스러짐","down"),txt:t.isMin?"파괴":"쓰러짐",cls:"miss",gap:180});   /* 대원이 쓰러질 때도 */
+  /* 소환물도 **종족별 죽음 소리**로 (사용자 2026-10-16). 적과 같은 규칙 —
+     죽음 효과가 있는 소환물(새싹 · 수목 · 일부 골렘)은 deathMarkFX 가 종족 소리를 내니 여기서는 공용 down.
+     성벽은 무너지는 제 소리가 따로 있어 여기서는 조용하다 */
+  const dsnd=t.isMin?(isWallName(t.name)?null:((!minDeathTxt(t)&&deathSnd(t))||"down")):sfxOr("뼈 으스러짐","down");
+  fx({side:"mine",slot:t.slot,s:dsnd,txt:t.isMin?"파괴":"쓰러짐",cls:"miss",gap:180});   /* 대원이 쓰러질 때도 */
   if(t.isMin){
     say(`${t.name}${jo(t.name,"ig")} 부서졌습니다.`,"t3");
     bark(t,"down",1);
@@ -38763,7 +38959,7 @@ function endPhase(){
   let n=0; const bump=()=>{ n++ };
   const mark=B.log.length;              /* 머리말은 나중에 이 자리에 끼워 넣는다 */
   /* [감시] — 손패에 들고 있으면 내 턴이 끝날 때 무작위 대원이 피해를 5 받는다 (첨탑 관리자) */
-  B.hand.filter(c=>c.name==="감시").forEach(c=>{ const hs=onField().filter(h=>h.hp>0); if(!hs.length) return;
+  handEach("감시",c=>{ const hs=onField().filter(h=>h.hp>0); if(!hs.length) return;   /* 쌓인 장수만큼 (2026-10-16) */
     const h=rnd(hs), k=B.foes.find(f=>f.alive&&f.name==="첨탑 관리자")||{name:"감시",alive:0,slot:0};
     fx({watchGaze:{slot:h.slot,ci:B.hand.indexOf(c)},gap:620});   /* 카드가 눈을 뜨고 시선이 뻗은 뒤에 피해 숫자 (사용자 2026-10-09, ②-2) */
     hurtAlly(k,h,5,"감시"); n++;
@@ -39185,6 +39381,8 @@ function startMyTurn(){
   run.heroes.forEach(h=>{ if(h.readyUsedTurn) h.readyUsedTurn=0 });
   /* 강해지는 할퀴기 — 「이번 턴에만」이라 턴이 바뀌면 비운다 (2026-10-12) */
   run.heroes.forEach(h=>{ if(h.clawTurn) h.clawTurn=0 });
+  /* 할퀴기 비용도 「이번 턴에만」 쌓인다 (사용자 2026-10-16) */
+  run.heroes.forEach(h=>{ if(h.clawCost) h.clawCost=0 });
   /* 근성 — 내 턴 시작 후 체력이 40% 이하면 회복 (2026-10-12) */
   run.heroes.forEach(h=>{ if(!h.tag.grit||h.down||h.hp<=0||h.slot<=0) return;
     if(h.hp<=h.maxHp*0.4){ const got=healUp(h,h.tag.grit);
@@ -39790,6 +39988,18 @@ function actPop(r,c,n){
   flushFX();
 }
 function toBag(it){ (run.bag=run.bag||[]).push(it); flyToBag() }
+/* 가방의 장신구 줄 — **아이콘 · 이름 · 등급 · 수량**만 (사용자 2026-10-16).
+   같은 장신구는 한 줄로 묶어 ×N 으로 센다. 자세한 것은 커서를 대면 뜬다 —
+   ⚠️ 그 글은 여기서 베껴 쓰지 않는다. `kw data-item` 이면 설명창이 **itemCard** 를 그대로 띄운다 */
+function bagItems(bag){
+  const L=[];
+  (bag||[]).forEach(it=>{ if(!it) return; const k=L.find(x=>x.n===it.n); if(k) k.c++; else L.push({n:it.n,g:it.g,it:it,c:1}) });
+  return `<div class="bagitems">`+L.map(x=>`<div class="bgi g${esc(x.g)} kw" data-item="${esc(x.n)}">
+      <span class="bgi-a">${itemIcon(x.it,30)}</span>
+      <span class="bgi-t"><b class="bgi-n">${esc(x.n)}</b><em class="bgi-g">${esc(x.g)}</em></span>
+      <span class="bgi-c">×${x.c}</span>
+    </div>`).join("")+`</div>`;
+}
 function drawBag(app){
   run.bag=run.bag||[]; run.cards=run.cards||[];
   const wrap=el(`<div class="dexwrap bagframe"></div>`);
@@ -39806,7 +40016,7 @@ function drawBag(app){
   const sec1=el(`<div class="misec"></div>`);
   sec1.appendChild(el(`<div class="mil">장신구 <em style="font-style:normal;font-size:11px;color:#b9a888;margin-left:6px">주둔지에서 대원에게 채웁니다</em></div>`));
   if(!run.bag.length) sec1.appendChild(el(`<div class="hint" style="font-size:12px;padding:6px 0">비어 있습니다.</div>`));
-  else sec1.appendChild(el(`<div class="dexgrid">${run.bag.map(itemCard).join("")}</div>`));
+  else sec1.appendChild(el(bagItems(run.bag)));
   wrap.appendChild(sec1);
 
   /* 카드 */
@@ -40133,8 +40343,10 @@ function heroPanel(h){
   if(inf.length){
     box.appendChild(el(`<div class="hp-h">지속</div>`));
     /* 노트 원문이 있으면 그것을 쓴다. 없을 때만 셈해서 보여 주던 글로 떨어진다 */
+    /* 지속도 **산 글**로 — 전리품 사냥꾼의 「얻은 공격력 ( )」 같은 자리가 채워진다 (사용자 2026-10-16).
+       richLive 는 기술 하나를 받으므로 이름만 든 조각을 넘긴다 (기술 전용 규칙은 이름으로 갈린다) */
     inf.forEach(p=>box.appendChild(el(`<div class="hp-sk">
-      ${skiHtml(p.n)}<b>${esc(p.n)}</b>${skUpsHtml(h,p.n)}<small>${SKILL_FULL[p.n]?rich(SKILL_FULL[p.n]):icoify(p.d(h))}</small></div>`)));
+      ${skiHtml(p.n)}<b>${esc(p.n)}</b>${skUpsHtml(h,p.n)}<small>${SKILL_FULL[p.n]?richLive(h,{n:p.n},SKILL_FULL[p.n]).html:icoify(p.d(h))}</small></div>`)));
   }
   box.appendChild(el(`<div class="hp-h">기술</div>`));
   h.sk.forEach((sk,i)=>{
@@ -40260,6 +40472,15 @@ function offerCards(app,hero,grade,done,lvUp){
   if(pending&&pending.pickKey===pkey&&pending.picks){
     const got=pending.picks.map(k=>pool.find(r=>rwKey(r)===k)).filter(Boolean);
     if(got.length===pending.picks.length) picks=got;
+    else{
+      /* 🔴 **고른 보상은 풀에서 빠진다** (「한 번만」인 것들). 그 뒤 done 이 도는 460~820ms 사이에
+         화면이 다시 그려지면 적어 둔 셋을 못 찾아 **새로 뽑고 있었다** —
+         다른 보상 셋이 잠깐 떴다가 넘어갔다 (사용자 2026-10-16 : 「한 번 더 보상 선택 화면이 잠깐 제시된다」).
+         풀에 없으면 **거르기 전 표**에서 같은 카드를 찾아 그대로 보여 준다. 뽑기는 여기서 다시 하지 않는다 */
+      const all=(HERO_REWARDS[hero.name]||[]).concat(COMMON);
+      const got2=pending.picks.map(k=>pool.find(r=>rwKey(r)===k)||all.find(r=>rwKey(r)===k)).filter(Boolean);
+      if(got2.length===pending.picks.length) picks=got2;
+    }
   }
   if(!picks){
     picks=pickWeighted(pool,3);
