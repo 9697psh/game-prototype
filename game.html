@@ -2027,6 +2027,17 @@ html:has(body.shakeall.noscrY){overflow:hidden}   /* 평소 세로로 스크롤�
 .bag-res span{display:flex;align-items:center;gap:4px;color:#f4d67c}
 .bag-res img.ri,.bag-res svg.ri{width:16px;height:16px}
 .bag-foot{margin-top:18px;display:flex;justify-content:center}
+/* 가방 카드는 최대 두 열. 지도 판에서는 두 카드가 함께 줄어들어 테두리 안에 든다. */
+.bagframe .dexcards{display:grid;grid-template-columns:repeat(2,minmax(0,196px));gap:10px;min-width:0}
+.bagframe .ccard.cf{width:100%;height:auto;aspect-ratio:5/7;min-width:0;container-type:inline-size}
+.bagframe .ccard.cf .cc-n{font-size:7.5cqw}
+.bagframe .ccard.cf .cc-type{font-size:5.3125cqw}
+.bagframe .ccard.cf .cc-own{font-size:6.875cqw;height:6.875cqw}
+.bagframe .ccard.cf .cc-d{font-size:5.9375cqw}
+.bagframe .ccard.cf .cc-d.long{font-size:5.3125cqw}
+.bagframe .ccard.cf .cc-art img,.bagframe .ccard.cf .cc-art svg{max-width:80%;max-height:92%;object-fit:contain}
+.bagframe .bgi-t{min-width:0}
+.bagframe .bgi-n{overflow-wrap:anywhere}
 /* 가방의 장신구 줄 — 아이콘 · 이름 · 등급 · 수량만 (사용자 2026-10-16).
    자세한 글(설명 · 조합법 · 이것으로 만들 수 있는 것)은 커서를 대면 설명창이 itemCard 를 띄운다 */
 .bagitems{display:flex;flex-direction:column;gap:5px;margin-top:4px}
@@ -2493,7 +2504,7 @@ header{align-items:center}
    무대(.pstage)는 정사각. 256px 그림을 3배(768)까지 키우고, 좁으면 기둥 폭을 따른다.
    격자는 양피지의 크림색 안쪽(256 기준 24~232)에 맞춰 9.375% 안쪽 · 81.25% 크기 — 그림이 커져도 비율로 따라간다 */
 .pstage{--pline:transparent;position:relative;width:min(768px,100%);aspect-ratio:1;margin:8px auto 0;cursor:none;border-radius:6px;overflow:visible;
-  background:#0f0c0a var(--floor,none) center/var(--floorsz,50%) repeat;image-rendering:pixelated}
+  --map-floor:#0f0c0a var(--floor,none) center/var(--floorsz,50%) repeat;background:var(--map-floor);image-rendering:pixelated}
 .pstage>img{position:absolute;image-rendering:pixelated;pointer-events:none;user-select:none}
 /* 테두리 — 격자 위, 손·말풍선 아래. 칸은 그대로 눌린다 (사용자 2026-09-29) */
 .pstage{border-radius:0}   /* 틀이 모서리까지 곧게 닿게 (2026-09-29) */
@@ -2517,6 +2528,16 @@ header{align-items:center}
 .pstage.unfolding::after{display:none}
 /* 띠의 한 칸에서만 빛난다 (sheetFX 의 glowAt — 리볼버 장전에서 총구가 번쩍, 2026-10-15) */
 .shfx.shglow{filter:drop-shadow(0 0 7px rgba(255,214,140,.95)) drop-shadow(0 0 16px rgba(255,180,80,.55)) brightness(1.18)}
+
+.fuel-wrench{position:fixed;width:64px;height:64px;pointer-events:none;z-index:60}.fuel-wrench img{width:100%;height:100%;image-rendering:pixelated}
+.fuel-heat-1 .art img{animation:fuelShake .8s ease-in-out infinite alternate}
+.fuel-heat-2 .art img{animation:fuelShake .35s ease-in-out infinite alternate;--fuel-shake:2px}
+.fuel-heat-3 .art img{animation:fuelShake .16s ease-in-out infinite alternate;--fuel-shake:3px}
+@keyframes fuelShake{from{transform:translateX(calc(-1 * var(--fuel-shake,1px)))}to{transform:translateX(var(--fuel-shake,1px))}}
+@media(prefers-reduced-motion:reduce){.fuel-heat-1 .art img,.fuel-heat-2 .art img,.fuel-heat-3 .art img{animation:none}}
+
+/* 샘의 잔영 비명 — 제공된 얼굴 띠의 빛만 강조한다 (사용자 2026-10-17). */
+.shfx[data-fxtag="spring-scream"]{filter:drop-shadow(0 0 5px rgba(95,225,255,.95)) drop-shadow(0 0 12px rgba(65,155,255,.6)) brightness(1.22)}
 #mySide .slot .art.reloading{visibility:hidden}
 /* ⚠️ 한때 여기서 양피지를 --pad 만큼 넓혀 액자 안쪽 틈을 메웠다가 되돌렸다 (사용자 2026-10-10).
    양피지가 액자 밖으로 나와 왼쪽 아래 손 그림이 튀어나왔고, 양피지만 커져 격자가 가운데로 몰려 보였다.
@@ -3647,6 +3668,17 @@ body.vmap header #hBtns button:hover{border-color:#f4d67c;color:#f4d67c}
 .mboard{position:relative;width:min(1528px,98vw);aspect-ratio:1528/816;margin:2px auto 0;
   background-repeat:no-repeat;background-size:100% 100%;image-rendering:pixelated}
 .mboard>div{position:absolute;box-sizing:border-box;image-rendering:auto}
+.mboard.taint-high{--taint-edge:.2;--taint-haze:.05;--taint-core:0;--taint-shadow:.23;--taint-width:70px;--taint-period:3.2s;--taint-low:.45;--taint-high:.9;--taint-rim:0}
+.mboard.taint-level-2{--taint-edge:.29;--taint-haze:.08;--taint-shadow:.33;--taint-width:95px;--taint-period:2.6s;--taint-low:.5;--taint-high:.96}
+.mboard.taint-level-3{--taint-edge:.41;--taint-haze:.12;--taint-core:.012;--taint-shadow:.46;--taint-width:120px;--taint-period:1.9s;--taint-low:.55;--taint-high:1}
+.mboard.taint-level-4{--taint-edge:.66;--taint-haze:.2;--taint-core:.035;--taint-shadow:.72;--taint-width:155px;--taint-period:1.1s;--taint-low:.62;--taint-high:1;--taint-rim:.85}
+.mboard.taint-high::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:50;
+  background:radial-gradient(ellipse at center,rgba(134,55,220,var(--taint-core)) 34%,rgba(144,65,230,var(--taint-haze)) 68%,rgba(157,62,226,var(--taint-edge)) 100%);
+  box-shadow:inset 0 0 var(--taint-width) rgba(155,64,228,var(--taint-shadow)),inset 0 0 12px rgba(228,112,255,var(--taint-rim));
+  mix-blend-mode:screen;animation:mapTaintGlow var(--taint-period) ease-in-out infinite alternate}
+.mboard.taint-level-4 .mb-rtop .taint{color:#ffe5ff;text-shadow:0 0 6px #e39aff,0 0 15px #ba43f2}
+@keyframes mapTaintGlow{from{opacity:var(--taint-low)}to{opacity:var(--taint-high)}}
+@media(prefers-reduced-motion:reduce){.mboard.taint-high::after{animation:none;opacity:var(--taint-high)}}
 .mb-btns {left:3.40%;top:7.60%;width:23.6%;height:17.5%;display:flex;align-items:center;justify-content:space-between}
 .mb-btns>*{flex:0 0 28%;height:100%;display:flex;align-items:center;justify-content:center;
   cursor:pointer;overflow:visible;background:none;border:0;border-radius:0;
@@ -3677,7 +3709,8 @@ body.vmap header #hBtns button:hover{border-color:#f4d67c;color:#f4d67c}
 .ledger .bag-res{gap:10px;font-size:12px;margin-bottom:8px}
 .ledger .mifoot,.ledger .bag-foot{padding-top:10px}
 .ledger .bag-foot .mgo{width:120px;height:46px;font-size:13px}
-.ledger .dexgrid,.ledger .dexcards{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.ledger .dexgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.ledger .dexcards{gap:6px}
 .ledger .qpanel{width:100%;max-width:none;position:relative;left:auto;top:auto}
 /* ⑥ 대원 줄 — 받은 세로 카드틀을 걷고 시안대로 (사용자 2026-10-14 밤).
    왼쪽에 얼굴과 이름, 오른쪽에 장신구 셋 · 체력 · 경험치. 줄 사이는 가는 선 하나 */
@@ -3701,10 +3734,14 @@ body.vmap header #hBtns button:hover{border-color:#f4d67c;color:#f4d67c}
 .ledger .msyn{flex-direction:row;flex-wrap:wrap;width:100%;gap:8px;justify-content:center;padding-top:10px}
 /* 지도에서는 시험용 건너뛰기를 안 보인다 (사용자 2026-10-14). 다시 보려면 이 줄을 지운다 */
 body.vmap #hSkip{display:none}
-.mb-left {left:4.06%;top:26.7%;width:23.5%;height:65.4%;overflow:hidden}
+/* 틀 그림의 안쪽(1528×816 기준 x67..405, y225..735)에 내용과 스크롤 끝을 맞춘다.
+   이전 칸은 오른쪽 기둥과 아래 테까지 포함해 퀘스트·장신구·카드가 그 위에 그려졌다. */
+.mb-left {left:4.4%;top:27.6%;width:22.1%;height:62.5%;overflow:hidden}
 .mb-mid  {left:27.1%;top:9.20%;width:44.8%;height:83.3%;display:flex;align-items:center;justify-content:center}
 .mb-rtop {left:72.7%;top:13.6%;width:23.4%;height:12.1%;display:flex;align-items:center;justify-content:center;gap:10px}
-.mb-right{left:72.6%;top:31.4%;width:24.9%;height:60.8%;overflow:auto}
+/* 오른쪽 틀의 안쪽 x1112..1470, y264..736 (MAP_BOARD 1528×816).
+   제목·그림·본문·버튼이 그림의 중심을 함께 쓰며 위아래 여백도 대칭이다. */
+.mb-right{left:calc(100% * 1112 / 1528);top:calc(100% * 264 / 816);width:calc(100% * 358 / 1528);height:calc(100% * 472 / 816);overflow:auto}
 /* 안에 들어가는 것들은 칸을 꽉 채운다 */
 .mb-mid .map-l{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
 .mb-mid .pstage{width:100%;max-width:100%;margin:0}
@@ -3745,8 +3782,9 @@ body.vmap .mtop .mtrow{justify-content:center}
 .mb-rtop .mclock svg,.mb-rtop .mclock canvas{width:64px;height:64px}
 .mb-rtop .mclock b{font-size:14px}
 /* ③ 주둔지 — 안쪽 액자(틀 안의 틀)를 걷고 칸을 그대로 쓴다 */
-.mb-right .minsp{border-image:none;border:0;padding:3% 7% 4%;max-width:none;width:100%;height:100%;aspect-ratio:auto}
-.mb-right .map-r{padding:0;height:100%}
+.mb-right .minsp{border-image:none;border:0;padding:3% 7%;max-width:none;width:100%;height:100%;min-height:0;aspect-ratio:auto;overflow:hidden}
+.mb-right .map-r{padding:0;height:100%;min-height:0;overflow:hidden}
+.mb-right .mclockbox:empty{display:none}   /* 위쪽 자원 칸으로 시계를 옮긴 뒤 남은 14px 공백 제거 */
 /* ④ 왼쪽 단추 아이콘 — 32px 짜리가 제 크기로 떠서 작았다. 칸에 맞춰 키운다.
    ⚠️ .mbag img.npx · .mquest img.npx (44px) 가 더 센 규칙이라 칸 이름까지 적어야 이긴다 */
 .mb-btns .mbag img.npx,.mb-btns .mquest img.npx,.mb-btns .mledger img,
@@ -3754,7 +3792,13 @@ body.vmap .mtop .mtrow{justify-content:center}
 /* ⓑ 오른쪽 구역 설명 (사용자 2026-10-15) — 흰 스크롤바를 걷고 단추를 칸 안에 붙든다.
    칸(.mb-right)이 제 스크롤바를 내던 것이 그 흰 줄이었다. 글이 길면 안쪽(.mib)만 구른다 */
 .mb-right{overflow:hidden}
-.mb-right .minsp .mib{scrollbar-width:none}
+.mb-right .minsp .mib{scrollbar-width:none;min-height:0;overflow-x:hidden}
+.mb-right .minsp .mib>*{flex-shrink:0;max-width:100%}
+.mb-right .minsp .mgo{max-width:100%}
+/* 세로로 긴 창에서도 주둔지 시설 넷은 오른쪽 판 안에 맞춘다. */
+.mb-right .minsp .mcamp2{grid-template-columns:repeat(4,minmax(0,1fr))}
+.mb-right .minsp .mcamp2 .cfac.iconly .fi{max-width:100%;height:auto;aspect-ratio:1;flex-shrink:1}
+.mb-right .minsp .mcamp2 .cfac.iconly .fi img,.mb-right .minsp .mcamp2 .cfac.iconly .fi svg{max-width:100%;height:auto}
 .mb-right .minsp .mib::-webkit-scrollbar{width:0;height:0;display:none}
 .mb-right .minsp .mifoot{position:sticky;bottom:0;z-index:2;margin-top:auto;padding-bottom:4px;
   background:linear-gradient(180deg,rgba(20,15,10,0),rgba(20,15,10,.95) 60%)}
@@ -3778,10 +3822,12 @@ body.vmap .mtop .mtrow{justify-content:center}
 /* ⚠️ 액자(::after)가 무대보다 1.6% 더 나간다 — **96%** 로 두어야 액자까지 칸 안에 든다
    (사용자 2026-10-15 : F11 에서 양옆으로 튀어나왔다). 96 × 1.032 ≒ 99 % */
 .mb-mid .pstage{width:min(92%,92cqh);height:auto;max-width:none;transform:translate(1.2%,2.4%)   /* 왼쪽 손이 틀에 닿아 보여 조금 오른쪽으로 (사용자 2026-10-15) */}   /* 아래끝을 옆 상자들 가까이 (액자가 칸을 안 넘는 선까지) */   /* 액자 아래끝을 옆 상자들과 나란히 (사용자 2026-10-15) — 1% 였을 때 15px 더 내려와 있었다 */
-/* 바닥과 액자만 위아래로 4% 눌렀다 (사용자 2026-10-15 : 「저 화살표 구간만큼」).
-   양피지(.pmapimg)와 격자(.pmap)는 absolute inset 이라 padding 에 안 밀린다 — 그대로 남는다.
-   바닥은 content-box 까지만 칠하고, 액자도 같은 만큼 안으로 들인다 */
-.mb-mid .pstage{padding:3.4% 0 1.2%;background-clip:content-box}
+/* 바닥과 액자만 위아래로 들인다 (사용자 2026-10-15 : 「저 화살표 구간만큼」).
+   양피지(.pmapimg)와 격자(.pmap)는 absolute inset:0 그대로 둔다. */
+/* 바닥과 액자를 같은 기준으로 들인다. padding의 %는 부모 폭 기준이라 F11에서
+   액자 아래에 바닥 그림이 몇 픽셀 남았다. ::before/::after는 모두 무대 자체 기준이다. */
+.mb-mid .pstage{padding:0;background:none}
+.mb-mid .pstage::before{content:"";position:absolute;inset:3.4% 0 1.2%;background:var(--map-floor);pointer-events:none}
 .mb-mid .pstage::after{inset:3.4% -1.6% 1.2% -1.6%}
 /* ⚠️ 아래는 1.2% 만 — 손 그림이 256줄 가운데 255줄까지 내려오는 것이 여럿이라
    아래를 많이 들이면 손끝이 액자 밖으로 삐져 나온다 (사용자 2026-10-15) */
@@ -3820,7 +3866,6 @@ body.vmap .mtop .mtrow{justify-content:center}
 .minsp .mii{height:64px;display:flex;align-items:center;justify-content:center;margin:8px 0 4px} .minsp .mii img,.minsp .mii svg{width:56px;height:56px;image-rendering:pixelated}
 .minsp .mir{font-size:14px;color:#f4d67c;margin:4px 0}
 .minsp .midist{font-size:11.5px;color:#b9a888;margin-top:6px} .minsp .midist b{color:#e08a8a;font-weight:600}
-.minsp.hover .mib{outline:1px dashed rgba(240,212,136,.25);outline-offset:-2px}
 .minsp .mit{font-size:12.5px;color:#d8c8a6;line-height:1.6;word-break:keep-all;margin-top:4px} .minsp .mit b{color:#f0e2c4}
 .minsp .mit img.ri,.minsp .mit svg,.minsp .mir2 img.ri,.minsp .mir2 svg{width:16px;height:16px;vertical-align:-3px;image-rendering:pixelated}
 .minsp .misec{width:100%}
@@ -4024,6 +4069,14 @@ body.vbattle .bagbtn{bottom:auto;top:9px;right:auto;left:16px;padding:6px 10px;g
 .bfstage .slot .ublw .reach.frng{position:static;top:auto;margin-top:3px;order:9}
 .bfstage .slot .ublw .reach:not(.frng){position:static;top:auto;margin-top:2px;order:10}   /* 지속 능력 줄 밑으로 (사용자 2026-10-05) */   /* 지속 능력 줄(이름 밑 느낌표)을 가리지 않게 더 아래로 (사용자 2026-09-29) */
 .bfstage .slot.far{opacity:.55}
+/* 적 행동 조명 — 캐릭터와 그 행동의 그림 이펙트가 함께 강조된다 (2026-10-16) */
+.bfstage .field.foe-focus::before{content:"";position:absolute;inset:-20%;background:rgba(0,0,0,.22);z-index:20;pointer-events:none;opacity:1;transition:opacity .25s}
+.bfstage .field.foe-focus .slot{filter:brightness(.6);opacity:.84;transition:filter .2s,opacity .2s}
+.bfstage .field.foe-focus .slot.fa-actor{filter:brightness(1.1);opacity:1;z-index:40}
+.bfstage .field.foe-focus .slot.fa-target{filter:none;opacity:1;z-index:35}
+.bfstage .field.foe-focus-out::before{opacity:0}
+.bfstage .field.foe-focus-out .slot{filter:none;opacity:1}
+.fa-effect>.fa-graphic{position:absolute;inset:0;pointer-events:none;background-position:inherit;background-size:inherit;background-repeat:inherit;image-rendering:inherit;transform:scale(var(--fa-zoom,1));transform-origin:inherit}
 /* 겨눌 수 있는 적 — 자리는 그대로, 조금 커진다 (사용자 2026-09-19) */
 .bfstage .slot.foe.pick .art img.pxs,.bfstage .slot.foe.pick .art svg{transform:scale(1.12);transform-origin:50% 100%;transition:transform .15s}
 .bfstage .slot.foe .art img.pxs.ph{transform-origin:50% 100%}
@@ -6135,6 +6188,9 @@ const mapPng=n=>MAP_DIR+encodeURIComponent(n);
    held 양피지+왼손 한 장 · point 가리킴 · press 누름 (몸통만 잘라 둔 그림). w/h 는 256 기준 크기, tip 은 검지 끝 (그림 안 좌표).
    새 대원 손이 오면 여기 한 줄 — art/지도/ 에 그림 넣고 build */
 const MAP_HANDS={
+ "파벨":{held:"양피지-손-파벨.png",scale:.45,point:{f:"손-가리킴-파벨.png",w:188,h:194,tip:[4,1]},press:{f:"손-누름-파벨.png",w:188,h:192,tip:[1,43]}},
+ "오리온":{held:"양피지-손-오리온.png",scale:.45,point:{f:"손-가리킴-오리온.png",w:188,h:192,tip:[3,1]},press:{f:"손-누름-오리온.png",w:184,h:163,tip:[1,40]}},
+ "데린저":{held:"양피지-손-데린저.png",scale:.45,point:{f:"손-가리킴-데린저.png",w:187,h:194,tip:[4,1]},press:{f:"손-누름-데린저.png",w:185,h:160,tip:[1,57]}},
  "도미니코":{held:"양피지-손-도미니코.png",scale:.5,point:{f:"손-가리킴-도미니코.png",w:203,h:198,tip:[18,0]},press:{f:"손-누름-도미니코.png",w:175,h:177,tip:[1,34]}},   /* 도미니코 (사용자 2026-10-06, tools/dominico-prep.py) */
  "도미니코 (악마)":{held:"양피지-손-도미니코 (악마).png",scale:.4,point:{f:"손-가리킴-도미니코 (악마).png",w:238,h:246,tip:[21,14]},press:{f:"손-누름-도미니코 (악마).png",w:236,h:201,tip:[28,38]}},
  "헥토":{held:"양피지-손-헥토.png",scale:.52,point:{f:"손-가리킴-헥토.png",w:198,h:202,tip:[26,17]},press:{f:"손-누름-헥토.png",w:198,h:211,tip:[13,100]}},   /* 헥토 은빛 건틀릿 (사용자 2026-10-06, tools/hecto-hand.py) */
@@ -6484,7 +6540,7 @@ function mapSay(key,force){
   const p=force?1:(MAP_SAY_P[key.split(":")[0]]||0);
   if(Math.random()>p) return false;
   const L=mapSayLines(key); if(!L.length) return false;
-  MAP_BUBBLE={t:rnd(L),at:Date.now()}; showMapBubble(); return true;
+  MAP_BUBBLE={t:run.heroes[0].name==="데린저"?L[Math.floor(foeBarkRand()*L.length)]:rnd(L),at:Date.now()}; showMapBubble(); return true;
 }
 /* 무대에 말풍선을 얹는다. 다시 그려도(걸음) 남은 시간만큼 이어 보인다 */
 function showMapBubble(){
@@ -6650,7 +6706,7 @@ function foeBgm(){
   return (B._foeBgm=k);
 }
 function bossBgm(){
-  const n=(typeof BOSSES!=="undefined"&&BOSSES[(typeof run!=="undefined"&&run&&run.field)||0])||"";
+  const n=(typeof BOSSES!=="undefined"&&expeditionBoss((typeof run!=="undefined"&&run&&run.field)||0))||"";
   return BOSS_BGM[n]||"boss1";
 }
 /* 곡은 라운드가 아니라 전투에 딸린다 — 라운드가 넘어가도 그대로 이어진다.
@@ -6812,7 +6868,189 @@ document.addEventListener("visibilitychange",()=>{
 
 /* ═══════ 이펙트 ═══════ */
 const FXQ=[];
-const fx=o=>{ FXQ.push(o) };
+const fx=o=>{ if(FOE_CAPTURING&&!PRED_DRY) foeViewRecord(o); FXQ.push(o) };
+/* 적 행동 조명 — 셈은 먼저 끝내고, 앞 칸부터 한 묶음씩 재생한다 (2026-10-16).
+   결과를 연출 콜백에 맡기지 않는다. 조명 상태는 render 가 끼어들어도 다시 붙는다. */
+let FOE_FOCUS=null, FOE_FOCUS_OBS=null, FOE_CAPTURING=0;
+const FOE_FOCUS_Z=1.16, FOE_FOCUS_IN=420, FOE_FOCUS_OUT=250;
+/* 전투 값은 즉시 확정하고, 화면 사본만 각 행동의 연출 시점에 갱신한다.
+   다시 그리거나 전투를 떠나도 실제 피해·회복·소환 결과는 사라지지 않는다. */
+let FOE_VIEW=null;
+const FOE_VIEW_KEYS="fuelHeat fuelDue repairId name hp maxHp shield eshield slot alive down downSlot mana maxMana atk mag def rng stun stop chg taunt thorn evade hide swallowed atkUp magUp defUp deb intent intent2 rew negShield armor buffs big dieHold wreck".split(" ");
+const FOE_VIEW_DELTA=new Set("hp maxHp shield eshield mana atk mag def atkUp magUp defUp".split(" "));
+function foeViewActive(){ return FOE_VIEW&&FOE_VIEW.battle===B&&view==="battle"?FOE_VIEW:null }
+function foeViewShot(u){
+  const v={}; FOE_VIEW_KEYS.forEach(k=>{ const x=u[k]; v[k]=x&&typeof x==="object"?JSON.parse(JSON.stringify(x)):x }); return v;
+}
+function foeViewBegin(){
+  if(PRED_DRY||!document.querySelector(".bfstage")){ FOE_VIEW=null; return }
+  const units=new Map();
+  [...run.heroes,...B.mins||[],...B.foes].forEach(u=>{ hpKey(u); units.set(u,foeViewShot(u)) });
+  FOE_VIEW={battle:B,units:units,last:new Map(units),logs:B.log.slice()};
+}
+function foeViewUnit(u){
+  const a=foeViewActive(), v=a&&a.units.get(u);
+  return v?Object.assign({},u,v,{hpShow:null,_viewReal:u}):u;
+}
+function foeViewAt(side,sl,body){
+  const a=foeViewActive(); if(!a) return side==="foe"?foeShownAt(sl):body?bodyAt(sl):unitAt(sl);
+  for(const [u,v] of a.units){
+    const foe=!!u.isFoe; if(foe!==(side==="foe")) continue;
+    if(body){ if(!u.isMin&&v.down&&v.downSlot===sl) return foeViewUnit(u) }
+    else if((foe?(v.alive||v.dieHold):(v.hp>0||!v.down&&v.slot>0)&&(!u.isMin||v.alive))&&(v.slot===sl||foe&&v.big&&v.slot+1===sl)) return foeViewUnit(u);
+  }
+  return null;
+}
+function foeViewRecord(o){
+  if(PRED_DRY) return;
+  const a=foeViewActive(); if(!a) return;
+  const changes=[];
+  [...run.heroes,...B.mins||[],...B.foes].forEach(u=>{
+    const v=foeViewShot(u), prev=a.last.get(u), patch={};
+    if(!prev){ changes.push({u:u,add:v}); hpKey(u) }
+    else FOE_VIEW_KEYS.forEach(k=>{ if(JSON.stringify(v[k])!==JSON.stringify(prev[k])) patch[k]={v:v[k],d:FOE_VIEW_DELTA.has(k)?(v[k]||0)-(prev[k]||0):null} });
+    if(Object.keys(patch).length) changes.push({u:u,patch:patch});
+    a.last.set(u,v);
+  });
+  if(changes.length){ o.foeViewChanges=changes; o.foeViewBattle=a.battle }
+}
+function foeViewApply(o){
+  const a=foeViewActive(); if(!a||!o.foeViewChanges||o.foeViewBattle!==a.battle) return;
+  o.foeViewChanges.forEach(c=>{
+    if(c.add) a.units.set(c.u,c.add);
+    else { const v=a.units.get(c.u); if(v) Object.entries(c.patch).forEach(([k,p])=>{ v[k]=p.d==null?p.v:(v[k]||0)+p.d }) }
+  });
+  render();
+}
+function foeViewFinish(){ const a=foeViewActive(); if(a){ a.finished=1; render() } }
+/* 종료 처리는 이미 계산한다. 패배·지도 화면으로 넘어가는 기존 예약만 마지막 연출 뒤에 보인다. */
+function foeViewLater(fn,ms){
+  if(!foeViewActive()) return setTimeout(fn,ms);
+  const battle=B, journey=run;
+  return setTimeout(function ready(){
+    if(B!==battle||run!==journey) return;
+    const a=foeViewActive(); if(a&&!a.finished){ setTimeout(ready,80); return }
+    fn();
+  },ms);
+}
+
+function foeFocusClear(){
+  const a=FOE_FOCUS; FOE_FOCUS=null;
+  if(a&&a.anim) a.anim.cancel();
+  document.querySelectorAll('.foe-focus,.foe-focus-out,.fa-actor,.fa-target').forEach(e=>e.classList.remove('foe-focus','foe-focus-out','fa-actor','fa-target'));
+}
+function foeFocusSync(){
+  const a=FOE_FOCUS; if(!a) return;
+  if(view!=="battle"||B!==a.battle){ foeFocusClear(); return }
+  const fld=document.querySelector('.bfstage .field'); if(!fld) return;
+  fld.classList.add('foe-focus'); fld.classList.toggle('foe-focus-out',!!a.out);
+  const u=foeViewUnit(a.u), c=ctrOf('foe',u.slot), slot=c&&c.e;
+  if(!slot||!u.alive) return;
+  document.querySelectorAll('.fa-actor,.fa-target').forEach(e=>e.classList.remove('fa-actor','fa-target'));
+  slot.classList.add('fa-actor');
+  a.targets.forEach(sl=>{ const p=ctrOf('mine',sl); if(p&&p.e) p.e.classList.add('fa-target') });
+  const art=slot.querySelector('.art'); if(!art||!art.animate) return;
+  if(a.art===art) return;
+  if(a.anim) a.anim.cancel(); a.art=art;
+  art.style.transformOrigin='50% 100%';
+  const d=Math.round(FOE_FOCUS_IN*a.speed), dx=a.attack?-48:0;
+  if(a.out){
+    a.anim=art.animate([{scale:FOE_FOCUS_Z,translate:dx+'px 0px'},{scale:1,translate:'0px 0px'}],
+      {duration:Math.round(FOE_FOCUS_OUT*a.speed),fill:'both',easing:'ease-out'});
+    a.anim.currentTime=Math.max(0,Date.now()-a.out);
+  }else{
+    const keys=a.attack?
+      [{scale:1,translate:'0px 0px'},{scale:FOE_FOCUS_Z,translate:'0px 0px',offset:.5},
+       {scale:FOE_FOCUS_Z,translate:'7px 0px',offset:.68},{scale:FOE_FOCUS_Z,translate:dx+'px 0px'}]:
+      [{scale:1,translate:'0px 0px'},{scale:FOE_FOCUS_Z,translate:'0px 0px',offset:.5},{scale:FOE_FOCUS_Z,translate:'0px 0px'}];
+    a.anim=art.animate(keys,{duration:d,fill:'both',easing:'cubic-bezier(.2,.8,.3,1)'});
+    a.anim.currentTime=Math.min(d,Math.max(0,Date.now()-a.at));
+  }
+}
+function foeFocusStart(meta){
+  if(view!=="battle"||!B||!document.querySelector('.bfstage')) return;
+  foeFocusClear();
+  const fxLayer=document.getElementById("fx"); if(fxLayer) fxLayer.style.setProperty("--fa-zoom",FOE_FOCUS_Z);
+  FOE_FOCUS=Object.assign({battle:B,at:Date.now(),speed:SPD,art:null,anim:null,out:0},meta);
+  const a=foeViewActive(), v=a&&a.units.get(meta.u);
+  if(v&&v._viewDone){ v._viewDone=0; render() }   /* 되감기로 다시 행동하면 그 의도를 다시 보인다 */
+  foeFocusSync();
+  if(meta.pose) setPose("foe",foeViewUnit(meta.u).slot,meta.pose,Math.ceil(meta.hold/SPD));
+  if(!FOE_FOCUS_OBS&&typeof MutationObserver!=="undefined"){
+    const lay=document.getElementById('fx');
+    if(lay){ FOE_FOCUS_OBS=new MutationObserver(records=>{
+      if(!FOE_FOCUS) return;
+      records.forEach(r=>r.addedNodes.forEach(n=>foeFocusEffect(n)));
+    }); FOE_FOCUS_OBS.observe(lay,{childList:true}) }
+  }
+}
+function foeFocusEnd(){
+  const a=FOE_FOCUS; if(!a) return;
+  a.out=Date.now(); a.art=null; foeFocusSync();
+  setTimeout(()=>{ if(FOE_FOCUS===a) foeFocusClear() },Math.round(FOE_FOCUS_OUT*a.speed));
+}
+function foeFocusEffect(nd){
+  const a=FOE_FOCUS;
+  if(!a||!nd||nd.nodeType!==1||nd.dataset.faOwner!=null) return;
+  /* 숫자와 대사는 원래 크기. 지속하는 배경 오라는 다음 행동으로 넘기지 않는다. */
+  if(nd.matches('.pop,.bark,.expfx,#colloop,.colloopfx')) return;
+  nd.dataset.faOwner=String(a.u.id); nd.classList.add('fa-effect');
+  const cs=getComputedStyle(nd), filter=cs.filter;
+  nd.style.filter=(filter&&filter!=='none'?filter+' ':'')+'brightness(1.12)';
+  /* 날아가는 마디 자체를 키우면 도착점도 어긋난다. 안쪽의 그림만 키운다.
+     background-position/size 는 부모에서 받아, 타이머로 넘기는 띠도 같은 칸을 읽는다. */
+  if(cs.backgroundImage&&cs.backgroundImage!=='none'){
+    const pic=document.createElement('i'); pic.className='fa-graphic';
+    pic.style.backgroundImage=cs.backgroundImage;
+    nd.style.backgroundImage='none'; nd.appendChild(pic);
+  }else nd.querySelectorAll(':scope > img,:scope > svg').forEach(im=>{ im.style.scale=String(FOE_FOCUS_Z) });
+}
+/* 기존 이펙트의 수명. CSS 고정 시간과 SPD 를 곱하는 것을 나누어 다음 적과 겹치지 않게 한다. */
+function foeActionLife(o){
+  if(o.foeLife!=null) return o.foeLife;
+  const k=SPD;
+  if(o.colFx==='fire') return 1900*k;
+  if(o.colFx==='fist') return (o.quick?COL_FIST_QUICK:COL_FIST_MS).reduce((s,n)=>s+n,0)*k+40;
+  if(o.colFx==='palm') return 1600*k;
+  if(o.colFx==='charge') return 900*k;
+  if(o.chainPull) return 800*SPD;
+  if(o.sheet){ const p=o.sheetOpt||{}; return ((p.ms||(p.frameMs||[]).reduce((s,n)=>s+n,0)||450)+(p.fade||0)+(p.fadeIn||0)+120)*SPD }
+  if(o.strip){ const ms=o.strip.ms; return (Array.isArray(ms)?ms.reduce((s,n)=>s+n,0):(ms||100)*8)*SPD+80 }
+  if(o.fuelWrench)return 800*SPD;
+  if(o.ember) return 380*SPD;
+  if(o.eyeBeam) return 900;
+  if(o.blowup||o.swell) return 1100;
+  return 700*SPD;
+}
+function foeActionCollect(groups,meta,start,acted){
+  if(PRED_DRY||!acted||!document.querySelector('.bfstage')) return;
+  const tail={gap:0,foeLife:0}; foeViewRecord(tail); if(tail.foeViewChanges) FXQ.push(tail);
+  const list=FXQ.splice(start); if(!list.length) return;
+  meta.attack=list.some(o=>o.lunge||o.ember||o.eyeBeam||o.quiverLunge||o.side==='mine'&&o.hit||['fire','fist','palm'].includes(o.colFx));
+  if(!meta.attack&&!list.some(o=>o.pose||o.strip||o.colFx)){ const t=meta.u.intent&&meta.u.intent.t;
+    meta.pose=["def","thorn"].includes(t)?"guard":["buff","heal","beer","purge"].includes(t)?"bless":null }
+  meta.targets=[...new Set(list.filter(o=>o.side==='mine'&&o.slot).map(o=>o.slot))];
+  if(list.some(o=>o.colFx==='fire'||o.colFx==='palm')) meta.targets=allUnits().map(u=>u.slot);
+  groups.push({meta:meta,list:list});
+}
+function foeActionQueue(groups){
+  groups.sort((a,b)=>a.meta.order-b.meta.order);
+  groups.forEach(g=>{
+    let t=FOE_FOCUS_IN*SPD, end=Math.max(1320*SPD,t);
+    g.list.forEach(o=>{
+      if(o.ember&&!o.emberOverlap) o.gap=Math.max(o.gap||0,340);
+      end=Math.max(end,t+foeActionLife(o)); t+=gapOf(o);
+    });
+    g.meta.hold=end;
+    fx({foeFocus:g.meta,gap:FOE_FOCUS_IN});
+    g.list.forEach(o=>{ o.foeFocused=1; fx(o) });
+    fx({gap:Math.max(0,(end-t)/SPD)});
+    fx({foeViewDone:g.meta.u,foeLife:0,gap:0});
+    fx({foeFocusEnd:1,gap:FOE_FOCUS_OUT+50});
+  });
+  if(foeViewActive()) fx({foeViewFinish:1,gap:0});
+}
+
 /* 피신 — 보이지 않는 줄에 당겨지듯 뒤로 휙 (사용자가 시안 셋 중 A 를 고름, 2026-10-09).
    자리는 이미 옮겨져 그려진 뒤라, 「왔던 자리에서 지금 자리로」 거꾸로 태운다.
    ⚠️ transform 만 쓴다 — background-position 은 WAAPI 가 먹지 않는다 (2026-10-08) */
@@ -7088,9 +7326,11 @@ function iraSweepFX(right){
    뿌리를 **입**에 둔다 — 공격 자세(191px 틀) 안에서 몸이 시작하는 칸이 78 이다.
    ⚠️ 늘어나는 길이는 **잰 거리**로만 정한다. Math.random 을 쓰지 않는다 */
 function tongueFX(side,slot,from){
+  if(FOE_CAPTURING){ const p=bodyPoint(side,slot)||ctrOf(side,slot), saved=Object.assign({},from,{toPoint:p&&{x:p.x,y:p.y}});
+    fx({fn:()=>tongueFX(side,slot,saved),gap:0,foeLife:1200}); return }
   const u=(typeof ICON_PNG!=="undefined")&&skinIcon("fx_toad_tongue"); if(!u) return;
   const q=from&&(bodyPoint(from.side,from.slot)||ctrOf(from.side,from.slot)); if(!q) return;
-  const p=bodyPoint(side,slot)||ctrOf(side,slot); if(!p) return;
+  const p=(from&&from.toPoint)||bodyPoint(side,slot)||ctrOf(side,slot); if(!p) return;
   const c=ctrOf(from.side,from.slot), im=c&&c.e&&c.e.querySelector(".art img.pxs");
   let mx=q.x, my=q.y;
   if(im){ const r=im.getBoundingClientRect();
@@ -7161,7 +7401,7 @@ function luckyCoinFX(side,slot){
 const COL_SHEET={charge:{key:"fx_col_charge",s:1.165,dx:40,dy:-15},fire:{key:"fx_col_fire",s:0.955,dx:88,dy:-2}};
 const COL_HEAD={x0:13,y0:13,w:485,ex:90,ey:228};   /* 머리 그림(512) 속 몸 테두리와 눈 */
 const colImg=()=>document.querySelector('#foeSide img.pxs[data-nm="콜로서스"]');
-const colK=()=>SPD<1?0.8:SPD;
+const colK=()=>SPD<1&&!FOE_FOCUS?0.8:SPD;
 const colSnd=k=>{ if(typeof sfxHas==="function"&&sfxHas(k)) SFX.play(k) };
 function colQuake(){ const b=document.body; b.classList.remove("shakeall","noscrY"); void b.offsetWidth;
   b.classList.add("shakeall",...(document.documentElement.scrollHeight<=innerHeight+1?["noscrY"]:[])); setTimeout(()=>b.classList.remove("shakeall","noscrY"),620) }
@@ -7364,12 +7604,12 @@ function debInFX(side,slot,k){
 }
 /* 금속 펜던트 발동 — 어두워진 화면 가운데 펜던트가 떠올라 흔들리고(빛줄기 · 반짝임), 이름과 효과가 뜬 뒤
    새로 그린 보상 화면의 '금속 펜던트' 줄로 날아가 앉는다. then 은 보상 화면을 다시 그리는 일 (사용자 2026-10-06) */
-function pendantFX(then,pk,line){
+function pendantFX(then,pk,line,title){
   pk=pk||"금속 펜던트"; line=line||"중급 보상을 하나 더 얻습니다";
   const u=typeof ICON_PNG!=="undefined"&&PACK_ICON[pk]&&ICON_PNG[PACK_ICON[pk]];
-  if(!u||!document.body.animate){ toast(`${pk} — ${line}`); then(); return }
+  if(!u||!document.body.animate){ toast(`${title||pk} — ${line}`); then(); return }
   if(sfxHas("제련 완성")) SFX.play("제련 완성");
-  const o=el(`<div class="pdfx"><div class="pdrays"></div><img class="pdic" src="${u}" alt=""><b>${esc(pk)}</b><span>${esc(line)}</span></div>`);
+  const o=el(`<div class="pdfx"><div class="pdrays"></div><img class="pdic" src="${u}" alt=""><b>${esc(title||pk)}</b><span>${esc(line)}</span></div>`);
   document.body.appendChild(o);
   const ic=o.querySelector(".pdic"), rays=o.querySelector(".pdrays");
   o.animate([{background:"rgba(0,0,0,0)"},{background:"rgba(0,0,0,.55)",offset:.15},{background:"rgba(0,0,0,.55)",offset:.8},{background:"rgba(0,0,0,0)"}],{duration:2000,fill:"forwards"});
@@ -7929,6 +8169,16 @@ const ART={
  boom :'<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="30" fill="#e0a86a" opacity=".55"/><path d="M50 2 L60 38 L96 50 L60 62 L50 98 L40 62 L4 50 L40 38 Z" fill="#e0705a" opacity=".8"/></svg>'
 };
 function playFX(o){
+  foeViewApply(o);
+  if(o.foeViewFinish){ foeViewFinish(); return }
+  if(o.foeViewDone){ const a=foeViewActive(), v=a&&a.units.get(o.foeViewDone); if(v){ v._viewDone=1; render() } return }
+  if(o.foeLog){ const a=foeViewActive(); if(a&&a.battle===o.foeLog.battle){ const x=Object.assign({},o.foeLog.entry), u=o.foeLog.hpUnit, v=u&&a.units.get(u);
+    if(v) x.t=x.t.replace(/\d+\/\d+$/,Math.max(0,v.hp)+"/"+v.maxHp);
+    a.logs.push(x);
+    const l=document.getElementById("log"); if(l){ l.insertAdjacentHTML("beforeend",`<div class="${x.c||""}">${x.t}</div>`); l.scrollTop=l.scrollHeight } } return }
+  if(o.foeBark){ foeBarkPlay(o.foeBark); return }
+  if(o.foeFocus){ foeFocusStart(o.foeFocus); return }
+  if(o.foeFocusEnd){ foeFocusEnd(); return }
   if(o.crit){ critFX(o.side,o.slot); return }
   if(o.s) SFX.play(o.s);
   /* 화살비는 칸 하나에 매인 연출이 아니다 — slot 을 보기 전에 처리한다 */
@@ -7959,7 +8209,7 @@ function playFX(o){
     if(c&&c.e) c.e.classList.add("fall");
     /* 처치 임팩트(.field.kimp)가 도는 동안은 다시 그리지 않는다 — 판을 새로 그리면 임팩트가 중간에 끊긴다 (2026-10-03) */
     const tidy=(n)=>{ if((document.querySelector(".field.kimp")||f.dieWait)&&n<40){ setTimeout(()=>tidy(n+1),100); return }   /* dieWait — 제 마지막 연출이 끝날 때까지 칸에 남는다 (초월체, 2026-10-13) */
-      if(f.dieHold){ f.dieHold=0; f.hpShow=null; f.dash=0; if(B&&!B.over) render() } };
+      if(f.dieHold){ f.dieHold=0; const a=foeViewActive(), v=a&&a.units.get(f); if(v) v.dieHold=0; f.hpShow=null; f.dash=0; if(B&&!B.over) render() } };
     setTimeout(()=>tidy(0),Math.round(460*SPD));
     return }
   /* 영혼 돌진도 칸에 매이지 않는다 — 죽은 칸은 이미 사라지고 없다 (2026-09-29) */
@@ -7976,7 +8226,7 @@ function playFX(o){
   if(o.mpull) magPullFX(o.side,o.slot);
   if(o.quake) quakeFX(p);
   if(o.leap){ p.e.classList.remove("leap"); void p.e.offsetWidth; p.e.classList.add("leap") }
-  if(o.hpU){ const u=o.hpU; u.hpShow=(o.hpV===Math.max(0,u.hp))?null:o.hpV; u.hpShowT=Date.now(); hpShowSync(u) }   /* 이 타격만큼 체력을 깎아 보인다 */
+  if(o.hpU&&!foeViewActive()){ const u=o.hpU; u.hpShow=(o.hpV===Math.max(0,u.hp))?null:o.hpV; u.hpShowT=Date.now(); hpShowSync(u) }   /* 이 타격만큼 체력을 깎아 보인다 */
   if(o.hit){
     /* 막아 낸 한 방은 쇠빛으로 짧게, 실제로 닳았을 때만 붉게 */
     p.e.classList.remove("shake","flashd","flashb","soft"); void p.e.offsetWidth;
@@ -7990,7 +8240,7 @@ function playFX(o){
     const sd=o.side, sl=o.slot, e0=p.e;
     setTimeout(()=>{ const q=ctrOf(sd,sl); if(q&&q.e!==e0) bigPoseFX(q,Math.round(o.big*0.8),o.bigGlow) },140) }
   if(o.strike) strikeFX(o.side,o.slot,o.strike);   /* 대원 강조 공격 */
-  if(o.lunge)       nudge(o.side,o.slot, 1);
+  if(o.lunge&&!(FOE_FOCUS&&o.side==="foe"&&FOE_FOCUS.u.slot===o.slot)) nudge(o.side,o.slot, 1);
   if(o.quiverLunge) quiverNudge(o.side,o.slot,typeof o.quiverLunge==="object"?o.quiverLunge.tSide:null,typeof o.quiverLunge==="object"?o.quiverLunge.tSlot:null);
   if(o.recoil) nudge(o.side,o.slot,-1);
   if(o.glow){ p.e.classList.remove("flashg"); void p.e.offsetWidth; p.e.classList.add("flashg"); }
@@ -8004,8 +8254,13 @@ function playFX(o){
   if(o.aura) auraFX(o.side,o.slot);
   if(o.hop!=null) hopFX(o.side,o.slot,o.hop,o.hopUp);
   if(o.soulg) soulGainFX(o.side,o.slot,o.soulg===2);
-  if(o.sheet) sheetFX(o.sheet,o.side,o.slot,o.sheetOpt);
+  if(o.sheet){ let opt=o.sheetOpt;
+    if(o.foeFocused&&SPD<1){ opt=Object.assign({},opt||{}); ["ms","fade","fadeIn"].forEach(k=>{ if(opt[k]) opt[k]*=SPD });
+      if(opt.frameMs) opt.frameMs=opt.frameMs.map(n=>n*SPD); if(!opt.ms&&!opt.frameMs) opt.ms=450*SPD }
+    sheetFX(o.sheet,o.side,o.slot,opt);
+  }
   if(o.eyeBeam) eyeBeamFX(o.slot);   /* 감옥의 눈 빔 (58) */
+  if(o.fuelWrench)fuelWrenchFX(o.fuelWrench.from,o.slot);
   if(o.strip) poseStripFX(o.side,o.slot,o.strip.k,o.strip.ms,o.strip.opt);   /* 자세 띠 한 바퀴 (76) */
   if(o.flareShot) flareShotFX(o.side,o.slot,o.flareShot);
   if(o.spot!=null){ if(KIMP) spotFX(o.slot,o.spot,o.foeName,o.barkU,o.barkLine); else if(o.barkLine&&o.barkU) barkShow(o.barkU,o.barkLine,Date.now(),1) }
@@ -8221,6 +8476,7 @@ function echoReviveFX(side,slot,col){
     popText({x:p.x,y:p.y-60},"crit","메아리") },T(980));
 }
 function pulseFX(side,slot,color,rings,quiet){
+  if(FOE_CAPTURING){ fx({fn:()=>pulseFX(side,slot,color,rings,quiet),gap:0,foeLife:850+(rings||3)*100}); return }
   if(!quiet) SFX.play("pulse");
   const p=ctrOf(side,slot); if(!p) return;
   const n=(rings||3)+1;
@@ -8647,7 +8903,7 @@ function releaseHold(ids,how){
   const olds={};
   Object.keys(was).forEach(id=>{ const q=ctrOf("foe",was[id]); if(q) olds[id]=q.x });
   if(!Object.keys(FOE_HOLD.map).length) FOE_HOLD=null;
-  render();
+  FOE_SLIDE_SKIP=new Set(Object.keys(was));render();FOE_SLIDE_SKIP=null;
   Object.keys(was).forEach(id=>{
     const f=B.foes.find(x=>String(x.id)===String(id)&&x.alive); if(!f||f.slot===was[id]) return;
     const b=ctrOf("foe",f.slot); const im=b&&b.e.querySelector(".art img.pxs, .art svg");
@@ -9446,11 +9702,12 @@ function emberFX(side,slot,from){
   const q=from&&(bodyPoint(from.side,from.slot)||ctrOf(from.side,from.slot)); if(!q) return;
   const nd=spawn('<div class="embfly"></div>'); if(!nd) return;
   at(nd,q);
+  nd.style.animationDuration=Math.round(340*SPD)+"ms";
   nd.style.backgroundImage="url("+u+")";
   nd.style.setProperty("--dx",(p.x-q.x)+"px");
   nd.style.setProperty("--dy",(p.y-q.y)+"px");
   nd.style.setProperty("--rot",(Math.atan2(p.y-q.y,p.x-q.x)*180/Math.PI+180)+"deg");
-  setTimeout(()=>nd.remove(),380);
+  setTimeout(()=>nd.remove(),380*SPD);
 }
 function arrowFX(side,slot,from){
   const hit=(typeof ICON_PNG!=="undefined")&&skinIcon("fx_tristan_arrow");   /* 외형 화살 (무패의 장군) */
@@ -9582,6 +9839,7 @@ function bigSlash(side,slot,color,n){
 }
 /* 화면 가장자리를 물들이는 테두리 */
 function edgeGlow(color){
+  if(FOE_CAPTURING){ fx({fn:()=>edgeGlow(color),gap:0,foeLife:700}); return }
   const nd=el('<div class="edgeglow" style="box-shadow:inset 0 0 90px 18px '+color+'"></div>');
   document.body.appendChild(nd);
   setTimeout(()=>nd.remove(),700);
@@ -9717,7 +9975,8 @@ function flushFX(){
   while(FXQ.length){
     const o=FXQ.shift();
     if(o.hpU) any=1;
-    setTimeout(()=>playFX(o),t);
+    const battle=B;
+    setTimeout(()=>{ if((o.foeFocus||o.foeFocusEnd||o.foeFocused)&&B!==battle) return; playFX(o) },t);
     t+=gapOf(o);
   }
   if(any) setTimeout(()=>{ if(!B||!B.foes) return; B.foes.forEach(f=>{ if(f.hpShow!=null&&(f.alive||!f.dieHold)){ f.hpShow=null; hpShowSync(f) } }) },t+120);
@@ -10088,9 +10347,14 @@ function setPose(side,slot,pose,ms){
   const img=p.e.querySelector("img.pxs[data-nm]"); if(!img) return;
   if(img._strip>Date.now()) return;   /* 자세 띠가 도는 중 — 띠가 임자다 (76) */
   { const _su=(side==="mine")?unitAt(slot):foeShownAt(slot); if(_su&&stopped(_su)) return; }   /* 정지 — 자세를 바꾸지 않는다 (2026-10-07) */
+  if(side==="foe"&&img.dataset.nm==="실험 책임자"&&(pose==="atk"||pose==="atk2")){
+    const shown=foeViewAt("foe",slot),unit=shown&&(shown._viewReal||shown);
+    if(unit){if(img._pt){clearTimeout(img._pt);img._pt=0}
+      DIRECTOR_ATTACK={battle:B,unit,pose,until:Date.now()+Math.round((ms||900)*SPD)};directorVisualSync();return}
+  }
   /* 두 번째 공격 자세(atk2)가 있으면 공격 때마다 반반 — 타락한 나이코스 (사용자 2026-10-01) */
   { const set=PNG_SPRITE[skinSprite(img.dataset.nm)], alt=pose+"2";   /* 두 갈래 자세 (atk2 · expand2) */
-    if(set&&set[alt]){ const pk=ATK_PICK[img.dataset.nm]; if(pk==null?Math.random()<0.5:pk) pose=alt } }   /* 대원은 시전마다 고른 것(doSkill), 그 밖은 그때그때 */
+    if(set&&set[alt]&&img.dataset.nm!=="실험 책임자"){ const pk=ATK_PICK[img.dataset.nm]; if(pk==null?Math.random()<0.5:pk) pose=alt } }   /* 대원은 시전마다 고른 것(doSkill), 그 밖은 그때그때 */
   if(!poseOf(img.dataset.nm,pose)&&POSE_FALL[pose]) pose=POSE_FALL[pose];
   const now=poseOf(img.dataset.nm,pose);
   if(!now||now===poseOf(img.dataset.nm,img.dataset.pose)) return;
@@ -10803,7 +11067,7 @@ function phantomFigure(of){
   PXCACHE[key]=out;
   return out;
 }
-const FOE_NAMES={"작은 죄수":1,"사슬 광인":1,"굶주린 그림자":1,"부서진 파수병":1,"첨탑 관리자":1,"울타리":1,"감옥 경비병":1,"억울한 죄수":1,"풀려난 장군":1,"간수의 손":1,"오염된 갑주":1,"사슬에 묶인 마귀":1,"사슬에 묶인 마귀 (각성)":1,"정체 모를 주술사":1,
+const FOE_NAMES={"실험 책임자":1,"연료 장치":1,"작은 죄수":1,"사슬 광인":1,"굶주린 그림자":1,"부서진 파수병":1,"첨탑 관리자":1,"울타리":1,"감옥 경비병":1,"억울한 죄수":1,"풀려난 장군":1,"간수의 손":1,"오염된 갑주":1,"사슬에 묶인 마귀":1,"사슬에 묶인 마귀 (각성)":1,"정체 모를 주술사":1,
  "균열 애벌레":1,"얼음 정령":1,"간수장":1,"고철 거인":1,"콜로서스":1,"콜로서스의 여분팔":1,"콜로서스의 여분발":1,"서리 군주":1,"악마 하수인":1,"악마 장군":1,
  "술집 난동꾼":1,"떠도는 불씨":1,"늑대치기":1,"무시무시한 늑대":1,
  /* 2026-09-11 받은 적 그림 — 아직 FOE 에 없는 것도 있다 (감옥의 눈·메아리 정령·사슬 간수·샘의 잔영·피 먹는 자) */
@@ -11090,7 +11354,7 @@ const IDLE_LOOP={"간수의 손":1};
  "균열 군체","악마 차원문","굶주린 자"]
   .forEach(n=>{ IDLE_LOOP[n]=1 });
 /* 빠르게 도는 대기 띠 — 이름: 한 칸 ms (사용자 2026-10-01 : 균열 군체는 1초 한 칸이면 끊겨 보인다) */
-const IDLE_FAST={"균열 군체":160,"누군가의 영혼":125,"명부에 묶인 잔영":125,
+const IDLE_FAST={"실험 책임자":160,"균열 군체":160,"누군가의 영혼":125,"명부에 묶인 잔영":125,
   "악마 하수인 (폭식의 군주)":220,"악마 장군 (폭식의 군주)":220,
   "새싹":260,"수목":260,"고대수목":260,"새싹 (봄의 정원사)":420,"수목 (봄의 정원사)":420,"고대수목 (봄의 정원사)":420,"새싹 (봄의 정원사 프로토타입-02)":420,"수목 (봄의 정원사 프로토타입-02)":420,"고대수목 (봄의 정원사 프로토타입-02)":420};   /* 오토의 정원 — 잎이 흔들리고 코어가 맥동 (usage 120~220ms) */   /* 폭식의 군주 하수인 — 1초 한 칸 숨쉬기는 느려 보였다, 칸당 220ms 로 늘 돈다 (사용자 2026-10-04) */   /* 환영 — 둥실 떠 있는 띠, 칸당 125ms 로 늘 (2026-10-03) */
 setInterval(()=>{ const now=Date.now();
@@ -11204,6 +11468,7 @@ function figure(name,pose,u){
   /* 사슬에 묶인 마귀 — 각성하면 날개 편 그림 */
   if(name==="사슬에 묶인 마귀"&&u&&u.awake&&PNG_SPRITE["사슬에 묶인 마귀 (각성)"]) name="사슬에 묶인 마귀 (각성)";
   /* 간수장 — 2단계부터 갑옷이 깨진 그림 (축복 자리에 각성 자세). 3단계에 들어설 때 그 각성 자세를 보인다 (2026-10-03) */
+  if(name==="연료 장치"&&u&&!pose)pose=["idle","bless","guard","atk"][u.fuelHeat||0];
   if(name==="간수장"&&u){ const wp=u.ph||1;   /* 갑주(1) · 갑옷 파손(2) · 각성(3) — 76 */
     if(wp>=3&&PNG_SPRITE["간수장 (각성)"]) name="간수장 (각성)";
     else if(wp>=2&&PNG_SPRITE["간수장 (파손)"]) name="간수장 (파손)" }
@@ -11334,7 +11599,7 @@ HEROES["트리스탄"]={title:"저주받은 궁수",role:"원거리, 관통",hp:
    보지 못하는 자라 **기류**(무작위 자리)가 그의 눈이다 — 그 자리의 피해는 치명타.
    ⚠️ 보상(하급·중급·상급)과 카드는 노트에 아직 한 줄도 없다 — 사용자가 나중에 넣는다.
    ⚠️ 그림도 아직 없다 — 아래 생김새 표의 값으로 그려진다 */
-HEROES["오리온"]={title:"눈먼 사냥꾼",role:"원거리, 사냥개",hp:20,mana:3,hpLv:2,
+HEROES["오리온"]={title:"눈먼 사냥꾼",role:"원거리, 사냥개",hp:20,mana:3,hpLv:1,
   focus:"길들여진 악마들, 위치 변경, 치명타",
   passive:{n:"사냥의 기류",d:"매 턴 무작위 적 자리에 기류가 흐른다. 그 자리의 대상에게 주는 오리온의 피해는 치명타"},
   skills:[
@@ -12614,6 +12879,8 @@ const DEX_KIND_NAME={foe:"적", card:"카드", ev:"이벤트", gim:"전용 구�
 const DEX_KIND_UNIT={foe:"종", card:"가지", ev:"가지", gim:"가지", item:"개"};
 
 /* 오염도 최대량 — 정령숲 2 · 3 (+25 · +50) */
+/* 지도 경고 단계 — 오염도80/85/90/95부터 한 단계씩 높인다 (사용자 2026-10-17). */
+function mapTaintLevel(value){ return value>=95?4:value>=90?3:value>=85?2:value>=80?1:0 }
 function taintMax(){ const c=synCount("정령숲"); return 100+(c>=3?50:c>=2?25:0) }
 /* 날이 밝을 때 얻는 활동량 — 전 구역 6, 모험가 1 · 2 가 +1 · +3 (사용자 2026-10-08. 처음 5 에서 늘렸다 → 7 · 9).
    활동량에 **최대치가 없다** — 쌓이는 대로 쌓인다. 옛 actCap(최대치)은 없앴다 */
@@ -12780,29 +13047,39 @@ function openDemonGates(n){
 function bountySpots(){ const L=[];
   ((run&&run.grid)||[]).forEach((row,r)=>row.forEach((c,ci)=>{ if(c.t==="dungeon"&&!c.done&&!c.bounty) L.push({r:r,c:ci}) }));
   return L }
+/* 전용 레벨업 보상 횟수 — 시작 꾸러미와 공용 보상이 같은 몫을 더한다. */
+function grantOwnRewards(r,n,name){
+  const left=r.ownOnly||0, names=left?(r.ownOnlyName||"맞춤 갑옷").split(" · "):[];
+  r.ownOnly=left+n; r.ownOnlyMax=r.ownOnly;
+  r.ownOnlyName=[...new Set(names.concat(name))].join(" · ");
+}
+function ownRewardsOnly(own,lvUp){ return !!(lvUp&&run.ownOnly>0&&own.length) }
+function spendOwnReward(){ run.ownOnly=Math.max(0,(run.ownOnly||0)-1) }
 const COMMON=[
+ R("딱맞는 갑옷","하급","다음 1번의 레벨업 보상이 전용 보상으로만 등장합니다.",
+   h=>grantOwnRewards(run,1,"딱맞는 갑옷")),
  /* ── 하급 ── */
  R("장신구: 파편","하급","무작위 <b>파편 장신구</b>을 얻습니다.",
    h=>{ (run.after=run.after||[]).push({item:rnd(ITEMS.filter(i=>i.g==="파편"))}) }),
- R("하급: 체력 강화","하급","최대 체력을 3 얻습니다.",h=>addMaxHp(h,3,"하급: 체력 강화")),
+ R("하급: 체력 강화","하급","최대 체력을 4 얻습니다.",h=>addMaxHp(h,4,"하급: 체력 강화")),
  R("하급: 부정 보호막 강화","하급","전투 시작 후, 부정 보호막을 1 얻습니다.",
    h=>h.tag.negShield=(h.tag.negShield||0)+1),
- R("하급: 에너지 강화","하급","전투 시작 후, 에너지 보호막을 5 얻습니다.",
-   h=>h.tag.eshield=(h.tag.eshield||0)+5,0.3),
+ R("하급: 에너지 강화","하급","전투 시작 후, 에너지 보호막을 3 얻습니다.",
+   h=>h.tag.eshield=(h.tag.eshield||0)+3,0.3),
  R("하급: 제련석","하급","제련석을 3개 얻습니다.",h=>{ run.stone=(run.stone||0)+3 }),
  R("오염 정화","하급","현재 오염도가 15 감소합니다.",h=>addTaint(-15)),
- R("하급: 발 마사지","하급","활동량을 1 얻습니다. 금화를 5개 얻습니다.",
-   h=>{ run.act+=1; run.gold+=5; if(run.act>0) run.night=0 }),
- R("하급: 회복","하급","체력을 20% 회복합니다.",
-   h=>{ healUp(h,Math.round(h.maxHp*0.2)) }),
+ R("하급: 발 마사지","하급","활동량을 1 얻습니다. 금화를 4개 얻습니다.",
+   h=>{ run.act+=1; run.gold+=4; if(run.act>0) run.night=0 }),
+ R("하급: 회복","하급","체력을 25% 회복합니다.",
+   h=>{ healUp(h,Math.round(h.maxHp*0.25)) }),
  R("하급: 가시 두르기","하급","가시를 1 얻습니다.",h=>h.tag.thorn=(h.tag.thorn||0)+1),
  /* ⚠️ 카제의 「폭풍」과 **같은 스위치**다. 각각 하나씩 가지면 둘로 센다 (사용자 2026-10-11) */
  R("전장의 바람","하급","대원 배치 후, 모든 적을 공중에 뜸 상태로 만듭니다.",h=>h.tag.startStorm=(h.tag.startStorm||0)+1,0.3),
  R("전장의 칼날","하급","대원 배치 후, 모든 적에게 피해를 4 줍니다.",
    h=>h.tag.startBlade=(h.tag.startBlade||0)+4),
  /* 도는 자리는 onSummon — 처음부터 **대원 배치 후**였고 글만 「전투 시작 후」였다 (사용자 2026-10-12) */
- R("전장의 방패","하급","대원 배치 후, 모든 아군에게 에너지 보호막을 3 부여합니다.",
-   h=>h.tag.startAura=(h.tag.startAura||0)+3),
+ R("전장의 방패","하급","대원 배치 후, 모든 아군에게 에너지 보호막을 2 부여합니다.",
+   h=>h.tag.startAura=(h.tag.startAura||0)+2),
  R("하급: 회피 기동","하급","전투 시작 후, 회피를 1 얻습니다.",
    h=>h.tag.startEvade=(h.tag.startEvade||0)+1,0.12),
  R("행상인 수레 방문","하급","빵, 소형 방패, 맥주 카드를 1장씩 얻습니다.",
@@ -12813,8 +13090,8 @@ const COMMON=[
    h=>h.tag.roundMana=(h.tag.roundMana||0)+1,0.5),   /* 나오는 확률 반으로 (사용자 2026-10-12) */
  R("하급: 잔불","하급","대원 배치 후, 무작위 적 하나에게 화상을 4 부여합니다.",
    h=>{ (h.tag.burns=h.tag.burns||[]).push(4) },0.5),   /* 나오는 확률 반으로 (사용자 2026-10-12) */   /* 합치지 않는다 — 하나하나 제 몫을 돌린다 (2026-10-12) */
- R("곰팡이 빵","하급","빵 카드를 4장 얻습니다. 오염도가 4 증가합니다.",
-   h=>{ addCard(run,"빵",4); addTaint(4) }),
+ R("곰팡이 빵","하급","빵 카드를 4장 얻습니다. 오염도가 8 증가합니다.",
+   h=>{ addCard(run,"빵",4); addTaint(8) }),
  R("잔걸음","하급","전투 시작 후, 추진력을 5 얻습니다.",
    h=>h.tag.startMom=(h.tag.startMom||0)+5),
  R("하급: 꼭두각시 인형","하급","소환물 카드를 낸 후에, 그 소환물의 최대 체력이 20% 증가합니다.",
@@ -12833,13 +13110,13 @@ const COMMON=[
    h=>h.tag.nightStat=(h.tag.nightStat||0)+2,0.3),
  R("파편 상자","하급","다음 2번의 전투 보상 상자에서 파편 장신구을 확정적으로 얻을 수 있습니다.",
    h=>{ run.shardBox=(run.shardBox||0)+2 },0.6),
- R("오염 구역 정화","하급","전투가 끝난 후, 오염도가 추가로 5 감소합니다. 금화를 8 얻습니다.",
-   h=>{ h.tag.clearTaint=(h.tag.clearTaint||0)+5; if(run) run.gold+=8 }),   /* 금화 8 은 고를 때 한 번 — 전투마다 주던 것 (사용자 2026-10-07) */
- R("반가운 상인","하급","상점에 방문하면 금화를 4 얻습니다.",
-   h=>h.tag.shopGold=(h.tag.shopGold||0)+4),
+ R("오염 구역 정화","하급","전투가 끝난 후, 오염도가 추가로 5 감소합니다. 금화를 5 얻습니다.",
+   h=>{ h.tag.clearTaint=(h.tag.clearTaint||0)+5; if(run) run.gold+=5 }),   /* 금화 5 는 고를 때 한 번 — 전투마다 주던 것 (사용자 2026-10-07) */
+ R("반가운 상인","하급","상점에 방문하면 금화를 3 얻습니다.",
+   h=>h.tag.shopGold=(h.tag.shopGold||0)+3),
  R("반가운 휴식","하급","쉼터에 도착하면 체력을 4 회복합니다.",
    h=>h.tag.restHeal=(h.tag.restHeal||0)+4),
- R("주둔지 복귀","하급","귀환서 카드를 2장 얻습니다.",h=>{ addCard(run,"귀환서",2) }),
+ R("주둔지 복귀","하급","귀환서 카드를 1장 얻습니다.",h=>{ addCard(run,"귀환서",1) }),
  R("오염된 피부","하급","오염도가 50 이상일 때, 전투에서 모든 추가 능력치를 1 얻습니다.",
    h=>h.tag.taintStat=(h.tag.taintStat||0)+1),
  R("굶주린 시선","하급","악마 하수인 카드를 2장 얻습니다.",h=>{ addCard(run,"악마 하수인",2) }),
@@ -12852,24 +13129,24 @@ const COMMON=[
  R("각성제","하급","다음 1회의 전투에서 아군 대원들이 모든 능력치를 2 얻습니다.",h=>{ run.stimNext=(run.stimNext||0)+2 }),
  R("동전 마술","하급","카드를 낸 후에, 10% 확률로 금화를 1개 얻습니다.\n*선택할수록 확률이 10% 누적",
    h=>h.tag.cardGold=(h.tag.cardGold||0)+1),
- R("행운의 금화","하급","소환물이 아닌 적을 처치한 후에, 2% 확률로 금화를 1개 얻습니다.\n*선택할수록 확률이 10% 누적",
+ R("행운의 금화","하급","소환물이 아닌 적을 처치한 후에, 3% 확률로 금화를 1개 얻습니다.\n*선택할수록 확률이 10% 누적",
    h=>h.tag.luckGold=(h.tag.luckGold||0)+1),
  R("탐험 정신","중급","미지의 구역에 도착하면 활동량을 1 얻습니다. 금화를 4개 얻습니다.",   /* 하급 → 중급 (사용자 2026-10-08) */
    h=>{ h.tag.exploreAct=(h.tag.exploreAct||0)+1; run.gold+=4 }),
- R("밀수품","하급","금화를 13개 얻습니다. 오염도가 20 증가합니다.",h=>{ run.gold+=13; addTaint(20) }),
+ R("밀수품","하급","금화를 8개 얻습니다. 오염도가 20 증가합니다.",h=>{ run.gold+=8; addTaint(20) }),
  R("급한 걸음","하급","이동할 때 소요되는 시간이 5분 감소합니다. 이동 시 증가하는 오염도가 1 증가합니다.",
    h=>h.tag.rush=(h.tag.rush||0)+1),
  R("단련","하급","주둔지의 훈련장에서 얻는 경험치가 8 증가합니다.",h=>h.tag.trainPlus=(h.tag.trainPlus||0)+8),
  R("흥정","하급","다음 1회의 상점에서 무작위 품목 3개의 비용이 50% 감소합니다.\n*비용 1 이상의 품목에게만 적용",
    h=>{ run.haggle=(run.haggle||0)+1 }),
- R("고물 장수","하급","상점에서 장신구를 팔 때 금화를 4개 더 받습니다.",h=>h.tag.junkGold=(h.tag.junkGold||0)+4),
+ R("고물 장수","하급","상점에서 장신구를 팔 때 금화를 3개 더 받습니다.",h=>h.tag.junkGold=(h.tag.junkGold||0)+3),
  R("현상금 사냥","하급","밤의 습격에서 승리하면 금화를 3개 더 얻습니다.",h=>h.tag.bounty=(h.tag.bounty||0)+3),
  R("모닥불 이야기","하급","쉼터를 방문한 후, 다음 1회의 전투에서 대원 배치 시 에너지 보호막을 8 부여합니다.",
    h=>h.tag.campfire=(h.tag.campfire||0)+8),
  R("정예 사냥꾼","하급","정예 전투 보상 상자에 무작위 보상 2개를 더 추가합니다.",h=>h.tag.eliteHunt=(h.tag.eliteHunt||0)+2),
  R("미래 계획","하급","우두머리 전투에서 승리한 후, 금화를 20개 얻습니다.",h=>{ run.futureGold=(run.futureGold||0)+20 }),
- R("무거운 짐","하급","금화 15개와 제련석 4개를 얻습니다. 활동량을 모두 잃고 즉시 밤이 됩니다.",
-   h=>{ run.gold+=15; run.stone=(run.stone||0)+4; run.act=0; if(!run.night){ run.night=1; run.time=Math.max(run.time,18) } }),
+ R("무거운 짐","하급","금화 12개와 제련석 4개를 얻습니다. 활동량을 모두 잃고 즉시 밤이 됩니다.",
+   h=>{ run.gold+=12; run.stone=(run.stone||0)+4; run.act=0; if(!run.night){ run.night=1; run.time=Math.max(run.time,18) } }),
  R("하급: 달리기","하급","내 턴이 끝날 때, 추진력을 최대 3만큼 소모하고 그 2배만큼 보호막을 얻습니다.",
    h=>{ (h.tag.dashes=h.tag.dashes||[]).push([3,2]) }),
  /* ── 공용 하급 여섯 (사용자 2026-10-14) ── */
@@ -12877,22 +13154,22 @@ const COMMON=[
    h=>{ const L=bountySpots(); if(!L.length) return;
      const p=rnd(L); run.grid[p.r][p.c].bounty=1;
      toast("지도의 전투 하나에 현상금 표식이 붙었습니다.") }),{okf:()=>bountySpots().length>0}),
- R("야전 병원","하급","이번 원정 동안 날이 밝을 때, 모든 대원이 체력을 4 회복합니다.",
-   h=>h.tag.dayHeal=(h.tag.dayHeal||0)+4),
- R("보급선","하급","이번 원정 동안 날이 밝을 때, 금화를 3개 얻습니다.",
-   h=>h.tag.dayGold=(h.tag.dayGold||0)+3),
+ R("야전 병원","하급","이번 원정 동안 날이 밝을 때, 모든 대원이 체력을 3 회복합니다.",
+   h=>h.tag.dayHeal=(h.tag.dayHeal||0)+3),
+ R("보급선","하급","이번 원정 동안 날이 밝을 때, 금화를 2개 얻습니다.",
+   h=>h.tag.dayGold=(h.tag.dayGold||0)+2),
  Object.assign(R("사냥 수첩","하급","퀘스트: 수락자가 적 20회 처치\n보상: 무작위 보상",
    h=>{ if(!questHas("사냥 수첩")) questAccept("사냥 수첩",h.name) }),{okf:()=>!questHas("사냥 수첩")}),   /* 고른 대원이 수락자 (2026-10-16) */
- R("안개지대","하급","지도 위 무작위 위치에 안개로 가려진 무작위 구역 1곳을 추가합니다.\n해당 구역에 도착하면 금화를 12개 얻습니다.",
+ R("안개지대","하급","지도 위 무작위 위치에 안개로 가려진 무작위 구역 1곳을 추가합니다.\n해당 구역에 도착하면 금화를 10개 얻습니다.",
    h=>{ const k=rnd(["event","shop","forge","rest","elite","dungeon","dungeon","dungeon"]);
-     let ex={fogged:1,giftGold:12};
+     let ex={fogged:1,giftGold:10};
      if(k==="dungeon"){ const w=1+Math.floor(Math.random()*3); ex=Object.assign(ex,{waves:w},encRoll("dungeon",run.field,w)) }
      else if(k==="elite") ex=Object.assign(ex,{waves:1},encRoll("elite",run.field,1));
      const put=sprinkleCell(k,1,ex);
      toast(put?"지도 어딘가에 안개가 깔립니다. 무엇이 가려졌는지는 닿아야 압니다.":"지도에 빈 자리가 없어 안개가 끼지 않았습니다.") }),
- R("도박꾼의 상자","하급","50% 확률로 금화를 12개 얻거나, 오염도를 12 얻습니다.",
-   h=>{ if(Math.random()<0.5){ run.gold+=12; if(sfxHas("금화 얻기")) SFX.play("금화 얻기"); toast("도박꾼의 상자 — 금화 +12") }
-     else { addTaint(12); toast("도박꾼의 상자 — 오염도 +12") } }),
+ R("도박꾼의 상자","하급","50% 확률로 금화를 10개 얻거나, 오염도를 10 얻습니다.",
+   h=>{ if(Math.random()<0.5){ run.gold+=10; if(sfxHas("금화 얻기")) SFX.play("금화 얻기"); toast("도박꾼의 상자 — 금화 +10") }
+     else { addTaint(10); toast("도박꾼의 상자 — 오염도 +10") } }),
  /* ── 중급 ── */
  R("중급: 달리기","중급","내 턴이 끝날 때, 추진력을 최대 5만큼 소모하고 그 2배만큼 보호막을 얻습니다.",
    h=>{ (h.tag.dashes=h.tag.dashes||[]).push([5,2]) }),
@@ -12925,8 +13202,8 @@ const COMMON=[
    h=>{ run.act+=3; run.gold+=10; if(run.act>0) run.night=0 }),
  R("오염 정화","중급","현재 오염도가 30 감소합니다.",h=>addTaint(-30)),
  R("중급: 제련석","중급","제련석을 8개 얻습니다.",h=>{ run.stone=(run.stone||0)+8 }),
- R("중급: 에너지 강화","중급","전투 시작 후, 에너지 보호막을 12 얻습니다.",
-   h=>h.tag.eshield=(h.tag.eshield||0)+12,0.3),   /* 설명 12 — 20 이었다 (점검 2026-10-07) */
+ R("중급: 에너지 강화","중급","전투 시작 후, 에너지 보호막을 8 얻습니다.",
+   h=>h.tag.eshield=(h.tag.eshield||0)+8,0.3),   /* 12 → 8 (사용자 2026-10-16) */
  R("중급: 부정 보호막 강화","중급","전투 시작 후, 부정 보호막을 2 얻습니다. 금화를 6개 얻습니다.",
    h=>{ h.tag.negShield=(h.tag.negShield||0)+2; run.gold+=6 }),
  R("중급: 보호력 강화","중급","영구히 보호력을 1 얻습니다.",h=>h.def+=1),
@@ -12966,13 +13243,13 @@ const COMMON=[
  Object.assign(R("기계 강화","하급","기계 조합의 에너지 보호막 획득량이 2 증가합니다.\n*기계 조합이 켜져 있을 때만 등장",
    h=>synUpAdd("기계",2),0.35),{okf:()=>synLit("기계")}),
  /* ── 새 전투 카드를 주는 보상 일곱 (사용자 2026-10-14) ── */
- R("섬광","하급","[섬광이 담긴 병] 카드를 3장 얻습니다.",h=>{ addCard(run,"섬광이 담긴 병",3) }),
+ R("섬광","하급","[섬광이 담긴 병] 카드를 2장 얻습니다.",h=>{ addCard(run,"섬광이 담긴 병",2) }),
  R("녹아내린 방패","하급","[산성 병] 카드를 1장 얻습니다.",h=>{ addCard(run,"산성 병",1) }),
  R("타오르는 항아리","하급","[기름 항아리] 카드를 2장 얻습니다.",h=>{ addCard(run,"기름 항아리",2) }),
  R("의사의 주머니","하급","[해독제] 카드를 1장 얻습니다.",h=>{ addCard(run,"해독제",1) }),
  R("마굿간","하급","[밧줄] 카드와 [빵] 카드를 3장씩 얻습니다.",h=>{ addCard(run,"밧줄",3); addCard(run,"빵",3) }),
- R("마나 부스러기","하급","[마나 결정] 카드를 3장 얻습니다.",h=>{ addCard(run,"마나 결정",3) }),
- R("각성초 재배","하급","[각성초] 카드를 3장 얻습니다.",h=>{ addCard(run,"각성초",3) }),
+ R("마나 부스러기","하급","[마나 결정] 카드를 2장 얻습니다.",h=>{ addCard(run,"마나 결정",2) }),
+ R("각성초 재배","하급","[각성초] 카드를 2장 얻습니다.",h=>{ addCard(run,"각성초",2) }),
  /* ── 공용 중급 다섯 (사용자 2026-10-14) ── */
  Object.assign(R("수집가","중급","가방의 무작위 파편 장신구 3개를 무작위 일반 장신구 1개로 바꿉니다.\n*가방에 파편 장신구가 3개 이상일 때만 등장",
    h=>{ for(let q=0;q<3;q++){ const idx=[];
@@ -12984,8 +13261,8 @@ const COMMON=[
  R("대장장이 친구","중급","지도 위 무작위 위치에 제련소 1곳을 추가합니다.\n해당 제련소에 도착하면 제련석을 5개 얻습니다.",
    h=>{ const put=sprinkleCell("forge",1,{giftStone:5});
      toast(put?"지도에 제련소가 하나 들어섰습니다.":"지도에 빈 자리가 없어 제련소를 세우지 못했습니다.") }),
- R("장인의 눈","중급","이번 원정 동안 제련소에서 제련할 때 제련석 비용이 1 감소합니다.",
-   h=>h.tag.forgeCut=(h.tag.forgeCut||0)+1),
+ R("장인의 눈","중급","이번 원정 동안 제련소에서 제련할 때 제련석 비용이 2 감소합니다.",
+   h=>h.tag.forgeCut=(h.tag.forgeCut||0)+2),
  R("쪽잠","중급","주둔지를 제외한 쉼터에 도착하면 활동량을 1 얻습니다.\n금화를 7개 얻습니다.",
    h=>{ h.tag.restAct=(h.tag.restAct||0)+1; run.gold+=7 }),
  Object.assign(R("부지런한 아침","중급","주둔지에서 시설을 방문한 뒤, 활동량을 1 소모하여 한 곳 더 이용할 수 있습니다. 같은 곳을 2번 이용할 수 있습니다.",
@@ -13020,7 +13297,7 @@ const COMMON=[
  R("상급: 공격력 강화","상급","영구히 공격력을 4 얻습니다.",h=>h.atk+=4),
  R("장신구: 희귀","상급","무작위 희귀 장신구을 얻습니다.",
    h=>{ (run.after=run.after||[]).push({item:rnd(ITEMS.filter(i=>i.g==="희귀"))}) }),
- R("각성초 중독","중급","[각성초] 카드를 7장 얻습니다.",h=>{ addCard(run,"각성초",7) }),
+ R("각성초 중독","중급","[각성초] 카드를 5장 얻습니다.",h=>{ addCard(run,"각성초",5) }),
  R("경계 태세","중급","이번 원정 동안 밤의 습격 확률이 10% 감소합니다.\n밤의 습격에서 승리한 후, 무작위 보상을 얻습니다.",
    h=>h.tag.guardStance=(h.tag.guardStance||0)+1,0.35),
  R("새로운 지도","중급","현재 지도를 다시 그립니다.\n활동량을 모두 잃습니다.",
@@ -13042,7 +13319,7 @@ const COMMON=[
  Object.assign(R("완전한 대형","상급","활성화된 조합이 4개 이상이면, 모든 대원이 모든 추가 능력치를 4 얻습니다.\n*활성화된 조합이 4개 이상일 때만 등장",
    h=>{ run.heroes.forEach(x=>{ x.atk+=4; x.mag+=4; x.def+=4 });
      toast("완전한 대형 — 모든 대원의 모든 추가 능력치 +4") },0.35),{okf:()=>litCount()>=4}),
- Object.assign(R("사치품","상급","이번 원정 동안 파편 장신구끼리 제련하면 일반 장신구 대신 무작위 희귀 장신구를 얻습니다.",
+ Object.assign(R("사치품","상급","이번 원정 동안 동일한 파편 장신구끼리 제련하면 일반 장신구 대신 무작위 희귀 장신구를 얻습니다.",
    h=>{ run.luxForge=1 }),{okf:()=>!(run&&run.luxForge)})
 ];
 /* 판 전체 자원(오염도·활동량)에만 작용하는 보상.
@@ -15301,7 +15578,7 @@ const GIM_DEX=[
   t:"여러 번 들를 수 있고, 고른 스택은 이 구역 내내 남습니다. 1번을 고른 뒤에는 같은 화면으로 돌아옵니다.",
   o:[{t:"고문당하기",d:"무작위 대원이 피해를 3 받고 금화 2. 고를 때마다 3, 2씩 늘어납니다."},
      {t:"고문장 부수기",d:"사형장에서 1번 이상 고른 뒤에만. 고문실을 부수고 중급 보상."},
-     {t:"사형대 올라가기",d:"무작위 대원이 20% 로 쓰러집니다. 하급 보상. 고를 때마다 5%씩 오릅니다."},
+     {t:"사형대 올라가기",d:"무작위 대원이 20% 확률로 최대 체력이 영구적으로 절반 감소합니다. 하급 보상. 고를 때마다 5%씩 오릅니다."},
      {t:"사형장 부수기",d:"고문실에서 1번 이상 고른 뒤에만. 사형장을 부수고 모든 대원 체력 회복."}]},
  {n:"간수 초소",icon:"ink11_map_guard_post",field:"핏빛 감옥",odds:"50%",cells:"1",refresh:"새로고침 가능 (없으면 새 날에 40% 로 다시)",camp:0,
   t:"초소 둘레 2칸은 빈 칸이 아니어도 낮에 습격 25% — 지도에서 붉게 비칩니다. 낮 습격은 감옥 경비병입니다.",
@@ -15551,7 +15828,7 @@ const FDX_COND={notAlone:"다른 적이 있을 때만",hasPuppet:"꼭두각시�
   cannonFront:"앞에 대포가 있을 때만",noCannon:"앞에 대포가 없을 때만",dogsAlive:"경비견이 살아 있을 때만",mobDied:"다른 폭도가 죽었을 때, 한 번",noEshield:"에너지 보호막이 없을 때만",bound:"사슬에 묶인 동안",free:"사슬이 풀린 뒤",never:"정확한 죽음 다음에만"};
 const FDX_GIM={taunt:"도발 — 이 적부터 겨눠야 합니다",hide:"은신 — 숨을 곳이 있으면 겨눌 수 없습니다",evade:"회피 — 공격 한 번을 흘립니다",thorn:"가시 — 맞을 때마다 되받아칩니다",neg:"부정 보호막 — 상태 이상을 막아냅니다",armor:"갑피 — 한 번에 받는 피해가 갑피 수치까지로 잘립니다"};
 function fdxFields(name){
-  const out=[];
+  const out=[];if(name==="실험 책임자"||name==="연료 장치")out.push(FIELDS[0].n);
   FIELD_FOES.forEach((p,i)=>{ if(p.indexOf(name)>=0&&out.indexOf(FIELDS[i].n)<0) out.push(FIELDS[i].n) });
   /* 뽑는 풀에는 없지만 그 구역 것인 적 — 도감 전용 표 (/foe 2026-10-10). 여기에만 쓰고 뽑는 데는 안 쓴다 */
   if(typeof FOE_DEX_FIELD==="object"&&FOE_DEX_FIELD[name]!=null){
@@ -15623,6 +15900,7 @@ function fdxCard(name){
   const race=foeRace({name:name}); if(race) tags.push(`<span class="evdx-tag">${esc(race)}</span>`);
   tags.push(`<span class="evdx-tag">${esc(D.el||"공격")} 계열</span>`); tags.push(`<span class="evdx-tag">공격 범위 ${D.rng}</span>`);
   fdxFields(name).forEach(f=>tags.push(`<span class="evdx-tag">${esc(f)}</span>`));
+  if(D.summoned)tags.push(`<span class="evdx-tag c">소환물</span>`);
   if(D.of) tags.push(`<span class="evdx-tag c">${esc(D.of)}의 변종</span>`);
   if(FDX_SUMMONER[name]) tags.push(`<span class="evdx-tag c">소환물 — ${esc(FDX_SUMMONER[name])}가 불러냅니다</span>`);
   if(FDX_GONE[name]) tags.push(`<span class="evdx-tag">${esc(FDX_GONE[name])}</span>`);
@@ -15636,7 +15914,7 @@ function fdxCard(name){
       <div class="evdx-name">${esc(name)}</div>
       <div class="evdx-tags">${tags.join("")}${roles}</div>
       <div class="fdx-stat">${ic("hp")}<b>${D.hp}</b> ${ic("atk")}<b>${foeSkHas(D,"dmg")?"+0":D.atk}</b> ${ic("def")}<b>${(foeSkHas(D,"shield")||foeSkHas(D,"eshield"))?"+0":D.def}</b> <span class="hint">경험치 ${D.exp}${D.seq?" 기술이 차례대로 바뀜":""}</span></div>
-      ${pas}${gim}
+      ${D.story?`<div class="evdx-t">${esc(D.story)}</div>`:""}${pas}${gim}
       <div class="fdx-sub">기술</div>${sk}
     </div></div>`;
 }
@@ -15668,7 +15946,7 @@ function drawFoeDex(app){
     (ELITE_LEADS[i]||[]).forEach(n=>{ if(FOE[n]&&L.indexOf(n)<0) L.push(n) });
     if(ELITE_LEAD[i]&&L.indexOf(ELITE_LEAD[i])<0) L.push(ELITE_LEAD[i]);
     if(BOSSES[i]&&L.indexOf(BOSSES[i])<0) L.push(BOSSES[i]);
-    if(i===0) ["첨탑 관리자","감옥 경비병","억울한 죄수","울타리"].forEach(n=>{ if(FOE[n]&&L.indexOf(n)<0) L.push(n) });
+    if(i===0) ["실험 책임자","연료 장치","첨탑 관리자","감옥 경비병","억울한 죄수","울타리"].forEach(n=>{ if(FOE[n]&&L.indexOf(n)<0) L.push(n) });
     L.sort((a,b)=>order(a)-order(b));
     /* 도감에서 감춘 적은 구역 목록에서도 뺀다 (2026-10-12) — 가짓수의 분모에 없는 것이 칸으로 보이면 안 맞는다 */
     for(let q=L.length-1;q>=0;q--) if(!FOE[L[q]]||FOE[L[q]].dexHide||FOE[L[q]].isPhantom) L.splice(q,1);
@@ -16478,8 +16756,6 @@ const FOE={
    hit:"포격"},
  "살아있는 덩굴":{hp:25,atk:4,def:4,rng:3,exp:5,   /* 기생 w4·cd1 → w1·cd3 — 너무 잦았다 (사용자 2026-10-01, sim/probe-vine 17.8% → 아래) */
    el:"공격",
-   pas:[{k:"echo",n:"메아리",kw:"메아리",d:"죽으면 절반의 생명력으로 1회 부활합니다."},
-],
    sk:[
     {n:"기생",w:1,tg:"none",cd:4,cond:"canParasite",parasite:{who:"살아있는 덩굴"},d:"「죽음」이 없는 다른 적 하나에게 「죽음: 살아있는 덩굴을 소환합니다」를 부여합니다. (그렇게 자란 덩굴은 메아리가 없습니다. 소환물이 아닙니다)"},
     {n:"숨기",w:3,tg:"self",hideUp:1,d:"1턴 동안 은신합니다."},
@@ -16892,6 +17168,22 @@ const FOE={
  /* 세 단계 (사용자 2026-10-03) — 체력 300, 공격력 8 은 배율을 안 받는다(fixHp). 기술 숫자가 적은 그대로 들어간다.
     보호력만 여느 우두머리처럼 오른다 (맞는 쪽). 200 아래 2단계, 100 아래 3단계 — 단계를 넘으면 그 단계의 「전환」부터.
     배율을 곱해 보니(철퇴 25, 연타 12×3) 예전 간수장보다 훨씬 어려웠다 (sim, 4명 lv9 42% → 10%) */
+ "실험 책임자":{hp:200,fixHp:1,atk:6,def:0,rng:7,exp:8,boss:1,bossSlot:2,solo:1,noMove:1,el:"공격",
+   story:"핏빛 감옥에서 균열석을 연료로 사용하려던 실험을 끝까지 멈추지 않은 자. 이 때문에 2차 균열 사태가 일어나게 되었다.",
+   pas:[{k:"fuelRepair",n:"수리",d:"연료 장치가 과열 3단계가 되면, 그 장치의 뒤로 이동해서 수리를 시작합니다."},
+        {k:"fuelRage",n:"기막힌 발명품",d:"연료 장치가 부서지면, 책임자가 분노하여 공격력을 2 얻습니다."}],
+   sk:[{n:"수리 작업",w:1,tg:"none",fuelRepair:1,cond:"fuelRepair",must:1,d:"앞 연료 장치의 과열을 완전히 식힙니다."},
+       {n:"스패너 던지기",w:3,tg:"back",dmg:10,chase:1,fuelThrow:1,d:"스패너를 던져 가장 뒤의 대상에게 공격 피해를 10 줍니다."},
+       {n:"스패너 후리기",w:3,tg:"near",dmg:4,hits:2,chase:1,d:"스패너를 휘둘러 가장 앞의 대상에게 공격 피해를 4씩 2번 줍니다."},
+       {n:"복구",w:2,tg:"none",fuelRestore:1,cond:"fuelWreck",d:"잔해가 된 연료 장치를 되살립니다."},
+       {n:"실험복 입기",w:2,tg:"self",shield:10,negUp:2,d:"보호막을 10 얻습니다. 부정 보호막을 2 얻습니다."},
+       {n:"간단한 실수",w:2,tg:"none",fuelMistake:1,d:"모든 과열 장치들이 1단계 더 과열됩니다."},
+       {n:"때리기",w:3,tg:"any",dmg:6,chase:1,d:"무작위 대상에게 공격 피해를 6 줍니다."}],hit:"때리기"},
+ "연료 장치":{hp:20,fixHp:1,atk:0,mag:0,def:0,rng:9,exp:0,noMove:1,wreck:1,summoned:1,el:"마법",
+   pas:[{k:"fuelHeat",n:"과열",d:"1~2턴마다 무작위로 과열됩니다. 3단계에서 더 과열되면, 폭발하여 아군과 적군 모두에게 마법 피해를 15 주고 오염도를 5 증가시킵니다."},
+        {k:"info",n:"죽음",d:"잔해가 남습니다."}],
+   sk:[{n:"대기",tg:"none",d:"아무 행동도 하지 않습니다."},{n:"과열",tg:"none",d:"1단계 과열됩니다."},
+       {n:"폭발",tg:"none",d:"폭발하여 아군과 적군 모두에게 마법 피해를 15 주고 오염도를 5 증가시킵니다."}]},
  "간수장":    {hp:300,fixHp:1,atkScale:0.12,phases:[200,100],atk:8,def:10,rng:4,exp:8,boss:1,   /* atkScale 0.25 → 0.12 (사용자 2026-10-05: 너무 세다 — 1스테이지 14 → 11, 기술 피해 모두 -3). 공격력은 적 강화도의 이 몫만큼 오른다 (사용자 2026-10-04: 1스테이지 +282% 에서 8 → 14, 기술 피해도 같은 몫만큼) */
    el:"공격",
    pas:[{k:"info",hide:1,n:"세 단계",d:"체력 200 이하에서 2단계, 100 이하에서 3단계로 넘어갑니다. 단계마다 쓰는 패턴이 바뀝니다."},
@@ -17027,7 +17319,9 @@ const FOE_DEX_FIELD={
  "모형 기사단장":2,                        /* 모형 창병의 진급 · 모형 열병식 */
  "마력의 초월체":2                         /* 탑의 주인이 죽으면 그 자리에 선다 — 뽑는 풀에 넣으면 안 된다 */
 };
-const BOSSES=["간수장","콜로서스","탑의 주인"];   /* 2구역 — 고철 거인 → 콜로서스 (사용자 2026-10-07) */
+const BOSSES=["간수장","콜로서스","탑의 주인"];
+const BOSS_POOLS=[["간수장","실험 책임자"],["콜로서스"],["탑의 주인"]];
+const BOSS_FORMATIONS={"실험 책임자":[["실험 책임자",2],["연료 장치",3],["연료 장치",4],["연료 장치",5]]};   /* 2구역 — 고철 거인 → 콜로서스 (사용자 2026-10-07) */
 /* ═══════════ 조합 ═══════════
    전투 하나는 적을 뽑아 세우는 것이 아니라 **손으로 짠 한 판**이다.
 
@@ -17614,6 +17908,7 @@ function debBadges(u){
 /* 적의 지속 능력 풀이 — 턴이 지나며 바뀌는 수치(진급까지 남은 턴 · 지능 상승 · 얻은 공격력 · 과열 중첩)를 따라간다 (사용자 2026-10-08) */
 function foePasD(f,x){
   let d=x.d||"";
+  if(x.k==="fuelHeat")return `${Math.max(1,(f.fuelDue||((B&&B.turn)||1)+1)-((B&&B.turn)||1))}턴마다 과열됩니다. ${d} 지금 과열 ${f.fuelHeat||0}단계.`;
   if(x.k==="outRangeDmg") d=d.replace("{피해}",foeDmg(f,x.v,"마법"));   /* 실제로 들어가는 값 — hurtAlly 로 가는 foeEndPassives 와 같은 foeDmg */
   else if(x.k==="promote"){ const rem=Math.max(1,(x.turns||3)-(f.age||0)); d=d.replace(/^\d+턴 후에/,rem+"턴 후에") }
   else if(x.k==="death"&&x.kind==="grpMag"){ const v=(x.v||0)+(f.deathUp||0); d=d.replace(/마법력을 \d+ 부여/,`마법력을 ${v} 부여`) }
@@ -17631,7 +17926,7 @@ function foeStatusRows(f){
     if(x.hide) return;   /* 글만 감추는 지속 능력 (간수장 세 단계, 2026-10-12) */
     if(x.k==="drain"){ g.push(bd("g","흡수",Math.round((x.v||1)*100)+"%",x.d)); return }
     if(x.k==="bounty"){ t.push(bd("t",x.n,`${x.n} ${Math.max(0,f.bounty||0)}`,`이 대상을 처치하면 금화를 ${Math.max(0,f.bounty||0)}개 얻습니다. 적 턴이 끝날 때마다 2씩 감소합니다.`,x.n)); return }   /* 흡수는 대원처럼 버프 칸에 '흡수 100%' (사용자 2026-10-05) */
-    const h=bd("t",x.kw||x.n,x.n,foePasD(f,x),x.n);
+    const h=bd("t",x.kw||x.n,x.k==="fuelHeat"?`과열(${f.fuelHeat||0}단계)`:x.n,foePasD(f,x),x.n);
     t.push(cutting?h.replace('class="bd ','class="bd echocut '):h) });
   if(f.drainTurn&&B&&f.drainTurn>=B.turn&&!foePas(f,"drain")) g.push(bd("g","흡수",Math.round((f.drainRate||1)*100)+"%","이번 턴(또는 다음 턴)에 보호막에 막히지 않은 피해의 "+Math.round((f.drainRate||1)*100)+"%만큼 체력을 회복합니다."));   /* 미믹 깨물기 */
   /* 기생으로 심긴 죽음 — 붙어 있는 동안 보인다 (사용자 2026-09-29) */
@@ -17803,10 +18098,11 @@ function heroStatusRows(h){
 function dotAlly(u,v,kind,snd,extra){
   if(!u||!(v>0)||stopped(u)) return;   /* 정지 — 지속 피해도 받지 않는다 */
   if(u.evade>0){ u.evade--;
+    fuelPreviewHit(u,0,0,1);
     fx({side:"mine",slot:u.slot,s:sfxOr("회피","miss"),trig:"회피",txt:"회피!",cls:"miss evbig",gap:60,evade:1});
     say(`${u.name}${jo(u.name,"ig")} ${kind} 피해를 피했습니다.`,"t2"); return }
   if(u.armor>0&&v>u.armor) v=u.armor;   /* 갑피 — 한 번에 받는 피해를 잘라낸다 */
-  const d=soakAlly(u,v).d; u.hp-=d;
+  const d=soakAlly(u,v).d; u.hp-=d;fuelPreviewHit(u,v,d,0);
   fx(Object.assign({side:"mine",slot:u.slot,hit:1,trig:kind,s:snd,txt:(d<v?"막음 ":"-")+v,cls:d<=0?"shd":"dmg",gap:80,pose:d>0?"hurt":"guard",recoil:1},extra||{}));
   say(`${u.name} ${kind} 피해 ${v}`,"t3");
   if(u.hp<=0&&!u.down&&(u.isMin?u.alive:true)){ if(!u.isMin&&run){ u.downBy=kind; run.lastKiller=kind; run.lastKillerBy=kind } unitDown(u) }
@@ -18992,10 +19288,13 @@ function wagonPath(r0,c0){
   const S=run.size, bm=Math.floor(S/2), gr=0, gc=bm;
   const free=(r,c)=>(r===gr&&c===gc)||(run.grid[r][c].t==="empty"&&!run.grid[r][c].stair&&!(run.pos.r===r&&run.pos.c===c));
   const seen={}; seen[r0+"-"+c0]=1;
-  const q=[{r:r0,c:c0,p:null}];
+  const q=[{r:r0,c:c0,p:null}], distance=x=>x.r+Math.abs(x.c-gc);
+  let best=q[0];
+  const trace=x=>{ const path=[]; while(x.p){ path.unshift({r:x.r,c:x.c}); x=x.p } return path };
   for(let h=0;h<q.length;h++){
     const cur=q[h];
-    if(cur.r===gr&&cur.c===gc){ const path=[]; let x=cur; while(x.p){ path.unshift({r:x.r,c:x.c}); x=x.p } return path }
+    if(distance(cur)<distance(best)) best=cur;
+    if(cur.r===gr&&cur.c===gc) return trace(cur);
     const dirs=[[-1,0],[0,cur.c<bm?1:-1],[0,cur.c<bm?-1:1],[1,0]];
     for(const [dr,dc] of dirs){
       const r=cur.r+dr, c=cur.c+dc, k=r+"-"+c;
@@ -19003,7 +19302,7 @@ function wagonPath(r0,c0){
       seen[k]=1; q.push({r:r,c:c,p:cur});
     }
   }
-  return null;
+  return best.p?trace(best):null;   /* 완주 경로가 막혀도 갈 수 있는 빈 길까지는 전진한다 (사용자 2026-10-17). */
 }
 /* 새 날 — 마차가 우두머리 쪽으로 WAGON_DAY 칸 (빈 칸으로만, 막히면 둘러 간다).
    한 칸 갈 때마다 길을 다시 찾는다 — 한 칸 간 자리에서 막힐 수 있다 (사용자 2026-10-08).
@@ -19165,9 +19464,11 @@ const PACKS=[
  {n:"건강 챙기기",d:"최대 체력을 8 얻습니다.",i:"life",
   fx:r=>{ addMaxHp(r.heroes[0],8,"세계핵") }},
  {n:"맞춤 갑옷",d:"다음 2번의 레벨업 보상이 전용 보상으로만 등장합니다.",i:"armor",
-  fx:r=>{ r.ownOnly=(r.ownOnly||0)+2; r.ownOnlyMax=(r.ownOnlyMax||0)+2 }},   /* 최대 — 'N/최대' 로 보인다 */
+  fx:r=>grantOwnRewards(r,2,"맞춤 갑옷")},   /* 최대 — 'N/최대' 로 보인다 */
  {n:"소형 차원문",d:"[악마 하수인] 카드 4장을 얻습니다.",i:"portal",
-  fx:r=>{ addCard(r,"악마 하수인",4) }}
+  fx:r=>{ addCard(r,"악마 하수인",4) }},
+ {n:"고향 지도",d:"귀환서 카드를 3장 얻습니다.",i:"map",
+  fx:r=>{ addCard(r,"귀환서",3) }}
 ];
 function packArt(i,name){
   /* 새로 받은 그림이 있으면 그것부터 */
@@ -19206,6 +19507,7 @@ function newRun(name,pack){
        pos:{r:S-1,c:mid}, day:1, time:6, act:f.act, actMax:f.act,
        taint:0, night:0, campDone:0, remapUsed:0, bonusLv:null, playMs:0,
        pack:pack?pack.n:null, packDesc:pack?pack.d:null, packIcon:pack?pack.i:null};
+  run.prisonBoss=BOSS_POOLS[0][mapBossSeed(run.grid)%2];
   try{ run.unlock0=unlockSnap() }catch(e){}   /* 이번 판에 새로 열린 것을 끝에서 견주려고 (사용자 2026-10-12) */
   rollPatrol();                       /* 간수 순찰로 — 튜토리얼이 아닌 새 판에서도 (사용자 2026-09-15 — 안 나오던 버그) */
   if(pack) pack.fx(run);
@@ -19544,7 +19846,9 @@ function autoLvReward(h,grade){
   const own=own0.map(r=>Object.assign({},r,{w:(r.w==null?1:r.w)*OWN_W}));
   const com=COMMON.filter(r=>r.g===grade&&rewardOk(h,r));
   const lock=derrMidLock(h,grade,own0);
-  const r=pickWeighted(lock||own.concat(com),1)[0]; if(!r) return null;
+  const ownOnly=ownRewardsOnly(own0,true);
+  const r=pickWeighted(lock||(ownOnly?own0:own.concat(com)),1)[0]; if(!r) return null;
+  if(ownOnly) spendOwnReward();
   r.fx(h,r.n);
   try{ skinRewardGot(h,r) }catch(e){}
   h.tag.taken=(h.tag.taken||[]).concat(r.n);
@@ -19600,8 +19904,33 @@ function showFieldRules(){
 
 /* ═══════════ 화면 ═══════════ */
 let _lastView=null, MAP_ENTER=0, MAP_UNF_TOK=0, MAP_BO_UNTIL=0;   /* MAP_BO_UNTIL — 날이 바뀌는 암전이 걷히는 때. 지도 펼침은 그 뒤에 */
+/* 전용 이동 연출이 없는 적: 다시 그리기 전 좌표에서 새 칸까지 수평 이동. */
+let FOE_SLIDES=new Map(),FOE_SLIDE_BATTLE=null,FOE_SLIDE_SKIP=null;
+function foeSlideBefore(){
+  if(PRED_DRY||view!=="battle"||!B)return [];
+  if(FOE_SLIDE_BATTLE!==B){FOE_SLIDES.clear();FOE_SLIDE_BATTLE=B}
+  return [...document.querySelectorAll('#foeSide .slot[data-foe-id]')].map(e=>({id:e.dataset.foeId,slot:Number(e.dataset.slot),x:e.getBoundingClientRect().x}));
+}
+function foeSlideAfter(before){
+  if(PRED_DRY||view!=="battle"||!B){FOE_SLIDES.clear();return}
+  const now=Date.now();
+  before.forEach(old=>{
+    const unit=B.foes.find(f=>String(f.id)===old.id),D=unit&&FOE[unit.name],I=unit&&(unit.lastAct||unit.intent),skill=D&&I&&I.t==="sk"&&D.sk&&D.sk[I.i];
+    if(FOE_SLIDE_SKIP&&FOE_SLIDE_SKIP.has(old.id)||D&&D.ghostMove||skill&&skill.flee){FOE_SLIDES.delete(old.id);return}
+    const e=document.querySelector(`#foeSide .slot[data-foe-id="${old.id}"]`);if(!e)return;
+    const x=e.getBoundingClientRect().x,im=e.querySelector('.art img.pxs,.art svg');if(!im)return;
+    if(Number(e.dataset.slot)!==old.slot&&Math.abs(old.x-x)>1)FOE_SLIDES.set(old.id,{from:old.x-x,at:now,duration:Math.round(420*SPD)});
+    const move=FOE_SLIDES.get(old.id);if(!move)return;
+    if(now-move.at>=move.duration){FOE_SLIDES.delete(old.id);return}
+    const anim=im.animate([{translate:move.from+'px 0px'},{translate:'0px 0px'}],{duration:move.duration,easing:'cubic-bezier(.3,0,.2,1)'});
+    anim.currentTime=now-move.at;im.dataset.foeSliding='1';
+  });
+}
+
 function render(){
+  if(FOE_CAPTURING) return;   /* 적의 셈 도중 다시 그리면 아직 모으는 연출 큐가 먼저 흘러간다 */
   if(PRED_DRY) return;   /* 미리 돌려 보는 중 — 그리지 않는다. 안 막으면 되돌이로 화면이 멈춘다 */
+  if(FOE_VIEW&&(B!==FOE_VIEW.battle||view!=="battle")) FOE_VIEW=null;
   /* 전투를 떠나면 되풀이 녹음을 끈다 (사용자 2026-10-13 : 훈련장에서 복수귀가 켜진 채 나오면 소리가 따라왔다).
      ⚠️ 끄는 자리가 iraAuraHtml **안에만** 있었다 — 그 함수는 전투 화면을 그릴 때만 돈다.
         켜는 자리가 어떤 화면 안에 있으면, **끄는 자리는 그 화면 밖에도** 있어야 한다 */
@@ -19625,7 +19954,12 @@ function render(){
   if(view!=="map") mapTipHide();   /* 칸 카드가 전투 화면까지 따라오던 버그 — 칸이 갈리면 mouseleave 가 안 온다 (사용자 2026-09-14) */
   document.querySelectorAll(".peek,.tutbox,.tuthi,.tutdim").forEach(x=>x.remove());
   nightVeil();
+  const oldFoes=foeSlideBefore();
   render0();
+  foeSlideAfter(oldFoes);
+  directorVisualSync();
+  driftFxSync();
+  foeFocusSync();
   try{ ringSync() }catch(e){}
   dashKeep();   /* 헥토 돌진 — 연출이 시작될 때까지 옛 칸에 그려 둔다 */
   if(typeof view!=="undefined"&&view!=="battle") try{ colLoopSync() }catch(e){}   /* 전투를 떠나면 충전 띠 · 충전음을 걷는다 */
@@ -20318,6 +20652,7 @@ function savePeek(i){
 /* 저장본은 기술 객체를 통째로 싣는다. 그 뒤 정의에 키가 새로 생기면(균형의 shield:2)
    옛 판에는 없어 셈이 NaN 이 된다 — 빠진 키만 정의에서 채운다. 이미 있는 값은 건드리지 않는다 */
 function syncSkillDefs(h){
+  if(h.name==="오리온"&&h.hpLv===2) h.hpLv=HEROES["오리온"].hpLv;   /* 이전 저장본도 다음 레벨부터 성장 체력 1 */
   const d=HEROES[h.name]; if(!d||!d.skills||!h.sk) return;
   h.sk.forEach(k=>{ if(!k) return;
     const src=d.skills.find(x=>x.n===k.n)||d.skills.find(x=>x.alt&&x.alt.n===k.n); if(!src) return;
@@ -20349,6 +20684,7 @@ function loadGame(i){
          foes:b.foes||[],mins:b.mins||[],portals:b.portals||[],hz:b.hz||[],
          corpseUsed:b.corpseUsed||0,drag:null};
       B.hand=handUnpack(b.hand);
+      B.hand.forEach(c=>{ delete c.arrive });   /* 저장된 도착 연출은 재개하지 않는다 — 이어하기 첫 턴부터 손패를 보인다 */
       /* fearSrc 는 uid() 로 만든 문자열이라 그대로 실려 온다.
          객체로 되살리면 uid(x)===f.fearSrc 비교가 깨지므로 손대지 않는다. */
       view="battle";
@@ -20375,6 +20711,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 181, "v": "0.7", "d": "2026-10-17", "t": "실험 책임자·연료 장치 추가 및 적 연출·훈련장 개선", "big": 0},
  {"b": 180, "v": "0.7", "d": "2026-10-16", "t": "클라우드 여덟 묶음 — 쉼터 셋 · 카드 보유량 · 이라/간수장 너프", "big": 0},
  {"b": 179, "v": "0.7", "d": "2026-10-15", "t": "이펙트 띠를 첫 화면 뒤로 — 들어오는 데 24.9초 → 2.5초", "big": 0},
  {"b": 178, "v": "0.7", "d": "2026-10-15", "t": "쇠뇌는 표식 수만큼만 나간다", "big": 0},
@@ -21747,7 +22084,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=180;
+const BUILD_NO=181;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -21830,11 +22167,11 @@ function txtEntries(){
     if(HEROES[hb]){ (HEROES[hb].skills||[]).forEach(sk=>{ keys.push("skill:"+sk.n); if(sk.alt) keys.push("skill:"+sk.alt.n); (sk.opts||[]).forEach(o=>keys.push("skill:"+o.n)) });
       if(typeof PASSIVE_INFO!=="undefined") (PASSIVE_INFO[hb]||[]).forEach(p=>keys.push("skill:"+p.n));
       (HERO_REWARDS[hb]||[]).filter(r=>/^\[전투 기술\]/.test(r.d||"")).forEach(r=>keys.push("skill:"+r.n)) }
-    Object.keys(BARK[n]||{}).forEach(k=>{ if(/^(skill|event|kill):/.test(k)) keys.push(k) });
+    Object.keys(BARK[n]||{}).forEach(k=>{ if(/^(in|skill|event|kill):/.test(k)) keys.push(k) });
     [...new Set(keys)].forEach(k=>{
       const [kind,nm,sub]=k.split(":");
       const label=kind==="skill"?`기술, ${nm}${sub?` (${sub==="적"?"적이 선 칸에":sub==="카드"?"카드를 얻을 때":sub})`:""} 을 쓸 때`
-                 :kind==="event"?`사건, ${nm}`:`처치, ${nm==="악마"?"악마를 처치할 때":nm+"으로 처치할 때"}`;
+                 :kind==="event"?`사건, ${nm}`:kind==="in"?`전장에 설 때, ${nm}`:`처치, ${nm==="악마"?"악마를 처치할 때":nm+"으로 처치할 때"}`;
       putBark(k,label);
     });
   });
@@ -21863,10 +22200,44 @@ function txtEntries(){
   });
   return out;
 }
+/* 이벤트 수치는 설명과 실제 효과가 같은 표를 읽는다. field는 0·1·2 = 1·2·3구역. */
+const EV_VALUES={
+  feast:[6,10,14],bounty:[3,8,15],begGive:[2,7,12],begHeal:[5,10,15],begTake:[1,6,11],begTaint:[2,7,12],
+  ownerGold:[12,16,20],holeGold:[3,7,11],appraiseTaint:[5,10,15],altarHeal:[5,10,15],wagonExp:[16,24,32],
+  voiceTaint:[40,40,40],voiceHp:[5,10,15],rustStone:[6,6,6],creationItems:[5,5,5]
+};
+function evScale(key){ return EV_VALUES[key][Math.max(0,Math.min((run&&run.field)||0,2))] }
+function evScaleText(key,span){ return "{"+EV_VALUES[key].map(v=>span?v+"~"+(v+span):v).join("/")+"}" }
 /* TXTFIX:BEGIN — 보내 주신 '설명 고치기' 파일. txtEntries 의 열쇠를 쓴다 */
 const TXT_FIX={
- "ev:거렁뱅이의 부탁:o0:d": "<b>금화</b>를 줍니다. 무작위 아군 대원이 회복합니다.",
- "ev:거렁뱅이의 부탁:o2:d": "<b>금화</b>를 빼앗습니다. 죄책감이 가슴을 찌릅니다...",
+ /* 데린저 대사만 선택 반영: 균열-설명수정 (10).json (사용자 2026-10-17) */
+ "bark:데린저:in": "금화 냄새가 나는데?\n무슨 일이야?\n보상은 두둑히 준비했겠지?\n현상금 사냥이다!\n쓸만한게 많아보이네.\n은행 털이범은 아니라구.",
+ "bark:데린저:atk": "받아라!\n이리와!\n조용히해.\n",
+ "bark:데린저:hurt": "윽\n아프잖아!\n아파!",
+ "bark:데린저:down": "내 보물들...\n",
+ "bark:데린저:kill": "잡았어.\n잡았네.\n목표를 처치했어.",
+ "bark:데린저:skill:자동변환단총": "",
+ "bark:데린저:skill:탄알 장전": "장전한다.\n장전할게.\n탄알이 다 떨어졌어.",
+ "bark:데린저:skill:연막탄": "연막탄!\n위험한데?\n잠깐 빠질게.",
+ "bark:데린저:skill:정확 조준": "목표, 조준.\n목표를 타게팅할게.\n이제야 보이는군.",
+ "mapsay:데린저:move:empty": "두둑히 챙기러 가자.\n정직한건 내 스타일이 아니라구.\n",
+ "mapsay:데린저:move:dungeon": "싸움의 시간이야!\n머리통에 구멍을 내주지!",
+ "mapsay:데린저:move:elite": "조금 무서운데?\n단단히 준비해야겠어.\n전리품이다!",
+ "mapsay:데린저:move:shop": "돈 쓸때가 왔군.\n이래서 내가 돈을 좋아해.",
+ "mapsay:데린저:move:rest": "좀 쉬어야겠어.\n쉴 타이밍이야.",
+ "mapsay:데린저:move:forge": "총열을 손봐야하는데.\n조준경을 닦아야 해.\n",
+ "mapsay:데린저:move:event": "여긴 어디지?\n",
+ "mapsay:데린저:move:camp": "복귀했어.\n복귀 완료.\n좀 많이 벌었지.",
+ "mapsay:데린저:floor": "저쪽으로 갈까?\n이쪽으로 가면 되겠어.",
+ "mapsay:데린저:outside": "흠...\n이번 목표는...",
+ "mapsay:데린저:long": "멀어보여.\n멀군.\n다리 아프겠는데...",
+ "mapsay:데린저:back:battle": "휴...\n많이 챙겼어.\n좋은 결투였네.",
+ "mapsay:데린저:back:rest": "(기지개 펴는 소리)\n좋은 휴식이었어.",
+ "mapsay:데린저:back:forge": "역시 아름다워...\n(총을 한번 돌리는 소리)",
+ "mapsay:데린저:back:shop": "좋은 구매였어.\n슬쩍해볼걸...\n",
+ "mapsay:데린저:back:event": "복귀했어.\n무사히 복귀했어.",
+ "ev:거렁뱅이의 부탁:o0:d": "<b>금화</b>를 "+evScaleText("begGive",2)+"개 줍니다. 무작위 아군 대원이 체력을 "+evScaleText("begHeal",2)+" 회복합니다.",
+ "ev:거렁뱅이의 부탁:o2:d": "<b>금화</b>를 "+evScaleText("begTake",2)+"개 빼앗습니다. 오염도가 "+evScaleText("begTaint",2)+" 증가합니다. 죄책감이 가슴을 찌릅니다...",
  "ev:룰렛의 달인:t": "천막 아래에서 광대가 낡은 룰렛을 돌리고 있습니다. 운을 시험해 보겠느냐고 묻습니다.",
  "ev:룰렛의 달인:o0:d": "룰렛을 돌려 운을 시험합니다!",
  "ev:술집 난동꾼:t": "선술집에 들어가 휴식하던 중, 어디선가 큰 소리가 들립니다. 덩치 하나가 탁자를 뒤엎고 있습니다.\n<shake>'술을 더 내놓아라!!!'</shake>\n",
@@ -21889,16 +22260,16 @@ const TXT_FIX={
  "ev:야행성 짐승 무리:o1:d": "무엇인지는 모르겠지만, 그냥 지나칠 수는 없습니다. 싸우고 좋은 보상을 얻습니다. (밤에만 고를 수 있습니다.)",
  "ev:정화의 샘:t": "바위 틈에서 <wave>맑은 물</wave>이 솟습니다. 균열의 영향이 닿지 않은 것처럼 보입니다.",
  "ev:균열의 목소리:t": "갈라진 틈 속에서 부정적인 기운이 느껴집니다. 누군가의 이름을 부르는 것 같습니다...어디선가 들어본 것 같기도 합니다.",
- "ev:균열의 목소리:o0:d": "궁금함을 참지 못하고 귀를 기울입니다. 오염도가 20 증가하지만 중급 보상을 1개 얻습니다.",
- "ev:균열의 목소리:o1:d": "모두 귀를 막지만, 바닥의 <shake>진동</shake> 때문에 넘어집니다. 모든 대원이 체력 5를 잃습니다.",
+ "ev:균열의 목소리:o0:d": "궁금함을 참지 못하고 귀를 기울입니다. 오염도가 40 증가하지만 중급 보상을 1개 얻습니다.",
+ "ev:균열의 목소리:o1:d": "모두 귀를 막지만, 바닥의 <shake>진동</shake> 때문에 넘어집니다. 모든 대원이 체력 "+evScaleText("voiceHp")+"를 잃습니다.",
  "ev:버려진 사원:t": "버려진 사원에 도착하여, 무너진 기둥 사이에 낯선 석상이 서 있는 것을 발견합니다. 예물함도 함께 놓여있습니다.",
  "ev:버려진 사원:o0:d": "앞으로의 여정을 위하여 석상을 기립니다. 금화를 전부 바치고 대원 하나가 완전히 회복합니다.",
  "ev:버려진 사원:o1:d": "위험한 석상일수도 있으니 부수고 예물을 챙겨 금화를 얻습니다. 석상의 저주로 다음 전투를 모든 대원이 기절한 채로 시작합니다.",
  "ev:떠돌이 감정사:t": "돋보기를 든 사내가 갑자기 뒤에서 나타나 배낭을 훔쳐 뒤적입니다. <wave>정 확 한</wave> 값을 매겨 주겠다고 합니다.",
  "ev:떠돌이 감정사:o0:d": "감정을 맡겨봅니다. 파편 하나를 선택하여 주고 절반의 확률로 일반 아이템을 얻을 수 있습니다.",
- "ev:떠돌이 감정사:o1:d": "뒤통수를 치고 감정사의 배낭에서 파편 하나를 훔칩니다. 오염도가 5 증가합니다.",
+ "ev:떠돌이 감정사:o1:d": "뒤통수를 치고 감정사의 배낭에서 파편 하나를 훔칩니다. 오염도가 "+evScaleText("appraiseTaint")+" 증가합니다.",
  "ev:녹슨 상자:t": "자물쇠가 삭아 버린 상자를 발견합니다. 열려면 열쇠를 만들어야 할 것 같습니다.",
- "ev:녹슨 상자:o0:d": "제련석 10개로 열쇠를 만듭니다. 어떤 장신구가 나올까요?\n",
+ "ev:녹슨 상자:o0:d": "제련석 6개로 열쇠를 만듭니다. 어떤 장신구가 나올까요?\n",
  "ev:녹슨 상자:o1:d": "열기 귀찮아보입니다. 두고 갈 길을 갑니다.",
  "ev:깨진 진열대:t": "<b>상점</b>에 도착합니다. 주인은 보이지 않고 엎어진 진열대에 물건들이 널부러져 있습니다. ",
  "ev:깨진 진열대:o0:d": "진열대를 정리합니다. 일반 아이템 하나를 같은 등급의 다른 것으로 바꿉니다.",
@@ -21913,19 +22284,19 @@ const TXT_FIX={
  "ev:낯선 동행자:o1:t": "거절하기",
  "ev:희생의 제단:t": "검붉은 돌판 위에 홈이 파인 글씨가 적혀 있습니다. 어떤 의미인지 모르겠지만, 무엇을 흘려보내야 할지 알 것 같습니다.\n",
  "ev:희생의 제단:o0:d": "대원 하나가 체력을 절반 잃고, 나머지가 절반 회복합니다.",
- "ev:희생의 제단:o1:d": "모두 합심하여 돌판을 부숴봅니다. 모든 대원이 체력 5를 회복합니다.",
+ "ev:희생의 제단:o1:d": "모두 합심하여 돌판을 부숴봅니다. 모든 대원이 체력 "+evScaleText("altarHeal")+"를 회복합니다.",
  "ev:저주받은 성소:t": "휴식을 위해 근처 동굴에 들어갑니다. 동굴 저 끝에 불이 피워져있고, 뼈다귀가 가득한 성소를 발견합니다. 저 목걸이는 뭐죠?",
  "ev:저주받은 성소:o0:t": "목걸이 줍기",
  "ev:저주받은 성소:o1:t": "동굴에서 벗어나기",
  "ev:저주받은 성소:o1:d": "쓸데없는 호기심입니다. 오염도가 10 증가합니다.",
  "ev:행상인 수레:o0:d": "빵, 소형 방패, 맥주 카드를 한 장씩 얻습니다.",
- "ev:행상인 수레:o1:d": "오래된 명작입니다. 모든 대원이 경험치 16을 얻습니다.",
+ "ev:행상인 수레:o1:d": "오래된 명작입니다. 모든 대원이 경험치 "+evScaleText("wagonExp")+"을 얻습니다.",
  "bark:나이코스:in": "관중은 어디 있지.\n오늘도 승리할 것이다.\n자, 시작하자.",
  "bark:나이코스:atk": "늘 하던 일이다.",
  "bark:나이코스:hurt": "이 정도로는.\n아직이다.\n...",
  "bark:나이코스:kill": "다음.\n기억해두지.\n약하군.",
  "bark:나이코스:down": "아직… 끝나지 않았다…",
- "bark:사슬 광인:hurt": "더!\n하하, 아프다!",
+ "bark:사슬 광인:hurt": "더!\n하하!",
  "bark:트리스탄:in": "내 몸이...!\n성을...사수해라\n모두...죽여라",
  "bark:트리스탄:atk": "<shake>(살점이 찢어지는 소리)</shake>",
  "bark:트리스탄:hurt": "저주받은...육체\n고통을...감내해라",
@@ -21977,7 +22348,7 @@ const TXT_FIX={
  "bark:술집 난동꾼:hurt": "아야! 술 깨겄네.\n그렇게 나온다 이거지.",
  "bark:술집 난동꾼:kill": "술 맛 떨어지게...\n돈은 당신이 내!",
  "bark:술집 난동꾼:down": "내 술...\n이런...젠장...",
- "ev:떨어진 금화:o0:d": "퀘스트: 이번 구역 동안 <b>미지의 구역</b> 4번 방문. (보상: 금화를 12개 얻습니다.)",
+ "ev:떨어진 금화:o0:d": "퀘스트: 이번 구역 동안 <b>미지의 구역</b> 4번 방문. (보상: 금화를 "+evScaleText("ownerGold")+"개 얻습니다.)",
  "ev:떨어진 금화:o1:d": "<b>금화</b>를 얻습니다.",
  "ev:룰렛의 달인:o1:d": "<b>오염도</b>가 낮아집니다.",
  "ev:거렁뱅이의 부탁:t": "어디선가 <shake>시큼한 냄새</shake>가 납니다. 돌아보니 넝마를 걸친 자가 손을 내밀고 있습니다.",
@@ -22170,7 +22541,216 @@ const TXT_FIX={
  "bark:타락한 나이코스:in": "몸이...이상해...\n승리...\n영광이시여...",
  "bark:타락한 나이코스:down": "(날카로운 비명 소리)\n(몸이 파괴되는 소리)",
  "bark:타락한 나이코스:skill:베기": "<shake>죽어라!</shake>\n<shake>날 멈춰줘!</shake>",
- "bark:타락한 나이코스:skill:승리의 일격": "모두 파괴하겠다...\n죽여주겠다..."
+ "bark:타락한 나이코스:skill:승리의 일격": "모두 파괴하겠다...\n죽여주겠다...",
+ "bark:작은 죄수:in": "하하!\n나갈 수 없다!\n막아라!",
+ "bark:작은 죄수:atk": "이야!\n맞아라!",
+ "bark:작은 죄수:hurt": "으윽!\n윽!",
+ "bark:작은 죄수:kill": "",
+ "bark:작은 죄수:down": "안돼!\n으악!",
+ "bark:사슬 광인:in": "(사슬이 바닥에 끌리는 소리)\n가까이 와.\n흐흐흐...",
+ "bark:사슬 광인:atk": "받아라!\n묶어 주마!",
+ "bark:사슬 광인:down": "윽...\n",
+ "bark:굶주린 그림자:in": "...배고파\n냄새가 나\n어둠 속에서...",
+ "bark:굶주린 그림자:atk": "",
+ "bark:굶주린 그림자:hurt": "성가시군...\n윽",
+ "bark:굶주린 그림자:down": "다시...어둠으로...",
+ "bark:떠도는 불씨:in": "(불빛이 흔들린다)\n(치직...)\n(허공에서 스르르 밝아진다)",
+ "bark:떠도는 불씨:atk": "(파앗!)\n(치이익)",
+ "bark:떠도는 불씨:hurt": "푸슥...\n(잠깐 사그라든다)",
+ "bark:떠도는 불씨:kill": "(밝게 타오른다)",
+ "bark:떠도는 불씨:down": "...(푸슥)",
+ "bark:피 먹는 자:in": "(크르르륵)\n(크르륵...)",
+ "bark:피 먹는 자:atk": "(씹어먹는 소리)\n(씹는 소리)",
+ "bark:피 먹는 자:hurt": "(키익)\n",
+ "bark:피 먹는 자:down": "(낮은 포효)",
+ "bark:경비견:in": "크르르...\n컹!\n으르렁...",
+ "bark:경비견:hurt": "깨갱!\n크르...",
+ "bark:경비견:down": "끼잉...",
+ "bark:폭도:hurt": "아얏!\n도망쳐!",
+ "bark:폭도:down": "살려...",
+ "bark:고문 기술자:in": "이리로 와.\n비명은 좋은 소리지.",
+ "bark:고문 기술자:atk": "지져주지!\n뜨겁나?",
+ "bark:고문 기술자:hurt": "윽!",
+ "bark:고문 기술자:down": "안돼...\n이럴수가...",
+ "bark:감옥 경비병:in": "지나갈 수 없다!\n막아라!\n(호루라기를 부는 소리)",
+ "bark:감옥 경비병:atk": "이얍!\n들어가!\n",
+ "bark:감옥 경비병:hurt": "으윽...\n악!",
+ "bark:감옥 경비병:down": "경보 발령...\n위험하다...",
+ "bark:대포병:down": "안돼...\n",
+ "bark:억울한 죄수:in": "저는 아무 짓도 안 했어요...\n제발...죽이지 말아주세요...",
+ "bark:억울한 죄수:hurt": "안돼요 살려주세요!\n살려주시면 후회 안할거에요!",
+ "bark:억울한 죄수:down": "...안돼\n이런...",
+ "bark:사슬 간수:in": "숨어 봐야 소용없다.\n이리 와.",
+ "bark:사슬 간수:atk": "이리오거라!\n묶여라!",
+ "bark:사슬 간수:hurt": "크윽\n윽...",
+ "bark:사슬 간수:down": "열쇠는...안돼...",
+ "bark:감옥의 눈:in": "(눈알이 굴러가는 소리)\n(무언가를 본듯한 소리)\n",
+ "bark:감옥의 눈:atk": "...\n",
+ "bark:감옥의 눈:hurt": "...",
+ "bark:감옥의 눈:down": "...\n(터지는 소리)",
+ "bark:녹슨 철창 골렘:in": "나가면...안됩니다...\n들어가십시오...\n머리가...복잡합니다...",
+ "bark:녹슨 철창 골렘:atk": "쿵!\n밀어내겠습니다...",
+ "bark:녹슨 철창 골렘:hurt": "...\n비상...",
+ "bark:녹슨 철창 골렘:down": "...이런\n",
+ "bark:사슬에 묶인 마귀:atk": "찢어 주마!\n내가 보이나?\n날 가둔걸 후회하게 해주마!",
+ "bark:사슬에 묶인 마귀:hurt": "크윽...\n크아악!",
+ "bark:사슬에 묶인 마귀:down": "탐욕의 악마시여...",
+ "bark:정체 모를 주술사:in": "이곳의 비밀을 알고싶나?\n어리석은 영혼이군...",
+ "bark:정체 모를 주술사:atk": "어쩔 수 없군\n멈춰라.",
+ "bark:정체 모를 주술사:hurt": "그만두어라!\n멈춰보아라!",
+ "bark:정체 모를 주술사:down": "다음에 보겠군...\n여기까지...",
+ "bark:풀려난 장군:in": "<shake>하하하하!</shake>\n<shake>내가 도래했다!</shake>",
+ "bark:풀려난 장군:atk": "<shake><b>(도끼로 내려찍는 소리)</b></shake>\n<shake>죽어라!</shake>",
+ "bark:풀려난 장군:hurt": "<shake>윽!</shake>\n<shake>이정도로는!</shake>",
+ "bark:풀려난 장군:down": "<shake>안돼!!!</shake>\n<shake>이대로는!!!</shake>",
+ "bark:간수의 손:in": "(불길한 소리)\n(어둠을 삼키는 소리)",
+ "bark:간수의 손:atk": "(퍽!)\n(착!)",
+ "bark:간수의 손:hurt": "(아파하는 소리)\n(낮은 비명소리)",
+ "bark:오염된 갑주:in": "...\n....\n.....",
+ "bark:오염된 갑주:atk": "...\n....\n.....",
+ "bark:오염된 갑주:kill": "...\n....\n.....",
+ "bark:오염된 갑주:down": "...\n....\n.....",
+ "bark:오염된 갑주:hurt": "...!\n....!\n.....!!",
+ "bark:첨탑 관리자:in": "여기가 어디라고!\n썩 나가라!\n경비병!",
+ "bark:첨탑 관리자:atk": "이리와!\n특별 수감이다!\n절대 안봐준다!",
+ "bark:첨탑 관리자:hurt": "윽\n어딜!\n그만!",
+ "bark:첨탑 관리자:down": "첨탑을 지켜라...\n안돼...",
+ "bark:간수장:in": "고통스럽군...!\n그만...이제 그만해다오!\n형을...집행하겠다...",
+ "bark:간수장:atk": "무릎을 꿇어라!\n그만해라!\n나를 막아다오!\n(악마의 비명)",
+ "bark:간수장:hurt": "으윽...\n정신이...\n(혼란스러운 비명)",
+ "bark:간수장:down": "감옥을...닫아주게...\n해방됐군...",
+ "bark:샘의 잔영:in": "정령숲이여...\n여길 떠나거라...",
+ "bark:샘의 잔영:atk": "떠나라!\n꺼져라!",
+ "bark:샘의 잔영:hurt": "아...\n으...",
+ "bark:샘의 잔영:down": "아...\n",
+ "bark:메아리 정령:in": "(울리는 소리)\n이상한 소리가...",
+ "bark:메아리 정령:atk": "(메아리치는 소리)\n사라져라!",
+ "bark:메아리 정령:hurt": "(고통스러워하는 소리)\n",
+ "bark:메아리 정령:down": "(저 멀리 사라지는 소리)",
+ "bark:균열 애벌레:in": "(치익)\n(끼이익)",
+ "bark:균열 애벌레:atk": "(치이익)",
+ "bark:균열 애벌레:hurt": "(끼익)\n(치익!)",
+ "bark:균열 애벌레:down": "(끼...익...)",
+ "bark:살아있는 덩굴:in": "(덩굴이 얽히는 소리)\n(기분나쁜 소리)",
+ "bark:살아있는 덩굴:atk": "(줄기찬 소리)\n(따끔한 소리)",
+ "bark:빛무리:down": "(흩어짐)",
+ "bark:수리 드론:in": "수리 프로토콜 시작.\n수리를 시작합니다.",
+ "bark:수리 드론:atk": "치지직\n수리 진행 중.\n다수 결함 발견.",
+ "bark:수리 드론:hurt": "이상 발견.\n외부 침입 발생.",
+ "bark:수리 드론:down": "자폭 프로토콜을 실행합니다.\n비상 프로토콜 실행.",
+ "bark:뿔사슴 정령:in": "푸르릉\n푸르르륵",
+ "bark:뿔사슴 정령:atk": "(뿔로 받치는 소리)\n(달려오는 소리)",
+ "bark:뿔사슴 정령:hurt": "(아파하는 소리)",
+ "bark:뿔사슴 정령:down": "푸르륵...",
+ "bark:수맥지기:in": "방해하지 마라.\n니가 올 곳이 아니다.",
+ "bark:수맥지기:atk": "저리가라!\n방해하지 마라!",
+ "bark:수맥지기:hurt": "윽...\n이런...",
+ "bark:수맥지기:down": "숲을...지켜라...",
+ "bark:악마 차원문:in": "(불길한 소리)\n(악마들의 웃음 소리)",
+ "bark:악마 차원문:atk": "(불길한 소리)\n(악마들의 웃음 소리)",
+ "bark:고장난 수호기:in": "명령 프로그램 이상.. 발견\n대상 포착 불가능..",
+ "bark:고장난 수호기:atk": "",
+ "bark:고장난 수호기:hurt": "비상.\n오류.\n결함 확인.",
+ "bark:고장난 수호기:down": "작동...정지...\n",
+ "bark:늪 두꺼비:in": "(두껍)\n(개굴)",
+ "bark:늪 두꺼비:atk": "(낼름)",
+ "bark:늪 두꺼비:hurt": "(깨굴!)",
+ "bark:늪 두꺼비:down": "(개굴...)",
+ "bark:부서진 파수병:in": "침입자 확인.\n통과 불가.",
+ "bark:부서진 파수병:atk": "경고는 없습니다.",
+ "bark:부서진 파수병:down": "임무 종료.",
+ "bark:물길군주:in": "하하!\n정신이 이상하군!\n",
+ "bark:물길군주:atk": "맑아져라!",
+ "bark:물길군주:hurt": "아프군!\n용서 못하겠군!",
+ "bark:물길군주:down": "태초로 돌아가겠다!\n이런!",
+ "bark:뿌리모체:in": "(뿌드득)\n(나뭇잎이 흔들리는 소리)",
+ "bark:뿌리모체:atk": "(뿌리로 휘감는 소리)\n",
+ "bark:뿌리모체:hurt": "(잎이 흩날리는 소리)",
+ "bark:뿌리모체:down": "(펑 터지는 소리)",
+ "bark:늪의 왕:in": "<shake>배고파!</shake>",
+ "bark:늪의 왕:atk": "(낼름)\n(끈적한 소리)\n(기분나쁜 끈적함)",
+ "bark:늪의 왕:hurt": "(끈적한 타격음)\n",
+ "bark:늪의 왕:down": "아직 부족해...",
+ "bark:타락한 드루이드:in": "숲을...파괴하라...\n넌 누구지?",
+ "bark:타락한 드루이드:atk": "저주!\n균열이시여!",
+ "bark:타락한 드루이드:hurt": "그만!\n넌 이해하지 못한다!",
+ "bark:타락한 드루이드:down": "윽...\n안돼...",
+ "bark:시종:in": "무엇을 도와드릴까요?\n안녕하세요 침입자님?\n(정중한 인사)",
+ "bark:시종:atk": "나가주세요!\n이곳은 들어올 수 없습니다!\n허가는 받으셨나요?",
+ "bark:시종:hurt": "예상 외 행동은 금지합니다!\n그만두십시오!",
+ "bark:시종:down": "죄송합니다...\n작동 정지...",
+ "bark:근위병의 갑옷:in": "<wave>아...</wave>\n<wave>여긴 어딘가...?</wave>",
+ "bark:근위병의 갑옷:atk": "<wave>건드리지 마라!</wave>\n<wave>으아아!</wave>",
+ "bark:근위병의 갑옷:down": "<wave>이걸 받게...</wave>\n<wave>(검을 떨어트리는 소리)</wave>",
+ "bark:근위병의 갑옷:hurt": "<wave>안돼!</wave>\n<wave>이리와!</wave>\n",
+ "bark:떠드는 마도서:in": "(파라라라락)\n히히!\n넌 누구지?",
+ "bark:떠드는 마도서:atk": "하하!\n죽어라!",
+ "bark:떠드는 마도서:hurt": "잔혹하구나!\n",
+ "bark:떠드는 마도서:down": "(찢어지는 소리)",
+ "bark:책벌레:in": "(캬아악)\n(꿈틀)",
+ "bark:책벌레:atk": "(캬아악)\n(꿈틀)",
+ "bark:책벌레:hurt": "(키이익!)",
+ "bark:책벌레:down": "(푸스슥)",
+ "bark:장부쟁이:in": "<wave>장부를 정리해야해...</wave>\n<wave>익숙한 얼굴이군...</wave>",
+ "bark:장부쟁이:atk": "<wave>명단에 기록해주지...</wave>",
+ "bark:장부쟁이:down": "<wave>(장부가 떨어지는 소리)</wave>",
+ "bark:장부쟁이:hurt": "<wave>아...</wave>\n<wave>하...</wave>",
+ "bark:마나 결정체:in": "날 풀어주게...!\n영겁의 시간이 흘렀군...",
+ "bark:마나 결정체:atk": "어서...!\n",
+ "bark:마나 결정체:hurt": "풀어주게!\n안돼!",
+ "bark:마나 결정체:down": "해방됐군...\n태초로 돌아가겠다...",
+ "bark:흘러나온 시간:in": "흘러나온...시간...\n되돌릴 수...없다...\n마력이...느껴지는군...",
+ "bark:흘러나온 시간:atk": "무한한...시간!\n그분을...섬겨라!",
+ "bark:흘러나온 시간:hurt": "어리석군...\n아...",
+ "bark:흘러나온 시간:down": "다시...\n후회...",
+ "bark:모형 창병:in": "대열 유지!\n대열을 유지한다!",
+ "bark:모형 창병:atk": "찌르기!\n",
+ "bark:모형 창병:hurt": "아파!\n아프다!",
+ "bark:모형 창병:down": "안된다!",
+ "bark:모형 기병:in": "적들을 공격한다!\n막는다!",
+ "bark:모형 기병:atk": "돌진!\n돌격!",
+ "bark:모형 기병:hurt": "아프다!\n들어와라!",
+ "bark:모형 기병:down": "안돼!\n내 말!",
+ "bark:모형 궁수:in": "적이 보인다!\n공격 준비!",
+ "bark:모형 궁수:atk": "쏜다!\n받아라!",
+ "bark:모형 궁수:hurt": "아야!\n",
+ "bark:모형 궁수:down": "(부서지는 소리)\n",
+ "bark:모형 궁정 마법사:in": "모형 병사들이여!\n집결해라!",
+ "bark:모형 궁정 마법사:atk": "마법!\n마술!\n반짝!",
+ "bark:모형 궁정 마법사:hurt": "윽!\n",
+ "bark:모형 궁정 마법사:down": "저주...\n",
+ "bark:결정에 갇힌 잔영:in": "...\n....",
+ "bark:결정에 갇힌 잔영:atk": "...\n...",
+ "bark:결정에 갇힌 잔영:down": "(수정이 깨지는 소리)",
+ "bark:결정에 갇힌 잔영:hurt": "(수정에 금가는 소리)",
+ "bark:붉은 망토 늑대:in": "가만히 있지 그랬어.\n(크르르륵...)\n맛있는 먹이감이군.",
+ "bark:붉은 망토 늑대:atk": "(깨무는 소리)\n크앙!",
+ "bark:붉은 망토 늑대:down": "이런...\n",
+ "bark:모형 기사단장:in": "병사들이여! \n나의 말을 따라라!\n지휘한다!",
+ "bark:모형 기사단장:atk": "출동!\n공격하라!\n할 수 있다!",
+ "bark:모형 기사단장:hurt": "이 정도로는!\n약하군!",
+ "bark:모형 기사단장:down": "(부러지는 소리)\n(모형이 나뒹구는 소리)",
+ "bark:시평선의 문지기:in": "익숙한 얼굴이군...\n나가는게 좋을것이다...",
+ "bark:시평선의 문지기:atk": "정지.\n영겁의 시간이여.",
+ "bark:시평선의 문지기:hurt": "힘들군...",
+ "bark:시평선의 문지기:down": "작동 정지.\n저지 실패.",
+ "bark:미치광이 인형사:in": "흐하하하!\n반가운 관객이군!\n오랜만의 관객이군!",
+ "bark:미치광이 인형사:atk": "다음 공연으로!\n다음 막으로!\n즐거우셨나요?",
+ "bark:미치광이 인형사:hurt": "이 정도 열렬한 반응이라니!\n하하! 감사합니다!\n열띤 성원이로구나!",
+ "bark:미치광이 인형사:kill": "비용은 목숨으로 받겠습니다!\n다음에 또 오세요!",
+ "bark:미치광이 인형사:down": "최고의...공연이었습니다\n",
+ "bark:모형 전략가:in": "최고의 전략이란!\n모두 집중!",
+ "bark:모형 전략가:atk": "나의 병사들이여!\n용기!",
+ "bark:모형 전략가:hurt": "막아라!\n그만!",
+ "bark:모형 전략가:down": "내 전략이...",
+ "bark:마나 정제로:in": "(정제되는 소리)\n(마나가 끓는 소리)",
+ "bark:마나 정제로:atk": "(마나가 쏟아지는 소리)\n(과열 경고음 소리)",
+ "bark:마나 정제로:hurt": "(...)\n(부글부글)\n",
+ "bark:마나 정제로:down": "(마나가 녹아내림)",
+ "bark:균열 공작:in": "잘 오셨습니다.\n반갑습니다.\n노래 한번 하시겠습니까?",
+ "bark:균열 공작:atk": "아첼레란도!\n안단테!\n알라르간도!\n템포 프리모!",
+ "bark:균열 공작:hurt": "하하.\n우습군요.",
+ "bark:균열 공작:down": "흥미로웠습니다..."
 };
 /* 기본 글 자체를 바꾼다. 손으로 고친 것(TXT)은 이 뒤에 입혀지므로 그쪽이 이긴다 */
 function txtFixApply(){
@@ -22182,6 +22762,71 @@ function txtFixApply(){
 /* 브라우저에 남은 옛 수정 — 게임 쪽 글이 그 뒤에 바뀌었으면 옛 수정이 새 글을 덮는다.
    여기 적힌 옛 값 그대로면 지운다 (사용자가 다시 고친 것은 값이 달라서 남는다). 사용자 2026-09-15 떨어진 금화 */
 const TXT_STALE={
+ /* 알려진 옛 데린저 대사만 걷고 사용자가 따로 고친 글은 보존한다. */
+ "bark:데린저:in": [""],
+ "bark:데린저:atk": [""],
+ "bark:데린저:hurt": [""],
+ "bark:데린저:down": [""],
+ "bark:데린저:kill": [""],
+ "bark:데린저:skill:탄알 장전": [""],
+ "bark:데린저:skill:연막탄": [""],
+ "bark:데린저:skill:정확 조준": [""],
+ "mapsay:데린저:move:empty": [""],
+ "mapsay:데린저:move:dungeon": [""],
+ "mapsay:데린저:move:elite": [""],
+ "mapsay:데린저:move:shop": [""],
+ "mapsay:데린저:move:rest": [""],
+ "mapsay:데린저:move:forge": [""],
+ "mapsay:데린저:move:event": [""],
+ "mapsay:데린저:move:camp": [""],
+ "mapsay:데린저:floor": [""],
+ "mapsay:데린저:outside": [""],
+ "mapsay:데린저:long": [""],
+ "mapsay:데린저:back:battle": [""],
+ "mapsay:데린저:back:rest": [""],
+ "mapsay:데린저:back:forge": [""],
+ "mapsay:데린저:back:shop": [""],
+ "mapsay:데린저:back:event": [""],
+ /* 공용 보상 수치 조정 (사용자 2026-10-16) */
+ "common:하급:하급: 체력 강화": ["최대 체력을 3 얻습니다."],
+ "common:하급:하급: 에너지 강화": ["전투 시작 후, 에너지 보호막을 5 얻습니다."],
+ "common:하급:하급: 발 마사지": ["활동량을 1 얻습니다. 금화를 5개 얻습니다."],
+ "common:하급:하급: 회복": ["체력을 20% 회복합니다."],
+ "common:하급:전장의 방패": ["대원 배치 후, 모든 아군에게 에너지 보호막을 3 부여합니다."],
+ "common:하급:곰팡이 빵": ["빵 카드를 4장 얻습니다. 오염도가 4 증가합니다."],
+ "common:하급:오염 구역 정화": ["전투가 끝난 후, 오염도가 추가로 5 감소합니다. 금화를 8 얻습니다."],
+ "common:하급:반가운 상인": ["상점에 방문하면 금화를 4 얻습니다."],
+ "common:하급:주둔지 복귀": ["귀환서 카드를 2장 얻습니다."],
+ "common:하급:행운의 금화": ["소환물이 아닌 적을 처치한 후에, 2% 확률로 금화를 1개 얻습니다.\n*선택할수록 확률이 10% 누적"],
+ "common:하급:밀수품": ["금화를 13개 얻습니다. 오염도가 20 증가합니다."],
+ "common:하급:고물 장수": ["상점에서 장신구를 팔 때 금화를 4개 더 받습니다."],
+ "common:하급:무거운 짐": ["금화 15개와 제련석 4개를 얻습니다. 활동량을 모두 잃고 즉시 밤이 됩니다."],
+ "common:하급:야전 병원": ["이번 원정 동안 날이 밝을 때, 모든 대원이 체력을 4 회복합니다."],
+ "common:하급:보급선": ["이번 원정 동안 날이 밝을 때, 금화를 3개 얻습니다."],
+ "common:하급:안개지대": ["지도 위 무작위 위치에 안개로 가려진 무작위 구역 1곳을 추가합니다.\n해당 구역에 도착하면 금화를 12개 얻습니다."],
+ "common:하급:도박꾼의 상자": ["50% 확률로 금화를 12개 얻거나, 오염도를 12 얻습니다."],
+ "common:하급:섬광": ["[섬광이 담긴 병] 카드를 3장 얻습니다."],
+ "common:하급:마나 부스러기": ["[마나 결정] 카드를 3장 얻습니다."],
+ "common:하급:각성초 재배": ["[각성초] 카드를 3장 얻습니다."],
+ "common:중급:각성초 중독": ["[각성초] 카드를 7장 얻습니다."],
+ "common:중급:중급: 에너지 강화": ["전투 시작 후, 에너지 보호막을 12 얻습니다."],
+ "common:중급:장인의 눈": ["이번 원정 동안 제련소에서 제련할 때 제련석 비용이 1 감소합니다."],
+ "common:상급:사치품": ["이번 원정 동안 파편 장신구끼리 제련하면 일반 장신구 대신 무작위 희귀 장신구를 얻습니다."],
+
+ /* 구역별 이벤트 수치 변경 (사용자 2026-10-16) */
+ "ev:현상 수배:o1:d": ["금화를 {3/6/9}개 냅니다. 무작위 일반 적 3마리 중 하나를 선택하여, 전투에서 만나면 체력을 1로 만듭니다. (1회만)"],
+ "ev:모닥불:o1:d": ["먹고 남은 고기를 먹습니다. 모든 대원이 체력을 6 회복합니다."],
+ "ev:거렁뱅이의 부탁:o0:d": ["금화를 잃고 대원 하나가 회복합니다.", "<b>금화</b>를 줍니다. 무작위 아군 대원이 회복합니다."],
+ "ev:거렁뱅이의 부탁:o2:d": ["금화를 빼앗지만 오염도가 오릅니다.", "<b>금화</b>를 빼앗습니다. 죄책감이 가슴을 찌릅니다..."],
+ "ev:수상한 구멍:o1:d": ["금화를 얻습니다."],
+ "ev:떠돌이 감정사:o1:d": ["뒤통수를 치고 감정사의 배낭에서 파편 하나를 훔칩니다. 오염도가 5 증가합니다.", "파편 하나를 훔칩니다. 오염도 5."],
+ "ev:희생의 제단:o1:d": ["모두 합심하여 돌판을 부숴봅니다. 모든 대원이 체력 5를 회복합니다.", "모든 대원이 체력 5를 회복합니다."],
+ "ev:균열의 목소리:o0:d": ["오염도 20을 받고 중급 보상 하나.", "궁금함을 참지 못하고 귀를 기울입니다. 오염도가 20 증가하지만 중급 보상을 1개 얻습니다."],
+ "ev:균열의 목소리:o1:d": ["모든 대원이 체력 5를 잃습니다.", "모두 귀를 막지만, 바닥의 <shake>진동</shake> 때문에 넘어집니다. 모든 대원이 체력 5를 잃습니다."],
+ "ev:녹슨 상자:o0:d": ["제련석 10개 소모. 희귀 20%, 일반 30%, 파편 50%.", "제련석 10개로 열쇠를 만듭니다. 어떤 장신구가 나올까요?"],
+ "ev:세상의 시작:o1:d": ["특수 장신구 [창조의 시침]을 얻습니다. (라이티늄 관련 장신구를 6개 이상 가지고 있다면 선택할 수 있습니다.)"],
+ "ev:행상인 수레:o1:d": ["모든 대원이 경험치 16을 얻습니다.", "오래된 명작입니다. 모든 대원이 경험치 16을 얻습니다."],
+
  /* 사냥 수첩 — 수락자가 생겼다 (사용자 2026-10-16) */
  "common:하급:사냥 수첩": [
   "퀘스트: 적 20회 처치\n보상: 무작위 보상"
@@ -22216,6 +22861,8 @@ const TXT_STALE={
   "마나 중독자/유동적 공격/치명타"
  ],
  "ev:떨어진 금화:o0:d": [
+  "퀘스트: 이번 구역 동안 <b>미지의 구역</b> 4번 방문. (보상: 금화를 12개 얻습니다.)",
+  "퀘스트: 이번 구역 동안 미지의 구역 4번 방문. (보상: 금화를 12개 얻습니다.)",
   "<b>금화</b>를 얻습니다.",
   "금화를 얻습니다."
  ],
@@ -23348,7 +23995,7 @@ function migrateCells(){
 /* 지도를 누르면 퀘스트 목록 고정이 풀린다 (사용자 2026-10-14) */
 function qPinOff(){ if(typeof run!=="undefined"&&run&&run.qPin){ run.qPin=0; return true } return false }
 function drawMap(app){
-  const f=FIELDS[run.field], S=run.size;
+  const f=FIELDS[run.field], S=run.size, taintLevel=mapTaintLevel(run.taint);
   migrateCells();
   if(spiritOn()&&run.crystal==null) run.crystal=CRYSTAL_MAX;   /* 푸른 수정 전의 저장본 */
   const dLeft=Math.max(0,(f.days||7)-run.day+1);
@@ -23454,7 +24101,7 @@ function drawMap(app){
   /* 받은 가죽 틀로 옮겨 담는다 (사용자 2026-10-14).
      three(.mapwrap.m3) 는 지금까지대로 지어 두고 **조각만 칸으로 옮긴다** —
      붙이는 자리가 수십 곳이라 그쪽을 건드리면 조용히 빠지는 것이 생긴다 */
-  { const board=el(`<div class="mboard" style="background-image:url(${mapPng("MAP_BOARD.png")})">
+  { const board=el(`<div class="mboard${taintLevel?" taint-high taint-level-"+taintLevel:""}" style="background-image:url(${mapPng("MAP_BOARD.png")})">
       <div class="mb-btns"></div><div class="mb-left"></div><div class="mb-mid"></div>
       <div class="mb-rtop"></div><div class="mb-right"></div></div>`);
     const mv=(from,to)=>{ const a=three.querySelector(from), b=board.querySelector(to); if(a&&b) b.appendChild(a) };
@@ -23572,6 +24219,7 @@ function mapInspector(at){
       ?`<div class="mifoe"><span class="kw" data-kw="${esc(cell.hint)}" data-tip="이 전투에 나오는 적입니다. 나머지는 가 봐야 압니다.">${figure(cell.hint)}</span></div>`
       :`<div class="mifoe unk"><span class="kw" data-kw="확인 불가" data-tip="어떤 적이 나올지 알 수 없습니다.">${figure(kind==="elite"?"사슬 광인":"작은 죄수")}<b>?</b></span></div>`));
     if(lines.length) b.appendChild(el(`<div class="mit">${lines.map(x=>`<div>${rich(x)}</div>`).join("")}</div>`)); }
+  if(kind==="boss"){const boss=expeditionBoss(run.field);b.appendChild(el(`<div class="misec boss-preview"><div class="mil">이번 원정의 우두머리</div><div class="mifoe">${figure(boss)}</div><div class="mit"><b>${esc(boss)}</b></div></div>`))}
   /* 획득 보상 */
   if(battle&&!cell.done){
     const gm=(cell.bounty?1.5:1)*(wellNear(r,c)&&kind!=="well"?1.5:1);
@@ -24112,7 +24760,7 @@ function enterCell0(r,c){
   }
   if(cell.t==="dungeon"||cell.t==="elite"||cell.t==="boss"){
     startDungeon(cell,r,c);
-    if(cell.t==="boss") bossCard(BOSSES[run.field]||"");   /* 전장이 깔린 위에 얹는다 */
+    if(cell.t==="boss") bossCard(expeditionBoss(run.field)||"");   /* 전장이 깔린 위에 얹는다 */
     return;
   }
   view="map"; render();
@@ -24226,8 +24874,8 @@ function bellFill(f){
   campSafe(run.grid);
   return L.length;
 }
-const MANA_LOOT=[["사파이어 파편",50],["사파이어 수정",40],["마나석",10]];
-function manaLoot(){ let x=Math.random()*100; for(const [n,w] of MANA_LOOT){ if(x<w) return n; x-=w } return MANA_LOOT[0][0] }
+const MANA_LOOT=[["사파이어 파편",30],["사파이어 수정",20],["마나석",10]];
+function manaLoot(){ let x=Math.random()*100; for(const [n,w] of MANA_LOOT){ if(x<w) return n; x-=w } return null }
 /* 지도 칸의 마도서 표시에 쓸 그림. 장신구 아이콘(닫힌 마법책)을 돌려 쓴 것인데
    사용자가 이대로 쓰기로 했다 (2026-10-10) — 전용 그림을 기다리지 않아도 된다.
    나중에 바꾸고 싶어지면 여전히 이 한 줄이다 */
@@ -24308,11 +24956,11 @@ const GIM_EV={
     o:[{t:"활성화",d:`마나석 기둥을 ${PILLAR_HOURS}시간 동안 활성화합니다.`+(L>0?" 이미 켜져 있다면 시간을 다시 채웁니다.":""),end:1,
         f:()=>{ cell.until=tClock()+PILLAR_HOURS; SFX.play("unlock"); const s2=pillarState(towerFloor(r));
           return `기둥이 푸르게 타오릅니다. 이 층의 기둥 ${s2.on}/${s2.total} 활성화.`+(s2.total>0&&s2.on===s2.total?" 이 층의 모든 기둥이 켜져 모든 대원이 전투에서 추가 마나 +1을 얻습니다.":"") }},
-       {t:"부수기",d:"기둥을 부수고 마나 장신구를 얻습니다. 사파이어 파편 50%, 사파이어 수정 40%, 마나석 10%. 부순 기둥은 이 층의 셈에서 빠집니다.",end:1,
+       {t:"부수기",d:"기둥을 부숩니다. 사파이어 파편 30%, 사파이어 수정 20%, 마나석 10%, 나머지 40%는 아무것도 얻지 못합니다. 부순 기둥은 이 층의 셈에서 빠집니다.",end:1,
         f:()=>{ const nm=manaLoot(), it=ITEMS.find(i=>i.n===nm); run.grid[r][c]={t:"empty"};
           if(sfxHas("건물 파괴")) SFX.play("건물 파괴"); else SFX.play("danger");   /* 고문실 · 사형장과 같은 녹음 (사용자 2026-10-12) */
           if(it) (run.after=run.after||[]).push({item:it});
-          return `기둥이 산산이 부서지며 ${nm}${jo(nm,"ig")} 굴러 나옵니다.` }},
+          return nm?`기둥이 산산이 부서지며 ${nm}${jo(nm,"ig")} 굴러 나옵니다.`:"기둥이 산산이 부서졌습니다. 아무것도 얻지 못했습니다." }},
        {t:"나가기",d:"지도로 돌아갑니다.",leave:1,f:()=>""}]} },
   bookcase:(cell,r,c)=>({n:"책장",art:"ink_tw_library",face:"책벌레",gim:1,
     t:"수많은 책들이 쌓여있는 곳입니다. 처음 보는 문자들도 많습니다.",
@@ -24510,18 +25158,13 @@ const GIM_EV={
        {t:"나가기",d:"지도로 돌아갑니다.",leave:1,f:()=>""}]} },
   gallows:(cell,r,c)=>{ const n0=(run.gim&&run.gim.gal)||0, p0=Math.round((0.20+0.05*n0)*100); return {n:"사형장",art:"ink11_map_execution_ground_colored",face:"부서진 파수병",gim:1,
     t:"높은 단 위에 밧줄이 늘어져 있습니다. 올라서는 자에게 무언가를 준다고 합니다.",
-    o:[{t:"사형대 올라가기",d:`(무작위로 /선택된 대원)이 ${p0}% 확률로 쓰러집니다. 하급 보상을 얻습니다. (고를 때마다 5%씩 올라갑니다)`,again:1,
+    o:[{t:"사형대 올라가기",d:`(무작위로 /선택된 대원)의 최대 체력이 ${p0}% 확률로 영구적으로 절반 감소합니다. 하급 보상을 얻습니다. (고를 때마다 5%씩 올라갑니다)`,again:1,
         f:()=>{ const n=run.gim.gal||0, p=0.20+0.05*n;
           const up=run.heroes.filter(h=>!h.down), h=up.length?rnd(up):null;
           run.gim.gal=n+1; (run.after=run.after||[]).push({grade:"하급"});
-          if(h&&Math.random()<p){ h.hp=0; h.down=1; h.slot=0; prideFall(h); if(sfxHas("danger")) SFX.play("danger");
-            toast(`${h.name}${jo(h.name,"ig")} 쓰러졌습니다. 주둔지 치료소에서만 일어납니다.`);
-            /* 남은 대원이 없으면 전투를 기다리지 않고 그 자리에서 끝난다 */
-            if(!run.heroes.some(x=>!x.down)){
-              run.evMsg=null; run.after=[]; run.afterList=null; run.afterBack=null;
-              setTimeout(()=>lose("사형대에서 마지막 대원까지 쓰러졌습니다. 주둔지로 데려갈 사람이 남지 않았습니다."),700);
-              return `${h.name}${jo(h.name,"ig")} 사형대에서 내려오지 못했습니다. 남은 대원이 없습니다.` }
-            return `${h.name}${jo(h.name,"ig")} 사형대에서 내려오지 못했습니다. 밧줄이 끊기고 상자만 남았습니다.` }
+          if(h&&Math.random()<p){ const before=h.maxHp; halveMaxHp(h,"사형대"); if(sfxHas("danger")) SFX.play("danger");
+            toast(`${h.name} — 최대 체력이 영구적으로 감소했습니다. (${before} → ${h.maxHp})`);
+            return `${h.name}${jo(h.name,"eun")} 최대 체력이 영구적으로 절반 감소했습니다. (${before} → ${h.maxHp}) 단 아래 상자가 놓여 있습니다.` }
           return `${h?h.name+jo(h.name,"ig")+" 밧줄 아래 섰다가 무사히 내려왔습니다. ":""}상자가 놓여 있습니다.` }},
        {t:"사형장 부수기",d:"사형장을 부수고 모든 대원의 체력을 모두 회복합니다. (고문실에서 /선택지를 1번 이상 고른 경우에만 /선택이 가능합니다.)",end:1,
         when:()=>(run.gim&&run.gim.tort)>=1,   /* 서로 엇갈린 조건 — 고문장은 사형장 뒤에, 사형장은 고문실 뒤에 (사용자 2026-09-15) */
@@ -24588,6 +25231,7 @@ function gimFenceBattle(){
    기술의 보호막 숫자에는 그 몫을 안 얹는다 (def0, skShield) */
 function foeFix(f,keepHp){
   const D=FOE[f.name]; if(!D||!D.fixHp) return f;
+  if(D.summoned){f.summoned=1;f.exp=0}
   if(!keepHp){ f.maxHp=D.hp; f.hp=D.hp }
   f.atk=D.atkScale?Math.round(D.atk*(1+(foeScale((B&&B.kind)||"boss").m-1)*D.atkScale)):D.atk;
   { const mb=(D.mag!=null?D.mag:D.atk);   /* 마법력도 같은 셈 (2026-10-15) */
@@ -24720,7 +25364,8 @@ function foePromoteTick(f){
   /* ⚠️ 띠가 도는 **동안은 아직 창병**이다 — 바로 갈아 끼우면 첫 칸에서 덮여 띠가 안 보인다
      (사용자 2026-10-15 : 「진급 이펙트를 넣어놨는데 게임에는 적용 안 되고 있음」).
      화면이 없는 시뮬에서는 ms 가 0 이라 그 자리에서 변신한다 — 판은 그대로다 */
-  if(ms>0) setTimeout(()=>{ try{ if(f.alive) morphFoe(f,p.to,{}) }catch(e){} }, ms);
+  const battle=B;
+  if(ms>0) setTimeout(()=>{ try{ if(B===battle&&f.alive){ const m=morphFoe(f,p.to,{}); if(m) render() } }catch(e){} }, ms);
   else morphFoe(f,p.to,{});
 }
 /* 체력이 절반 이하로 떨어지는 그 순간 한 번 (전투당 1회) — 마나 결정체 「감금됨」 (사용자 2026-10-07) */
@@ -24736,6 +25381,7 @@ function foeHalfCheck(f){
   const p=foePas(f,"halfBurst"); if(!p||f.halfDone||!(f.hp<=f.maxHp/2)) return;
   f.halfDone=1;
   const L=allUnits().filter(u=>u.hp>0);
+  if(L.length) foeBark(f,"event:감금됨");
   fx({side:"foe",slot:f.slot,ring:"#a06ae0",quake:1,txt:p.n||"감금됨",cls:"crit",gap:200});
   /* 파동이 **날아가** 기절시킨다 (사용자 2026-10-15, 그림을 받아 넣었다 — fx_crystal_burst, 한 장짜리 64×64).
      결정체에서 크게 한 번 터지고, 대상마다 차례로 닿는다. 그림이 없으면 조용히 건너뛴다 */
@@ -24802,6 +25448,25 @@ function spawnFoeNamed(n,slot,opt){
 /* 연습장 — 서 있는 적을 지금 배율(foeScale)로 다시 셈한다 (사용자 2026-09-29).
    손잡이를 누르면 그 자리에서 값이 바뀌어야 한다. 셈은 spawnFoeNamed 와 똑같다 —
    허수아비 체력(9999)은 「진짜 체력」이 꺼져 있을 때만 씌운다. */
+/* 훈련장에서 전용 우두머리 대형을 고르면 실제 조우와 같은 판을 세운다. */
+function sandPlaceFoe(n){
+  const formation=BOSS_FORMATIONS[n];let rows;
+  if(formation){
+    if(B.busy)return;
+    B.foes=[];FOE_VIEW=null;FOE_HOLD=null;FOE_SLIDES.clear();
+    rows=formation;
+  }else{
+    let sl=1;while(sl<=SLOTS&&foeBlock(sl))sl++;
+    const bs=FOE[n]&&FOE[n].bossSlot;
+    if(bs&&!foeBlock(bs)&&!foeBlock(bs+1))sl=bs;
+    if(sl>SLOTS){toast("빈 칸이 없습니다.");return}
+    rows=[[n,sl]];
+  }
+  rows.forEach(([name,slot])=>{const f=spawnFoeNamed(name,slot);if(!f)return;
+    if(!run.sandFoeReal){f.maxHp=9999;f.hp=9999}f.exp=0;
+  });
+  rollIntents(true);render();
+}
 function sandRescaleFoes(){
   if(!B||!run) return;
   const sc=foeScale(B.kind);
@@ -26651,9 +27316,9 @@ const EVENTS=[
   o:[{t:"의뢰 받기",d:"퀘스트: 정예 전투에서 1회 승리. (보상: 해당 정예 전투에서 보상을 1번 더 받습니다.)",
       quest:"현상 수배", when:()=>!questHas("현상 수배"),
       f:()=>"수배지 한 장을 뜯어 품에 넣습니다."},
-     {t:"현상 수배 걸기",d:"금화를 {3/6/9}개 냅니다. 무작위 일반 적 3마리 중 하나를 선택하여, 전투에서 만나면 체력을 1로 만듭니다. (1회만)",
-      when:()=>run.gold>=[3,6,9][Math.min(run.field,2)]&&!run.bountyFoe,
-      f:()=>{ const cost=[3,6,9][Math.min(run.field,2)]; run.gold-=cost;
+     {t:"현상 수배 걸기",d:"금화를 "+evScaleText("bounty")+"개 냅니다. 무작위 일반 적 3마리 중 하나를 선택하여, 전투에서 만나면 체력을 1로 만듭니다. (1회만)",
+      when:()=>run.gold>=evScale("bounty")&&!run.bountyFoe,
+      f:()=>{ const cost=evScale("bounty"); run.gold-=cost;
         const pool=[...new Set(FIELD_FOES[Math.min(run.field,2)])].filter(n=>FOE[n]&&!FOE[n].still&&!FOE[n].wreck);
         const pick=[]; while(pick.length<3&&pool.length) pick.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
         run.evSub={t:"bounty",foes:pick};
@@ -26669,8 +27334,8 @@ const EVENTS=[
   t:"한치 앞이 보이지 않는 와중 저 멀리 작은 불빛이 보입니다.\n방금 전까지 누군가가 있었던 것 같습니다.",
   o:[{t:"잠깐 휴식하기",d:"잠을 청해 8시간이 흐릅니다. 활동량을 5 얻습니다.",
       f:()=>{ run.act+=5; spend(8,0); return "불가에 몸을 누입니다. 8시간이 흘렀습니다. 활동량을 5 얻었습니다." }},
-     {t:"만찬 즐기기",d:"먹고 남은 고기를 먹습니다. 모든 대원이 체력을 6 회복합니다.",
-      f:()=>{ run.heroes.forEach(h=>{ if(!h.down) healUp(h,6) }); return "꼬치에 남은 고기를 나눠 먹습니다. 모든 대원이 체력을 6 회복했습니다." }}]},
+     {t:"만찬 즐기기",d:"먹고 남은 고기를 먹습니다. 모든 대원이 체력을 "+evScaleText("feast")+" 회복합니다.",
+      f:()=>{ const v=evScale("feast"); run.heroes.forEach(h=>{ if(!h.down) healUp(h,v) }); return `꼬치에 남은 고기를 나눠 먹습니다. 모든 대원이 체력을 ${v} 회복했습니다.` }}]},
 
  {n:"채석장",art:"ore", face:"작은 죄수",
   when:()=>run.field===0,
@@ -26681,19 +27346,19 @@ const EVENTS=[
       f:()=>{ run.act=Math.max(0,run.act-1); run.after=[{item:itemDef("금덩어리 파편")}]; return "돌무더기에서 금빛 조각을 캐냅니다. 활동량을 1 잃고 금덩어리 파편을 얻었습니다." }}]},
  {n:"거렁뱅이의 부탁",art:"card_bread", face:"작은 죄수",
   t:"어디선가 시큼한 냄새가 납니다. 돌아보니 넝마를 걸친 자가 손을 내밀고 있습니다.",
-  o:[{t:"도와주기",d:"금화를 잃고 대원 하나가 회복합니다.",
-      f:()=>{ const g=rr([2,4]); run.gold=Math.max(0,run.gold-g);
-        const h=someHero(); const v=rr([5,7]); if(h) healUp(h,v);
+  o:[{t:"도와주기",d:"금화를 "+evScaleText("begGive",2)+"개 잃고 무작위 대원 하나가 체력을 "+evScaleText("begHeal",2)+" 회복합니다.",
+      f:()=>{ const g=rr([2,4])+evScale("begGive")-2; run.gold=Math.max(0,run.gold-g);
+        const h=someHero(); const v=rr([5,7])+evScale("begHeal")-5; if(h) healUp(h,v);
         return `금화를 ${g} 건넸습니다. ${h?h.name+"의 체력이 "+v+" 회복되었습니다.":""}` }},
      {t:"무시하기",d:"그냥 지나갑니다.",f:()=>"뒤에서 욕지거리가 들려옵니다."},
-     {t:"약탈하기",d:"금화를 빼앗지만 오염도가 오릅니다.",
-      f:()=>{ const g=rr([1,3])*ST(), sc=rr([2,4]); run.gold+=g; addTaint(sc);
+     {t:"약탈하기",d:"금화를 "+evScaleText("begTake",2)+"개 얻고 오염도가 "+evScaleText("begTaint",2)+" 증가합니다.",
+      f:()=>{ const g=rr([1,3])+evScale("begTake")-1, sc=rr([2,4])+evScale("begTaint")-2; run.gold+=g; addTaint(sc);
         return `금화를 ${g} 빼앗았습니다. 오염도가 ${sc} 올랐습니다.` }}]},
 
  {n:"떨어진 금화",art:"currency_gold", face:"작은 죄수",
   t:"길 한복판에 금화가 떨어져 있습니다. 너무 눈에 잘 띄는 자리입니다.",
   /* 퀘스트 리메이크 (사용자 2026-09-15) — '지나가기' 대신 '주인 찾아주기'(퀘스트). 금화 줍기는 그대로 */
-  o:[{t:"주인 찾아주기",d:"퀘스트: 이번 구역 동안 미지의 구역 4번 방문. (보상: 금화를 12개 얻습니다.)",
+  o:[{t:"주인 찾아주기",d:"퀘스트: 이번 구역 동안 미지의 구역 4번 방문. (보상: 금화를 "+evScaleText("ownerGold")+"개 얻습니다.)",
       quest:"주인 찾아주기", when:()=>!questHas("주인 찾아주기"),
       f:()=>"금화를 챙겨 두고 주인을 찾아 주기로 합니다."},
      {t:"금화 줍기",d:"금화를 얻습니다.",
@@ -26738,8 +27403,8 @@ const EVENTS=[
   t:"바위 틈에 팔뚝만 한 구멍이 뚫려 있습니다. 안쪽에서 미지근한 바람이 나옵니다.",
   o:[{t:"발 집어넣기",d:"활동량을 얻습니다.",
       f:()=>{ run.act+=2; return "발끝에 무언가 닿습니다. 활동량을 2 얻었습니다." }},
-     {t:"손 집어넣기",d:"금화를 얻습니다.",
-      f:()=>{ const g=rr([3,6])*ST(); run.gold+=g; return `손끝에 금화가 ${g} 잡혔습니다.` }}]},
+     {t:"손 집어넣기",d:"금화를 "+evScaleText("holeGold",3)+"개 얻습니다.",
+      f:()=>{ const g=rr([3,6])+evScale("holeGold")-3; run.gold+=g; return `손끝에 금화가 ${g} 잡혔습니다.` }}]},
 
  {n:"무너진 조련소",art:"puppet", face:"부서진 파수병",
   t:"지붕이 내려앉은 건물입니다. 녹슨 사슬과 부서진 틀이 널브러져 있습니다.",
@@ -26792,12 +27457,12 @@ const EVENTS=[
 
  {n:"균열의 목소리",dex:{field:"2구역부터"},art:"corruption", face:"균열 애벌레", when:()=>run.field>=1,
   t:"땅속에서 이름을 부르는 소리가 들립니다. 아무도 그런 이름을 부른 적이 없습니다.",
-  o:[{t:"귀를 기울이기",d:"오염도 20을 받고 중급 보상 하나.",
-      f:()=>{ addTaint(20); run.after=[{grade:"중급"}];
-        return "속삭임이 머릿속에 남습니다. 오염도가 20 올랐습니다." }},
-     {t:"귀 막기",d:"모든 대원이 체력 5를 잃습니다.",
-      f:()=>{ run.heroes.forEach(h=>{ if(!h.down) h.hp=Math.max(1,h.hp-5) });
-        return "귀를 틀어막았지만 두통이 남습니다. 모두 체력 5를 잃었습니다." }}]},
+  o:[{t:"귀를 기울이기",d:"오염도 "+evScaleText("voiceTaint")+"을 받고 중급 보상 하나.",
+      f:()=>{ addTaint(evScale("voiceTaint")); run.after=[{grade:"중급"}];
+        return "속삭임이 머릿속에 남습니다. 오염도가 40 올랐습니다." }},
+     {t:"귀 막기",d:"모든 대원이 체력 "+evScaleText("voiceHp")+"를 잃습니다.",
+      f:()=>{ const v=evScale("voiceHp"); run.heroes.forEach(h=>{ if(!h.down) h.hp=Math.max(1,h.hp-v) });
+        return `귀를 틀어막았지만 두통이 남습니다. 모두 체력 ${v}를 잃었습니다.` }}]},
 
  {n:"버려진 사원",art:"ward", face:"부서진 파수병",   /* 1구역부터 (사용자 2026-09-15 — 퀘스트 리메이크) */
   t:"무너진 기둥 사이에 낯선 신상이 서 있습니다. 발치에 헌금함이 놓여 있습니다.",
@@ -26817,15 +27482,15 @@ const EVENTS=[
   o:[{t:"감정 맡기기",d:"파편 하나를 선택하여 주고 절반의 확률로 일반 장신구.",
       f:()=>{ if(!ownedItems().some(x=>x.it.g==="파편")) return "맡길 파편이 없습니다.";
         run.evSub={t:"gpick",g:"파편",then:"appraise"}; return null }},   /* 고르기는 EV_GAME.gpick (사용자 2026-10-06) */
-     {t:"도둑질하기",d:"파편 하나를 훔칩니다. 오염도 5.",
-      f:()=>{ addTaint(5); run.after=[{item:rnd(ITEMS.filter(i=>i.g==="파편"))}];
-        return "배낭에서 파편 하나를 슬쩍했습니다. 오염도가 5 올랐습니다." }}]},
+     {t:"도둑질하기",d:"파편 하나를 훔칩니다. 오염도 "+evScaleText("appraiseTaint")+".",
+      f:()=>{ const v=evScale("appraiseTaint"); addTaint(v); run.after=[{item:rnd(ITEMS.filter(i=>i.g==="파편"))}];
+        return `배낭에서 파편 하나를 슬쩍했습니다. 오염도가 ${v} 올랐습니다.` }}]},
 
  {n:"녹슨 상자",dex:{field:"2구역부터"},art:"chest_bronze", face:"부서진 파수병", when:()=>run.field>=1,
   t:"자물쇠가 삭아 버린 상자입니다. 억지로 열려면 제련석을 갈아 넣어야 합니다.",
-  o:[{t:"상자 열기",d:"제련석 10개 소모. 희귀 20%, 일반 30%, 파편 50%.",
-      when:()=>(run.stone||0)>=10,
-      f:()=>{ run.stone-=10; const r=Math.random();
+  o:[{t:"상자 열기",d:"제련석 "+evScaleText("rustStone")+"개 소모. 희귀 20%, 일반 30%, 파편 50%.",
+      when:()=>(run.stone||0)>=evScale("rustStone"),
+      f:()=>{ run.stone-=evScale("rustStone"); const r=Math.random();
         const g=r<0.2?"희귀":r<0.5?"일반":"파편";
         const pool=ITEMS.filter(i=>i.g===g);
         run.after=[{item:rnd(pool.length?pool:ITEMS.filter(i=>i.g==="파편"))}];
@@ -26870,9 +27535,9 @@ const EVENTS=[
         v.hp=Math.max(1,Math.floor(v.hp/2));
         list.forEach(h=>{ if(h!==v) healUp(h,Math.round(h.maxHp*0.5)) });
         return `${v.name}이 돌판에 손을 얹었습니다. 나머지 대원이 크게 회복합니다.` }},
-     {t:"협동심 다지기",d:"모든 대원이 체력 5를 회복합니다.",
-      f:()=>{ run.heroes.forEach(h=>{ if(!h.down) healUp(h,5) });
-        return "서로의 등을 두드렸습니다. 모두 체력 5를 회복합니다." }}]},
+     {t:"협동심 다지기",d:"모든 대원이 체력 "+evScaleText("altarHeal")+"를 회복합니다.",
+      f:()=>{ const v=evScale("altarHeal"); run.heroes.forEach(h=>{ if(!h.down) healUp(h,v) });
+        return `서로의 등을 두드렸습니다. 모두 체력 ${v}를 회복합니다.` }}]},
 
  {n:"저주받은 성소",dex:{rate:"낮음 — 35%만 후보에 든다"},art:"card_cursedwall", face:"굶주린 그림자", when:()=>Math.random()<0.35,
   t:"검은 천으로 덮인 제단이 있습니다. 천 아래에서 쇠붙이가 짤랑거립니다.",
@@ -26892,8 +27557,8 @@ const EVENTS=[
   t:"어느샌가 아침이 밝아오고, 머리 속에서 한가지 의문이 생깁니다.\n\"이 세상은 어떻게 시작되었는가?\"",
   o:[{t:"정신차리기",d:"오염도가 0이 됩니다.",
       f:()=>{ addTaint(-run.taint); return "이상한 생각을 떨쳐냅니다. 오염도를 0으로 만듭니다." }},
-     {t:"창조의 시간",d:"특수 장신구 [창조의 시침]을 얻습니다. (라이티늄 관련 장신구를 6개 이상 가지고 있다면 선택할 수 있습니다.)",
-      when:()=>lythiumCount()>=6,
+     {t:"창조의 시간",d:"특수 장신구 [창조의 시침]을 얻습니다. (라이티늄 관련 장신구를 5개 이상 가지고 있다면 선택할 수 있습니다.)",
+      when:()=>lythiumCount()>=evScale("creationItems"),
       f:()=>{ const it=ITEMS.find(x=>x.n==="창조의 시침");
         (run.after=run.after||[]).push({item:it});
         return "순간 머리 속에 빛이 들어옵니다. 정신을 차려보니 손에 얇은 시침을 쥐고 있습니다." }}]},
@@ -26963,13 +27628,13 @@ const EVENTS=[
   o:[{t:"골동품 수집하기",d:"빵, 소형 방패, 맥주를 한 장씩 얻습니다.",
       f:()=>{ addCard(run,"빵",1); addCard(run,"소형 방패",1); addCard(run,"맥주",1);
         return "쓸 만한 것 세 가지를 챙겼습니다." }},
-     {t:"고서 읽기",d:"모든 대원이 경험치 16을 얻습니다.",
-      f:()=>{ giveExp(16,run.heroes.filter(h=>!h.down),true); return "낡은 책장을 넘겼습니다. 모두 경험치 16을 얻습니다." }},   /* 8 → 16 (사용자 2026-10-12) */
+     {t:"고서 읽기",d:"모든 대원이 경험치 "+evScaleText("wagonExp")+"을 얻습니다.",
+      f:()=>{ const v=evScale("wagonExp"); giveExp(v,run.heroes.filter(h=>!h.down),true); return `낡은 책장을 넘겼습니다. 모두 경험치 ${v}을 얻습니다.` }},   /* 8 → 16 (사용자 2026-10-12) */
      {t:"먹을게 많군!",d:"두 선택지 보상을 모두 얻습니다. (대원 중 굴라가 있다면 선택할 수 있습니다.)",
       when:()=>run.heroes.some(h=>h.name==="굴라"&&!h.down), snd:1,
       f:()=>{ evRoar(); addCard(run,"빵",1); addCard(run,"소형 방패",1); addCard(run,"맥주",1);
-        giveExp(16,run.heroes.filter(h=>!h.down),true);   /* 같은 고서 읽기다 — 8 → 16 (사용자 2026-10-12) */
-        return "굴라가 수레를 통째로 뒤집니다. 세 가지를 챙기고 책장도 넘겨 모두 경험치 16을 얻습니다." }}]},
+        const v=evScale("wagonExp"); giveExp(v,run.heroes.filter(h=>!h.down),true);   /* 고서 읽기와 같은 구역별 경험치 */
+        return `굴라가 수레를 통째로 뒤집니다. 세 가지를 챙기고 책장도 넘겨 모두 경험치 ${v}을 얻습니다.` }}]},
 
  /* ── 새 이벤트 일곱 (사용자 2026-10-05). 대원 고르기 · 카드 섞기 · 상자 셋 · 스물하나 · 시련의 문은 EV_GAME 이 그린다 ── */
  {n:"떠돌이 대장장이",art:"forge", face:"작은 죄수",
@@ -27560,7 +28225,7 @@ const evSay=(e,o)=>(o&&o.say)||(e&&e.say)||"";
    field:1 인 퀘스트는 받은 구역을 벗어나면 사라진다. 저장은 run.quests 가 그대로 실린다 (대원은 이름으로) */
 const QUESTS={
   "주인 찾아주기":{kind:"visit",need:4,field:1,who:"all",
-    d:"이번 구역 동안 미지의 구역 {n}번 방문",rd:"금화를 12개 얻습니다.",reward:{gold:12}},
+    d:"이번 구역 동안 미지의 구역 {n}번 방문",get rd(){return `금화를 ${evScale("ownerGold")}개 얻습니다.`},reward:{get gold(){return evScale("ownerGold")}}},
   "공물 준비하기":{kind:"kill",need:20,who:"hero",
     d:"수락자가 적 {n}명 처치",rd:"수락자가 중급 보상을 받습니다.",reward:{grade:"중급"}},
   /* 2026-09-16 (사용자) — 저항군 결성 · 현상 수배 */
@@ -28566,8 +29231,9 @@ function foeSet0(kind){
   const f=Math.min(run.field,2), pool=FIELD_FOES[f], out=[];
   const n=run.heroes.length;
   if(kind==="boss"){
-    const BD=FOE[BOSSES[f]]||{};
-    out.push([BOSSES[f],BD.bossSlot||1]);
+    const boss=expeditionBoss(f),BD=FOE[boss]||{};
+    out.push([boss,BD.bossSlot||1]);
+    if(BOSS_FORMATIONS[boss])return BOSS_FORMATIONS[boss].map(x=>x.slice());
     if(BD.solo) return out;   /* 혼자 서는 우두머리 — 졸개는 제 기술로 부른다 (콜로서스) */
     const extra=Math.min(2,Math.max(0,n-1));
     for(let i=0;i<extra;i++) out.push([rnd(pool),2+i]);
@@ -28921,7 +29587,7 @@ function startBattle(kind,pinned){
   const colI=!pinned&&B.foes.find(x=>x.alive&&x.name==="콜로서스");
   if(colI&&typeof document!=="undefined"&&document.body&&document.body.classList){ document.body.classList.add("colin"); setTimeout(()=>{ try{ colIntro(colI) }catch(e){ document.body.classList.remove("colin","colin2") } },2600) }
   setTimeout(()=>{ const f=B&&B.foes&&B.foes.filter(x=>x.alive);
-    if(f&&f.length&&!colI) bark(f[0].boss?f[0]:rnd(f),"in") },700);
+    if(f&&f.length&&!colI){const actor=f[0].boss?f[0]:rnd(f);bark(actor,"in",actor.name==="실험 책임자");if(actor.name==="실험 책임자"){SFX.play("실험 책임자 전장에 나설 때");flushFX()}} },700);
   say(`${FIELDS[run.field].n} — ${kind==="boss"?"우두머리":kind==="elite"?"정예":"교전"} `
      +`${run.dun&&run.dun.waves>1?`${run.dun.wave}/${run.dun.waves}라운드`:"시작"}`,"t1");
   say("손패의 대원 카드를 원하는 칸으로 끌어다 놓으세요.","t2");
@@ -29022,8 +29688,10 @@ function resetBattle(){
     say("전투를 처음으로 초기화했습니다 — 적과 패턴은 그대로입니다.","t2");
   }catch(e){ startBattle(B.kind) }
 }
-function say(t,c){ if(!B||!B.log) return;   /* 전투 밖(지도에서 보상을 고를 때 등)에서 불려도 넘어지지 않게 — 수확철 (2026-09-30) */
-  t=icoify(t); B.log.push({t,c}); if(!BARK_SHOW) return; const l=document.getElementById("log");
+function say(t,c,hpUnit){ if(!B||!B.log) return;   /* 전투 밖(지도에서 보상을 고를 때 등)에서 불려도 넘어지지 않게 — 수확철 (2026-09-30) */
+  t=icoify(t); B.log.push({t,c});
+  if(FOE_CAPTURING&&foeViewActive()){ fx({foeLog:{entry:{t,c},battle:B,hpUnit:hpUnit},foeLife:0,gap:0}); return }
+  if(!BARK_SHOW) return; const l=document.getElementById("log");
   if(l){ l.insertAdjacentHTML("beforeend",`<div class="${c||""}">${t}</div>`); l.scrollTop=l.scrollHeight } }
 /* 정지(u.stop) — 잔해처럼 겨눌 수도 때릴 수도 없다. 칸은 그대로 막는다(allyAt·minAt 은 거른 적이 없다) (사용자 2026-10-07) */
 /* 정지 — 어떤 효과도 닿지 않는 상태. **삼켜진 대원도 같다** (사용자 2026-10-14 : 「먹힌 상태에서는
@@ -29559,6 +30227,7 @@ function morphFoe(f,name,opt){
     fx({side:"foe",slot:sl,s:"summon",ring:"#c9a227",txt:"변신",cls:"buf",gap:160});
     say(`${was}${jo(was,"ig")} ${name}${jo(name,"eu")}로 변신합니다. (체력 ${hp})`,"t1");
   }
+  if(name==="모형 기사단장"&&was!==name) foeBark(m,"event:진급");
   try{ rollIntents(true) }catch(e){}
   return m;
 }
@@ -29596,6 +30265,7 @@ function foePurge(f){
 /* 적의 종족 — 대원(HERO_TAGS.race)과 같은 낱말. FOE 에 race 가 없으면 demon 표로, 그것도 없으면 빈 글자 */
 /* 2026-09-30 (사용자) — 짐승→야수 · 굶주린 그림자·오염된 갑주는 망자 · 빈 적 채움. 울타리·고요한 우물은 구조물이라 없음 */
 const FOE_RACE={
+ "실험 책임자":"인간","연료 장치":"기계",
  /* 핏빛 감옥 */
  "작은 죄수":"악마","사슬 광인":"악마","억울한 죄수":"인간",   /* 작은 죄수·사슬 광인 악마 (사용자 2026-09-30) */"감옥 경비병":"인간","사슬 간수":"인간","고문 기술자":"인간",
  "대포병":"인간","첨탑 관리자":"인간","간수장":"골렘",   /* 간수장 인간 → 골렘 (사용자 2026-10-08) — 죽음 소리는 「골렘 죽음」이 올 때까지 기계 */
@@ -29727,6 +30397,8 @@ function demonExposed(f){
   return B.foes.some(x=>x.alive&&x!==d&&x.slot<d.slot)?null:d;
 }
 const SK_COND={
+  fuelRepair:f=>!!fuelRepairTarget(f),
+  fuelWreck:f=>fuelDevices().some(x=>!x.alive&&x.wreck&&!foeAt(x.slot)),
   toad:      f=>B.foes.some(x=>x.alive&&x.name==="늪 두꺼비"),   /* 먹이활동 — 먹을 두꺼비가 있을 때만 (사용자 2026-10-14) */
   cannonFront:f=>B.foes.some(x=>x.alive&&x.name==="대포"&&x.slot<f.slot),
   noCannon:  f=>!B.foes.some(x=>x.alive&&x.name==="대포"&&x.slot<f.slot),
@@ -29917,6 +30589,7 @@ function skW(f,s){
   return s.w||1;
 }
 function skRoll(f,allies,inR,far){
+  if(f.name==="연료 장치")return fuelRoll(f);
   const D=FOE[f.name], S=D.sk; let farSelf=null;
   f.skCd=f.skCd||{}; f.skUsed=f.skUsed||{};
   const cand=[];
@@ -29991,6 +30664,165 @@ function skRoll(f,allies,inR,far){
           to:to,toId:toId,chase:!!s.chase,
           v:s.dmg?skDmg(f,s)+(s.buffAfter?0:(s.buff||0)):0,hits:skHits(f,s),el:s.el||D.el||"공격",far:0};   /* 스스로 강해진 뒤 때린다 (바라보기·갈증) — 의도 숫자에 그 몫 (2026-10-01) */
 }
+/* 실험 책임자 / 연료 장치 — 상태는 전투에, 연출은 큐에 둔다. */
+const FUEL_NAME="연료 장치", DIRECTOR_NAME="실험 책임자";
+function mapBossSeed(grid){let seed=2166136261;const text=JSON.stringify(grid);for(let i=0;i<text.length;i++)seed=Math.imul(seed^text.charCodeAt(i),16777619)>>>0;return seed}
+function expeditionBoss(fi){ return fi===0&&run&&run.prisonBoss||BOSSES[fi] }
+function fuelDevices(){ return B.foes.filter(x=>x.name===FUEL_NAME) }
+function fuelRand(){ if(B.fuelSeed==null)B.fuelSeed=mapBossSeed(run.grid);B.fuelSeed=(Math.imul(1664525,B.fuelSeed)+1013904223)>>>0; return B.fuelSeed/4294967296 }
+function fuelSchedule(f){ f.fuelDue=(B.turn||1)+(fuelRand()<.5?1:2) }
+function fuelIntent(f,i){ const s=FOE[f.name].sk[i];return {t:"sk",i,n:s.n,tg:s.tg||"none",to:0,v:0,hits:1,el:FOE[f.name].el||"공격"} }
+function fuelRoll(f){
+  if(f.fuelDue==null) fuelSchedule(f);
+  return fuelIntent(f,f.fuelDue<=(B.turn||1)?((f.fuelHeat||0)>=3?2:1):0);
+}
+function fuelRepairTarget(f){ return fuelDevices().find(x=>x.id===f.repairId&&x.alive)||null }
+function fuelRepairSeek(){
+  const f=B.foes.find(x=>x.alive&&x.name===DIRECTOR_NAME); if(!f) return;
+  if(fuelRepairTarget(f)) return;
+  f.repairId=null;
+  const hot=fuelDevices().filter(x=>x.alive&&(x.fuelHeat||0)>=3);
+  if(!hot.length||foeBound(f)) return;
+  const target=hot[Math.floor(fuelRand()*hot.length)], from=f.slot, to=target.slot;
+  if(to===from) return;
+  /* 중간 장치(잔해 포함)를 한 칸씩 앞으로/뒤로 민다. 맞바꿈하지 않는다. */
+  const between=B.foes.filter(x=>x!==f&&(x.alive||x.wreck)&&x.slot>=Math.min(from,to)&&x.slot<=Math.max(from,to));
+  if(between.some(x=>x.name!==FUEL_NAME)) return;
+  between.forEach(x=>{x.slot+=to>from?-1:1}); f.slot=to; f.repairId=target.id;
+  between.filter(x=>x.alive).forEach(x=>foeMoved(x));foeMoved(f);
+  if(!f.alive)return;
+  f.intent=fuelIntent(f,0);
+  fx({side:"foe",slot:f.slot,s:"step",gap:420});
+  say(`수리 — ${f.name}${jo(f.name,"ig")} ${foeNo(f.slot)}번으로 이동해 앞 장치를 수리합니다.`,"t2");
+}
+function fuelOtherIntent(f){
+  const allies=allUnits(),inR=allies.filter(a=>dist(a.slot,f.slot)<=foeRng(f)),random=Math.random;
+  try{Math.random=fuelRand;return skRoll(f,allies,inR,!inR.length)}finally{Math.random=random}
+}
+function fuelRepairCancel(dead){
+  const f=B.foes.find(x=>x.alive&&x.name===DIRECTOR_NAME&&x.repairId===dead.id);if(!f)return;
+  f.repairId=null;
+  f.intent=fuelOtherIntent(f);
+}
+function fuelDeath(f){
+  if(f.name!==FUEL_NAME)return;
+  f.fuelHeat=0;f.fuelDue=null;
+  const boss=B.foes.find(x=>x.alive&&x.name===DIRECTOR_NAME);
+  if(boss){foeAtkUp(boss,2);foeBark(boss,"event:연료 장치 파괴");
+    fx({side:"foe",slot:boss.slot,s:"실험 책임자 장치 파괴",gap:0});
+    say("기막힌 발명품 — 실험 책임자 공격력 +2", "t2")}
+  fuelRepairCancel(f);
+}
+function fuelExplosion(f){
+  if(!f.alive||f.fuelExploding)return;
+  f.fuelExploding=1;
+  const foes=B.foes.filter(x=>x.alive),allies=allUnits().filter(x=>x.hp>0),v=foeDmg(f,15,"마법");
+  fx({side:"foe",slot:f.slot,sheet:"fx_fuel_explosion",sheetOpt:{cellW:128,cellH:208,frames:8,z:.9,feet:1,ms:1600,tag:"fuel-explosion"},s:foeSnd(f,"폭발"),gap:1600});
+  addTaint(5);say("연료 장치 폭발 — 아군과 적군 모두에게 마법 피해 "+v+", 오염도 +5", "t3");
+  /* 먼저 잔해로 확정해 자기 폭발이 가시/죽음에 다시 폭발하지 않게 한다. */
+  f.evade=0;f.armor=0;
+  asSrc(f,()=>hurt(f,f.hp,"폭발",null,true,0,1));
+  asSrc(f,()=>{
+    allies.forEach(t=>{if(t.hp>0)hurtAlly(f,t,v,"폭발","마법")});
+    foes.filter(t=>t!==f).forEach(t=>{if(t.alive)hurt(t,v,"연료 장치 폭발","mag")});
+  });
+  f.fuelExploding=0;
+}
+function fuelHeatUp(f){
+  if(!f.alive)return;
+  if((f.fuelHeat||0)>=3){fuelExplosion(f);return}
+  f.fuelHeat=(f.fuelHeat||0)+1;
+  fx({side:"foe",slot:f.slot,s:foeSnd(f,"과열"),gap:180});
+  say(`연료 장치 — 과열 ${f.fuelHeat}단계`,"t3");fuelRepairSeek();
+}
+function fuelExec(f,I){
+  const s=FOE[f.name].sk[I.i];
+  if(f.name===FUEL_NAME){
+    if(I.i===0){fx({side:"foe",slot:f.slot,s:foeSnd(f,"대기"),gap:100});say("연료 장치 — 대기", "t2");return true}
+    fuelHeatUp(f);if(f.alive)fuelSchedule(f);return true;
+  }
+  if(f.name!==DIRECTOR_NAME)return false;
+  if(s.fuelRepair){
+    const target=fuelRepairTarget(f);
+    if(!target||target.slot!==f.slot-1){f.repairId=null;const next=fuelOtherIntent(f);if(next)skExec(f,next);return true}
+    foeBark(f,"skill:수리 작업");
+    fx({side:"foe",slot:f.slot,strip:{k:"makeA",ms:180},s:foeSnd(f,"수리 작업"),gap:1440});
+    target.fuelHeat=0;fuelSchedule(target);target.intent=fuelRoll(target);f.repairId=null;
+    say("수리 작업 — 앞 연료 장치를 완전히 식힙니다.","t2");return true;
+  }
+  if(s.fuelRestore){
+    const t=fuelDevices().find(x=>!x.alive&&x.wreck&&!foeAt(x.slot));if(!t)return true;
+    t.alive=1;t.wreck=0;t.hp=t.maxHp;t.hpShow=null;t.shield=0;t.eshield=0;t.deb={};t.fuelHeat=0;t.fuelDue=null;t.dieHold=0;
+    t.fuelExploding=0;fuelSchedule(t);t.intent=fuelRoll(t);
+    fx({side:"foe",slot:f.slot,strip:{k:"makeA",ms:180},s:foeSnd(f,"복구"),gap:900});
+    say("복구 — 연료 장치를 되살립니다.","t2");return true;
+  }
+  if(s.fuelMistake){
+    foeBark(f,"skill:간단한 실수");say("간단한 실수 — 과열 장치들이 1단계 더 과열됩니다.","t3");
+    fuelDevices().filter(x=>x.alive&&(x.fuelHeat||0)>0).forEach(fuelHeatUp);return true;
+  }
+  return false;
+}
+/* 책임자: 재그리기에도 공격 자세를 유지하고, 수리 대기는8프레임을 반복한다. */
+let DIRECTOR_ATTACK=null;
+const DIRECTOR_REPAIR_CLOCK=new WeakMap();
+function directorVisualSync(){
+  if(PRED_DRY)return;
+  if(view!=="battle"||!B){DIRECTOR_ATTACK=null;return}
+  const now=Date.now();
+  if(DIRECTOR_ATTACK&&(DIRECTOR_ATTACK.battle!==B||now>=DIRECTOR_ATTACK.until))DIRECTOR_ATTACK=null;
+  document.querySelectorAll('#foeSide img[data-nm="실험 책임자"]').forEach(im=>{
+    const slot=im.closest('.slot'),u=slot&&foeViewAt('foe',Number(slot.dataset.slot)),real=u&&(u._viewReal||u),set=PNG_SPRITE['실험 책임자'];
+    if(!u||!u.alive||!set||im._strip>now)return;
+    const attack=DIRECTOR_ATTACK&&DIRECTOR_ATTACK.unit===real?DIRECTOR_ATTACK:null;
+    if(attack){
+      const pic=set[attack.pose];if(!pic)return;
+      im.removeAttribute('data-anim');im.removeAttribute('data-repair-anim');im.dataset.directorAttack='1';im.dataset.pose=attack.pose;
+      im.src=pic.u;im.style.setProperty('--ph',pic.ph);return;
+    }
+    if(im._pt)return;   /* 피격/막기 자세가 끝나면 수리 반복으로 돌아온다. */
+    if(u.repairId!=null&&set.makeA&&set.makeA.length){
+      if(!DIRECTOR_REPAIR_CLOCK.has(real))DIRECTOR_REPAIR_CLOCK.set(real,now);
+      const k=Math.floor((now-DIRECTOR_REPAIR_CLOCK.get(real))/(180*SPD))%set.makeA.length;
+      im.removeAttribute('data-anim');im.removeAttribute('data-director-attack');im.dataset.repairAnim='1';im.dataset.pose='repair';im.dataset.repairFrame=k;
+      if(im.src!==set.makeA[k])im.src=set.makeA[k];im.style.setProperty('--ph',set.idle.ph);return;
+    }
+    DIRECTOR_REPAIR_CLOCK.delete(real);
+    if(im.dataset.repairAnim||im.dataset.directorAttack){
+      im.removeAttribute('data-repair-anim');im.removeAttribute('data-repair-frame');im.removeAttribute('data-director-attack');
+      im.dataset.pose='idle';im.dataset.anim='1';im.src=set.idleA?set.idleA[0]:set.idle.u;im.style.setProperty('--ph',set.idle.ph);
+    }
+  });
+}
+setInterval(directorVisualSync,40);
+
+function fuelWrenchFX(from,to){
+  const a=ctrOf("foe",from),b=ctrOf("mine",to),layer=document.getElementById("fx");
+  if(!a||!b||!layer||!ICON_PNG.fuel_wrench)return;
+  const nd=el(`<div class="fuel-wrench"><img src="${ICON_PNG.fuel_wrench}" alt=""></div>`);layer.appendChild(nd);
+  const duration=720*SPD;
+  nd.animate([0,.2,.4,.6,.8,1].map(t=>({left:(a.x+(b.x-a.x)*t)+"px",top:(a.y+(b.y-a.y)*t-100*Math.sin(Math.PI*t))+"px",transform:`translate(-50%,-50%) rotate(${-720*t}deg)`})),{duration,easing:"linear",fill:"forwards"});
+  setTimeout(()=>nd.remove(),duration+50);
+}
+/* 실제 피해 경로로 새 기믹의 연쇄 폭발까지 예고한다. 판·타이머·추첨은 되돌린다. */
+let FUEL_PREVIEW=null;
+function fuelPreviewHit(t,raw,d,ev){
+  if(!FUEL_PREVIEW)return;
+  const sl=FUEL_PREVIEW.slots.get(t);if(!sl)return;
+  const m=FUEL_PREVIEW.map[sl]||(FUEL_PREVIEW.map[sl]={raw:0,hp:0,ev:0});m.raw+=raw;m.hp+=d;m.ev+=ev||0;
+}
+function fuelIncoming(){
+  if(B.foeAct)return {};
+  const snap=predSnap(),render0=render,timer=setTimeout,flush=flushFX,random=Math.random,oldView=FOE_VIEW,oldSel=sel;
+  const out={map:{},slots:new Map(allUnits().map(u=>[u,u.slot]))};let seed=7654321;
+  try{
+    PRED_DRY++;FUEL_PREVIEW=out;render=()=>{};setTimeout=()=>0;flushFX=()=>{};
+    Math.random=()=>{seed=(Math.imul(1664525,seed)+1013904223)>>>0;return seed/4294967296};
+    if(!B.foeAct)endPhase();foePhase();
+  }finally{FUEL_PREVIEW=null;predRest(snap);PRED_DRY--;render=render0;setTimeout=timer;flushFX=flush;Math.random=random;FOE_VIEW=oldView;sel=oldSel}
+  return out.map;
+}
+
 /* 여분 부품 (콜로서스, (사용자 2026-10-07)) — 첫째 의도를 정한 뒤 다른 기술로 둘째 의도를 정한다 */
 function foeAct2(f,allies,inR,far){
   f.intent2=null;
@@ -30117,10 +30949,12 @@ const TONGUE_SK={"늪 두꺼비":{"혀 낚아채기":"far"},
                  "늪의 왕":{"끈적혀":"far"}};   /* 산성 침은 혀가 아니라 침이 날아간다 (사용자 2026-10-14) */   /* 삼키기는 그 자리에서 따로 (대원이 사라지기 전 칸으로) */
 function skExec0(f,I){
   const D=FOE[f.name], s=D&&D.sk&&D.sk[I.i]; if(!s) return;
+  if(fuelExec(f,I))return;
   f.skCd=f.skCd||{}; f.skUsed=f.skUsed||{};
   if(s.cd) f.skCd[I.i]=s.cd;             /* 적 차례가 열릴 때마다 하나 줄어 cd 턴을 쉰다 */
   f.skUsed[I.i]=1;
-  bark(f,"atk");
+  foeVerdictBark(f);
+  bark(f,"atk",false,foeSkillBark(f,s));
   say(`${f.name} — ${s.n}`,"t3");
   if(s.mp) mpGain(f,s.mp);   /* 마력을 얻는 패턴 (탑의 주인 봉인 · 수련 · 시간 역행) */
   if(f.name==="감옥의 눈"&&s.dmg) fx({side:"foe",slot:f.slot,pose:"atk",eyeBeam:1,gap:300});   /* 눈에서 빔 (58) */
@@ -30218,7 +31052,7 @@ function skExec0(f,I){
   }
   if(s.eatToad){                       /* 먹이활동 — 늪 두꺼비를 잡아먹는다 */
     const t=B.foes.find(x=>x.alive&&x.name==="늪 두꺼비");
-    if(t&&!f.swallow){ t.alive=0; t.expTaken=1;
+    if(t&&!f.swallow){ foeBark(f,"skill:먹이활동"); t.alive=0; t.expTaken=1;
       healUp(f,s.eatToad.heal||30);
       { const u=s.eatToad.up||3;   /* 「모든 능력치를 3」 — 셋 다 (2026-10-15) */
         f.atk+=u; f.atkUp=(f.atkUp||0)+u; f.mag=(f.mag||0)+u; f.magUp=(f.magUp||0)+u; f.def+=u; f.defUp=(f.defUp||0)+u }
@@ -30351,6 +31185,10 @@ function skExec0(f,I){
     else say(`${s.n} — 기생할 곳이 없습니다.`,"t2");
   }
   if(s.chg){ f.chg=(f.chg||0)+s.chg; if(s.chgClamp) f.chg=Math.min(chgMax(f),f.chg);   /* chgClamp — 되감기로 한 차례에 두 번 이어 가도 충전이 최대를 넘지 않는다 (탑의 주인 기억 저장, 2026-10-12) */
+    if(f.name==="고장난 수호기"||f.name==="시평선의 문지기"){
+      const v=FOE_VERDICT_BARK.get(f);
+      if(!v||v.saidTurn!==B.turn) foeBark(f,"event:충전 "+f.chg);
+    }
     if(f.name==="고장난 수호기") fx({side:"foe",slot:f.slot,guardChg:f.chg,gap:0});   /* 충전 8칸 (사용자 2026-10-07) */
     fx({side:"foe",slot:f.slot,pose:f.name==="고장난 수호기"?null:"bless",ring:"#c9a227",glow:1,txt:"충전 "+f.chg+"/"+chgMax(f),cls:"shd",gap:f.name==="고장난 수호기"?520:160});
     say(`${f.name} — ${f.name==="고장난 수호기"?"포신이 달아오릅니다":"기운이 차오릅니다"} (충전 ${f.chg}/${chgMax(f)})`,"t3") }
@@ -30462,7 +31300,8 @@ function skExec0(f,I){
     say(`${s.n} — 과열 중첩 ${was} → ${f.heat}`,"t2"); heatRefresh(f) }
   if(s.reward){   /* 포상 — 무작위 모형 창병을 모두 회복시키고 진급시킨다 */
     const L=grpMates(f).filter(x=>x.name==="모형 창병"), t=L.length?rnd(L):null;
-    if(t){ const v=Math.max(0,t.maxHp-t.hp); if(v) healUp(t,v);
+    if(t){ foeBark(f,"event:진급 명령");
+      const v=Math.max(0,t.maxHp-t.hp); if(v) healUp(t,v);
       fx({side:"foe",slot:t.slot,s:"heal",ring:"#7fd39a",txt:"+"+v,cls:"heal",gap:120});
       say(`${s.n} — ${t.name}의 체력이 모두 차오르고 진급합니다.`,"t2");
       morphFoe(t,"모형 기사단장",{}) }
@@ -30520,6 +31359,10 @@ function skExec0(f,I){
     try{ if(typeof fieldQuake==="function") fieldQuake("quakeB") }catch(e){}
     try{ const k=["시평선_선고","시평선 선고"].find(x=>sfxHas(x)); if(k) SFX.play(k) }catch(e){}
     const L=allUnits().filter(u=>u.hp>0&&!stopped(u)), M=B.foes.filter(x=>x.alive&&x!==f&&!stopped(x));   /* 자신을 뺀 모든 대상 — 대원 · 소환물 · 다른 적까지 (사용자 2026-10-08) */
+    if(f.name==="시평선의 문지기"&&L.length+M.length){
+      FOE_VERDICT_BARK.set(f,{turn:B.turn,step:0,saidTurn:B.turn});
+      foeBark(f,"event:모두 정지");
+    }
     L.forEach(u=>{ u.stop=(u.stop||0)+s.stopAll+1;   /* 적이 거는 'N턴 동안' 은 N+1 */
       fx({side:"mine",slot:u.slot,ring:"#8fa8c0",gap:100,fn:()=>buffSheetFX("mine",u.slot,"정지")}) });
     M.forEach(x=>{ x.stop=(x.stop||0)+s.stopAll+1;
@@ -30690,7 +31533,9 @@ function skExec0(f,I){
     out.forEach(u=>Object.keys(s.debOut).forEach(k=>addDeb(u,k,s.debOut[k],f)));
     if(out.length) say(`${s.n} — 공격 범위 밖 ${out.map(u=>u.name).join("")}에게 ${Object.keys(s.debOut).map(k=>(DEBUFF[k]||{}).n+" "+s.debOut[k]).join(", ")}`,"t3") }
   if(!T.length) return;
-  if(s.dmg){ if(f.name!=="콜로서스") fx({side:"foe",slot:f.slot,pose:"atk",lunge:1,gap:0,s:foeSnd(f,"공격")});
+  if(s.dmg){
+    if(f.name==="고장난 수호기"&&s.spend) foeBark(f,"event:포격");
+    if(f.name!=="콜로서스") fx({side:"foe",slot:f.slot,pose:s.fuelThrow?"atk2":"atk",lunge:1,gap:0,s:foeSnd(f,s.fuelThrow?"스패너 던지기":"공격")});
     else if(!s.shoveAll) fx({side:"foe",slot:f.slot,colFx:"fist",colTo:T[0].slot,colAlt:f._act2?1:0,gap:910,s2:foeSnd(f,"공격")}) }   /* 콜로서스 — 아래에서 솟는 주먹 · 밀치기는 손바닥이 이미 (사용자 2026-10-07) */
   else if(s.deb&&f.name!=="콜로서스") fx({side:"foe",slot:f.slot,pose:"atk",gap:0,s:foeSnd(f,"공격")});   /* 디버프만 걸 때도 공격 자세 (2026-10-08) */
   const kindN=s.kindHits?debKindsOnField():0;   /* 균열 폭발 — 상대에게 걸린 부정적인 효과의 종류 수 */
@@ -30708,10 +31553,11 @@ function skExec0(f,I){
       for(let q=0;q<hits;q++){
         if(t.hp<=0) break;
         const before=t.hp;
+        if(q===0&&s.fuelThrow)fx({side:"mine",slot:t.slot,fuelWrench:{from:f.slot},gap:720});
         if(q===0&&f.name==="간수장"){   /* 간수장 철퇴 · 발구르기 (79)(80) */
           if(s.n==="철퇴 내려찍기")
-            fx({side:"mine",slot:t.slot,sheet:"fx_warden_slam",   /* 충돌점이 그림 (116,55) */
-                sheetOpt:{cellW:256,cellH:64,frames:8,z:1.6,dx:12,dy:-23,frameMs:[90,75,65,55,80,95,115,140]},
+            fx({side:"mine",slot:t.slot,sheet:"fx_warden_slam",   /* 충돌점 (116,55)을 발밑에 — 아래 여백 9px 보정 */
+                sheetOpt:{cellW:256,cellH:64,frames:8,z:1.6,feet:1,dx:12,dy:9,frameMs:[180,150,130,110,160,190,230,280]},   /* 내려찍기 띠를 2배 천천히 (사용자 2026-10-16) */
                 s:sfxOr("철퇴 공격",null),gap:0});
           else if(s.n==="발구르기")
             fx({side:"mine",slot:t.slot,sheet:"fx_warden_quake",   /* 발밑에서 땅이 울린다 — 충돌점 (32,36) */
@@ -30835,9 +31681,9 @@ function foeDeath(f){
          샘의 잔영의 죽음일 때만 (사용자 2026-10-13) */
       if(f&&f.name==="샘의 잔영"&&(typeof ICON_PNG!=="undefined")&&ICON_PNG.fx_spring_scream)
         fx({side:"mine",slot:t.slot,sheet:"fx_spring_scream",
-            sheetOpt:{cellW:64,cellH:64,frames:8,z:1.8,dy:-28,
-                      frameMs:[80,80,80,90,90,80,90,120]},gap:0});   /* 더 크게 (사용자 2026-10-13) — z 1.1 → 1.8.
-                      ⚠️ dy 는 **그림 픽셀**이라 sheetFX 가 z 를 곱한다. 자리를 그대로 두려면 같은 비율로 줄여야 한다 (-46×1.1/1.8 ≒ -28) */
+            sheetOpt:{cellW:64,cellH:64,frames:8,z:2.7,dy:-19,tag:"spring-scream",fade:160,
+                      frameMs:[80,80,80,90,90,80,90,120]},gap:0});   /* 1.8 → 2.7, 푸른 광채 · 스러짐 (사용자 2026-10-17).
+                      dy×z 를 약 -51px로 유지해 얼굴 중심은 대원 위 제자리에 둔다. */
       fx({side:"mine",slot:t.slot,s:"mag",ring:"#5fd8cf",gap:120});
       say(`${d.n} — ${t.name}에게 마법 피해 ${d.v}`,"t3");
       asSrc(f,()=>hurtAlly(f,t,foeDmg(f,d.v,"마법"),d.n,"마법"));
@@ -31254,6 +32100,7 @@ function rollIntents(onlyIdle){
   squeezeRefresh();   /* 조여 오는 힘 — 뽑은 의도에 그 몫을 미리 넣는다 */
 }
 function rollIntents0(onlyIdle){
+  fuelRepairSeek();
   grpHideSync();
   tauntWithSync();   /* 주인의 명령 — 도발은 의도를 고르기 전에 맞춰 둔다 (도발이 서면 겨눌 수 있는 대상이 달라진다) */
   const USED={};
@@ -31750,16 +32597,166 @@ BARK["트리스탄"]["kill:악마"]=["죽어라 악마여!!","물러나라!!","�
 BARK["트리스탄"]["skill:화살비"]=["하늘을...뒤덮어라"];
 /* 제 대사가 없는 대상은 말이 없다 — 공용 대사는 뺐다 (2026-09-11). 표는 비워 두고 자리만 남긴다 */
 const BARK_ANY={};
+/* 기존 대사 주머니의 주사위 소비는 유지한다. 새 적 대사는 화면 전용 주사위를 쓴다.
+   대사 추가만으로 전투의 대상·피해·보상 추첨이 밀리면 안 된다 (2026-10-16). */
+const BARK_LEGACY=new Set(Object.entries(BARK).flatMap(([n,T])=>Object.keys(T).filter(k=>T[k]&&T[k].length).map(k=>n+"|"+k)));
+/* 앞선 원고에서 이미 쓰던 적 대사도 기존 주사위 흐름을 지킨다. */
+["in","down"].forEach(k=>BARK_LEGACY.add("타락한 나이코스|"+k));
+const FOE_EVENT_BARK={
+ "실험 책임자":{in:["내 연구를 방해하지마라!","이것이 바로 미래다!"],atk:["방해하지 마라고!","꺼져라"],hurt:["너도 개조해야겠군...","말을 안들어?"],down:["내 연구가..."],"skill:수리 작업":["어서 수리해야 해!","방해하지마!","위험하다고!","이게 왜이러지?"],"event:연료 장치 파괴":["이런!","내 발명품이!","내 희대의 작품이!"],"skill:간단한 실수":["이런 실수를...","안돼 내 장치들!"]},
+ "고장난 수호기": {
+  "event:충전 1": [
+   "위협 대응 프로그램을 실행합니다."
+  ],
+  "event:충전 2": [
+   "확인가능한 모든 생물체 조준."
+  ],
+  "event:포격": [
+   "정화 시작."
+  ]
+ },
+ "물길군주": {
+  "event:정령 소환": [
+   "일어나라 정령들이여!"
+  ]
+ },
+ "뿌리모체": {
+  "skill:파종": [
+   "(덩굴이 자라는 소리)"
+  ]
+ },
+ "늪의 왕": {
+  "skill:산성 침": [
+   "(우웩)"
+  ],
+  "skill:먹이활동": [
+   "(냠냠)"
+  ],
+  "skill:삼키기": [
+   "먹어주마!",
+   "맛있는 먹이군!"
+  ]
+ },
+ "장부쟁이": {
+  "event:기록 정정": [
+   "<wave>이제 그만...</wave>",
+   "<wave>잠깐 쉬어라...</wave>"
+  ]
+ },
+ "마나 결정체": {
+  "event:감금됨": [
+   "풀려났다!",
+   "나를 막을 순 없다!"
+  ]
+ },
+ "모형 기사단장": {
+  "event:진급": [
+   "적들을 막아라!",
+   "강해졌군!"
+  ]
+ },
+ "시평선의 문지기": {
+  "event:충전 1": [
+   "그만 멈추거라..."
+  ],
+  "event:충전 2": [
+   "여기를 떠나라..."
+  ],
+  "event:충전 3": [
+   "되돌릴 수 없다..."
+  ],
+  "event:모두 정지": [
+   "이제 그만...!"
+  ],
+  "event:정지 다음 턴": [
+   "안정화 프로토콜 실행."
+  ],
+  "event:정지 다다음 턴": [
+   "시간선 안정화 작업 완료."
+  ]
+ },
+ "모형 전략가": {
+  "event:진급 명령": [
+   "진급하라!",
+   "승진이다!"
+  ]
+ }
+};
+Object.entries(FOE_EVENT_BARK).forEach(([n,T])=>Object.assign(BARK[n]=BARK[n]||{},T));
+const FOE_VERDICT_BARK=new WeakMap();
+let FOE_BARK_SEED=123456789;
+function foeBarkRand(){ FOE_BARK_SEED=(Math.imul(1664525,FOE_BARK_SEED)+1013904223)>>>0; return FOE_BARK_SEED/4294967296 }
+function foeBark(f,cat,optional){
+  if(PRED_DRY||!B||!f||!document.querySelector(".bfstage")) return false;
+  const P=(BARK[f.name]||{})[cat]; if(!P||!P.length) return false;
+  fx({foeBark:{u:f,cat:cat,battle:B,optional:!!optional},foeLife:optional?0:(SPD<1?1680:2400),gap:0});
+  return true;
+}
+function foeBarkPlay(o){
+  if(PRED_DRY||B!==o.battle||!document.querySelector(".bfstage")) return;
+  const P=(BARK[o.u.name]||{})[o.cat]; if(!P||!P.length) return;
+  const now=Date.now(), rate={in:.42,atk:.13,hurt:.16,kill:.3,down:.85}[o.cat]||.12;
+  if(o.optional&&(now-BARK_AT<1800||foeBarkRand()>rate)) return;
+  const owner=String(uid(o.u));
+  document.querySelectorAll("#fx .bark").forEach(nd=>{ if(nd.dataset.barkOwner===owner) nd.remove() });
+  barkShow(o.u,P[Math.floor(foeBarkRand()*P.length)],now,false,o.optional?1300:(SPD<1?1680:2400));
+}
+function foeVerdictBark(f){
+  const v=FOE_VERDICT_BARK.get(f); if(!v||v.saidTurn===B.turn) return false;
+  const step=B.turn-v.turn;
+  if(step<1||step>2||step<=v.step) return false;
+  v.step=step; v.saidTurn=B.turn;
+  foeBark(f,step===1?"event:정지 다음 턴":"event:정지 다다음 턴"); return true;
+}
+function foeSkillBark(f,s){
+  const v=FOE_VERDICT_BARK.get(f);
+  if(v&&v.saidTurn===B.turn) return true;   /* 안정화 안내 중에는 다음 충전 대사를 겹치지 않는다 */
+  if(f.name==="실험 책임자"&&!s.dmg)return true;
+  if(f.name==="고장난 수호기"&&(s.chg||s.spend&&s.dmg)) return true;
+  if(f.name==="시평선의 문지기"&&(s.chg||s.stopAll)) return true;
+  if(f.name==="물길군주"&&s.summon) return foeBark(f,"event:정령 소환");
+  if(f.name==="뿌리모체"&&s.n==="파종") return foeBark(f,"skill:파종");
+  if(f.name==="늪의 왕"){
+    if(s.eatToad) return true;   /* 먹이가 실제로 있을 때 아래에서 말한다 */
+    if(s.n==="산성 침"||s.n==="삼키기") return foeBark(f,"skill:"+s.n);
+  }
+  if(f.name==="모형 전략가"&&s.reward) return true;
+  return false;
+}
+/* 변형 무기 대사는 기본 배치/처치 대사에 더한다 (사용자 2026-10-17). */
+BARK["데린저"]=Object.assign(BARK["데린저"]||{},{"in:산탄총":["산탄총 앞에선 모두가 평등하지.","책상엔 내리치진 마."],"in:리볼버":["역시 난 이거야.","무릎 꿇고 손 들어!","무법자의 기본 소양이지."],"in:기관총":["하하하!","멈출 수가 없어!","좀 무거운데?"],"in:저격소총":["침착하게.","(숨 들이마쉬는 소리)","단 한발로.","머리를 뚫어주지!"],"kill:산탄총":["내 앞에서 꺼져!","떨어지는게 좋았을 텐데!"],"kill:리볼버":["(연기를 후 부는 소리)","(리볼버를 돌리는 소리)","좋은 전투였어.","실력은 인정할게."],"kill:기관총":["하하하하!","갈아줄게!","구멍내줄게!"],"kill:저격소총":["헤드샷.","원샷 원킬."]});
+function barkPool(u,cat,T){
+  if(!u) return [];
+  T=T||skinTable(BARK,u.of||u.name)||{};
+  const pool=(T[cat]||[]).slice(), gun=u.name==="데린저"&&u.tag&&u.tag.gun;
+  if(gun&&(cat==="in"||cat==="kill")) pool.push(...(T[cat+":"+gun]||[]));
+  return pool;
+}
+/* 새 데린저 대사는 화면 전용 추첨·간격을 쓴다. 기존 전투 추첨과 다른 대원의 말 간격을 건드리지 않는다. */
+let DERR_BARK_AT=0;
+const barkClock=u=>u&&u.name==="데린저"?DERR_BARK_AT:BARK_AT;
+const barkRoll=u=>u&&u.name==="데린저"?foeBarkRand():Math.random();
+function barkStamp(u,t){ if(u&&u.name==="데린저") DERR_BARK_AT=t; else BARK_AT=t }
+function barkDraw(pool,u){
+  const rare="책상엔 내리치진 마.", i=pool.indexOf(rare);
+  if(i<0||pool.length<2) return u&&u.name==="데린저"?pool[Math.floor(foeBarkRand()*pool.length)]:rnd(pool);
+  /* 화면 전용 추첨 안에서 2%로 고른다. */
+  const n=barkRoll(u); if(n<.02) return rare;
+  const common=pool.filter(t=>t!==rare); return common[Math.min(common.length-1,Math.floor((n-.02)/.98*common.length))];
+}
 let BARK_AT=0;
-function bark(u,cat,force){
+function bark(u,cat,force,quiet){
   if(!u||!B||B.over) return;
   const now=Date.now();
-  if(!force&&now-BARK_AT<1800) return;          /* 너무 자주 떠들지 않게 */
-  const P=(skinTable(BARK,u.of||u.name)||{})[cat]||(u.isMin?null:BARK_ANY[cat]);
+  if(!force&&now-barkClock(u)<1800) return;          /* 너무 자주 떠들지 않게 */
+  if(FOE[u.name]&&!BARK_LEGACY.has(u.name+"|"+cat)){ if(!quiet) foeBark(u,cat,!force); return }
+  const T=skinTable(BARK,u.of||u.name)||{}, own=barkPool(u,cat,T), P=(T[cat]||own.length)?own:(u.isMin?null:BARK_ANY[cat]);
   if(!P||!P.length) return;
   const rate={in:0.42,atk:0.13,hurt:0.16,kill:0.3,down:0.85,awake:1}[cat]||0.12;
-  if(!force&&Math.random()>rate) return;
-  barkShow(u,rnd(P),now);
+  if(!force&&barkRoll(u)>rate) return;
+  const line=barkDraw(P,u);
+  if(quiet){ if(!PRED_DRY) barkStamp(u,now); return }
+  barkShow(u,line,now);
 }
 /* 처치 조명 — 대원 칸(mine,slot)과 적 칸(foe,foeSlot)만 남기고 다 가라앉힌다 */
 /* 처치 임팩트 효과 — 화면이 암전되고, 대원 칸과 쓰러진 적 칸이 제자리에서 가운데로 모이며 커진다.
@@ -31810,19 +32807,23 @@ function spotFX(slot,foeSlot,foeName,barkU,barkLine){
 function barkLine(u,cats){
   const T=(u&&skinTable(BARK,u.of||u.name))||{};   /* 외형 처치 대사 (2026-10-03) */
   let pool=[];
-  cats.forEach(c=>{ const L=T[c]; if(L&&L.length) pool=pool.concat(L) });
-  return pool.length?rnd(pool):null;
+  cats.forEach(c=>{ const L=barkPool(u,c,T); if(L.length) pool=pool.concat(L) });
+  return pool.length?barkDraw(pool,u):null;
 }
-function barkShow(u,line,now,big){
+function barkShow(u,line,now,big,life){
   if(PRED_DRY) return;   /* 미리 돌려 보는 중 — 말풍선도 뜨지 않고, 떠드는 틈(BARK_AT)도 안 당겨 쓴다 */
-  BARK_AT=now||Date.now();
+  if(FOE_CAPTURING){ const stamp=now||Date.now(); barkStamp(u,stamp);
+    fx({fn:()=>barkShow(u,line,stamp,big,life),gap:0}); return }
+  barkStamp(u,now||Date.now());
   const foe=!!u.isFoe||B.foes.indexOf(u)>=0;
-  const p=ctrOf(foe?"foe":"mine",u.slot);
+  const p=ctrOf(foe?"foe":"mine",foeViewUnit(u).slot);
   if(!p) return;
   const ph=u.isPhantom||u.phantomOf!=null;   /* 영혼 분리 환영 — 주인의 말이 메아리처럼 (사용자 2026-10-03) */
   const nd=spawn(ph?'<div class="bark ph">~ '+talk(line)+' ~</div>'
-                   :'<div class="bark'+(foe?" f":"")+(big?" big":"")+(u.name==="콜로서스"?" colsay":"")+'">'+talk(line)+'</div>');   /* 콜로서스 — 떨림 (사용자 2026-10-07) */
+                   :'<div class="bark'+(foe?" f":"")+(big?" big":"")+(u.name==="콜로서스"?" colsay":"")+'">'+talk(line)+'</div>',life);   /* 콜로서스 — 떨림 (사용자 2026-10-07) */
   if(!nd) return;
+  nd.dataset.barkOwner=String(uid(u));
+  if(life) nd.style.animationDuration=life+"ms";
   nd.style.left=(p.x-(u.name==="콜로서스"?110:0))+"px";   /* 콜로서스 — 머리가 오른쪽 끝이라 한 줄 대사가 화면 밖으로 안 나가게 */
   nd.style.top=(p.y-58)+"px";
 }
@@ -31830,14 +32831,14 @@ function barkShow(u,line,now,big){
 function barkPick(u,cats,force){
   if(!u||!B||B.over) return;
   const now=Date.now();
-  if(!force&&now-BARK_AT<1800) return;
+  if(!force&&now-barkClock(u)<1800) return;
   const T=skinTable(BARK,u.of||u.name)||{};
   let pool=[], own=0;
-  cats.forEach((c,i)=>{ const L=T[c]; if(L&&L.length){ pool=pool.concat(L); if(i<cats.length-1) own=1 } });
+  cats.forEach((c,i)=>{ const L=barkPool(u,c,T); if(L.length){ pool=pool.concat(L); if(i<cats.length-1) own=1 } });
   if(!pool.length&&!u.isMin){ const L=BARK_ANY[cats[cats.length-1]]; if(L) pool=L.slice() }
   if(!pool.length) return;
-  if(!force&&Math.random()>(own?0.6:0.13)) return;
-  barkShow(u,rnd(pool),now);
+  if(!force&&barkRoll(u)>(own?0.6:0.13)) return;
+  barkShow(u,barkDraw(pool,u),now);
 }
 /* 기술을 쓸 때 — 그 기술 전용 + 공용(atk). 갈래가 있는 기술(균열 차원문)은 효과 쪽에서 따로 부른다 */
 const BARK_LATE={"균열 차원문":1};
@@ -31849,6 +32850,7 @@ function barkSkill(h,s){ if(!s||BARK_LATE[s.n]) return;
 /* 기술 창의 쪽 (사용자 2026-10-12) — 한 쪽에 넉 장. 대원이 바뀌면 처음 쪽으로 */
 const SK_PER=4; let SK_PAGE=0, SK_PAGE_WHO=null;
 function intentHtml(f,I2){
+  if(f._viewDone) return "";
   const h=intentHtml0(f,I2), I=I2||f.intent;
   if(!h||!I||!(I.sq>0)) return h;
   const mag=(I.el==="마법"||((FOE[f.name]||{}).el==="마법"&&I.el==null));   /* 얻는 것은 그 계열의 힘 — 마법 적은 마법력, 물리 적은 공격력 */
@@ -31968,7 +32970,7 @@ function drawBattle(app){
   const fixedMv = (preSkill&&sel.step>=2&&sel.step!==5) ? previewMove(sel.hero,preSkill,sel.count||1).slice(-1) : [];
   /* 이동 기술이면 갈 수 없는 칸은 켜지 않는다 */
   const canGo = n => !(sel && tgMode==="ally" && moveBlock(sel.hero,preSkill,n));
-  const INC = incoming();
+  const INC = foeViewActive()?{}:incoming();
   /* 적을 눌러 두면 그 적이 닿는 칸을 밝게 보여 준다 — 어디로 피할지 알 수 있다 */
   const peekFoe = (B.peek!=null) ? B.foes.find(x=>x.id===B.peek&&x.alive) : null;
   /* 영혼 분리 환영을 눌러 두면 어느 적에게서 뜯어냈는지 짚어 준다 — 이름이 같은 적이 여럿일 때 (사용자 2026-10-03) */
@@ -31982,8 +32984,8 @@ function drawBattle(app){
       +`<path d="M12 3c3.2 3.4 4.4 6.4 4.4 8.6a4.4 4.4 0 0 1-8.8 0C7.6 9.4 8.8 6.4 12 3z" `
       +`fill="${dk?"#a06ae0":"#5f5070"}" opacity=".9"/></svg>`;
   for(let s=1;s<=SLOTS;s++){
-    const h=unitAt(s);
-    const body=h?null:bodyAt(s);
+    const h=foeViewAt("mine",s);
+    const body=h?null:foeViewAt("mine",s,true);
     const hz=(h||body)?null:hzAt(s);
     /* 아직 쓸 마나가 남았는가 — 몸 둘레 푸른빛 (사용자 2026-10-12) */
     const mleft=!!(h&&!h.isMin&&h.hp>0&&!h.down&&(h.mana||0)>0);
@@ -32098,10 +33100,11 @@ function drawBattle(app){
         else if(tgMode==="any") doSkill(-s) };
     }
     if(drop) d.onclick=()=>{ const k=B.pick; B.pick=null; playCard(k,s,"mine") };
+    if(foeViewActive()) d.onclick=null;
     my.appendChild(d);
   }
   for(let s=1;s<=SLOTS;s++){
-    const f=foeShownAt(s);
+    const f=foeViewAt("foe",s);
     if(f&&f.big&&heldSlot(f)+1===s){ fs.appendChild(el(`<div class="slot bigshadow"></div>`)); continue }   /* 두 칸짜리의 뒷칸 */
     if(!f&&wreckAt(s)){ const w=wreckAt(s);   /* 부서진 대포 — 대원의 쓰러짐처럼 자리에 남는다 · 저주받은 성벽은 잔해 */
       /* 자폭 잔해 — 터지기까지 몇 턴인지 잔해 위에 (사용자 2026-10-14 : 대비할 수 있게) */
@@ -32112,7 +33115,7 @@ function drawBattle(app){
           bmb?`<div class="bombcd kw" data-kw="자폭" data-tip="${esc(bmb.n||"자폭")} — ${left?left+"턴 뒤":"이번 턴 끝"}에 잔해가 터져 모든 상대에게 공격 피해를 ${bmb.v} 줍니다.">${left?left+"턴 뒤 폭발":"이번 턴 끝 폭발"} <b>${bmb.v}</b></div>`:""}</div>
         <div class="nm">${esc(w.wallFoe?"잔해":w.name)}</div>
         <div class="mini"><span class="chip on">${bmb?(left?`째깍 ${left}`:"째깍"):(w.wallFoe?"잔해":"부서짐")}</span></div></div>`);
-      dw.dataset.slot=s; fs.appendChild(dw); continue }
+      dw.dataset.slot=s;dw.dataset.foeId=w.id; fs.appendChild(dw); continue }
     const d=el(`<div class="slot ${f?"":"empty"}${f&&f.big?" big":""}"><span class="no">${foeNo(s)}${f&&f.big?""+foeNo(s+1):""}</span>${
       preSkill&&f?`<span class="reach">거리 ${dist(sel.hero.slot,s)}</span>`:""}</div>`);
     if(f&&f.morphing) d.classList.add("morphing");   /* 변신 중 — 장면이 끝날 때까지 몸을 감춘다 (다시 그려도 이어진다) */
@@ -32120,12 +33123,12 @@ function drawBattle(app){
     if(f&&f.willWeak) d.classList.add("wkshrink");   /* 의지 약화 — 그 턴 동안 작아진 몸 (사용자 2026-10-06) */
     else if(f&&f.wkGrowAt&&Date.now()-f.wkGrowAt<700){ d.classList.add("wkgrow"); d.style.setProperty("--wkd",-(Date.now()-f.wkGrowAt)+"ms") }   /* 풀리면 천천히 제 크기로 — 다시 그려도 이어서 */
     if(B._wb&&B._wb["foe"+s]>Date.now()) d.classList.add("wbuild");   /* 적 전장의 저주받은 성벽 — 좌우 반전 (사용자 2026-10-06) */
-    d.dataset.slot=s;
+    d.dataset.slot=s;if(f)d.dataset.foeId=f.id;
+    if(f&&f.name==="연료 장치"&&f.fuelHeat>0)d.classList.add("fuel-heat-"+f.fuelHeat);
     /* 사냥의 기류 — 그 칸에 보랏빛이 수직으로 흐른다 (노트 18-0).
        ⚠️ 전에는 아래 `if(f){…}` 안에서 그려 **빈 칸에서는 안 보였다** (사용자 2026-10-15).
           기류는 적이 있든 없든 그 자리에 흐르는 것이다 — 칸을 만든 여기서 붙인다 */
-    if(driftHas(s)&&typeof ICON_PNG!=="undefined"&&ICON_PNG.fx_orion_current)
-      d.appendChild(el(`<i class="driftfx" style="background-image:url(${ICON_PNG.fx_orion_current})"></i>`));
+    /* 기류의 마디는 driftFxSync가 유지한다 — 다시 그려도 페이드가 처음부터 시작되지 않는다. */
     /* 쇠사슬 올가미 — 끌어갈 자리는 밝히고 **화살표**를 띄운다 (사용자 2026-10-15 : 대원 이동과 같은 꼴) */
     if(B.lasso&&B.lasso.spots.includes(s)){ d.classList.add("pick");
       if(typeof ICON_PNG!=="undefined"&&ICON_PNG.ui_move_down)
@@ -32210,6 +33213,7 @@ function drawBattle(app){
        전에는 `tgMode==="any"` 가지에만 걸려 있어, 올가미를 쓴 뒤(겨눔이 풀린 뒤) 빈 칸을 눌러도
        아무 일도 없었다 — 사용자가 「이동 효과가 없다」고 본 것이 이것이다 (2026-10-15) */
     if(B.lasso&&B.lasso.spots.includes(s)) d.onclick=()=>{ lassoDrop(s) };
+    if(foeViewActive()) d.onclick=null;
     fs.appendChild(d);
   }
 
@@ -32287,7 +33291,7 @@ function drawBattle(app){
     kb.appendChild(fb);
     /* 적 고르기 — 골라서 빈 칸에 세운다 (사용자 2026-09-16). 진짜 능력치로 선다(허수아비처럼 체력을 부풀리지 않는다) */
     { const names=Object.keys(FOE).filter(n=>!FOE[n].boss).sort((a,b)=>a.localeCompare(b,"ko"));
-      const bossN=BOSSES.filter(n=>FOE[n]);   /* 우두머리도 세울 수 있게 (사용자 2026-10-03, 간수장) — 목록 맨 위 묶음 */
+      const bossN=BOSS_POOLS.flat().filter(n=>FOE[n]);   /* 우두머리도 세울 수 있게 (사용자 2026-10-03, 간수장) — 목록 맨 위 묶음 */
       /* 적 강화 배율 — 연습장에서 손으로 (사용자 2026-09-29). 0 이면 판의 셈 그대로 */
       { const now=run.sandScale>0?run.sandScale:foeScale(B.kind).m;
         const sr=el(`<div class="knob sandrw" style="border-color:var(--brass)"><span>적 강화</span>
@@ -32337,12 +33341,7 @@ function drawBattle(app){
       const sel2=row.querySelector("select"), [bAdd,bClr]=row.querySelectorAll("button"), ck=row.querySelector("input");
       sel2.onchange=()=>{ run.sandFoe=sel2.value };
       ck.onchange=()=>{ run.sandFoeReal=ck.checked?1:0; sandRescaleFoes(); render() };
-      bAdd.onclick=e=>{ e.stopPropagation(); const n=sel2.value||names[0]; let sl=1; while(sl<=SLOTS&&foeBlock(sl)) sl++;
-        { const bs=FOE[n]&&FOE[n].bossSlot; if(bs&&!foeBlock(bs)&&!foeBlock(bs+1)) sl=bs }   /* 제자리가 정해진 우두머리 (콜로서스 4 · 5번 칸) (사용자 2026-10-07) */
-        if(sl>SLOTS){ toast("빈 칸이 없습니다."); return }
-        const f=spawnFoeNamed(n,sl); if(!f) return;
-        if(!run.sandFoeReal){ f.maxHp=9999; f.hp=9999 }
-        f.exp=0; rollIntents(true); render() };
+      bAdd.onclick=e=>{e.stopPropagation();sandPlaceFoe(sel2.value||names[0])};
       bClr.onclick=e=>{ e.stopPropagation(); B.foes=[]; render() };
       kb.appendChild(row); }
     app.appendChild(kb);
@@ -32509,7 +33508,7 @@ function drawBattle(app){
       :"Esc — 선택 해제"}</span></div>`);
   stage.querySelector(".bftop").appendChild(pr);
   const lg=el(`<div class="log ${B.logOpen?"open":""}" id="log"></div>`); stage.appendChild(lg);
-  B.log.forEach(x=>lg.insertAdjacentHTML("beforeend",`<div class="${x.c||""}">${x.t}</div>`));
+  (foeViewActive()?FOE_VIEW.logs:B.log).forEach(x=>lg.insertAdjacentHTML("beforeend",`<div class="${x.c||""}">${x.t}</div>`));
   lg.scrollTop=lg.scrollHeight;
 }
 let BF_CLK={t:0,id:null};
@@ -34037,8 +35036,6 @@ function onSummon(h){
   if(h.name==="데린저"&&t.placeShot){ const f=(typeof nearestFoe==="function")&&nearestFoe(h);
     if(f) for(let i=0;i<t.placeShot;i++) derrFreeUse(h,f);   /* 「발사」는 **기술을 한 번 쓰는 것** — 기관총이면 여덟 발 (사용자 2026-10-15) */
     if(f) say(`부착: 속사 탄창 — ${h.name}${jo(h.name,"ig")} 선제 사격`,"t2") }
-  if(h.name==="데린저"&&t.startShoes){ handAddCard("간이 신발",{gone:1,arrive:1},t.startShoes);   /* 소멸성 · 한 장에 쌓인다 (사용자 2026-10-16) */
-    say(`야전신발 — 소멸성 간이 신발 ${t.startShoes}장`,"t2") }
   if(B&&B.foes&&hasTag(h,"정령")&&synOn("정령",2)){   /* 정령 2 · 3 (노트 2026-10-04) */
     const ks=DEB_KEYS.slice().sort(()=>Math.random()-.5).slice(0,synOn("정령",3)?3:1);
     B.foes.filter(f=>f.alive).forEach(f=>ks.forEach(k=>addDeb(f,k,1,h)));
@@ -34213,6 +35210,11 @@ function onSummon(h){
   /* ── 아래는 전투 시작 효과 : 그 전투에서 처음 나설 때 한 번만 ── */
   if(h.summoned) return;
   h.summoned=1;
+  if(h.name==="데린저"&&t.startShoes){
+    /* 도착 연출이 없는 지급에는 arrive를 달지 않는다. 첫 턴부터 보이고 잡혀야 한다. */
+    handAddCard("간이 신발",{gone:1},t.startShoes);
+    say(`야전신발 — 소멸성 간이 신발 ${t.startShoes}장`,"t2");
+  }
   if(run.stimOn&&!run.sandbox){ const v=run.stimOn;   /* 각성제 */
     bumpTmp(h,"atk",v); bumpTmp(h,"mag",v); bumpTmp(h,"def",v);
     fx({side:"mine",slot:h.slot,s:"buffup",ring:"#e0705a",txt:"각성제 +"+v,cls:"buf",gap:80});
@@ -34454,6 +35456,16 @@ function addMaxHp(h,v,why){
   h.maxHp=Math.max(1,h.maxHp+v);
   if(v>0) h.hp+=v; else h.hp=Math.min(h.hp,h.maxHp);
   return v;
+}
+/* 사형대 — 현재 최대치의 절반을 영구적으로 잃는다. 기존 비율 감소는 유지하고 밑동을 줄인다.
+   홀수는 내림, 최소 1. 반복 선택은 절반 → 그 절반이며 이후 성장 체력은 정상 적용한다. */
+function halveMaxHp(h,why){
+  if(!h) return 0;
+  const before=h.maxHp, target=Math.max(1,Math.floor(before/2));
+  const base=h.hpBase==null?before:h.hpBase, cut=h.hpBase==null?0:(h.hpCutPct||0);
+  const nextBase=Math.max(1,Math.round(target/(1-cut/100)));
+  addMaxHp(h,Math.min(0,nextBase-base),why);
+  return before-h.maxHp;
 }
 /* 비율로 깎기 — **밑동을 따로 들고 백분율을 합연산으로 쌓는다** (사용자 2026-10-13 : 「거의 다 합연산」).
    금단의 고서 40% + 혈기 공유 50% = **90% 감소**. 자리마다 곱하면 70% 가 되어 어긋난다 */
@@ -35061,6 +36073,7 @@ function endShieldAhead(){
   return add;
 }
 function incoming(){
+  if(!PRED_DRY&&B&&!B.over&&B.foes.some(f=>f.name==="연료 장치"))return fuelIncoming();
   const map={};
   if(!B||B.over||!B.foes||!B.foes.length) return map;
   const list=allUnits();
@@ -35599,6 +36612,7 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
     echoUp(f); return;
   }
   if(f.hp<=0&&f.alive){ f.alive=0; bark(f,"down",1);
+    fuelDeath(f);
     if(FOE[f.name]&&FOE[f.name].wreck){ f.wreck=1; say(`${f.name}${jo(f.name,"ig")} 부서졌습니다 — 잔해가 자리에 남습니다.`,"t2") }
     if(run&&!f.isPhantom&&!f.summoned&&!run.sandbox&&f.bounty>0){ run.gold+=f.bounty;   /* 미믹 — 죽음 */
       fx({side:"foe",slot:f.slot,txt:"금화 +"+f.bounty,cls:"crit",gap:90}); say(`죽음 — ${f.name}이 쥐고 있던 금화 ${f.bounty}개를 얻습니다.`,"t1"); f.bounty=0 }
@@ -35606,10 +36620,10 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
       coreKillTick();   /* 세계핵 — 전투가 끝날 때 통산 처치 수에 더한다 (사용자 2026-10-09) */
       if(/^모형 /.test(f.name)&&f.name!=="모형 전략가") try{ keyQuestTick("모형 병사") }catch(e){}   /* 모형 토벌 (2026-10-10) */
       try{ skinKillCheck(f.name) }catch(e){}   /* 스킨 — 간수장 처치 따위 (2026-10-01) */
-      /* 행운의 금화 — **2%** + 고른 수마다 10% 누적 (5% → 2%, 사용자 2026-10-13) */
-      const lg=tagSum("luckGold"); if(lg&&Math.random()<(0.02+0.10*(lg-1))){ run.gold+=1;
+      /* 행운의 금화 — **3%** + 고른 수마다 10% 누적 (사용자 2026-10-16) */
+      const lg=tagSum("luckGold"); if(lg&&Math.random()<(0.03+0.10*(lg-1))){ run.gold+=1;
         { const sl=f.slot; fx({side:"foe",slot:sl,s:sfxOr("금화 얻기",null),fn:()=>luckyCoinFX("foe",sl),txt:"금화 +1",cls:"crit",gap:90}) }
-        say(`행운의 금화 — 금화 +1 (${2+10*(lg-1)}%)`,"t2") } }
+        say(`행운의 금화 — 금화 +1 (${3+10*(lg-1)}%)`,"t2") } }
     /* f.exp 는 전투가 끝날 때 더해지는 바로 그 값이다 — 지금까지 안 보여 줬을 뿐이다. 소환물은 없다 */
     f.dieHold=Date.now();   /* 마지막 타격 연출까지 칸에 남는다 */
     const dsnd=(!(foePas(f,"death")||f.dthTag)&&deathSndExact(f))||"die";   /* 죽음 효과가 있는 적은 deathMarkFX 가 종족 소리를 내니 여기서는 공용 die */
@@ -38633,12 +39647,12 @@ function battleLost(){
   const standing=run.heroes.filter(h=>!h.down).length;
   if(!standing){
     say("모두 쓰러졌습니다. 일으켜 줄 사람이 남지 않았습니다.","t3");
-    setTimeout(()=>lose("대원이 모두 쓰러졌습니다. 주둔지로 데려갈 사람이 남지 않았습니다."),1300);
+    foeViewLater(()=>lose("대원이 모두 쓰러졌습니다. 주둔지로 데려갈 사람이 남지 않았습니다."),1300);
     return;
   }
   addTaint(30);
   say("물러납니다. 오염도가 30 올랐습니다.","t3");
-  setTimeout(()=>{ toast(`쓰러진 대원은 주둔지 치료소에서 일으킬 수 있습니다. (성한 대원 ${standing}명)`);
+  foeViewLater(()=>{ toast(`쓰러진 대원은 주둔지 치료소에서 일으킬 수 있습니다. (성한 대원 ${standing}명)`);
     if(view!=="over") toMap() },1200);
 }
 function critAlly(t){ fx({crit:1,side:"mine",slot:t.slot}) }   /* 큐에 넣기만 — 부르는 자리가 기술 한가운데다 (⑳) */
@@ -38673,6 +39687,7 @@ function hurtAlly(f,t,raw,label,el,evMsg,pierce,ownFx){   /* evMsg — 회피했
   if(t&&t.name==="도미니코") domHateSync(t);   /* 악마 혐오 — 맞기 직전 지금 수로 */
   /* 회피가 먼저 — 한 방을 통째로 흘린다. 회피를 셈하는 곳은 여기 하나다 (전투 정리 2026-10-05: 대포 · 적 기술 · 적 공격이 저마다 셈했다) */
   if(t.evade>0){ t.evade--;
+    fuelPreviewHit(t,0,0,1);
     fx({side:"mine",slot:t.slot,s:sfxOr("회피","miss"),trig:"회피",txt:"회피!",cls:"miss evbig",gap:60,evade:1});
     say(evMsg||`${label} — ${t.name} 회피!`,"t2");
     afterEvade(t,f);   /* 역풍 */
@@ -38724,6 +39739,7 @@ function hurtAlly(f,t,raw,label,el,evMsg,pierce,ownFx){   /* evMsg — 회피했
     if(L.length){ L.forEach(a=>addShield(a,v));
       say(`피의 서약 — ${L.map(a=>a.name).join(", ")} 보호막 +${v}`,"t2") } }
   t.hp-=d;
+  fuelPreviewHit(t,raw,d,0);
   sh+=eh;
   if(t.isMin&&raw>0){ const o=ottoOn(); if(o&&o.tag&&o.tag.rootLink){ o.eshield=(o.eshield||0)+o.tag.rootLink; skinProg("ottoEsh",o.tag.rootLink);
     say(`뿌리 연결 — ${o.name} 에너지 보호막 +${o.tag.rootLink}`,"t2") } }
@@ -38745,7 +39761,7 @@ function hurtAlly(f,t,raw,label,el,evMsg,pierce,ownFx){   /* evMsg — 회피했
       s:blocked?"block":(mag?"마법피해":"hit"),
       txt:(blocked?"막음 ":"-")+raw, cls:blocked?"shd":(tru?"tru":(mag?"mag":"dmg")), gap:170,
       recoil:1, pose:(d>0?"hurt":(sh>0?"guard":null))});
-  say(`${f.name} → ${t.name} ${label} 피해 ${raw}${sh?` (보호막 ${sh})`:""} ${Math.max(0,t.hp)}/${t.maxHp}`);
+  say(`${f.name} → ${t.name} ${label} 피해 ${raw}${sh?` (보호막 ${sh})`:""} ${Math.max(0,t.hp)}/${t.maxHp}`,undefined,t);
   if(f&&raw>0) f.lastHit=raw;
   { const th=((t.tag&&t.tag.thorn)||0)+(t.thornTmp||0)+((t.taunt>0&&t.tag&&t.tag.tauntThorn)||0);
     if(th&&f.alive&&!t.thornBusy){
@@ -38870,6 +39886,47 @@ function driftRoll(){
 function driftList(){ const d=(typeof B!=="undefined"&&B)?B.drifts:null;
   return Array.isArray(d)?d.filter(Boolean):(d?[d]:[]) }
 function driftHas(slot){ return slot!=null&&driftList().indexOf(slot)>=0 }
+/* 기류 그림의 생애만 보존한다. 치명타 조건과 기류 추첨에는 관여하지 않는다. */
+let DRIFT_FX=null;
+const DRIFT_FADE_IN=480, DRIFT_FADE_OUT=320;
+function driftFxClear(){
+  if(!DRIFT_FX) return;
+  DRIFT_FX.nodes.forEach(e=>{ clearTimeout(e.timer); if(e.anim) e.anim.cancel(); e.nd.remove() });
+  DRIFT_FX=null;
+}
+function driftFxFade(e,to,ms){
+  clearTimeout(e.timer);
+  const from=e.anim?e.from+(e.to-e.from)*Math.min(1,(e.anim.currentTime||0)/e.ms):parseFloat(e.nd.style.opacity)||0;
+  if(e.anim) e.anim.cancel();
+  e.from=from; e.to=to; e.ms=ms; e.nd.style.opacity=from;
+  e.anim=e.nd.animate([{opacity:from},{opacity:to}],{duration:ms,fill:"both",easing:"ease-in-out"});
+  const state=DRIFT_FX;
+  e.timer=setTimeout(()=>{
+    if(DRIFT_FX!==state||e.to!==to) return;
+    e.nd.style.opacity=to; if(e.anim){ e.anim.cancel(); e.anim=null }
+    if(!to){ e.nd.remove(); state.nodes.delete(e.slot) }
+  },ms);
+}
+function driftFxSync(){
+  if(PRED_DRY) return;
+  if(view!=="battle"||!B){ driftFxClear(); return }
+  if(DRIFT_FX&&DRIFT_FX.battle!==B) driftFxClear();
+  const side=document.getElementById("foeSide"), src=typeof ICON_PNG!=="undefined"&&ICON_PNG.fx_orion_current;
+  if(!side||!src) return;
+  if(!DRIFT_FX) DRIFT_FX={battle:B,nodes:new Map()};
+  const wanted=new Set(driftList());
+  wanted.forEach(slot=>{
+    let e=DRIFT_FX.nodes.get(slot);
+    if(!e){ const nd=el('<i class="driftfx"></i>'); nd.style.backgroundImage="url("+src+")"; nd.style.opacity=0;
+      e={slot:slot,nd:nd,to:0,anim:null,timer:0}; DRIFT_FX.nodes.set(slot,e); }
+    const host=side.querySelector(`.slot[data-slot="${slot}"]`); if(host) host.appendChild(e.nd);
+    if(e.to!==.9) driftFxFade(e,.9,DRIFT_FADE_IN);
+  });
+  DRIFT_FX.nodes.forEach((e,slot)=>{
+    const host=side.querySelector(`.slot[data-slot="${slot}"]`); if(host&&e.nd.parentNode!==host) host.appendChild(e.nd);
+    if(!wanted.has(slot)&&e.to!==0) driftFxFade(e,0,DRIFT_FADE_OUT);
+  });
+}
 /* 사냥의 기류를 타는 패거리 — 오리온, 그리고 「동료애」(상급) 를 고른 뒤의 그의 소환물 */
 function orionCrew(u){
   if(!u) return false;
@@ -39137,6 +40194,8 @@ function foePhase(){
     f.mag=(f.mag||0)+v; f.magUp=(f.magUp||0)+v; f.buffs=(f.buffs||0)+1;   /* 글대로 **마법력**이다 (2026-10-15) */
     fx({side:"foe",slot:f.slot,s:"buffup",ring:"#6aa8e0",glow:1,txt:"마법력 +"+v,cls:"buf",gap:140});
     say(`${f.name} 오래 볼수록 — 마법력 +${v} (누적 +${f.magUp})`,"t2") });
+  foeViewBegin();
+  const actionFX=[];
   const actOne=f=>{
     if(!f.alive||!f.intent||B.over) return;
     if(f.stop>0) return;   /* 정지 — 움직이지 않는다 (사용자 2026-10-07) */   /* 판이 끝났으면(앞의 적이 대원을 다 쓰러뜨림) 남은 적은 움직이지 않는다 (2026-10-05) */
@@ -39146,6 +40205,7 @@ function foePhase(){
       f.stun=0; if(f.deb) f.deb.stun=0;   /* 적은 기절이 중첩되지 않는다 — 두 갈래(f.stun · deb)를 함께 걷는다 (점검 2026-10-07) */
       fx({side:"foe",slot:f.slot,trig:"기절",txt:"기절",cls:"miss",gap:130});
       say(`${f.name} 기절 — 움직이지 못합니다.`,"t2"); return }
+    foeVerdictBark(f);
     f._acted=1;   /* 이번에 실제로 행동했다 — 불안정한 변신이 옮기는 때 */
     f.lastAct=Object.assign({},f.intent);      /* 망자들의 통솔자가 따라 할 '직전 턴의 실제 행동' */
     { const I0=f.intent;   /* 조여 오는 힘 — 처음 움직일 때만(되감긴 행동은 한 번 더 얻지 않는다). 그 뒤 직전 의도로 적어 둔다 */
@@ -39290,19 +40350,25 @@ function foePhase(){
       fx({side:"foe",slot:f.slot,pose:"atk",lunge:1,gap:0});
       /* 떠도는 불씨 — 맞는 사람마다 화염구 하나씩. 한꺼번에 쏟지 않고 조금씩 어긋나게 (사용자 2026-10-12).
          ⚠️ 어긋나는 몫은 **선 자리**로 정한다 — Math.random 을 쓰면 판의 주사위가 밀린다 */
-      if(f.name==="떠도는 불씨") allUnits().filter(a=>a.hp>0).forEach((a,i)=>
-        setTimeout(()=>{ if(B&&!B.over) emberFX("mine",a.slot,{side:"foe",slot:f.slot}) },i*70));
+      if(f.name==="떠도는 불씨"){
+        allUnits().filter(a=>a.hp>0).forEach(a=>fx({side:"mine",slot:a.slot,ember:{side:"foe",slot:f.slot},emberOverlap:1,gap:70}));
+        fx({gap:270});   /* 마지막 화염구도 닿은 뒤에 피해 숫자 — 궤도는 340ms */
+      }
       { let v=foeDmg(f,f.intent.v,f.intent.el);
         if(f.painBonus){ v+=f.painBonus; say(`고통 감내 — 피해 +${f.painBonus}`,"t2"); f.painBonus=0 }
         allUnits().slice().forEach(a=>{ if(a.hp>0) hurtAlly(f,a,v,"일제 사격",f.intent.el) }); }
     }
   };
   /* 여분 부품 (콜로서스, (사용자 2026-10-07)) — 의도 둘을 차례로. 기절이면 첫째만 막히고(기절이 걷힌다) 둘째는 나간다 */
-  const actTwice=f=>{ const I2=f.intent2, q0=FXQ.length; f._acted=0; actOne(f);
+  const actTwice=(f,prefix)=>{ const meta={u:f,order:f.slot}, I2=f.intent2, q0=FXQ.length, capture=!PRED_DRY&&!!document.querySelector(".bfstage"); f._acted=0;
+    if(capture) FOE_CAPTURING++;
+    try{ actOne(f);
     if(I2&&f.alive&&!B.over){ const q1=FXQ.length, I1=f.intent; f.intent=I2; f._act2=1; try{ actOne(f) } finally{ f.intent=I1; f._act2=0 }
       /* 셈은 차례로, 연출은 함께 — 둘째 의도의 연출을 첫째와 같은 때에 시작하도록 엮는다 (사용자 2026-10-07) */
       if(q1>=q0&&FXQ.length>=q1){ const A=FXQ.splice(q0,q1-q0), Z=FXQ.splice(q0); FXQ.push(...fxMerge(A,Z,140)) } }
-    if(f._acted&&f.alive&&!B.over) unstableMove(f) };   /* 불안정한 변신 — 되감긴 행동도 행동이라 그때마다 옮긴다 */
+    if(f._acted&&f.alive&&!B.over) unstableMove(f);
+    }finally{ if(capture) FOE_CAPTURING-- }
+    foeActionCollect(actionFX,meta,prefix==null?q0:prefix,f._acted) };   /* 불안정한 변신 — 되감긴 행동도 행동이라 그때마다 옮긴다 */
   /* 되감기 — 쌓인 만큼 같은 수를 한 번 더. 기절은 첫 행동만 막으므로(actOne 이 걷는다) 되감긴 행동은 나간다.
      같은 의도를 그대로 다시 쓰니 대상도 되도록 그대로다 (사용자 2026-10-07).
      한 턴 윗한도(REW_MAX)는 적마다 한 번 — 아래 두 번째 훑기와 합쳐서 센다 */
@@ -39310,17 +40376,20 @@ function foePhase(){
   const rewRun=f=>{
     while(f.alive&&!B.over&&(f.rew||0)>0&&(f._rw||0)<REW_MAX){ f.rew--; f._rw=(f._rw||0)+1;
       say(`되감기 — ${f.name}${jo(f.name,"ig")} 한 번 더 행동합니다.${f.rew>0?` (남은 되감기 ${f.rew})`:""}`,"t1");
+      const prefix=FXQ.length;
       fx({side:"foe",slot:f.slot,ring:"#c9a227",txt:"되감기",cls:"buf",gap:90});
-      actTwice(f) } };
-  B.foes.forEach(f=>{ actTwice(f); rewRun(f) });
+      actTwice(f,prefix) } };
+  const phaseFoes=B.foes.some(f=>f.name==="연료 장치")?B.foes.slice().sort((a,b)=>a.slot-b.slot):B.foes;
+  phaseFoes.forEach(f=>{ actTwice(f); rewRun(f) });
   /* 늦게 움직인 적(흘러나온 시간 「째깍째깍」)이 먼저 움직인 적에게 되감기를 걸어도 이번 턴에 한 번 더 움직인다 (사용자 2026-10-08) */
   B.foes.forEach(rewRun);
   /* ── 적의 행동을 다 셈했다. 이제 연출이 흐르게 두고, 다 흐른 뒤에 내 턴을 연다 ──
      한꺼번에 셈하고 곧바로 내 턴을 열면, 화면에는 보호막이 먼저 사라지고
      막아 낸 숫자가 뒤늦게 날아왔다. 보호막이 깎이는 모습을 끝까지 보여 주고 걷는다. */
-  { const wait=Math.min(2600,Math.max(300,fxDuration()+240));
+  foeActionQueue(actionFX);
+  { const wait=actionFX.length?Math.max(300,fxDuration()+240):Math.min(2600,Math.max(300,fxDuration()+240)), battle=B;
     B.busy=1; keepSel(); render();
-    setTimeout(()=>{ if(!B) return; B.busy=0; if(!B.over) startMyTurn(); else render() },wait);
+    setTimeout(()=>{ if(B!==battle) return; B.busy=0; if(!B.over) startMyTurn(); else render() },wait);
     return; }
 }
 /* 마당 ③ — 내 턴. 남은 보호막은 바로 여기, 턴이 열리기 직전에 걷힌다. */
@@ -39332,6 +40401,7 @@ function disciplineTick(h,si){
   /* 장부쟁이 「기록 정정」 — 세 번째 기술을 그 턴 동안 잠근다 (사용자 2026-10-07) */
   { const c=B.foes.find(f=>f.alive&&foePas(f,"recordFix"));
     if(c&&si!=null&&h.sk&&h.sk[si]&&!h.lock[si]){
+      foeBark(c,"event:기록 정정");
       h.lock[si]=1;   /* lockNew 를 달지 않는다 — 다음 내 턴 머리(startMyTurn)에서 풀려야 「그 턴 동안」이다. 달면 한 턴 더 잠겼다 (사용자 2026-10-12) */
       /* 잠금 표시 — 묶음 : 「기술 **버튼 위**, 툴팁 아래」 · 90/100/100/110/90/110/110/180.
          ⚠️ 한 번 터지는 것이다(loop false) — 떠 있는 표시가 아니다 (사용자 2026-10-13) */
@@ -39352,6 +40422,7 @@ function colIdle(){
     const L=(BARK["콜로서스"]||{}).idle; if(L&&L.length) barkShow(f,rnd(L),Date.now()) },900);
 }
 function startMyTurn(){
+  FOE_VIEW=null;
   try{ colIdle() }catch(e){}
   if(B&&B.foes) B.foes.forEach(f=>{ if(f.alive&&f.bounty>0){ f.bounty=Math.max(0,f.bounty-2); say(`죽음 — ${f.name}의 금화가 ${f.bounty}개로 줄었습니다.`,"t3") } });   /* 미믹 — 적 턴이 끝날 때마다 -2 */
   if(!B||B.over) return;
@@ -40192,6 +41263,7 @@ const REW_FIX={
  "강탈":{"ic":"currency_gold"},
  "부와 명예":{"ic":"chest_gold"},
  "부착: 반동 패드":{"ic":"shield"},
+ "딱맞는 갑옷":{"ic":"armor"},
  "야전신발":{"ic":"card_shoes"},
  "부착: 개머리판":{"ic":"item_rare_dash"},
  "은신 사격":{"ic":"status_stealth"},
@@ -40455,7 +41527,7 @@ function offerCards(app,hero,grade,done,lvUp){
   let com=COMMON.filter(r=>r.g===grade&&rewardOk(hero,r));
   /* 맞춤 갑옷 — 다음 몇 번의 레벨업 보상은 전용만 나온다.
      전용이 하나도 없는 대원이면 몫을 축내지 않고 그냥 넘어간다. */
-  const ownOnly=!!(lvUp&&run.ownOnly>0&&own.length);
+  const ownOnly=ownRewardsOnly(own,lvUp);
   if(ownOnly) com=[];
   if(noRunRes()){
     const cut=com.filter(r=>!r.rr);
@@ -40509,9 +41581,9 @@ function offerCards(app,hero,grade,done,lvUp){
   const 잠겼나=()=>!!(로컬잠금||(pending&&pending.tookKey===pkey));
   const 잠근다=()=>{ 로컬잠금=1; if(pending) pending.tookKey=pkey };
   if(ownOnly&&pending&&!pending.pendantShow){
-    const left=run.ownOnly||0, mx=Math.max(left,run.ownOnlyMax||2), ai=PACK_ICON["맞춤 갑옷"]&&typeof ICON_PNG!=="undefined"&&ICON_PNG[PACK_ICON["맞춤 갑옷"]];
-    app.querySelector(".center").appendChild(el(`<div class="sub pendantx">${ai?`<img src="${ai}" alt="">`:""}맞춤 갑옷: 전용 보상만 나옵니다 (${left}/${mx})</div>`));   /* '남은 N번' 대신 N/최대 (사용자 2026-10-07) */
-    if(pending.armorAt!==(pending.idx==null?-1:pending.idx)){ pending.armorAt=(pending.idx==null?-1:pending.idx);   /* 레벨업이 여럿이면 그때마다 */ setTimeout(()=>pendantFX(()=>{},"맞춤 갑옷","이번 레벨업 보상은 전용 보상만 나옵니다"),250) } }   /* 금속 펜던트처럼 (사용자 2026-10-06) */
+    const left=run.ownOnly||0, mx=Math.max(left,run.ownOnlyMax||2), label=run.ownOnlyName||"맞춤 갑옷", ai=PACK_ICON["맞춤 갑옷"]&&typeof ICON_PNG!=="undefined"&&ICON_PNG[PACK_ICON["맞춤 갑옷"]];
+    app.querySelector(".center").appendChild(el(`<div class="sub pendantx">${ai?`<img src="${ai}" alt="">`:""} ${esc(label)}: 전용 보상만 나옵니다 (${left}/${mx})</div>`));   /* '남은 N번' 대신 N/최대 (사용자 2026-10-07) */
+    if(pending.armorAt!==(pending.idx==null?-1:pending.idx)){ pending.armorAt=(pending.idx==null?-1:pending.idx);   /* 레벨업이 여럿이면 그때마다 */ setTimeout(()=>pendantFX(()=>{},"맞춤 갑옷","이번 레벨업 보상은 전용 보상만 나옵니다",label),250) } }   /* 금속 펜던트처럼 (사용자 2026-10-06) */
   if(pending&&pending.pendantShow) app.querySelector(".center").appendChild(el(`<div class="sub pendantx">${(PACK_ICON["금속 펜던트"]&&typeof ICON_PNG!=="undefined"&&ICON_PNG[PACK_ICON["금속 펜던트"]])?`<img src="${ICON_PNG[PACK_ICON["금속 펜던트"]]}" alt="">`:""}금속 펜던트: 중급 보상을 하나 더 고릅니다</div>`));
   const row=el(`<div class="rewards${pending&&pending.rise?" rise r"+pending.rise:""}"></div>`);
   if(pending) pending.rise=0;
@@ -40528,7 +41600,7 @@ function offerCards(app,hero,grade,done,lvUp){
       if(잠겼나()) return;
       잠근다();
       pickBurst(c,r.g);
-      if(ownOnly) run.ownOnly=Math.max(0,(run.ownOnly||0)-1);
+      if(ownOnly) spendOwnReward();
       row.querySelectorAll(".rw").forEach(x=>{ if(x!==c) x.classList.add("faded") });
       const cn0=(run.cards||[]).reduce((t,x)=>t+x.c,0);
       r.fx(hero,r.n);
