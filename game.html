@@ -4137,11 +4137,14 @@ body.vbattle .bagbtn{bottom:auto;top:9px;right:auto;left:16px;padding:6px 10px;g
 .bfstage .slot.foe .ublw .bar{order:1} .bfstage .slot.foe .ublw .mini{order:2} .bfstage .slot.foe .ublw .nm{order:3;display:block;font-size:12.5px;letter-spacing:.04em;margin-top:1px} .bfstage .slot.foe .ublw .st.t{order:4}
 .bfstage .slot.foe .ublw .prog{order:5}
 /* 종족 한 줄 — 이름 바로 밑 (DOM 에서 이름 뒤라 같은 order 면 이름 다음에 선다) */
-.bfstage .slot.foe .ublw .frace{order:3;display:flex;align-items:center;gap:4px;font-size:11.5px;color:#d9c28a;
+.bfstage .slot .ublw .frace{order:0;display:flex;align-items:center;gap:4px;font-size:11.5px;color:#d9c28a;
   text-shadow:0 1px 0 #000,0 0 4px #000;letter-spacing:.04em;margin-top:-1px}
-.bfstage .slot.foe .ublw .frace img{width:16px;height:16px;image-rendering:pixelated}
+.bfstage .slot .ublw .frace img{width:16px;height:16px;image-rendering:pixelated}
+.bfstage .slot.foe .ublw .frace{order:3}
 .bfstage .ublw .st.t{display:flex;position:static;flex-direction:row;align-items:center;justify-content:center;gap:6px;margin-top:2px;right:auto;pointer-events:auto;position:relative;z-index:6}
 .bfstage .ublw .st.t .bd{cursor:help;pointer-events:auto}
+.bfstage .slot .st.g .bd[data-kw="과열"]{position:relative}
+.bfstage .slot .st.g .bd[data-kw="과열"] em{display:block;font-size:11px;font-weight:bold;white-space:nowrap;position:absolute;top:100%;left:50%;transform:translateX(-50%);color:#ffcf91;text-shadow:0 1px 3px #000}
 .bfstage .ublw .st.t .bd em{display:none} .bfstage .ublw .st.t .bd img.ci,.bfstage .ublw .st.t .bd i.ci{width:28px;height:28px;flex:0 0 28px}   /* 죽음·메아리를 크게 (사용자 2026-09-29) */
 .bfstage .slot.selh .ublw .st.t,.bfstage .slot.peeked .ublw .st.t{display:flex}
 .bfstage .ublw .bar{width:78%;height:11px;background:rgba(0,0,0,.65);border:1px solid rgba(240,212,136,.3);border-radius:2px;position:relative;overflow:hidden}
@@ -6876,7 +6879,7 @@ const FOE_FOCUS_Z=1.16, FOE_FOCUS_IN=420, FOE_FOCUS_OUT=250;
 /* 전투 값은 즉시 확정하고, 화면 사본만 각 행동의 연출 시점에 갱신한다.
    다시 그리거나 전투를 떠나도 실제 피해·회복·소환 결과는 사라지지 않는다. */
 let FOE_VIEW=null;
-const FOE_VIEW_KEYS="fuelHeat fuelDue repairId name hp maxHp shield eshield slot alive down downSlot mana maxMana atk mag def rng stun stop chg taunt thorn evade hide swallowed atkUp magUp defUp deb intent intent2 rew negShield armor buffs big dieHold wreck".split(" ");
+const FOE_VIEW_KEYS="fuelHeat fuelDue fuelPower repairId name hp maxHp shield eshield slot alive down downSlot mana maxMana atk mag def rng stun stop chg taunt thorn evade hide swallowed atkUp magUp defUp deb intent intent2 rew negShield armor buffs big dieHold wreck".split(" ");
 const FOE_VIEW_DELTA=new Set("hp maxHp shield eshield mana atk mag def atkUp magUp defUp".split(" "));
 function foeViewActive(){ return FOE_VIEW&&FOE_VIEW.battle===B&&view==="battle"?FOE_VIEW:null }
 function foeViewShot(u){
@@ -7029,6 +7032,8 @@ function foeActionCollect(groups,meta,start,acted){
   meta.attack=list.some(o=>o.lunge||o.ember||o.eyeBeam||o.quiverLunge||o.side==='mine'&&o.hit||['fire','fist','palm'].includes(o.colFx));
   if(!meta.attack&&!list.some(o=>o.pose||o.strip||o.colFx)){ const t=meta.u.intent&&meta.u.intent.t;
     meta.pose=["def","thorn"].includes(t)?"guard":["buff","heal","beer","purge"].includes(t)?"bless":null }
+  const command=meta.u.intent&&meta.u.intent.t==="sk"&&((FOE[meta.u.name]||{}).sk||[])[meta.u.intent.i];
+  if(command&&(command.puppetHit||command.fire))meta.attack=false;
   meta.targets=[...new Set(list.filter(o=>o.side==='mine'&&o.slot).map(o=>o.slot))];
   if(list.some(o=>o.colFx==='fire'||o.colFx==='palm')) meta.targets=allUnits().map(u=>u.slot);
   groups.push({meta:meta,list:list});
@@ -7849,6 +7854,7 @@ function buffSheetFX(side,slot,kw,wait){
   const sel=`#${side==="foe"?"foeSide":"mySide"} .slot[data-slot="${slot}"] .bd[data-kw="${kw}"]`;
   const hide=document.createElement("style"); hide.textContent=sel+"{visibility:hidden}"; document.head.appendChild(hide);
   const d=el(`<div class="debsh" style="--c:${T.c};width:${T.px}px;height:${T.px}px;left:${r.left+r.width/2}px;top:${r.top+r.height*T.y}px;background-image:url(${src})"></div>`);
+  if(kw==="정지"&&sfxHas("정지 효과 발동"))setTimeout(()=>SFX.play("정지 효과 발동"),wait||0);
   if(kw==="되감기"&&sfxHas("되감기 얻음")) setTimeout(()=>SFX.play("되감기 얻음"),wait||0);
   if(wait) d.style.opacity="0";   /* 차례가 올 때까지 — 상태 줄의 아이콘은 이미 숨겨 둔다 */
   l.appendChild(d);
@@ -8791,6 +8797,10 @@ function sheetFX(key,side,slot,o){
     requestAnimationFrame(()=>{ nd.style.transition="opacity "+o.fadeIn+"ms ease-in"; nd.style.opacity="1";
       if(o.fade) setTimeout(()=>{ nd.style.transition="opacity "+o.fade+"ms ease-out" },o.fadeIn+20) }) }
   const ms=o.ms||(o.frameMs&&o.frameMs.length?o.frameMs.reduce((a,b)=>a+b,0):450);
+  if(o.burst){
+    nd.style.transformOrigin="50% 100%";
+    nd.animate([{scale:".65",opacity:.7},{scale:"1.08",opacity:1,offset:.36},{scale:"1.45",opacity:1,offset:.61},{scale:"1.85",opacity:1,offset:.75},{scale:"1.6",opacity:0}],{duration:ms,easing:"ease-in",fill:"forwards"});
+  }
   nd.style.setProperty("--d",ms+"ms");
   nd.style.transform="scale("+((o.flip?-1:1)*(o.z||1.6))+","+(o.z||1.6)+")";
   {const CH=o.cellH||o.cell||64; if(o.dy) nd.style.marginTop=`calc(${o.feet?-CH:-CH/2}px + ${Math.round(o.dy*(o.z||1.6))}px)` }   /* dy — 그림 픽셀로 아래로 (2026-10-01) */
@@ -10055,6 +10065,8 @@ const genHit=k=>(typeof B!=="undefined"&&B&&B._ownSnd)?null:k;
 function hitSnd(k){ return (k&&typeof B!=="undefined"&&B&&B._ownSnd&&!sfxHas(k))?null:k }
 function sfxHas(k){ return typeof SND!=="undefined"&&!!(SND[k]||SND[k+" 1"]) }
 /* 적의 녹음 — 「<적 이름> 공격」 · 「<적 이름> 피해받음」 이 있으면 (미믹, 사용자 2026-10-06). 없으면 null */
+/* 네 제공 음원을 기존 소리 추첨으로 고른다 — 전투 주사위는 쓰지 않는다. */
+function directorIdleSnd(){if(typeof SND!=="undefined")["연료 장치 대기 1","연료 장치 대기 2","실험 책임자 전장에 나설 때 1","실험 책임자 전장에 나설 때 2"].forEach((k,i)=>{if(SND[k])SND["실험 책임자 대기 "+(i+1)]=SND[k]});return "실험 책임자 대기"}
 function foeSnd(f,k){ const n=f&&f.name+" "+k; return (n&&sfxHas(n))?n:null }
 /* 외형 소리 — 착용한 외형의 「<외형 이름> <소리>」 녹음이 있으면 그것, 없으면 원래 소리 (없으면 null) */
 /* 이 소환물의 모습을 바꾸는 외형 (minionSp) — 입고 있을 때만 */
@@ -10347,6 +10359,11 @@ function setPose(side,slot,pose,ms){
   const img=p.e.querySelector("img.pxs[data-nm]"); if(!img) return;
   if(img._strip>Date.now()) return;   /* 자세 띠가 도는 중 — 띠가 임자다 (76) */
   { const _su=(side==="mine")?unitAt(slot):foeShownAt(slot); if(_su&&stopped(_su)) return; }   /* 정지 — 자세를 바꾸지 않는다 (2026-10-07) */
+  if(side==="foe"&&img.dataset.nm==="꼭두각시"&&pose==="atk"){
+    const shown=foeViewAt("foe",slot),unit=shown&&(shown._viewReal||shown);
+    if(unit){if(img._pt){clearTimeout(img._pt);img._pt=0}
+      PUPPET_ATTACK.set(unit,{battle:B,until:Date.now()+Math.round((ms||650)*SPD)});puppetVisualSync();return}
+  }
   if(side==="foe"&&img.dataset.nm==="실험 책임자"&&(pose==="atk"||pose==="atk2")){
     const shown=foeViewAt("foe",slot),unit=shown&&(shown._viewReal||shown);
     if(unit){if(img._pt){clearTimeout(img._pt);img._pt=0}
@@ -12623,8 +12640,8 @@ const CORES=[
   d:"이번 원정동안 날이 밝을 때 얻는 활동량이 2 증가합니다. 대신 주둔지나 쉼터에서 숙면하면 9시에 깨어납니다.",
   fx:{dayAct:2, wakeAt:9}, icon:"world_core_reality"},   /* 1 → 2 (사용자 2026-10-12) */
  {id:"rift",  n:"균열 세계핵",   cond:"오염도 누적 5000 획득",        need:{k:"taint",  n:5000},
-  d:"이번 원정동안 지도에서 이동할 때 얻는 오염도가 4 증가합니다.\n반복 퀘스트: 오염도를 누적 100 얻을 때마다 무작위 보상을 얻습니다.",
-  fx:{moveTaint:4}, quest:{k:"taint",   n:100, do:"riftGift"}, icon:"world_core_rift"},   /* 5 → 4 (사용자 2026-10-12. 바탕 4 와 더해 한 칸 8) */
+  d:"이번 원정동안 지도에서 이동할 때 얻는 오염도가 3 증가합니다.\n반복 퀘스트: 오염도를 누적 100 얻을 때마다 무작위 보상을 얻습니다.",
+  fx:{moveTaint:3}, quest:{k:"taint",   n:100, do:"riftGift"}, icon:"world_core_rift"},   /* 4 → 3 (사용자 2026-10-17. 바탕4와 더해 한 칸7) */
  {id:"storm", n:"폭풍 세계핵",   cond:"미지의 구역 100회 방문",       need:{k:"unknown",n:100},
   d:"이번 원정동안 날이 밝을 때 지도의 빈 구역에 미지의 구역을 하나 추가합니다.\n반복 퀘스트: 미지의 구역을 2번 방문할 때마다 지도의 빈 구역에 미지의 구역을 하나 추가합니다.",
   fx:{dayUnknown:1}, quest:{k:"unknown", n:2,   do:"stormZone"}, icon:"world_core_storm"},
@@ -16639,7 +16656,7 @@ const FOE={
    el:"마법",
    gim:{neg:5},
    pas:[{k:"info",n:"면역자",d:"부정 보호막을 5 얻은 채로 전투를 시작합니다."},
-        {k:"outRangeDmg",v:10,n:"감시관의 갑주",d:"적 턴이 끝날 때, 공격 범위 밖의 상대(대원과 소환물)들이 마법 피해를 {피해} 입습니다."},{k:"cycle",every:2,gain:"negShield",v:2,n:"정화",d:"2턴마다 부정 보호막을 2 얻습니다."}],
+        {k:"outRangeCrit",n:"감시관의 갑주",d:"공격 범위 밖의 상대에게 이 적의 공격이 치명타로 적중합니다."},{k:"cycle",every:2,gain:"negShield",v:2,n:"정화",d:"2턴마다 부정 보호막을 2 얻습니다."}],
    sk:[
     {n:"음산한 기운",w:2,tg:"all",open:1,deb:{magDn:2,atkDn:2},shield:6,cd:2,d:"공격 범위 안 상대에게 마법약화와 공격약화를 2 부여하고 보호막을 6 얻습니다."},
     {n:"엄벌",w:4,tg:"all",dmg:8,d:"공격 범위 안 모든 상대에게 마법 피해를 8 줍니다."},
@@ -17171,19 +17188,19 @@ const FOE={
  "실험 책임자":{hp:200,fixHp:1,atk:6,def:0,rng:7,exp:8,boss:1,bossSlot:2,solo:1,noMove:1,el:"공격",
    story:"핏빛 감옥에서 균열석을 연료로 사용하려던 실험을 끝까지 멈추지 않은 자. 이 때문에 2차 균열 사태가 일어나게 되었다.",
    pas:[{k:"fuelRepair",n:"수리",d:"연료 장치가 과열 3단계가 되면, 그 장치의 뒤로 이동해서 수리를 시작합니다."},
-        {k:"fuelRage",n:"기막힌 발명품",d:"연료 장치가 부서지면, 책임자가 분노하여 공격력을 2 얻습니다."}],
+        {k:"fuelRage",n:"기막힌 발명품",d:"전장에 부서지지 않은 연료 장치의 수만큼, 실험 책임자가 공격력을 1 얻습니다. 연료 장치가 부서지면, 책임자가 분노하여 공격력을 2 얻습니다."}],
    sk:[{n:"수리 작업",w:1,tg:"none",fuelRepair:1,cond:"fuelRepair",must:1,d:"앞 연료 장치의 과열을 완전히 식힙니다."},
        {n:"스패너 던지기",w:3,tg:"back",dmg:10,chase:1,fuelThrow:1,d:"스패너를 던져 가장 뒤의 대상에게 공격 피해를 10 줍니다."},
        {n:"스패너 후리기",w:3,tg:"near",dmg:4,hits:2,chase:1,d:"스패너를 휘둘러 가장 앞의 대상에게 공격 피해를 4씩 2번 줍니다."},
-       {n:"복구",w:2,tg:"none",fuelRestore:1,cond:"fuelWreck",d:"잔해가 된 연료 장치를 되살립니다."},
+       {n:"복구",w:2,wBoost:{cond:"fuelAllBroken",w:5},tg:"none",fuelRestore:1,cond:"fuelWreck",d:"잔해가 된 연료 장치를 되살립니다."},
        {n:"실험복 입기",w:2,tg:"self",shield:10,negUp:2,d:"보호막을 10 얻습니다. 부정 보호막을 2 얻습니다."},
-       {n:"간단한 실수",w:2,tg:"none",fuelMistake:1,d:"모든 과열 장치들이 1단계 더 과열됩니다."},
+       {n:"간단한 실수",w:2,tg:"none",fuelMistake:1,cond:"fuelAlive",d:"모든 과열 장치들이 1단계 더 과열됩니다."},
        {n:"때리기",w:3,tg:"any",dmg:6,chase:1,d:"무작위 대상에게 공격 피해를 6 줍니다."}],hit:"때리기"},
- "연료 장치":{hp:20,fixHp:1,atk:0,mag:0,def:0,rng:9,exp:0,noMove:1,wreck:1,summoned:1,el:"마법",
-   pas:[{k:"fuelHeat",n:"과열",d:"1~2턴마다 무작위로 과열됩니다. 3단계에서 더 과열되면, 폭발하여 아군과 적군 모두에게 마법 피해를 15 주고 오염도를 5 증가시킵니다."},
+ "연료 장치":{hp:30,fixHp:1,atk:0,mag:0,def:0,rng:9,exp:0,noMove:1,wreck:1,summoned:1,el:"마법",
+   pas:[{k:"fuelHeat",n:"과열",d:"무작위로 과열됩니다. 3단계에서 더 과열되면, 폭발하여 모두에게 마법 피해를 20 주고 오염도를 5 증가시킵니다."},
         {k:"info",n:"죽음",d:"잔해가 남습니다."}],
    sk:[{n:"대기",tg:"none",d:"아무 행동도 하지 않습니다."},{n:"과열",tg:"none",d:"1단계 과열됩니다."},
-       {n:"폭발",tg:"none",d:"폭발하여 아군과 적군 모두에게 마법 피해를 15 주고 오염도를 5 증가시킵니다."}]},
+       {n:"폭발",tg:"none",d:"폭발하여 모두에게 마법 피해를 20 주고 오염도를 5 증가시킵니다."}]},
  "간수장":    {hp:300,fixHp:1,atkScale:0.12,phases:[200,100],atk:8,def:10,rng:4,exp:8,boss:1,   /* atkScale 0.25 → 0.12 (사용자 2026-10-05: 너무 세다 — 1스테이지 14 → 11, 기술 피해 모두 -3). 공격력은 적 강화도의 이 몫만큼 오른다 (사용자 2026-10-04: 1스테이지 +282% 에서 8 → 14, 기술 피해도 같은 몫만큼) */
    el:"공격",
    pas:[{k:"info",hide:1,n:"세 단계",d:"체력 200 이하에서 2단계, 100 이하에서 3단계로 넘어갑니다. 단계마다 쓰는 패턴이 바뀝니다."},
@@ -17909,6 +17926,7 @@ function debBadges(u){
 function foePasD(f,x){
   let d=x.d||"";
   if(x.k==="fuelHeat")return `${Math.max(1,(f.fuelDue||((B&&B.turn)||1)+1)-((B&&B.turn)||1))}턴마다 과열됩니다. ${d} 지금 과열 ${f.fuelHeat||0}단계.`;
+  if(x.k==="fuelRage")d+=` (지금 장치 ${fuelDevices().filter(x=>x.alive).length}개: 공격력 +${f.fuelPower||0})`;
   if(x.k==="outRangeDmg") d=d.replace("{피해}",foeDmg(f,x.v,"마법"));   /* 실제로 들어가는 값 — hurtAlly 로 가는 foeEndPassives 와 같은 foeDmg */
   else if(x.k==="promote"){ const rem=Math.max(1,(x.turns||3)-(f.age||0)); d=d.replace(/^\d+턴 후에/,rem+"턴 후에") }
   else if(x.k==="death"&&x.kind==="grpMag"){ const v=(x.v||0)+(f.deathUp||0); d=d.replace(/마법력을 \d+ 부여/,`마법력을 ${v} 부여`) }
@@ -17928,6 +17946,7 @@ function foeStatusRows(f){
     if(x.k==="bounty"){ t.push(bd("t",x.n,`${x.n} ${Math.max(0,f.bounty||0)}`,`이 대상을 처치하면 금화를 ${Math.max(0,f.bounty||0)}개 얻습니다. 적 턴이 끝날 때마다 2씩 감소합니다.`,x.n)); return }   /* 흡수는 대원처럼 버프 칸에 '흡수 100%' (사용자 2026-10-05) */
     const h=bd("t",x.kw||x.n,x.k==="fuelHeat"?`과열(${f.fuelHeat||0}단계)`:x.n,foePasD(f,x),x.n);
     t.push(cutting?h.replace('class="bd ','class="bd echocut '):h) });
+  if(f.name==="연료 장치")g.push(bd("g","과열",`${f.fuelHeat||0}단계`,foePasD(f,FOE[f.name].pas[0]),"과열"));
   if(f.drainTurn&&B&&f.drainTurn>=B.turn&&!foePas(f,"drain")) g.push(bd("g","흡수",Math.round((f.drainRate||1)*100)+"%","이번 턴(또는 다음 턴)에 보호막에 막히지 않은 피해의 "+Math.round((f.drainRate||1)*100)+"%만큼 체력을 회복합니다."));   /* 미믹 깨물기 */
   /* 기생으로 심긴 죽음 — 붙어 있는 동안 보인다 (사용자 2026-09-29) */
   if(f.dthTag) t.push(bd("t","죽음",f.dthTag.n||"기생",
@@ -17954,7 +17973,7 @@ function foeStatusRows(f){
     g.push(bd("g","빔 광선 충전",`${n}턴`,`${n}턴 뒤 적 턴이 시작될 때 빔 광선을 발사합니다. 모든 상대에게 마법 피해 ${f.beam.v}, 보호약화 1.`,"빔 광선 충전")) }
   if(f.air) o.push(bd("o","공중에 뜸","","잠깐 공중에 떠 있습니다. 내려오면 사라집니다."));   /* 디버프 칸 · 바람 아이콘 (사용자 2026-09-16) */
   if(f.gmark) g.push(bd("g","장군의 표식","","장군의 표식"));
-  if(f.summoned) g.push(bd("g","소환물","","적이 부른 소환물입니다 — 경험치도, 처치 수도 세지 않습니다"));
+  if(f.summoned&&!puppetDisguised(f)) g.push(bd("g","소환물","","적이 부른 소환물입니다 — 경험치도, 처치 수도 세지 않습니다"));
   if(f.infect) o.push(bd("o","감염",f.infect,"턴이 끝날 때 피해를 1(추가 ∴) 주고 감염 중첩을 1 감소"));
   if(f.stun&&!deb(f,"stun")) o.push(bd("o","기절","",DEBUFF.stun.d));
   if(f.burn) o.push(bd("o","화상",f.burn,DEBUFF.burn.d));
@@ -19958,6 +19977,7 @@ function render(){
   render0();
   foeSlideAfter(oldFoes);
   directorVisualSync();
+  puppetVisualSync();
   driftFxSync();
   foeFocusSync();
   try{ ringSync() }catch(e){}
@@ -20711,6 +20731,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 182, "v": "0.7", "d": "2026-10-17", "t": "실험 책임자 장치 개편·수리 오류 수정 및 전투 표시·효과음 개선", "big": 0},
  {"b": 181, "v": "0.7", "d": "2026-10-17", "t": "실험 책임자·연료 장치 추가 및 적 연출·훈련장 개선", "big": 0},
  {"b": 180, "v": "0.7", "d": "2026-10-16", "t": "클라우드 여덟 묶음 — 쉼터 셋 · 카드 보유량 · 이라/간수장 너프", "big": 0},
  {"b": 179, "v": "0.7", "d": "2026-10-15", "t": "이펙트 띠를 첫 화면 뒤로 — 들어오는 데 24.9초 → 2.5초", "big": 0},
@@ -22084,7 +22105,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=181;
+const BUILD_NO=182;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -25443,7 +25464,7 @@ function spawnFoeNamed(n,slot,opt){
   if(f.big&&(slot>=SLOTS||foeBlock(slot+1))) return null;   /* 두 칸짜리는 뒤 칸도 비어야 */
   if(opt&&opt.summoned){ f.summoned=1; f.exp=0 }   /* 적 기술이 부른 것은 소환물 — 경험치도 처치 수도 없다 (사용자 2026-09-16) */
   foeFix(f);
-  B.foes.push(f); return f;
+  B.foes.push(f); if(n===FUEL_NAME||n===DIRECTOR_NAME)fuelPowerSync(); return f;
 }
 /* 연습장 — 서 있는 적을 지금 배율(foeScale)로 다시 셈한다 (사용자 2026-09-29).
    손잡이를 누르면 그 자리에서 값이 바뀌어야 한다. 셈은 spawnFoeNamed 와 똑같다 —
@@ -29011,23 +29032,25 @@ function ammoUp(h,n){ if(!h||!n) return;
 /* 데린저의 **무기 피해량** — 총을 바꿔도 남는 덤 (노트 「부착: 총열」의 주석 그대로).
    ⚠️ 기술 이름에 걸지 말 것 — 변형하면 1번 기술 이름이 통째로 바뀐다.
    새 부착물은 **여기 한 곳**에 한 줄씩 더한다 */
-function derrGunAdd(h,s,tgt){
-  if(!h||h.name!=="데린저"||!s||!s.ammo) return 0;
-  const t=h.tag||{}; let a=(t.gunDmg||0);
+function derrGunParts(h,s,tgt){
+  if(!h||h.name!=="데린저"||!s||!s.ammo) return [];
+  const t=h.tag||{},out=[]; const add=(n,v)=>{if(v)out.push({n,v})}; add("무기 피해 증가",t.gunDmg||0);
   const d=tgt?dist(h.slot,tgt.slot):0;
   if(tgt){
-    if(t.gunFar&&d>=4) a+=t.gunFar;        /* 부착: 조준경 — 거리 4 이상 */
-    if(t.gunNear&&d<=2) a+=t.gunNear;      /* 근접사격 · 부착: 초크 — 거리 2 이내 */
-    if(t.gunFarthest&&typeof farthestFoe==="function"){ const f=farthestFoe(h); if(f&&f===tgt) a+=t.gunFarthest }   /* 부착: 삼각대 */
+    if(t.gunFar&&d>=4) add("부착: 조준경",t.gunFar);        /* 부착: 조준경 — 거리 4 이상 */
+    if(t.gunNear&&d<=2) add("근접사격",t.gunNear);      /* 근접사격 · 부착: 초크 — 거리 2 이내 */
+    if(t.gunFarthest&&typeof farthestFoe==="function"){ const f=farthestFoe(h); if(f&&f===tgt) add("부착: 삼각대",t.gunFarthest) }   /* 부착: 삼각대 */
   }
-  if(t.gunOnce){ a+=t.gunOnce; }           /* 부착: 개머리판 · 강화약실 — 다음 한 방만 (쏜 뒤 비운다) */
-  if(t.farAddPlus&&s.farAdd&&tgt) a+=t.farAddPlus*d;   /* 부착: 기계식 조준기 — 거리당 한 번 더 */
-  if(t.antiMat&&s.farAdd) a+=(h.atk||0)*3;             /* 대물 저격소총 — 추가 공격력의 세 배 */
-  if(h.killGun) a+=h.killGun;              /* 무법의 쾌감 — **이번 전투에서만** (BATTLE_RESET 이 비운다, 2026-10-16) */
-  if(t.hideAtk&&h.hide) a+=t.hideAtk;      /* 은신 사격 — 숨은 동안 */
-  if(t.magBullet) a+=(h.mag||0);           /* 마력탄환 — 무기 피해가 마법력의 영향을 받는다 (노트 2026-10-15) */
-  return a;
+  if(t.gunOnce){ add("다음 사격",t.gunOnce); }           /* 부착: 개머리판 · 강화약실 — 다음 한 방만 (쏜 뒤 비운다) */
+  if(t.farAddPlus&&s.farAdd&&tgt) add("부착: 기계식 조준기",t.farAddPlus*d);   /* 부착: 기계식 조준기 — 거리당 한 번 더 */
+  if(t.antiMat&&s.farAdd) add("대물 저격소총",(h.atk||0)*3);             /* 대물 저격소총 — 추가 공격력의 세 배 */
+  if(h.killGun) add("무법의 쾌감",h.killGun);              /* 무법의 쾌감 — **이번 전투에서만** (BATTLE_RESET 이 비운다, 2026-10-16) */
+  if(t.hideAtk&&h.hide) add("은신 사격",t.hideAtk);      /* 은신 사격 — 숨은 동안 */
+  if(t.magBullet) add("마력탄환",(h.mag||0));           /* 마력탄환 — 무기 피해가 마법력의 영향을 받는다 (노트 2026-10-15) */
+  return out;
 }
+function derrGunAdd(h,s,tgt){return derrGunParts(h,s,tgt).reduce((v,p)=>v+p.v,0)}
+
 /* 값을 치르지 않고 한 발 — 「대원 배치 후」 쏘는 보상들이 쓴다 (노트 2026-10-15).
    ⚠️ 셈은 여느 사격과 같은 길을 쓴다 (derrGunAdd · critWhy · derrAfterShot) */
 /* 기술을 **한 번 쓴 것**과 같게 쏜다 — 기관총이면 여덟 발이 다 나간다
@@ -30157,6 +30180,10 @@ function squeezeRefresh(){ if(!B||!B.foes) return;
   B.foes.forEach(f=>{ if(f.alive&&f.intent&&f.intent.t!=="wait") squeezeSet(f,f.intent,squeezeWant(f,f.intent)) }) }
 /* 간수의 손 「뺨다귀」 — 감옥의 눈이 치는 상대가 간수의 손의 공격 범위 안이면 치명타. 실제(skExec)와 예고(incoming)가 같이 쓴다.
    hs · fs 는 예고가 자리 바뀜을 따라갈 때 쓰는 칸 읽개 (사용자 2026-10-08) */
+function outRangeCritFor(f,t,hs,fs){
+  if(!f||!t||!foePas(f,"outRangeCrit"))return false;
+  return dist((hs||((u)=>u.slot))(t),(fs||((u)=>u.slot))(f))>(f.rng||1);
+}
 function eyeCritFor(f,t,hs,fs){
   if(!f||f.name!=="감옥의 눈"||!t) return false;
   hs=hs||(u=>u.slot); fs=fs||(u=>u.slot);
@@ -30177,6 +30204,8 @@ function spreadPlan(L,hits){
 /* 꼭두각시 하나가 얻은 공격력 (표의 공격력과의 차 — 다른 적 기술의 skDmg 와 같은 셈). 인형 휘두르기 · 꼭두각시 폭발이 인형마다 더한다.
    실제(skExec)와 예고(incoming)가 같이 쓴다 (사용자 2026-10-08) */
 function puppetPow(p){ return (p.atk||0)-((FOE[p.name]||{}).atk||p.atk||0) }
+/* 소환 여부의 실제 규칙은 유지하고, 변신 동안 꼭두각시들의 표식만 가린다. */
+function puppetDisguised(f){return !!(f&&f.name==="꼭두각시"&&B&&B.foes.some(x=>x.alive&&x.morphBack&&x.morphBack.name==="미치광이 인형사"))}
 function puppetsOf(f){ return B.foes.filter(x=>x.alive&&x!==f&&x.name==="꼭두각시"&&!x.morphBack) }
 /* 상대(대원 + 소환물)에게 걸린 부정적인 효과의 종류 수 (균열 폭발) */
 function debKindsOnField(){ return DEB_KEYS.filter(k=>allUnits().some(u=>u.hp>0&&deb(u,k)>0)).length }
@@ -30288,7 +30317,7 @@ const FOE_RACE={
    아이콘은 대원 조합 그림을 빌린다 — 야수는 아직 그림이 없어 글자만 */
 const RACE_ICON={"인간":"syn_human","악마":"syn_demon","기계":"syn_machine","망자":"syn_undead","정령":"syn_spirit","야수":"syn_beast","골렘":"syn_golem","초월체":"syn_transcendent"};   /* 초월체 — 마력의 초월체 (사용자 2026-10-13) */   /* 골렘 (사용자 2026-10-07) */   /* 종족 전용 그림 (2026-09-30) */
 function raceLine(f){
-  const r=foeRace(f); if(!r) return "";
+  const r=f&&(f.isMin||HEROES[f.name])?unitTags(f).race:foeRace(f); if(!r) return "";
   const k=RACE_ICON[r], u=k&&(typeof ICON_PNG!=="undefined")&&ICON_PNG[k];
   return `<div class="frace">${u?`<img src="${u}" alt="" draggable="false">`:""}<span>${esc(r)}</span></div>`;
 }
@@ -30398,6 +30427,8 @@ function demonExposed(f){
 }
 const SK_COND={
   fuelRepair:f=>!!fuelRepairTarget(f),
+  fuelAlive:f=>fuelDevices().some(x=>x.alive),
+  fuelAllBroken:f=>fuelDevices().length>0&&!fuelDevices().some(x=>x.alive),
   fuelWreck:f=>fuelDevices().some(x=>!x.alive&&x.wreck&&!foeAt(x.slot)),
   toad:      f=>B.foes.some(x=>x.alive&&x.name==="늪 두꺼비"),   /* 먹이활동 — 먹을 두꺼비가 있을 때만 (사용자 2026-10-14) */
   cannonFront:f=>B.foes.some(x=>x.alive&&x.name==="대포"&&x.slot<f.slot),
@@ -30669,6 +30700,12 @@ const FUEL_NAME="연료 장치", DIRECTOR_NAME="실험 책임자";
 function mapBossSeed(grid){let seed=2166136261;const text=JSON.stringify(grid);for(let i=0;i<text.length;i++)seed=Math.imul(seed^text.charCodeAt(i),16777619)>>>0;return seed}
 function expeditionBoss(fi){ return fi===0&&run&&run.prisonBoss||BOSSES[fi] }
 function fuelDevices(){ return B.foes.filter(x=>x.name===FUEL_NAME) }
+/* 지금 살아 있는 장치의 몫만 교체한다. 파괴할 때 얻는 영구 분노와 따로 센다. */
+function fuelPowerSync(){
+  if(!B)return;
+  const n=fuelDevices().filter(x=>x.alive).length;
+  B.foes.filter(x=>x.alive&&x.name===DIRECTOR_NAME).forEach(f=>{const d=n-(f.fuelPower||0);if(d){foeAtkUp(f,d);f.fuelPower=n}});
+}
 function fuelRand(){ if(B.fuelSeed==null)B.fuelSeed=mapBossSeed(run.grid);B.fuelSeed=(Math.imul(1664525,B.fuelSeed)+1013904223)>>>0; return B.fuelSeed/4294967296 }
 function fuelSchedule(f){ f.fuelDue=(B.turn||1)+(fuelRand()<.5?1:2) }
 function fuelIntent(f,i){ const s=FOE[f.name].sk[i];return {t:"sk",i,n:s.n,tg:s.tg||"none",to:0,v:0,hits:1,el:FOE[f.name].el||"공격"} }
@@ -30676,21 +30713,22 @@ function fuelRoll(f){
   if(f.fuelDue==null) fuelSchedule(f);
   return fuelIntent(f,f.fuelDue<=(B.turn||1)?((f.fuelHeat||0)>=3?2:1):0);
 }
-function fuelRepairTarget(f){ return fuelDevices().find(x=>x.id===f.repairId&&x.alive)||null }
+function fuelRepairTarget(f){ return fuelDevices().find(x=>x.id===f.repairId&&x.alive&&x.slot===f.slot-1)||null }
 function fuelRepairSeek(){
   const f=B.foes.find(x=>x.alive&&x.name===DIRECTOR_NAME); if(!f) return;
   if(fuelRepairTarget(f)) return;
   f.repairId=null;
+  if(f.intent&&f.intent.t==="sk"&&FOE[f.name].sk[f.intent.i]?.fuelRepair)f.intent=fuelOtherIntent(f);
   const hot=fuelDevices().filter(x=>x.alive&&(x.fuelHeat||0)>=3);
   if(!hot.length||foeBound(f)) return;
-  const target=hot[Math.floor(fuelRand()*hot.length)], from=f.slot, to=target.slot;
-  if(to===from) return;
+  const target=hot[Math.floor(fuelRand()*hot.length)], from=f.slot, to=target.slot>from?target.slot:target.slot+1;
   /* 중간 장치(잔해 포함)를 한 칸씩 앞으로/뒤로 민다. 맞바꿈하지 않는다. */
-  const between=B.foes.filter(x=>x!==f&&(x.alive||x.wreck)&&x.slot>=Math.min(from,to)&&x.slot<=Math.max(from,to));
+  const between=to===from?[]:B.foes.filter(x=>x!==f&&(x.alive||x.wreck)&&x.slot>=Math.min(from,to)&&x.slot<=Math.max(from,to));
   if(between.some(x=>x.name!==FUEL_NAME)) return;
   between.forEach(x=>{x.slot+=to>from?-1:1}); f.slot=to; f.repairId=target.id;
   between.filter(x=>x.alive).forEach(x=>foeMoved(x));foeMoved(f);
   if(!f.alive)return;
+  if(!fuelRepairTarget(f)){f.repairId=null;f.intent=fuelOtherIntent(f);return}
   f.intent=fuelIntent(f,0);
   fx({side:"foe",slot:f.slot,s:"step",gap:420});
   say(`수리 — ${f.name}${jo(f.name,"ig")} ${foeNo(f.slot)}번으로 이동해 앞 장치를 수리합니다.`,"t2");
@@ -30707,17 +30745,22 @@ function fuelRepairCancel(dead){
 function fuelDeath(f){
   if(f.name!==FUEL_NAME)return;
   f.fuelHeat=0;f.fuelDue=null;
+  fuelPowerSync();
   const boss=B.foes.find(x=>x.alive&&x.name===DIRECTOR_NAME);
   if(boss){foeAtkUp(boss,2);foeBark(boss,"event:연료 장치 파괴");
     fx({side:"foe",slot:boss.slot,s:"실험 책임자 장치 파괴",gap:0});
     say("기막힌 발명품 — 실험 책임자 공격력 +2", "t2")}
   fuelRepairCancel(f);
+  if(boss&&boss.intent&&boss.intent.t==="sk"){
+    const sk=FOE[boss.name].sk[boss.intent.i];
+    if(sk&&sk.cond&&SK_COND[sk.cond]&&!SK_COND[sk.cond](boss))boss.intent=fuelOtherIntent(boss);
+  }
 }
 function fuelExplosion(f){
   if(!f.alive||f.fuelExploding)return;
   f.fuelExploding=1;
-  const foes=B.foes.filter(x=>x.alive),allies=allUnits().filter(x=>x.hp>0),v=foeDmg(f,15,"마법");
-  fx({side:"foe",slot:f.slot,sheet:"fx_fuel_explosion",sheetOpt:{cellW:128,cellH:208,frames:8,z:.9,feet:1,ms:1600,tag:"fuel-explosion"},s:foeSnd(f,"폭발"),gap:1600});
+  const foes=B.foes.filter(x=>x.alive),allies=allUnits().filter(x=>x.hp>0),v=foeDmg(f,20,"마법");
+  fx({side:"foe",slot:f.slot,sheet:"fx_fuel_explosion",sheetOpt:{cellW:128,cellH:208,frames:8,z:.9,feet:1,ms:1600,burst:1,tag:"fuel-explosion"},s:foeSnd(f,"폭발"),gap:1600});
   addTaint(5);say("연료 장치 폭발 — 아군과 적군 모두에게 마법 피해 "+v+", 오염도 +5", "t3");
   /* 먼저 잔해로 확정해 자기 폭발이 가시/죽음에 다시 폭발하지 않게 한다. */
   f.evade=0;f.armor=0;
@@ -30744,7 +30787,7 @@ function fuelExec(f,I){
   if(f.name!==DIRECTOR_NAME)return false;
   if(s.fuelRepair){
     const target=fuelRepairTarget(f);
-    if(!target||target.slot!==f.slot-1){f.repairId=null;const next=fuelOtherIntent(f);if(next)skExec(f,next);return true}
+    if(!target){f.repairId=null;f.intent=fuelOtherIntent(f);if(f.intent)skExec(f,f.intent);return true}
     foeBark(f,"skill:수리 작업");
     fx({side:"foe",slot:f.slot,strip:{k:"makeA",ms:180},s:foeSnd(f,"수리 작업"),gap:1440});
     target.fuelHeat=0;fuelSchedule(target);target.intent=fuelRoll(target);f.repairId=null;
@@ -30753,11 +30796,12 @@ function fuelExec(f,I){
   if(s.fuelRestore){
     const t=fuelDevices().find(x=>!x.alive&&x.wreck&&!foeAt(x.slot));if(!t)return true;
     t.alive=1;t.wreck=0;t.hp=t.maxHp;t.hpShow=null;t.shield=0;t.eshield=0;t.deb={};t.fuelHeat=0;t.fuelDue=null;t.dieHold=0;
-    t.fuelExploding=0;fuelSchedule(t);t.intent=fuelRoll(t);
+    t.fuelExploding=0;fuelSchedule(t);t.intent=fuelRoll(t);fuelPowerSync();
     fx({side:"foe",slot:f.slot,strip:{k:"makeA",ms:180},s:foeSnd(f,"복구"),gap:900});
     say("복구 — 연료 장치를 되살립니다.","t2");return true;
   }
   if(s.fuelMistake){
+    if(!SK_COND.fuelAlive(f))return true;
     foeBark(f,"skill:간단한 실수");say("간단한 실수 — 과열 장치들이 1단계 더 과열됩니다.","t3");
     fuelDevices().filter(x=>x.alive&&(x.fuelHeat||0)>0).forEach(fuelHeatUp);return true;
   }
@@ -30781,7 +30825,7 @@ function directorVisualSync(){
       im.src=pic.u;im.style.setProperty('--ph',pic.ph);return;
     }
     if(im._pt)return;   /* 피격/막기 자세가 끝나면 수리 반복으로 돌아온다. */
-    if(u.repairId!=null&&set.makeA&&set.makeA.length){
+    if(u.repairId!=null&&fuelRepairTarget(u)&&set.makeA&&set.makeA.length){
       if(!DIRECTOR_REPAIR_CLOCK.has(real))DIRECTOR_REPAIR_CLOCK.set(real,now);
       const k=Math.floor((now-DIRECTOR_REPAIR_CLOCK.get(real))/(180*SPD))%set.makeA.length;
       im.removeAttribute('data-anim');im.removeAttribute('data-director-attack');im.dataset.repairAnim='1';im.dataset.pose='repair';im.dataset.repairFrame=k;
@@ -30795,6 +30839,21 @@ function directorVisualSync(){
   });
 }
 setInterval(directorVisualSync,40);
+const PUPPET_ATTACK=new WeakMap();
+function puppetVisualSync(){
+  if(PRED_DRY||view!=="battle"||!B)return;
+  const now=Date.now(),set=PNG_SPRITE["꼭두각시"];if(!set)return;
+  document.querySelectorAll('#foeSide img[data-nm="꼭두각시"]').forEach(im=>{
+    const u=foeViewAt("foe",+im.closest('.slot').dataset.slot),real=u&&(u._viewReal||u),a=real&&PUPPET_ATTACK.get(real);
+    if(!u||!u.alive||im._strip>now)return;
+    if(a&&a.battle===B&&now<a.until){
+      im.removeAttribute('data-anim');im.dataset.puppetAttack='1';im.dataset.pose='atk';im.src=set.atk.u;im.style.setProperty('--ph',set.atk.ph);
+    }else if(im.dataset.puppetAttack){
+      im.removeAttribute('data-puppet-attack');im.dataset.pose='idle';im.dataset.anim='1';im.src=set.idleA?set.idleA[0]:set.idle.u;im.style.setProperty('--ph',set.idle.ph);
+    }
+  });
+}
+setInterval(puppetVisualSync,40);
 
 function fuelWrenchFX(from,to){
   const a=ctrOf("foe",from),b=ctrOf("mine",to),layer=document.getElementById("fx");
@@ -30927,7 +30986,7 @@ function foeDrain(f,t,before){
   { const hg=foePas(f,"hunger");   /* 굶주림 — 체력이 절반 이하면 흡수 +v% (붉은 망토 늑대) */
     if(hg&&f.alive&&f.hp<=f.maxHp*0.5&&f.hp<f.maxHp){
       const v=healUp(f,Math.min(Math.round(dealt*(hg.v||50)/100),f.maxHp-f.hp),1)||0;
-      if(v>0){ fx({side:"foe",slot:f.slot,s:"heal",ring:"#a34f4f",txt:"+"+v,cls:"heal",gap:80}); say(`${f.name} 굶주림 — 흡수로 체력 +${v}`,"t2") } } }
+      if(v>0){ fx({side:"foe",slot:f.slot,s:"heal",trig:"흡수",ring:"#a34f4f",txt:"+"+v,cls:"heal",gap:80}); say(`${f.name} 굶주림 — 흡수로 체력 +${v}`,"t2") } } }
   if((foePas(f,"drain")||(f.drainTurn&&B&&f.drainTurn===B.turn))&&f.hp<f.maxHp){
     const rate=foePas(f,"drain")?1:(f.drainRate||1);   /* 피의 계약 — 50% */
     const v=healUp(f,Math.min(Math.round(dealt*rate),f.maxHp-f.hp),1)||0;   /* 보호약화면 절반 (점검 2026-10-07) */
@@ -31239,7 +31298,7 @@ function skExec0(f,I){
     say(`${f.name}${jo(f.name,"ig")} ${s.stop}턴 동안 정지합니다 — 겨눌 수도, 피해를 줄 수도 없습니다.`,"t2") }
   if(s.puppetHit){   /* 인형 휘두르기 — 꼭두각시마다 무작위 상대 하나 */
     const P=puppetsOf(f);
-    if(P.length) fx({side:"foe",slot:f.slot,pose:"atk",lunge:1,gap:90,s:foeSnd(f,"공격")});   /* 줄을 당기는 인형사 (㉔) */
+    if(P.length) fx({side:"foe",slot:f.slot,pose:"atk",gap:240,s:foeSnd(f,"공격")});   /* 제자리에서 명령하고 꼭두각시가 공격한다. */
     P.forEach(p=>{ const t=puppetAimOf(I,p); if(!t) return;
       fx({side:"foe",slot:p.slot,pose:"atk",lunge:1,gap:60,s:sfxOr("꼭두각시_공격",foeSnd(p,"공격"))});
       asSrc(p,()=>hurtAlly(p,t,foeDmg(p,s.puppetHit+puppetPow(p),"공격"),s.n,"공격",`${s.n} — ${t.name} 회피!`)) });
@@ -31546,7 +31605,7 @@ function skExec0(f,I){
       if(foePas(f,"dist4Double")&&dist(t.slot,f.slot)===4){ hits*=2; say(`죽음과 저주 — 거리 4, ${s.n}이 두 번!`,"t1") }
       let one=foeDmg(f,skDmg(f,s),I.el);
       if(f.painBonus){ one+=f.painBonus; say(`고통 감내 — 피해 +${f.painBonus}`,"t2"); f.painBonus=0 }
-      let crit=!!(s.burnCrit&&deb(t,"burn")>0)||!!(s.debCrit&&DEB_KEYS.some(k=>deb(t,k)>0));
+      let crit=!!(s.burnCrit&&deb(t,"burn")>0)||!!(s.debCrit&&DEB_KEYS.some(k=>deb(t,k)>0))||outRangeCritFor(f,t);
       if(eyeCritFor(f,t)){ crit=true; say(`뺨다귀 — ${t.name}${jo(t.name,"eun")} 간수의 손 공격 범위 안이라 ${s.n}이 치명타!`,"t1") }
       if(crit){ one*=2; if(s.burnCrit) say(`${s.n} — 화상 입은 ${t.name}에게 치명타!`,"t1"); if(s.debCrit) say(`${s.n} — 부정적인 효과가 걸린 ${t.name}에게 치명타!`,"t1") }
       if(crit) critAlly(t);   /* 보이고 들리게 — 대원 쪽엔 있는데 적 쪽엔 없었다 (⑳) */
@@ -31665,6 +31724,7 @@ function foeDeath(f){
     const mb=f.morphBack; let sl=f.slot; if(foeBlock(sl)){ sl=1; while(sl<=SLOTS&&foeBlock(sl)) sl++ }
     if(sl<=SLOTS){ const m=spawnFoeNamed(mb.name,sl);
       if(m){ m.maxHp=mb.maxHp; m.hp=mb.hp;
+        if(mb.name==="미치광이 인형사")foeBark(m,"event:변신 해제");
         fx({side:"foe",slot:sl,s:"summon",ring:"#c9a227",txt:"다시 등장",cls:"crit",gap:220});
         say(`${mb.name}${jo(mb.name,"ig")} 꼭두각시의 실을 끊고 다시 모습을 드러냅니다. (체력 ${mb.hp})`,"t1");
         rollIntents(true) } } }
@@ -31983,22 +32043,14 @@ function vineEndPassives(){
       hurtAlly(src,u,VINE_TICK.v,VINE_TICK.n,"마법") });
   });
 }
-/* 적 턴이 끝날 때 — 감시관의 갑주: 공격 범위 밖 대상(대원 + 소환물, 사용자 2026-10-05)에게 마법 피해 */
+/* 적 턴이 끝날 때 — 마나 흐름 정제소의 칸별 약화 */
 function foeEndPassives(){
   B.foes.forEach(f=>{ const p=f.alive&&foePas(f,"flow"); if(!p) return;   /* 마나 흐름 정제소 — 선 칸마다 약화 (사용자 2026-10-07) */
     const MAP={1:"magDn",2:"atkDn",3:"magDn",4:"atkDn",5:"defDn"};
     const L=allUnits().filter(u=>u.hp>0&&!stopped(u)&&MAP[u.slot]);
     L.forEach(u=>{ addDeb(u,MAP[u.slot],1,f); fx({side:"mine",slot:u.slot,s:"mag",ring:"#6aa8e0",txt:(DEBUFF[MAP[u.slot]]||{}).n+" 1",cls:"miss",gap:60}) });
     if(L.length) say(`${p.n} — 서 있는 칸에 따라 ${L.length}에게 약화가 스며듭니다.`,"t3") });
-  B.foes.forEach(f=>{ const p=f.alive&&foePas(f,"outRangeDmg"); if(!p) return;
-    const out=allUnits().filter(u=>u.hp>0&&dist(u.slot,f.slot)>foeRng(f));
-    if(!out.length) return;
-    say(`감시관의 갑주 — 공격 범위 밖 대상에게 마법 피해 ${p.v}`,"t3");
-    const mz=document.querySelector(".bfstage")?2.6:1.2;   /* 띠 속 몸 49px — 큰 무대는 124px (2026-09-29) */
-    out.forEach(u=>{ fx({side:"mine",slot:u.slot,sheet:"fx_armor_orb",   /* 받은 구체 낙하 (65) */
-                       sheetOpt:{cell:64,frames:8,z:mz*1.5,dy:-24,frameMs:[90,80,70,65,65,85,105,140]},hit:1,s:"mag",gap:220});   /* 충돌점이 그림 y56 */
-                     hurtAlly(f,u,foeDmg(f,p.v,"마법"),"감시관의 갑주","마법") });
-  });
+
 }
 /* 기술의 효과를 짧게 — 의도 칸에 이름 대신 적는다 (사용자 2026-09-15: '화상 2 ↝ 나이코스' 꼴) */
 /* 끌기·밀치기 — 화살표 그림 + 칸 수. pull 은 맞는 대원이 어디 서 있느냐에 따라 칸 수가 달라 대상(t)을 받는다 */
@@ -32100,6 +32152,7 @@ function rollIntents(onlyIdle){
   squeezeRefresh();   /* 조여 오는 힘 — 뽑은 의도에 그 몫을 미리 넣는다 */
 }
 function rollIntents0(onlyIdle){
+  fuelPowerSync();
   fuelRepairSeek();
   grpHideSync();
   tauntWithSync();   /* 주인의 명령 — 도발은 의도를 고르기 전에 맞춰 둔다 (도발이 서면 겨눌 수 있는 대상이 달라진다) */
@@ -32603,6 +32656,7 @@ const BARK_LEGACY=new Set(Object.entries(BARK).flatMap(([n,T])=>Object.keys(T).f
 /* 앞선 원고에서 이미 쓰던 적 대사도 기존 주사위 흐름을 지킨다. */
 ["in","down"].forEach(k=>BARK_LEGACY.add("타락한 나이코스|"+k));
 const FOE_EVENT_BARK={
+ "미치광이 인형사":{"event:변신 해제":["재밌으셨나요?","깜짝 놀랬죠?","맞추셨군요!"]},
  "실험 책임자":{in:["내 연구를 방해하지마라!","이것이 바로 미래다!"],atk:["방해하지 마라고!","꺼져라"],hurt:["너도 개조해야겠군...","말을 안들어?"],down:["내 연구가..."],"skill:수리 작업":["어서 수리해야 해!","방해하지마!","위험하다고!","이게 왜이러지?"],"event:연료 장치 파괴":["이런!","내 발명품이!","내 희대의 작품이!"],"skill:간단한 실수":["이런 실수를...","안돼 내 장치들!"]},
  "고장난 수호기": {
   "event:충전 1": [
@@ -33063,7 +33117,7 @@ function drawBattle(app){
       d.innerHTML+=`<div class="res">${manaPips(h)}${heroRes(h)}${
           h.mom?`<span class="rr">${ic("move")}${h.mom}</span>`:""}</div>${h.isMin?"":gearRow(h)}
         <div class="art${(h.name==="카제"&&h.hp>0&&h.sk[0]&&h.sk[0].n==="회오리")?" charged":""}${h.bigArt?" bigart":""}">${pmk}${mrf}${iraa}${auraHtml(h)[0]}${(h.mobile&&h.hp>0&&skinIcon("fx_it_aura"))?`<i class="mobaura kw" style="background-image:url(${skinIcon("fx_it_aura")})" data-kw="기동 상태" data-tip="다른 기술을 쓴 뒤 1칸 물러서고 에너지 보호막을 얻습니다."></i>`:""}${ksoulAuraHtml(h)}${figure((h.artAs&&Date.now()-(h.artAsT||0)<5000)?h.artAs:h.name,poseNow(h),h)}${(h.mobile&&h.hp>0&&skinIcon("fx_it_aura"))?`<i class="mobaura front" style="background-image:url(${skinIcon("fx_it_aura")})"></i>`:""}${ksoulAuraHtml(h,1)}${auraHtml(h)[1]}${(h.name==="카제"&&h.hp>0&&h.sk[0]&&h.sk[0].n==="회오리")?`<i class="swglow kw" data-kw="회오리" data-tip="회오리가 찼습니다."></i>`:""}</div>
-        <div class="nm">${esc(h.name)}</div>
+        <div class="nm">${esc(h.name)}</div>${(sel&&sel.hero===h)?raceLine(h):""}
         <div class="bar" data-hpk="${hpKey(h)}" data-hpv="${Math.max(0,h.hp/h.maxHp*100)}" data-hpn="${h.hp}"
           data-shv="${(h.shield||0)+(h.eshield||0)}" data-esw="${esW}" data-shw="${shW}">
           <em class="gh" style="width:${Math.max(0,h.hp/h.maxHp*100)}%"></em><i style="width:${Math.max(0,h.hp/h.maxHp*100)}%"></i>
@@ -33542,6 +33596,8 @@ function extraParts(h,sk,key){
     return out }
   const t=h.tag||{}, fst=h.first||{};
   if(key==="dmg"){
+    if(h.name==="데린저"&&sk.ammo){out.push(...derrGunParts(h,sk,null));
+      if(t.headshot&&!h.headshotUsed)out.push({n:"헤드샷",v:8+(h.atk||0)})}
     /* 발톱 갈아놓기(다음 한 번) · 반격의 기억(이번 전투) — **상태에 걸린 몫**이라 규칙대로 여기 한 줄
        (사용자 2026-10-13 : 기술 칸에 수치가 안 붙었다). 셈도 breakdown 이 한다 — iraRend 는 더 더하지 않는다 */
     if(sk.rend&&h.rendNext) out.push({n:"발톱 갈아놓기",v:h.rendNext});
@@ -33711,8 +33767,7 @@ function richLive(h,sk,txt){
      ⚠️ 빈 괄호가 그대로 보이던 자리다. 수를 쥔 곳은 h.treaAtk 하나다 */
   if(h&&sk&&sk.n==="전리품 사냥꾼")
     txt0=txt0.replace(/얻은 공격력 \*\(\s*\)\s*\*/,"얻은 공격력 "+NUM_A+(h.treaAtk||0)+NUM_B+"지금까지 얻은 몫"+NUM_C);
-  /* 마력탄환 — 무기 피해에 마법력이 얹힌다. 글의 기호에 ∴ 를 더해 기술 칸 숫자가 살아 보이게 (2026-10-15) */
-  if(h&&sk&&sk.ammo&&h.tag&&h.tag.magBullet) txt0=txt0.replace(/\(추가 \u2020/g,"(추가 \u2020,\u2234");
+  /* 마력탄환의 추가 마법력은 derrGunParts → extraParts에서 한 번만 반영한다. */
   if(h&&sk&&sk.lifeConv){   /* 생명 에너지 전환 — 지금 쓰면 얼마인지 (사용자 2026-10-04, 응축 폭발처럼) */
     const e=h.eshield||0, add=(sk.dmg||0)+mod(sk,"dmg"), v=e*2+add;
     txt0=txt0.replace(/모든 적에게 피해를 줍니다/,"모든 적에게 피해를 "+NUM_A+v+NUM_B+`에너지 보호막 ${e}의 2배`+(add?` / 생명 에너지 전환 강화 +${add}`:"")+NUM_C+" 줍니다") }
@@ -36161,7 +36216,7 @@ function incoming(){
       const R=foeTarget(f,f.intent,null,VV);                  /* 실행(foePhase)과 같은 셈 — 공포 · 도발 · 공격 범위 · 쫓던 대상이 없으면 헛손질 */
       if(R.why) return;
       const t=R.t;
-      const one=foeDmg(f,f.intent.v+up(f),f.intent.el)+(f.painBonus||0);   /* 고통 감내 몫도 예고에 (2026-09-20) */
+      const one=(foeDmg(f,f.intent.v+up(f),f.intent.el)+(f.painBonus||0))*(outRangeCritFor(f,t,hsl,fsl)?2:1);   /* 고통 감내 몫도 예고에 (2026-09-20) */
       const hits=Math.max(1,f.intent.hits||1);
       for(let q=0;q<hits;q++) hitOn(t,one,f);
     }
@@ -36241,7 +36296,7 @@ function incoming(){
       else if(s&&(tg==="near2"||tg==="back2"||tg==="distAll"||tg==="within"))
         T=skTargets(f,s,list.filter(u=>u.hp>0),VV);   /* 밀려난 뒤의 자리로 — 아랫줄 foeTarget 과 같게 (2026-10-10) */
       else if(s&&tg!=="self"&&tg!=="none"){ const R=foeTarget(f,I,s,VV); if(!R.why&&R.t) T=[R.t] }
-      T.forEach(t=>{ let one=foeDmg(f,I.v+up(f),I.el)+(f.painBonus||0); if(s&&((s.burnCrit&&burnV(t)>0)||(s.debCrit&&DEB_KEYS.some(k=>deb(t,k)>0))||eyeCritFor(f,t,hsl,fsl))) one*=2;   /* 고통 감내 몫도 예고에 (2026-09-20) */
+      T.forEach(t=>{ let one=foeDmg(f,I.v+up(f),I.el)+(f.painBonus||0); if(s&&((s.burnCrit&&burnV(t)>0)||(s.debCrit&&DEB_KEYS.some(k=>deb(t,k)>0))||eyeCritFor(f,t,hsl,fsl)||outRangeCritFor(f,t,hsl,fsl))) one*=2;   /* 고통 감내 몫도 예고에 (2026-09-20) */
         for(let q=0;q<(s&&s.kindHits?Math.max(1,debKindsOnField()):Math.max(1,I.hits||1));q++) hitOn(t,one,f,s&&s.pierce);
         /* 맞은 대원이 밀리거나 끌려온다 — 다음 적은 바뀐 자리를 잰다 (pushBack · pullFront · pullN 과 같은 셈) */
         const sh0=hsl(t), bound=deb(t,"bind")>0;
@@ -36264,9 +36319,6 @@ function incoming(){
          모래시계 조합에서 예고 19 / 실제 40 — 떠드는 마도서가 낭독을 한 번 더 했다). */
     const rw=Math.min((f.rew||0)+(f.rewNext||0),REW_MAX);
     for(let q=0;q<rw;q++) incAll(f,1) });
-  /* 적 턴이 끝날 때 — 감시관의 갑주: 공격 범위 밖 대상에게 마법 피해 (사용자 2026-10-03: 머리 위에도 · 10-05: 소환물도) */
-  B.foes.forEach(f=>{ const p=f.alive&&foePas(f,"outRangeDmg"); if(!p) return;
-    list.filter(u=>u.hp>0&&dist(hsl(u),fsl(f))>foeRng(f)).forEach(u=>hitOn(u,foeDmg(f,p.v,"마법"),f)) });
   return map;
 }
 /* 그 칸에 서 있는 아군 머리 위에 붙일 쪽지 */
@@ -40206,6 +40258,7 @@ function foePhase(){
       fx({side:"foe",slot:f.slot,trig:"기절",txt:"기절",cls:"miss",gap:130});
       say(`${f.name} 기절 — 움직이지 못합니다.`,"t2"); return }
     foeVerdictBark(f);
+    if(f.name==="실험 책임자")fx({side:"foe",slot:f.slot,s:directorIdleSnd(),gap:120});
     f._acted=1;   /* 이번에 실제로 행동했다 — 불안정한 변신이 옮기는 때 */
     f.lastAct=Object.assign({},f.intent);      /* 망자들의 통솔자가 따라 할 '직전 턴의 실제 행동' */
     { const I0=f.intent;   /* 조여 오는 힘 — 처음 움직일 때만(되감긴 행동은 한 번 더 얻지 않는다). 그 뒤 직전 의도로 적어 둔다 */
@@ -40269,6 +40322,7 @@ function foePhase(){
       const hits=Math.max(1,f.intent.hits||1);
       let one=foeDmg(f,f.intent.v,f.intent.el);
       if(f.painBonus){ one+=f.painBonus; say(`고통 감내 — 피해 +${f.painBonus}`,"t2"); f.painBonus=0 }   /* 여느 공격에도 (2026-09-20 — 기술 공격에만 얹히던 것) */
+      if(outRangeCritFor(f,t)){one*=2;critAlly(t)}
       if(hits>1) say(`${f.name} ${f.intent.pat||"연타"} — ${hits}번 몰아칩니다.`,"t2");
       for(let q=0;q<hits;q++){
         if(!t.alive&&t.isMin) break;
@@ -40428,7 +40482,7 @@ function startMyTurn(){
   if(!B||B.over) return;
   B.disc={};
   if(B.hand) B.hand.forEach(c=>{ if(c.arrive) delete c.arrive });   /* 감시 카드 날아오기 — 연출이 끊겼어도 내 턴엔 보인다 */
-  try{ foeEndPassives() }catch(e){ console.error(e) }   /* 적 턴이 끝난 뒤 — 감시관의 갑주 */
+  try{ foeEndPassives() }catch(e){ console.error(e) }   /* 적 턴이 끝난 뒤 지속 효과 */
   try{ vineEndPassives() }catch(e){ console.error(e) }   /* 오염된 덩굴 (2026-09-29) */
   B.foeAct=0;   /* 여기부터 내 턴 (바람처럼 사라져라 — 2026-09-30) */
   /* 사냥의 기류 — 오리온이 서 있는 동안, 매 턴 무작위 적 자리 하나에 기류가 흐른다 (노트 18-0, 2026-10-14).
