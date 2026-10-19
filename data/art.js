@@ -848,6 +848,7 @@ const PNG_SPRITE={
  }
 };
 const SND={
+ "A_powerful_dark_fant_#1-1792386576111":{v:0.28,f:"A_powerful_dark_fant_#1-1792386576111.wav"},
  "block":{v:0.229,f:"block.wav"},
  "boom":{v:0.166,f:"boom.wav"},
  "buffup":{v:0.149,f:"buffup.wav"},
