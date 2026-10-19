@@ -20820,13 +20820,14 @@ function firstEmptySlot(){ for(let i=0;i<SAVE_SLOTS;i++) if(!savePeek(i)) return
 /* 손패 10칸에는 남은 대원 카드도 센다. 첫 대원을 배치하기 전에는
    나머지 카드를 대기열에 보관하고, 배치 후 빈칸마다 먼저 받은 순서로 채운다. */
 const HAND_MAX=10;
-function handRefill(){
+function handRefill(animate=true){
   if(!B||!B.hand||B.handOpen===false||B.over)return;
-  const q=B.handQueue||[];let part=false;
+  const q=B.handQueue||[];let part=false;const dealt=[];
   while(q.length&&B.hand.length<HAND_MAX){
     const c=q.shift();if(c.stock&&!(run.cards||[]).some(x=>x.n===c.stock&&x.c>0))continue;
-    delete c.arrive;B.hand.push(c);if(c.type==="part")part=true;
+    delete c.arrive;B.hand.push(c);dealt.push(c);if(c.type==="part")part=true;
   }
+  if(animate)handDealMotion(dealt);
   if(part&&!B.golem)golemMerge(run.heroes.find(h=>h.name==="파벨"));
 }
 function handOpenFor(h){
@@ -21004,7 +21005,7 @@ function loadGame(i){
          foes:b.foes||[],mins:b.mins||[],portals:b.portals||[],hz:b.hz||[],
          corpseUsed:b.corpseUsed||0,drag:null};
       B.foes.forEach(migrateGrimoireMark);
-      B.hand=handUnpack(b.hand);B.handOpen=b.handOpen!==false;B.handQueue=handUnpack(b.handQueue);handRefill();
+      B.hand=handUnpack(b.hand);B.handOpen=b.handOpen!==false;B.handQueue=handUnpack(b.handQueue);handRefill(false);
       B.hand.forEach(c=>{ delete c.arrive });   /* 저장된 도착 연출은 재개하지 않는다 — 이어하기 첫 턴부터 손패를 보인다 */
       /* fearSrc 는 uid() 로 만든 문자열이라 그대로 실려 온다.
          객체로 되살리면 uid(x)===f.fearSrc 비교가 깨지므로 손대지 않는다. */
@@ -21032,6 +21033,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 191, "v": "0.7", "d": "2026-10-19", "t": "대원 배치 후 카드를 한 장씩 손패로 받는 연출", "big": 0},
  {"b": 190, "v": "0.7", "d": "2026-10-19", "t": "대원 우선 손패·표식과 특성 보정·현상 수배 복제·잔영 피격", "big": 0},
  {"b": 189, "v": "0.7", "d": "2026-10-19", "t": "연막 주머니 즉시 사용·삼키기 거리 제한 제거·다중 연막탄 희귀도 조정", "big": 0},
  {"b": 188, "v": "0.7", "d": "2026-10-19", "t": "특성 보상 틀 수정·초기 적 편성 조정·대원 레벨과 특성 보상 목록", "big": 0},
@@ -22414,7 +22416,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=190;
+const BUILD_NO=191;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -36434,20 +36436,36 @@ document.addEventListener("click",e=>{
 /* 라운드가 열릴 때 손패가 한 장씩 덱에서 날아든다 (사용자 2026-10-06).
    그리는 사이에 다시 그려져도(render) 이어서 — 지난 시간만큼 앞당겨 시작한다. translate · rotate · scale 은 CSS transform(부채꼴)과 따로 겹친다 */
 const DRAW_WAIT=260, DRAW_STEP=150;
+/* 카드 소유/보유량은 즉시 확정하고 도착 시각만 별도로 기억한다.
+   render가 끼어도 같은 시각부터 이어가며 저장/미리보기의 전투 값에는 넣지 않는다. */
+const HAND_DEAL_AT=new WeakMap(),HAND_DEAL_END=new WeakMap();
+function handDealMotion(cards){
+  if(!cards.length||PRED_DRY||!B||run?.sandbox||view!=="battle"||!document.getElementById("hand"))return;
+  const battle=B;let at=Math.max(Date.now()+80,HAND_DEAL_END.get(battle)||0);
+  cards.forEach(c=>{HAND_DEAL_AT.set(c,at);
+    setTimeout(()=>{if(B===battle&&view==="battle"&&B.hand.includes(c)&&sfxHas("카드 드로우"))SFX.play("카드 드로우")},Math.max(0,at-Date.now())+120);
+    at+=DRAW_STEP;
+  });HAND_DEAL_END.set(battle,at);
+}
 function drawInAnim(hand){
-  if(!B||!B.drawAt) return;
-  const el0=Date.now()-B.drawAt, cards=[...hand.querySelectorAll(".card")];
-  if(el0>cards.length*DRAW_STEP+600){ B.drawAt=0; return }
-  cards.forEach((c,i)=>{ if(!c.animate) return; const r=c.getBoundingClientRect();
-    const dx=innerWidth*0.94-(r.left+r.width/2), dy=innerHeight*0.55;
+  if(!B)return;
+  const now=Date.now(),cards=[...hand.querySelectorAll(".card")];
+  if(B.drawAt&&now-B.drawAt>cards.length*DRAW_STEP+600)B.drawAt=0;
+  cards.forEach((c,i)=>{
+    const card=B.hand[+c.dataset.i],deal=card&&HAND_DEAL_AT.get(card);
+    const at=deal??(B.drawAt?B.drawAt+i*DRAW_STEP:null);
+    if(at==null||now-at>=440||!c.animate)return;
+    const r=c.getBoundingClientRect(),dx=innerWidth*0.94-(r.left+r.width/2),dy=innerHeight*0.55;
     c.animate([{translate:`${dx.toFixed(0)}px ${dy.toFixed(0)}px`,rotate:"28deg",scale:"0.6",opacity:0},
-               {translate:`${(dx*0.25).toFixed(0)}px ${(-30).toFixed(0)}px`,rotate:"-4deg",scale:"1.04",opacity:1,offset:.7},
+               {translate:`${(dx*0.25).toFixed(0)}px -30px`,rotate:"-4deg",scale:"1.04",opacity:1,offset:.7},
                {translate:"0px 0px",rotate:"0deg",scale:"1",opacity:1}],
-      {duration:440,delay:i*DRAW_STEP-el0,easing:"cubic-bezier(.2,.75,.3,1)",fill:"backwards"}) });
+      {duration:440,delay:at-now,easing:"cubic-bezier(.2,.75,.3,1)",fill:"backwards"});
+  });
 }
 function startDrag(card,i){
   card.addEventListener("pointerdown",e=>{
     if(e.button!==0||B.over||B.busy)return;
+    if((HAND_DEAL_AT.get(B.hand[i])||0)>Date.now())return;
     { const c0=B.hand[i];   /* 부속 카드는 **낼 수 없다** (노트 17-3 주석) — 둘이 모이면 저절로 합쳐진다 */
       if(c0&&c0.type==="part"){ e.preventDefault();
         say("부속 카드는 낼 수 없습니다 — 재료와 영혼이 모이면 저절로 합쳐집니다.","t2"); return } }
