@@ -1644,6 +1644,28 @@ body.vbattle .tornado{transform:scale(4.6);margin-top:14px}   /* 회오리도 �
   filter:drop-shadow(0 1px 0 rgba(0,0,0,.9)) drop-shadow(0 0 4px rgba(255,200,80,.55))}
 .cell .cbounty img{width:28px;height:28px;image-rendering:pixelated;display:block}
 .cell:has(.cbounty) .crisk{left:auto;right:3px;top:16px}
+/* 도감 — 특성별 전용 보상과 연관 공용 보상 */
+.cxtraits{min-width:0;text-align:left}
+.cxtraits .ct-controls{position:sticky;top:-12px;z-index:2;padding:8px 0 10px;background:var(--panel);border-bottom:1px solid var(--rule)}
+.cxtraits .cx2-mtabs{flex-wrap:wrap}
+.cxtraits .ct-filter{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:8px}
+.cxtraits .ct-filter>b{flex:0 0 36px;font-size:11px;color:var(--dim)}
+.cxtraits .ct-filter button{padding:5px 9px;font-size:11.5px;white-space:normal;max-width:100%}
+.cxtraits .ct-filter button.on{border-color:var(--brass);color:var(--brass);background:var(--raise)}
+.cxtraits .ct-summary{display:flex;flex-direction:column;gap:5px;margin:14px 0 16px}
+.cxtraits .ct-summary>b{font-family:var(--serif);font-size:16px;color:var(--brass)}
+.cxtraits .ct-summary>span{font-size:12px;color:var(--fg);line-height:1.6;word-break:keep-all;overflow-wrap:anywhere}
+.cxtraits .ct-summary>small{font-size:11px;color:var(--dim)}
+.cxtraits .cxsec{margin:18px 0 6px;font-size:13px;letter-spacing:.02em}
+.cxtraits .cxsec small{font-size:11px;color:var(--dim);font-weight:400}
+.cxtraits .ct-tags{display:flex;flex-wrap:wrap;gap:3px 8px;margin-top:4px;font-size:11px;color:var(--brass)}
+.cxtraits .ct-tags>span:first-child{color:var(--dim)}
+.cxtraits .cxrw{grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))}
+.cxtraits .cxb{overflow-wrap:anywhere}
+.cxtraits .ct-empty{margin:12px 0}
+@media(max-width:480px){.cxtraits .ct-filter>b{flex-basis:100%}.cxtraits .cxrw{grid-template-columns:minmax(0,1fr)}}
+@media(max-height:500px){.cxtraits .ct-controls{position:static}}
+
 /* 도감 — 전용 보상 목록 */
 .cxsec{margin:26px 0 4px;font-family:var(--serif);font-size:15px;color:var(--brass);
   letter-spacing:.1em;border-bottom:1px solid var(--rule);padding-bottom:6px}
@@ -6912,6 +6934,7 @@ const fx=o=>{ if(FOE_CAPTURING&&!PRED_DRY) foeViewRecord(o); FXQ.push(o) };
 /* 적 행동 조명 — 셈은 먼저 끝내고, 앞 칸부터 한 묶음씩 재생한다 (2026-10-16).
    결과를 연출 콜백에 맡기지 않는다. 조명 상태는 render 가 끼어들어도 다시 붙는다. */
 let FOE_FOCUS=null, FOE_SHADE=null, FOE_FOCUS_OBS=null, FOE_CAPTURING=0;
+let CARD_BATCH=0;
 const FOE_FOCUS_Z=1.16, FOE_FOCUS_IN=420, FOE_FOCUS_OUT=250;
 /* 전투 값은 즉시 확정하고, 화면 사본만 각 행동의 연출 시점에 갱신한다.
    다시 그리거나 전투를 떠나도 실제 피해·회복·소환 결과는 사라지지 않는다. */
@@ -13463,7 +13486,7 @@ const HERO_REWARDS={
   R("영광의 휘장","상급","방어구 카드 목록에 [영광의 휘장]을 추가합니다.\n대원의 최대 체력이 16 증가합니다.",
     h=>{ if(h.tag.armors.indexOf("영광의 휘장")<0) h.tag.armors.push("영광의 휘장");
          h.maxHp+=16; h.hp+=16 },0.5),
-  R("중무장","상급","내 턴가 시작될 때, 무작위 방어구 카드를 가져옵니다.",
+  R("전투 준비 태세","상급","내 턴이 시작될 때, 무작위 방어구 카드를 가져옵니다.",
     h=>h.tag.armorTurn=1,0.5),
   R("최후의 검투사","상급","전투에 나이코스 혼자 배치되어 있다면, 모든 능력치를 8 얻습니다.",
     h=>h.tag.soloStat=(h.tag.soloStat||0)+8,0.5),   /* 겹쳐 고르면 8씩 더 (사용자 2026-10-11) */
@@ -14734,7 +14757,8 @@ const REW_COND={
  "상급|든든함 폭발":{once:1},                     /* 헥토 */
  "상급|대상 포착":{once:1},                       /* 트리스탄 */
  "상급|생명의 메아리":{once:1}};                  /* 오토 */
-const rwKey=r=>(r&&r.g||"")+"|"+(r&&r.n||"");
+/* 이름만 바뀐 상급 보상의 저장 열쇠·아이콘은 유지한다. 중급 중무장은 별개. */
+const rwKey=r=>(r&&r.g||"")+"|"+(r&&r.g==="상급"&&r.n==="전투 준비 태세"?"중무장":(r&&r.n||""));
 /* 전용 보상에는 주인 이름을 적어 둔다 — 아이콘 표가 주인별로 나뉘어 있다 */
 Object.keys(HERO_REWARDS).forEach(nm=>(HERO_REWARDS[nm]||[]).forEach(r=>{ r.own=nm }));
 /* 파벨 — 자원이 있어야 고를 수 있는 둘 (노트의 「*…일때만 등장」) */
@@ -14992,7 +15016,8 @@ function rewardKind(r,h){
 /* 고른 보상을 갈래와 함께 돌려준다 (이름만 저장해 두므로 표에서 되찾는다) */
 function takenList(h){
   const own=HERO_REWARDS[h.name]||[], all=own.concat(COMMON);
-  return (h.tag.taken||[]).map(t=>{
+  return (h.tag.taken||[]).map((t,i)=>{
+    if(h.name==="나이코스"&&t==="중무장"&&h.tag.tk?.[i]==="상급|중무장")t="전투 준비 태세";
     const r=all.find(x=>x.n===t);
     return {n:t, r:r, mine:own.some(x=>x.n===t), k:rewardKind(r||{n:t,d:""},h)};
   });
@@ -20028,7 +20053,7 @@ function mapPanelAfter(saved){
 }
 
 function render(){
-  if(FOE_CAPTURING) return;   /* 적의 셈 도중 다시 그리면 아직 모으는 연출 큐가 먼저 흘러간다 */
+  if(FOE_CAPTURING||CARD_BATCH) return;   /* 적의 셈 도중 다시 그리면 아직 모으는 연출 큐가 먼저 흘러간다 */
   if(PRED_DRY) return;   /* 미리 돌려 보는 중 — 그리지 않는다. 안 막으면 되돌이로 화면이 멈춘다 */
   if(FOE_VIEW&&(B!==FOE_VIEW.battle||view!=="battle")) FOE_VIEW=null;
   /* 전투를 떠나면 되풀이 녹음을 끈다 (사용자 2026-10-13 : 훈련장에서 복수귀가 켜진 채 나오면 소리가 따라왔다).
@@ -20662,7 +20687,7 @@ function handPack(){
   return (B.hand||[]).map(c=>{
     if(c.type==="hero")   return {t:"hero",n:c.hero.name};
     if(c.type==="summon") return {t:"summon",n:c.name,gone:c.gone?1:0};
-    if(c.gone&&!c.stock&&CARD_LIB[c.name]) return {t:"gone",n:c.name};   /* 소멸성 카드 (감시 · 사기꾼의 패) — 전에는 방어구로 되살아났다 */
+    if(c.gone&&!c.stock&&CARD_LIB[c.name]) return {t:"gone",n:c.name,cnt:c.n||1,by:c.by||null};   /* 소멸성 카드 (감시 · 사기꾼의 패) — 전에는 방어구로 되살아났다 */
     if(c.stock)           return {t:"stock",n:c.stock,d:c.d};
     return {t:"armor",n:c.name,d:c.d,by:c.by||null,cnt:c.n||1};   /* giveArmor 로 들어온 방어구 (쌓인 장수까지) */
   });
@@ -20675,7 +20700,7 @@ function handUnpack(list){
       if(h) out.push({type:"hero",hero:h});
     }
     else if(c.t==="summon") out.push(c.gone?{type:"summon",name:c.n,gone:1}:{type:"summon",name:c.n});
-    else if(c.t==="gone"){ const L=CARD_LIB[c.n]; if(L) out.push({type:"item",name:c.n,d:L.d,use:L.use,gone:1}) }
+    else if(c.t==="gone"){ const L=CARD_LIB[c.n]; if(L)out.push(Object.assign({type:"item",name:c.n},L,{gone:1,n:c.cnt||1,by:c.by||null})) }
     else if(c.t==="stock"){
       const L=CARD_LIB[c.n];
       if(L) out.push({type:"item",name:c.n,d:c.d||L.d,stock:c.n,use:L.use});
@@ -20814,6 +20839,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 184, "v": "0.7", "d": "2026-10-19", "t": "특성별 보상 도감·카드 여러 장 사용·나이코스 보상 이름 수정", "big": 0},
  {"b": 183, "v": "0.7", "d": "2026-10-17", "t": "훈련장 개편·연료 장치 아이콘·전투와 지도 연출 안정화", "big": 0},
  {"b": 182, "v": "0.7", "d": "2026-10-17", "t": "실험 책임자 장치 개편·수리 오류 수정 및 전투 표시·효과음 개선", "big": 0},
  {"b": 181, "v": "0.7", "d": "2026-10-17", "t": "실험 책임자·연료 장치 추가 및 적 연출·훈련장 개선", "big": 0},
@@ -22189,7 +22215,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=183;
+const BUILD_NO=184;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -23252,19 +23278,1051 @@ function codexModal(title,body){
   ov.onclick=ev=>{ if(ev.target===ov) close() }; ov.querySelector(".cx2-x").onclick=close;
   document.body.appendChild(ov); return ov;
 }
-function codexRewards(name,com){
-  const rwCell=r=>`<div class="cxr1${gcls(r.g)}"><div class="cxi">${rewardIcon(r)}</div><div class="cxb"><b>${esc(r.n)}</b><span>${rich(rewDesc(r.d))}</span>${rewCondHtml(r)}</div></div>`;
-  const src=com?COMMON:(HERO_REWARDS[name]||[]);
-  const body=el(`<div><div class="cx2-mtabs"><button class="${com?"":"on"}">${esc(name)} 전용</button><button class="${com?"on":""}">공용</button></div></div>`);
-  const [t1,t2]=body.querySelectorAll(".cx2-mtabs button");
-  t1.onclick=()=>{ document.querySelectorAll(".cx2-modal").forEach(x=>x.remove()); codexRewards(name,0) };
-  t2.onclick=()=>{ document.querySelectorAll(".cx2-modal").forEach(x=>x.remove()); codexRewards(name,1) };
-  if(!src.length) body.appendChild(el(`<p class="hint">이 대원은 아직 전용 보상이 없습니다. 공용 보상만 나옵니다.</p>`));
-  ["하급","중급","상급"].forEach(g=>{ const Lg=src.filter(r=>r.g===g); if(!Lg.length) return;
-    body.appendChild(el(`<div class="cxg">${g} ${Lg.length}종</div>`));
-    const row=el(`<div class="cxrw"></div>`); Lg.forEach(r=>row.appendChild(el(rwCell(r)))); body.appendChild(row) });
-  codexModal(com?"공용 보상":"전용 보상",body);
+const HERO_TRAITS={
+  "나이코스": [
+    {
+      "id": "slash",
+      "n": "베기",
+      "d": "베기를 거듭 사용하고, 처치와 연속 공격으로 다음 베기를 강화합니다.",
+      "own": [
+        "하급|베기 강화",
+        "하급|근거리 타격",
+        "중급|늘어가는 실력",
+        "중급|아드레날린 분비",
+        "중급|처음은 날카롭게",
+        "중급|준비 태세",
+        "중급|찌르기",
+        "상급|핏빛 칼날",
+        "상급|두 번 베기",
+        "상급|처세술",
+        "상급|돌격 베기",
+        "상급|아드레날린 흡수"
+      ],
+      "common": []
+    },
+    {
+      "id": "armor",
+      "n": "방어",
+      "d": "방어구 카드를 모으고 사용하며 보호막과 회복을 이어 갑니다.",
+      "own": [
+        "하급|막기 강화",
+        "하급|갑옷 장착 강화",
+        "하급|튼튼한 방어구 강화",
+        "하급|낡은 투구끈",
+        "하급|항상 대비하기",
+        "중급|검투 대비",
+        "중급|강철 투구",
+        "중급|마법 부여 보호구",
+        "중급|더 많은 갑옷",
+        "중급|갑옷 고르기",
+        "중급|쉴 때도 단단하게",
+        "중급|중무장",
+        "상급|영광의 휘장",
+        "상급|중무장"
+      ],
+      "common": []
+    },
+    {
+      "id": "pride",
+      "n": "자부심",
+      "d": "자부심을 쌓고 넘치게 얻어, 능력치와 원정의 이득을 늘립니다.",
+      "own": [
+        "하급|돈은 벌어야지",
+        "하급|전투 경험",
+        "중급|전장의 지배자",
+        "중급|전장의 승자 강화",
+        "상급|분노 전환"
+      ],
+      "common": []
+    },
+    {
+      "id": "victory",
+      "n": "승리의 일격",
+      "d": "승리의 일격으로 적을 마무리하고 마나와 베기의 힘을 얻습니다.",
+      "own": [
+        "하급|승리의 일격 강화",
+        "중급|승리의 연격",
+        "상급|잔혹한 일격"
+      ],
+      "common": []
+    }
+  ],
+  "카제": [
+    {
+      "id": "whirl",
+      "n": "회오리 연격",
+      "d": "진선풍도와 회오리를 이어 쓰고 강화된 회오리로 적을 휩씁니다.",
+      "own": [
+        "하급|진선풍도 강화",
+        "하급|날카로운 칼끝",
+        "하급|회오리 강화",
+        "하급|소용돌이",
+        "중급|회오리 단련",
+        "중급|연쇄 회오리",
+        "상급|잠재력 각성",
+        "상급|폭풍칼날",
+        "상급|맞바람",
+        "상급|청풍검법"
+      ],
+      "common": [
+        "중급|치명적인 공격",
+        "상급|마나석 발견"
+      ]
+    },
+    {
+      "id": "windstep",
+      "n": "바람걸음",
+      "d": "산들바람으로 자리를 바꾸며 추진력과 공격 기회를 만듭니다.",
+      "own": [
+        "하급|산들바람 강화",
+        "하급|잠재력 활성 강화",
+        "하급|눈보다 빠르게",
+        "하급|잔향",
+        "중급|제자리바람",
+        "중급|바람걸음",
+        "중급|방어의 바람",
+        "중급|보법",
+        "중급|허공답보",
+        "중급|바람과 하나되어",
+        "상급|싹쓸바람",
+        "상급|잠재력 각성",
+        "상급|청풍검법"
+      ],
+      "common": [
+        "하급|잔걸음",
+        "하급|하급: 가죽 장화끈",
+        "중급|중급: 가죽 장화끈",
+        "상급|상급: 가죽 장화끈"
+      ]
+    },
+    {
+      "id": "veil",
+      "n": "회피와 장막",
+      "d": "공격을 피하고 회오리 장막을 쌓아 자신과 아군을 지킵니다.",
+      "own": [
+        "하급|회오리 장막 강화",
+        "하급|기류 흘리기 강화",
+        "하급|역풍",
+        "중급|자취 감추기",
+        "중급|빠른 회오리",
+        "중급|바람걸음",
+        "상급|폭풍의 눈",
+        "상급|용오름"
+      ],
+      "common": [
+        "하급|하급: 회피 기동",
+        "중급|중급: 회피 기동",
+        "상급|상급: 회피 기동"
+      ]
+    }
+  ],
+  "트리스탄": [
+    {
+      "id": "bow",
+      "n": "페일노트",
+      "d": "강화된 페일노트로 적을 처치하고 다음 사격의 힘을 키웁니다.",
+      "own": [
+        "하급|페일노트 강화",
+        "하급|원거리 공격",
+        "하급|육체 강화",
+        "하급|조각난 화살",
+        "중급|활시위 당기기",
+        "중급|손아귀 강화",
+        "중급|침입자 토벌",
+        "상급|반전활",
+        "상급|대상 포착"
+      ],
+      "common": [
+        "중급|치명적인 공격",
+        "중급|중급: 공격력 강화",
+        "상급|상급: 공격력 강화"
+      ]
+    },
+    {
+      "id": "pierce",
+      "n": "꿰뚫는 화살",
+      "d": "꿰뚫는 화살로 여러 적을 약화시키고 치명타와 흡수를 노립니다.",
+      "own": [
+        "하급|꿰뚫는 화살 강화",
+        "중급|갈라진 상처",
+        "상급|척추뼈 화살촉",
+        "상급|옥수정 촉",
+        "상급|서릿빛 용의 비늘촉",
+        "상급|대상 포착"
+      ],
+      "common": [
+        "상급|한계 해방",
+        "중급|중급: 공격력 강화"
+      ]
+    },
+    {
+      "id": "corpse",
+      "n": "망자의 육체",
+      "d": "쓰러진 뒤 망자의 육체로 싸움을 잇고 부활과 사명감을 활용합니다.",
+      "own": [
+        "하급|망자의 복수심",
+        "하급|망자의 끈기",
+        "하급|망자는 전리품을 남기고",
+        "중급|그림자 위장",
+        "상급|영원한 사명",
+        "상급|육체 정화",
+        "상급|영광스러운 귀환"
+      ],
+      "common": [
+        "하급|하급: 꼭두각시 인형",
+        "중급|중급: 꼭두각시 인형"
+      ]
+    }
+  ],
+  "굴라": [
+    {
+      "id": "feast",
+      "n": "포식",
+      "d": "씹어먹기로 피해와 회복을 함께 얻고 최대 체력을 키웁니다.",
+      "own": [
+        "하급|씹어먹기 강화",
+        "하급|폭식의 악마 강화",
+        "하급|더부룩함",
+        "하급|혀 내밀기",
+        "하급|육즙의 맛",
+        "중급|음미",
+        "중급|가스 방출",
+        "중급|폭식가",
+        "중급|식욕을 참을 수 없어",
+        "하급|뺏어먹기",
+        "상급|포만감",
+        "상급|빨아먹기",
+        "상급|데펴먹기",
+        "상급|무한한 식욕"
+      ],
+      "common": [
+        "중급|중급: 체력 강화"
+      ]
+    },
+    {
+      "id": "portal",
+      "n": "차원문",
+      "d": "차원문 위의 아군을 지키고 적에게 피해와 약화를 가합니다.",
+      "own": [
+        "하급|차원문 강화: 보호",
+        "하급|차원문 강화: 공격",
+        "하급|감소의 문",
+        "중급|음미",
+        "중급|공포스러운 차원문",
+        "중급|물량 공세",
+        "상급|데펴먹기",
+        "상급|저주의 혓바닥"
+      ],
+      "common": [
+        "중급|중급: 마법력 강화",
+        "상급|상급: 마법력 강화"
+      ]
+    },
+    {
+      "id": "minions",
+      "n": "악마 하수인",
+      "d": "악마 하수인을 강화하고 지휘하거나 융합해 힘을 얻습니다.",
+      "own": [
+        "하급|융합 강화",
+        "하급|악마 하수인 강화",
+        "하급|하수인 단련",
+        "하급|임프 무리",
+        "중급|전투식량",
+        "중급|물량 공세",
+        "중급|소화",
+        "중급|주인님을 받들어라",
+        "상급|악마 장군 소환",
+        "상급|진두지휘",
+        "상급|자비를 베풀어주지"
+      ],
+      "common": [
+        "하급|굶주린 시선",
+        "하급|하급: 꼭두각시 인형",
+        "중급|중급: 꼭두각시 인형",
+        "하급|악마 강화"
+      ]
+    },
+    {
+      "id": "burst",
+      "n": "응축 폭발",
+      "d": "체력과 보호막을 바탕으로 폭발을 준비하고 반복합니다.",
+      "own": [
+        "하급|응축 폭발 강화",
+        "하급|폭발력 강화",
+        "중급|가시 돋힌 피부",
+        "상급|질긴 피부",
+        "상급|연쇄 폭발"
+      ],
+      "common": [
+        "중급|중급: 체력 강화",
+        "하급|하급: 가시 두르기"
+      ]
+    }
+  ],
+  "쿠렘타이": [
+    {
+      "id": "phantom",
+      "n": "환영",
+      "d": "영혼 분리로 환영을 만들고 환영의 행동과 죽음을 활용합니다.",
+      "own": [
+        "하급|영혼 분리 강화",
+        "하급|환영 성장",
+        "하급|떠도는 영혼",
+        "하급|정신 분리",
+        "중급|으스스한 기운",
+        "중급|환영 착취",
+        "중급|다중 환영",
+        "상급|망자들의 통솔자"
+      ],
+      "common": [
+        "하급|하급: 꼭두각시 인형",
+        "중급|중급: 꼭두각시 인형"
+      ]
+    },
+    {
+      "id": "pain",
+      "n": "환상통",
+      "d": "환상통의 피해를 증폭하고 치명타와 흡수로 적을 압도합니다.",
+      "own": [
+        "하급|환상통 강화",
+        "중급|환상폭발",
+        "중급|내면 파괴",
+        "상급|산 자의 고통",
+        "상급|치명적인 고통",
+        "상급|의식 제거"
+      ],
+      "common": [
+        "중급|중급: 마법력 강화",
+        "상급|상급: 마법력 강화",
+        "상급|마나석 발견"
+      ]
+    },
+    {
+      "id": "souls",
+      "n": "영혼 수확과 선고",
+      "d": "영혼을 모아 착취를 강화하고 사형 선고로 생사를 다룹니다.",
+      "own": [
+        "하급|착취 강화",
+        "하급|사형 선고 강화",
+        "하급|수확자",
+        "하급|강한 영혼 수확",
+        "하급|대가를 치뤄라",
+        "중급|더 빠른 선고",
+        "중급|직접 거두기",
+        "중급|마나 착취",
+        "중급|등가 교환",
+        "중급|수확철",
+        "중급|사후로부터의 지시",
+        "상급|사형 집행자",
+        "상급|인도"
+      ],
+      "common": [
+        "상급|한계 해방",
+        "하급|하급: 마나 흡입"
+      ]
+    }
+  ],
+  "플레어와 플로우": [
+    {
+      "id": "fire",
+      "n": "화상",
+      "d": "플레어로 화상을 쌓고 폭발과 전이로 불길을 넓힙니다.",
+      "own": [
+        "하급|플레어의 균형 강화",
+        "하급|플레어의 악의 기운 소멸",
+        "하급|불태우기",
+        "하급|점화",
+        "중급|빠짐없는 정화",
+        "중급|잿불",
+        "중급|불타오르는 변환",
+        "중급|뜨거운 변환",
+        "상급|불씨 폭발",
+        "상급|불과 불",
+        "상급|화상 전이",
+        "상급|불의 화신"
+      ],
+      "common": [
+        "하급|하급: 잔불",
+        "중급|중급: 잔불",
+        "하급|타오르는 항아리"
+      ]
+    },
+    {
+      "id": "water",
+      "n": "물의 수호",
+      "d": "플로우로 피해를 줄이고 보호막을 얻으며 적의 자리를 바꿉니다.",
+      "own": [
+        "하급|플로우의 균형 강화",
+        "하급|플로우의 악의 기운 약화",
+        "하급|파도 보호막",
+        "중급|빗물",
+        "중급|윤슬 보호막",
+        "중급|밀물",
+        "중급|썰물",
+        "중급|피해 흘리기",
+        "중급|차가운 변환",
+        "상급|화재 진압"
+      ],
+      "common": [
+        "중급|중급: 보호력 강화",
+        "상급|상급: 보호력 강화"
+      ]
+    },
+    {
+      "id": "harmony",
+      "n": "변환과 조화",
+      "d": "물과 불 사이를 오가며 조화를 반복하고 아군과 힘을 나눕니다.",
+      "own": [
+        "하급|변환 강화",
+        "하급|조화 강화",
+        "하급|적절한 균형",
+        "중급|재빠른 이동",
+        "중급|물불 가리지 않기",
+        "중급|불타오르는 변환",
+        "중급|차가운 변환",
+        "중급|뜨거운 변환",
+        "상급|기운 옮기기",
+        "상급|부조화",
+        "상급|세상의 조화",
+        "상급|오염된 조화"
+      ],
+      "common": [
+        "하급|하급: 가죽 장화끈",
+        "중급|중급: 가죽 장화끈",
+        "상급|상급: 가죽 장화끈"
+      ]
+    }
+  ],
+  "이테리오": [
+    {
+      "id": "mark",
+      "n": "정밀 표식",
+      "d": "정밀 표식을 남기고 옮겨 치명타와 추가 공격을 이어 갑니다.",
+      "own": [
+        "하급|수축 공격 강화",
+        "하급|팽창 공격 강화",
+        "하급|조준 보정",
+        "하급|선제 표식",
+        "하급|시공간 폭탄 강화",
+        "하급|추적 장치",
+        "중급|선제 타격",
+        "중급|융합 보호",
+        "중급|강화된 선제 표식",
+        "중급|표식 편이",
+        "중급|전자기 충전",
+        "상급|무한 팽창",
+        "상급|압축 공격",
+        "상급|반전화",
+        "상급|특이점",
+        "상급|마이스너 변환",
+        "상급|정밀 공학"
+      ],
+      "common": [
+        "중급|치명적인 공격",
+        "중급|치명적인 마법"
+      ]
+    },
+    {
+      "id": "mobile",
+      "n": "기동과 보호막",
+      "d": "점프백과 자기장 변환으로 자리를 바꾸며 보호막을 쌓습니다.",
+      "own": [
+        "하급|자기장 변환 강화",
+        "하급|점프백 강화",
+        "하급|도약 보호막",
+        "하급|여분 전지",
+        "하급|반동",
+        "중급|자석 갑옷",
+        "상급|터널링",
+        "상급|홀로그램 분신",
+        "상급|마이스너 변환"
+      ],
+      "common": [
+        "하급|하급: 가죽 장화끈",
+        "중급|중급: 가죽 장화끈",
+        "상급|상급: 가죽 장화끈"
+      ]
+    },
+    {
+      "id": "overcharge",
+      "n": "마나 과충전",
+      "d": "마나를 확보하고 소모해 추가 능력치와 팽창 공격을 끌어냅니다.",
+      "own": [
+        "중급|에너지 과부하",
+        "중급|전자기 충전",
+        "중급|아크 방전",
+        "중급|기계 심장",
+        "상급|마나 도약",
+        "상급|에너지 중첩"
+      ],
+      "common": [
+        "하급|하급: 마나 흡입",
+        "중급|중급: 마나 흡입",
+        "상급|마나석 발견"
+      ]
+    }
+  ],
+  "오토": [
+    {
+      "id": "trees",
+      "n": "수목 육성",
+      "d": "새싹을 심어 수목으로 기르고, 성장과 보호로 전장을 채웁니다.",
+      "own": [
+        "하급|단단한 뿌리",
+        "하급|작은 성장",
+        "하급|비옥한 토지",
+        "하급|가시 돋힌 가지",
+        "중급|물 주기",
+        "중급|접붙이기",
+        "중급|든든한 그늘",
+        "중급|틈에 자란 이끼",
+        "중급|씨앗 주머니",
+        "중급|엽록소 충전",
+        "상급|무성한 숲",
+        "상급|거목",
+        "상급|넘쳐나는 생명",
+        "상급|고대수목의 씨앗"
+      ],
+      "common": [
+        "하급|하급: 꼭두각시 인형",
+        "중급|중급: 꼭두각시 인형"
+      ]
+    },
+    {
+      "id": "cycle",
+      "n": "생명의 순환",
+      "d": "소환물의 피해와 죽음, 메아리를 활용해 아군에게 이득을 남깁니다.",
+      "own": [
+        "하급|정원 손질",
+        "하급|숲의 기운",
+        "중급|뿌리 연결",
+        "중급|씨앗 주머니",
+        "상급|넘쳐나는 생명",
+        "상급|생명의 메아리",
+        "상급|교감"
+      ],
+      "common": [
+        "하급|하급: 꼭두각시 인형",
+        "중급|중급: 꼭두각시 인형",
+        "하급|굶주린 시선"
+      ]
+    },
+    {
+      "id": "energy",
+      "n": "보호막 전환",
+      "d": "보호막을 에너지 보호막으로 전환하고 생명 에너지 전환의 힘을 키웁니다.",
+      "own": [
+        "하급|쓰담쓰담 강화",
+        "하급|따뜻한 손길",
+        "하급|기름칠",
+        "하급|돌봄 강화",
+        "하급|생명 에너지 전환 강화",
+        "중급|명령: 돌보기",
+        "중급|모드 전환: 방어",
+        "중급|모드 전환: 공격",
+        "상급|프로토타입-02",
+        "상급|고대의 에너지"
+      ],
+      "common": [
+        "하급|하급: 에너지 강화",
+        "중급|중급: 에너지 강화",
+        "상급|상급: 에너지 강화"
+      ]
+    }
+  ],
+  "헥토": [
+    {
+      "id": "wall",
+      "n": "성벽 운용",
+      "d": "성벽을 세우고 부수며 보호막과 공격의 발판을 마련합니다.",
+      "own": [
+        "하급|굳건한 성벽 강화",
+        "중급|성벽 쌓기",
+        "상급|저주받은 성벽",
+        "하급|성벽 부수기",
+        "중급|진지 구축",
+        "중급|최후의 보루",
+        "상급|대비책",
+        "상급|기계화 성벽"
+      ],
+      "common": [
+        "하급|하급: 꼭두각시 인형",
+        "중급|중급: 꼭두각시 인형",
+        "상급|한계 해방"
+      ]
+    },
+    {
+      "id": "guard",
+      "n": "아군 수호",
+      "d": "앞뒤 자리를 오가며 아군에게 보호막과 회복을 나눕니다.",
+      "own": [
+        "하급|든든한 아군 강화",
+        "하급|방패 막기 강화",
+        "하급|선두 방어 강화",
+        "하급|후미 준비 회복 강화",
+        "하급|후미 준비 보호 강화",
+        "하급|재빠른 수호자",
+        "중급|든든함 추가",
+        "하급|든든한 방패",
+        "중급|최후의 보루",
+        "상급|집결하라!",
+        "중급|방어 후 막기",
+        "중급|선한 영향력",
+        "상급|든든함 폭발",
+        "상급|수호 활동"
+      ],
+      "common": [
+        "하급|수호자 강화",
+        "중급|중급: 보호력 강화",
+        "상급|상급: 보호력 강화"
+      ]
+    },
+    {
+      "id": "assault",
+      "n": "방패 공세",
+      "d": "방패 밀치기와 보호막에서 얻는 힘으로 적의 대형을 무너뜨립니다.",
+      "own": [
+        "하급|방패 밀치기 강화",
+        "중급|공성전 방패",
+        "상급|검과 방패",
+        "하급|선두 돌격",
+        "중급|진지 구축",
+        "상급|대비책",
+        "중급|준비 후 밀치기",
+        "상급|육중한 밀치기",
+        "상급|공방전"
+      ],
+      "common": [
+        "중급|중급: 공격력 강화",
+        "중급|치명적인 공격"
+      ]
+    }
+  ],
+  "도미니코": [
+    {
+      "id": "wand",
+      "n": "지팡이",
+      "d": "라이티늄 지팡이의 피해와 회복을 강화하고 여러 대상에게 나눕니다.",
+      "own": [
+        "하급|라이티늄 지팡이 강화",
+        "하급|치유의 지팡이",
+        "하급|엄격한 규율",
+        "중급|어둠의 힘",
+        "중급|날카로운 지팡이",
+        "중급|충전의 지팡이",
+        "중급|왕실의 시곗바늘",
+        "상급|의지의 지팡이",
+        "상급|세계의 지팡이",
+        "상급|통찰력"
+      ],
+      "common": [
+        "중급|중급: 마법력 강화",
+        "상급|상급: 마법력 강화"
+      ]
+    },
+    {
+      "id": "blessing",
+      "n": "독서와 축복",
+      "d": "독서를 쌓아 축복에 이르고, 축복의 보호와 회복을 나눕니다.",
+      "own": [
+        "하급|의지 약화 강화",
+        "하급|속독",
+        "하급|밑줄 긋기",
+        "하급|축복받은 걸음",
+        "하급|정화의 빛",
+        "중급|어둠의 힘",
+        "중급|왕실의 은총",
+        "중급|의지 강화",
+        "상급|왕자의 가호",
+        "상급|깊은 통찰",
+        "상급|의지 약탈",
+        "상급|매우매우 두꺼운 고서"
+      ],
+      "common": [
+        "하급|왕실 강화",
+        "하급|하급: 마나 흡입"
+      ]
+    },
+    {
+      "id": "shackle",
+      "n": "족쇄",
+      "d": "영광의 족쇄로 적을 묶고 치명타와 연쇄 공격을 노립니다.",
+      "own": [
+        "하급|영광의 족쇄 강화",
+        "하급|엄격한 규율",
+        "중급|치명적인 족쇄",
+        "중급|연쇄 족쇄",
+        "상급|족쇄 난사",
+        "상급|죄수의 일기"
+      ],
+      "common": [
+        "중급|치명적인 마법",
+        "상급|마나석 발견"
+      ]
+    },
+    {
+      "id": "penance",
+      "n": "참회",
+      "d": "참회의 기류를 반복해 아군을 정화하고 피해와 보호막을 함께 줍니다.",
+      "own": [
+        "하급|참회와 독서",
+        "중급|참회의 기류 강화",
+        "중급|참회의 길",
+        "중급|예습",
+        "상급|축복받은 기류",
+        "상급|절실한 신앙"
+      ],
+      "common": [
+        "중급|중급: 마나 흡입",
+        "상급|마나석 발견"
+      ]
+    }
+  ],
+  "이라": [
+    {
+      "id": "claws",
+      "n": "발톱과 흡수",
+      "d": "찢어발기기와 할퀴기를 강화하고 흡수와 초과 회복을 활용합니다.",
+      "own": [
+        "하급|찢어발기기 강화",
+        "하급|발톱 갈아놓기",
+        "하급|참을 수 없는 분노",
+        "중급|반격의 기억",
+        "중급|할퀴기 강화",
+        "중급|깊은 상처",
+        "중급|강해지는 할퀴기",
+        "상급|갈증",
+        "상급|넘치는 흡수"
+      ],
+      "common": [
+        "중급|중급: 공격력 강화",
+        "상급|상급: 공격력 강화"
+      ]
+    },
+    {
+      "id": "charge",
+      "n": "충전과 대가",
+      "d": "준비 자세로 기술을 충전하고 대가 치르기의 광역 공격을 반복합니다.",
+      "own": [
+        "하급|대가 치르기 강화",
+        "하급|전방 타격",
+        "하급|숨고르기",
+        "하급|발톱 갈아놓기",
+        "중급|날 선 대가",
+        "중급|확실한 준비",
+        "중급|되묻기",
+        "상급|순간 충전",
+        "상급|다중 준비",
+        "상급|복수는 끝나지 않았다",
+        "상급|대가 확인"
+      ],
+      "common": [
+        "하급|하급: 마나 흡입",
+        "중급|중급: 마나 흡입",
+        "상급|마나석 발견"
+      ]
+    },
+    {
+      "id": "revenge",
+      "n": "복수귀",
+      "d": "낮은 체력에서 복수귀의 힘을 끌어내고 회복과 버티기로 싸움을 잇습니다.",
+      "own": [
+        "하급|복수귀 강화",
+        "하급|복수의 원동력",
+        "하급|후처리",
+        "중급|복수의 불씨",
+        "중급|근성",
+        "중급|투기장의 감옥",
+        "상급|갈증",
+        "상급|복수는 끝나지 않았다"
+      ],
+      "common": [
+        "중급|피의 투기장 강화"
+      ]
+    }
+  ],
+  "파벨": [
+    {
+      "id": "slam",
+      "n": "지면 내려치기",
+      "d": "지면 내려치기를 강화하고 반복해 여러 적을 제압합니다.",
+      "own": [
+        "하급|지면 내려치기 강화",
+        "중급|진동",
+        "중급|무게추",
+        "중급|지면 파훼",
+        "상급|다중 내려치기",
+        "상급|지진파",
+        "상급|합맞추기"
+      ],
+      "common": [
+        "중급|치명적인 공격"
+      ]
+    },
+    {
+      "id": "golem",
+      "n": "골렘 창조",
+      "d": "부속을 조합해 골렘을 만들고, 골렘의 행동과 죽음을 활용합니다.",
+      "own": [
+        "하급|골렘의 심장",
+        "하급|돌파편",
+        "하급|별똥별 파편",
+        "하급|보호막 창조",
+        "하급|잔해 수집",
+        "중급|분업",
+        "중급|영혼 부속: 별빛",
+        "중급|재료 부속: 부유석",
+        "중급|영혼 부속: 포식",
+        "중급|골렘 군단",
+        "상급|양손 작업",
+        "상급|재료 부속: 고대석",
+        "상급|재조립",
+        "상급|마나석 끼워넣기",
+        "상급|이른 창조",
+        "상급|창조의 고통",
+        "상급|주문 제작",
+        "상급|합맞추기"
+      ],
+      "common": []
+    },
+    {
+      "id": "artisan",
+      "n": "장신구 장인",
+      "d": "제련석과 장신구를 마련하고, 원천 분석으로 장비의 힘을 나눕니다.",
+      "own": [
+        "하급|모험 준비",
+        "하급|오래된 경험",
+        "중급|태초의 조합법",
+        "중급|골렘 군단",
+        "상급|석공의 주머니",
+        "상급|원천 복제"
+      ],
+      "common": [
+        "하급|하급: 제련석",
+        "중급|중급: 제련석",
+        "상급|상급: 제련석"
+      ]
+    },
+    {
+      "id": "air",
+      "n": "공중 띄우기",
+      "d": "적을 공중에 띄우고 파수꾼의 은총으로 보호막을 얻습니다.",
+      "own": [
+        "하급|파수꾼의 은총 강화",
+        "하급|살점 구체화",
+        "중급|진동",
+        "중급|재료 부속: 부유석",
+        "중급|무게추",
+        "중급|파수꾼의 시험",
+        "중급|헤르메스의 신발",
+        "상급|다중 내려치기"
+      ],
+      "common": [
+        "하급|전장의 바람"
+      ]
+    }
+  ],
+  "오리온": [
+    {
+      "id": "hounds",
+      "n": "사냥개",
+      "d": "사냥개를 기르고 여러 마리를 부리며 오리온과 함께 싸웁니다.",
+      "own": [
+        "하급|사냥개 부리기 강화",
+        "하급|사냥개 강화",
+        "하급|공격 훈련",
+        "하급|먹이 주기",
+        "중급|활동량 증폭",
+        "중급|물어뜯기 훈련",
+        "중급|호루라기",
+        "중급|박치기",
+        "중급|침흘리는 사냥개",
+        "상급|동료애",
+        "상급|거대 사냥개",
+        "상급|전우애",
+        "상급|무리 사냥",
+        "상급|고단백 살점",
+        "상급|재빠른 본성",
+        "상급|탐욕의 이빨"
+      ],
+      "common": [
+        "하급|하급: 꼭두각시 인형",
+        "중급|중급: 꼭두각시 인형"
+      ]
+    },
+    {
+      "id": "hunt",
+      "n": "기류와 사슬 몰이",
+      "d": "사슬로 적을 사냥의 기류에 끌어들이고 표식과 쇠뇌 사격을 이어 갑니다.",
+      "own": [
+        "하급|악마뼈 쇠뇌 강화",
+        "하급|기운 감지",
+        "하급|쇠사슬 올가미 강화",
+        "하급|쇠사슬 목줄",
+        "하급|몰이",
+        "하급|날카로운 사슬",
+        "중급|감각 증폭",
+        "중급|냄새 뭍히기",
+        "중급|은총의 기류",
+        "상급|동료애",
+        "상급|포식자의 표적",
+        "상급|표적 확인",
+        "상급|균열 화살촉 보급"
+      ],
+      "common": [
+        "중급|치명적인 공격",
+        "하급|마굿간"
+      ]
+    },
+    {
+      "id": "bait",
+      "n": "미끼",
+      "d": "미끼로 적을 제압하고 사냥개의 추가 공격을 끌어냅니다.",
+      "own": [
+        "하급|미끼 던지기 강화",
+        "중급|더 많은 미끼",
+        "중급|작은 미끼",
+        "중급|침흘리는 사냥개"
+      ],
+      "common": [
+        "상급|한계 해방",
+        "중급|중급: 공격력 강화"
+      ]
+    }
+  ],
+  "데린저": [
+    {
+      "id": "shotgun",
+      "n": "산탄총",
+      "d": "가까운 적에게 여러 번 발사하고 흡수와 보호막으로 버팁니다.",
+      "own": [
+        "중급|변형: 산탄총",
+        "하급|근접사격",
+        "하급|부착: 초크",
+        "중급|부착: 흡혈총검",
+        "중급|무법의 쾌감",
+        "상급|근접 난사",
+        "상급|부착: 충격 흡수 개머리판"
+      ],
+      "common": [
+        "중급|중급: 공격력 강화",
+        "상급|상급: 공격력 강화"
+      ]
+    },
+    {
+      "id": "revolver",
+      "n": "리볼버",
+      "d": "적을 처치하며 무기를 강화하고 납탄과 치명타로 연속 사격합니다.",
+      "own": [
+        "중급|변형: 리볼버",
+        "하급|부착: 강화약실",
+        "중급|부착: 흡혈총검",
+        "중급|무법의 쾌감",
+        "상급|납탄",
+        "상급|은탄"
+      ],
+      "common": [
+        "중급|치명적인 공격",
+        "중급|중급: 공격력 강화"
+      ]
+    },
+    {
+      "id": "machinegun",
+      "n": "기관총",
+      "d": "탄알을 모아 기관총의 연속 사격과 탄막을 쏟아붓습니다.",
+      "own": [
+        "중급|변형: 기관총",
+        "하급|부착: 탄통",
+        "상급|탄막"
+      ],
+      "common": [
+        "중급|중급: 공격력 강화",
+        "상급|상급: 공격력 강화"
+      ]
+    },
+    {
+      "id": "sniper",
+      "n": "저격소총",
+      "d": "먼 거리의 적을 겨누고 거리와 관통을 살려 강한 한 발을 날립니다.",
+      "own": [
+        "중급|변형: 저격소총",
+        "하급|부착: 조준경",
+        "하급|부착: 삼각대",
+        "하급|부착: 관통총열",
+        "중급|부착: 기계식 조준기",
+        "상급|철갑탄",
+        "상급|대물 저격소총"
+      ],
+      "common": [
+        "중급|치명적인 공격",
+        "상급|상급: 공격력 강화"
+      ]
+    }
+  ]
+};
+/* 특성 분류는 도감에서 원래 보상을 찾아 보여 주기 위한 표다. 보상 효과·추첨에는 손대지 않는다. */
+function heroRewardTraits(name){return HERO_TRAITS[name]||[]}
+function rewardTraitNames(name,r,common){
+  const key=rwKey(r),field=common?'common':'own';
+  return heroRewardTraits(name).filter(t=>t[field].includes(key)).map(t=>t.n);
 }
+function codexTraitRewards(name,id,common){
+  const source=common?COMMON:(HERO_REWARDS[name]||[]),groups=heroRewardTraits(name);
+  if(id==='all')return source.slice();
+  if(id==='other')return common?[]:source.filter(r=>!groups.some(t=>t.own.includes(rwKey(r))));
+  const trait=groups.find(t=>t.id===id),keys=trait?trait[common?'common':'own']:[];
+  return source.filter(r=>keys.includes(rwKey(r)));
+}
+function codexRewards(name,com){
+  const groups=heroRewardTraits(name),previous=document.activeElement;
+  let common=!!com,trait='all',grade='all';
+  const body=el('<div class="cxtraits"></div>'),ov=codexModal(common?'공용 보상':name+' 특성 보상',body);
+  ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-label',name+' 보상 도감');
+  const close=()=>{ov.remove();if(previous?.isConnected)previous.focus({preventScroll:true})};
+  ov.querySelector('.cx2-x').onclick=close;ov.onclick=e=>{if(e.target===ov)close()};
+  ov.addEventListener('keydown',e=>{
+    e.stopPropagation();
+    if(e.key==='Escape'){e.preventDefault();close();return}
+    if(e.key==='Tab'){
+      const list=[...ov.querySelectorAll('button:not(:disabled),a[href],input,select,textarea')].filter(n=>n.getClientRects().length);
+      const first=list[0],last=list[list.length-1];
+      if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus()}
+      else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus()}
+    }
+  });
+  const grades=['하급','중급','상급'];
+  const fits=r=>grade==='all'||r.g===grade;
+  const rwCell=(r,isCommon)=>{
+    const tags=rewardTraitNames(name,r,isCommon);
+    return `<div class="cxr1${gcls(r.g)}" data-reward-key="${esc(rwKey(r))}" data-reward-source="${isCommon?'common':'own'}"><div class="cxi">${rewardIcon(r)}</div><div class="cxb"><b>${esc(r.n)}</b><div class="ct-tags"><span>${isCommon?'공용':'전용'}</span>${tags.map(n=>`<span>${esc(n)}</span>`).join('')}${!isCommon&&!tags.length?'<span>기타 전용</span>':''}</div><span>${rich(rewDesc(r.d))}</span>${rewCondHtml(r)}</div></div>`;
+  };
+  function section(title,list,isCommon){
+    const section=el(`<section class="ct-section" aria-label="${esc(title)}"><h3 class="cxsec">${esc(title)} <small>${list.length}종</small></h3></section>`);
+    if(!list.length)section.appendChild(el('<p class="hint ct-empty">해당 등급의 보상이 없습니다.</p>'));
+    grades.forEach(g=>{const rows=list.filter(r=>r.g===g);if(!rows.length)return;
+      section.appendChild(el(`<div class="cxg">${g} ${rows.length}종</div>`));
+      const grid=el('<div class="cxrw"></div>');rows.forEach(r=>grid.appendChild(el(rwCell(r,isCommon))));section.appendChild(grid);
+    });body.appendChild(section);
+  }
+  function draw(focus){
+    const active=groups.find(t=>t.id===trait),own=codexTraitRewards(name,trait,false).filter(fits);
+    const linked=active?codexTraitRewards(name,trait,true).filter(fits):[];
+    ov.querySelector('.cx2-mh b').textContent=common?'공용 보상':name+' 특성 보상';
+    body.innerHTML=`<div class="ct-controls"><div class="cx2-mtabs"><button data-mode="own" class="${common?'':'on'}" aria-pressed="${!common}">${esc(name)} 전용</button><button data-mode="common" class="${common?'on':''}" aria-pressed="${common}">공용</button></div>${!common&&groups.length?`<div class="ct-filter" role="group" aria-label="특성"><b>특성</b><button data-trait="all" class="${trait==='all'?'on':''}" aria-pressed="${trait==='all'}">전체 전용</button>${groups.map(t=>`<button data-trait="${esc(t.id)}" class="${trait===t.id?'on':''}" aria-pressed="${trait===t.id}">${esc(t.n)}</button>`).join('')}<button data-trait="other" class="${trait==='other'?'on':''}" aria-pressed="${trait==='other'}">기타 전용</button></div>`:''}<div class="ct-filter" role="group" aria-label="보상 등급"><b>등급</b>${['all',...grades].map(g=>`<button data-grade="${g}" class="${grade===g?'on':''}" aria-pressed="${grade===g}">${g==='all'?'전체':g}</button>`).join('')}</div></div>`;
+    const title=common?'공용 보상':active?active.n+' 특성':trait==='other'?'기타 전용 보상':name+' 전용 보상';
+    const desc=common?'모든 대원이 받을 수 있는 보상입니다.':active?active.d:trait==='other'?'특성에 묶이지 않은 전용 보상입니다.':'특성을 골라 관련 보상을 살펴보세요.';
+    const count=common?`공용 ${COMMON.filter(fits).length}종`:`전용 ${own.length}종${active?' · 연관 공용 '+linked.length+'종':''}`;
+    body.appendChild(el(`<div class="ct-summary" role="status" aria-live="polite"><b>${esc(title)}</b><span>${esc(desc)}</span><small>${count}</small></div>`));
+    if(common)section('공용 보상',COMMON.filter(fits),true);
+    else{section('전용 보상',own,false);if(active&&active.common.length)section('함께 쓰기 좋은 공용 보상',linked,true)}
+    body.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{common=b.dataset.mode==='common';draw('[data-mode="'+b.dataset.mode+'"]')});
+    body.querySelectorAll('[data-trait]').forEach(b=>b.onclick=()=>{trait=b.dataset.trait;draw('[data-trait="'+trait+'"]')});
+    body.querySelectorAll('[data-grade]').forEach(b=>b.onclick=()=>{grade=b.dataset.grade;draw('[data-grade="'+grade+'"]')});
+    if(focus){ov.querySelector('.cx2-mb').scrollTop=0;body.querySelector(focus)?.focus({preventScroll:true})}
+  }
+  draw();ov.querySelector('.cx2-x').focus({preventScroll:true});
+}
+
 function codexSyn(PT){
   const A=synPreview(PT);
   const body=el(`<div class="cxsyn cx2-synl">${A.length?A.map(x=>`<div class="cxsy${x.on?" on":""}"><b>${esc(x.n)}</b><span class="k">${esc(x.k)} ${x.c}명</span>${
@@ -26881,7 +27939,7 @@ const CARD_LIB={
                        setTimeout(()=>fleeBattle(0,"습격에서 도망쳤습니다."),900) }},
  "악마 하수인":{d:"빈 칸에 악마 하수인을 소환합니다.",summon:1},
  "악마 장군":{d:"빈 칸에 악마 장군을 소환합니다.",summon:1},
- "간이 신발":{d:"거리 1을 이동합니다.",
+ "간이 신발":{single:1,d:"거리 1을 이동합니다.",
               /* 자리를 **고르게** 한다 (사용자 2026-10-15) — 쇠사슬 올가미와 같은 길(B.step) */
               use:a=>{ const L=stepSpots(a);
                        if(!L.length){ say("움직일 데가 없습니다.","t2"); return "keep" }
@@ -26893,19 +27951,19 @@ const CARD_LIB={
    use:f=>{ const L=(B&&B.foes||[]).filter(x=>x.alive);
             say("섬광이 담긴 병 — 빛이 터집니다.","t1");
             L.forEach(x=>{ addDeb(x,"atkDn",1); addDeb(x,"magDn",1) }) }},
- "산성 병":{d:"대상의 보호막을 모두 제거합니다.",any:1,
+ "산성 병":{single:1,d:"대상의 보호막을 모두 제거합니다.",any:1,
    use:a=>{ const foeSide=!!(B&&B.foes&&B.foes.indexOf(a)>=0), v=a.shield||0;
             a.shield=0;
             fx({side:foeSide?"foe":"mine",slot:a.slot,txt:v?"보호막 -"+v:"보호막 없음",cls:"miss",gap:80});
             say(`산성 병 — ${a.name}의 보호막이 모두 녹아내립니다. (보호막 ${v})`,"t2") }},
  "기름 항아리":{d:"대상 적에게 화상을 4 부여합니다.",foe:1,
    use:f=>{ addDeb(f,"burn",4) }},
- "해독제":{d:"대상 아군의 부정적인 효과를 모두 제거합니다.",
+ "해독제":{single:1,d:"대상 아군의 부정적인 효과를 모두 제거합니다.",
    use:a=>{ const n=Object.keys(a.deb||{}).filter(k=>a.deb[k]>0).length;
             a.deb={};
             fx({side:"mine",slot:a.slot,s:"heal",ring:"#7fd39a",txt:n?"정화 "+n:"깨끗함",cls:"heal",gap:60});
             say(`해독제 — ${a.name}의 부정적인 효과 ${n}개를 걷어냅니다.`,"t2") }},
- "밧줄":{d:"대상 적을 맨 앞으로 끌어옵니다.",foe:1,
+ "밧줄":{single:1,d:"대상 적을 맨 앞으로 끌어옵니다.",foe:1,
    use:f=>{ if(f.slot<=1){ say("이미 맨 앞에 있는 적입니다.","t2"); return "keep" }
             const occ=foeAt(1), from=f.slot;
             f.slot=1; if(occ&&occ!==f) occ.slot=from;
@@ -29679,7 +30737,7 @@ function startBattle(kind,pinned){
   }
   /* 소멸성 카드(gone) — 라운드 사이에는 남긴다. 전투(칸)가 끝나면 손패가 다시 짜이며 사라진다 (사용자 2026-09-15) */
   const prevGone=(!pinned&&B&&B.hand&&run.dun&&run.dun.wave>1)?B.hand.filter(c=>c.gone&&c.type!=="hero"):[];
-  B={kind,turn:1,over:0,log:[],hand:[],units:[],foes:[],drag:null,pick:null};
+  B={kind,turn:1,over:0,log:[],hand:[],units:[],foes:[],drag:null,pick:null,pickN:0};
   if(!(run.dun&&run.dun.wave>1)) run.heroes.forEach(h=>{ h._lvB=h.lv; h.homeSlot=0 });   /* homeSlot — 이 전투에서 처음 배치한 자리, 새 전투마다 비운다 */   /* 이 전투를 시작할 때의 레벨 — 기술 잠금은 이것으로 (skLv) */
   B_ENC=null;                       /* 지난 판의 조합 이름이 남지 않게 */
   /* 전투(옛 던전) 하나는 여러 라운드로 이루어진다.
@@ -33296,7 +34354,7 @@ function drawBattle(app){
         <div class="nm">${esc(body.name)}</div>
         <div class="mini"><span class="chip on">쓰러짐</span></div>
         <div class="mini">${ic("hp")}0/${body.maxHp}</div>`;
-      if(drop) d.onclick=()=>{ const k=B.pick; B.pick=null; playCard(k,s,"mine") };
+      if(drop) d.onclick=()=>{ playCard(B.pick,s,"mine") };
       my.appendChild(d); continue;
     }
     if(hz){   /* 오염된 씨앗·덩굴 — 잔해처럼. 휘감기 문구는 여기(대원 전장)에서만 */
@@ -33387,7 +34445,7 @@ function drawBattle(app){
           doSkill(s) }
         else if(tgMode==="any") doSkill(-s) };
     }
-    if(drop) d.onclick=()=>{ const k=B.pick; B.pick=null; playCard(k,s,"mine") };
+    if(drop) d.onclick=()=>{ playCard(B.pick,s,"mine") };
     if(foeViewActive()) d.onclick=null;
     my.appendChild(d);
   }
@@ -33496,7 +34554,7 @@ function drawBattle(app){
       d.classList.add("pick");
       d.onclick=()=>{ if(B.lasso&&lassoDrop(s)) return; doSkill(s) };
     }
-    if(fdrop) d.onclick=()=>{ const k=B.pick; B.pick=null; playCard(k,s,"foe") };
+    if(fdrop) d.onclick=()=>{ playCard(B.pick,s,"foe") };
     /* 🔴 쇠사슬 올가미로 끌어갈 자리 — 올가미가 떠 있는 동안에는 **그 칸의 누름을 올가미가 가져간다.**
        전에는 `tgMode==="any"` 가지에만 걸려 있어, 올가미를 쓴 뒤(겨눔이 풀린 뒤) 빈 칸을 눌러도
        아무 일도 없었다 — 사용자가 「이동 효과가 없다」고 본 것이 이것이다 (2026-10-15) */
@@ -33587,14 +34645,17 @@ function drawBattle(app){
     const card=el(`<div class="card ccard cf ${kind}${cfk} ${B.pick===i?"picked":""}${c.arrive?" arrive":""}${gone?" gone":""}" data-i="${i}"${cfu?` style="--cardframe:url(${cfu})"`:""}>
       ${gone?`<i class="cc-void"><b></b><b></b><b></b><b></b><b></b><b></b></i>`:""}
       <div class="cc-top">${
-        c.stock?`<span class="cc-own" title="가진 수 — 다 쓰면 손패에서 사라집니다">${stk}/10</span>`
-        :(c.n>1?`<span class="cc-own" title="쌓인 장수 — 한 번에 한 장씩 씁니다">${c.n}/${ARMOR_CARDS[c.name]?ARMOR_HOLD:10}</span>`:"")}</div>
+        B.pick===i&&cardBatchMax(c)>1?`<span class="cc-own" title="선택 ${cardPickedN(i)}장 / 보유 ${cardHave(c)}장">${cardPickedN(i)}/${cardHave(c)}</span>`
+        :c.stock?`<span class="cc-own" title="가진 수 — 다 쓰면 손패에서 사라집니다">${stk}/10</span>`
+        :(c.n>1?`<span class="cc-own" title="쌓인 장수 — 여러 번 눌러 함께 쓸 장수를 고릅니다">${c.n}/${ARMOR_CARDS[c.name]?ARMOR_HOLD:10}</span>`:"")}</div>
       <div class="cc-art">${art}</div>
       <div class="cc-n">${esc(nm)}</div>
       <div class="cc-type">${cfType(type,tags)}</div>
       <div class="cc-d${cfLong(c.d)&&!hero&&c.type!=="summon"?" long":""}"><div class="cc-di">${desc}</div></div>
       ${st?`<div class="cc-st">${st}</div>`:""}
     </div>`);
+    card.dataset.cardName=nm;card.dataset.selectedCount=B.pick===i?cardPickedN(i):0;
+    card.addEventListener('contextmenu',e=>{if(B.pick===i&&cardBatchMax(c)>1){e.preventDefault();lessPickedCard()}});
     startDrag(card,i);
     /* 손패 — 커서 쪽으로 살짝 기울고 윤이 따라 흐른다 (2026-10-01) */
     card.addEventListener("pointermove",ev=>{ const r=card.getBoundingClientRect(); if(!r.width) return;
@@ -33618,11 +34679,13 @@ function drawBattle(app){
   if(B.pick!=null&&B.hand[B.pick]){
     const c=B.hand[B.pick];
     app.appendChild(el(`<div class="pickbar">
-      <b>${esc(c.name||(c.hero&&c.hero.name)||"카드")}</b>
-      <span class="hint">놓을 칸을 누르세요, 카드를 다시 누르면 취소</span>
+      <b>${esc(c.name||(c.hero&&c.hero.name)||"카드")}${cardBatchMax(c)>1?` ×${cardPickedN(B.pick)}장`:""}</b>
+      <span class="hint">${cardBatchMax(c)>1?'카드를 누르면 1장 추가 · 우클릭으로 1장 빼기 · 대상을 눌러 함께 사용':'놓을 칸을 누르세요, 카드를 다시 누르면 취소'}</span>
+      ${cardBatchMax(c)>1?`<button class="mini pkless" aria-label="선택 장수 줄이기"${cardPickedN(B.pick)>1?'':' disabled'}>−1장</button>`:''}
       <span class="grow"></span>
       <button class="mini pkx">취소</button></div>`));
-    app.querySelector(".pkx").onclick=()=>{ B.pick=null; render() };
+    app.querySelector(".pkx").onclick=()=>{clearCardPick();render()};
+    const less=app.querySelector('.pkless');if(less)less.onclick=lessPickedCard;
     stage.querySelector(".bftop").appendChild(app.querySelector(".pickbar"));   /* 무대 위 띠에 */
   }
   /* 골렘 창조 — 부속 둘 가운데 하나 (사용자 녹화 2026-10-13). 고를 때까지 떠 있는다 */
@@ -34535,7 +35598,7 @@ function keepSel(){
 function pickUnit(s){
   if(B.over) return; const h=unitAt(s); if(!h) return;
   if(stopped(h)){ say(`${h.name}${jo(h.name,"eun")} 정지 상태라 고를 수 없습니다.`,"t2"); return }   /* 정지 (사용자 2026-10-07) */
-  sel={hero:h,slot:s,step:2,skill:null,count:1}; render();
+  clearCardPick();sel={hero:h,slot:s,step:2,skill:null,count:1}; render();
   if(!h.isMin&&idleMotionOf(h)){ idleMotion(h); h._imNext=Date.now()+idleRand(IDLE_MO.gap) }   /* 희귀 외형 — 누르면 특수 대기 행동 (사용자 2026-10-04) */
 }
 /* 선택 기술의 갈래를 숫자로 고른다 (사용자 2026-09-30).
@@ -34998,7 +36061,7 @@ document.addEventListener("keydown",e=>{
   if(e.key==="Escape"){
     /* 갈래 목록이 열려 있으면 그것부터 닫는다 (사용자 2026-09-30) */
     if(sel&&sel.optOpen!=null){ sel.optOpen=null; render(); return }
-    if(B) B.pick=null; sel=null; render(); return }
+    clearCardPick(); sel=null; render(); return }
   /* Enter 는 2026-09-16 뺌 (사용자) — 턴 종료는 스페이스바만 */
   if(e.key===" "){ e.preventDefault(); if(B&&B.claim) claimGo(); else endTurn(); return }   /* 스페이스바 = 턴 종료 (사용자 2026-09-16). 버튼에 초점이 있어도 두 번 눌리지 않게 */
   /* 칸이 1~10 이 되었으니 0 을 10번 칸으로 읽는다 */
@@ -35060,7 +36123,7 @@ function drawInAnim(hand){
 }
 function startDrag(card,i){
   card.addEventListener("pointerdown",e=>{
-    if(B.over) return;
+    if(e.button!==0||B.over||B.busy)return;
     { const c0=B.hand[i];   /* 부속 카드는 **낼 수 없다** (노트 17-3 주석) — 둘이 모이면 저절로 합쳐진다 */
       if(c0&&c0.type==="part"){ e.preventDefault();
         say("부속 카드는 낼 수 없습니다 — 재료와 영혼이 모이면 저절로 합쳐집니다.","t2"); return } }
@@ -35068,9 +36131,14 @@ function startDrag(card,i){
     const x0=e.clientX, y0=e.clientY; let moved=0;
     GHAND_HIDE=1; try{ gHandDraw() }catch(e){}   /* 손 커서는 카드를 놓을 때까지 감춘다 (사용자 2026-10-01) */
     if(sfxHas("카드 집기")) SFX.play("카드 집기");   /* 카드를 집는 소리 (사용자 2026-10-06) */
-    const c=B.hand[i]; const g=el(`<div class="ghost"><div class="gtilt">${card.outerHTML}</div></div>`);
+    const c=B.hand[i],amount=cardPickedN(i),dragBattle=B; const g=el(`<div class="ghost"><div class="gtilt">${card.outerHTML}</div></div>`);
     const gt=g.firstElementChild, gc=gt.firstElementChild;
     gc.classList.remove("picked"); gc.style.transform=""; gc.style.margin="0";
+    if(amount>1){
+      gt.style.position="relative";gc.style.position="relative";gc.style.zIndex="3";
+      for(let n=Math.min(2,amount-1);n>0;n--){const copy=gc.cloneNode(true);copy.setAttribute('aria-hidden','true');copy.dataset.batchCopy='1';
+        Object.assign(copy.style,{position:'absolute',left:(-7*n)+'px',top:(5*n)+'px',margin:'0',zIndex:String(3-n),transform:'rotate('+(-3*n)+'deg)',filter:'brightness(.8)'});gt.insertBefore(copy,gc)}
+    }
     document.body.appendChild(g); card.style.opacity=".22";
     /* 카드의 몸 — 보이는 자리(px,py)가 커서(tx,ty)를 조금 늦게 따라가고, 속도만큼 기운다 (하스스톤, 2026-10-01) */
     const r0=card.getBoundingClientRect();
@@ -35130,13 +36198,17 @@ function startDrag(card,i){
       /* 칸에 놓았어도 쓰이지 않았으면(빈 칸·적에게 방어구 따위) 빈 곳에 놓았을 때처럼 손패로 날아 돌아간다 (사용자 2026-10-01).
          쓰였는지는 손패·보유 카드·소환물·대원 자리가 바뀌었는지로 잰다 */
       let used=false;
-      /* 대상에게 쓰는 카드(물건 · 적에게 던지는 것)는 대상 곁에 멈췄다 들어간 **뒤에** 쓴다 — 효과·체력 막대가 그때 바뀐다.
-         그래서 먼저 쓸 수 있는지만 본다(canPlayCard). 소환물·대원 카드는 빈 칸에 서는 것이라 바로 쓴다 */
+      /* 대상 카드도 놓는 순간 결과를 확정한다. 카드 묶음이 도착할 때 화면/이펙트를 갱신한다.
+         도중에 render가 끼거나 전투를 떠나도 이미 낸 장수와 효과가 사라지지 않는다. */
       const c0=B.hand[i], late=!!(c0&&c0.type==="item");
       if(hit&&moved){
-        if(late){ const w=cardWhy(i,hit,side); used=!w; if(w) cardSayWhy(w) }
+        if(late){
+          const w=cardWhy(i,hit,side);if(w)cardSayWhy(w);
+          else{CARD_BATCH++;try{used=!!playCard(i,hit,side,amount)}finally{CARD_BATCH--}
+            if(used&&B===dragBattle)B.busy=1;else render()}
+        }
         else { const fp=()=>JSON.stringify([B.hand.map(x=>[x.name||x.type,x.n||1,x.d||""]),(run.cards||[]).map(x=>x.c),(B.mins||[]).length,run.heroes.map(h=>h.slot)]);
-          const f0=fp(); playCard(i,hit,side); used=(B&&fp()!==f0) } }
+          const f0=fp(); playCard(i,hit,side,amount); used=(B&&fp()!==f0) } }
       const hand=document.querySelector(`#hand .card[data-i="${i}"]`)||card;
       if(hit&&moved&&used&&!late){ const P=hitBody||{x:hitR.left+hitR.width/2,y:hitR.top+hitR.height/2};   /* 빈 칸에 서는 카드 — 그 자리로 줄어들며 */
         fly(P.x,P.y,0.3,0,Math.round(200*SPD),null) }
@@ -35149,16 +36221,16 @@ function startDrag(card,i){
           gt.style.transition=`transform ${t2}ms ease-in-out`; gt.style.transform="rotateZ(-4deg) scale(.54)";
           setTimeout(()=>{ gc.style.filter="brightness(2) saturate(1.3)";
             fly(P.x,P.y,0.05,0.15,t3,()=>{ try{ at(spawn('<div class="soulring" style="border-color:#f0d890"></div>'),P); sparks(P,"#f0d890",9) }catch(e){}
-              const k=B?B.hand.indexOf(c0):-1;   /* 이제 쓴다 — 그 사이 손패가 바뀌었을 수 있어 카드로 다시 찾는다 */
-              if(k>=0) playCard(k,hit,side); else render() }) },t2) },1) }
+              /* 결과는 놓는 순간 확정했다. 연출 콜백은 잠금과 표시만 정리한다. */
+              dragBattle.busy=0;render() }) },t2) },1) }
       else if(moved){ hand.style.opacity="0"; const r=hand.getBoundingClientRect(); fly(r.left+r.width/2,r.top+r.height/2,1,1,240,()=>{ hand.style.opacity=""; card.style.opacity="" }) }
       else { g.remove(); card.style.opacity="" }
       /* 끌지 않고 그냥 눌렀으면 '이 카드를 골랐다'로 친다.
          고른 뒤 칸을 누르면 거기에 놓인다 — 드래그가 어려운 환경을 위해. */
       if(!moved&&!hit){
-        B.pick=(B.pick===i)?null:i; sel=null; render(); return;
+        if(B===dragBattle)pickHandCard(i);return;
       }
-      if(hit&&!moved) playCard(i,hit,side);   /* 끌어서 놓은 것은 위에서 이미 썼다 */
+      if(hit&&!moved) playCard(i,hit,side,amount);   /* 끌어서 놓은 것은 위에서 이미 썼다 */
     };
     document.addEventListener("pointermove",move);
     document.addEventListener("pointerup",up);
@@ -35804,12 +36876,65 @@ function cardMagic(skip){
       fx({side:"mine",slot:h.slot,txt:"금화 +1",cls:"crit",gap:60});
       say(`동전 마술 — 금화 +1 (${T.cardGold*10}%)`,"t2") } });
 }
-function playCard(i,slot,side){
+/* 한 카드 칸의 보유량/선택량. 낱장 효과와 사용 반응은 playCardOne을 장마다 통과한다. */
+function cardHave(c){
+  if(!c)return 0;
+  if(c.stock)return Math.max(0,Math.floor(((run.cards||[]).find(x=>x.n===c.stock)||{}).c||0));
+  return Math.max(1,Math.floor(c.n||1));
+}
+function cardCanBatch(c){
+  if(!c||c.type!=="item")return false;
+  const key=c.stock||c.name,L=CARD_LIB[key];
+  return !!(L||ARMOR_CARDS[key])&&!(L&&(L.noTarget||L.single));
+}
+function cardBatchMax(c){return cardCanBatch(c)?cardHave(c):Math.min(1,cardHave(c))}
+function cardPickedN(i){return Math.max(1,Math.min(cardBatchMax(B.hand[i])||1,B.pick===i?(B.pickN||1):1))}
+function clearCardPick(){if(B){B.pick=null;B.pickN=0}}
+function pickHandCard(i){
+  if(!B||B.busy||B.over||!B.hand[i])return;
+  const max=cardBatchMax(B.hand[i]);
+  if(B.pick===i&&max>1)B.pickN=Math.min(max,(B.pickN||1)+1);
+  else if(B.pick===i)clearCardPick();
+  else{B.pick=i;B.pickN=1}
+  sel=null;render();
+}
+function lessPickedCard(){
+  if(!B||B.busy||B.pick==null)return;
+  if(cardPickedN(B.pick)>1)B.pickN=cardPickedN(B.pick)-1;else clearCardPick();
+  render();
+}
+function spendHandCard(c){
+  const i=B.hand.indexOf(c);if(i<0)return;
+  if(c.stock){
+    useCard(c.stock);const e=(run.cards||[]).find(x=>x.n===c.stock);
+    if(e&&CARD_LIB[c.stock])c.d=CARD_LIB[c.stock].d+` (보유 ${e.c})`;
+    else B.hand.splice(i,1);
+  }else if(c.n>1)c.n--;else B.hand.splice(i,1);
+}
+function playCard(i,slot,side,amount){
+  const why=cardWhy(i,slot,side);if(why){cardSayWhy(why);render();return 0}
+  const c=B.hand[i],battle=B,requested=amount==null?cardPickedN(i):amount;
+  const count=Math.max(0,Math.min(cardBatchMax(c),Math.floor(requested)||1));
+  if(!count)return 0;
+  const target=side==="foe"?foeAt(slot):unitAt(slot);let played=0;
+  clearCardPick();CARD_BATCH++;
+  try{
+    for(let n=0;n<count;n++){
+      if(B!==battle||B.over||B.busy||view!=="battle")break;
+      if(n&&target!==(side==="foe"?foeAt(slot):unitAt(slot)))break;
+      const index=B.hand.indexOf(c);if(index<0||!cardHave(c))break;
+      if(!playCardOne(index,slot,side))break;
+      played++;if(B===battle)cardStealCheck();
+    }
+  }finally{CARD_BATCH--;render()}
+  return played;
+}
+
+function playCardOne(i,slot,side){
   { const w=cardWhy(i,slot,side); if(w){ cardSayWhy(w); render(); return } }   /* 못 놓는 자리 — 말하고, 흐려진 카드(집은 채 남은 것)를 되돌린다 */
   const c=B.hand[i]; if(!c) return;
   if(c.type==='part'){   /* 부속 카드는 낼 수 없다 (노트 17-3 주석) — 집는 것도 막지만 여기서도 막는다 */
     say('부속 카드는 낼 수 없습니다 — 재료와 영혼이 모이면 저절로 합쳐집니다.','t2'); render(); return }
-  { const before=B.hand.length; setTimeout(()=>{ if(B&&B.hand.length<before) cardStealCheck() },0) }   /* 카드가 실제로 나갔을 때만 */
   const wantFoe=!!(c.stock&&CARD_LIB[c.stock]&&CARD_LIB[c.stock].foe)||!!c.foe
     ||!!((CARD_LIB[c.stock||c.name]||{}).any&&side==="foe");   /* any — 산성 병 (2026-10-14) */
   if(wantFoe){
@@ -35819,11 +36944,8 @@ function playCard(i,slot,side){
     if(c.use(f)==="keep"){ render(); return }
     cardMagic();
     if(cardGone(c)) goneFX("foe",slot);
-    if(c.stock){ useCard(c.stock);
-      const e=(run.cards||[]).find(x=>x.n===c.stock);
-      if(e){ c.d=CARD_LIB[c.stock].d+` (보유 ${e.c})` } else B.hand.splice(i,1);
-    } else B.hand.splice(i,1);
-    checkEnd(); render(); return;
+    spendHandCard(c);
+    checkEnd(); render(); return true;
   }
   if(c.type==="summon"&&side==="foe"){   /* 저주받은 성벽 — 적 전장에 (도발 유지 · 잔해, 사용자 2026-10-06) */
     const S=SUMMONS[c.name]; if(!S||!S.foeOk) return;
@@ -35831,10 +36953,10 @@ function playCard(i,slot,side){
     B.foes.push({name:c.name,slot:slot,maxHp:hp,hp:hp,atk:0,def:0,rng:0,exp:0,demon:0,boss:0,shield:0,air:0,alive:1,id:B.foes.length+300,
       infect:0,stun:0,weak:0,deb:{},isFoe:1,isPhantom:1,wallFoe:1,taunt:S.taunt?99:0,curseOnDeath:S.curseOnDeath||0,intent:{t:"wait"}});
     cardMagic(); if(cardGone(c)) goneFX("foe",slot);
-    if(c.stock){ useCard(c.stock); if(!(run.cards||[]).find(x=>x.n===c.stock)) B.hand.splice(i,1) } else B.hand.splice(i,1);
+    spendHandCard(c);
     fx({side:"foe",slot:slot,fn:()=>{ wallBuildFX("foe",slot,true); setTimeout(()=>SFX.play(sfxOr("성벽 건설","summon")),Math.round(160*SPD)) },gap:700});   /* 무너짐을 거꾸로 — 쌓아 올린다 (사용자 2026-10-06) */
     say(`${c.name}${jo(c.name,"ig")} 적 전장 ${foeNo(slot)}번 칸에 섭니다.`,"t1");
-    rollIntents(); render(); return;
+    rollIntents(); render(); return true;
   }
   if(side==="foe") return;
 
@@ -35845,9 +36967,7 @@ function playCard(i,slot,side){
     B.mins.push(m); lifeAuraSync();
     cardMagic();   /* 소환물 카드도 카드다 (악마 하수인 · 망자의 육체 …) */
     if(cardGone(c)) goneFX("mine",slot);
-    if(c.stock){ useCard(c.stock);
-      if(!(run.cards||[]).find(x=>x.n===c.stock)) B.hand.splice(i,1);
-    } else B.hand.splice(i,1);
+    spendHandCard(c);
     /* 소리는 카드가 아니라 **선 놈** 의 이름으로 찾는다 — 하수인 카드가 장군으로
        서면 "악마 장군 배치" 가 운다. 그 녹음이 없으면 카드 이름으로, 그것도 없으면 합성음 */
     const mk=minionSkin(m.name), mks=mk&&sfxHas(mk.n+" 소환")?mk.n+" 소환":null;   /* 외형 소환물 — 그 외형의 소환 소리 (무패의 장군 소환, 사용자 2026-10-04) */
@@ -35860,10 +36980,10 @@ function playCard(i,slot,side){
     say(`${c.name}${jo(c.name,"ig")} ${slot}번 칸에 소환됩니다.`,"t1");
     setTimeout(()=>bark(m,"in"),80);
     /* 도발하는 소환물이 아니면 적의 의도는 그대로 — 기다리던 적만 새로 정한다 */
-    rollIntents(!m.taunt); render(); return;
+    rollIntents(!m.taunt); render(); return true;
   }
   if(c.type==="hero"){
-    c.hero.slot=slot; B.hand.splice(i,1);
+    c.hero.slot=slot;spendHandCard(c);
     if(!c.hero.homeSlot) c.hero.homeSlot=slot;   /* 전투 시작 후 처음 배치한 자리 — 탑의 주인 시간 역행이 돌아가는 곳 (2026-10-12) */
     fx({side:"mine",slot:slot,s:heroPlaceSnd(c.hero)||"summon",ring:"#7fd39a",glow:1,gap:60});   /* 제 녹음이 있으면 그것 (데린저 배치 1·2·3, 사용자 2026-10-16) */
     onSummon(c.hero); lifeAuraSync();   /* 대원이 설 때도 */
@@ -35893,13 +37013,9 @@ function playCard(i,slot,side){
     cardMagic();   /* 카드 마술 · 동전 마술 */
     if(cardGone(c)) goneFX("mine",slot);
     if(!c.stock||!CARD_LIB[c.stock]) SFX.play("shield");
-    if(c.stock){ useCard(c.stock);
-      const e=(run.cards||[]).find(x=>x.n===c.stock);
-      if(e){ c.d=CARD_LIB[c.stock].d+` (보유 ${e.c})` } else B.hand.splice(i,1);
-    } else if(c.n>1) c.n--;                          /* 쌓인 방어구 카드 — 한 장만 쓴다 */
-    else B.hand.splice(i,1);
+    spendHandCard(c);
   }
-  render();
+  render();return true;
 }
 
 /* ─ 전투 처리 ─ */
@@ -40134,6 +41250,7 @@ function autoImps(){
 function endTurn(){
   if(B.over||B.busy) return;
   if(lassoWait()) return;     /* 끌어갈 자리를 고르기 전에는 턴도 못 넘긴다 (2026-10-15) */
+  clearCardPick();
   /* 부착: 개머리판 — 추진력 2 를 치르고 다음 무기 피해 +1 (노트 2026-10-15).
      ⚠️ 2 가 모자라면 **치르지 않고 덤도 없다** (노트 주석 그대로) */
   onField().forEach(h=>{ const n=(h.name==="데린저"&&h.tag&&h.tag.endMomGun)||0;
