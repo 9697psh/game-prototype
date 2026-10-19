@@ -5702,16 +5702,22 @@ body.vbattle #hand .card.ccard.cf>.card-batch-hint{position:absolute;top:-23px;b
 #app.trait-stage>.center{width:100%;max-width:1400px;margin:auto;text-align:center}
 .trait-owner{color:#bca58d;margin:12px 0 22px;font-size:13px}
 .trait-choices{display:grid;grid-template-columns:repeat(3,minmax(0,232px));justify-content:center;gap:30px;margin:0 auto;max-width:1100px}
-body.vnew #app button.trait-choice{width:100%;height:392px;min-height:392px;box-sizing:border-box;padding:28px 20px 22px;position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;white-space:normal;line-height:1.6;color:#dfcdb8;border:0;border-image:none;border-radius:0;background:url("ui/menu-card-companion-dark-red-gem-384x512.png") center/100% 100% no-repeat;box-shadow:none;image-rendering:pixelated;transition:transform .18s,filter .18s;cursor:pointer}
+body.vnew #app button.trait-choice{width:100%;height:392px;min-height:392px;box-sizing:border-box;padding:44px 20px 22px;position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;white-space:normal;line-height:1.6;color:#dfcdb8;border:0;border-image:none;border-radius:0;background:url("ui/menu-card-companion-dark-red-gem-384x512.png") center/100% 100% no-repeat;box-shadow:none;image-rendering:pixelated;transition:transform .18s,filter .18s;cursor:pointer}
 body.vnew #app button.trait-choice:hover,body.vnew #app button.trait-choice:focus-visible{transform:translateY(-6px);filter:brightness(1.15) drop-shadow(0 0 12px #a52d4a)}
 body.vnew #app button.trait-choice:focus-visible{outline:2px solid #e6b3a2;outline-offset:3px}
-.trait-icon{width:72px;height:72px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+/* 특성 선택 — 처음 열 때 카드가 한 장씩 깔린다 (사용자 2026-10-20).
+   ⚠️ 끝나면 JS 가 .deal 을 떼어 준다 — 안 떼면 animation 의 transform 이 남아 :hover 가 죽는다 */
+@keyframes traitDeal{from{opacity:0;transform:translateY(34px) scale(.9)}to{opacity:1;transform:none}}
+body.vnew #app button.trait-choice.deal{animation:traitDeal .44s cubic-bezier(.2,.85,.3,1) both}
+/* 보상 카드(.rw.rwpick .rwi)와 같은 크기로 — 카드 상자는 둘 다 232×392 인데 속이 작아 보였다
+   (사용자 2026-10-20 : 「특성 카드랑 다른 카드랑 크기 동일하게」) */
+.trait-icon{width:96px;height:96px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .trait-icon img,.trait-icon .ricon{max-width:100%;max-height:100%;width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
 .trait-choice>b{font-family:var(--serif);font-size:19px;line-height:1.3;color:#efc4a7;word-break:keep-all}
-.trait-description{font-size:12px;line-height:1.65;word-break:keep-all;overflow-wrap:anywhere;min-height:0;flex:1;width:100%;display:flex;align-items:center;justify-content:center;text-align:center;image-rendering:auto}
+.trait-description{font-size:13.5px;line-height:1.6;word-break:keep-all;overflow-wrap:anywhere;min-height:0;flex:0 1 auto;margin:10px 0 auto;width:100%;padding:0 12px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;text-align:center;image-rendering:auto}
 .trait-description>span{width:100%}
 .trait-description .trait-key{font-weight:700;color:#ffe1a1;text-shadow:0 0 7px rgba(237,183,94,.4)}
-.morph-choices .trait-description{font-size:11.5px;line-height:1.55}
+.morph-choices .trait-description{font-size:12.5px;line-height:1.5}
 .trait-skip{margin:24px auto 0}
 .trait-chosen{animation:traitChosen .42s ease-out both}
 .trait-faded{opacity:.28}
@@ -5733,8 +5739,8 @@ body.vnew #app .rewards:has(.trait-guarantee){margin-top:48px}
 .hero-trait-rewards ul{padding:0;margin:4px 0;list-style:none}.hero-trait-rewards li{padding:3px 0;border-bottom:1px solid #352a2d}
 .hero-trait-rewards li small{font-size:10px;color:#988b7e;margin-left:4px}
 .hero-trait-info>span{color:#efb7b0}.hero-trait-info>small{display:block;flex-basis:100%;font-size:11px;line-height:1.6}
-@media(max-width:1000px){.trait-choices{gap:14px;grid-template-columns:repeat(3,minmax(0,232px))}.trait-icon{width:56px;height:56px}.trait-choice>b{font-size:17px}}
-@media(max-width:620px){.trait-choices{grid-template-columns:minmax(0,232px);gap:16px}.trait-icon{width:64px;height:64px}#app.trait-stage .title{font-size:22px}}
+@media(max-width:1000px){.trait-choices{gap:14px;grid-template-columns:repeat(3,minmax(0,232px))}.trait-icon{width:76px;height:76px}.trait-choice>b{font-size:17px}}
+@media(max-width:620px){.trait-choices{grid-template-columns:minmax(0,232px);gap:16px}.trait-icon{width:86px;height:86px}#app.trait-stage .title{font-size:22px}}
 @media(prefers-reduced-motion:reduce){.trait-chosen,body.vnew #app .rw.rwpick.trait-guarantee{animation:none!important}}
 
 </style>
@@ -10011,6 +10017,20 @@ function punchIn(side,slot){
    잔상(em.gh)이 한 박자 늦게 따라와 얻어맞은 몫을 보여 준다. */
 let HKSEQ=0, HPMEM={}, SHMEM={}, SHWMEM={};
 function hpKey(u){ if(!u) return ""; if(!u._hk) u._hk="U"+(++HKSEQ); return u._hk }
+/* 막(보호막 · 에너지 보호막)이 바에서 차지할 몫 — **합**을 묶는다 (사용자 2026-10-20).
+   전에는 둘을 **따로** 묶어 두어 대원은 45+45=90%, 적은 45+60=**105%** 까지 갔다.
+   막은 position:absolute · z-index 3 이라 체력 fill **위를 덮는다** — 그래서 둘 다 두껍게 두르면
+   체력 칸이 통째로 가려져 「체력바가 금빛 띠가 되는」 오래된 버그가 났다.
+   ⚠️ 체력이 안 쓰는 자리까지만 준다. 다만 막이 있으면 적어도 20% 는 보이게 (얇은 막도 눈에 띄게).
+   ⚠️ 숫자(.mini)는 손대지 않는다 — 보이는 띠의 몫만 묶는 일이다 */
+function barWard(es,sh,hpPct){
+  const t=es+sh; if(!(t>0)) return [es,sh];
+  const free=100-Math.max(0,Math.min(100,hpPct||0));
+  const cap=Math.max(20,Math.min(60,free));
+  if(t<=cap) return [es,sh];
+  const k=cap/t;
+  return [Math.round(es*k*10)/10,Math.round(sh*k*10)/10];
+}
 function hpAnim(){
   document.querySelectorAll(".bar[data-hpk]").forEach(bar=>{
     const k=bar.dataset.hpk, now=parseFloat(bar.dataset.hpv)||0;
@@ -15793,7 +15813,7 @@ const GIM_DEX=[
      {t:"해킹",d:"(기계 종족 대원이 있을 때) 아군 기계 종족 대원들이 영구히 마법력 +1."},
      {t:"중심핵",d:"푸른 수정을 1회 충전합니다."}],
   fight:"부서진 파수병, 고장난 수호기, 수리 드론"},
- {n:"안개 지대",icon:"ink_sp_fog",field:"정령숲",odds:"40%",cells:"2×2 + 둘레 0~2",refresh:"낮은 확률로 새로고침 (없으면 새 날에 25%)",camp:1,
+ {n:"안개 지대",icon:"ink_sp_fog",field:"정령숲",odds:"65%",cells:"2×2 + 둘레 0~2 (여럿이 겹칠 수 있다)",refresh:"새 날마다 35% 로 하나 더 (이미 깔려 있어도)",camp:1,
   t:"어떤 칸이 있는지 가립니다 — 빈 칸일 수도, 상점일 수도, 적일 수도. 마음대로 지나갈 수 있고, 밟은 칸은 걷힙니다. 2~3일 지속.",o:[]},
  {n:"기력의 샘",icon:"ink_sp_spring",field:"정령숲",odds:"지도마다 4",cells:"1",refresh:"미지의 구역처럼 새로고침",camp:1,
   t:"방문 후 없어집니다.",
@@ -19125,7 +19145,7 @@ function campSafe(g){
    구역마다 개성 있는 칸. 확률이 낮고(구역당 0~3개), 주둔지 곁(2칸 안)에는 안 놓는다.
    1구역 핏빛 감옥 — 첨탑과 울타리(새로고침 불가 : 재편성해도 그 자리에 남는다) · 고문실과 사형장(새로고침 가능 : 재편성·새 날에 다시 놓일 수 있다).
    고른 스택(run.gim.tort · run.gim.gal)은 판 내내 남는다. */
-const GIM_ODDS=[{tower:0.6,tg:0.6,post:0.5,wagon:0.4,tunnel:0.5,wall:0.5,patrol:0.4,well:0.35},{grove:0.6,nest:0.5,cave:0.4,colony:0.35,mwreck:0.4,fog:0.4},{}];   /* 구역별 확률 — 정령숲 (2026-10-01) · 3구역 기믹은 아직 */
+const GIM_ODDS=[{tower:0.6,tg:0.6,post:0.5,wagon:0.4,tunnel:0.5,wall:0.5,patrol:0.4,well:0.35},{grove:0.6,nest:0.5,cave:0.4,colony:0.35,mwreck:0.4,fog:0.65},{}];   /* 구역별 확률 — 정령숲 (2026-10-01) · 3구역 기믹은 아직 */
 const SPRING_N=4;   /* 기력의 샘 — 지도를 만들 때 넷, 새 날마다 미지의 구역처럼 채운다 */
 function placeGimmicks(g,fi,keep){
   const S=g.length, camp=[S-1,Math.floor(S/2)], O=GIM_ODDS[Math.min(fi,GIM_ODDS.length-1)]||{};
@@ -19182,8 +19202,8 @@ function placeMWreck(g){
   return false;
 }
 /* 안개 지대 — 2×2 에 둘레 0~2칸. 칸 안의 것을 가린다 (지나갈 수는 있다). 2~3일 뒤 걷힌다. run.fog 에 적는다 */
-function rollFog(){
-  const S=run.size; run.fog=null;
+function rollFog(keep){   /* keep — 이미 깔린 안개를 두고 **하나 더** 깔린다 (사용자 2026-10-20) */
+  const S=run.size; if(!keep) run.fog=null;
   const bad=(r,c)=>{ const t=run.grid[r][c].t; return t==="camp"||t==="boss"||(run.pos.r===r&&run.pos.c===c) };
   for(let t=0;t<60;t++){
     const r=Math.floor(Math.random()*(S-1)), c=Math.floor(Math.random()*(S-1));
@@ -19192,7 +19212,13 @@ function rollFog(){
     L.forEach(([a,b])=>[[a-1,b],[a+1,b],[a,b-1],[a,b+1]].forEach(([x,y])=>{
       if(x>=0&&y>=0&&x<S&&y<S&&!bad(x,y)&&!L.concat(nb).some(([p,q])=>p===x&&q===y)) nb.push([x,y]) }));
     const ex=rr([0,2]); for(let i=0;i<ex&&nb.length;i++) L.push(nb.splice(Math.floor(Math.random()*nb.length),1)[0]);
-    run.fog={cells:L.map(([a,b])=>a+"-"+b),until:run.day+rr([2,3])}; return true }
+    const until=run.day+rr([2,3]), keys=L.map(([a,b])=>a+"-"+b);
+    if(run.fog){ run.fog.when=run.fog.when||{};
+      run.fog.cells=run.fog.cells.concat(keys.filter(k=>run.fog.cells.indexOf(k)<0));
+      run.fog.until=Math.max(run.fog.until||0,until) }
+    else run.fog={cells:keys,until:until,when:{}};
+    keys.forEach(k=>{ if(run.fog.when[k]==null||run.fog.when[k]<until) run.fog.when[k]=until });
+    return true }
   return false;
 }
 const fogAt=(r,c)=>!!(run&&run.fog&&run.fog.cells.indexOf(r+"-"+c)>=0)||!!(run&&run.grid&&run.grid[r]&&run.grid[r][c]&&run.grid[r][c].fogged)||(typeof floorHidden==="function"&&floorHidden(r,c));   /* 마력의 탑 — 아직 닿지 않은 층 · 보상 「안개지대」가 깔은 한 칸(cell.fogged) */
@@ -19201,7 +19227,9 @@ function fogLift(r,c){
     if(cl&&cl.fogged){ delete cl.fogged; mapGone("fog",[r+"-"+c]) } }
   if(run&&run.fog){ if(run.fog.cells.indexOf(r+"-"+c)>=0){ mapGone("fog",[r+"-"+c]);
       try{ dexSee("gimT","fog") }catch(e){} }   /* 안개 지대에 들어서면 도감이 열린다 (사용자 2026-10-14) */
-    run.fog.cells=run.fog.cells.filter(k=>k!==r+"-"+c); if(!run.fog.cells.length) run.fog=null } }
+    run.fog.cells=run.fog.cells.filter(k=>k!==r+"-"+c);
+    if(run.fog.when) delete run.fog.when[r+"-"+c];
+    if(!run.fog.cells.length) run.fog=null } }
 /* 지도에서 사라지는 것 — 다음 지도 그리기에서 사라지는 연출 (안개가 걷힘 · 기계 잔해가 무너짐) (사용자 2026-10-07) */
 function mapGone(t,keys,extra){ if(typeof MAP_GONE==="undefined") return; keys.forEach((k,i)=>MAP_GONE.push(Object.assign({t:t,k:k,i:i,t0:0},extra&&extra[i]||{}))) }
 /* 균열 군체 — 하루가 지나면 둘레 빈 칸에 오염된 뿌리 1~4, 그 뒤로는 뿌리마다 1~2 (칸마다 한 번만 퍼뜨린다) */
@@ -19568,8 +19596,14 @@ function respawn(){
     colonyStep();
     if(!gimCells(run.grid,"cave").length&&!run.cave&&Math.random()<0.2) placeOne(run.grid,"cave");   /* 낮은 확률로 새로고침 */
     if(!gimCells(run.grid,"mwreck").length&&Math.random()<0.2) placeMWreck(run.grid);
-    if(run.fog&&run.day>=run.fog.until){ mapGone("fog",run.fog.cells.slice()); run.fog=null }   /* 안개는 2~3일 뒤 걷힌다 — 걷히는 연출 */
-    else if(!run.fog&&Math.random()<0.25) rollFog();
+    /* 안개는 2~3일 뒤 걷힌다 — **덩어리마다 따로** (사용자 2026-10-20). when 이 없는 옛 판은 until 로 */
+    if(run.fog){ const W=run.fog.when||{},
+        go=run.fog.cells.filter(k=>(W[k]!=null?W[k]:run.fog.until)<=run.day);
+      if(go.length){ mapGone("fog",go.slice());
+        run.fog.cells=run.fog.cells.filter(k=>go.indexOf(k)<0);
+        go.forEach(k=>{ delete W[k] });
+        if(!run.fog.cells.length) run.fog=null } }
+    if(Math.random()<0.35) rollFog(true);   /* 이미 깔려 있어도 또 깔린다 — 겹칠 수 있다 */
   }
   if(run.field===1&&!gimCells(run.grid,"nest").length&&Math.random()<0.2){ const p=placeOne(run.grid,"nest"); if(p&&(p.r!==run.pos.r||p.c!==run.pos.c)) toast("어딘가에 반딧불 둥지가 새로 생겼습니다.") }
   /* 날이 밝으면 비어 가는 지도에 일반 전투 칸을 보탠다 (사용자 2026-10-05: 4~5일차엔 지도가 너무 비어 보였다).
@@ -19970,7 +20004,9 @@ function nextField(){
   run.crystal=run.field===1?CRYSTAL_MAX:null;             /* 푸른 수정 — 정령숲에서만 (2026-10-01) */
   run.fieldRules=FIELD_RULES[run.field]?1:0;
   run.floorsSeen={1:1}; run.keyQ=[]; run.wolf=null; if(towerOn()) run.stairKey=0;   /* 마력의 탑 — 1층만 보인다 */
-  run.fog=null; if(run.field===1&&Math.random()<(GIM_ODDS[1].fog||0)) rollFog();
+  run.fog=null;
+  if(run.field===1&&Math.random()<(GIM_ODDS[1].fog||0)){ rollFog();
+    if(Math.random()<0.45) rollFog(true) }   /* 처음부터 둘이 겹쳐 깔릴 수 있다 (사용자 2026-10-20) */
   if(run.cave){ const b=caveReturn(); if(b) toast(`${b.h.name}${jo(b.h.name,"ig")} 동굴에서 나와 함께 떠납니다.${b.done?" 수련을 마쳐 모든 추가 능력치 +2.":""}`) }               /* 바뀐 규칙 안내 창 — 지도가 펴진 뒤 한 번 (사용자 2026-10-01) */
   if(run.quests) run.quests=run.quests.filter(q=>!(q.field!=null&&q.field!==run.field&&!q.done));   /* '이번 구역 동안' 퀘스트 만료 */
   run.gim=null;                                            /* 고문실·사형장 스택은 구역 내내 — 새 구역에서 처음부터 */
@@ -20002,6 +20038,7 @@ const SKIP_SET={1:{lv:SKIP2_LV,gold:SKIP2_GOLD,stone:SKIP2_STONE,item:1},
 /* 특성 선택과 보장 보상 — 상태에는 식별자만 저장한다. 연출은 결과를 바꾸지 않는다. */
 const TRAIT_REWARD_LVS=[10,12,13,15,16,17,18,20,22,23,25,27,28,30];
 const TRAIT_PICK_SND="A_powerful_dark_fant_#1-1792386576111";
+let TRAIT_DEALT="";   /* 카드 깔림 연출을 이미 보인 화면 — 대원 이름 + 갈래. 다시 그려도 또 깔지 않는다 */
 const DERR_TRAIT_GUN={"산탄총":"shotgun","리볼버":"revolver","기관총":"machinegun","저격소총":"sniper"};
 const isMorphReward=(h,r)=>h&&h.name==="데린저"&&/^변형: /.test(r.n);
 function derrMorphRewards(h){
@@ -20047,7 +20084,10 @@ function traitRewardListHtml(h,t){
   const own=codexTraitRewards(h.name,t.id,false),common=codexTraitRewards(h.name,t.id,true);
   return `<div class="hero-trait-rewards" hidden>${["하급","중급","상급"].map(g=>{
     const L=own.filter(r=>r.g===g).map(r=>[r,"전용"]).concat(common.filter(r=>r.g===g).map(r=>[r,"공용"]));
-    return L.length?`<section><b>${g} 보상</b><ul>${L.map(([r,k])=>`<li data-reward-key="${esc(rwKey(r))}" data-reward-source="${k}">${esc(r.n)} <small>${k}</small></li>`).join("")}</ul></section>`:"";
+    /* 커서를 올리면 그 보상이 무엇인지 보인다 (사용자 2026-10-20).
+       ⚠️ title= 흰 풍선이 아니라 게임의 #kwtip — .kw + data-kw/data-tip */
+    return L.length?`<section><b>${g} 보상</b><ul>${L.map(([r,k])=>`<li class="kw" data-kw="${esc(r.n)}" data-tip="${
+      esc(String((r.d!=null?r.d:"")).replace(/\n/g," "))}" data-reward-key="${esc(rwKey(r))}" data-reward-source="${k}">${esc(r.n)} <small>${k}</small></li>`).join("")}</ul></section>`:"";
   }).join("")||`<p>분류된 보상이 없습니다.</p>`}</div>`;
 }
 function traitInfoHtml(h){
@@ -20085,6 +20125,12 @@ function drawTraitStep(app,cur){
     row.appendChild(card);
   });
   app.querySelector(".center").appendChild(row);
+  { const dk=h.name+"|"+(morph?"m":"t");
+    if(TRAIT_DEALT!==dk){ TRAIT_DEALT=dk;
+      [...row.children].forEach((c,i)=>{ const d=i*110;
+        c.classList.add("deal"); c.style.animationDelay=d+"ms";
+        setTimeout(()=>{ try{ SFX.play(SND_FLIP()) }catch(e){} },d);
+        setTimeout(()=>{ c.classList.remove("deal"); c.style.animationDelay="" },d+520); }); } }
   if(!morph){const skip=el(`<div class="trait-skip"><button type="button">넘어가기</button></div>`);
     skip.querySelector("button").onclick=()=>{if(locked||pending!==P||(h.tag&&h.tag.traitDecided))return;locked=true;h.tag.traitDecided=1;delete h.tag.traitId;saveGame();render()};
     app.querySelector(".center").appendChild(skip);
@@ -21059,6 +21105,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 193, "v": "0.7", "d": "2026-10-20", "t": "체력바 막 겹침 · 의도 보호막 수치 · 특성 카드 · 안개 · 찌르기 · 적 강화 배율", "big": 0},
  {"b": 192, "v": "0.7", "d": "2026-10-19", "t": "전투 강화 정보 패널 — 접기/펼치기", "big": 0},
  {"b": 191, "v": "0.7", "d": "2026-10-19", "t": "대원 배치 후 카드를 한 장씩 손패로 받는 연출", "big": 0},
  {"b": 190, "v": "0.7", "d": "2026-10-19", "t": "대원 우선 손패·표식과 특성 보정·현상 수배 복제·잔영 피격", "big": 0},
@@ -22443,7 +22490,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=192;
+const BUILD_NO=193;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -31040,6 +31087,17 @@ function foeScale(kind){
   return {m:m, hpP:hpP, atkP:atkP, defP:defP,
           hpAdd:Math.round((f*3+l)*hpP), atkAdd:Math.floor(f*1.2*atkP), defAdd:Math.round(f*2*defP)};
 }
+/* 적이 내놓는 **덤 수치**도 강화 배율을 탄다 (사용자 2026-10-20 : 「너무 강하지는 않게」).
+   회복 · 에너지 보호막 · 대원 전장 덩굴의 휘감기 — 전에는 표에 적힌 값 그대로였다.
+   ⚠️ 몫은 **1/4**(1+(m-1)*0.25)다. 체력은 m 을 다 타고 공격력은 반 몫인데, 덤 수치는 밑값이 크다 —
+      15레벨 정예는 m 이 9쯤이라 반 몫이면 5배가 되어 버린다 (골든이 잡았다 :
+      마나 정제로의 에너지 보호막이 37 → 154). 1/4 면 같은 자리에서 37 → 61 이다.
+   ⚠️ **두 번 세지 말 것.** skShield 는 보호력(이미 강화를 탄 값)을 얹으므로 그 위에 또 곱하면 겹친다.
+      에너지 보호막은 여기만 쓴다. 보호막(s.shield)은 전처럼 skShield 만 쓴다.
+   화면이 없는 곳(sim)·전투 밖에서도 안 터지게 try 로 감싼다 */
+function foeGive(v,kind){ if(!(v>0)) return v;
+  let m=1; try{ m=foeScale(kind||(typeof B!=="undefined"&&B&&B.kind)||"battle").m }catch(e){}
+  return Math.max(1,Math.round(v*(1+(m-1)*0.25))) }
 /* 전투를 시작한 그 순간의 판을 적어 둔다. 「전투 초기화」의 원본이 된다 (낱말 가름 2026-10-07 — 「되감기」는 적 · 대원의 열쇠말) */
 let BSNAP=null;
 /* 어둠 속에서 나타나는 우두머리 (사용자 2026-10-13 : 탑의 주인).
@@ -31326,6 +31384,10 @@ const ROUND_RESET={
   windBuff:0, windDmg:0, potential:0, lock:{}, lockNew:{}, airUp:0, manaUsed:0,
   mom:0,                           /* 추진력 — 라운드마다 (사용자 2026-10-05) */
   rew:0, stop:0,                   /* 되감기 · 정지 — 노트에 '이번 전투 동안' 이 없으니 라운드 (사용자 2026-10-07) */
+  cutSum:0,                        /* 찌르기 — 「**이번 턴에** 사용한 베기」의 셈이라 턴 단위다.
+                                      ⚠️ 턴 비우기(startMyTurn)는 적 차례가 끝날 때만 돈다 — 라운드가 넘어갈 때는
+                                      startBattle 로 바로 들어와 안 돈다. 그래서 여기(라운드)에도 둔다
+                                      (사용자 2026-10-20 : 「라운드가 넘어가도 베기 피해량이 유지된다」) */
   acts:0, veilDone:0,              /* 회오리 장막 중첩 — 라운드마다 (사용자 2026-10-03) */
   spentTurn:0, magnetTurn:0,       /* 아크 방전 셈 (사용자 2026-10-03) */
   /* 노트에 '이번 전투 동안' · '전투당' · '영구히' 가 없으면 라운드마다 (사용자 2026-10-06) —
@@ -31340,7 +31402,7 @@ const BATTLE_RESET={
   verdictUsed:0, lastStandUsed:0,
   first:{},                        /* 처음은 완벽하게 따위 — 전투당 한 번 */
   critAtkUsed:0, critMagUsed:0, soloOn:0,
-  cutGrow:0, cutSum:0, deathSaveUsed:0, lastRageUsed:0, countUp:0, chgOn:0, chg:0, shotBonus:0,   /* 복수는 끝나지 않았다 · 타락의 초읽기 — 전투 단위 (2026-10-13) */
+  cutGrow:0, deathSaveUsed:0, lastRageUsed:0, countUp:0, chgOn:0, chg:0, shotBonus:0,   /* 복수는 끝나지 않았다 · 타락의 초읽기 — 전투 단위 (2026-10-13) */
   wanderBonus:0, archerBonus:0, gloryGuard:0, arenaHeal:0, echo:0};   /* 조합 몫 — applySynergy 가 다시 채운다 */
 function resetVals(h,T){ for(const k in T){ const v=T[k]; h[k]=(v&&typeof v==="object")?(Array.isArray(v)?[]:{}):v } }
 function resetBattle(){
@@ -32721,9 +32783,10 @@ function skExec0(f,I){
       fx({side:"foe",slot:f.slot,s:"buffup",ring:"#6aa8e0",glow:1,txt:"마법력 +"+s.magUp,cls:"buf",gap:120});
       say(`${f.name} 마법력 +${s.magUp} (누적 +${f.magUp})`,"t2") } }
   if(s.defUp){ f.def+=s.defUp; f.defUp=(f.defUp||0)+s.defUp; fx({side:"foe",slot:f.slot,ring:"#8fa2c9",txt:"보호력 +"+s.defUp,cls:"shd",gap:120}); say(`${f.name} 보호력 +${s.defUp}`,"t2") }
-  if(s.heal){ healUp(f,s.heal); fx({side:"foe",slot:f.slot,s:"heal",txt:"+"+s.heal,cls:"heal"}); say(`${f.name} 체력 +${s.heal}`,"t2") }
+  if(s.heal){ const hv=foeGive(s.heal);   /* 강화 배율의 1/4 몫 (2026-10-20) */
+    healUp(f,hv); fx({side:"foe",slot:f.slot,s:"heal",txt:"+"+hv,cls:"heal"}); say(`${f.name} 체력 +${hv}`,"t2") }
   if(s.shield){ const v=skShield(f,s.shield); addShield(f,v); fx({side:"foe",slot:f.slot,s:"shield"}); say(`${f.name} 보호막 +${v}`) }
-  if(s.eshield){ const v=skShield(f,s.eshield); f.eshield=(f.eshield||0)+v;
+  if(s.eshield){ const v=foeGive(s.eshield); f.eshield=(f.eshield||0)+v;   /* 강화 배율 1/4 몫만 — skShield 를 겹쳐 쓰지 않는다 (2026-10-20) */
     fx({side:"foe",slot:f.slot,s:"shield",ring:"#5fd8cf",txt:"에너지 보호막 +"+v,cls:"shd",gap:140}); say(`${f.name} 에너지 보호막 +${v}`,"t2") }
   if(s.thorn){ f.thorn=s.thorn.v; f.thornTurn=(s.thorn.turns||2)+1;   /* +1 — 내 턴 머리에 하나 줄어도 그 턴 동안 남게 (도발과 같은 셈) (점검 2026-10-07) */
     fx({side:"foe",slot:f.slot,thornIn:1,txt:"가시"+f.thorn,cls:"shd"}); say(`${f.name} 가시 ${f.thorn} (${f.thornTurn-1}턴)`,"t3") }
@@ -32782,7 +32845,11 @@ function skExec0(f,I){
         (B.hz=B.hz||[]).push({name:"오염된 씨앗",slot:sl,isHz:1,seedTurn:(B.turn||1)+turns});
         fx({side:"mine",slot:sl,s:"summon",ring:"#9640c8",txt:"씨앗",cls:"shd",gap:120}); n++; mine++; continue }
       const m=spawnFoeNamed("오염된 씨앗",sl,{summoned:1});
-      if(m){ m.maxHp=s.seed.hp||40; m.hp=m.maxHp; m.seedTurn=(B.turn||1)+turns; m.exp=0; n++;
+      if(m){ /* ⚠️ 그냥 덮어쓰면 spawnFoeNamed 가 매긴 강화가 통째로 날아간다 (사용자 2026-10-20).
+               표(FOE)와 같은 셈으로 다시 매긴다 */
+        if(s.seed.hp){ const sc=foeScale(B.kind);
+          m.maxHp=Math.round(s.seed.hp*sc.m*sc.hpP)+sc.hpAdd; m.hp=m.maxHp }
+        m.seedTurn=(B.turn||1)+turns; m.exp=0; n++;
         fx({side:"foe",slot:sl,s:"summon",ring:"#9640c8",txt:"씨앗",cls:"shd",gap:120}) } }
     say(n?`${s.n} — 오염된 씨앗을 ${n} 심습니다${mine?` (대원 전장에 ${mine})`:""} — ${turns}턴 뒤에 자랍니다.`:`${s.n} — 심을 자리가 없습니다.`,"t3");
     if(n) rollIntents(true);
@@ -33677,7 +33744,10 @@ function foeOnHurt(f,d){
   if(foePas(f,"retreat")&&!f.big){ if(foeStep(f,+1,1)){ fx({side:"foe",slot:f.slot,s:"step",ring:"#9c8d77",gap:100}); say(`물러남 — ${f.name}${jo(f.name,"ig")} 한 칸 물러섭니다 → ${foeNo(f.slot)}번`,"t2") } }
 }
 /* 적 턴이 끝날 때 — 대원 전장의 오염된 덩굴이 옆 칸을 휘감는다 (사용자 2026-09-29 · 10-01 내 전장에서만) */
-const VINE_TICK={v:8,n:"휘감기",d:"적 턴이 끝날 때, 옆 칸(거리 1)의 대원에게 마법 피해를 8 줍니다."};
+/* 대원 전장에서 자란 덩굴 — 적이 아니라 B.hz 라 강화를 안 탔다 (사용자 2026-10-20).
+   v 는 밑값, vNow() 가 강화 배율의 반 몫을 얹은 **지금 값**이다. 글(d)도 지금 값으로 적는다 */
+const VINE_TICK={v:8,n:"휘감기",vNow(){ return foeGive(this.v) },
+  d(){ return `적 턴이 끝날 때, 옆 칸(거리 1)의 대원에게 마법 피해를 ${this.vNow()} 줍니다.` }};
 function vineEndPassives(){
   (B.hz||[]).filter(x=>x.vine).forEach(x=>{
     const L=allUnits().filter(u=>u.hp>0&&u.slot>0&&Math.abs(u.slot-x.slot)===1);
@@ -33685,7 +33755,7 @@ function vineEndPassives(){
     say(`${VINE_TICK.n} — 덩굴이 ${L.map(u=>u.name).join("")}을 휘감습니다.`,"t3");
     const src={name:x.name,alive:0};
     L.forEach(u=>{ fx({side:"mine",slot:u.slot,s:"mag",ring:"#9640c8",gap:100});
-      hurtAlly(src,u,VINE_TICK.v,VINE_TICK.n,"마법") });
+      hurtAlly(src,u,VINE_TICK.vNow(),VINE_TICK.n,"마법") });
   });
 }
 /* 적 턴이 끝날 때 — 마나 흐름 정제소의 칸별 약화 */
@@ -33712,17 +33782,22 @@ function skMoveHtml(s,t){
   if(s.push) P.push(moveArrow(-1,s.push===true?1:(s.push||1)));
   return P.join(" ");
 }
-function skEffectHtml(s){
+function skEffectHtml(s,f){
   if(!s) return "";
   const P=[];
   const deb=(k,v)=>{ const D=DEBUFF[k]; return D?`<span class="ideb kw" style="color:${D.c}" data-kw="${esc(D.n)}" data-tip="${esc(D.d||"")}">${bdIcon("o",D.n,D.n)}${v}</span>`:`${esc(k)} ${v}` };
   if(s.deb) Object.keys(s.deb).forEach(k=>P.push(deb(k,s.deb[k])));
   /* 칸이 좁다 — 짧게 */
-  if(s.shield) P.push(`${ic("def")}${s.shield}`);
-  if(s.eshield) P.push(`<span class="ideb kw" data-kw="에너지 보호막">${bdIcon("g","에너지 보호막","에너지 보호막")}${s.eshield}</span>`);
+  /* 보호막은 **실제로 얻을 값**으로 보인다 (사용자 2026-10-20 :
+     「추가 보호력이 있을 때 의도에 보호력이 더해지지 않은 수치로 보인다」).
+     ⚠️ 셈하는 자리와 똑같이 — 보호막은 skShield(싸우며 얻은 보호력을 얹는다) 뒤 addShield(보호약화면 절반),
+     에너지 보호막은 skShield 만 (f.eshield 에 바로 더해 addShield 를 지나지 않는다).
+     f 가 없는 자리(디버프만 뽑아 쓰는 데)는 적힌 값 그대로 */
+  if(s.shield) P.push(`${ic("def")}${f?shieldAfter(f,skShield(f,s.shield)):s.shield}`);
+  if(s.eshield) P.push(`<span class="ideb kw" data-kw="에너지 보호막">${bdIcon("g","에너지 보호막","에너지 보호막")}${f?foeGive(s.eshield):s.eshield}</span>`);
   if(s.taunt) P.push(`도발${s.taunt}`);
   if(s.thorn) P.push(`가시${s.thorn.v||s.thorn}`);
-  if(s.heal) P.push(`${ic("hp")}+${s.heal}`);
+  if(s.heal) P.push(`${ic("hp")}+${f?foeGive(s.heal):s.heal}`);
   if(s.buff&&s.defUp&&s.buff===s.defUp&&(!s.magUp||s.magUp===s.buff)) P.push(`<span class="ideb" style="color:#e0c85a">모든 능력치 +${s.buff}</span>`);
   else if(s.magUp) P.push(`마법+${s.magUp}`);   /* 마법력만 올리는 기술 (자가수리, 2026-10-15) */   /* 셋이 같은 값이면 한 줄로 (따라쟁이, 사용자 2026-10-08) */
   else{
@@ -33773,7 +33848,7 @@ function skIntentHtml(f,I){
     return `<span class="intent${e<I.v?" cut":""} ${I.el==="마법"?"t-mag":"t-atk"} kw" data-fintn="${esc(I.n)}" data-fintd="${tip}">${ic(I.el==="마법"?"mag":"atk")}<b>${e}</b>${
       I.hits>1?`<span class="hits">×${I.hits}</span>`:""}${ex} ${who}</span>`; }
   const k=(s&&(s.shield||s.eshield))?"def":(s&&(s.buff||s.snack||s.riot))?"atk":(s&&s.fire)?"atk":"move";
-  const eff=skEffectHtml(s)||esc(I.n);   /* 효과가 글로 안 되면 이름 */
+  const eff=skEffectHtml(s,f)||esc(I.n);   /* 효과가 글로 안 되면 이름 */
   const lead=(/^<svg/.test(eff)||/^<span class="ideb"/.test(eff)||(s&&s.partBuff)||k==="move")?"":ic(k)+" ";   /* 효과 글이 이미 아이콘으로 시작하면(보호막·회복·에너지·부정·부품) 앞 아이콘을 겹쳐 그리지 않는다 */
   const tclsk=(s&&(s.shield||s.eshield))?"t-def":(s&&(s.buff||s.snack||s.riot))?"t-atk":(s&&s.fire)?"t-atk":"t-move";
   return `<span class="intent${(s&&(s.buff||s.snack||s.riot))?" up":""} ${tclsk} kw" data-fintn="${esc(I.n)}" data-fintd="${tip}">${lead}${eff} ${who}</span>`;
@@ -34778,8 +34853,8 @@ function drawBattle(app){
       d.innerHTML+=`<div class="art">${hz.shardRub?shardArt("fx_shard_ground")||rubbleArt():hz.rubble?rubbleArt():hz.shard?shardArt("fx_shard_intact")||figure(hz.name):figure(hz.name)}</div>
         <div class="nm">${esc(hz.name)}</div>
         <div class="st t">${hz.rubble?bd("t","잔해","잔해",hz.rubTip||"부서진 저주받은 성벽의 잔해가 칸을 막고 있습니다.","잔해"):hz.shard?bd("t","고대의 파편",`${shardLeft(hz)}턴`,`${shardLeft(hz)}턴 뒤에 터져 양옆 칸에 공격 피해 ${hz.v}를 줍니다.`,"고대의 파편"):hz.vine   /* 적의 지속 능력처럼 — 느낌표 + 이름, 올리면 풀이 (사용자 2026-10-01) */
-          ?bd("t","휘감기","휘감기",VINE_TICK.d,"휘감기")
-          :bd("t","씨앗",left?`${left}턴 뒤 자람`:"곧 자람",`${left?left+"턴 뒤":"곧"} 오염된 덩굴로 자랍니다. 자라면 적 턴이 끝날 때 옆 칸 대원에게 마법 피해를 ${VINE_TICK.v} 줍니다. 잔해처럼 칸을 막고 있어 겨누거나 부술 수 없습니다.`,"씨앗")}</div>`;
+          ?bd("t","휘감기","휘감기",VINE_TICK.d(),"휘감기")
+          :bd("t","씨앗",left?`${left}턴 뒤 자람`:"곧 자람",`${left?left+"턴 뒤":"곧"} 오염된 덩굴로 자랍니다. 자라면 적 턴이 끝날 때 옆 칸 대원에게 마법 피해를 ${VINE_TICK.vNow()} 줍니다. 잔해처럼 칸을 막고 있어 겨누거나 부술 수 없습니다.`,"씨앗")}</div>`;
       my.appendChild(d); continue;
     }
     if(peekFoe&&dist(s,peekFoe.slot)<=peekFoe.rng) d.classList.add("inrng");
@@ -34819,8 +34894,9 @@ function drawBattle(app){
          칸과 약화의 짝은 foeEndPassives 의 MAP 과 같은 것을 쓴다 — 글이 아니라 코드를 따른다 */
       const mrf=mrfAuraHtml(s);
       const iraa=iraAuraHtml(h);   /* 복수귀 오라 — 켜져 있는 동안 몸을 감싼다 (2026-10-13) */
-      const esW=h.eshield?Math.max(6,Math.min(45,h.eshield/h.maxHp*100)):0;
-      const shW=h.shield?Math.max(6,Math.min(45,h.shield/h.maxHp*100)):0;
+      const esW0=h.eshield?Math.max(6,Math.min(45,h.eshield/h.maxHp*100)):0;
+      const shW0=h.shield?Math.max(6,Math.min(45,h.shield/h.maxHp*100)):0;
+      const [esW,shW]=barWard(esW0,shW0,h.hp/h.maxHp*100);   /* 둘의 합이 체력을 덮지 않게 (2026-10-20) */
       if(h.isMin&&h.mimic&&h.mimic.act) d.innerHTML+=`<div class="intentbar">${mimicHtml(h)}</div>`;
       d.innerHTML+=`<div class="res">${manaPips(h)}${heroRes(h)}${
           h.mom?`<span class="rr">${ic("move")}${h.mom}</span>`:""}</div>${h.isMin?"":gearRow(h)}
@@ -34932,8 +35008,9 @@ function drawBattle(app){
       const pf2=f.big&&B.portals&&B.portals.find(p=>p.side==="foe"&&p.slot===s+1);
       const pdoor=k=>`<i class="portal${f.big?" "+k:""}" style="background-image:url(${skinIcon("portal_idle")})"></i>`;
       const pfk=((pf&&!pf.fresh)?pdoor("pl"):"")+((pf2&&!pf2.fresh)?pdoor("pr"):"");
-      const fesW=f.eshield?Math.max(6,Math.min(45,f.eshield/f.maxHp*100)):0;
-      const fshW=f.shield?Math.max(6,Math.min(60,f.shield/f.maxHp*100)):0;
+      const fesW0=f.eshield?Math.max(6,Math.min(45,f.eshield/f.maxHp*100)):0;
+      const fshW0=f.shield?Math.max(6,Math.min(60,f.shield/f.maxHp*100)):0;
+      const [fesW,fshW]=barWard(fesW0,fshW0,shownHp(f)/f.maxHp*100);   /* 적은 45+60=105% 까지 갔다 (2026-10-20) */
       const tier=foeTier(f);
       d.classList.add("t-"+tier);
       const fsz=tier==="boss"?"boss":ELITE_NAMES[f.name]?"lead":"";
