@@ -5690,12 +5690,12 @@ body.vnew #app button.trait-choice:focus-visible{outline:2px solid #e6b3a2;outli
 .trait-chosen{animation:traitChosen .42s ease-out both}
 .trait-faded{opacity:.28}
 @keyframes traitChosen{0%{transform:scale(1);filter:brightness(1)}45%{transform:scale(1.06);filter:brightness(1.8) drop-shadow(0 0 24px #e65c76)}100%{transform:scale(1.02);filter:brightness(1.2)}}
-body.vnew #app .rw.rwpick.trait-guarantee{background-image:url("ui/menu-card-companion-dark-red-gem-384x512.png")!important;background-size:100% 100%;background-position:center;background-repeat:no-repeat;border-image:none!important;animation:traitRewardIn .65s ease-out both,traitRewardGlow 2.8s .65s ease-in-out infinite}
+body.vnew #app .rw.rwpick.trait-guarantee{background-image:url("ui/menu-card-companion-dark-red-gem-384x512.png")!important;background-size:100% 100%;background-position:center;background-repeat:no-repeat;border-image:none!important;animation:traitRewardGlow 2.8s ease-in-out infinite}
+body.vnew #app .rw.rwpick.trait-guarantee.rrin{animation:rrIn .42s cubic-bezier(.2,.9,.3,1.2) both,traitRewardGlow 2.8s ease-in-out infinite}
 body.vnew #app .rw.rwpick.trait-guarantee .ownmark{display:none}
 body.vnew #app .rw.rwpick.trait-guarantee{overflow:visible}
 .trait-overlabel{position:absolute;top:-34px;left:0;right:0;text-align:center;font-family:var(--serif);font-size:18px;line-height:26px;letter-spacing:.15em;color:#f1b9b8;text-shadow:0 2px 2px #000;pointer-events:none}
 body.vnew #app .rewards:has(.trait-guarantee){margin-top:48px}
-@keyframes traitRewardIn{0%{transform:translateY(22px) scale(.94);filter:brightness(.7)}60%{filter:brightness(1.6) drop-shadow(0 0 20px #ba2e4c)}100%{transform:none;filter:brightness(1.05)}}
 @keyframes traitRewardGlow{0%,100%{filter:brightness(1.02) drop-shadow(0 0 5px #733044)}50%{filter:brightness(1.15) drop-shadow(0 0 14px #bb3c59)}}
 .hero-trait-info{margin:12px 0;padding:10px 0;border-top:1px solid #654453;border-bottom:1px solid #654453;display:flex;flex-wrap:wrap;gap:8px;color:#bbaa97;font-size:12px}
 .hpanel .hero-trait-toggle{font:inherit;color:#efb7b0;background:none;border:0;border-bottom:1px solid #98616c;border-radius:0;padding:2px 0;cursor:pointer;text-align:left}
@@ -6983,7 +6983,7 @@ const FOE_FOCUS_Z=1.16, FOE_FOCUS_IN=420, FOE_FOCUS_OUT=250;
 /* 전투 값은 즉시 확정하고, 화면 사본만 각 행동의 연출 시점에 갱신한다.
    다시 그리거나 전투를 떠나도 실제 피해·회복·소환 결과는 사라지지 않는다. */
 let FOE_VIEW=null;
-const FOE_VIEW_KEYS="fuelHeat fuelDue fuelPower repairId name hp maxHp shield eshield slot alive down downSlot mana maxMana atk mag def rng stun stop chg taunt thorn evade hide swallowed atkUp magUp defUp deb intent intent2 rew negShield armor buffs big dieHold wreck".split(" ");
+const FOE_VIEW_KEYS="fuelHeat fuelDue fuelPower repairId name hp maxHp shield eshield slot alive down downSlot mana maxMana atk mag def rng stun stop chg taunt thorn evade hide swallowed grimoireMarks atkUp magUp defUp deb intent intent2 rew negShield armor buffs big dieHold wreck".split(" ");
 const FOE_VIEW_DELTA=new Set("hp maxHp shield eshield mana atk mag def atkUp magUp defUp".split(" "));
 function foeViewActive(){ return FOE_VIEW&&FOE_VIEW.battle===B&&view==="battle"?FOE_VIEW:null }
 function foeViewShot(u){
@@ -8349,7 +8349,7 @@ function playFX(o){
     if(o.block) blockFX(o.side,o.slot);
     else        p.e.classList.add("shake","flashd");
   }
-  if(o.pose) setPose(o.side,o.slot,o.pose,o.poseMs);
+  if(o.pose) setPose(o.side,o.slot,o.pose,o.poseMs,o.poseBreak);
   if(o.big){ bigPoseFX(p,o.big,o.bigGlow);    /* 강조 자세 — 조금 커지고 빛난다 (사용자 2026-09-30) */
     /* 기술이 판을 다시 그리면(시공간 폭탄) 그림이 새것으로 갈려 움직임이 끊긴다 — 한 번 더 건다 */
     const sd=o.side, sl=o.slot, e0=p.e;
@@ -10463,10 +10463,13 @@ function windStrong(h,nth){
   const every=(h.potential&&t.potentialEvery)||t.windEvery||3;
   return !!(t.alwaysStrong||(nth%every===0));
 }
-function setPose(side,slot,pose,ms){
+function setPose(side,slot,pose,ms,interrupt){
   const p=ctrOf(side,slot); if(!p) return;
   const img=p.e.querySelector("img.pxs[data-nm]"); if(!img) return;
-  if(img._strip>Date.now()) return;   /* 자세 띠가 도는 중 — 띠가 임자다 (76) */
+  if(img._strip>Date.now()){
+    if(!interrupt)return;
+    img._strip=0;delete img._stripToken;   /* 샘의 잔영 반격: 시전 띠보다 피격 자세를 우선한다. */
+  }
   { const _su=(side==="mine")?unitAt(slot):foeShownAt(slot); if(_su&&stopped(_su)) return; }   /* 정지 — 자세를 바꾸지 않는다 (2026-10-07) */
   if(side==="foe"&&img.dataset.nm==="꼭두각시"&&pose==="atk"){
     const shown=foeViewAt("foe",slot),unit=shown&&(shown._viewReal||shown);
@@ -10513,11 +10516,13 @@ function poseStripFX(side,slot,key,frameMs,opt){
   for(let i=0;i<ORD.length;i++){ at.push(Math.round(acc*SPD));
     acc+=AR?(frameMs[i]||frameMs[frameMs.length-1]||120):(frameMs||120) }
   const tot=Math.round(acc*SPD);
+  const token={};img._stripToken=token;
   img._strip=Date.now()+tot;   /* 이 동안은 setPose 가 비켜 간다 */
-  ORD.forEach((fi,i)=>setTimeout(()=>{ if(img.isConnected) img.src=A[fi] },at[i]));
+  ORD.forEach((fi,i)=>setTimeout(()=>{ if(img.isConnected&&img._stripToken===token) img.src=A[fi] },at[i]));
   if(opt&&opt.shakeAt!=null&&at[opt.shakeAt]!=null)
     setTimeout(()=>poseShake(side,slot,Math.round((AR?(frameMs[opt.shakeAt]||200):frameMs||200)*SPD)),at[opt.shakeAt]);
-  img._pt=setTimeout(()=>{ img._pt=0; img._strip=0;
+  img._pt=setTimeout(()=>{ if(img._stripToken!==token)return;
+    delete img._stripToken;img._pt=0; img._strip=0;
     if(back&&img.isConnected){ img.src=back.u; img.style.setProperty("--ph",back.ph) } },tot);
   return tot;
 }
@@ -12133,7 +12138,7 @@ function golemMerge(h){
   const m=B.hand.find(c=>c&&c.type==="part"&&c.kind==="mat");
   const so=B.hand.find(c=>c&&c.type==="part"&&c.kind==="soul");
   if(!m||!so) return 0;
-  B.hand=B.hand.filter(c=>c!==m&&c!==so);
+  B.hand=B.hand.filter(c=>c!==m&&c!==so);handRefill();
   const p=h&&h.slot>0?h.slot:null;
   if(p) fx({side:"mine",slot:p,s:sfxOr("골렘 창조","summon"),ring:"#c9a227",glow:1,txt:"창조",cls:"shd",gap:120});
   say(`${m.part}${jo(m.part,"gwa")} ${so.part}${jo(so.part,"ig")} 하나로 합쳐집니다 — 하수인 골렘.`,"t1");
@@ -14127,7 +14132,7 @@ const HERO_REWARDS={
   R("뒷골목 거래","하급","다음 1회의 상점에 50% 할인된 하급 보상 품목을 2개 추가합니다.",
     h=>{ run.backAlley=(run.backAlley||0)+1 }),
   R("부착: 반동 패드","하급","데린저가 무기를 사용한 후, 보호막을 1 얻습니다.",
-    h=>h.tag.shotShield=(h.tag.shotShield||0)+1),
+    h=>h.tag.shotShield=(h.tag.shotShield||0)+1,0.5),
   R("야전신발","하급","전투 시작 후, 소멸성인 간이 신발을 2장 얻습니다. 이번 원정 동안 데린저가 이동한 후 추진력을 1 얻습니다.",
     h=>{ h.tag.startShoes=(h.tag.startShoes||0)+2; h.tag.moveMom=(h.tag.moveMom||0)+1 }),
   R("부착: 개머리판","하급","내 턴이 끝날 때, 추진력을 2 소모하고 내 다음 무기 피해량이 1 증가합니다.",
@@ -17374,10 +17379,10 @@ const FOE={
     {n:"발묶기",w:2,tg:"near",deb:{bind:1},d:"가장 가까운 상대에게 속박을 1 부여합니다."}],
    hit:"때리기"},
  /* 고철 거인 — 적으로는 지웠다 (사용자 2026-10-12: 옛 2구역 우두머리, 콜로서스로 바뀐 뒤 어디에도 안 섰다). 그림 표 · 대사는 그대로 둔다 (얼음 정령과 같은 꼴) */
- /* 탑의 주인 — 3구역 우두머리 1페이즈 (사용자 2026-10-12, 문서/작업중-탑의주인.md). 체력 900 고정 · 마법 · 사거리 9 · 인간. 죽으면 초월한다(마력의 초월체, 다음 덩이).
+ /* 탑의 주인 — 3구역 우두머리 1페이즈 (사용자 2026-10-12, 문서/작업중-탑의주인.md). 체력 1000 고정 · 마법 · 사거리 9 · 인간. 죽으면 초월한다(마력의 초월체, 다음 덩이).
     ⚠️ 숫자는 사용자가 글에 적은 것만 확정이다 — atk(마법력 바닥) · def · exp 는 임시, 재서 맞춘다. 패턴 글은 사용자가 적은 그대로다.
     ⚠️ 새 능력은 지속 능력 배열의 맨 뒤에 붙인다(글 고침 표가 번호로 찾는다). 죽음(초월)과 마력의 초월체는 다음 덩이 */
- "탑의 주인":  {hp:900,fixHp:1,atkScale:0,atk:6,def:10,rng:9,exp:40,boss:1,solo:1,bossSlot:3,introDark:1,transcendTo:"마력의 초월체",heavyMove:1,   /* 돌덩이가 쿵 (사용자 2026-10-13) */   /* 도감에 든다 · 암전 뒤 등장 (사용자 2026-10-13) */   /* solo — 호위 없이 적 진영 가운데(5칸의 3번)에 혼자 선다. 졸개는 시간의 정령으로 스스로 부른다 (사용자 2026-10-13, 콜로서스와 같은 길) */   /* atkScale 0 — 구역 배율로 기술 숫자를 안 올린다: 사용자가 글에 적은 8 · 1x3 · 2x2 가 그대로 들어간다 (2026-10-12, 재서 맞춘다) */
+ "탑의 주인":  {hp:1000,fixHp:1,scaleStats:1,atk:6,def:10,rng:9,exp:40,boss:1,solo:1,bossSlot:3,introDark:1,transcendTo:"마력의 초월체",heavyMove:1,   /* 돌덩이가 쿵 (사용자 2026-10-13) */   /* 도감에 든다 · 암전 뒤 등장 (사용자 2026-10-13) */   /* solo — 호위 없이 적 진영 가운데(5칸의 3번)에 혼자 선다. 졸개는 시간의 정령으로 스스로 부른다 (사용자 2026-10-13, 콜로서스와 같은 길) */   /* 체력만 고정하고 공격력·마법력은 일반 적 강화 계산을 유지한다 (사용자 2026-10-19). */
    el:"마법",
    gim:{neg:10},
    pas:[{k:"mpAbsorb",per:20,atk:1,n:"마력 흡수",kw:"마력",d:"상대가 마나를 사용할 때마다 그만큼 마력을 얻습니다. 마력을 20 얻으면 마법력을 1 얻습니다."},
@@ -17398,9 +17403,9 @@ const FOE={
     {n:"기억 저장",w:3,tg:"none",cond:"charged",must:1,spend:1,memBack:1,d:"2턴 동안 충전 상태가 됩니다. 충전이 끝나면 충전 상태가 되었을 때의 체력으로 돌아옵니다."},
     {n:"시간의 정령",w:1,tg:"none",summon:{pool:["마나 결정체","흘러나온 시간","결정에 갇힌 잔영"],min:1,max:2},holdUntilDead:1,d:"탑의 정령을 소환합니다. 소환한 정령들이 죽을 때까지 정지 상태가 됩니다."}],
    hit:"마력의 지팡이"},
- /* 마력의 초월체 — 3구역 우두머리 2페이즈 (탑의 주인이 죽으면 그 자리에 선다, 사용자 2026-10-12). 체력 900 고정 · 마법과 공격 · 사거리 9 · 초월체.
+ /* 마력의 초월체 — 3구역 우두머리 2페이즈 (탑의 주인이 죽으면 그 자리에 선다, 사용자 2026-10-12). 체력 1000 고정 · 마법과 공격 · 사거리 9 · 초월체.
     패턴 열둘은 다음 덩이(고리를 쓰는 다섯은 고리 그림을 붙인 뒤). ⚠️ 새 능력은 지속 능력 배열의 맨 뒤에 붙인다. atk · def · exp 는 임시(탑의 주인과 같다) */
- "마력의 초월체":  {hp:900,fixHp:1,atkScale:0,atk:6,def:10,rng:9,exp:60,boss:1,bossSlot:3,dexHide:1,ghostMove:1,   /* 떠 있는 몸 — 잔상을 남기며 미끄러진다 (사용자 2026-10-13) */
+ "마력의 초월체":  {hp:1000,fixHp:1,scaleStats:1,atk:6,def:10,rng:9,exp:60,boss:1,bossSlot:3,dexHide:1,ghostMove:1,   /* 떠 있는 몸 — 잔상을 남기며 미끄러진다 (사용자 2026-10-13) */
    el:"마법",
    pas:[{k:"mpAbsorb",per:20,atk:4,n:"마력 흡수",kw:"마력",d:"상대가 마나를 사용할 때마다 그만큼 마력을 얻습니다. 마력을 20 얻으면 마법력을 4 얻습니다."},
         {k:"ring",n:"마력의 고리",d:"반경 1의 마력의 고리를 지닙니다. 마력을 20 얻으면 고리의 반경이 1 증가합니다."},
@@ -17966,7 +17971,7 @@ const KW_ICON={
   "흡수":"status_absorb","도발":"status_taunt","회피":"status_evade","가시":"status_thorns","은신":"status_stealth","갑피":"status_carapace",
   "부정 보호막":"status_negative_shield","에너지 보호막":"status_energy_shield",
   "빔 광선 충전":"status_col_beam",   /* 콜로서스 — 받은 버프 그림 colossus-beam-charge-buff (사용자 2026-10-07) */
-  "죽음":"status_death","메아리":"status_echo","정밀 표식":"status_precision_mark","표식":"status_precision_mark",
+  "죽음":"status_death","메아리":"status_echo","정밀 표식":"status_precision_mark","표식":"status_precision_mark","그리모어 표식":"item_rare_grimoire",
   "저주":"combat_kill",   /* 마나 저주(에너지 과부하 등) — 보상의 해골 그림 (사용자 2026-09-30, 전엔 '저' 글자) */   /* 열쇠말 전용 (status-effects-v3, 2026-09-29) */
   "소환물":"puppet",
   "공중에 뜸":"wind","공중":"wind","거리 제한 없음":"charge",
@@ -18089,6 +18094,7 @@ function foeStatusRows(f){
   if(f.stun&&!deb(f,"stun")) o.push(bd("o","기절","",DEBUFF.stun.d));
   if(f.burn) o.push(bd("o","화상",f.burn,DEBUFF.burn.d));
   if(f.mark) o.push(bd("o","정밀 표식",f.mark,"이테리오의 공격 피해가 치명타가 되고 표식이 하나 사라집니다.","정밀 표식"));
+  if(grimoireCount(f))o.push(bd("o","그리모어 표식",grimoireCount(f),`표식을 남긴 대원(${Object.keys(f.grimoireMarks).join(", ")})의 마법 피해가 치명타로 적용됩니다. 정밀 표식과 별개이며 공격해도 소모되지 않습니다.`,"그리모어 표식"));
   if(f.scent) o.push(bd("o","사냥감 냄새",f.scent,"오리온의 「악마뼈 쇠뇌」가 이 적을 겨눌 수 있습니다. 쏘면 표식이 하나 사라집니다.","사냥감 냄새"));
   /* 데린저의 조준 — **조준당한 적 쪽**에 띄운다 (사용자 2026-10-15 : 「누굴 조준했는지 알기 힘들다」).
      상태는 데린저가 들고 있다(h.aimAt) — 적에게 거는 디버프가 아니라서 여기서 되물어 그린다.
@@ -20811,19 +20817,36 @@ function setSlot(i){ SLOT=i; try{ localStorage.setItem(SLOT_KEY,String(i)) }catc
 function anySave(){ for(let i=0;i<SAVE_SLOTS;i++) if(savePeek(i)) return true; return false }
 function firstEmptySlot(){ for(let i=0;i<SAVE_SLOTS;i++) if(!savePeek(i)) return i; return -1 }
 
-/* 손패에 들고 있을 수 있는 **서로 다른 카드**의 수 (사용자 2026-10-13).
-   꽉 차 있으면 새로 들어오는 카드는 **그대로 사라진다**.
-   ⚠️ **대원 카드는 세되 버리지 않는다** — 버리면 그 대원을 영영 못 낸다.
-   ⚠️ 쌓이는 방어구 카드(giveArmor)는 손에 같은 것이 있으면 **장수만 올린다** — 그 길은 여기 안 온다.
-   ⚠️ 카드가 손에 들어오는 길은 **여기 하나**다 (B.hand.push 를 쓰지 말 것) */
+/* 손패 10칸에는 남은 대원 카드도 센다. 첫 대원을 배치하기 전에는
+   나머지 카드를 대기열에 보관하고, 배치 후 빈칸마다 먼저 받은 순서로 채운다. */
 const HAND_MAX=10;
+function handRefill(){
+  if(!B||!B.hand||B.handOpen===false||B.over)return;
+  const q=B.handQueue||[];let part=false;
+  while(q.length&&B.hand.length<HAND_MAX){
+    const c=q.shift();if(c.stock&&!(run.cards||[]).some(x=>x.n===c.stock&&x.c>0))continue;
+    delete c.arrive;B.hand.push(c);if(c.type==="part")part=true;
+  }
+  if(part&&!B.golem)golemMerge(run.heroes.find(h=>h.name==="파벨"));
+}
+function handOpenFor(h){
+  if(!B||!run||!run.heroes.includes(h)||!(h.slot>0))return;
+  B.handOpen=true;handRefill();
+}
 function handAdd(c){
-  if(!B||!B.hand||!c) return false;
-  if(c.type!=="hero"&&B.hand.length>=HAND_MAX){
-    const nm=c.name||"카드";
-    say(`손패가 가득 차 ${nm}${jo(nm,"eul")} 들지 못했습니다. (${HAND_MAX}장)`,"t2");
-    return false }
-  B.hand.push(c); return true;
+  if(!B||!B.hand||!c)return false;
+  if(c.type==="hero"){
+    B.hand.push(c);
+    if(B.hand.length>HAND_MAX){
+      const i=B.hand.findLastIndex(x=>x.type!=="hero");
+      if(i>=0)(B.handQueue||(B.handQueue=[])).unshift(B.hand.splice(i,1)[0]);
+    }
+  }else if(B.handOpen!==false&&B.hand.length<HAND_MAX&&!(B.handQueue||[]).length){
+    B.hand.push(c);
+  }else{
+    (B.handQueue||(B.handQueue=[])).push(c);handRefill();
+  }
+  return true;
 }
 /* ═══ 카드를 손에 넣는 길은 **여기 하나다** ═══ (사용자 2026-10-15 · 쌓기는 2026-10-16)
    글과 **쓰는 길**은 CARD_LIB 한 곳에서 가져온다.
@@ -20839,7 +20862,7 @@ function handAddCard(nm,opt,n){
   const want=Math.max(1,n||1);
   const o=Object.assign({},opt||{});
   /* 이미 손에 있는 같은 카드 — 쌓기만 한다 (소멸성 여부 · 임자가 같아야 한 장이다) */
-  const have=(typeof B!=="undefined"&&B&&B.hand||[]).find(c=>c&&c.type==="item"&&c.name===nm&&!c.stock
+  const have=(typeof B!=="undefined"&&B?[...(B.hand||[]),...(B.handQueue||[])]:[]).find(c=>c&&c.type==="item"&&c.name===nm&&!c.stock
     &&!!c.gone===!!o.gone&&(c.by||null)===(o.by||null));
   if(have){
     const cap=(typeof ARMOR_CARDS!=="undefined"&&ARMOR_CARDS[nm])?ARMOR_HOLD:HAND_STACK;
@@ -20850,10 +20873,11 @@ function handAddCard(nm,opt,n){
   }
   return handAdd(Object.assign({type:"item",name:nm},L,o,{n:want}));
 }
-function handPack(){
-  return (B.hand||[]).map(c=>{
+function handPack(cards=B.hand){
+  return (cards||[]).map(c=>{
     if(c.type==="hero")   return {t:"hero",n:c.hero.name};
-    if(c.type==="summon") return {t:"summon",n:c.name,gone:c.gone?1:0};
+    if(c.type==="summon") return {t:"summon",n:c.name,gone:c.gone?1:0,stock:c.stock||null,mat:c.mat||null,soul:c.soul||null};
+    if(c.type==="part") return {t:"part",n:c.name,kind:c.kind,part:c.part,d:c.d,gone:c.gone?1:0};
     if(c.gone&&!c.stock&&CARD_LIB[c.name]) return {t:"gone",n:c.name,cnt:c.n||1,by:c.by||null};   /* 소멸성 카드 (감시 · 사기꾼의 패) — 전에는 방어구로 되살아났다 */
     if(c.stock)           return {t:"stock",n:c.stock,d:c.d};
     return {t:"armor",n:c.name,d:c.d,by:c.by||null,cnt:c.n||1};   /* giveArmor 로 들어온 방어구 (쌓인 장수까지) */
@@ -20866,7 +20890,8 @@ function handUnpack(list){
       const h=run.heroes.find(x=>x.name===c.n);
       if(h) out.push({type:"hero",hero:h});
     }
-    else if(c.t==="summon") out.push(c.gone?{type:"summon",name:c.n,gone:1}:{type:"summon",name:c.n});
+    else if(c.t==="summon") out.push({type:"summon",name:c.n,gone:c.gone?1:0,stock:c.stock||undefined,mat:c.mat||undefined,soul:c.soul||undefined});
+    else if(c.t==="part") out.push({type:"part",name:c.n,kind:c.kind,part:c.part,d:c.d,gone:c.gone?1:0});
     else if(c.t==="gone"){ const L=CARD_LIB[c.n]; if(L)out.push(Object.assign({type:"item",name:c.n},L,{gone:1,n:c.cnt||1,by:c.by||null})) }
     else if(c.t==="stock"){
       const L=CARD_LIB[c.n];
@@ -20925,7 +20950,7 @@ function saveGame(){
     if(B&&view==="battle"&&!B.over){
       bat=encRef({kind:B.kind,turn:B.turn,log:B.log.slice(-60),
                   foes:B.foes,mins:B.mins||[],portals:B.portals||[],hz:B.hz||[],
-                  corpseUsed:B.corpseUsed||0,hand:handPack()},hs);
+                  corpseUsed:B.corpseUsed||0,hand:handPack(),handOpen:B.handOpen!==false,handQueue:handPack(B.handQueue)},hs);
     }
     localStorage.setItem(slotKey(SLOT),JSON.stringify({
       v:1, at:Date.now(), view:view, heroes:heroes, run:runS,
@@ -20978,7 +21003,8 @@ function loadGame(i){
       B={kind:b.kind,turn:b.turn,over:0,busy:0,log:b.log||[],hand:[],units:[],
          foes:b.foes||[],mins:b.mins||[],portals:b.portals||[],hz:b.hz||[],
          corpseUsed:b.corpseUsed||0,drag:null};
-      B.hand=handUnpack(b.hand);
+      B.foes.forEach(migrateGrimoireMark);
+      B.hand=handUnpack(b.hand);B.handOpen=b.handOpen!==false;B.handQueue=handUnpack(b.handQueue);handRefill();
       B.hand.forEach(c=>{ delete c.arrive });   /* 저장된 도착 연출은 재개하지 않는다 — 이어하기 첫 턴부터 손패를 보인다 */
       /* fearSrc 는 uid() 로 만든 문자열이라 그대로 실려 온다.
          객체로 되살리면 uid(x)===f.fearSrc 비교가 깨지므로 손대지 않는다. */
@@ -21006,6 +21032,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 190, "v": "0.7", "d": "2026-10-19", "t": "대원 우선 손패·표식과 특성 보정·현상 수배 복제·잔영 피격", "big": 0},
  {"b": 189, "v": "0.7", "d": "2026-10-19", "t": "연막 주머니 즉시 사용·삼키기 거리 제한 제거·다중 연막탄 희귀도 조정", "big": 0},
  {"b": 188, "v": "0.7", "d": "2026-10-19", "t": "특성 보상 틀 수정·초기 적 편성 조정·대원 레벨과 특성 보상 목록", "big": 0},
  {"b": 187, "v": "0.7", "d": "2026-10-19", "t": "장신구 균형·되감기 수정·변형 무작위3종과 특성/카드 안내 정비", "big": 0},
@@ -22387,7 +22414,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=189;
+const BUILD_NO=190;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -24645,7 +24672,7 @@ function sandRestartBattle(){
  sandRebuild();run.dun.forceFoes=rows;run.sandOpen=0;
  run.heroes.forEach(h=>h.summoned=0);startBattle("battle");if(!rows.length)sandClearFoes();sandRescaleFoes();
  run.heroes.forEach((h,i)=>{h.slot=slots[i]||5-i;onSummon(h);const v=sandValues(h);for(const k in v)sandSet(h,k,v[k]);h.hp=Math.min(h.hp,h.maxHp)});
- B.hand=B.hand.filter(c=>c.type!=="hero");B.busy=0;B.over=0;rollIntents();sel=null;view="battle";render();
+ B.hand=B.hand.filter(c=>c.type!=="hero");handRefill();B.busy=0;B.over=0;rollIntents();sel=null;view="battle";render();
 }
 function sandResetBodies(){
  sandboxTick();B.foes.forEach(f=>{f.wreck=0;f.dieHold=0;f.stop=0;if(f.name==='연료 장치'){f.fuelHeat=0;f.fuelDue=null}if(f.name==='실험 책임자')f.repairId=null});
@@ -24838,7 +24865,7 @@ function sandHero(){ return (run&&run.heroes.find(h=>h.name===run.sandFocus))||r
 function sandRwOf(h){ run.sandRwOf=run.sandRwOf||{}; return run.sandRwOf[h.name]=run.sandRwOf[h.name]||[] }
 /* 보유 카드(run.cards)를 판 전체가 나눠 쓰므로 대원 모두를 한꺼번에 다시 입힌다 */
 function sandRebuild(){
-  run.cards=[]; B.hand=(B.hand||[]).filter(c=>!c.stock);
+  run.cards=[]; B.hand=(B.hand||[]).filter(c=>!c.stock);B.handQueue=(B.handQueue||[]).filter(c=>!c.stock);
   run.heroes.forEach(sandRebuild1);
   /* 보유 카드가 생겼으면(임프 무리 등) 손에도 한 장 — 전투 시작 때와 같은 꼴 */
   (run.cards||[]).forEach(cd=>{ if(SUMMONS[cd.n]&&!B.hand.some(c=>c.stock===cd.n))
@@ -26836,9 +26863,11 @@ function foeFix(f,keepHp){
   const D=FOE[f.name]; if(!D||!D.fixHp) return f;
   if(D.summoned){f.summoned=1;f.exp=0}
   if(!keepHp){ f.maxHp=D.hp; f.hp=D.hp }
-  f.atk=D.atkScale?Math.round(D.atk*(1+(foeScale((B&&B.kind)||"boss").m-1)*D.atkScale)):D.atk;
-  { const mb=(D.mag!=null?D.mag:D.atk);   /* 마법력도 같은 셈 (2026-10-15) */
-    f.mag=D.atkScale?Math.round(mb*(1+(foeScale((B&&B.kind)||"boss").m-1)*D.atkScale)):mb }
+  if(!D.scaleStats){   /* 체력만 고정한 적은 생성 때 계산한 일반 강화 능력치를 유지한다. */
+    f.atk=D.atkScale?Math.round(D.atk*(1+(foeScale((B&&B.kind)||"boss").m-1)*D.atkScale)):D.atk;
+    const mb=(D.mag!=null?D.mag:D.atk);
+    f.mag=D.atkScale?Math.round(mb*(1+(foeScale((B&&B.kind)||"boss").m-1)*D.atkScale)):mb;
+  }
   f.def0=f.def; f.ph=1;
   return f;
 }
@@ -27881,7 +27910,7 @@ function rollChest(kind){
 }
 function openChest(kind){
   let list=rollChest(kind);
-  if(run.chestTwice){ run.chestTwice=0; list=list.concat(rollChest(kind)); toast("현상 수배 — 보상을 한 번 더 받습니다.") }
+  if(run.chestTwice&&kind==="elite"){ run.chestTwice=0; list.forEach(x=>x.copies=2); toast("현상 수배 — 같은 보상을 한 번 더 받습니다.") }
   if(run.dun&&run.dun.expGot) list.unshift({t:"경험치",v:run.dun.expGot,info:1});   /* 전투에서 이미 받은 경험치 — 금화처럼 보여만 준다 */
   run.chest={kind:kind,list:list,idx:0,opened:0};
   view="chest"; render();
@@ -27923,7 +27952,7 @@ function drawChest(app){
       :x.t==="파편"?"무작위 파편 장신구":x.t==="일반"?"무작위 일반 장신구"
       :x.t==="동료"?"새로운 대원 영입":`${x.t} 보상`;
     row.appendChild(el(`<div class="rw ro${gcls(x.t)}"><div class="rwi">${chestIcon(x.t)}</div>
-      <b>${esc(label)}</b>${(x.t==="금화"&&gm>1)
+      <b>${esc(label)}${x.copies===2?" ×2":""}</b>${(x.t==="금화"&&gm>1)
         ?`<p style="color:var(--brass)">죄악의 목걸이 +${Math.round((gm-1)*100)}% (원래 ${x.v})</p>`:""}${x.info?`<p style="color:var(--faint)">${esc(expByTxt())}</p>`:""}</div>`));
   });
   wrap.appendChild(row);
@@ -28026,22 +28055,23 @@ function chestOpenFX(box,grade,done,o){
 function takeChest(){
   const ch=run.chest, later=[];
   const isBoss=(ch.kind==="boss");
-  let exp=0;
+  let exp=0,expCopies=1;
   ch.list.forEach(x=>{
+    const copies=x.copies===2?2:1;
     if(x.t==="금화"){
       const raid=synOn("약탈자",2)?1.25:1;   /* 약탈자 2 (노트 2026-10-04) */
       const base=x.v, mul=(run.goldMul||1)*(run.wellGold?1.5:1)*(run.bountyGold?1.5:1)*raid;
-      const got=Math.round(base*mul);
+      const got=Math.round(base*mul)*copies;
       if(raid>1) setTimeout(()=>toast(`약탈자 — 전투 금화 +25%`),300);
       run.gold+=got;   /* 소리는 goldWatch 가 낸다 */
       if(run.bountyGold){ run.bountyGold=0; toast(`현상금 — 금화 ${base} → ${got} (+50%)`) }
       else if(run.wellGold){ run.wellGold=0; toast(`감옥의 우물 — 금화 ${base} → ${got} (+50%)`) }
       else if(mul>1) toast(`죄악의 목걸이 — 금화 ${base} → ${got} (+${Math.round((mul-1)*100)}%)`);
     }
-    else if(x.t==="경험치"){ if(!x.info) exp+=x.v }   /* 전투 경험치 칸은 보여 주기만 */
-    else if(x.t==="파편"||x.t==="일반"){ const it=rnd(ITEMS.filter(i=>i.g===x.t)); x.it=it; later.push({item:it}) }
+    else if(x.t==="경험치"){ if(!x.info){exp+=x.v;expCopies=copies} }   /* 전투 경험치 칸은 보여 주기만 */
+    else if(x.t==="파편"||x.t==="일반"){ const it=rnd(ITEMS.filter(i=>i.g===x.t)); x.it=it;for(let n=0;n<copies;n++)later.push({item:Object.assign({},it)}) }
     else if(x.t==="동료") later.push({recruit:1});
-    else later.push({grade:x.t,noRun:isBoss?1:0});
+    else later.push({grade:x.t,noRun:isBoss?1:0,bountyCopy:copies===2?1:0});
   });
   /* 오른쪽 목록에는 상자에 들어 있던 것을 다 보여 준다.
      금화·경험치는 여기서 바로 들어갔으므로 '받음' 으로 적어 둔다.
@@ -28051,12 +28081,12 @@ function takeChest(){
      목록이 상자 것만 담으면 화면과 목록이 한 칸씩 어긋나고, afterChest 의 길이 맞추기가
      엉뚱한 이름을 끝에 하나 더 붙인다 */
   run.afterList=(run.after||[]).map(x=>({t:afterName(x)}))
-    .concat(ch.list.map(x=>({t:x.t, v:x.v, it:x.it,
-      done:(x.t==="금화"||x.t==="경험치")?1:0})));
+    .concat(ch.list.flatMap(x=>Array.from({length:(x.t==="파편"||x.t==="일반")&&x.copies===2?2:1},()=>({t:x.t, v:x.v, it:x.it,copies:(x.t==="파편"||x.t==="일반")?1:x.copies,
+      done:(x.t==="금화"||x.t==="경험치")?1:0}))));
   run.afterUsed=0;
   run.chest=null;
   run.after=(run.after||[]).concat(later);   /* 남아 있던 뒷일을 지우지 않는다 */
-  if(exp) giveExp(exp,run.heroes.filter(h=>!h.down&&h.joined!==0));
+  if(exp) giveExp(exp,run.heroes.filter(h=>!h.down&&h.joined!==0),false,expCopies);
   if(isBoss&&run.pendingLv) run.pendingLv.forEach(x=>x.noRun=1);
   afterChest();
 }
@@ -28107,7 +28137,7 @@ function afterChest(){
     if(!run.heroOffer.length){ afterChest(); return }
     view="recruit"; render(); return;
   }
-  pending={hero:(nx.hero&&run.heroes.find(h=>h.name===nx.hero))||null,grade:nx.grade,free:1,back:"chain",noRun:nx.noRun||0}; view="reward"; render();
+  pending={hero:(nx.hero&&run.heroes.find(h=>h.name===nx.hero))||null,grade:nx.grade,free:1,back:"chain",noRun:nx.noRun||0,bountyCopy:nx.bountyCopy||0}; view="reward"; render();
 }
 /* 칸에서 쓴 시간을 지도로 나설 때 낸다.
    spend() 는 시간만 더하는 게 아니라 밤 전환과 날 넘김까지 태운다 —
@@ -28320,7 +28350,7 @@ function addExp(h,n){
   run.pendingLv=q;
   return n;
 }
-function giveExp(exp,pool,each){
+function giveExp(exp,pool,each,copies=1){
   pool=(pool&&pool.length)?pool:run.heroes.filter(h=>!h.down);
   if(!pool.length) pool=run.heroes.slice();
   if(each){
@@ -28344,6 +28374,7 @@ function giveExp(exp,pool,each){
   raw.map((x,i)=>({i:i,f:x-Math.floor(x)})).sort((a,b)=>b.f-a.f)
      .forEach(o=>{ if(left>0){ got[o.i]++; left-- } });
   if(exp>0) got.forEach((g,i)=>{ if(g<1) got[i]=1 });
+  if(copies>1)got.forEach((g,i)=>{got[i]=g*copies});
   const q=run.pendingLv||[];
   pool.forEach((h,i)=>{
     h.exp+=got[i];
@@ -28917,7 +28948,7 @@ const EVENTS=[
 
  {n:"현상 수배",art:"bounty_bag", face:"감옥 경비병",
   t:"길을 지나가다 현상수배판을 발견합니다.\n누가 의뢰했을까요?",
-  o:[{t:"의뢰 받기",d:"퀘스트: 정예 전투에서 1회 승리. (보상: 해당 정예 전투에서 보상을 1번 더 받습니다.)",
+  o:[{t:"의뢰 받기",d:"퀘스트: 정예 전투에서 1회 승리. (보상: 해당 정예 전투에서 받은 보상을 동일하게 받습니다.)",
       quest:"현상 수배", when:()=>!questHas("현상 수배"),
       f:()=>"수배지 한 장을 뜯어 품에 넣습니다."},
      {t:"현상 수배 걸기",d:"금화를 "+evScaleText("bounty")+"개 냅니다. 무작위 일반 적 3마리 중 하나를 선택하여, 전투에서 만나면 체력을 1로 만듭니다. (1회만)",
@@ -29836,7 +29867,7 @@ const QUESTS={
   "첨탑 파괴":{kind:"tower",need:1,field:1,who:"all",
     d:"이번 구역의 첨탑을 무너뜨리기 {n}",rd:"중급 보상을 1개 얻습니다.",reward:{grade:"중급"}},
   "현상 수배":{kind:"elite",need:1,who:"all",
-    d:"정예 전투에서 {n}번 승리",rd:"해당 정예 전투에서 보상을 1번 더 받습니다.",reward:{chestTwice:1}},
+    d:"정예 전투에서 {n}번 승리",rd:"해당 정예 전투에서 받은 보상을 동일하게 받습니다.",reward:{chestTwice:1}},
   /* 대원 조합 「고철의 무덤」 2 — 켜지면 저절로 걸리고, 깨면 다시 걸린다 (노트 2026-10-04) */
   /* 도미니코 상급 보상 (노트 2026-10-06) — 깨면 이번 게임 동안 참회의 기류가 두 번 더 */
   "절실한 신앙":{kind:"penance",need:20,who:"hero",
@@ -31029,8 +31060,8 @@ function startBattle(kind,pinned){
     try{ BSNAP={kind:kind,run:JSON.stringify(run)} }catch(e){ BSNAP=null }
   }
   /* 소멸성 카드(gone) — 라운드 사이에는 남긴다. 전투(칸)가 끝나면 손패가 다시 짜이며 사라진다 (사용자 2026-09-15) */
-  const prevGone=(!pinned&&B&&B.hand&&run.dun&&run.dun.wave>1)?B.hand.filter(c=>c.gone&&c.type!=="hero"):[];
-  B={kind,turn:1,over:0,log:[],hand:[],units:[],foes:[],drag:null,pick:null,pickN:0};
+  const prevGone=(!pinned&&B&&B.hand&&run.dun&&run.dun.wave>1)?[...B.hand,...(B.handQueue||[])].filter(c=>c.gone&&c.type!=="hero"):[];
+  B={kind,turn:1,over:0,log:[],hand:[],handOpen:false,handQueue:[],units:[],foes:[],drag:null,pick:null,pickN:0};
   if(!(run.dun&&run.dun.wave>1)) run.heroes.forEach(h=>{ h._lvB=h.lv; h.homeSlot=0 });   /* homeSlot — 이 전투에서 처음 배치한 자리, 새 전투마다 비운다 */   /* 이 전투를 시작할 때의 레벨 — 기술 잠금은 이것으로 (skLv) */
   B_ENC=null;                       /* 지난 판의 조합 이름이 남지 않게 */
   /* 전투(옛 던전) 하나는 여러 라운드로 이루어진다.
@@ -31863,7 +31894,7 @@ function foeAil(f){
   if(!f) return 0;
   let n=0;
   if(f.deb) DEB_KEYS.forEach(k=>{ n+=f.deb[k]||0 });
-  n+=(f.infect||0)+(f.burn||0)+(f.mark||0)+(f.scent||0)+(f.lead||0)+(f.weak||0)+(f.stun||0)+(f.weakAtk?1:0)+(f.air?1:0);
+  n+=(f.infect||0)+(f.burn||0)+(f.mark||0)+grimoireCount(f)+(f.scent||0)+(f.lead||0)+(f.weak||0)+(f.stun||0)+(f.weakAtk?1:0)+(f.air?1:0);
   return n;
 }
 /* 전부 걷어낸다. 걷어낸 중첩 수를 돌려준다 */
@@ -31871,7 +31902,7 @@ function foePurge(f){
   const n=foeAil(f);
   if(f.deb) DEB_KEYS.forEach(k=>{ delete f.deb[k] });
   f.fearSrc=null; f.fearName=null;
-  f.infect=0; f.burn=0; f.mark=0; f.markBy=null; f.scent=0; f.lead=0;
+  f.infect=0; f.burn=0; f.mark=0; f.grimoireMarks={}; delete f.markBy; f.scent=0; f.lead=0;
   f.weak=0; f.weakAtk=0; f.air=0; f.stun=0; if(f.willWeak) f.wkGrowAt=Date.now(); f.willWeak=0; f.willAtk=0; f.willDef=0;
   return n;
 }
@@ -36551,6 +36582,7 @@ function soloCheck(h){
   }
 }
 function onSummon(h){
+  handOpenFor(h);
   const t=h.tag;
   if(h.name==="데린저"&&t.placeAmmoEsh){ const v=ammoMaxOf(h)*t.placeAmmoEsh;
     h.eshield=(h.eshield||0)+v;
@@ -36701,8 +36733,8 @@ function onSummon(h){
   if(itemBt(h,"startHide")){ h.hide=1; hideFX(h.slot); say(`${h.name}${jo(h.name,"ig")} 그림자에 숨습니다.`,"t2") }
   if(itemBt(h,"startMark")){
     const f=B.foes.filter(x=>x.alive).sort((a,b)=>a.hp-b.hp)[0];
-    if(f){ f.mark=(f.mark||0)+1; f.markBy=h.name;
-      fx({side:"foe",slot:f.slot,ring:"#e0705a",txt:"정밀 표식",cls:"dmg",gap:70});
+    if(f){ f.grimoireMarks=f.grimoireMarks||{}; f.grimoireMarks[h.name]=(f.grimoireMarks[h.name]||0)+1;
+      fx({side:"foe",slot:f.slot,ring:"#aa83d8",txt:"그리모어 표식",cls:"dmg",gap:70});
       say(`그리모어 — ${f.name}에게 표식`,"t2") } }
   if(t.placeEvade){ h.evade+=t.placeEvade; say(`${h.name} 회피 +${t.placeEvade} (자취 감추기)`,"t2") }
   { const sm=itemBt(h,"startMom"); if(sm){ h.mom+=sm; say(`${h.name} 추진력 +${sm} (장비)`,"t2") } }   /* 에메랄드 파편 */
@@ -37203,6 +37235,7 @@ function spendHandCard(c){
     if(e&&CARD_LIB[c.stock])c.d=CARD_LIB[c.stock].d+` (보유 ${e.c})`;
     else B.hand.splice(i,1);
   }else if(c.n>1)c.n--;else B.hand.splice(i,1);
+  handRefill();
 }
 function playCard(i,slot,side,amount){
   const why=cardWhy(i,slot,side);if(why){cardSayWhy(why);render();return 0}
@@ -37331,11 +37364,22 @@ const PRED_OFF=["aim","armorUp","darkShadow","encore","frontal","fuse","grow","h
    ★ 새 치명타 보상은 반드시 여기 한 줄 — 안 그러면 예고가 또 샌다.
    tgt 를 주지 않으면 **대상과 상관없이 늘 치명타인가**를 묻는 꼴이 된다 — 기술 칸이 그렇게 쓴다.
    돌려주는 것 : 치명타면 그 까닭(글), 아니면 null */
+function grimoireCount(f,h){
+  const M=f&&f.grimoireMarks||{};
+  return h?M[h.name]||0:Object.values(M).reduce((n,v)=>n+(+v||0),0);
+}
+function migrateGrimoireMark(f){
+  if(!f||!f.markBy)return;
+  f.grimoireMarks=f.grimoireMarks||{};
+  f.grimoireMarks[f.markBy]=(f.grimoireMarks[f.markBy]||0)+1;
+  f.mark=Math.max(0,(f.mark||0)-1);delete f.markBy;
+}
 function critWhy(h,s,tgt){
   { const M=(typeof golemMat==="function")&&golemMat(h); if(M&&M.critAlways) return "금속" }   /* 하수인 골렘 — 금속 부속 (노트 17-3) */
   if(h&&s&&s.slam&&h.tag&&h.tag.quakeWave) return "지진파";   /* 파벨 상급 — 지면 내려치기가 치명타로 (노트 highRewards) */
   if(!h||!s) return null;
   const T=h.tag||{};
+  if(tgt&&s.el==="마법"&&grimoireCount(tgt,h)>0)return "그리모어";
   if(h.name==="트리스탄"){
     if(s.pierce&&T.pierceCrit) return "서릿빛 용의 비늘촉";                       /* 꿰뚫는 화살 — 늘 */
     if(tgt){   /* 대상에 걸린 규칙 — 대상을 모르면(기술 칸) 묻지 않는다 */
@@ -38089,7 +38133,7 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
         바로 위 「치명적인 마법」이 같은 결인데 그 문지기가 없는 것이 본보기다.
      ⚠️ pierce!==true 도 떼었다 — 관통을 **더하지 않으려던** 조건이지 치명타와는 상관이 없다 */
   if(!crit&&amt>0&&B&&B._ef&&B._efEl==="마법"&&B._efHero&&B.lastAttacker===B._efHero
-     &&f&&B.foes&&B.foes.indexOf(f)>=0&&f.markBy===B._efHero.name&&(f.mark||0)>0){
+     &&f&&B.foes&&B.foes.indexOf(f)>=0&&grimoireCount(f,B._efHero)>0){
     amt*=2; crit=1; say(`그리모어 — ${f.name}에게 치명타!`,"t1") }
   if(f.armor>0&&amt>f.armor) amt=f.armor;   /* 갑피 — 한 번에 받는 피해를 이 수치까지로 (적도 같게, 사용자 2026-10-07 시평선의 문지기) */
   let d=amt,s=0;
@@ -38992,7 +39036,7 @@ function giveArmor(h,nm){
   const A=ARMOR_CARDS[nm];
   pulseFX("mine",h.slot,"#e0c85a",2);
   /* 같은 카드가 손에 있으면 한 장 더 쌓는다 — 카드가 옆으로 늘어나지 않는다 */
-  const have=B.hand.find(c=>c.type==="item"&&c.name===nm&&c.by===h.name);
+  const have=[...B.hand,...(B.handQueue||[])].find(c=>c.type==="item"&&c.name===nm&&c.by===h.name);
   if(have&&(have.n||1)>=ARMOR_HOLD){   /* 보유량이 찼다 — 더 쌓지 않는다 (사용자 2026-10-12) */
     say(`${nm}${jo(nm,"eun")} 이미 ${ARMOR_HOLD}장을 들고 있습니다.`,"t2"); return }
   if(have){ have.n=(have.n||1)+1;
@@ -41330,7 +41374,8 @@ function hurtAlly(f,t,raw,label,el,evMsg,pierce,ownFx){   /* evMsg — 회피했
       mhit:(blocked||!mag||ownFx)?0:1,
       s:blocked?"block":(mag?"마법피해":"hit"),
       txt:(blocked?"막음 ":"-")+raw, cls:blocked?"shd":(tru?"tru":(mag?"mag":"dmg")), gap:170,
-      recoil:1, pose:(d>0?"hurt":(sh>0?"guard":null))});
+      recoil:1, pose:(d>0?"hurt":(sh>0?"guard":null)),
+      poseBreak:d>0&&f&&f.name==="샘의 잔영"&&label==="잔영"});
   say(`${f.name} → ${t.name} ${label} 피해 ${raw}${sh?` (보호막 ${sh})`:""} ${Math.max(0,t.hp)}/${t.maxHp}`,undefined,t);
   if(f&&raw>0) f.lastHit=raw;
   { const th=((t.tag&&t.tag.thorn)||0)+(t.thornTmp||0)+((t.taunt>0&&t.tag&&t.tag.tauntThorn)||0);
@@ -42378,11 +42423,11 @@ function afterListPanel(){
   if(!L||!L.length) return null;   /* 보상이 하나여도 보인다 (사용자 2026-10-05, 전에는 둘 이상일 때만) */
   const at=(run.afterAt==null)?-1:run.afterAt;
   const cur=L[at];
-  const nm=x=>(x.t==="금화"||x.t==="경험치")
+  const nm=x=>((x.t==="금화"||x.t==="경험치")
     ? `${x.t} ${x.v!=null?x.v:""}`.trim()
     : (x.t==="동료"?"새로운 대원"
       :(x.t==="파편"||x.t==="일반"||x.t==="희귀")?`${x.t} 장신구`
-      :`${x.t} 보상`);
+      :`${x.t} 보상`))+(x.copies===2?" ×2":"");
   const left=L.filter((x,i)=>!x.done&&i>at).length;
   return el(`<aside class="rwq">
     <div class="rwq-h">받는 중</div>
@@ -43171,7 +43216,7 @@ function offerCards(app,hero,grade,done,lvUp){
     const mine=!!r.own,guaranteed=traitPlan.enabled&&index===0&&!!(pending&&pending.traitSlotMode||traitPlan.mode);
     const traitMark=guaranteed?(pending&&pending.traitSlotMode||traitPlan.mode)==="trait":false;
     const c=el(`<div class="rw rwpick${gcls(r.g)}${mine?" own":""}${rrIn?" rrin":""}${guaranteed?" trait-guarantee":""}" data-reward-key="${esc(rwKey(r))}" data-trait-reward="${traitMark?"1":"0"}">${
-      guaranteed?`<div class="trait-overlabel">${traitMark?"특성":"대원 전용"}</div>`:mine?`<span class="ownmark">전용</span>`:""}<div class="rwi">${rewardIcon(r)}</div>
+      guaranteed?`<div class="trait-overlabel">특성</div>`:mine?`<span class="ownmark">전용</span>`:""}<div class="rwi">${rewardIcon(r)}</div>
       <b>${esc(r.n)}</b>
       <div class="rwd"><p>${rwDescHtml(r.d,hero)}</p></div>${rewCondHtml(r,hero)}
       <div class="rwft"><span class="gd">${esc(r.g)}</span>
@@ -43183,7 +43228,9 @@ function offerCards(app,hero,grade,done,lvUp){
       pickBurst(c,r.g);
       if(ownOnly) spendOwnReward();
       row.querySelectorAll(".rw").forEach(x=>{ if(x!==c) x.classList.add("faded") });
-      grantRunReward(hero,r);
+      const copies=pending&&pending.bountyCopy?2:1;
+      if(pending)pending.bountyCopy=0;
+      for(let n=0;n<copies;n++)grantRunReward(hero,r);
       if(lvUp&&pending&&pending.queue){ const q=pending.queue[pending.idx]; if(q) (hero.tag.lvGot=hero.tag.lvGot||{})[q.lv]={n:r.n,g:r.g} }
       /* 금속 펜던트 — 가장 처음 얻는 중급 보상이면 같은 대원에게 하나 더. 새 셋을 뽑아 같은 화면을 다시 그린다
          (건너뛰면 얻은 것이 아니므로 펜던트는 남는다) */
