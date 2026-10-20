@@ -2711,6 +2711,9 @@ html.noscr, html.noscr body{overflow:hidden!important}   /* 가로만 숨기면 
 .pmap .cell:not(.adj):not(.here):not(.onroute){filter:none;opacity:.82}
 .pmap .cell.emp{background-color:transparent;border-style:solid;opacity:1}
 .pmap .cell.done{opacity:.35;filter:grayscale(.7)}
+/* ㄱ자 벨트 — 이어지는 쪽으로 돌린다 (사용자 2026-10-21) */
+.beltturn{display:block;line-height:0;transform:rotate(var(--bt,0deg));transform-origin:50% 50%}
+.beltturn > *{display:block}
 .pmap .cell.adj{background-color:transparent;border-color:var(--pline)}
 .pmap .cell.adj:hover{transform:none;border-color:var(--pline)}
 .pmap .cell:hover,.pmap .cell.adj:hover{background-color:rgba(255,236,190,.35);z-index:3;
@@ -6856,6 +6859,10 @@ function gimCellArt(cell){
   if(cell.t==="well") return iconImg("ink11_well_"+(cell.tile||"22"));
   if(cell.t==="mwreck") return iconImg("ink_sp_mw"+(cell.tile||"11"));   /* 거대한 기계의 잔해 2×2 조각 */
   if(cell.t==="crane") return iconImg("ink_sc_crane_"+(cell.tile||"tl"));   /* 기중기 2×2 조각 (2026-10-21) */
+  if(cell.t==="beltT"){   /* ㄱ자 벨트 — 이어지는 쪽으로 돌린다 (2026-10-21) */
+    const d=beltTurnDeg(cell);
+    return d?`<span class="beltturn" style="--bt:${d}deg">${iconImg("ink_sc_belt_t")}</span>`
+            :iconImg("ink_sc_belt_t"); }
   return inkArt(cell.t);
 }
 /* 고철의 무덤 지도 그림 (사용자 2026-10-21) */
@@ -19992,8 +19999,14 @@ function placeOil(g){
    ⚠️ 벨트 자리에는 다른 구역이 깔리지 않는다 — gimOk 가 빈 칸만 내주므로 저절로 그렇다 */
 function placeBelt(g){
   const S=g.length, camp=[S-1,Math.floor(S/2)];
-  const ok=(r,c)=>r>=0&&c>=0&&r<S&&c<S&&gimOk(g,r,c)&&Math.abs(r-camp[0])+Math.abs(c-camp[1])>2;
   const DIRS=[[0,1],[0,-1],[1,0],[-1,0]];
+  /* ⚠️ **이미 깔린 다른 줄기에 닿으면 안 된다** (2026-10-21).
+     닿으면 그 칸의 이웃 벨트가 셋이 되는데, 꺾인 칸 그림(ㄱ자)으로는 T자를 담을 수 없고
+     선택지도 두 쪽뿐이라 길이 끊겨 보인다. 제 줄기는 아직 g 에 쓰지 않았으므로
+     g 에서 보이는 벨트는 **다른 줄기**뿐이다 */
+  const apart=(r,c)=>!DIRS.some(([dr,dc])=>{ const x=g[r+dr]&&g[r+dr][c+dc];
+    return !!(x&&/^belt/.test(x.t)) });
+  const ok=(r,c)=>r>=0&&c>=0&&r<S&&c<S&&gimOk(g,r,c)&&apart(r,c)&&Math.abs(r-camp[0])+Math.abs(c-camp[1])>2;
   for(let t=0;t<60;t++){
     const r0=Math.floor(Math.random()*S), c0=Math.floor(Math.random()*S);
     if(!ok(r0,c0)) continue;
@@ -20011,13 +20024,16 @@ function placeBelt(g){
       path.push([r,c]);
     }
     if(fail||path.length<4) continue;
-    /* 조각의 꼴을 정한다 — 이웃이 가로면 ㅡ, 세로면 ㅣ, 둘 다면 꺾인 칸 */
+    /* 조각의 꼴을 정한다 — 이웃이 가로면 ㅡ, 세로면 ㅣ, 둘 다면 꺾인 칸.
+       ⚠️ 꺾인 칸은 **이어지는 두 쪽**(turn)을 적어 둔다 — 그림을 그 방향으로 돌린다 (2026-10-21) */
     path.forEach(([pr,pc],i)=>{
       const prev=path[i-1], next=path[i+1];
-      let h=false, v=false;
+      let h=false, v=false; const way={};
       [prev,next].forEach(q=>{ if(!q) return;
-        if(q[0]===pr) h=true; else v=true });
-      g[pr][pc]={t:(h&&v)?"beltT":(v?"beltV":"beltH")};
+        if(q[0]===pr){ h=true; way[q[1]<pc?"l":"r"]=1 }
+        else { v=true; way[q[0]<pr?"u":"d"]=1 } });
+      if(h&&v) g[pr][pc]={t:"beltT",turn:beltTurnKey(way)};
+      else g[pr][pc]={t:(v?"beltV":"beltH")};
     });
     return path;
   }
@@ -21962,6 +21978,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 196, "v": "0.7", "d": "2026-10-21", "t": "컨베이어 벨트 ㄱ자 — 이어지도록 맞추고 꺾이는 쪽으로 회전", "big": 0},
  {"b": 195, "v": "0.7", "d": "2026-10-21", "t": "고철의 무덤 — 1막 구역 섞임 · 보급 레일 · 도감 분리 · 적 크기 · 막 입장 연출", "big": 0},
  {"b": 194, "v": "0.7", "d": "2026-10-21", "t": "고철의 무덤 전용 구역 일곱 — 폐유 웅덩이 · 돌보미 기계 · 기중기 · 작업 지시판", "big": 0},
  {"b": 193, "v": "0.7", "d": "2026-10-20", "t": "체력바 막 겹침 · 의도 보호막 수치 · 특성 카드 · 안개 · 찌르기 · 적 강화 배율", "big": 0},
@@ -23349,7 +23366,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=195;
+const BUILD_NO=196;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -27504,10 +27521,26 @@ const isBelt=(r,c)=>{ const g=run&&run.grid&&run.grid[r]&&run.grid[r][c]; return
 /* 그 칸에서 갈 수 있는 쪽 — 꼴에 따라. ㄱㄴ 은 **이어진 이웃 벨트** 쪽 둘 */
 const BELT_DIR={beltH:[[0,-1],[0,1]],beltV:[[-1,0],[1,0]],
   beltT:[[0,-1],[0,1],[-1,0],[1,0]]};
+/* 꺾인 칸은 **이어진 두 쪽만** 고를 수 있다 (2026-10-21).
+   전에는 네 쪽을 다 내주어 벨트가 없는 쪽으로도 실려 갔다 */
+const TURN_D={u:[-1,0],d:[1,0],l:[0,-1],r:[0,1]};
+/* ㄱ자 벨트가 돌아가는 각 (사용자 2026-10-21 : 「회전시켜서 자연스럽게 이어질 수 있게」).
+   그림(ink_sc_belt_t)은 **위 ↔ 오른쪽**(└)이다 — 가로·세로 그림과 같은 띠 자리에 맞춰 구웠다.
+   시계 방향으로 돌리면 └ → ┌ → ┐ → ┘ 가 된다. 네 방향을 그림 한 장으로 다 쓴다 */
+const BELT_TURN={ur:0,rd:90,dl:180,lu:270};
+const beltTurnKey=w=>{
+  if(w.u&&w.r) return "ur";
+  if(w.r&&w.d) return "rd";
+  if(w.d&&w.l) return "dl";
+  if(w.l&&w.u) return "lu";
+  return "ur";
+};
+const beltTurnDeg=cell=>BELT_TURN[(cell&&cell.turn)||"ur"]||0;
 const DIR_NAME={"0,-1":"왼쪽","0,1":"오른쪽","-1,0":"위","1,0":"아래"};
 function beltWays(r,c){
-  const g=run.grid[r][c], L=BELT_DIR[g.t]||[];
-  const S=run.size;
+  const g=run.grid[r][c], S=run.size;
+  let L=BELT_DIR[g.t]||[];
+  if(g.t==="beltT"&&g.turn) L=String(g.turn).split("").map(k=>TURN_D[k]).filter(Boolean);
   return L.filter(([dr,dc])=>{ const nr=r+dr, nc=c+dc;
     return nr>=0&&nc>=0&&nr<S&&nc<S });
 }
