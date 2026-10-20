@@ -2299,18 +2299,52 @@ body:has(.rwq) .hpanel{top:auto;bottom:16px;max-height:min(52vh,calc(100vh - 100
 /* 막 입장 — 구역에 들어설 때 그 이름이 가운데에서 피었다 진다 (사용자 2026-10-21).
    마력의 안개(.fogban)와 **같은 결**이다 — 두 벌을 만들지 않는다. 빛깔만 막마다 다르다.
    ⚠️ pointer-events:none — 다음 수를 막지 않는다 */
-.fieldban{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);z-index:941;pointer-events:none;
-  max-width:92vw;text-align:center;line-height:1.5;font-family:var(--serif);
-  padding:26px 56px;
-  animation:fogban 2.6s ease-out forwards}
-/* 어두운 받침 — 전장(어두움)과 지도(양피지) 둘 다에서 읽혀야 한다 (2026-10-21).
-   지도 위에서는 글이 바탕에 묻혔다 */
-.fieldban::before{content:"";position:absolute;inset:-14% -8%;z-index:-1;border-radius:50%;
-  background:radial-gradient(ellipse at 50% 50%,rgba(8,6,5,.88),rgba(8,6,5,.66) 52%,rgba(8,6,5,0) 78%)}
-.fieldban b{display:block;font-size:clamp(22px,4.2vw,46px);font-weight:800;letter-spacing:.22em;
-  color:var(--fbc,#e8dcc8);text-shadow:0 0 26px var(--fbg,rgba(176,128,48,.9)),0 2px 10px rgba(0,0,0,.95)}
-.fieldban i{display:block;margin-top:10px;font-style:normal;font-size:clamp(12px,1.6vw,17px);
-  letter-spacing:.14em;color:#c8bba6;text-shadow:0 2px 8px rgba(0,0,0,.95)}
+/* 막 입장 — **웅장하게** (사용자 2026-10-21 : 「지금 너무 짜침」).
+   탑의 주인 등장과 같은 결 — ① 화면이 어두워지고 ② 금빛 선 둘이 위아래로 벌어지며
+   ③ 이름이 넓은 자간에서 모여 들어 또렷해지고 ④ 빛무리가 한 번 번지고 ⑤ 부제가 떠오른다.
+   모두 4.2초. ⚠️ pointer-events:none — 다음 수를 막지 않는다 */
+.fbdim{position:fixed;inset:0;z-index:938;pointer-events:none;background:rgba(6,5,4,.78);
+  animation:fbDim 4.2s ease-out forwards}
+@keyframes fbDim{0%{opacity:0}12%{opacity:1}72%{opacity:1}100%{opacity:0}}
+.fieldban{position:fixed;left:50%;top:44%;transform:translate(-50%,-50%);z-index:941;pointer-events:none;
+  max-width:94vw;text-align:center;line-height:1.5;font-family:var(--serif);
+  padding:30px 64px;animation:fbWrap 4.2s ease-out forwards}
+@keyframes fbWrap{0%{opacity:0}9%{opacity:1}78%{opacity:1}100%{opacity:0}}
+/* 빛무리 — 이름 뒤에서 한 번 번진다 */
+.fieldban::before{content:"";position:absolute;inset:-26% -14%;z-index:-2;border-radius:50%;
+  background:radial-gradient(ellipse at 50% 46%,var(--fbg,rgba(176,128,48,.9)),rgba(8,6,5,0) 68%);
+  opacity:0;animation:fbGlow 4.2s ease-out forwards}
+@keyframes fbGlow{0%{opacity:0;transform:scale(.6)}20%{opacity:.5;transform:scale(1.06)}
+  34%{opacity:.26;transform:scale(1)}76%{opacity:.26}100%{opacity:0}}
+/* 금빛 선 둘 — 가운데에서 좌우로 벌어진다 */
+.fieldban u{display:block;position:absolute;left:50%;height:2px;width:0;transform:translateX(-50%);
+  background:linear-gradient(90deg,rgba(8,6,5,0),var(--fbc,#e8dcc8),rgba(8,6,5,0));
+  box-shadow:0 0 14px var(--fbg,rgba(176,128,48,.9));animation:fbLine 4.2s ease-out forwards}
+.fieldban u.t{top:6px} .fieldban u.b{bottom:6px}
+@keyframes fbLine{0%{width:0;opacity:0}8%{opacity:1}30%{width:100%}76%{width:100%;opacity:1}
+  100%{width:62%;opacity:0}}
+.fieldban b{display:block;font-size:clamp(26px,5.4vw,60px);font-weight:800;letter-spacing:.5em;
+  color:var(--fbc,#e8dcc8);text-indent:.5em;
+  text-shadow:0 0 34px var(--fbg,rgba(176,128,48,.95)),0 0 10px var(--fbg,rgba(176,128,48,.9)),0 3px 12px rgba(0,0,0,.95);
+  animation:fbName 4.2s cubic-bezier(.2,.8,.25,1) forwards}
+@keyframes fbName{0%{opacity:0;letter-spacing:.9em;filter:blur(10px);transform:scale(1.14)}
+  10%{opacity:1}
+  30%{letter-spacing:.2em;filter:blur(0);transform:scale(1)}
+  40%{transform:scale(1.035)}
+  50%{transform:scale(1)}
+  78%{opacity:1;letter-spacing:.2em}
+  100%{opacity:0;letter-spacing:.3em;filter:blur(5px)}}
+.fieldban i{display:block;margin-top:16px;font-style:normal;font-size:clamp(13px,1.9vw,20px);
+  letter-spacing:.2em;color:#d8cbb6;text-shadow:0 0 14px rgba(0,0,0,.9),0 2px 8px rgba(0,0,0,.95);
+  animation:fbSub 4.2s ease-out forwards}
+@keyframes fbSub{0%{opacity:0;transform:translateY(14px)}
+  22%{opacity:0;transform:translateY(14px)}
+  38%{opacity:1;transform:translateY(0)}
+  78%{opacity:1}100%{opacity:0;transform:translateY(-8px)}}
+@media (prefers-reduced-motion: reduce){
+  .fbdim,.fieldban,.fieldban::before,.fieldban u,.fieldban b,.fieldban i{animation-duration:.01s}
+  .fieldban b{letter-spacing:.2em;filter:none;transform:none;opacity:1}
+  .fieldban i{opacity:1;transform:none} }
 .fleeword{position:fixed;z-index:940;pointer-events:none;transform:translateX(-50%);
   font-family:var(--serif);font-size:clamp(20px,3.2vw,34px);font-weight:700;
   letter-spacing:.24em;color:#cfd6e6;text-shadow:0 0 18px rgba(0,0,0,.9);
@@ -6645,6 +6679,17 @@ const idleBid=()=>B?(B._iid||(B._iid=Date.now()+Math.random())):0;
    ⚠️ 값은 「기본.png 의 몸 높이 ÷ 띠 칸 안 몸 높이」로 잡는다.
       균열 애벌레 : 기본 60/60 · 띠 27/64 → 0.385 × (64/27) ≈ 0.91 */
 const IDLE_PH={"균열 애벌레":0.91};
+/* ═══ 그림마다의 키 손질 (사용자 2026-10-21 : 「고철무덤 적들 크기 전반적으로 줄여야함」) ═══
+   고철의 무덤 **일반** 적은 64칸을 꽉 채워 구워져 화면 키가 ~57px 다.
+   핏빛 감옥 일반 적은 칸 안에 여백을 두고 ~40px 라 나란히 서면 1.4배 커 보였다.
+   정예(56.3 vs 57.7)·우두머리(56.4 vs 56.0)는 이미 맞다 — **일반만** 줄인다.
+   ⚠️ 그림을 다시 굽지 않고 보이는 키만 줄인다 (data/art.js 는 생성물이라 손대면 다시 구울 때 날아간다).
+      나중에 art-cut 의 「기준」으로 다시 구우면 이 표에서 빼면 된다 */
+const SP_K={};
+["수거 드론","용접 팔","보급 레일","순찰기","재활용기","고철 수집가","해체공","밀수꾼",
+ "설계도 도둑","규격 검사기","분해 라인","배관","녹아내린 기체","균열 용광로"]
+  .forEach(n=>{ SP_K[n]=0.7 });
+const spPh=(name,ph)=>{ const k=SP_K[name]; const v=+ph||1; return k?Math.round(v*k*1000)/1000:v };
 function idleSkillUsed(h){ if(h){ h._idleAt=Date.now(); h._idleB=idleBid(); h._idleNext=h._idleAt+idleRand(IDLE_SAY.after); h._imNext=h._idleAt+idleRand(IDLE_MO.after) } }   /* doSkill 이 부른다 */
 setInterval(()=>{
   if(view!=="battle"||!B||B.over||B.busy||B.foeAct||(typeof TUT!=="undefined"&&TUT.on)||!run) return;
@@ -10626,9 +10671,9 @@ function setPose(side,slot,pose,ms,interrupt){
   if(!now||now===poseOf(img.dataset.nm,img.dataset.pose)) return;
   if(img._pt) clearTimeout(img._pt);
   const back=poseOf(img.dataset.nm,img.dataset.pose||"idle");
-  img.src=now.u; img.style.setProperty("--ph",now.ph);
+  img.src=now.u; img.style.setProperty("--ph",spPh(img.dataset.nm,now.ph));
   img._pt=setTimeout(()=>{ img._pt=0;
-    if(back&&img.isConnected){ img.src=back.u; img.style.setProperty("--ph",back.ph) }
+    if(back&&img.isConnected){ img.src=back.u; img.style.setProperty("--ph",spPh(img.dataset.nm,back.ph)) }
   }, Math.round((ms||POSE_MS[pose]||520)*SPD));
 }
 /* 자세 띠를 한 번 돌린다 (간수장 공격 · 끌기 — 76).
@@ -10660,7 +10705,7 @@ function poseStripFX(side,slot,key,frameMs,opt){
     setTimeout(()=>poseShake(side,slot,Math.round((AR?(frameMs[opt.shakeAt]||200):frameMs||200)*SPD)),at[opt.shakeAt]);
   img._pt=setTimeout(()=>{ if(img._stripToken!==token)return;
     delete img._stripToken;img._pt=0; img._strip=0;
-    if(back&&img.isConnected){ img.src=back.u; img.style.setProperty("--ph",back.ph) } },tot);
+    if(back&&img.isConnected){ img.src=back.u; img.style.setProperty("--ph",spPh(img.dataset.nm,back.ph)) } },tot);
   return tot;
 }
 /* 앞으로 파고들었다(공격) 뒤로 물러났다(피격) 제자리로 — 즉각 반응.
@@ -11656,7 +11701,7 @@ function pxFigure(name,pose){
       const anim=(p==="idle"&&set.idleA&&set.idleA.length&&!IDLE_STILL[name])?' data-anim="1"':"";   /* 대기 움직임 띠가 있으면 ticker 가 src 를 바꾼다 (2026-09-20) */
       /* 대기 띠의 칸 안에서 몸이 작게 그려지는 것들 — 띠에만 제 ph 를 준다 (사용자 2026-10-14).
          기본.png 는 몸을 꽉 채워 자르는데 띠 칸은 네모라 여백이 남는다. 그 여백만큼 키운다 */
-      const ph=(anim&&IDLE_PH[name])?IDLE_PH[name]:v.ph;
+      const ph=spPh(name,(anim&&IDLE_PH[name])?IDLE_PH[name]:v.ph);
       return PXCACHE[ck]='<img class="pxs '+(isFoe0?"foe":"hero")+'" data-nm="'+name
         +'" data-pose="'+p+'"'+anim+' style="--ph:'+ph+'" src="'+(anim?set.idleA[IDLE_K%set.idleA.length]:v.u)+'" alt="" draggable="false">';
     }
@@ -16145,6 +16190,11 @@ function fdxFields(name){
   if(typeof FOE_DEX_FIELD==="object"&&FOE_DEX_FIELD[name]!=null){
     const f=FIELDS[FOE_DEX_FIELD[name]]; if(f&&out.indexOf(f.n)<0) out.push(f.n) }
   ENCOUNTER.forEach((L,i)=>{ if(L.some(e=>(e.foes||[]).indexOf(name)>=0)&&out.indexOf(FIELDS[i].n)<0) out.push(FIELDS[i].n) });
+  /* 1막의 다른 갈래 — 제 이름으로 적는다 (2026-10-21). 전에는 아무것도 안 적혔다 */
+  ACT1_LIST.slice(1).forEach(k=>{ const A=ACT1[k]||{};
+    if(((A.foes||[]).indexOf(name)>=0||(A.enc||[]).some(e=>(e.foes||[]).indexOf(name)>=0))&&out.indexOf(k)<0) out.push(k);
+    if((A.elite||[]).some(e=>(e.foes||[]).indexOf(name)>=0)&&out.indexOf(k+" 정예")<0) out.push(k+" 정예");
+    if(A.boss===name&&out.indexOf(k+" 우두머리")<0) out.push(k+" 우두머리"); });
   ELITE_LEAD.forEach((n,i)=>{ if(n===name&&out.indexOf(FIELDS[i].n+" 정예")<0) out.push(FIELDS[i].n+" 정예") });
   ELITE_LEADS.forEach((L,i)=>{ if((L||[]).indexOf(name)>=0&&out.indexOf(FIELDS[i].n+" 정예")<0) out.push(FIELDS[i].n+" 정예") });   /* 정예 앞자리 (2026-09-29) */
   ELITE_ENC.forEach((L,i)=>{ if((L||[]).some(e=>(e.foes||[]).indexOf(name)>=0)&&out.indexOf(FIELDS[i].n+" 정예")<0) out.push(FIELDS[i].n+" 정예") });
@@ -16252,7 +16302,6 @@ function drawFoeDex(app){
     if(typeof FOE_DEX_FIELD==="object") Object.keys(FOE_DEX_FIELD).forEach(n=>{
       if(FOE_DEX_FIELD[n]===i&&FOE[n]&&L.indexOf(n)<0) L.push(n) });   /* 도감 전용 표 (/foe) */
     (ENCOUNTER[i]||[]).forEach(e=>(e.foes||[]).forEach(n=>{ if(L.indexOf(n)<0&&FOE[n]) L.push(n) }));
-    if(i===0) ACT1_LIST.forEach(k=>((ACT1[k].enc)||[]).forEach(e=>(e.foes||[]).forEach(n=>{ if(L.indexOf(n)<0&&FOE[n]) L.push(n) })));   /* 1막 변형의 적도 도감에 (2026-10-20) */
     /* 정예 — 앞자리에 서는 놈들과 정예 조합의 적도 그 구역 것이다 (사용자 2026-09-29) */
     (ELITE_ENC[i]||[]).forEach(e=>(e.foes||[]).forEach(n=>{ if(L.indexOf(n)<0&&FOE[n]) L.push(n) }));
     (ELITE_LEADS[i]||[]).forEach(n=>{ if(FOE[n]&&L.indexOf(n)<0) L.push(n) });
@@ -16264,6 +16313,21 @@ function drawFoeDex(app){
     for(let q=L.length-1;q>=0;q--) if(!FOE[L[q]]||FOE[L[q]].dexHide||FOE[L[q]].isPhantom) L.splice(q,1);
     L.forEach(n=>used.add(n));
     wrap.appendChild(el(`<div class="dexhd">${esc(F.n)} ${L.length}</div>`));
+    wrap.appendChild(el(`<div class="evdx-grid">${L.map(fdxCard).join("")}</div>`));
+  });
+  /* 1막의 다른 갈래 — **제 묶음으로 따로** (사용자 2026-10-21 : 「도감에 핏빛감옥에 고철의 무덤애들 들어가있음」).
+     전에는 1막 변형의 적을 핏빛 감옥 묶음에 쓸어 넣었다. ACT1_LIST[0] 이 핏빛 감옥이라 그 뒤만 돈다 */
+  ACT1_LIST.slice(1).forEach(k=>{
+    const A=ACT1[k]||{}, L=[];
+    const put=n=>{ if(FOE[n]&&L.indexOf(n)<0) L.push(n) };
+    (A.foes||[]).forEach(put);
+    (A.enc||[]).forEach(e=>(e.foes||[]).forEach(put));
+    (A.elite||[]).forEach(e=>(e.foes||[]).forEach(put));
+    if(A.boss) put(A.boss);
+    L.sort((a,b)=>order(a)-order(b));
+    for(let q=L.length-1;q>=0;q--) if(!FOE[L[q]]||FOE[L[q]].dexHide||FOE[L[q]].isPhantom) L.splice(q,1);
+    L.forEach(n=>used.add(n));
+    wrap.appendChild(el(`<div class="dexhd">${esc(k)} ${L.length}</div>`));
     wrap.appendChild(el(`<div class="evdx-grid">${L.map(fdxCard).join("")}</div>`));
   });
   /* 미지의 구역 — 이벤트로만 만나는 적 (사용자 2026-09-29) */
@@ -16941,7 +17005,9 @@ const FOE={
     {n:"불꽃 튀기기",w:3,tg:"all",deb:{burn:2},d:"모든 상대에게 화상을 2 부여합니다."},
     {n:"시야 가리기",w:3,tg:"any",deb:{defDn:1},d:"무작위 상대에게 보호약화를 1 부여합니다."}],
    hit:"용접"},
- "보급 레일":{hp:40,atk:3,def:5,rng:8,exp:3,still:1,wreck:1,
+ /* ⚠️ noMove 다 — still 은 「움직이지도 **때리지도** 않는다」라
+    rollIntents 가 바로 대기로 넘긴다. 2026-10-21 까지 보급 레일이 한 턴도 행동하지 않았다 */
+ "보급 레일":{hp:40,atk:3,def:5,rng:8,exp:3,noMove:1,wreck:1,
    el:"공격",
    pas:[{k:"info",n:"잔해",d:"움직이지 않습니다. 부서지면 그 자리에 잔해가 남습니다."}],
    sk:[
@@ -18780,12 +18846,14 @@ function fieldBanner(){
   if(typeof document==="undefined") return;
   const n=fieldLabel(); if(!n) return;
   const B0=FIELD_BAN[n]||{};
-  document.querySelectorAll(".fieldban").forEach(x=>x.remove());
+  document.querySelectorAll(".fieldban,.fbdim").forEach(x=>x.remove());
+  const dim=el(`<div class="fbdim"></div>`);
+  if(dim) document.body.appendChild(dim);
   const nd=el(`<div class="fieldban" style="--fbc:${B0.c||"#e8dcc8"};--fbg:${B0.g||"rgba(140,120,90,.9)"}">`
-    +`<b>${esc(n)}</b>${B0.s?`<i>${esc(B0.s)}</i>`:""}</div>`);
-  if(!nd) return;
+    +`<u class="t"></u><b>${esc(n)}</b>${B0.s?`<i>${esc(B0.s)}</i>`:""}<u class="b"></u></div>`);
+  if(!nd){ if(dim) dim.remove(); return }
   document.body.appendChild(nd);
-  setTimeout(()=>nd.remove(),2700);
+  setTimeout(()=>{ nd.remove(); if(dim) dim.remove() },4300);
 }
 const ACT1={
  "핏빛 감옥":{},
@@ -20357,11 +20425,14 @@ function respawn(){
     }
   });
   /* 고문실과 사형장 — 새로고침 가능. 둘 다 없어졌으면 절반 확률로 다른 자리에 다시 */
-  if(run.field===0&&!gimCells(run.grid,"torture").length&&!gimCells(run.grid,"gallows").length&&Math.random()<0.5){
-    if(placeTG(run.grid)) toast("고문실과 사형장이 다른 자리에 다시 세워졌습니다.") }
-  if(run.field===0){ const O=GIM_ODDS[0];
-    if(!gimCells(run.grid,"post").length&&Math.random()<0.4) placeOne(run.grid,"post");
-    if(!gimCells(run.grid,"tunnel").length&&Math.random()<0.4){ run.gim=run.gim||{}; run.gim.tunnel=0; placeTunnels(run.grid) } }
+  /* ⚠️ 고문실·사형장·간수 초소·땅굴은 **핏빛 감옥의 것**이다 (2026-10-21).
+     `run.field===0` 만 보던 탓에 **고철의 무덤에서도 날마다 다시 깔렸다** — 그 구역의 확률표에 적혀 있을 때만 */
+  { const O1=fieldPick("gim",GIM_ODDS)||{};
+    if(run.field===0&&O1.tg&&!gimCells(run.grid,"torture").length&&!gimCells(run.grid,"gallows").length&&Math.random()<0.5){
+      if(placeTG(run.grid)) toast("고문실과 사형장이 다른 자리에 다시 세워졌습니다.") }
+    if(run.field===0){
+      if(O1.post&&!gimCells(run.grid,"post").length&&Math.random()<0.4) placeOne(run.grid,"post");
+      if(O1.tunnel&&!gimCells(run.grid,"tunnel").length&&Math.random()<0.4){ run.gim=run.gim||{}; run.gim.tunnel=0; placeTunnels(run.grid) } } }
   /* 반딧불 둥지 — 낮은 확률로 새로고침 (없으면 새 날에 20%) */
   if(run.field===1){
     colonyStep();
@@ -20478,11 +20549,16 @@ function newRun(name,pack){
         같은 씨앗의 판이 달라진다 — 골든 208판이 전부 어긋났다. 규칙-그림소리.md 의 「시계로」 그대로. */
   const act1=(ACT1_PIN&&ACT1[ACT1_PIN])?ACT1_PIN
     :ACT1_LIST[((Date.now()/1000)|0)%ACT1_LIST.length];
+  /* ⚠️ **지도는 run 을 세운 뒤에 짓는다** (2026-10-21).
+     전에는 grid:buildGrid(…) 를 이 리터럴 안에서 불렀다 — 그 순간 run 은 아직 **이전 판의 것**(첫 판이면 없다)이라
+     act1Of 가 1막을 못 알아보고 **고철의 무덤인데 핏빛 감옥 전용 구역이 깔렸다.**
+     ⚠️ 주사위 차례는 그대로다 — makeHero 다음에 buildGrid, 전과 같은 순서다 (골든 208/0 으로 확인). */
   run={heroes:[makeHero(name)], gold:0, stone:0, cards:[], bag:[],
-       field:0, act1:act1, size:S, grid:buildGrid(0,null,true), mapUnfold:1,
+       field:0, act1:act1, size:S, grid:null, mapUnfold:1,
        pos:{r:S-1,c:mid}, day:1, time:6, act:f.act, actMax:f.act,
        taint:0, night:0, campDone:0, remapUsed:0, bonusLv:null, playMs:0,
        pack:pack?pack.n:null, packDesc:pack?pack.d:null, packIcon:pack?pack.i:null};
+  run.grid=buildGrid(0,null,true);   /* 1막을 적어 둔 **뒤에** 짓는다 (2026-10-21) */
   run.prisonBoss=BOSS_POOLS[0][mapBossSeed(run.grid)%2];
   try{ run.unlock0=unlockSnap() }catch(e){}   /* 이번 판에 새로 열린 것을 끝에서 견주려고 (사용자 2026-10-12) */
   rollPatrol();                       /* 간수 순찰로 — 튜토리얼이 아닌 새 판에서도 (사용자 2026-09-15 — 안 나오던 버그) */
@@ -21886,6 +21962,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 195, "v": "0.7", "d": "2026-10-21", "t": "고철의 무덤 — 1막 구역 섞임 · 보급 레일 · 도감 분리 · 적 크기 · 막 입장 연출", "big": 0},
  {"b": 194, "v": "0.7", "d": "2026-10-21", "t": "고철의 무덤 전용 구역 일곱 — 폐유 웅덩이 · 돌보미 기계 · 기중기 · 작업 지시판", "big": 0},
  {"b": 193, "v": "0.7", "d": "2026-10-20", "t": "체력바 막 겹침 · 의도 보호막 수치 · 특성 카드 · 안개 · 찌르기 · 적 강화 배율", "big": 0},
  {"b": 192, "v": "0.7", "d": "2026-10-19", "t": "전투 강화 정보 패널 — 접기/펼치기", "big": 0},
@@ -23272,7 +23349,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=194;
+const BUILD_NO=195;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
