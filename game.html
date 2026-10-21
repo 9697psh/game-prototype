@@ -10584,6 +10584,36 @@ function hectoSlotFix(h){
   const want=h.slot<=2?"방패 밀치기":"방패 막기", cur=h.sk[0];
   if(cur&&cur.n!==want&&cur.alt){ const nx=Object.assign({},cur.alt), back=Object.assign({},cur); back.mods=cur.mods; nx.mods=cur.alt.mods; delete back.alt; nx.alt=back; h.sk[0]=nx }
 }
+/* ═══ 레이 적응성 — 선 칸이 태세를 정한다 (노트 20-0, 사용자 2026-10-21) ═══
+   1 · 2번 칸이면 주술사, 3 · 4 · 5번 칸이면 전사. 1 · 2번 기술이 통째로 갈아 끼워진다.
+   ⚠️ 갈아 끼우는 곳은 **여기 한 곳**이다 (헥토 공방전과 같은 결). 그리기 · onSummon 이 부른다 —
+      라운드가 열릴 때 altReset 이 기본 꼴(전사)로 돌려놓고, 첫 그리기에서 이 함수가 칸에 맞춘다 */
+const rayStanceOf=sl=>(sl>0&&sl<=2)?"주술사":"전사";
+/* force 를 주면 **지금 칸으로 다시 정한다** (배치하는 순간). 안 주면 **비어 있을 때만** 채운다 —
+   노트가 「배치하면 **해당 라운드 동안**」이라, 라운드 중에 밀려나거나 움직여도 태세는 그대로다.
+   ⚠️ 헥토 공방전(hectoSlotFix)은 움직이면 따라오는 결이다. 둘은 다르다 (사용자 2026-10-21) */
+function rayStance(h,force){
+  if(!h||h.name!=="레이"||!(h.slot>0)) return;
+  if(!force&&h.rayK) return;
+  const want=rayStanceOf(h.slot), was=h.rayK;
+  if(was===want) return;
+  h.rayK=want;
+  [0,1].forEach(i=>{ const cur=(h.sk||[])[i];
+    if(!cur||!cur.alt||cur.rayK===want) return;
+    /* mods 는 각자 제 것 — 보상이 올린 값이 따라간다 (altReset · windSwap 과 같은 꼴) */
+    const nx=Object.assign({},cur.alt), back=Object.assign({},cur);
+    back.mods=cur.mods; nx.mods=cur.alt.mods; delete back.alt; nx.alt=back; h.sk[i]=nx });
+  if(was&&typeof say==="function")
+    say(`적응성 — ${h.name}${jo(h.name,"ig")} ${want} 태세가 됩니다.`,"t2");
+}
+/* 천둥의 기운 — 레이가 적에게 피해를 줄 때마다 체력 1 (노트 20-3).
+   「이번 턴에」라 턴 번호를 쥐어 둔다 — 비우는 표에 빠져 남는 일이 없다 */
+function rayThunderTick(h){
+  if(!h||h.name!=="레이"||typeof B==="undefined"||!B||B.over) return;
+  if(h.rayThunderT!==B.turn||h.hp<=0) return;
+  const got=healUp(h,1);
+  if(got) fx({side:"mine",slot:h.slot,s:"heal",txt:"+"+got,cls:"heal",gap:40});
+}
 /* 헥토 진지 구축 — 같은 전장에서 헥토보다 앞(큰 번호) 칸에 성벽이 서 있으면 */
 function fortAtk(h){
   if(!h||h.name!=="헥토"||!h.tag||!h.tag.fortAtk||!(h.slot>0)||typeof B==="undefined"||!B) return 0;
@@ -12040,9 +12070,11 @@ HEROES["인비디아"]={title:"질투의 악마",role:"마법, 감염",hp:20,man
   passive:{n:"질투의 악마",d:"감염된 적은 턴이 끝날 때 피해 1(+마법력)를 받고 중첩이 1 줄어든다"},
   skills:[
    {n:"죄악의 기침",cost:2,el:"마법",tg:"foe",nearest:1,dmg:2,infect:1,d:"가장 가까운 적에게 피해 2, 감염 1 (3중첩이면 체력 4 회복)"},
-   {n:"확산",cost:2,el:"마법",tg:"foe",spread:1,d:"감염된 적에게 보호약화 1, 대상 주변을 감염"},
+   {n:"확산",cost:2,el:"마법",tg:"foe",spread:1,spreadMin:2,d:"적을 감염시킵니다. 감염이 2 이상이면 보호약화 1, 거리 1 내도 감염"},
    {n:"숙주 폭발",cost:1,el:"마법",tg:"self",lock:2,burst:1,d:"잠금(2), 모든 적에게 피해 3 + 감염×2, 감염 제거"},
-   {n:"전두엽 감염",cost:2,el:"마법",tg:"self",lock:1,frontal:1,d:"잠금(1), 감염 3 이상인 적은 감염 +1, 다음 턴 방어만 함"}
+   /* 궁극기 — 전두엽 감염을 걷고 들어왔다 (노트, 사용자 2026-10-21).
+      ⚠️ **부정적 효과의 종류 수**만큼 되풀이한다. 중첩이 아니라 종류다 */
+   {n:"재능 시기",cost:2,el:"마법",tg:"foe",limit:1,envy:5,d:"사용한도(1), 적에게서 체력을 5 빼앗습니다. 대상의 부정적 효과 종류만큼 반복"}
   ]};
 HEROES["도미니코"]={title:"영광의 사제",role:"지원, 축복",hp:20,mana:3,hpLv:2,   /* 노트 대개편 (사용자 2026-10-06) */
   focus:"체력 회복/기술 강화와 약화/보호력 집중",
@@ -12577,6 +12609,14 @@ function golemDeath(u,why,산채로){
 }
 /* 기술 원문 — 기획노트 그대로. 고치려면 노트에서 고치세요 */
 const SKILL_FULL={
+ /* 레이 — 노트 20-0 ~ 20-4 (2026-10-21). 1 · 2번 기술은 태세마다 글이 따로다 */
+ "적응성":"전투에서 1, 2번 칸에 배치하면 해당 라운드 동안 주술사 태세가 됩니다. 3, 4, 5번 칸에 배치하면 전사 태세가 됩니다.",
+ "번개 구체":"피해를 2(추가 \u2234 )주는 구체를 날립니다. 3번째 구체는 치명타로 적중합니다.",
+ "벼락칼날":"피해를 2(추가 \u2020 ) 줍니다. 1칸 뒤에 적이 있다면, 그 적에게 반복합니다.",
+ "주술사의 다짐":"다음 [번개 구체]가 강화되어 지나간 적들에게도 피해를 줍니다.",
+ "전사의 다짐":"보호막을 2(추가 \u2020 ) 얻습니다.",
+ "천둥의 기운":"사용한도(1). 이번 턴에 레이가 적에게 피해를 줄 때마다 체력을 1 회복합니다.",
+ "전략 변경":"사용한도(1). 레이를 다시 내 손패로 가져옵니다.",
  /* 오리온 — 노트 18-0 ~ 18-5 (2026-10-14) */
  "사냥의 기류":"전투에서 매 턴마다 무작위 적 진영 위치에 기류가 흐릅니다. 해당 위치의 대상에게 오리온의 피해가 치명타로 적중합니다.",
  "악마뼈 쇠뇌":"_사냥감 냄새_ 표식이 있는 적에게 피해를 3(추가 † ) 주고 표식을 하나 제거합니다.",
@@ -12692,7 +12732,8 @@ const SKILL_FULL={
  "자기장 변환":"잠금(1). 적에게 피해를 8(추가 ∴ ) 줍니다. _정밀 표식_이 남겨진 적이라면 1칸 앞으로 이동시키고 속박시킵니다. 이동하지 못하는 상태라면, 대신 기절시킵니다.",
  "자동변환단총":"적에게 피해를 2(추가 † ) 줍니다.\n\n어떤 개조를 하더라도 제대로 작동하는 죽이는 총!",
  "잠재력 활성":"잠금(2). 이번 턴에 진선풍도가 거리 내의 모든 적에게 피해를 주고, 회오리는 모든 적을 공중으로 띄웁니다.\n다음 4번의 산들바람의 비용이 0이 됩니다.",
- "재능 시기":"적을 처치할 때마다 인비디아가 해당 전투에서 적들의 능력치를 얻습니다.\n\n적 처치 후 얻을 수 있는 능력치(각 25% 확률로)\n공격력 1, 마법력 1, 보호력 1, 체력 4",
+ /* 노트 7-4 — 리메이크로 **궁극기**가 되었다. 옛 지속 글이 남아 궁극기 칸에 뜨고 있었다 (2026-10-21) */
+ "재능 시기":"사용한도(1). 적에게서 체력을 5 빼앗아옵니다. 대상에게 부여된 부정적인 효과의 종류만큼 반복합니다.",
  "저주받은 성벽":"이 소환물이 죽은 후, 거리 1 내의 대상에게 보호약화를 2 부여합니다. 이동할 수 없습니다.",
  "저주받은 육체":"레벨 당 증가하는 최대 체력을 얻을 수 없습니다. 대신 사명감을 1 얻습니다.\n얻은 사명감 2당 영구히 공격력 +1을 얻습니다.\n\n전투 당 1회, 트리스탄이 죽은 후 망자의 육체 카드를 가져옵니다.\n망자의 육체가 배치된 상태에서 승리한다면, 트리스탄이 절반의 체력으로 부활합니다.",
  "적응성 비늘":"내 턴이 끝날 때, 보호막을 1(추가 ¤ + 이번 턴에 얻은 비늘 조각의 수) 얻습니다.",
@@ -12704,10 +12745,11 @@ const SKILL_FULL={
  "정확 조준":"적을 선택합니다. 데린저가 _조준 상태_가 되어 해당 적에게 입히는 피해가 치명타로 적중하고 다른 적을 공격할 수 없습니다.\n_조준 상태_에서는 이동할 수 없고, 재사용하거나 대상 적이 죽으면 해제됩니다.",
  "조각난 페일노트":"가장 멀리 있는 적에게 피해를 4(추가 † ) 줍니다.",
  "조화의 노래":"이로운 효과를 부여하는 _음율_을 선택하여 시전합니다.",
- "죄악의 기침":"가장 가까운 적에게 피해를 2(추가 ∴ ) 주고 감염시킵니다.\n감염이 3회 중첩된 적에게 사용 후 체력을 4 회복합니다.",
+ "죄악의 기침":"가장 가까운 적에게 피해를 2(추가 ∴ ) 주고 감염시킵니다.\n감염이 3회 이상 중첩된 적에게 사용 후 체력을 4 회복합니다.",
  "죽음 재배술":"일터에서 영혼꽃을 수확할 수 있습니다.\n영혼꽃은 재화로 환전하거나, 추가 마법력을 주는 장신구으로 바꿀 수 있습니다.",
  "지면 진동":"적을 공중에 뜸 상태로 만들고 1칸 뒤로 이동시킵니다. 이동하지 못하는 상태라면, 대신 속박시킵니다.",
  "진선풍도":"피해를 2(추가 † ) 줍니다. *(거리 2)*\n세 번째 사용 시에는 강화되어, 거리 3의 회오리를 날려 지나간 적들에게 피해를 2(추가 † ) 주고, 마지막 적은 공중에 뜸 상태로 만듭니다.",
+ "역병군주":"전투 시작 시, 시기의 역병 1장을 가져옵니다.",
  "질투의 악마":"인비디아의 기술은 적을 감염시킵니다. 감염은 중첩될 수 있고, 감염된 적에게는 턴이 끝날 때 피해를 1(추가 ∴ ) 주고 감염 중첩을 1 감소시킵니다.",
  "착취":"적에게 피해를 2(추가 ∴ ) 줍니다.\n\n영혼이 80개 이상이면 그 뒤의 적에게도 피해를 줍니다.\n영혼이 120개 이상이면 그 앞의 적에게도 피해를 줍니다.\n영혼이 160개 이상이면 관통 +50%를 얻습니다.\n영혼이 200개 이상이면 2번 발동합니다.",
  "참회의 기류":"잠금(1). 아군에게 보호막을 1(추가 ¤ ), 적에게 피해를 1(추가 ¤ ) 주는 기류를 날립니다.\n\n기류는 가장 먼 적에게 날아갔다가 돌아오고, 캐릭터를 지날 때마다 보호막량과 피해량이 1(추가 ) 증가합니다.",
@@ -12734,7 +12776,7 @@ const SKILL_FULL={
  "헤드샷":"매 턴 첫번째 자동변환단총의 공격 피해량이 8(추가 † ) 증가합니다. 이 피해는 치명타가 적용될때 2배가 아닌 3배의 피해를 줍니다.",
  "화음과 리듬":"리페는 _음율란_을 3개 가지고 시작합니다.\n기술을 통해 _음을란_을 모두 채우면, _음율_을 노래합니다",
  "화살비":"사용한도(1). 모든 적에게 피해를 8(추가 † ) 줍니다.",
- "확산":"감염된 적들에게 보호약화를 1 부여하고, 대상의 거리1 내의 다른 적들을 1회 감염시킵니다.",
+ "확산":"적을 감염시킵니다. 감염이 2회 이상 중첩되었다면, 보호약화를 1 부여하고 거리 1 내의 대상도 감염시킵니다.",
  "환상통":"잠금(1). 쿠렘타이의 추가 마법력*( )*만큼 모든 적에게 피해를 줍니다.",
  "회오리 장막":"카제가 3회 이동하거나 피해를 주면, 그 턴에 보호막을 1(추가 ¤ ) 얻습니다.",
  "후미 준비":"잠금(1). 가장 뒤로 이동하고 체력을 5 회복합니다.\n지나간 아군들에게 보호막을 5(추가 ¤ ) 부여합니다.\n선두 방어로 전환합니다."
@@ -12888,6 +12930,30 @@ HEROES["플레어와 플로우"]={title:"물과 불의 정령들",role:"보호, 
    {n:"물과 불",cost:3,costType:"mom",el:"마법",tg:"self",elemental:1,d:"추진력 3, 플로우, 거리 2의 적에게 공격약화, 마법약화 1 / 플레어, 화상 1, 이번 턴에 쓸 때마다 값 +1"},
    {n:"조화",cost:1,el:"마법",tg:"foe",lock:1,harmony:1,dmg:10,d:"잠금(1), 피해 10(추가 마법력+보호력), 플로우, 준 피해만큼 보호막 / 플레어, 치명타"}
   ]};
+/* ═══ 레이 — 숲의 전사 (노트 20-0 ~ 20-4, 사용자 2026-10-21) ═══
+   선 칸이 **태세**를 정하고, 1·2번 기술이 통째로 갈아 끼워진다.
+     1 · 2번 칸 → 주술사 (번개 구체 · 주술사의 다짐)
+     3 · 4 · 5번 칸 → 전사 (벼락칼날 · 전사의 다짐)
+   ⚠️ 갈아 끼우는 곳은 rayStance() **한 곳**이다. 여기 적힌 꼴이 전사 태세(기본)이고,
+      alt 쪽이 주술사 태세다 — 헥토 공방전(hectoSlotFix)과 같은 집안 결이다.
+      라운드가 열리면 altReset 이 기본 꼴로 돌리고 rayStance 가 다시 칸에 맞춘다 */
+HEROES["레이"]={title:"숲의 전사",role:"공격, 마법, 태세",hp:20,mana:3,hpLv:2,
+  focus:"전사와 주술사 태세, 연쇄 공격, 재배치",
+  passive:{n:"적응성",d:"1, 2번 칸에 배치하면 그 라운드 동안 주술사 태세, 3, 4, 5번 칸이면 전사 태세"},
+  skills:[
+   {n:"벼락칼날",cost:1,el:"공격",tg:"foe",dmg:2,rayBolt:1,rayK:"전사",
+    d:"피해 2(추가 공격력), 1칸 뒤에 적이 있으면 그 적에게 반복",
+    alt:{n:"번개 구체",cost:1,el:"마법",tg:"foe",dmg:2,rayOrb:1,rayK:"주술사",
+         d:"피해 2(추가 마법력)를 주는 구체, 3번째 구체는 치명타"}},
+   {n:"전사의 다짐",cost:1,el:"보호",tg:"self",shield:2,atkShield:1,rayK:"전사",
+    d:"보호막 2(추가 공격력)",
+    alt:{n:"주술사의 다짐",cost:1,el:"집중",tg:"self",rayVow:1,rayK:"주술사",
+         d:"다음 번개 구체가 지나간 적들에게도 피해"}},
+   {n:"천둥의 기운",cost:0,el:"집중",tg:"self",limit:1,rayThunder:1,
+    d:"사용한도(1), 이번 턴에 적에게 피해를 줄 때마다 체력 1 회복"},
+   {n:"전략 변경",cost:0,el:"집중",tg:"self",limit:1,rayRecall:1,
+    d:"사용한도(1), 레이를 다시 손패로 (체력은 그대로, 버프와 디버프 · 마나 · 사용한도 초기화)"}
+  ]};
 HEROES["보아"]={title:"균열의 짐승",role:"공중, 비늘",hp:20,mana:2,hpLv:2,
   focus:"공중 띄우기, 상대방 이동, 전용 자원",
   passive:{n:"적응성 비늘",d:"내 턴이 끝날 때 보호막 1(+보호력+이번 턴에 모은 비늘 조각)"},
@@ -12913,7 +12979,8 @@ HEROES["파벨"]={title:"모험심 가득한 창조자",role:"보호, 소환",hp
   ]};
 const START_PICKS=["나이코스","카제","굴라"];
 const HERO_POOL=["나이코스","카제","굴라","헥토","트리스탄","인비디아","도미니코",
- "쿠렘타이","이테리오","그슨대","오토","플레어와 플로우","이라","파벨","오리온","데린저"];
+ "쿠렘타이","이테리오","그슨대","오토","플레어와 플로우","이라","파벨","오리온","데린저",
+ "레이"];   /* 노트 20 — 전용 보상이 아직 없어 PLAYABLE 에는 아직 (사용자 2026-10-21) */
 /* 지금 판에 올릴 수 있는 대원.
    나머지는 전용 보상이 아직 임시라 빼 두었다 — 여기에 이름을 도로 넣으면 된다.
    영웅 도감은 이 목록을 보지 않는다. 거기서는 열넷을 다 구경할 수 있다. */
@@ -12974,7 +13041,8 @@ const HERO_TAGS={
  "트리스탄":{fac:"왕실",      job:["궁수"],               race:"망자"},
  "오토":    {fac:"정령숲",    job:["지원가"],    race:"기계"},   /* 수호자 뺌 (사용자 2026-10-04, 노트와 같게) */
  "보아":    {fac:"균열",      job:["학살자"],             race:"야수"},
- "플레어와 플로우":{fac:"정령숲",job:["마법사","수호자"],   race:"정령"}
+ "플레어와 플로우":{fac:"정령숲",job:["마법사","수호자"],   race:"정령"},
+ "레이":            {fac:"정령숲",job:["투사","마법사"],     race:"정령"}   /* 새 대원 — 노트 20 (사용자 2026-10-21) */
 };
 const tagsOf=n=>HERO_TAGS[n]||{fac:"",job:[],race:""};
 /* 그 대원의 진영 · 직업 · 종족 — 악마화한 도미니코는 악마 · 학살자 (노트 2026-10-06) */
@@ -22187,6 +22255,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 201, "v": "0.7", "d": "2026-10-21", "t": "새 대원 레이 (태세 둘) · 인비디아 리메이크 (사용자 2026-10-21)", "big": 0},
  {"b": 200, "v": "0.7", "d": "2026-10-21", "t": "고철의 무덤 — 일반 조합 31 · 2·3라운드 28 (ppt 그대로)", "big": 0},
  {"b": 199, "v": "0.7", "d": "2026-10-21", "t": "설계도 도둑 그림 손질 (사용자)", "big": 0},
  {"b": 198, "v": "0.7", "d": "2026-10-21", "t": "고철의 무덤 — 적 손질 · 기믹 칸 표시 규칙 · 효과음", "big": 0},
@@ -23579,7 +23648,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=200;
+const BUILD_NO=201;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -29603,7 +29672,8 @@ const CARD_META={
  /* 상점 전투 카드 일곱 (사용자 2026-10-14) */
  "섬광이 담긴 병":{src:"상점"}, "산성 병":{src:"상점"}, "기름 항아리":{src:"상점"},
  "해독제":{src:"상점"}, "밧줄":{src:"상점"}, "마나 결정":{src:"상점"}, "각성초":{src:"상점"},
- "분해기":{src:"상점, 고철의 무덤"}
+ "분해기":{src:"상점, 고철의 무덤"},
+ "시기의 역병":{src:"인비디아",gone:1}
 };
 const CARD_LIB={
  /* 첨탑 관리자가 끼워 넣는 카드 — 소멸성. 쓰면 아군에게 기절 (사용자 2026-09-15) */
@@ -29665,6 +29735,12 @@ const CARD_LIB={
             a.deb={};
             fx({side:"mine",slot:a.slot,s:"heal",ring:"#7fd39a",txt:n?"정화 "+n:"깨끗함",cls:"heal",gap:60});
             say(`해독제 — ${a.name}의 부정적인 효과 ${n}개를 걷어냅니다.`,"t2") }},
+ /* 인비디아의 카드 — 역병군주가 전투 시작 시 쥐여 준다 (사용자 2026-10-21) */
+ "시기의 역병":{single:1,d:"대상 적을 감염시킵니다.",foe:1,gone:1,
+   use:f=>{ if(!f||!f.alive){ say("감염시킬 적이 없습니다.","t2"); return "keep" }
+     infectFoe(f,1);
+     fx({side:"foe",slot:f.slot,ring:"#8f5fd0",txt:"감염",cls:"shd",gap:90});
+     say(`시기의 역병 — ${f.name}${jo(f.name,"eul")} 감염시킵니다.`,"t2") }},
  /* 고철의 무덤 전용 상점 카드 (사용자 2026-10-21) — 잔해를 부순다 */
  "분해기":{d:"전장의 잔해를 하나 파괴합니다.",
    use:()=>{ const W=(B&&B.foes||[]).filter(x=>!x.alive&&x.wreck&&x.slot>0);
@@ -32800,6 +32876,9 @@ const ROUND_RESET={
      독서 중첩 · 축복 · 회피 · 산들바람 무료 · 탄알 · 비늘 조각 · 어둠 조각 · 음율란 · 순환의 선율 · 독소 침 */
   read:0, blessed:0, evade:0, evadeTmp:0, free:0, endCount:0, limBonus:{},   /* evadeTmp — 다음 턴에 사라지는 회피 몫 (라이티늄 지팡이 축복) */
   taunt:0, tauntDefOn:0, emptyDefOn:0,   /* 도발 — 특별한 말이 없으면 라운드가 바뀔 때 풀린다 · 탈피 — 해당 라운드 (사용자 2026-10-06) */ ammo:5, scale:0, scaleTurn:0, dark:0, tunes:[], encore:0, venom:0,
+  /* 레이 — 태세와 구체 셈은 라운드마다 (노트 : 「해당 라운드 동안」, 2026-10-21).
+     rayK 를 비워야 altReset 뒤 rayStance 가 다시 칸에 맞춘다 */
+  rayK:0, rayOrbs:0, rayVow:0,
   portal:null, bomb:0, minions:[]};
 const BATTLE_RESET={
   summoned:0, purified:0, hpMagOn:0, taintOn:0, rageOn:0, rageDefOn:0, chainOn:0, soundOn:0, barsArmorOn:0,   /* 이라 — 늘 따라가는 몫 (2026-10-12 · 10-13) */
@@ -36399,6 +36478,7 @@ function drawBattle(app){
   try{ if(B&&B.foes) B.foes.forEach(f=>{ if(f&&f.name&&f.alive!==false) dexSee("foe",f.name) });
     if(B&&B.mins) B.mins.forEach(f=>{ if(f&&f.name) dexSee("foe",f.name) }) }catch(e){}
   if(run&&run.heroes) run.heroes.forEach(hectoSlotFix);   /* 공방전 — 지금 칸에 맞는 꼴로 */
+  if(run&&run.heroes) run.heroes.forEach(h=>rayStance(h));   /* 레이 적응성 — 비어 있을 때만 채운다 (부활처럼 onSummon 을 안 지나는 길, 2026-10-21) */
   if(run&&run.heroes) run.heroes.forEach(fortSync);   /* 진지 구축 — 성벽 뒤면 추가 공격력 */
   if(run&&run.heroes) run.heroes.forEach(domHateSync);   /* 악마 혐오 — 상시 */
   if(run&&run.heroes) run.heroes.forEach(alwaysSync);   /* 늘 따라가는 몫 — 생명 · 복수귀 · 흡수 · 오염을 한 자리에서 (2026-10-13) */
@@ -36982,7 +37062,9 @@ function breakdown(h,sk,key){
     if(st.v){ total+=st.v; parts.push(st) }
   }
   if(key==="dmg"&&sk.harmony&&h.def&&!skillFlat(sk)){ total+=h.def; parts.push({n:"추가 보호력",v:h.def}) }   /* 조화 — 마법력 + 보호력 (노트 기호 ∴,¤). extraParts 는 richLive 와 겹쳐 못 쓴다 */
-  if(key==="shield"&&h.def&&!skillFlat(sk)){ total+=h.def; parts.push({n:"추가 보호력",v:h.def}) }
+  /* 전사의 다짐 — 보호막에 **공격력**을 얹는다 (노트 20-2 의 †, 2026-10-21) */
+  if(key==="shield"&&sk.atkShield){ if(h.atk&&!skillFlat(sk)){ total+=h.atk; parts.push({n:"추가 공격력",v:h.atk}) } }
+  else if(key==="shield"&&h.def&&!skillFlat(sk)){ total+=h.def; parts.push({n:"추가 보호력",v:h.def}) }
   if(key==="houndHeal"&&h.def&&!skillFlat(sk)){ total+=h.def; parts.push({n:"추가 보호력",v:h.def}) }   /* 사냥개 부리기 — 노트 18-2 의 ¤ (사용자 2026-10-15) */
   extraParts(h,sk,key).forEach(p=>{ total+=p.v; parts.push(p) });
   if(key==="dmg"){ const w=critWhy(h,sk,null); if(w){ total*=2; parts.push({n:w,v:"치명타 ×2"}) } }   /* 늘 치명타 — 기술 칸과 같은 값 */
@@ -37167,8 +37249,15 @@ const PASSIVE_INFO={
   {n:"질투의 악마",
    d:h=>`감염된 적은 턴이 끝날 때 피해를 `
         +`${bk(1,[{n:"추가 마법력",v:h.mag},{n:"강화",v:h.tag.plaguePlus||0}])} 받고 중첩이 1 줄어듭니다.`},
-  {n:"재능 시기",p:"감염 총합",
-   d:h=>`적을 처치할 때마다 각각 25% 확률로 공격력, 마법력, 보호력 1, 최대 체력 4를 <b>이번 전투 동안</b> 얻습니다.`}],
+  /* 노트 리메이크 (사용자 2026-10-21) — 옛 지속 「재능 시기」를 걷고 「역병군주」로.
+     ⚠️ 「재능 시기」는 이제 **궁극기 이름**이다. 지속에 같은 이름을 두면 설명창이 엉킨다 */
+  {n:"역병군주",
+   d:h=>`전투 시작 시 「시기의 역병」 ${1+((h.tag&&h.tag.plagueMore)||0)}장을 가져옵니다.`}],
+ /* 레이 — 노트 20-0 (2026-10-21). ⚠️ 여기 없으면 전투 화면에 지속이 한 줄도 안 뜬다 (passHtml) */
+ "레이":[
+  {n:"적응성",
+   d:h=>`${(h.slot>0)?`지금 ${h.slot}번 칸 — <b>${rayStanceOf(h.slot)} 태세</b>입니다. `:""}`
+        +`1, 2번 칸에 배치하면 해당 라운드 동안 주술사 태세, 3, 4, 5번 칸에 배치하면 전사 태세가 됩니다.`}],
  "쿠렘타이":[
   {n:"영혼 수확",p:"영혼",
    d:h=>`무언가 죽을 때마다 영혼을 모읍니다. (일반 1, 정예 3, 우두머리 6, 아군 3) `
@@ -38421,6 +38510,7 @@ function soloCheck(h){
 }
 function onSummon(h){
   handOpenFor(h);
+  rayStance(h,1);   /* 레이 적응성 — 배치하는 그 순간에 태세가 정해진다 (노트 20-0, 2026-10-21) */
   const t=h.tag;
   if(h.name==="데린저"&&t.placeAmmoEsh){ const v=ammoMaxOf(h)*t.placeAmmoEsh;
     h.eshield=(h.eshield||0)+v;
@@ -38611,6 +38701,9 @@ function onSummon(h){
   /* ── 아래는 전투 시작 효과 : 그 전투에서 처음 나설 때 한 번만 ── */
   if(h.summoned) return;
   h.summoned=1;
+  /* 역병군주 — 노트 7-0-2 : 「**전투 시작 시**, 시기의 역병 1장을 가져옵니다」.
+     ⚠️ 그래서 이 줄은 h.summoned 문 **아래**다 — 위에 두면 라운드마다(배치마다) 한 장씩 쥐게 된다 */
+  if(h.name==="인비디아") handAddCard("시기의 역병",{gone:1},1+((h.tag&&h.tag.plagueMore)||0));
   if(h.name==="데린저"&&t.startShoes){
     /* 도착 연출이 없는 지급에는 arrive를 달지 않는다. 첫 턴부터 보이고 잡혀야 한다. */
     handAddCard("간이 신발",{gone:1},t.startShoes);
@@ -39232,6 +39325,8 @@ function critWhy(h,s,tgt){
   /* 사냥의 기류 — 기류가 흐르는 자리의 적에게 주는 오리온의 피해 (노트 18-0, 2026-10-14).
      **대상에 걸린 규칙**이라 기술 칸에는 안 적힌다 (점화 · 대상 포착과 같은 결) */
   if(tgt&&typeof driftHas==="function"&&driftHas(tgt.slot)&&orionCrew(h)) return "사냥의 기류";
+  /* 레이 — 세 번째 번개 구체 (노트 20-1). 쓰기 전에 알 수 있는 셈이라 기술 칸에도 두 배로 보인다 */
+  if(s.rayOrb&&(((h.rayOrbs||0)+1)%3===0)) return "세 번째 구체";
   if(h&&h.name==="데린저"&&tgt&&h.aimAt2!=null&&tgt.id===h.aimAt2) return "정확 조준";   /* 부착: 이중 조준경 (2026-10-15) */
   if(s.harmony&&(ffFlare(h)||T.disharmony)) return T.disharmony&&!ffFlare(h)?"부조화":"플레어";
   return null;
@@ -40182,6 +40277,9 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
   /* 🔑 오리온의 「때린 뒤」 보상은 **여기**서 묻는다 (사용자 2026-10-15 :
      「트리스탄이 때려도 표식이 안 붙는다」). 기술마다 가지가 달라 한 가지에만 걸어 두면
      활잡이의 farshot 길처럼 **앞서 return 하는 가지**는 통째로 빠진다 */
+  /* 천둥의 기운 — 레이가 적에게 피해를 줄 때마다 (노트 20-3, 2026-10-21).
+     죽는 한 방도 센다 — 그래서 f.alive 를 묻지 않는다 */
+  if(d>0) rayThunderTick(B.lastAttacker);
   if(f.alive&&d>0&&typeof orionAfterHit==="function") orionAfterHit(B.lastAttacker,null,f);
 }
 /* ★ 피해의 주인은 B.lastAttacker 다 — 기술이든, 그 대원이 찬 장신구든, 화상이든.
@@ -40677,6 +40775,16 @@ function airborne(h,f){
       say(`${f.name} 화상 ${f.burn}`,"t2") }
   }
 }
+/* 재능 시기 — **부정적 효과의 종류 수** (중첩이 아니다. 사용자 2026-10-21).
+   디버프 표(DEB_KEYS)와 적이 따로 쥔 나쁜 것들을 한 번씩만 센다 */
+function envyKinds(f){
+  if(!f) return 0;
+  let n=0;
+  if(typeof DEB_KEYS!=="undefined") DEB_KEYS.forEach(k=>{ if(deb(f,k)>0) n++ });
+  [f.infect,f.burn,f.mark,f.scent,f.lead,f.weak,f.weakAtk,f.stun,f.air].forEach(v=>{ if(v>0) n++ });
+  if(typeof grimoireCount==="function"&&grimoireCount(f)>0) n++;
+  return n;
+}
 function doSkill(target){
   if(B.busy) return;
   if(B.golem||B.srcPick){   /* 고르는 화면이 먼저다 — 둘이 겹쳐 뜨면 포개진다 */
@@ -40931,7 +41039,8 @@ function doSkill(target){
             L.forEach(a=>{ const g=addShield(a,v); fx({side:"mine",slot:a.slot,s:"shield",txt:"+"+g,cls:"shd",gap:80}) });
           say(`집결하라! — 왕실 ${L.map(a=>a.name).join(", ")} 보호막 +${v*h.tag.rally}`,"t2") } }
     }
-    if(s.alt&&!s.altBy&&!(h.name==="헥토"&&i===0&&h.tag&&h.tag.slotFix)){   /* 공방전 — 칸이 정한다 (hectoSlotFix) */
+    if(s.alt&&!s.altBy&&!(h.name==="헥토"&&i===0&&h.tag&&h.tag.slotFix)
+       &&!(h.name==="레이"&&i<2)){   /* 공방전 · 레이 적응성 — 칸이 정한다 (hectoSlotFix · rayStance) */
       const back=Object.assign({},s); const nx=Object.assign({},s.alt);
       back.mods=s.mods; nx.mods=s.alt.mods;
       delete back.alt; nx.alt=back; h.sk[i]=nx;
@@ -42485,13 +42594,36 @@ function runEffect0(h,i,s,target){
     return;
   }
   if(s.spread){
-    B.foes.filter(f=>f.alive&&f.infect>0).forEach(f=>pulseFX("foe",f.slot,"#8f5fd0",2));
     const t2=foeAt(target); if(!t2){ say("그 칸에는 적이 없습니다.","t2"); return }
-    const r=h.tag.spreadRange||1;
-    B.foes.filter(f=>f.alive&&f.infect>0).forEach(f=>{ f.weak=(f.weak||0)+1 });
+    /* 노트 리메이크 (사용자 2026-10-21) — **그 대상의 감염이 spreadMin 이상일 때만**
+       보호약화와 번짐이 따라온다. 전에는 감염만 있으면 전부에게 보호약화를 걸었다 */
+    const need=s.spreadMin||0, big=(t2.infect||0)>=need;
+    pulseFX("foe",t2.slot,"#8f5fd0",2);
     infectFoe(t2,1);
-    B.foes.filter(f=>f.alive&&f!==t2&&Math.abs(f.slot-t2.slot)<=r).forEach(f=>infectFoe(f,1));
-    say("확산 — 감염이 번집니다.","t1"); return;
+    if(big){
+      const r=h.tag.spreadRange||1;
+      t2.weak=(t2.weak||0)+1;
+      B.foes.filter(f=>f.alive&&f!==t2&&Math.abs(f.slot-t2.slot)<=r).forEach(f=>{
+        pulseFX("foe",f.slot,"#8f5fd0",2); infectFoe(f,1) });
+      say("확산 — 감염이 번집니다.","t1");
+    } else say(`확산 — ${t2.name}${jo(t2.name,"eul")} 감염시킵니다.`,"t2");
+    return;
+  }
+  /* 재능 시기 — 적에게서 체력을 빼앗는다. **부정적 효과의 종류 수**만큼 되풀이 (2026-10-21) */
+  if(s.envy){
+    const t2=foeAt(target); if(!t2){ say("그 칸에는 적이 없습니다.","t2"); return }
+    const kinds=envyKinds(t2), n=Math.max(1,kinds);
+    let got=0;
+    for(let q=0;q<n;q++){
+      const was=t2.hp;
+      asSrc(h,()=>hurt(t2,s.envy,"재능 시기","마법"));
+      got+=Math.max(0,was-Math.max(0,t2.hp));
+      if(!t2.alive) break;
+    }
+    if(got){ healUp(h,got);
+      fx({side:"mine",slot:h.slot,s:"heal",ring:"#c58fb0",txt:"+"+got,cls:"heal",gap:80}) }
+    say(`재능 시기 — ${t2.name}에게서 ${n}번 빼앗아 체력 ${got}을 가져옵니다. (부정적 효과 ${kinds}종)`,"t1");
+    return;
   }
   if(s.burst){
     B.foes.filter(f=>f.alive&&f.infect>0).forEach((f,k)=>
@@ -42655,8 +42787,36 @@ function runEffect0(h,i,s,target){
       for(let q=0;q<h.tag.gustLift;q++) airborne(h,rnd(L)) } } }   /* 겹친 수만큼 (2026-10-11) */
     return;
   }
+  /* ── 레이 (노트 20-2 ~ 20-4, 사용자 2026-10-21) ── */
+  if(s.rayVow){   /* 주술사의 다짐 — 다음 번개 구체가 지나간 적들에게도 */
+    h.rayVow=1;
+    fx({side:"mine",slot:h.slot,s:"buffup",ring:"#9ecbf5",txt:"다짐",cls:"buf",glow:1,gap:80});
+    say(`주술사의 다짐 — 다음 번개 구체가 지나간 적들에게도 피해를 줍니다.`,"t1");
+  }
+  if(s.rayThunder){   /* 천둥의 기운 — 「이번 턴에」라 턴 번호를 쥔다 */
+    h.rayThunderT=B.turn;
+    fx({side:"mine",slot:h.slot,s:"buffup",ring:"#f0d890",txt:"천둥",cls:"buf",glow:1,gap:80});
+    say(`천둥의 기운 — 이번 턴에 적에게 피해를 줄 때마다 체력을 1 회복합니다.`,"t1");
+  }
+  if(s.rayRecall){   /* 전략 변경 — 레이를 다시 손패로 */
+    const sl=h.slot;
+    /* 체력은 그대로 두고, 버프 · 디버프 · 마나 · 사용한도를 되돌린다 (노트 20-4 의 주석).
+       ⚠️ **제 사용한도는 되돌리지 않는다** — 되돌리면 한 턴에 끝없이 자리를 바꿀 수 있다 (사용자에게 올려 둠) */
+    const keep=(h.limitUsed&&h.limitUsed[i])||0;
+    clearRndTmp(h); clearTurnTmp(h);
+    h.deb={}; h.shield=0; h.keepShield=0; h.eshield=0; h.armor=0; h.taunt=0;
+    h.lock={}; h.lockNew={}; h.limitUsed={}; h.limitUsed[i]=keep;
+    h.mana=h.maxMana;
+    h.rayK=0; h.rayOrbs=0; h.rayVow=0; h.rayThunderT=null;
+    h.slot=0;
+    altReset(h);   /* 기술 둘을 기본 꼴로 — 다시 놓을 때 rayStance 가 그 칸에 맞춘다 */
+    fx({side:"mine",slot:sl,s:"step",ring:"#9ecbf5",txt:"전략 변경",cls:"moved",glow:1,gap:120});
+    handAdd({type:"hero",hero:h});
+    say(`전략 변경 — ${h.name}${jo(h.name,"ig")} 손패로 돌아갑니다.`,"t1");
+    return;
+  }
   /* 공통 : 보호막 · 회복 */
-  if(s.shield){ let v=s.shield+mod(s,"shield")+(skillFlat(s)?0:h.def);
+  if(s.shield){ let v=s.shield+mod(s,"shield")+(skillFlat(s)?0:(s.atkShield?(h.atk||0):h.def));   /* atkShield — 전사의 다짐은 공격력 (2026-10-21) */
     if(h.name==="나이코스"&&i===1&&h.tag.firstGuard&&h.first.guard!==1){
       v+=h.tag.firstGuard+h.def; h.first.guard=1 }
     v=addShield(h,v);   /* 보호약화는 addShield 가 */
@@ -43052,6 +43212,34 @@ function runEffect0(h,i,s,target){
           say(`승리의 일격 — 베기가 영구히 ${v} 강해집니다.`,"t1") }
         break;
       }
+    }
+    /* ── 레이 벼락칼날 — 1칸 뒤에 적이 있으면 그 적에게 반복 (노트 20-1, 2026-10-21).
+       노트 주석 그대로 : 3번을 때리면 4 · 5도 받고, 3 · 5만 있으면 4가 비어 이어지지 않는다 */
+    if(s.rayBolt&&tgt){
+      let nx=tgt.slot+1, hit=0;
+      while(nx<=SLOTS){
+        const t2=B.foes.find(f=>f.alive&&f.slot===nx);
+        if(!t2) break;
+        fx({side:"foe",slot:nx,ring:"#cfe4ff",gap:90});
+        asSrc(h,()=>hurt(t2,dmg,s.n,"slash",0,CRIT,1));
+        hit++; nx++;
+      }
+      if(hit) say(`벼락칼날 — 번개가 뒤의 적 ${hit}에게 이어집니다.`,"t2");
+    }
+    /* ── 레이 번개 구체 — 셈을 올리고, 다짐이 서 있으면 지나간 적들에게도 (노트 20-1 · 20-2) */
+    if(s.rayOrb){
+      if(h.rayVow&&tgt){
+        h.rayVow=0;
+        const pass=B.foes.filter(f=>f.alive&&f!==tgt&&f.slot<tgt.slot);
+        if(pass.length){
+          say(`주술사의 다짐 — 구체가 지나간 적 ${pass.length}에게도 피해를 줍니다.`,"t1");
+          pass.slice().sort((a,b)=>a.slot-b.slot).forEach(f=>{
+            fx({side:"foe",slot:f.slot,ring:"#9ecbf5",gap:70});
+            asSrc(h,()=>hurt(f,dmg,s.n,"mag",0,CRIT,1)) });
+        } else say("주술사의 다짐 — 구체가 지나간 적이 없습니다.","t2");
+      }
+      /* ⚠️ 셈은 **맨 나중에** 올린다 — critWhy 가 「다음이 세 번째인가」를 보기 때문이다 */
+      h.rayOrbs=(h.rayOrbs||0)+1;
     }
     /* 쇠사슬 올가미 — 때린 뒤 거리 1 안의 자리를 고르게 한다 (노트 18-3, 2026-10-14).
        사용자 주석 : 「적 눌러서 피해를 주고, 그다음에 적 위치 거리 1 내로 원하는 곳을 눌러 이동」.
