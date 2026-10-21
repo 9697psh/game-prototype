@@ -16194,7 +16194,7 @@ function drawEncDex(app){
         <div class="evdx-t">${q.rounds.map((r,i)=>`${i+1}라운드 — ${esc(r)}`).join("<br>")}</div></div></div>`)));
       wrap.appendChild(g4);
     }
-    const Q=ENC_SEQ[fi]||[];
+    const Q=fieldPick("seq",ENC_SEQ,fi)||[];   /* 1막 변형(고철의 무덤)도 (2026-10-21) */
     if(Q.length){
       wrap.appendChild(el(`<div class="dexhd" style="margin-top:12px">짜여진 구성, ${Q.length}가지</div>`));
       const g2=el(`<div class="evdx-grid encdx"></div>`);
@@ -19024,7 +19024,61 @@ const ACT1={
     {n:"재활용", w:6, foes:["재활용기","배관"], slots:[2,4], min:1},
     {n:"규격 검사", w:5, foes:["규격 검사기","보급 레일"], slots:[3,5], min:1},
     {n:"분해 공정", w:5, foes:["분해 라인","수거 드론","수거 드론"], rnd:1, min:1},
-    {n:"설계도 도둑", w:4, foes:["설계도 도둑","순찰기"], slots:[4,2], min:1}],
+    {n:"설계도 도둑", w:4, foes:["설계도 도둑","순찰기"], slots:[4,2], min:1},
+    /* ── ppt 에서 늘린 열다섯 (사용자 2026-10-21) ── */
+    {n:"도둑들", w:4, foes:["설계도 도둑","밀수꾼"], slots:[2,3], vary:{"설계도 도둑":[1,2]}, min:1},
+    {n:"오염 수집가", w:3, foes:["녹아내린 기체","녹아내린 기체","고철 수집가"], slots:[1,2,4],
+      vary:{"녹아내린 기체":[1,2]}, min:1},
+    {n:"배관 수리", w:3, foes:["보급 레일","배관","배관"], slots:[1,3,4], vary:{"배관":[1,2]}, min:1},
+    {n:"배관공", w:4, foes:["배관","배관","고철 수집가"], slots:[1,2,5], vary:{"배관":[1,2]}, min:1},
+    {n:"오염 수집가 2", w:3, foes:["균열 용광로","고철 수집가"], slots:[2,4], min:1},
+    {n:"시한폭탄", w:3, foes:["균열 용광로","균열 용광로"], slots:[2,3], min:1},
+    {n:"배관 수리 기계", w:5, foes:["배관","배관","수거 드론"], slots:[1,2,4], min:1},
+    {n:"오염 재활용기1", w:2, foes:["재활용기","균열 용광로"], slots:[2,5], rnd:1, back:["균열 용광로"], min:1},
+    {n:"오염 재활용기2", w:3, foes:["재활용기","녹아내린 기체","녹아내린 기체"], slots:[2,4,5],
+      vary:{"녹아내린 기체":[1,2]}, min:1},
+    {n:"오염된 기계들", w:5, foes:["녹아내린 기체","녹아내린 기체","균열 용광로"], slots:[1,2,5],
+      vary:{"녹아내린 기체":[1,2]}, min:1},
+    {n:"용병1", w:4, foes:["해체공","순찰기"], slots:[1,4], rnd:1, min:1},
+    {n:"제한 시간", w:3, foes:["밀수꾼","균열 용광로"], slots:[4,5], rnd:1, back:["균열 용광로"], min:1},
+    {n:"오염 검사", w:5, foes:["녹아내린 기체","규격 검사기","녹아내린 기체","녹아내린 기체"],
+      slots:[2,3,4,5], rnd:1, fixed:["규격 검사기"], min:1},
+    {n:"배관 분해", w:4, foes:["배관","배관","분해 라인"], slots:[2,3,4], min:1},
+    {n:"수리와 분해", w:4, foes:["보급 레일","분해 라인"], slots:[1,4], min:1}],
+   /* ── 2 · 3라운드 묶음 (사용자 2026-10-21 — ppt 의 일반 서른하나를 결대로 이었다) ──
+      이 구역의 결 : ① 잔해를 남기는 적 뒤에 먹는 적 ② 오염이 번진다
+      ③ 도둑이 털고 달아난다 ④ 공장이 점점 달아오른다 */
+   seq:[
+    /* ── 2라운드 ── */
+    {n:"드론 공장",rounds:["드론 무리","드론과 용접 팔"]},
+    {n:"용접 작업장",rounds:["용접 작업","배관 수리 기계"]},
+    {n:"보급선",rounds:["레일 방어선","수리와 분해"]},
+    {n:"순찰 교대",rounds:["순찰","공장 수비"]},
+    {n:"줍는 손들",rounds:["줍는 자들","해체 현장"]},
+    {n:"해체 작업",rounds:["해체 현장","배관 분해"],rnd:1},
+    {n:"도둑질",rounds:["밀수","도둑들"]},
+    {n:"털고 달아나기",rounds:["설계도 도둑","제한 시간"]},
+    {n:"오염이 번진다",rounds:["오염","오염된 기계들"]},
+    {n:"녹아내리는 공장",rounds:["오염 수집가","오염 재활용기2"],rnd:1},
+    {n:"달아오름",rounds:["달아오른 공장","시한폭탄"]},
+    {n:"규격 미달",rounds:["규격 검사","오염 검사"]},
+    {n:"재활용 공정",rounds:["재활용","오염 재활용기1"]},
+    {n:"배관 공사",rounds:["배관공","배관 수리"],rnd:1},
+    {n:"분해 공정",rounds:["분해 공정","배관 분해"]},
+    {n:"용병과 기계",rounds:["용병1","약탈자와 기계"],rnd:1},
+    {n:"고철 줍기",rounds:["오염 수집가 2","줍는 자들"]},
+    /* ── 3라운드 ── */
+    {n:"공장 한 바퀴",rounds:["드론 무리","용접 작업","공장 수비"]},
+    {n:"잔해의 사슬",rounds:["배관 수리","재활용","분해 공정"]},
+    {n:"오염 확산",rounds:["오염","오염 수집가","오염된 기계들"]},
+    {n:"끓어오르는 공장",rounds:["달아오른 공장","시한폭탄","오염 검사"]},
+    {n:"도둑 소굴",rounds:["밀수","설계도 도둑","도둑들"]},
+    {n:"수거와 해체",rounds:["줍는 자들","해체 현장","약탈자와 기계"],rnd:1},
+    {n:"보급 라인",rounds:["레일 방어선","수리와 분해","배관 수리 기계"]},
+    {n:"순찰 강화",rounds:["순찰","용병1","공장 수비"]},
+    {n:"배관 정비",rounds:["배관공","배관 분해","배관 수리 기계"]},
+    {n:"재활용 공장",rounds:["재활용","오염 재활용기1","오염 재활용기2"]},
+    {n:"검사 공정",rounds:["규격 검사","오염 검사","분해 공정"],rnd:1}],
    boss:"폐기물 더미",
    elite:[
     {n:"1세대 돌보미", w:8, foes:["1세대 돌보미"], slots:[3], min:1},
@@ -22133,6 +22187,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 200, "v": "0.7", "d": "2026-10-21", "t": "고철의 무덤 — 일반 조합 31 · 2·3라운드 28 (ppt 그대로)", "big": 0},
  {"b": 199, "v": "0.7", "d": "2026-10-21", "t": "설계도 도둑 그림 손질 (사용자)", "big": 0},
  {"b": 198, "v": "0.7", "d": "2026-10-21", "t": "고철의 무덤 — 적 손질 · 기믹 칸 표시 규칙 · 효과음", "big": 0},
  {"b": 197, "v": "0.7", "d": "2026-10-21", "t": "고철의 무덤 손질 — 적 버릇 · 전용 구역 · 연출 · 효과음", "big": 0},
@@ -23524,7 +23579,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=199;
+const BUILD_NO=200;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -29078,7 +29133,7 @@ function startDungeon(cell,r,c){
   if(cell.t==="ambush"&&!run.night){ const n=Math.min(3,Math.max(2,run.heroes.length)); run.dun.forceFoes=[]; for(let i=0;i<n;i++) run.dun.forceFoes.push(["감옥 경비병",i+1]) }   /* 낮 습격 = 간수 초소·순찰로의 경비병 */
   /* 여러 라운드 전투 — 절반은 짜여진 구성(ENC_SEQ), 절반은 라운드마다 무작위 (ppt 1장) */
   if(cell.seq){ run.dun.seq=cell.seq.slice(); run.dun.seqName=cell.seqName }   /* 칸을 놓을 때 정해 둔 구성 (encRoll) */
-  else if(!cell.enc){ const f=Math.min(run.field,2), cands=(ENC_SEQ[f]||[]).filter(q=>q.rounds.length===run.dun.waves&&floorFit(encFoesOf(f,q),towerKindAtRow(r)));   /* 탑 — 그 층에 맞는 묶음만 (없으면 라운드마다 고른다) */
+  else if(!cell.enc){ const f=Math.min(run.field,2), cands=(fieldPick("seq",ENC_SEQ,f)||[]).filter(q=>q.rounds.length===run.dun.waves&&floorFit(encFoesOf(f,q),towerKindAtRow(r)));   /* 탑 — 그 층에 맞는 묶음만 (없으면 라운드마다 고른다) */
     if(run.dun.waves>1&&cands.length&&Math.random()<0.5&&(cell.t==="dungeon"||cell.t==="elite")){
       const q=rnd(cands); run.dun.seq=q.rnd?q.rounds.slice().sort(()=>Math.random()-0.5):q.rounds.slice(); run.dun.seqName=q.n } }
   if(cell.force) run.dun.forceFoes=cell.force.map(x=>x.slice());   /* 정해진 상대 (미믹 · 시련의 문, 2026-10-05) */
@@ -32246,7 +32301,7 @@ function encRoll(kind,fi,waves,fk,opening){
   let enc=null, seq=null, seqName=null;
   if(kind==="elite"&&eliteOf(f).length){ const L=eliteOf(f).filter(e=>(e.min||1)<=n&&!e.gim); enc=rnd(floorList(L.length?L:ELITE_ENC[f].filter(e=>!e.gim),e=>e.foes,fk)) }   /* gim — 기믹 구역 전용 (2026-09-30) */
   else {
-    const cands=(ENC_SEQ[f]||[]).filter(q=>q.rounds.length===(waves||1)&&floorFit(encFoesOf(f,q),fk));   /* 탑 — 그 층에 맞는 묶음만 */
+    const cands=(fieldPick("seq",ENC_SEQ,f)||[]).filter(q=>q.rounds.length===(waves||1)&&floorFit(encFoesOf(f,q),fk));   /* 탑 — 그 층에 맞는 묶음만 */
     if((waves||1)>1&&cands.length&&Math.random()<0.5){ const q=rnd(cands); seq=q.rnd?q.rounds.slice().sort(()=>Math.random()-0.5):q.rounds.slice(); seqName=q.n; enc=encByName(f,seq[0]) }
     if(!enc) enc=pickEncounter(f,n,1,fk,opening&&f===0&&(waves||1)===1?OPENING_PRISON_SKIP:null);
   }
