@@ -2711,6 +2711,20 @@ html.noscr, html.noscr body{overflow:hidden!important}   /* 가로만 숨기면 
 .pmap .cell:not(.adj):not(.here):not(.onroute){filter:none;opacity:.82}
 .pmap .cell.emp{background-color:transparent;border-style:solid;opacity:1}
 .pmap .cell.done{opacity:.35;filter:grayscale(.7)}
+/* 돌보미 기계가 온다 — 옛 칸에서 **두 번 통통** 튀며 들어오고, 닿을 때 살짝 갸웃한다
+   (사용자 2026-10-21 : 「귀엽게 이동하는 연출」). 마차의 결을 더 가볍고 둥글게 */
+.gridmap .cell.carehop .cico{animation:careHop 1.05s cubic-bezier(.33,.9,.4,1) var(--bd,0ms) both;
+  transform-origin:50% 92%}
+@keyframes careHop{
+  0%  {transform:translate(calc(var(--dx) * 100%),calc(var(--dy) * 100%)) scale(.92)}
+  14% {transform:translate(calc(var(--dx) * 74%),calc(var(--dy) * 74% - 26%)) scale(1.1,.9)}
+  30% {transform:translate(calc(var(--dx) * 50%),calc(var(--dy) * 50%)) scale(.9,1.12)}
+  46% {transform:translate(calc(var(--dx) * 26%),calc(var(--dy) * 26% - 20%)) scale(1.08,.92)}
+  64% {transform:translate(0,0) scale(.92,1.1)}
+  76% {transform:translate(0,-8%) scale(1.04,.96) rotate(-7deg)}
+  88% {transform:translate(0,0) scale(.98,1.02) rotate(5deg)}
+  100%{transform:translate(0,0) scale(1) rotate(0)}}
+@media (prefers-reduced-motion: reduce){ .gridmap .cell.carehop .cico{animation:none} }
 /* ㄱ자 벨트 — 이어지는 쪽으로 돌린다 (사용자 2026-10-21) */
 .beltturn{display:block;line-height:0;transform:rotate(var(--bt,0deg));transform-origin:50% 50%}
 .beltturn > *{display:block}
@@ -9424,7 +9438,10 @@ function flareShotFX(side,slot,from){
 function scrapPool(kind){
   const L=(kind==="elite")?((act1Of("elite")||[]).flatMap(e=>e.foes||[]))
                           :(act1Of("foes")||[]);
-  return [...new Set(L)].filter(n=>FOE[n]&&!FOE[n].boss&&!FOE[n].still&&!FOE[n].noMove&&!FOE[n].big);
+  /* ⚠️ **기계만** 뱉는다 (사용자 2026-10-21) — 고철 더미가 사람이나 악마를 뱉을 수는 없다.
+     붙박이(still · noMove)와 두 칸짜리(big)도 뺀다 — 뱉어 놓을 자리가 마땅치 않다 */
+  return [...new Set(L)].filter(n=>FOE[n]&&!FOE[n].boss&&!FOE[n].still&&!FOE[n].noMove&&!FOE[n].big
+    &&(FOE[n].race||FOE_RACE[n]||(FOE[n].demon?"악마":""))==="기계");
 }
 /* 뱉어내는 결 — 더미의 몸에서 튀어나와 그 칸에 떨어진다 (사용자 2026-10-21 : 「몸에서 던지는 듯한 연출」).
    ⚠️ 새 그림을 지어내지 않는다 — **그 소환물 제 스프라이트**가 날아간다 */
@@ -17065,10 +17082,10 @@ const FOE={
    chgMax:2,
    sk:[
     {n:"고철판 들기",w:4,tg:"none",chg:1,cond:"chgIdle",shield:6,
-      d:"2턴 동안 충전하고 보호막을 6 얻습니다. 충전이 끝나면 모든 상대에게 공격 피해를 8 줍니다."},
+      d:"2턴 동안 충전하고 보호막을 6 얻습니다. 충전이 끝나면 공격 범위와 상관없이 모든 상대에게 공격 피해를 8 줍니다."},
     {n:"고철판 들기",w:9,tg:"none",chg:1,cond:"charging",must:1,d:"충전을 이어 갑니다."},
-    {n:"고철판 내려치기",w:9,tg:"all",cond:"charged",must:1,spend:1,dmg:8,
-      d:"충전이 끝났습니다. 모든 상대에게 공격 피해를 8 줍니다."},
+    {n:"고철판 내려치기",w:9,tg:"all",anyRng:1,cond:"charged",must:1,spend:1,dmg:8,
+      d:"충전이 끝났습니다. 공격 범위와 상관없이 모든 상대에게 공격 피해를 8 줍니다."},
     {n:"집게질",w:4,tg:"near",dmg:4,d:"가장 가까운 상대에게 공격 피해를 4 줍니다."},
     {n:"방어",w:2,tg:"self",shield:4,d:"보호막을 4 얻습니다."},
     {n:"용접복",w:3,tg:"self",cond:"hasDeb",negUp:2,d:"부정 보호막을 2 얻습니다."},
@@ -17099,7 +17116,10 @@ const FOE={
     rollIntents 가 바로 대기로 넘긴다. 2026-10-21 까지 보급 레일이 한 턴도 행동하지 않았다 */
  "보급 레일":{hp:40,atk:3,def:5,rng:8,exp:3,noMove:1,wreck:1,
    el:"공격",
-   pas:[{k:"info",n:"잔해",d:"움직이지 않습니다. 부서지면 그 자리에 잔해가 남습니다."}],
+   /* 늘 도발 — 전투를 세울 때 f.taunt=99 가 선다. tauntTurn 이 없어 걷히지 않는다 (사용자 2026-10-21) */
+   gim:{taunt:1},
+   pas:[{k:"info",n:"도발",d:"겨눌 수 있는 대상이 있으면 이 적부터 겨눠야 합니다."},
+        {k:"info",n:"잔해",d:"움직이지 않습니다. 부서지면 그 자리에 잔해가 남습니다."}],
    sk:[
     {n:"투척",w:4,tg:"all",dmg:3,d:"모든 상대에게 공격 피해를 3 줍니다."},
     {n:"보급",w:3,tg:"none",cond:"hasMech",foeBuff:{race:"기계",one:1,atk:1},
@@ -17174,7 +17194,7 @@ const FOE={
     {n:"훔치기",w:5,tg:"none",steal:"card",cond:"hasCard",
       d:"내 손패에서 카드를 1장 훔쳐갑니다. 대원과 소환물 카드는 훔치지 않습니다."},
     {n:"되돌려주기",w:5,tg:"none",cond:"hasLoot",useStolen:1,
-      d:"훔쳐간 카드를 사용합니다."},
+      d:"훔쳐간 카드를 사용합니다. 적을 겨누는 카드는 그대로 쓰고, 그 밖은 뜯어 보호막을 얻습니다."},
     {n:"설계도 던지기",w:4,tg:"near",dmg:5,d:"가장 가까운 상대에게 마법 피해를 5 줍니다."},
     {n:"숨기",w:2,tg:"self",hideUp:1,negUp:2,d:"1턴 동안 은신하고 부정 보호막을 2 얻습니다."}],
    hit:"설계도 던지기"},
@@ -17232,7 +17252,7 @@ const FOE={
     {n:"준비",w:3,tg:"self",fwd:2,rngUp:2,d:"최대 2칸 이동하고 공격 범위가 2 증가합니다."},
     {n:"보호",w:3,tg:"self",eshield:4,d:"에너지 보호막을 4 얻습니다."},
     {n:"구식 주먹질",w:4,tg:"any",dmg:6,d:"공격 범위 안 무작위 대상에게 공격 피해를 6 줍니다."},
-    {n:"에너지 전환",w:3,tg:"none",chg:1,cond:"chgIdle",eshield:30,
+    {n:"에너지 전환",w:3,tg:"none",chg:1,cond:"chgIdle",eshield:30,intentName:1,
       d:"에너지 보호막을 30 얻고 1턴 동안 충전합니다. 충전이 끝나면 에너지 보호막을 모두 소모하여 공격 범위 안 모든 상대에게 그만큼 피해를 줍니다."},
     {n:"에너지 방출",w:9,tg:"none",cond:"charged",must:1,spend:1,eshDump:1,scBeam:1,
       d:"충전이 끝났습니다. 에너지 보호막을 모두 소모하여 공격 범위 안 모든 상대에게 그만큼 피해를 줍니다."}],
@@ -17308,7 +17328,7 @@ const FOE={
  /* ═══ 고철의 무덤 우두머리 — 폐기물 더미 (사용자 2026-10-21 목록 그대로) ═══
     고철을 써서 행동한다. 3번 맞을 때마다 고철이 하나 떨어진다.
     ⚠️ 그림은 아직이다 — 받으면 art/적/폐기물 더미/ 에 넣는다 */
- "폐기물 더미":{hp:250,fixHp:1,phases:[200,100],atk:6,def:5,rng:9,exp:12,
+ "폐기물 더미":{hp:200,fixHp:1,phases:[120,60],atk:6,def:5,rng:9,exp:12,
    /* ⚠️ still 을 달면 **수를 고르기도 전에 대기**로 넘어간다 (rollIntents).
       움직이지 않는 것은 noMove 하나로 족하다 (사용자 2026-10-21 : 「'대기' 패턴이 자주 반복되는데」) */
    boss:1,big:1,noMove:1,solo:1,bossSlot:3,scrapMax:10,
@@ -17318,7 +17338,7 @@ const FOE={
          d:"폐기물 더미는 고철을 사용해서 행동합니다. 3번 피해받을 때마다 고철을 1개 잃습니다."}],
    sk:[
     /* ── 1페이즈부터 ── */
-    {n:"뱉어내기",phMin:1,phMax:1,w:5,tg:"none",cond:"고철3",scrapCost:3,spit:{pool:"normal",n:1,hp:20},
+    {n:"뱉어내기",phMin:1,phMax:1,w:5,wBoost:{cond:"noSpawn",w:16},tg:"none",cond:"고철3",scrapCost:3,spit:{pool:"normal",n:1,hp:20},
       d:"고철을 3개 소모하여 기계를 소환합니다."},
     {n:"흡수하기",phMin:1,w:5,tg:"self",cond:"hasWreck",wreckEat:{shield:8,scrap:4},
       d:"가까운 잔해를 수집합니다. 보호막 8과 고철을 4 얻습니다."},
@@ -17328,19 +17348,19 @@ const FOE={
       d:"고철을 2개 소모하여 무작위 대원에게 기절을 2 부여합니다."},
     {n:"고철 수집",phMin:1,phMax:1,w:5,tg:"none",scrapGain:4,d:"고철을 4개 얻습니다."},
     /* ── 2페이즈 ── */
-    {n:"뱉어내기",phMin:2,phMax:2,w:5,tg:"none",cond:"고철3",scrapCost:3,spit:{pool:"normal",n:1,hp:25},
+    {n:"뱉어내기",phMin:2,phMax:2,w:5,wBoost:{cond:"noSpawn",w:16},tg:"none",cond:"고철3",scrapCost:3,spit:{pool:"normal",n:1,hp:25},
       d:"고철을 3개 소모하여 기계를 소환합니다."},
     {n:"마구 뱉어내기",phMin:2,phMax:2,w:1,tg:"none",cond:"고철4",spit:{pool:"normal",all:1,per:2,hp:25},
       d:"고철을 모두 소모하여, 소모한 고철 2개당 기계를 하나 소환합니다."},
     {n:"고철 수집",phMin:2,phMax:2,w:5,tg:"none",scrapGain:5,d:"고철을 5개 얻습니다."},
-    {n:"부품 보급",phMin:2,phMax:2,w:4,tg:"none",cond:"고철2",scrapCost:2,
+    {n:"부품 보급",phMin:2,phMax:2,w:4,tg:"none",cond:"고철2보급",scrapCost:2,
       foeBuff:{race:"기계",allStat:1},
       d:"고철을 2개 소모하여 적 기계들에게 모든 능력치를 1 부여합니다."},
     /* ── 3페이즈 ── */
     {n:"강한 뱉어내기",phMin:3,w:1,tg:"none",cond:"고철4",scrapCost:4,
       spit:{pool:"elite",n:1,hp:50,front:1,taunt:2},
       d:"고철을 4개 소모하여 앞에 정예 기계를 소환하고 도발을 부여합니다."},
-    {n:"뱉어내기",phMin:3,w:5,tg:"none",cond:"고철3",scrapCost:3,spit:{pool:"normal",n:1,hp:30},
+    {n:"뱉어내기",phMin:3,w:5,wBoost:{cond:"noSpawn",w:16},tg:"none",cond:"고철3",scrapCost:3,spit:{pool:"normal",n:1,hp:30},
       d:"고철을 3개 소모하여 기계를 소환합니다."},
     {n:"녹슨 기운",phMin:3,w:4,tg:"all",cond:"고철2",scrapCost:2,negUp:3,
       deb:{defDn:2,atkDn:2,magDn:2},
@@ -17348,7 +17368,7 @@ const FOE={
     {n:"묻어버리기",phMin:3,w:4,tg:"any",cond:"고철5",scrapCost:5,deb:{stun:3},
       d:"고철을 5개 소모하여 무작위 대원에게 기절을 3 부여합니다."},
     {n:"고철 수집",phMin:3,w:5,tg:"none",scrapGain:6,d:"고철을 6개 얻습니다."},
-    {n:"부품 보급",phMin:3,w:4,tg:"none",cond:"고철2",scrapCost:2,
+    {n:"부품 보급",phMin:3,w:4,tg:"none",cond:"고철2보급",scrapCost:2,
       foeBuff:{race:"기계",allStat:2},
       d:"고철을 2개 소모하여 적 기계들에게 모든 능력치를 2 부여합니다."}],
    hit:"묻어버리기"},
@@ -18729,8 +18749,10 @@ function foeStatusRows(f){
       if(gc) L.push(`금화 ${gc}`);
       if(ic) L.push(`장신구 ${ic}`);
       if(cc) L.push(`카드 ${cc}`);
+      /* ⚠️ 아이콘 열쇠를 꼭 댄다 — 안 대면 bdIcon 이 이름 첫 글자(「훔」)를 띄운다 (사용자 2026-10-21) */
       g.push(bd("g","훔친 것",L.join(" · "),
-        `훔쳐 쥐고 있는 것입니다. 쓰러뜨리면 모두 돌려받고, 달아나면 가지고 갑니다. (${L.join(", ")})`,"훔친 것")) } }
+        `훔쳐 쥐고 있는 것입니다. 쓰러뜨리면 모두 돌려받고, 달아나면 가지고 갑니다. (${L.join(", ")})`,
+        "훔친 것","bounty_bag")) } }
   /* 균열 용광로 — 지금 몇 단계인지 (사용자 2026-10-21). 연료 장치와 같은 칩 */
   { const hs=foePas(f,"heatStep");
     if(hs) g.push(bd("g","과열",`${Math.min(hs.v,f.heat||0)}/${hs.v}단계`,foePasD(f,hs),"과열")) }
@@ -19811,7 +19833,7 @@ function craneNode(cell,r,c){
   const O={
    조종실:[{t:"기중기 조종",d:"지도 무작위 자리에 1라운드 전투 구역 셋을 더합니다. 그 전투에서 이기면 제련석 2를 얻습니다.",
      when:()=>!cell.done,
-     f:()=>{ const put=sprinkleCell("dungeon",3,{waves:1,craneStone:2});
+     f:()=>{ const put=sprinkleCell("dungeon",3,{waves:1,craneStone:2,born:"crane"});
        return `기중기가 고철을 헤집어 ${put}곳에 길을 엽니다. 그 싸움을 이기면 제련석 2씩 나옵니다.`+craneTail(cell) }}],
    팔:[{t:"잔해 치우기",d:"지도의 무작위 3라운드 전투를 1라운드로 바꿉니다. 얻을 보상은 그대로입니다.",
      when:()=>!cell.done,
@@ -19833,6 +19855,8 @@ function craneNode(cell,r,c){
        return `엔진이 돌며 ${h.name}${jo(h.name,"eul")} 덧댑니다. 최대 체력 +6 (${h.hp}/${h.maxHp})`+craneTail(cell) }}]
   };
   const o=(O[part]||[]).slice();
+  /* 넷 다 같은 대가를 치른다 — 글을 네 군데 적지 않고 여기서 한 줄 붙인다 (사용자 2026-10-21) */
+  o.forEach(x=>{ x.d=(x.d||"")+"\n이 기중기와 무작위 기중기 시설 하나가 파괴됩니다." });
   o.push({t:"나가기",d:"지도로 돌아갑니다.",leave:1,f:()=>""});
   return {n:"기중기 — "+part,art:"ink_sc_crane_"+(cell.tile||"tl"),face:"생산라인 조립대",gim:1,
     t:cell.done?`부서진 ${part}입니다. 더 움직이지 않습니다.`
@@ -19879,6 +19903,7 @@ function carePlan(at){
   while(k!==s0){ path.unshift({r:Math.floor(k/S),c:k%S}); k=par[k]; if(k==null) return null }
   return path.length?path:null;
 }
+let CARE_MOVE=[];   /* 돌보미 기계 — 방금 옮긴 칸 {k, dr/dc 온 쪽, t0} (마차 · 열병식과 같은 꼴) */
 function careStep(){
   const at=careFind(); if(!at||run.lost) return 0;
   if(careOff(at.cell)) return 0;                   /* 멈춰 있으면 움직이지도 않는다 */
@@ -19886,6 +19911,10 @@ function careStep(){
   const end=path.slice(0,CARE_STEP).pop();
   run.grid[at.r][at.c]={t:"empty"};
   run.grid[end.r][end.c]=at.cell;
+  /* 연출에 줄 것 — 온 쪽을 적어 둔다. 두 칸을 곧게 왔으면 그 두 칸을, 꺾어 왔으면 마지막 한 칸을 (늑대와 같은 규칙) */
+  { const dr=at.r-end.r, dc=at.c-end.c, str=(dr===0||dc===0);
+    CARE_MOVE.push({k:end.r+"-"+end.c, dr:str?dr:Math.sign(dr), dc:str?dc:0, t0:0});
+    while(CARE_MOVE.length>6) CARE_MOVE.shift(); }
   return 1;
 }
 function careTick(){
@@ -22104,6 +22133,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 198, "v": "0.7", "d": "2026-10-21", "t": "고철의 무덤 — 적 손질 · 기믹 칸 표시 규칙 · 효과음", "big": 0},
  {"b": 197, "v": "0.7", "d": "2026-10-21", "t": "고철의 무덤 손질 — 적 버릇 · 전용 구역 · 연출 · 효과음", "big": 0},
  {"b": 196, "v": "0.7", "d": "2026-10-21", "t": "컨베이어 벨트 ㄱ자 — 이어지도록 맞추고 꺾이는 쪽으로 회전", "big": 0},
  {"b": 195, "v": "0.7", "d": "2026-10-21", "t": "고철의 무덤 — 1막 구역 섞임 · 보급 레일 · 도감 분리 · 적 크기 · 막 입장 연출", "big": 0},
@@ -23493,7 +23523,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=197;
+const BUILD_NO=198;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -26589,7 +26619,8 @@ function mapGridEl(peek){
     const watch=kind!=="wall"&&kind!=="camp"&&kind!=="boss"&&kind!=="post"&&(postNear(r,c)||(kind==="empty"&&onPatrol(r,c)));   /* 낮에도 습격 — 붉게 */
     const ffly=nestNear(r,c);
     const risky=((run.night&&cell.t==="empty"&&adj)||(watch&&adj))&&!ffly;
-    const glow=kind!=="well"&&wellNear(r,c);
+    /* 특별한 기믹이 세운 칸도 빛난다 (사용자 2026-10-21 고정 규칙 — GIM_BORN) */
+    const glow=(kind!=="well"&&wellNear(r,c))||!!gimBorn(cell);
     /* 칸 왼쪽 아래 .cact — 활동량을 내야 들어가는 칸에만. 어느 칸인지는 enterCost 가 안다 (사용자 2026-10-10).
        ⚠️ 아래는 템플릿 문자열이다. 그 안에 주석을 쓰면 글자로 들어가 칸이 벌어진다 */
     const d=el(`<div class="cell k-${kind} ${cell.tutgo?"tutgo":""} ${cell.stair?"stair":""} ${cell.ceil?"ceil":""} ${kind==="empty"?"emp":""} ${here?"here":""} ${adj?"adj":""} ${cell.done?"done":""} ${(kind==="care"&&careOff(cell))?"careoff":""} ${risky?"risk":""} ${watch?"watch":""} ${glow?"glow":""} ${ffly?"ffly":""} ${kind==="wall"?"wall":""} ${(cell.boon||cell.weapon)?"boon":""} ${(cell.giftStone||cell.giftGold)?"gift":""} ${cell.relay?"relay":""} ${rn?"onroute":""} ${rn&&rn===(run.route?run.route.steps:0)?"rdest":""}">
@@ -26631,6 +26662,13 @@ function mapGridEl(peek){
         if(x.gone){ const art=gimCellArt({t:"wagon"}); if(art){ const g=el(`<span class="cico wagongo">${art}</span>`);
             g.style.setProperty("--dx",x.dc); g.style.setProperty("--dy",x.dr); g.style.setProperty("--bd",del); d.appendChild(g) } }
         else if(kind==="wagon"){ d.classList.add("wagonmove"); d.style.setProperty("--dx",x.dc); d.style.setProperty("--dy",x.dr); d.style.setProperty("--bd",del) } } }
+    /* 돌보미 기계 — 통통 튀며 온다 (사용자 2026-10-21 : 「귀엽게 이동하는 연출」) */
+    if(!peek&&typeof CARE_MOVE!=="undefined"&&CARE_MOVE.length){
+      const x=CARE_MOVE.find(y=>y.k===r+"-"+c);
+      if(x){ if(!x.t0) x.t0=RN;
+        if(RN-x.t0<1200){ d.classList.add("carehop");
+          d.style.setProperty("--dx",x.dc); d.style.setProperty("--dy",x.dr);
+          d.style.setProperty("--bd",(-(RN-x.t0))+"ms") } } }
     if(!peek&&typeof PARADE_MOVE!=="undefined"&&PARADE_MOVE&&PARADE_MOVE.length){
       const x=PARADE_MOVE.find(y=>y.k===r+"-"+c);
       if(x){ d.classList.add("parademove"); d.style.setProperty("--dx",x.dc); d.style.setProperty("--dy",x.dr);
@@ -26946,6 +26984,9 @@ function mapInspector(at){
   }
   /* 특이사항 — 그림 + 짧은 글, 그림에 커서를 올리면 풀이 */
   { const N=[];
+    /* 특별한 기믹이 세운 칸 — 맨 앞에 (사용자 2026-10-21 고정 규칙) */
+    { const bn=gimBorn(cell);
+      if(bn) N.push([(bn.ic&&iconImg(bn.ic))||inkArt(cell.t)||"",bn.n,bn.d]) }
     if(cell.bounty) N.push([iconImg("bounty_bag"),"현상금","현상금이 걸린 전투 — 전투 금화 획득량 +50%"]);
     if(cell.gate) N.push([iconImg("skill_gula_rift_portal"),"악마 차원문","전투 시작 시 적 전장에 악마 차원문이 열린다"]);
     if(cell.relay) N.push(["","재배치","전장 재배치로 1라운드가 된 전투입니다. 얻는 보상은 그대로입니다."]);
@@ -27539,6 +27580,16 @@ function gimEnter(cell,r,c){
   setTimeout(()=>stepBanner(NODE[cell.t].label,GIM_SUB[cell.t]),40);
   render();
 }
+/* ═══ 특별한 기믹이 세운 칸 (사용자 2026-10-21 — **고정 규칙**) ═══
+   기믹이 지도에 칸을 세울 때는 `cell.born="열쇠말"` 을 적는다. 그러면
+     ① 지도에서 **빛나고**  ② 칸 카드의 **특이사항**에 무엇인지 적힌다.
+   여기 한 줄만 더하면 둘 다 따라온다 — 칸을 세우는 쪽에서 따로 손댈 것이 없다.
+   {n 이름 · d 풀이 · ic 그림(없으면 그 칸 그림)} */
+const GIM_BORN={
+  crane:{n:"기중기가 연 길",d:"기중기 조종실이 헤집어 낸 전투입니다. 이기면 제련석을 2 얻습니다.",ic:"ink_sc_crane_tl"},
+  depot:{n:"창고 경보",d:"자재 창고의 경보를 듣고 순찰기가 들이닥친 자리입니다.",ic:"ink_sc_warehouse"}
+};
+const gimBorn=cell=>(cell&&cell.born&&GIM_BORN[cell.born])||null;
 const GIM_SUB={clocktower:"거대한 종소리가 울립니다",mana_pillar:"푸른 빛이 맥동합니다",bookcase:"먼지 쌓인 책등이 빽빽합니다",tome_shelf:"낡은 책들이 꽂혀 있습니다",lockdoor:"굳게 잠겨 있습니다",stair:"위아래로 이어집니다",hole:"바닥이 부서져 있습니다",keyroom:"시험이 기다립니다",cave:"차가운 바람이 새어 나옵니다",colony:"검붉은 기운이 맥동합니다",croot:"뿌리가 발목을 휘감습니다",mwreck:"녹슨 거체가 반쯤 묻혀 있습니다",thicket:"덩굴이 길을 막고 있습니다",nest:"작은 빛들이 깜빡입니다",spring:"푸른 기운이 샘솟습니다",fence:"첨탑을 두른 울타리입니다",torture:"쇠사슬 소리가 납니다",gallows:"밧줄이 바람에 흔들립니다",post:"간수들이 이쪽을 봅니다",tunnel:"축축한 바람이 올라옵니다",well:"물소리가 울립니다",
   beltH:"벨트가 아직 돌고 있습니다",beltV:"벨트가 아직 돌고 있습니다",beltT:"벨트가 꺾이는 자리입니다",
   furnace:"쇳물이 느리게 돕니다",depot:"경보 장치가 살아 있습니다",
@@ -27719,7 +27770,7 @@ function depotAlarm(r,c){
     if(nr<0||nc<0||nr>=S||nc>=S) return;
     const g=run.grid[nr][nc];
     if(!g||g.t!=="empty") return;   /* 이미 구역이 있으면 안 놓는다 */
-    run.grid[nr][nc]={t:"dungeon",waves:1,enc:"창고 경보"};
+    run.grid[nr][nc]={t:"dungeon",waves:1,enc:"창고 경보",born:"depot"};
     n++ });
   return n;
 }
@@ -32530,6 +32581,14 @@ function startBattle(kind,pinned){
   B.foes.forEach(f=>{ const b=foePas(f,"bounty"); if(b) f.bounty=b.v });   /* 미믹 — 쥔 금화 (2026-10-05) */
   /* 사슬에 묶인 마귀 — 묶여 있는 동안은 속박 99 (사용자 2026-09-29). 사슬 간수가 다 죽어 각성하면 boundCheck 가 푼다 */
   B.foes.forEach(f=>{ if(foePas(f,"bound")&&!f.awake){ f.deb=f.deb||{}; f.deb.bind=99 } });
+  /* 오염된 용광로 — **다음 3번의 전투**에 균열 용광로가 끼어 선다 (사용자 2026-10-21).
+     전에는 run.furnaceCurse 에 수만 적고 세우는 코드가 없어 아무 일도 없었다.
+     맨 뒤 빈 자리에 세운다 — 자리가 없으면 그 전투는 넘기고 수도 줄지 않는다 */
+  if(run.furnaceCurse>0&&!run.sandbox&&!pinned&&(B.kind==="battle"||B.kind==="elite")&&FOE["균열 용광로"]){
+    let sl=0; for(let i=SLOTS;i>=1;i--) if(!foeBlock(i)){ sl=i; break }
+    if(sl){ const m=spawnFoeNamed("균열 용광로",sl,{});
+      if(m){ run.furnaceCurse--;
+        say(`오염된 용광로 — 쇳물이 따라붙어 균열 용광로가 함께 섭니다. (남은 전투 ${run.furnaceCurse})`,"t1") } } }
   /* 현상 수배 걸기 — 수배된 적을 만나면 체력 1 (한 번만). 사용자 2026-09-16 */
   if(run.bountyFoe&&!run.sandbox&&!pinned){ const bf=B.foes.find(x=>x.name===run.bountyFoe);
     if(bf){ bf.hp=1; run.bountyFoe=null; say(`현상 수배 — ${bf.name}${jo(bf.name,"eun")} 이미 만신창이로 끌려 나옵니다. 체력 1.`,"t1") } }
@@ -33442,6 +33501,13 @@ const SK_COND={
   hurtMech:  f=>B.foes.some(x=>x.alive&&x!==f&&foeRace(x)==="기계"&&x.hp<x.maxHp),
   hasDeb:    f=>Object.keys(f.deb||{}).some(k=>(f.deb[k]||0)>0),   /* 제 몸에 부정적인 효과가 있나 */
   hasMin:    f=>(B.mins||[]).some(m=>m.alive&&m.slot>0),           /* 대원 전장에 소환물이 있나 */
+  /* 적 전장에 **제가 부른 것**이 하나도 없나 — 폐기물 더미가 뱉어내기를 더 자주 하게 (2026-10-21) */
+  noSpawn:   f=>!(B.foes||[]).some(x=>x.alive&&x.summoned&&x!==f),
+  /* 적 전장에 **제가 부른 것**이 있나 — 부품 보급은 줄 상대가 있을 때만 (사용자 2026-10-21) */
+  hasSpawn:  f=>(B.foes||[]).some(x=>x.alive&&x.summoned&&x!==f),
+  /* 고철이 2 이상이고 **줄 상대도 있을 때** — 부품 보급 (사용자 2026-10-21).
+     ⚠️ 한 기술에 cond 를 둘 적으면 뒤의 것만 남는다. 합친 조건을 하나 만든다 */
+  "고철2보급": f=>SK_COND["고철2"](f)&&SK_COND.hasSpawn(f),
   gradeSet:  f=>!!f.gradeK,                                        /* 규격 검사기 — 고른 규격이 있나 */
   hasCard:   f=>(B.hand||[]).some(c=>c&&c.type==="item"),          /* 훔칠 카드가 손패에 있나 */
   hasItem:   f=>((run&&run.bag)||[]).length>0,                     /* 훔칠 장신구가 가방에 있나 */
@@ -33652,6 +33718,13 @@ function gradeFireName(f,s){
   const k=f&&f.gradeK, nm=GRADE_NM[k];
   return nm?`${s.n}: ${nm}`:s.n;
 }
+/* 「되돌려주기」 — **어느 카드를 쓸지** 행동에 적는다 (사용자 2026-10-21).
+   foePlayStolen 이 맨 앞(shift)을 쓰므로 여기서도 맨 앞을 본다 */
+function stolenName(f,s){
+  if(!s||!s.useStolen) return s?s.n:"";
+  const c=((f&&f.loot&&f.loot.cards)||[])[0];
+  return c?`${s.n}: [${c.name}]`:s.n;
+}
 /* 도둑의 두 버릇 (사용자 2026-10-21) */
 /* 첫 턴에는 훔치는 수만 고른다 — 훔칠 것이 있을 때만 */
 function stealFirst(f){
@@ -33743,7 +33816,7 @@ function skRoll(f,allies,inR,far){
   let to=t?t.slot:0, toId=t?uid(t):null;
   /* cell — 대원이 아니라 공격 범위 안의 칸 하나를 무작위로 (늪의 왕 산성 침 — 빈 칸이면 빗나가 침뱉기 (점검 2026-10-07)) */
   if(s.cell){ const C=[]; for(let q=1;q<=SLOTS;q++) if(dist(q,f.slot)<=foeRng(f)) C.push(q); if(C.length){ to=rnd(C); toId=null } }
-  return {t:"sk",i:pick.i,n:gradeFireName(f,s),tg:s.tg||"near",forced:forcedRep,pa:(s.puppetHit||s.puppetBomb)?puppetAimRoll(f):null,
+  return {t:"sk",i:pick.i,n:(s.useStolen?stolenName(f,s):gradeFireName(f,s)),tg:s.tg||"near",forced:forcedRep,pa:(s.puppetHit||s.puppetBomb)?puppetAimRoll(f):null,
           to:to,toId:toId,chase:!!s.chase,
           v:s.dmg?skDmg(f,s)+(s.buffAfter?0:(s.buff||0)):0,hits:skHits(f,s),el:s.el||D.el||"공격",far:0};   /* 스스로 강해진 뒤 때린다 (바라보기·갈증) — 의도 숫자에 그 몫 (2026-10-01) */
 }
@@ -34209,7 +34282,8 @@ function skExec0(f,I){
     onField().filter(u=>u.hp>0).sort((a,b)=>b.slot-a.slot).forEach(u=>pullN(f,u,s.pullAll)) }
   if(s.dmgPct){                        /* 제 최대 체력의 비율만큼 모두에게 — 무덤지기 깔아뭉개기 */
     const D=Math.max(1,Math.round(f.maxHp*s.dmgPct));
-    onField().filter(u=>u.hp>0).forEach(u=>{ asSrc(f,()=>hurtAlly(f,u,D,s.n,"공격")) });
+    /* allUnits — **소환물까지** (2026-10-21). 글이 「모든 상대에게」다 */
+    allUnits().filter(u=>u.hp>0).forEach(u=>{ asSrc(f,()=>hurtAlly(f,u,D,s.n,"공격")) });
     say(`${s.n} — 최대 체력의 ${Math.round(s.dmgPct*100)}% (${D})`,"t3") }
   if(s.spawnWreck){                    /* 잔해를 남기는 기계를 세웠다가 바로 부순다 — 무덤지기 고철 생성 */
     const Q=s.spawnWreck, pool=(act1Of("foes")||[]).filter(n=>FOE[n]&&FOE[n].wreck&&!FOE[n].elite);
@@ -34249,7 +34323,9 @@ function skExec0(f,I){
   if(s.eshDump){                       /* 에너지 보호막을 모두 쏟아 그만큼 — 1세대 돌보미 에너지 전환 */
     const v=f.eshield||0; f.eshield=0;
     if(v>0){ say(`${s.n} — 에너지 보호막 ${v}를 모두 쏟아붓습니다.`,"t1");
-      skTargets(f,{tg:"all"},onField().filter(u=>u.hp>0)).forEach(u=>{ asSrc(f,()=>hurtAlly(f,u,v,s.n,"공격")) }) }
+      /* ⚠️ allUnits — **소환물까지** 때린다 (사용자 2026-10-21 : 사냥개가 안 맞았다).
+         onField() 는 대원만이라 예고(incoming, allUnits)와 어긋났다 */
+      skTargets(f,{tg:"all"},allUnits().filter(u=>u.hp>0)).forEach(u=>{ asSrc(f,()=>hurtAlly(f,u,v,s.n,"공격")) }) }
     else say(`${s.n} — 쏟을 에너지 보호막이 없습니다.`,"t3") }
   if(s.steal) foeSteal(f,s.steal,s.stealN||1);   /* 훔치기 (2026-10-20) */
   if(s.useStolen) foePlayStolen(f,s.n);          /* 훔친 카드를 되돌려 쓴다 (2026-10-20) */
@@ -35359,7 +35435,9 @@ function skIntentHtml(f,I){
     return `<span class="intent${e<I.v?" cut":""} ${I.el==="마법"?"t-mag":"t-atk"} kw" data-fintn="${esc(I.n)}" data-fintd="${tip}">${ic(I.el==="마법"?"mag":"atk")}<b>${e}</b>${
       I.hits>1?`<span class="hits">×${I.hits}</span>`:""}${ex} ${who}</span>`; }
   const k=(s&&(s.shield||s.eshield))?"def":(s&&(s.buff||s.snack||s.riot))?"atk":(s&&s.fire)?"atk":"move";
-  const eff=skEffectHtml(s,f)||esc(I.n);   /* 효과가 글로 안 되면 이름 */
+  /* intentName — **이름**을 띄운다 (사용자 2026-10-21 : 「에너지 전환」이 보호막 숫자만 떠
+     무슨 수인지 알 수 없었다). 효과 숫자보다 이름이 중요한 기술에 단다 */
+  const eff=(s&&s.intentName)?esc(I.n):(skEffectHtml(s,f)||esc(I.n));   /* 효과가 글로 안 되면 이름 */
   const lead=(/^<svg/.test(eff)||/^<span class="ideb"/.test(eff)||(s&&s.partBuff)||k==="move")?"":ic(k)+" ";   /* 효과 글이 이미 아이콘으로 시작하면(보호막·회복·에너지·부정·부품) 앞 아이콘을 겹쳐 그리지 않는다 */
   const tclsk=(s&&(s.shield||s.eshield))?"t-def":(s&&(s.buff||s.snack||s.riot))?"t-atk":(s&&s.fire)?"t-atk":"t-move";
   return `<span class="intent${(s&&(s.buff||s.snack||s.riot))?" up":""} ${tclsk} kw" data-fintn="${esc(I.n)}" data-fintd="${tip}">${lead}${eff} ${who}</span>`;
@@ -39533,11 +39611,16 @@ function incoming(){
           const b=burnV(u); if(b>0) hitOn(u,foeDmg(f,b*s.burnPop,I.el),f);
           burnSet(u,0) });   /* 터뜨린 화상은 없어진다 (skExec 의 u.deb.burn=0) — 뒤에 오는 적의 몫은 0 */
         return }
+      if(s&&s.dmgPct){   /* 깔아뭉개기 — 제 최대 체력의 비율만큼 모두에게 (사용자 2026-10-21).
+          ⚠️ 예고에 없어 받을 피해가 **아무에게도 안 보였다**. skExec 와 같은 길 */
+        const D=Math.max(1,Math.round(f.maxHp*s.dmgPct));
+        list.filter(u=>u.hp>0).forEach(u=>hitOn(u,D,f));
+        return }
       if(s&&s.eshDump){   /* 에너지 방출 — 쌓인 에너지 보호막을 그대로 쏟는다 (사용자 2026-10-21).
           ⚠️ s.dmg 가 없어 받을 피해가 **아무에게도 안 보였다.** skExec 와 같은 길 :
              겨냥은 tg:"all"(공격 범위 안 모두), 값은 지금 에너지 보호막 그대로(foeDmg 를 타지 않는다) */
         const v=f.eshield||0;
-        if(v>0) skTargets(f,{tg:"all"},list.filter(u=>u.hp>0)).forEach(u=>hitOn(u,v,f));
+        if(v>0) skTargets(f,{tg:"all"},list.filter(u=>u.hp>0)).forEach(u=>hitOn(u,v,f));   /* list = allUnits — 소환물까지 */
         return }
       if(s&&s.lifeDrain){   /* 양분 흡수 — 대원에게 마법 피해 (소환물은 빼고, skExec 와 같게) */
         list.filter(u=>u.hp>0&&!u.isMin).forEach(u=>hitOn(u,foeDmg(f,s.lifeDrain,"마법"),f));
