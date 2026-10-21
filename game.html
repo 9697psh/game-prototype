@@ -10480,6 +10480,9 @@ function heroPlaceSnd(h){
   const nm=(h&&h.name)||""; if(!nm) return null;
   const sk=(typeof skinOn==="function")&&skinOn(nm), k=sk&&(sk.n+" 배치");
   if(k&&sfxHas(k)) return k;
+  /* 레이 — 태세마다 다른 녹음 (사용자 2026-10-21). 칸이 태세를 정하니 **칸으로** 고른다 —
+     이 소리는 onSummon 보다 먼저 울려 h.rayK 가 아직 지난 라운드의 것일 수 있다 */
+  if(nm==="레이"&&h.slot>0){ const rk="레이 "+rayStanceOf(h.slot)+" 배치"; if(sfxHas(rk)) return rk }
   return sfxHas(nm+" 배치")?nm+" 배치":null;
 }
 /* 자세를 잡은 채 부들부들 — 그림 칸(.art)을 40ms 마다 ±2px (무패의 장군 명중, 2026-10-04). 끝나면 제자리 */
@@ -10597,7 +10600,14 @@ function rayStance(h,force){
   if(!force&&h.rayK) return;
   const want=rayStanceOf(h.slot), was=h.rayK;
   if(was===want) return;
+  reiSetStance(h,want,was);
+}
+/* 기술 둘을 그 태세의 꼴로 — 갈아 끼우는 셈은 **여기 한 곳**이다.
+   「흐르는 태세」(상급)도 이 길로 들어온다 */
+function reiSetStance(h,want,was){
   h.rayK=want;
+  /* 태세 훈련 퀘스트 — 이 전투에서 거친 태세를 적어 둔다 (battleWon 이 센다) */
+  { h.reiKSeen=h.reiKSeen||{}; h.reiKSeen[want]=1 }
   [0,1].forEach(i=>{ const cur=(h.sk||[])[i];
     if(!cur||!cur.alt||cur.rayK===want) return;
     /* mods 는 각자 제 것 — 보상이 올린 값이 따라간다 (altReset · windSwap 과 같은 꼴) */
@@ -10606,13 +10616,132 @@ function rayStance(h,force){
   if(was&&typeof say==="function")
     say(`적응성 — ${h.name}${jo(h.name,"ig")} ${want} 태세가 됩니다.`,"t2");
 }
+/* 흐르는 태세 (상급) — 기술을 쓸 때마다 반대 태세로. 라운드 고정이 풀린다 */
+function reiFlip(h){
+  if(!h||h.name!=="레이"||!h.tag||!h.tag.reiFlow||!(h.slot>0)) return;
+  const want=(h.rayK==="주술사")?"전사":"주술사";
+  reiSetStance(h,want,h.rayK);
+}
+/* 최후의 전사 (상급) — 추가 공격력과 추가 마법력이 서로 더해진다.
+   늘 따라가는 결이라 **얹은 몫을 따로 적어 두고** 그 차이만 손본다 (진지 구축과 같은 꼴) */
+function reiCrossSync(h){
+  if(!h||h.name!=="레이"||!h.tag||!h.tag.reiCrossAdd) return;
+  const ca=h.crossAtkOn||0, cm=h.crossMagOn||0;
+  const ba=(h.atk||0)-ca, bm=(h.mag||0)-cm;   /* 둘 다 **먼저** 센다 — 한쪽을 고치면 다른 쪽 밑동이 흔들린다 */
+  if(ca!==bm){ h.atk+=bm-ca; h.crossAtkOn=bm }
+  if(cm!==ba){ h.mag+=ba-cm; h.crossMagOn=ba }
+}
 /* 천둥의 기운 — 레이가 적에게 피해를 줄 때마다 체력 1 (노트 20-3).
    「이번 턴에」라 턴 번호를 쥐어 둔다 — 비우는 표에 빠져 남는 일이 없다 */
 function rayThunderTick(h){
   if(!h||h.name!=="레이"||typeof B==="undefined"||!B||B.over) return;
   if(h.rayThunderT!==B.turn||h.hp<=0) return;
-  const got=healUp(h,1);
+  const got=healUp(h,1+((h.tag&&h.tag.reiThHeal)||0));   /* 천둥 축적 (중급) */
   if(got) fx({side:"mine",slot:h.slot,s:"heal",txt:"+"+got,cls:"heal",gap:40});
+}
+/* ═══ 레이의 보상 (노트 20, 사용자 2026-10-21) ═══
+   도는 자리는 셋뿐이다 — reiDeploy(대원 배치 후) · reiEndTurn(손패에 있는 동안, 내 턴 끝) ·
+   runEffect(기술마다). 그 밖은 h.tag 에 값만 얹고 읽는 쪽에서 센다 */
+const reiOf=()=>((typeof run!=="undefined"&&run&&run.heroes)||[]).find(h=>h.name==="레이");
+/* 레이가 지금 손패에 있나 — 쓰러진 것은 손패가 아니다 */
+function reiInHand(){
+  const h=reiOf();
+  if(!h||h.down||h.hp<=0||h.slot>0) return null;
+  if(typeof B==="undefined"||!B||B.over||!B.hand) return null;
+  return B.hand.some(c=>c&&c.type==="hero"&&c.hero===h)?h:null;
+}
+/* 마주 보는 적 칸 — 아군 5번과 적 1번이 마주 본다 (dist 가 그렇게 센다) */
+const reiFaceSlot=sl=>SLOTS+1-sl;
+/* 대원 배치 후 — 태세가 정해진 **뒤**에 돈다 (onSummon 이 rayStance 다음에 부른다) */
+function reiDeploy(h){
+  if(!h||h.name!=="레이"||!(h.slot>0)||typeof B==="undefined"||!B||B.over) return;
+  const T=h.tag||{}, mage=h.rayK==="주술사";
+  if(mage&&T.reiMageMana){ h.mana+=T.reiMageMana;
+    say(`번개 마력 — ${h.name} 이번 턴 마나 +${T.reiMageMana}`,"t2") }
+  if(!mage&&T.reiWarShield){ const v=addShield(h,T.reiWarShield);
+    fx({side:"mine",slot:h.slot,s:"shield",txt:"+"+v,cls:"shd",gap:60});
+    say(`번개 보호막 — ${h.name} 보호막 +${v}`,"t2") }
+  /* 빛의 속도 · 결심 — 겹친 수만큼 다음 N 회가 공짜 (노트 주석 : 「중복 가능」) */
+  if(T.reiOrbFree) h.reiOrbFree=(h.reiOrbFree||0)+T.reiOrbFree;
+  if(T.reiVowFree) h.reiVowFree=(h.reiVowFree||0)+T.reiVowFree;
+  if(T.reiRally){ const n=onField().filter(a=>a.hp>0&&tagsOf(a.name).race==="정령").length*T.reiRally;
+    if(n){ bumpRnd(h,"atk",n); bumpRnd(h,"mag",n);
+      say(`정령 집결 — ${h.name} 추가 공격력, 마법력 +${n}`,"t2") } }
+  if(T.reiAdapt){
+    if(mage){ run.gold+=T.reiAdapt; say(`환경 적응 — 금화 +${T.reiAdapt}`,"t2") }
+    else if(canGainMaxHp(h)){ h.maxHp+=T.reiAdapt; h.hp+=T.reiAdapt;
+      say(`환경 적응 — ${h.name} 최대 체력 +${T.reiAdapt}`,"t2") } }
+  if(T.reiCross){ bumpTmp(h,mage?"atk":"mag",T.reiCross);
+    say(`전환 번개 — ${h.name} 이번 전투 추가 ${mage?"공격력":"마법력"} +${T.reiCross}`,"t2") }
+  if(T.reiCharge){
+    /* 손패에서 차오른 몫을 얹어 터뜨린다 (reiEndTurn 이 쌓는다) */
+    const v=T.reiCharge+(h.reiChargeUp||0);
+    const L=B.foes.filter(f=>f.alive);
+    if(L.length){ say(`충 전 — 모든 적에게 피해 ${v}`,"t1");
+      L.forEach(f=>{ fx({side:"foe",slot:f.slot,ring:"#9ecbf5",gap:60});
+        asSrc(h,()=>hurt(f,v,"충 전","mag")) }) }
+    h.reiChargeUp=0; }
+  if(T.reiStrike){ const f=farthestFoe(h);
+    if(f){ const v=T.reiStrike+(h.atk||0)+(h.mag||0);
+      fx({side:"foe",slot:f.slot,quake:1,ring:"#cfe4ff",txt:"낙뢰",cls:"crit",glow:1,s:sfxOr("레이 낙뢰","quake"),gap:200});
+      say(`낙뢰 — ${f.name}에게 번개가 떨어져 피해 ${v}`,"t1");
+      asSrc(h,()=>hurt(f,v,"낙뢰","mag")) } }
+  if(T.reiStormZone){ h.reiZone=reiFaceSlot(h.slot);
+    say(`뇌관 — ${foeNo(h.reiZone)}번 칸이 폭풍 지대가 됩니다.`,"t1") }
+  /* 전략 고정 · 교류 전류 — 「전략 변경」으로 빠졌다 돌아온 그 배치에만 */
+  if(h.reiBackSlot){
+    const same=(h.reiBackSlot===h.slot), sameK=(h.reiBackK===h.rayK);
+    if(same&&T.reiSamePos){ bumpTmp(h,"atk",T.reiSamePos); bumpTmp(h,"mag",T.reiSamePos);
+      say(`전략 고정 — ${h.name} 이번 전투 추가 공격력, 마법력 +${T.reiSamePos}`,"t1") }
+    if(!sameK&&T.reiAC){
+      B.foes.filter(f=>f.alive).forEach(f=>addDeb(f,"stun",1,h));
+      bumpTmp(h,mage?"mag":"atk",T.reiAC);
+      say(`교류 전류 — 모든 적이 기절하고 ${h.name}의 추가 ${mage?"마법력":"공격력"} +${T.reiAC}`,"t1") }
+    h.reiBackSlot=0; h.reiBackK=0; }
+}
+/* 내 턴이 끝날 때 — 손패에 있는 동안의 몫과 폭풍 지대. 센 수를 돌려준다 (endPhase 가 쓴다) */
+function reiEndTurn(){
+  let n=0;
+  if(typeof B==="undefined"||!B||B.over) return 0;
+  /* 뇌관 — 레이가 전장에 선 동안 그 칸에 번개가 떨어진다 */
+  { const h=reiOf();
+    if(h&&h.slot>0&&h.hp>0&&h.reiZone&&h.tag&&h.tag.reiStormZone){
+      const f=B.foes.find(x=>x.alive&&x.slot===h.reiZone), v=h.tag.reiStormZone+(h.atk||0)+(h.mag||0);
+      if(f){ fx({side:"foe",slot:f.slot,quake:1,ring:"#cfe4ff",txt:"뇌관",cls:"crit",glow:1,s:sfxOr("레이 낙뢰","quake"),gap:180});
+        say(`뇌관 — 폭풍 지대에 번개가 떨어져 ${f.name}에게 피해 ${v}`,"t1");
+        asSrc(h,()=>hurt(f,v,"뇌관","mag")); n++ }
+      else say(`뇌관 — 폭풍 지대에 아무도 없습니다.`,"t3") } }
+  const h=reiInHand(); if(!h) return n;
+  const T=h.tag||{};
+  if(T.reiCharge){ h.reiChargeUp=(h.reiChargeUp||0)+T.reiCharge; n++;
+    say(`충 전 — 레이의 번개가 ${T.reiCharge+h.reiChargeUp}까지 차올랐습니다.`,"t3") }
+  if(T.reiHandHeal&&h.hp<h.maxHp){ const g=healUp(h,T.reiHandHeal);
+    if(g){ n++; say(`대기 자세 — ${h.name} 체력 +${g} (손패)`,"t3") } }
+  if(T.reiHandBolt){ const L=B.foes.filter(f=>f.alive);
+    if(L.length){ const f=L.reduce((a,b)=>(a.hp>=b.hp?a:b));
+      fx({side:"foe",slot:f.slot,ring:"#9ecbf5",txt:"내부의 기운",cls:"shd",glow:1,gap:120});
+      say(`내부의 기운 — 손패의 레이가 ${f.name}에게 피해 ${T.reiHandBolt}`,"t2");
+      asSrc(h,()=>hurt(f,T.reiHandBolt,"내부의 기운","mag")); n++ } }
+  return n;
+}
+/* 숲의 수호자 — 손패에 있는 **동안**이라 늘 따라간다 (방랑자 · 진지 구축과 같은 결) */
+function reiHandSync(){
+  if(typeof B==="undefined"||!B||B.over||!run||!run.heroes) return;
+  const h=reiInHand(), v=(h&&h.tag&&h.tag.reiHandGuard)||0;
+  onField().forEach(a=>{
+    const want=(v&&a.hp>0&&tagsOf(a.name).race==="정령")?v:0, cur=a.reiGuardOn||0;
+    if(want===cur) return;
+    bumpRnd(a,"def",want-cur); a.reiGuardOn=want;
+    if(want>cur) say(`숲의 수호자 — ${a.name} 보호력 +${want-cur}`,"t2");
+  });
+}
+/* 정령의 전언 — 손패의 레이가 다른 아군의 **그 턴 첫 기술** 값을 깎는다.
+   ⚠️ 깎는 셈은 여기 한 곳이다 — payCost 와 canPay 가 같이 쓴다 */
+function reiWordCut(h){
+  if(!h||h.isMin||h.name==="레이"||typeof B==="undefined"||!B) return 0;
+  if(h.reiWordT===B.turn) return 0;
+  const r=reiInHand();
+  return (r&&r.tag&&r.tag.reiWord)||0;
 }
 /* 헥토 진지 구축 — 같은 전장에서 헥토보다 앞(큰 번호) 칸에 성벽이 서 있으면 */
 function fortAtk(h){
@@ -11714,6 +11843,11 @@ function skinSprite(name){
   if(name==="도미니코"&&domDemonRun()&&PNG_SPRITE["도미니코 (악마)"]) return "도미니코 (악마)";   /* 금단의 고서 — 그 판에서는 악마 외형 (사용자 2026-10-06) */
   /* 데린저 — 든 총에 따라 자세 한 벌이 통째로 바뀐다 (노트 변형 보상, 2026-10-14) */
   if(name==="데린저"){ const g=(typeof derrGun==="function")&&derrGun(); if(g&&PNG_SPRITE["데린저 ("+g+")"]) return "데린저 ("+g+")" }
+  /* 레이 — 태세마다 자세 한 벌이 통째로 바뀐다 (주술사는 구체 셋, 전사는 번개 검, 사용자 2026-10-21).
+     ⚠️ 아직 안 선(손패) 레이는 전사 꼴로 보인다 — 칸이 정해져야 태세가 선다 */
+  if(name==="레이"){ const r=(typeof reiOf==="function")&&reiOf();
+    const k=(r&&r.slot>0)?rayStanceOf(r.slot):(r&&r.rayK);
+    if(k==="주술사"&&PNG_SPRITE["레이 (주술사)"]) return "레이 (주술사)" }
   const k=skinOn(name); if(k&&PNG_SPRITE[k.sp]) return k.sp;
   /* 소환물 — 주인이 입은 외형의 소환물 그림 (폭식의 군주 → 차원문 악마군, 2026-10-03). 주인이 파티에 있을 때만 */
   for(const hero in SKINS){ const kk=skinOn(hero), m=kk&&kk.minionSp&&kk.minionSp[name]; if(m&&PNG_SPRITE[m]&&skinOwnerIn(hero)){
@@ -12134,6 +12268,22 @@ const partName=(kind,n)=>(kind==="mat"?"재료 부속: ":"영혼 부속: ")+n;
 ["막아내기","정화하기","찌르기","영혼부르기","별똥별","포식의 주먹"].forEach(n=>{ SKILL_ICON[n]="skill_golem_minion_attack" });
 /* 데린저 — 받은 아이콘 묶음 (2026-10-14). 변형 넷은 보상이 들어오면 그 이름으로 바로 걸린다 */
 Object.assign(SKILL_ICON,{
+ /* 인비디아 — 받은 아이콘 묶음 invidia-skills-v1 (2026-10-22) */
+ "질투의 악마":"skill_invidia_demon_of_envy",
+ "역병군주":"skill_invidia_plague_lord",
+ "죄악의 기침":"skill_invidia_sinful_cough",
+ "확산":"skill_invidia_spread",
+ "숙주 폭발":"skill_invidia_host_explosion",
+ "재능 시기":"skill_invidia_talent_envy",
+ /* 레이 — 받은 아이콘 묶음 rei-skills-v1 (2026-10-21).
+    「번개 구체」는 남은 구체 수에 따라 그림이 바뀐다 — skillIcon 이 갈아 끼운다 */
+ "적응성":"skill_rei_adaptability",
+ "번개 구체":"skill_rei_lightning_orbs",
+ "벼락칼날":"skill_rei_thunder_blade",
+ "주술사의 다짐":"skill_rei_shaman_vow",
+ "전사의 다짐":"skill_rei_warrior_vow",
+ "천둥의 기운":"skill_rei_thunder_energy",
+ "전략 변경":"skill_rei_strategy_change",
  /* 오리온 — 받은 아이콘 묶음 (2026-10-14) */
  "악마뼈 쇠뇌":"skill_orion_silver_bolt_crossbow",
  "사냥개 부리기":"skill_orion_command_hound",
@@ -12984,9 +13134,11 @@ const HERO_POOL=["나이코스","카제","굴라","헥토","트리스탄","인�
 /* 지금 판에 올릴 수 있는 대원.
    나머지는 전용 보상이 아직 임시라 빼 두었다 — 여기에 이름을 도로 넣으면 된다.
    영웅 도감은 이 목록을 보지 않는다. 거기서는 열넷을 다 구경할 수 있다. */
-const PLAYABLE=["나이코스","카제","트리스탄","굴라","쿠렘타이","플레어와 플로우","이테리오","오토","헥토","도미니코","이라","파벨","오리온","데린저"];   /* 카제 2026-09-16 · 이테리오 2026-09-30 · 오토 2026-10-04 · 헥토 · 도미니코 2026-10-06 (사용자) */
+const PLAYABLE=["나이코스","카제","트리스탄","굴라","쿠렘타이","플레어와 플로우","이테리오","오토","헥토","도미니코","이라","파벨","오리온","데린저",
+ "레이"];   /* 전용 보상 서른여섯이 다 들어왔다 (노트 20, 사용자 2026-10-21) */   /* 카제 2026-09-16 · 이테리오 2026-09-30 · 오토 2026-10-04 · 헥토 · 도미니코 2026-10-06 (사용자) */
 /* 대원 고르기 화면의 난이도 — 사용자가 정한다. 여기 없는 대원은 표시하지 않는다 */
 const HERO_DIFF={"이라":"보통",   /* 사용자가 정했다 (2026-10-13) */
+ "레이":"어려움",   /* 사용자가 정했다 (2026-10-22) */
  "오리온":"쉬움",   /* 사용자가 정했다 (2026-10-15) */
  "데린저":"보통",   /* 사용자가 정했다 (2026-10-15) */
  "파벨":"보통",   /* 사용자가 정했다 (2026-10-15) */
@@ -14112,6 +14264,88 @@ const HERO_REWARDS={
   R("대상 포착","상급","트리스탄을 배치한 후, 가장 가까운 적에게 '장군의 표식'을 남깁니다. 그 적에게는 트리스탄의 공격 피해가 치명타로 적중합니다.",
     h=>h.tag.genMark=1,0.5)
  ],
+ /* ═══ 레이 — 노트 20 의 보상 서른여섯 (사용자 2026-10-21) ═══
+    ⚠️ 태세마다 기술 이름이 다르다 — addMod 는 alt 안도 찾으니 「번개 구체」·「벼락칼날」 이름 그대로 쓰면 된다.
+       거는 자리는 대개 h.tag 하나이고, 실제로 도는 곳은 reiDeploy(배치 후) · reiHandTurn(손패) · runEffect(기술) 셋이다 */
+ "레이":[
+  /* ── 하급 열넷 ── */
+  R("구체 강화","하급","번개 구체의 피해량이 영구히 1 증가합니다.",(h,rn)=>addMod(h,"번개 구체","dmg",1,rn)),
+  R("칼날 강화","하급","벼락칼날의 피해량이 영구히 1 증가합니다.",(h,rn)=>addMod(h,"벼락칼날","dmg",1,rn)),
+  R("숲의 전사","하급","전사의 다짐의 보호막량이 영구히 1 증가합니다.",(h,rn)=>addMod(h,"전사의 다짐","shield",1,rn)),
+  R("번개 마력","하급","주술사 태세로 배치한 후, 해당 턴에만 마나를 1 얻습니다.",
+    h=>h.tag.reiMageMana=(h.tag.reiMageMana||0)+1),
+  R("번개 보호막","하급","전사 태세로 배치한 후, 보호막을 3 얻습니다.",
+    h=>h.tag.reiWarShield=(h.tag.reiWarShield||0)+3),
+  R("태세 훈련","하급","퀘스트: 주술사, 전사 태세로 각각 전투에서 5회 승리\n보상: 추가 공격력, 마법력 +1",
+    h=>{ if(!questHas("태세 훈련")) questAccept("태세 훈련",h.name) },0.5),
+  R("빛의 속도","하급","대원 배치 후, 다음 1회의 번개 구체 비용이 0이 됩니다.",
+    h=>h.tag.reiOrbFree=(h.tag.reiOrbFree||0)+1),
+  R("충격 흡수","하급","벼락칼날로 둘 이상에게 피해를 준 후, 보호막을 1 얻습니다.",
+    h=>h.tag.reiBoltShield=(h.tag.reiBoltShield||0)+1),
+  R("결심","하급","대원 배치 후, 다음 1회의 주술사의 다짐 비용이 0이 됩니다.",
+    h=>h.tag.reiVowFree=(h.tag.reiVowFree||0)+1),
+  R("정령 집결","하급","대원 배치 후, 아군 전장 정령의 수만큼 추가 공격력, 마법력을 얻습니다.",
+    h=>h.tag.reiRally=(h.tag.reiRally||0)+1),
+  R("천둥의 보호막","하급","천둥의 기운을 사용한 후, 보호막을 4 얻습니다.\n*[천둥의 기운] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.reiThShield=(h.tag.reiThShield||0)+4),
+  R("천둥의 마력","하급","천둥의 기운을 사용한 후, 마나를 1 얻습니다.\n*[천둥의 기운] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.reiThMana=(h.tag.reiThMana||0)+1),
+  R("연쇄 번개","하급","벼락칼날이 반복될 때마다 피해량이 1씩 증가합니다.",
+    h=>h.tag.reiChainUp=(h.tag.reiChainUp||0)+1),
+  R("충 전","하급","대원 배치 후, 모든 적에게 피해를 1 줍니다. 레이가 손패에 있는 동안, 턴이 끝날 때 이 피해량이 1 증가합니다.",
+    h=>h.tag.reiCharge=(h.tag.reiCharge||0)+1),
+  /* ── 중급 열둘 ── */
+  R("천둥 축적","중급","천둥의 기운의 회복량이 1 증가합니다.",
+    h=>h.tag.reiThHeal=(h.tag.reiThHeal||0)+1,0.5),
+  R("환경 적응","중급","주술사 태세로 배치한 후, 금화를 1 얻습니다.\n전사 태세로 배치한 후, 최대 체력을 영구히 1 얻습니다.",
+    h=>h.tag.reiAdapt=(h.tag.reiAdapt||0)+1),
+  R("구체 폭발","중급","번개 구체가 치명타로 적중하면, 거리 1 내의 양옆의 적에게도 절반의 피해를 줍니다.",
+    h=>h.tag.reiOrbBurst=(h.tag.reiOrbBurst||0)+1),
+  R("파괴 연쇄","중급","퀘스트: 벼락칼날이 4번 연쇄되어야 합니다.\n보상: 벼락칼날의 피해량이 영구히 4 증가합니다.",
+    h=>{ if(!questHas("파괴 연쇄")) questAccept("파괴 연쇄",h.name) },0.5),
+  R("전략 고정","중급","전략 변경을 사용한 후, 사용하기 전 위치에 다시 배치하면 해당 전투에서 추가 공격력, 마법력을 1 얻습니다.\n*[전략 변경] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.reiSamePos=(h.tag.reiSamePos||0)+1),
+  R("내부의 기운","중급","레이가 손패에 있는 동안, 내 턴이 끝날 때 체력이 가장 높은 적에게 피해를 5 줍니다.",
+    h=>h.tag.reiHandBolt=(h.tag.reiHandBolt||0)+5),
+  R("낙뢰","중급","대원 배치 후, 가장 먼 적의 위치에 번개가 내려쳐 피해를 15(추가 \u2020, \u2234) 줍니다.",
+    h=>h.tag.reiStrike=(h.tag.reiStrike||0)+15),
+  R("되울림","중급","벼락칼날 대상의 거리 1 내에 다른 적이 없다면, 피해량이 3 증가합니다.",
+    h=>h.tag.reiEcho=(h.tag.reiEcho||0)+3),
+  R("공명","중급","번개 구체로 적을 처치하면 주술사의 다짐이 비용없이 사용됩니다.\n*획득시 보상에서 다시 등장하지 않음",
+    h=>h.tag.reiResonate=1,0.5),
+  R("전환 번개","중급","주술사 태세로 배치한 후, 해당 전투에서 추가 공격력을 2 얻습니다.\n전사 태세로 배치한 후, 해당 전투에서 추가 마법력을 2 얻습니다.",
+    h=>h.tag.reiCross=(h.tag.reiCross||0)+2),
+  R("대기 자세","중급","레이가 손패에 있는 동안, 체력을 1 회복합니다.",
+    h=>h.tag.reiHandHeal=(h.tag.reiHandHeal||0)+1),
+  R("숲의 수호자","중급","레이가 손패에 있는 동안, 아군 정령들이 보호력을 2 얻습니다.",
+    h=>h.tag.reiHandGuard=(h.tag.reiHandGuard||0)+2),
+  /* ── 상급 열 ── */
+  R("순환의 구체","상급","주술사의 다짐으로 강화된 구체가 레이에게 다시 돌아오며 지나간 적들에게 피해를 줍니다.\n*획득시 보상에서 다시 등장하지 않음",
+    h=>h.tag.reiOrbBack=1),
+  R("번뇌","상급","천둥의 기운의 사용한도가 없어집니다. 대신 비용이 2가 됩니다.",
+    h=>{ h.tag.reiThFree=1;
+      /* 기술 객체를 바로 고친다 — alt 안에는 없는 기술이라 sk 만 보면 된다 */
+      (h.sk||[]).forEach(k=>{ if(k&&k.rayThunder){ k.limit=0; k.cost=2 } }) }),
+  R("최후의 전사","상급","레이의 추가 공격력과 추가 마법력이 서로 더해집니다.",
+    h=>h.tag.reiCrossAdd=1),
+  R("삼뢰 해방","상급","무기 전문가 특성을 얻습니다. 번개 구체가 항상 치명타로 적중합니다.\n*획득시 보상에서 다시 등장하지 않음",
+    h=>{ h.tag.reiOrbAlways=1;
+      /* 「특성」은 조합이 보는 **직업**이다 — 외톨이(→ 방랑자)와 같은 길 (h.tag.addJob) */
+      const J=(h.tag.addJob=h.tag.addJob||[]); if(J.indexOf("무기 전문가")<0) J.push("무기 전문가");
+      if(typeof applySynergy==="function") try{ applySynergy() }catch(e){} },0.5),
+  R("흐르는 태세","상급","태세가 더 이상 라운드 동안 고정되지 않고, 레이가 기술을 사용할 때마다 태세가 바뀝니다.\n*획득시 보상에서 다시 등장하지 않음",
+    h=>h.tag.reiFlow=1),
+  R("뇌관","상급","대원 배치 후, 마주 보는 적 칸이 폭풍 지대가 됩니다. 내 턴이 끝날 때, 해당 위치에 번개가 내려쳐 피해를 15(추가 \u2020, \u2234) 줍니다.\n*획득시 보상에서 다시 등장하지 않음",
+    h=>h.tag.reiStormZone=(h.tag.reiStormZone||0)+15),
+  R("정령의 전언","상급","레이가 손패에 있는 동안, 다른 아군이 그 턴에 처음 쓰는 기술의 비용이 1 줄어듭니다.",
+    h=>h.tag.reiWord=(h.tag.reiWord||0)+1),
+  R("벼락 과충전","상급","벼락칼날이 3번 이상 연쇄되었다면, 해당 전투에서 추가 공격력을 2 얻습니다.",
+    h=>h.tag.reiOverBolt=(h.tag.reiOverBolt||0)+2),
+  R("벼락 사슬","상급","벼락칼날이 대상을 1칸 앞으로 끌어옵니다. 공격력을 영구히 3 얻습니다.",
+    h=>{ h.tag.reiBoltPull=1; h.atk+=3 }),
+  R("교류 전류","상급","전략 변경으로 돌아온 레이를 기존과 다른 태세가 되는 칸에 배치하면, 모든 적을 기절시키고 해당 태세의 추가 능력치를 5 얻습니다.",
+    h=>h.tag.reiAC=(h.tag.reiAC||0)+5)
+ ],
  "인비디아":[
   R("깊은 기침","하급","죄악의 기침의 피해 +2",(h,rn)=>addMod(h,"죄악의 기침","dmg",2,rn)),
   R("독한 숨","중급","감염 피해 +2",h=>h.tag.plaguePlus=(h.tag.plaguePlus||0)+2),
@@ -15007,6 +15241,13 @@ const REW_KIND={
  "하급|정원 손질":"기술 강화"};
 /* 보상 등장 조건 — 기획 노트 설명문의 * 줄을 그대로 옮긴 것 */
 const REW_COND={
+ /* 레이 (노트 20, 2026-10-21) — 노트가 *표로 적어 둔 것과, 잠긴 3·4번 기술을 키우는 것 */
+ "하급|천둥의 보호막":{need:["천둥의 기운"]}, "하급|천둥의 마력":{need:["천둥의 기운"]},
+ "중급|천둥 축적":{need:["천둥의 기운"]}, "중급|전략 고정":{need:["전략 변경"]},
+ "중급|공명":{once:1},
+ /* 아래 둘은 노트에 *표가 없지만 그 기술이 없으면 빈 보상이다 — 설명에 줄은 더하지 않는다 */
+ "상급|번뇌":{need:["천둥의 기운"]}, "상급|교류 전류":{need:["전략 변경"]},
+ "상급|순환의 구체":{once:1}, "상급|삼뢰 해방":{once:1}, "상급|흐르는 태세":{once:1}, "상급|뇌관":{once:1},
  "상급|한계 해방":{needLimit:1},
  /* 헥토 새 보상 (노트 2026-10-06) */
  /* 도미니코 (노트 2026-10-06) */
@@ -18695,6 +18936,7 @@ function foeTarget(f,I,s,V){
    특징(지속 기술)은 붉은 ! 로만 — 이름은 안 적고, 올리면 효과가 뜬다.
    KW_ICON[열쇠말] 에 ICON_PNG id 를 적으면 동그라미 대신 그 그림을 쓴다 (아이콘 아트가 오면 여기만 채운다). */
 const KW_ICON={
+  "감염":"status_invidia_infection",   /* 인비디아 — 받은 상태 그림 (사용자 2026-10-22) */
   "축복":"status_dom_bless",   /* 도미니코 축복 — 펼친 책 (사용자 2026-10-06) */
   "투기장의 감옥":"status_ira_arena_prison",   /* 이라 중급 보상 — 모두가 받는 피해 (사용자 2026-10-14) */
   "최후의 보루":"shield",   /* 헥토 — 보상에 쓰는 방패 그림 (노트 2026-10-06) */
@@ -22255,6 +22497,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 202, "v": "0.7", "d": "2026-10-22", "t": "레이 보상 36 · 특성 넷 · 레이와 인비디아 그림과 소리 (사용자 2026-10-22)", "big": 0},
  {"b": 201, "v": "0.7", "d": "2026-10-21", "t": "새 대원 레이 (태세 둘) · 인비디아 리메이크 (사용자 2026-10-21)", "big": 0},
  {"b": 200, "v": "0.7", "d": "2026-10-21", "t": "고철의 무덤 — 일반 조합 31 · 2·3라운드 28 (ppt 그대로)", "big": 0},
  {"b": 199, "v": "0.7", "d": "2026-10-21", "t": "설계도 도둑 그림 손질 (사용자)", "big": 0},
@@ -23648,7 +23891,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=201;
+const BUILD_NO=202;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -24712,6 +24955,76 @@ function codexModal(title,body){
   document.body.appendChild(ov); return ov;
 }
 const HERO_TRAITS={
+  "레이": [
+    {
+      "id": "orb",
+      "n": "번개 구체",
+      "d": "구체를 거듭 날려 세 번째를 치명타로 꽂고, 다짐으로 지나가는 길까지 태웁니다.",
+      "own": [
+        "하급|구체 강화",
+        "하급|빛의 속도",
+        "하급|결심",
+        "중급|구체 폭발",
+        "중급|공명",
+        "상급|순환의 구체",
+        "상급|삼뢰 해방"
+      ],
+      "common": []
+    },
+    {
+      "id": "blade",
+      "n": "벼락칼날",
+      "d": "칼날을 뒤의 적으로 이어 보내고, 길게 이어질수록 세집니다.",
+      "own": [
+        "하급|칼날 강화",
+        "하급|숲의 전사",
+        "하급|충격 흡수",
+        "하급|연쇄 번개",
+        "중급|파괴 연쇄",
+        "중급|되울림",
+        "상급|벼락 과충전",
+        "상급|벼락 사슬"
+      ],
+      "common": []
+    },
+    {
+      "id": "stance",
+      "n": "적응성",
+      "d": "선 칸으로 태세를 고르고, 태세를 바꿔 가며 이득을 챙깁니다.",
+      "own": [
+        "하급|번개 마력",
+        "하급|번개 보호막",
+        "하급|태세 훈련",
+        "하급|정령 집결",
+        "중급|환경 적응",
+        "중급|전환 번개",
+        "중급|전략 고정",
+        "상급|최후의 전사",
+        "상급|흐르는 태세",
+        "상급|교류 전류"
+      ],
+      "common": []
+    },
+    {
+      "id": "storm",
+      "n": "폭풍",
+      "d": "천둥을 두르고, 손패에서 기다리며 전장에 번개를 내립니다.",
+      "own": [
+        "하급|천둥의 보호막",
+        "하급|천둥의 마력",
+        "하급|충 전",
+        "중급|천둥 축적",
+        "중급|내부의 기운",
+        "중급|대기 자세",
+        "중급|숲의 수호자",
+        "중급|낙뢰",
+        "상급|번뇌",
+        "상급|정령의 전언",
+        "상급|뇌관"
+      ],
+      "common": []
+    }
+  ],
   "나이코스": [
     {
       "id": "slash",
@@ -31322,6 +31635,11 @@ const evSay=(e,o)=>(o&&o.say)||(e&&e.say)||"";
    다 채우면 run.qDone 에 줄을 서고, 지도로 돌아갈 때(backToMap) 보상 화면(questdone)이 먼저 뜬다.
    field:1 인 퀘스트는 받은 구역을 벗어나면 사라진다. 저장은 run.quests 가 그대로 실린다 (대원은 이름으로) */
 const QUESTS={
+  /* 레이 (노트 20 보상, 2026-10-21) — 태세마다 다섯씩 「각각」이라 each 로 센다 (작업 지시판과 같은 틀) */
+  "태세 훈련":{kind:"stanceWin",need:10,who:"hero",each:{"주술사":5,"전사":5},
+    d:"주술사, 전사 태세로 각각 전투에서 5번 승리",rd:"추가 공격력, 마법력을 1 얻습니다.",reward:{atkMag:1}},
+  "파괴 연쇄":{kind:"boltChain",need:1,who:"hero",
+    d:"벼락칼날을 4번 연쇄시키기 {n}",rd:"벼락칼날의 피해량이 영구히 4 증가합니다.",reward:{boltUp:4}},
   "주인 찾아주기":{kind:"visit",need:4,field:1,who:"all",
     d:"이번 구역 동안 미지의 구역 {n}번 방문",get rd(){return `금화를 ${evScale("ownerGold")}개 얻습니다.`},reward:{get gold(){return evScale("ownerGold")}}},
   "공물 준비하기":{kind:"kill",need:20,who:"hero",
@@ -31722,6 +32040,13 @@ function questClaim(id){
   if(R.allStat){ const h=run.heroes.find(x=>x.name===q.hero)||run.heroes.find(x=>!x.down)||run.heroes[0];
     if(h){ h.atk+=R.allStat; h.mag+=R.allStat; h.def+=R.allStat;
       toast(`파수꾼의 시험 — ${h.name}의 모든 추가 능력치 +${R.allStat}`) } }
+  /* 레이 (2026-10-21) */
+  if(R.atkMag){ const h=run.heroes.find(x=>x.name===q.hero)||run.heroes.find(x=>x.name==="레이");
+    if(h){ h.atk+=R.atkMag; h.mag+=R.atkMag;
+      toast(`태세 훈련 — ${h.name}의 추가 공격력, 마법력 +${R.atkMag}`) } }
+  if(R.boltUp){ const h=run.heroes.find(x=>x.name===q.hero)||run.heroes.find(x=>x.name==="레이");
+    if(h){ addMod(h,"벼락칼날","dmg",R.boltUp,"파괴 연쇄");
+      toast(`파괴 연쇄 — 벼락칼날 피해 +${R.boltUp}`) } }
   if(R.slamUp){ const h=run.heroes.find(x=>x.name===q.hero)||run.heroes.find(x=>x.name==="파벨");
     if(h){ addMod(h,"지면 내려치기","dmg",R.slamUp,"지면 파훼");
       toast(`지면 파훼 — 지면 내려치기 피해 +${R.slamUp}`) } }
@@ -32879,6 +33204,9 @@ const ROUND_RESET={
   /* 레이 — 태세와 구체 셈은 라운드마다 (노트 : 「해당 라운드 동안」, 2026-10-21).
      rayK 를 비워야 altReset 뒤 rayStance 가 다시 칸에 맞춘다 */
   rayK:0, rayOrbs:0, rayVow:0,
+  /* 레이의 보상 — 「대원 배치 후」라 라운드마다 다시 선다 (노트 20, 2026-10-21).
+     reiGuardOn 은 bumpRnd 와 짝이라 **같이** 비워야 한다 */
+  reiOrbFree:0, reiVowFree:0, reiZone:0, reiBackSlot:0, reiBackK:0, reiGuardOn:0, reiWordT:0,
   portal:null, bomb:0, minions:[]};
 const BATTLE_RESET={
   summoned:0, purified:0, hpMagOn:0, taintOn:0, rageOn:0, rageDefOn:0, chainOn:0, soundOn:0, barsArmorOn:0,   /* 이라 — 늘 따라가는 몫 (2026-10-12 · 10-13) */
@@ -32888,7 +33216,8 @@ const BATTLE_RESET={
   first:{},                        /* 처음은 완벽하게 따위 — 전투당 한 번 */
   critAtkUsed:0, critMagUsed:0, soloOn:0,
   cutGrow:0, deathSaveUsed:0, lastRageUsed:0, countUp:0, chgOn:0, chg:0, shotBonus:0,   /* 복수는 끝나지 않았다 · 타락의 초읽기 — 전투 단위 (2026-10-13) */
-  wanderBonus:0, archerBonus:0, gloryGuard:0, arenaHeal:0, echo:0};   /* 조합 몫 — applySynergy 가 다시 채운다 */
+  wanderBonus:0, archerBonus:0, gloryGuard:0, arenaHeal:0, echo:0,
+  reiChargeUp:0, reiKSeen:{}, crossAtkOn:0, crossMagOn:0};   /* 레이 — 전투 단위 (충 전 누적 · 거친 태세 · 벼락 과충전, 2026-10-21) */   /* 조합 몫 — applySynergy 가 다시 채운다 */
 function resetVals(h,T){ for(const k in T){ const v=T[k]; h[k]=(v&&typeof v==="object")?(Array.isArray(v)?[]:{}):v } }
 function resetBattle(){
   if(run&&run.sandbox){sandRestartBattle();return}
@@ -34447,7 +34776,7 @@ function skExec0(f,I){
     if(W.length){ const w=rnd(W);
       w.alive=1; w.wreck=0; w.hp=Math.max(1,Math.ceil(w.maxHp/2)); w.shield=0; w.expTaken=0;
       fx({side:"foe",slot:w.slot,s:"summon",ring:"#7fd39a",glow:1,txt:"재조립",cls:"crit",gap:180});
-      say(`${s.n} — ${w.name}${jo(w.name,"ieul")} 절반의 체력으로 되살립니다 (체력 ${w.hp}).`,"t1");
+      say(`${s.n} — ${w.name}${jo(w.name,"eul")} 절반의 체력으로 되살립니다 (체력 ${w.hp}).`,"t1");
       try{ rollIntents(true) }catch(e){} }
     else say(`${s.n} — 되살릴 잔해가 없습니다.`,"t3") }
   if(s.rngUp){ f.rng=(f.rng||0)+s.rngUp;   /* 공격 범위가 늘어난다 — 1세대 돌보미 준비 */
@@ -36479,6 +36808,8 @@ function drawBattle(app){
     if(B&&B.mins) B.mins.forEach(f=>{ if(f&&f.name) dexSee("foe",f.name) }) }catch(e){}
   if(run&&run.heroes) run.heroes.forEach(hectoSlotFix);   /* 공방전 — 지금 칸에 맞는 꼴로 */
   if(run&&run.heroes) run.heroes.forEach(h=>rayStance(h));   /* 레이 적응성 — 비어 있을 때만 채운다 (부활처럼 onSummon 을 안 지나는 길, 2026-10-21) */
+  try{ reiHandSync() }catch(e){}                             /* 숲의 수호자 — 손패의 레이가 정령들을 지킨다 */
+  try{ const _r=reiOf(); if(_r) reiCrossSync(_r) }catch(e){}  /* 최후의 전사 — 늘 맞춘다 */
   if(run&&run.heroes) run.heroes.forEach(fortSync);   /* 진지 구축 — 성벽 뒤면 추가 공격력 */
   if(run&&run.heroes) run.heroes.forEach(domHateSync);   /* 악마 혐오 — 상시 */
   if(run&&run.heroes) run.heroes.forEach(alwaysSync);   /* 늘 따라가는 몫 — 생명 · 복수귀 · 흡수 · 오염을 한 자리에서 (2026-10-13) */
@@ -37791,6 +38122,13 @@ function payCost(h,i){
   if(h.name==="카제"&&i===1&&h.free>0) return 0;
   if(h.tag.freeCut&&i===0&&h.guarded) return 0;
   if(i===0&&h.name==="트리스탄"&&(h.shotFree||0)>0) return 0;
+  /* 레이 — 빛의 속도(번개 구체) · 결심(주술사의 다짐) 은 다음 N 회가 공짜 (노트 20 하급) */
+  if(h.name==="레이"){
+    if(s.rayOrb&&(h.reiOrbFree||0)>0) return 0;
+    if(s.rayVow&&(h.reiVowFree||0)>0) return 0;
+  }
+  /* 정령의 전언 — 손패의 레이가 다른 아군의 그 턴 첫 기술을 깎는다 (상급) */
+  { const w=(typeof reiWordCut==="function")?reiWordCut(h):0; if(w) return Math.max(0,C-w) }
   return C;
 }
 function canPay(h,i,n){
@@ -37810,13 +38148,21 @@ function canPay(h,i,n){
   let fp=(h.freePush&&s.n==="방패 밀치기")?1:0;
   /* 트리스탄 손아귀 강화 — 피부 강화 뒤의 페일노트는 공짜 */
   let sf=(i===0&&h.name==="트리스탄")?(h.shotFree||0):0;
+  /* 레이 — 공짜 몫과 정령의 전언. payCost 와 **같은 셈**이어야 쓸 수 있다 · 없다가 어긋나지 않는다 */
+  let ro=(h.name==="레이"&&s.rayOrb)?(h.reiOrbFree||0):0;
+  let rv=(h.name==="레이"&&s.rayVow)?(h.reiVowFree||0):0;
+  let rw=(typeof reiWordCut==="function")?reiWordCut(h):0;
   for(let k=0;k<n;k++){
     if(h.name==="카제"&&i===1&&free>0){ free--; continue }
     if(h.tag.freeCut&&i===0&&guard>0){ guard--; continue }
     if(fb){ fb=0; continue }
     if(fp){ fp=0; continue }
     if(sf>0){ sf--; continue }
-    need+=Math.max(0,(s.cost||0)+mod(s,"cost"));   /* 비용 덤 (2026-10-15) */
+    if(ro>0){ ro--; continue }
+    if(rv>0){ rv--; continue }
+    let c=Math.max(0,(s.cost||0)+mod(s,"cost"));   /* 비용 덤 (2026-10-15) */
+    if(rw>0){ c=Math.max(0,c-rw); rw=0 }
+    need+=c;
   }
   return h.mana>=need;
 }
@@ -38511,6 +38857,7 @@ function soloCheck(h){
 function onSummon(h){
   handOpenFor(h);
   rayStance(h,1);   /* 레이 적응성 — 배치하는 그 순간에 태세가 정해진다 (노트 20-0, 2026-10-21) */
+  reiDeploy(h);     /* 레이의 「대원 배치 후」 보상 — 태세를 보고 갈린다 (2026-10-21) */
   const t=h.tag;
   if(h.name==="데린저"&&t.placeAmmoEsh){ const v=ammoMaxOf(h)*t.placeAmmoEsh;
     h.eshield=(h.eshield||0)+v;
@@ -38858,6 +39205,7 @@ function iraLeechSync(h){
 function alwaysSync(u){
   if(!u||u.isFoe||u.isMin||typeof B==="undefined"||!B) return;
   hpMagSync(u); iraRageSync(u); iraLeechSync(u); taintSync(u);
+  reiCrossSync(u);   /* 레이 최후의 전사 (2026-10-21) */
 }
 function iraRageVals(h){
   const t=(h&&h.tag)||{};
@@ -39326,6 +39674,7 @@ function critWhy(h,s,tgt){
      **대상에 걸린 규칙**이라 기술 칸에는 안 적힌다 (점화 · 대상 포착과 같은 결) */
   if(tgt&&typeof driftHas==="function"&&driftHas(tgt.slot)&&orionCrew(h)) return "사냥의 기류";
   /* 레이 — 세 번째 번개 구체 (노트 20-1). 쓰기 전에 알 수 있는 셈이라 기술 칸에도 두 배로 보인다 */
+  if(s.rayOrb&&h.tag&&h.tag.reiOrbAlways) return "삼뢰 해방";   /* 상급 — 번개 구체가 늘 치명타 (2026-10-21) */
   if(s.rayOrb&&(((h.rayOrbs||0)+1)%3===0)) return "세 번째 구체";
   if(h&&h.name==="데린저"&&tgt&&h.aimAt2!=null&&tgt.id===h.aimAt2) return "정확 조준";   /* 부착: 이중 조준경 (2026-10-15) */
   if(s.harmony&&(ffFlare(h)||T.disharmony)) return T.disharmony&&!ffFlare(h)?"부조화":"플레어";
@@ -39483,6 +39832,9 @@ function predictDmg(h,s,tgt){
     if(s.el==="마법"&&deb(h,"magDn")) dmg=Math.ceil(dmg*0.5);
     else if(s.el!=="마법"&&deb(h,"atkDn")) dmg=Math.ceil(dmg*0.5);
     if(h.name==="이테리오"&&itCritEl(h,s)&&(tgt.mark||0)>0){ dmg=Math.round(dmg*itCritX(h)); crit=1 }
+    /* 레이 되울림 — runEffect 와 **같은 차례**여야 예고가 맞는다 (2026-10-21) */
+    if(s.rayBolt&&h.tag&&h.tag.reiEcho&&!alive.some(f=>f!==tgt&&Math.abs(f.slot-tgt.slot)<=1))
+      dmg+=h.tag.reiEcho;
     { if(critOnce(h,s)){ dmg*=2; crit=1 } MAINC=1 }   /* 치명적인 공격 · 마법 — 그 전투의 첫 한 방. 예고는 닳게 하지 않는다 (critOnce 한 곳에서 묻는다) */
     if(!crit&&critWhy(h,s,tgt)){ dmg*=2; crit=1 }   /* 보상으로 걸리는 치명타 — 실제와 같은 자리에서 묻는다 (2026-10-09) */
     if(h.name==="그슨대"&&h.hide&&s.el==="공격"){ dmg*=2; crit=1 }
@@ -40908,6 +41260,9 @@ function doSkill(target){
     else if(s.costType==="mom"){
       if(s.rise){ h.mom-=s.cost+h.airUp; h.airUp++ } else h.mom-=s.cost; }
     else if(h.name==="카제"&&i===1&&h.free>0){ h.free-- }
+    /* 레이 — 공짜 한 번을 닳린다 (payCost 와 같은 셈) */
+    else if(h.name==="레이"&&s.rayOrb&&(h.reiOrbFree||0)>0){ h.reiOrbFree-- }
+    else if(h.name==="레이"&&s.rayVow&&(h.reiVowFree||0)>0){ h.reiVowFree-- }
     else if(h.tag.freeCut&&i===0&&h.guarded){ h.guarded-- }
     else if(h.freeBlock&&s.n==="방패 막기"){ h.freeBlock=0;
       say("방어 후 막기 — 이번 방패 막기는 공짜입니다.","t2") }
@@ -40915,7 +41270,13 @@ function doSkill(target){
       say("준비 후 밀치기 — 이번 방패 밀치기는 공짜입니다.","t2") }
     else if(freeArrow){ h.shotFree--;
       say("손아귀 강화 — 이번 페일노트는 공짜입니다.","t2") }
-    else { const C=payCost(h,i);   /* 비용 덤(부착: 장전 손잡이)까지 셈한 값 — 기술 칸에 보이는 것과 같다 (2026-10-15) */
+    else {
+      /* 정령의 전언 — 깎는 셈은 payCost 안에 있다. 여기서는 **깎인 값으로 치르고** 그 턴에 썼다고 적는다.
+         ⚠️ 공짜 가지(else if)로 넣으면 마나를 아예 안 내게 된다 — 한 번 그렇게 적었다가 고쳤다 (2026-10-21) */
+      const _rw=(typeof reiWordCut==="function")?reiWordCut(h):0;
+      const C=payCost(h,i);   /* 비용 덤(부착: 장전 손잡이)까지 셈한 값 — 기술 칸에 보이는 것과 같다 (2026-10-15) */
+      if(_rw){ h.reiWordT=B.turn;
+        say(`정령의 전언 — ${h.name}의 ${s.n} 값이 ${_rw} 줄었습니다.`,"t3") }
       h.mana-=C; h.manaUsed=(h.manaUsed||0)+C; mpAbsorbHook(h,C);   /* 마력 흡수 — 마나를 쓴 만큼 마력 (2026-10-12) */
       if(C){
         const mm=itemBt(h,"manaMom"); if(mm) h.mom+=mm;   /* '마나를 소모할 때마다 추진력 +1' — 쓴 마나만큼 주던 것 (점검 2026-10-07) */
@@ -41046,6 +41407,7 @@ function doSkill(target){
       delete back.alt; nx.alt=back; h.sk[i]=nx;
       say(`${s.n} → ${nx.n}${jo(nx.n,"eu")}로 전환됩니다.`,"t2");
     }
+    if(h.name==="레이"&&h.tag.reiFlow) reiFlip(h);   /* 흐르는 태세 (상급) — 쓸 때마다 갈아탄다 (2026-10-21) */
     if(h.name==="카제"&&s.el==="이동"&&h.moveOk) veilAct(h,1);   /* 이동은 실제로 움직였을 때만 (속박·막힘이면 안 쌓임). 피해는 맞힌 적마다 hurt 자리에서 센다 (2026-09-17) */
     if(h.name==="나이코스"&&i===0&&h.tag.chargeCut){
       const fr=h.slot+1<=SLOTS?h.slot+1:h.slot-1;
@@ -42588,13 +42950,17 @@ function runEffect0(h,i,s,target){
     const f=foeAt(target)||nearestFoe(h);
     if(!f){ say("적이 없습니다.","t2"); return }
     if((f.infect||0)>=3){ healUp(h,4);
-      fx({side:"mine",slot:h.slot,s:"heal",txt:"+4",cls:"heal"}); say(`${h.name} 체력 +4`) }
+      /* 받은 녹음 (사용자 2026-10-22) — 감염이 깊은 적을 기침하면 기운을 빨아들인다 */
+      fx({side:"mine",slot:h.slot,s:sfxOr("인비디아 감염 회복","heal"),txt:"+4",cls:"heal"});
+      say(`${h.name} 체력 +4`) }
     hurt(f,s.dmg+mod(s,"dmg")+h.mag,"죄악의 기침","mag");
     infectFoe(f,h.tag.infectPlus||1);
     return;
   }
   if(s.spread){
     const t2=foeAt(target); if(!t2){ say("그 칸에는 적이 없습니다.","t2"); return }
+    /* 받은 자세와 녹음 (사용자 2026-10-22) — 확산은 **공격 자세**로 */
+    fx({side:"mine",slot:h.slot,pose:"atk",poseMs:620,gap:0});
     /* 노트 리메이크 (사용자 2026-10-21) — **그 대상의 감염이 spreadMin 이상일 때만**
        보호약화와 번짐이 따라온다. 전에는 감염만 있으면 전부에게 보호약화를 걸었다 */
     const need=s.spreadMin||0, big=(t2.infect||0)>=need;
@@ -42604,7 +42970,9 @@ function runEffect0(h,i,s,target){
       const r=h.tag.spreadRange||1;
       t2.weak=(t2.weak||0)+1;
       B.foes.filter(f=>f.alive&&f!==t2&&Math.abs(f.slot-t2.slot)<=r).forEach(f=>{
-        pulseFX("foe",f.slot,"#8f5fd0",2); infectFoe(f,1) });
+        pulseFX("foe",f.slot,"#8f5fd0",2); infectFoe(f,1);
+        /* 번질 때마다 — 받은 녹음 「확산_확산됨」 (사용자 2026-10-22) */
+        fx({side:"foe",slot:f.slot,s:sfxOr("인비디아 확산 번짐",null),gap:0}) });
       say("확산 — 감염이 번집니다.","t1");
     } else say(`확산 — ${t2.name}${jo(t2.name,"eul")} 감염시킵니다.`,"t2");
     return;
@@ -42626,6 +42994,8 @@ function runEffect0(h,i,s,target){
     return;
   }
   if(s.burst){
+    /* 받은 「저주」 자세 — 축복 칸에 구웠다. 사용자가 「숙주 폭발 때」로 정했다 (2026-10-22) */
+    fx({side:"mine",slot:h.slot,pose:"bless",poseMs:900,glow:1,gap:0});
     B.foes.filter(f=>f.alive&&f.infect>0).forEach((f,k)=>
       setTimeout(()=>{ pulseFX("foe",f.slot,"#c58fb0",3);
         fx({side:"foe",slot:f.slot,art:"boom",s:"boom",gap:0}); flushFX() },k*90));
@@ -42796,7 +43166,13 @@ function runEffect0(h,i,s,target){
   if(s.rayThunder){   /* 천둥의 기운 — 「이번 턴에」라 턴 번호를 쥔다 */
     h.rayThunderT=B.turn;
     fx({side:"mine",slot:h.slot,s:"buffup",ring:"#f0d890",txt:"천둥",cls:"buf",glow:1,gap:80});
-    say(`천둥의 기운 — 이번 턴에 적에게 피해를 줄 때마다 체력을 1 회복합니다.`,"t1");
+    say(`천둥의 기운 — 이번 턴에 적에게 피해를 줄 때마다 체력을 ${1+((h.tag&&h.tag.reiThHeal)||0)} 회복합니다.`,"t1");
+    /* 천둥의 보호막 · 천둥의 마력 (하급) */
+    if(h.tag.reiThShield){ const v=addShield(h,h.tag.reiThShield);
+      fx({side:"mine",slot:h.slot,s:"shield",txt:"+"+v,cls:"shd",gap:60});
+      say(`천둥의 보호막 — ${h.name} 보호막 +${v}`,"t2") }
+    if(h.tag.reiThMana){ h.mana+=h.tag.reiThMana;
+      say(`천둥의 마력 — ${h.name} 마나 +${h.tag.reiThMana}`,"t2") }
   }
   if(s.rayRecall){   /* 전략 변경 — 레이를 다시 손패로 */
     const sl=h.slot;
@@ -42807,6 +43183,8 @@ function runEffect0(h,i,s,target){
     h.deb={}; h.shield=0; h.keepShield=0; h.eshield=0; h.armor=0; h.taunt=0;
     h.lock={}; h.lockNew={}; h.limitUsed={}; h.limitUsed[i]=keep;
     h.mana=h.maxMana;
+    /* 전략 고정 · 교류 전류 — 어디서 어떤 태세로 빠졌는지 (reiDeploy 가 읽는다, 2026-10-21) */
+    h.reiBackSlot=sl; h.reiBackK=h.rayK;
     h.rayK=0; h.rayOrbs=0; h.rayVow=0; h.rayThunderT=null;
     h.slot=0;
     altReset(h);   /* 기술 둘을 기본 꼴로 — 다시 놓을 때 rayStance 가 그 칸에 맞춘다 */
@@ -43057,6 +43435,9 @@ function runEffect0(h,i,s,target){
         dmg*=2; CRIT=1; say("차원문 위의 적 — 씹어먹기 치명타!","t1") }
       if(T.chompLeech) addLeech(h,T.chompLeech);
     }
+    /* 레이 되울림 (중급) — 대상 거리 1 내에 다른 적이 없으면 (노트 20). **치명타 앞**이라 예고와 같다 */
+    if(s.rayBolt&&h.tag.reiEcho&&!B.foes.some(f=>f.alive&&f!==tgt&&Math.abs(f.slot-tgt.slot)<=1))
+      dmg+=h.tag.reiEcho;
     /* 🔴 치명타는 **여기 한 곳**에서 묻는다 (사용자 2026-10-15).
        전에는 대원 이름마다 가지를 쳐 두어(골렘·트리스탄…) 거기 안 적힌 대원은 조용히 빠졌다 —
        2026-10-13 골렘, 2026-10-15 오리온의 **사냥의 기류**가 그렇게 빠져 있었다.
@@ -43216,18 +43597,39 @@ function runEffect0(h,i,s,target){
     /* ── 레이 벼락칼날 — 1칸 뒤에 적이 있으면 그 적에게 반복 (노트 20-1, 2026-10-21).
        노트 주석 그대로 : 3번을 때리면 4 · 5도 받고, 3 · 5만 있으면 4가 비어 이어지지 않는다 */
     if(s.rayBolt&&tgt){
-      let nx=tgt.slot+1, hit=0;
+      let nx=tgt.slot+1, hit=0, cd=dmg;
+      const up=(h.tag&&h.tag.reiChainUp)||0;   /* 연쇄 번개 (하급) — 반복마다 피해 +1씩 */
       while(nx<=SLOTS){
         const t2=B.foes.find(f=>f.alive&&f.slot===nx);
         if(!t2) break;
-        fx({side:"foe",slot:nx,ring:"#cfe4ff",gap:90});
-        asSrc(h,()=>hurt(t2,dmg,s.n,"slash",0,CRIT,1));
+        cd+=up;
+        /* 받은 녹음 — 번개가 뒤의 적으로 옮겨가는 소리 (사용자 2026-10-21) */
+        fx({side:"foe",slot:nx,ring:"#cfe4ff",s:sfxOr("레이 벼락칼날 전이",null),gap:90});
+        asSrc(h,()=>hurt(t2,cd,s.n,"slash",0,CRIT,1));
         hit++; nx++;
       }
       if(hit) say(`벼락칼날 — 번개가 뒤의 적 ${hit}에게 이어집니다.`,"t2");
+      /* ── 레이의 벼락칼날 보상 (노트 20, 2026-10-21) ── */
+      const T=h.tag||{};
+      if(hit>=1&&T.reiBoltShield){ const v=addShield(h,T.reiBoltShield);
+        fx({side:"mine",slot:h.slot,s:"shield",txt:"+"+v,cls:"shd",gap:60});
+        say(`충격 흡수 — ${h.name} 보호막 +${v}`,"t2") }
+      if(hit>=3&&T.reiOverBolt){ bumpTmp(h,"atk",T.reiOverBolt);
+        say(`벼락 과충전 — ${h.name} 이번 전투 추가 공격력 +${T.reiOverBolt}`,"t1") }
+      if(hit>=4) questProgress("boltChain",h.name);   /* 파괴 연쇄 퀘스트 (중급) */
+      /* 벼락 사슬 (상급) — 대상을 1칸 앞(레이 쪽)으로 끌어온다 */
+      if(T.reiBoltPull&&tgt.alive&&!tgt.big&&tgt.slot>1){
+        const sw=foeShift(tgt,tgt.slot-1);
+        if(sw){ fx({side:"foe",slot:tgt.slot,s:"step",txt:"끌려옴",cls:"moved",gap:80});
+          say(`벼락 사슬 — ${tgt.name}${jo(tgt.name,"ig")} ${foeNo(tgt.slot)}번으로 끌려옵니다.`,"t2") } }
     }
     /* ── 레이 번개 구체 — 셈을 올리고, 다짐이 서 있으면 지나간 적들에게도 (노트 20-1 · 20-2) */
     if(s.rayOrb){
+      const T=h.tag||{};
+      /* 받은 녹음 (사용자 2026-10-21) — 치명타로 나가는 구체는 소리가 다르다.
+         보통 구체는 skillSfx 가 「레이 번개 구체」로 저절로 울린다 */
+      if(CRIT&&sfxHas("레이 치명타 구체")) fx({s:"레이 치명타 구체",gap:0});
+      if(sfxHas("레이 번개 구체 피격")) fx({s:"레이 번개 구체 피격",gap:0});
       if(h.rayVow&&tgt){
         h.rayVow=0;
         const pass=B.foes.filter(f=>f.alive&&f!==tgt&&f.slot<tgt.slot);
@@ -43236,8 +43638,28 @@ function runEffect0(h,i,s,target){
           pass.slice().sort((a,b)=>a.slot-b.slot).forEach(f=>{
             fx({side:"foe",slot:f.slot,ring:"#9ecbf5",gap:70});
             asSrc(h,()=>hurt(f,dmg,s.n,"mag",0,CRIT,1)) });
+          /* 순환의 구체 (상급) — 되돌아오며 지나간 적들을 한 번 더 */
+          if(T.reiOrbBack){
+            say("순환의 구체 — 구체가 레이에게 돌아오며 다시 지나갑니다.","t1");
+            pass.slice().sort((a,b)=>b.slot-a.slot).forEach(f=>{ if(!f.alive) return;
+              fx({side:"foe",slot:f.slot,ring:"#cfe4ff",gap:70});
+              asSrc(h,()=>hurt(f,dmg,s.n,"mag",0,CRIT,1)) });
+            if(tgt.alive){ fx({side:"foe",slot:tgt.slot,ring:"#cfe4ff",gap:70});
+              asSrc(h,()=>hurt(tgt,dmg,s.n,"mag",0,CRIT,1)) } }
         } else say("주술사의 다짐 — 구체가 지나간 적이 없습니다.","t2");
       }
+      /* 구체 폭발 (중급) — 치명타면 거리 1 양옆에도 절반 */
+      if(CRIT&&T.reiOrbBurst&&tgt){
+        const side=B.foes.filter(f=>f.alive&&f!==tgt&&Math.abs(f.slot-tgt.slot)<=1);
+        if(side.length){ const v=Math.max(1,Math.round(dmg/2));
+          say(`구체 폭발 — 양옆의 적 ${side.length}에게 피해 ${v}`,"t2");
+          side.forEach(f=>{ fx({side:"foe",slot:f.slot,ring:"#cfe4ff",gap:60});
+            asSrc(h,()=>hurt(f,v,"구체 폭발","mag",0,0,1)) }) } }
+      /* 공명 (중급) — 구체로 처치하면 주술사의 다짐이 저절로 */
+      if(T.reiResonate&&tgt&&!tgt.alive&&!h.rayVow){
+        h.rayVow=1;
+        fx({side:"mine",slot:h.slot,s:"buffup",ring:"#9ecbf5",txt:"공명",cls:"buf",glow:1,gap:80});
+        say("공명 — 주술사의 다짐이 비용 없이 걸립니다.","t1") }
       /* ⚠️ 셈은 **맨 나중에** 올린다 — critWhy 가 「다음이 세 번째인가」를 보기 때문이다 */
       h.rayOrbs=(h.rayOrbs||0)+1;
     }
@@ -43833,6 +44255,7 @@ function endPhase(){
     hurtAlly(k,h,5,"감시"); n++;
     say(`감시 — ${h.name}${jo(h.name,"ig")} 피해를 5 받습니다.`,"t3") });
   n+=mimicTick();                        /* 망자들의 통솔자 — 환영이 예약한 흉내 */
+  n+=reiEndTurn();                       /* 레이 — 폭풍 지대 · 손패에 있는 동안의 몫 (노트 20 보상, 2026-10-21) */
   /* 충전 완료 — 이번 턴에 안 썼으면 여기서 사라진다 (사용자 2026-10-13 : 「한 턴 안에 안 쓰면」).
      차는 중(chgOn)은 그대로 둔다 — 아직 완료가 아니다 */
   onField().forEach(h=>{ if(h.hp>0&&h.charge>0){ h.charge=0;
@@ -44437,7 +44860,12 @@ function startMyTurn(){
     if(f.alive&&f.infect){
       const inv=run.heroes.find(x=>x.name==="인비디아"&&x.slot>0);
       const v=1+(inv?inv.mag:0)+(inv?(inv.tag.plaguePlus||0):0);
-      asSrc(inv,()=>hurt(f,v,"감염","mag")); if(f.alive) f.infect--;
+      /* 받은 녹음 「감염 피해 틱」 (사용자 2026-10-22). 바로 위 화상과 같은 꼴 —
+         제 녹음이 울면 hurt 의 합성 타격음(mag)은 뺀다 */
+      const own=sfxHas("인비디아 감염 피해");
+      if(own){ fx({side:"foe",slot:f.slot,s:"인비디아 감염 피해",gap:0}); B._ownSnd=1 }
+      try{ asSrc(inv,()=>hurt(f,v,"감염","mag")) } finally { if(own) B._ownSnd=0 }
+      if(f.alive) f.infect--;
     } });
   /* 차원문의 아군 보호막은 여기서 주지 않는다 — 노트대로 **내 턴이 끝날 때**(endPhase) 준다.
      여기서 주면 방금 걷은 자리에 도로 얹혀 내 턴 내내 보이고, 노트와 어긋난다. */
@@ -44554,6 +44982,9 @@ function battleWon(){
     if(v) run.heroes.forEach(h=>addMaxHp(h,v,"전투 뒤")); }
   try{ coreBattleEnd() }catch(e){ console.error(e) }   /* 세계핵 해금 — 통산 집계 (2026-10-09) */
   coreGetLater();
+  /* 태세 훈련 — 이 전투에서 거친 태세마다 하나씩 (노트 20 하급, 2026-10-21) */
+  { const r=reiOf();
+    if(r&&!r.down&&r.reiKSeen) Object.keys(r.reiKSeen).forEach(k=>questEach(k)); }
   lvBattleEnd();   /* 전투가 끝났다 — 오른 레벨의 기술이 이제 열린다 */
   run.heroes.forEach(clearTmp); run.heroes.forEach(clearRndTmp);
   /* 고철 줍기 — 고를 때마다 5% 씩 쌓인다 */
@@ -44960,6 +45391,10 @@ function skillIcon(name,plain,u){
   let base=(typeof SKILL_ICON!=="undefined")&&SKILL_ICON[name];
   if(!base) return "";
   if(name==="물과 불"&&u&&typeof ffFlare==="function"&&ffFlare(u)) base="skill_primal_fire_pillar";
+  /* 레이 번개 구체 — 쓸 때마다 셋 → 둘 → 강화된 하나 (받은 묶음 README2, 2026-10-21).
+     세 번째가 치명타니 그림이 「하나 남았다」를 보여 주는 셈이다 */
+  if(name==="번개 구체"&&u&&u.name==="레이"){ const q=(u.rayOrbs||0)%3;
+    base=q===0?"skill_rei_lightning_orbs":q===1?"skill_rei_lightning_orbs_2":"skill_rei_lightning_orb_enhanced_1" }
   /* 🔴 테두리 없는 쪽이 없으면 **테두리 있는 쪽**으로 떨어진다 (사용자 2026-10-15).
      전에는 빈 글자라 지속 능력 자리가 통째로 비었고, 새 대원이 올 때마다 그랬다.
      (tools/art-gap.py 가 「_no_frame 이 없다」를 잡아 주니, 받으면 그때 채우면 된다) */
