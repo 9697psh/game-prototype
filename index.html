@@ -2492,7 +2492,7 @@ body:has(.rwq) .hpanel{top:auto;bottom:16px;max-height:min(52vh,calc(100vh - 100
    기류가 든 빈 칸만 되살린다 (사용자 2026-10-15) */
 .bfstage .slot.empty:has(>.driftfx){opacity:1}
 /* 뇌관의 폭풍 지대 — 여덟 칸 바닥 오라가 그 칸에 계속 돈다 (사용자 2026-10-22) */
-.reizone{position:absolute;left:50%;bottom:0;width:64px;height:64px;margin-left:-32px;
+.reizone{position:absolute;left:50%;bottom:-16px;width:64px;height:64px;margin-left:-32px;
   background-size:800% 100%;background-repeat:no-repeat;image-rendering:pixelated;
   pointer-events:none;z-index:0;transform:scale(2.1);transform-origin:50% 100%;opacity:.92;
   animation:reizone 1.04s steps(8) infinite}
@@ -10674,30 +10674,32 @@ function reiStrikeFX(side,slot){
 }
 /* 폭풍 지대 — 「뇌관」이 못 박은 적 칸에 오라가 **계속 서 있다** (사용자 2026-10-22 : 「발동 안 하는 것 같다」).
    보이지 않으면 없는 것이나 같다. 오리온의 사냥의 기류(driftFxSync)와 같은 결 */
-let REI_ZONE_FX=null;
-function reiZoneClear(){
-  if(!REI_ZONE_FX) return;
-  REI_ZONE_FX.nd.remove(); REI_ZONE_FX=null;
-}
-function reiZoneSlot(){
-  const h=(typeof reiOf==="function")&&reiOf();
-  return (h&&h.slot>0&&h.hp>0&&h.reiZone&&h.tag&&h.tag.reiStormZone)?h.reiZone:0;
+let REI_AURA={};
+/* 오라 하나를 그 칸에 붙이거나 뗀다 — 붙이고 떼는 셈은 **여기 한 곳**이다.
+   slot 이 0 이면 걷는다. 그리기마다 불려도 값이 같으면 아무 일도 안 한다 */
+function reiAuraSet(key,side,slot){
+  let e=REI_AURA[key];
+  const drop=()=>{ if(e){ e.nd.remove(); delete REI_AURA[key] } };
+  if(e&&e.battle!==B){ drop(); e=null }
+  if(!slot||view!=="battle"||!B||B.over){ drop(); return }
+  const box=document.getElementById(side==="foe"?"foeSide":"mySide");
+  const src=(typeof skinIcon==="function")&&skinIcon("fx_rei_ground_aura");
+  if(!box||!src){ drop(); return }
+  const host=box.querySelector('.slot[data-slot="'+slot+'"]');
+  if(!host){ drop(); return }
+  if(!e){ const nd=el('<i class="reizone"></i>');
+    nd.style.backgroundImage="url("+src+")"; e=REI_AURA[key]={battle:B,nd:nd} }
+  if(e.nd.parentNode!==host) host.appendChild(e.nd);
+  e.slot=slot;
 }
 function reiZoneSync(){
   if(typeof PRED_DRY!=="undefined"&&PRED_DRY) return;
-  if(view!=="battle"||!B||B.over){ reiZoneClear(); return }
-  const want=reiZoneSlot();
-  if(!want){ reiZoneClear(); return }
-  const side=document.getElementById("foeSide");
-  const src=(typeof skinIcon==="function")&&skinIcon("fx_rei_ground_aura");
-  if(!side||!src){ reiZoneClear(); return }
-  if(REI_ZONE_FX&&REI_ZONE_FX.battle!==B) reiZoneClear();
-  if(!REI_ZONE_FX){ const nd=el('<i class="reizone"></i>');
-    nd.style.backgroundImage="url("+src+")"; REI_ZONE_FX={battle:B,slot:0,nd:nd} }
-  const host=side.querySelector('.slot[data-slot="'+want+'"]');
-  if(!host){ reiZoneClear(); return }
-  if(REI_ZONE_FX.nd.parentNode!==host) host.appendChild(REI_ZONE_FX.nd);
-  REI_ZONE_FX.slot=want;
+  const h=(typeof reiOf==="function")&&reiOf();
+  const on=!!(h&&h.slot>0&&h.hp>0);
+  /* 뇌관 — 못 박은 적 칸 */
+  reiAuraSet("zone","foe",(on&&h.reiZone&&h.tag&&h.tag.reiStormZone)?h.reiZone:0);
+  /* 천둥의 기운 — 도는 동안 레이 발밑 (사용자 2026-10-22) */
+  reiAuraSet("thunder","mine",(on&&B&&h.rayThunderT===B.turn)?h.slot:0);
 }
 /* 배치 전환 — 받은 여덟 칸(1024×128). 구슬이 모여 검이 되거나, 구체 셋으로 흩어진다.
    ⚠️ 칸 수와 칸마다의 길이를 꼭 넘긴다 — 안 주면 그림 폭에서 짐작하다 어긋난다 (규칙-그림소리.md) */
@@ -10713,12 +10715,9 @@ function reiMorphFX(h){
       setTimeout(()=>{ if(!a.isConnected) return;
         a.style.transition="opacity 260ms ease-in"; a.style.opacity="";
         setTimeout(()=>{ if(a.isConnected) a.style.transition="" },300) },Math.max(0,REI_TF_ALL-240)) } }
-  /* 변신을 못 박는다 — 바닥에서 빛이 솟고, 칸이 한 번 번쩍이고, 끝에 고리가 퍼진다 */
-  try{ pillarFX("mine",sl,"rgba(159,203,245,.95)") }catch(e){}
-  sheetFX(k,"mine",sl,{cell:128,frames:8,feet:1,z:1.25,frameMs:REI_TF_MS,fade:160,glow:1});
-  setTimeout(()=>{ const p=ctrOf("mine",sl);
-    if(p){ try{ at(spawn('<div class="ring" style="border-color:#9ecbf5"></div>'),p);
-      sparks(p,"#cfe4ff",14) }catch(e){} } },REI_TF_ALL-360);
+  /* ⚠️ 받은 띠만 띄운다 (사용자 2026-10-22) — 빛기둥 · 고리 · 불티와 그에 딸린 효과음은 걷었다.
+     지어낸 연출은 쓰지 않는다. 변신이 도드라지는 것은 **뒤의 자세를 감추는 것**으로 충분하다 */
+  sheetFX(k,"mine",sl,{cell:128,frames:8,feet:1,z:1.25,frameMs:REI_TF_MS,fade:160});
 }
 /* 천둥의 기운 — 레이가 적에게 피해를 줄 때마다 체력 1 (노트 20-3).
    「이번 턴에」라 턴 번호를 쥐어 둔다 — 비우는 표에 빠져 남는 일이 없다 */
@@ -10739,8 +10738,11 @@ function reiInHand(){
   if(typeof B==="undefined"||!B||B.over||!B.hand) return null;
   return B.hand.some(c=>c&&c.type==="hero"&&c.hero===h)?h:null;
 }
-/* 마주 보는 적 칸 — 아군 5번과 적 1번이 마주 본다 (dist 가 그렇게 센다) */
-const reiFaceSlot=sl=>SLOTS+1-sl;
+/* 마주 보는 적 칸 — **같은 번호**다 (사용자 2026-10-22 :
+   「1번 칸에 배치했으면 6번, 5번 칸에 배치했으면 10번」).
+   보이는 번호가 foeNo(s)=s+SLOTS 이니 아군 1번 ↔ 적 6번은 둘 다 속으로 1번이다.
+   ⚠️ 전에는 SLOTS+1-sl 로 뒤집어 세어 엉뚱한 칸에 지대가 섰다 */
+const reiFaceSlot=sl=>sl;
 /* 대원 배치 후 — 태세가 정해진 **뒤**에 돈다 (onSummon 이 rayStance 다음에 부른다) */
 function reiDeploy(h){
   if(!h||h.name!=="레이"||!(h.slot>0)||typeof B==="undefined"||!B||B.over) return;
@@ -18935,10 +18937,13 @@ function negCut(u,k,n){
   if(!u||!(u.negShield>0)||!(n>0)) return n;
   /* 화상 · 냉각 · 감전은 보호막 하나로 **들어오는 중첩을 모두** 막는다 (사용자 2026-10-14) */
   const all=!!NEG_ALLK[k];
+  /* ⚠️ DEBUFF 표 밖의 부정 효과도 받는다 — 감염이 그렇다 (사용자 2026-10-22).
+     표에 없으면 열쇠말을 그대로 이름으로 쓴다 */
+  const nm=(DEBUFF[k]&&DEBUFF[k].n)||k;
   const cut=all?n:Math.min(u.negShield,n);
   u.negShield-=all?1:cut; n-=cut;
   fx({side:u.isFoe?"foe":"mine",slot:u.slot,trig:"부정 보호막",ring:"#7fd39a",txt:"−"+cut,cls:"shd",gap:70,s:"부정보호막 사용"});
-  say(`부정 보호막이 ${DEBUFF[k].n} ${cut}${jo(String(cut),"eul")} ${all&&cut>1?"모두 ":""}걷어냅니다.${n>0?` (${DEBUFF[k].n} ${n} 남음)`:""}`,"t2");
+  say(`부정 보호막이 ${nm} ${cut}${jo(String(cut),"eul")} ${all&&cut>1?"모두 ":""}걷어냅니다.${n>0?` (${nm} ${n} 남음)`:""}`,"t2");
   { const ne=itemBt(u,"negEsh");
     if(ne){ u.eshield=(u.eshield||0)+ne*cut }
     const ed=itemBt(u,"emptyDef");
@@ -22598,6 +22603,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 205, "v": "0.7", "d": "2026-10-22", "t": "감염도 부정 효과 · 레이 연출 손질 · 마주 보는 칸 바로잡음 (사용자 2026-10-22)", "big": 0},
  {"b": 204, "v": "0.7", "d": "2026-10-22", "t": "레이 이펙트 손질 — 짧게 스르르 · 변신 강조 · 뇌관 폭풍 지대 보이게 (사용자 2026-10-22)", "big": 0},
  {"b": 203, "v": "0.7", "d": "2026-10-22", "t": "레이 · 인비디아 이펙트 · 정면 얼굴 · 구체 수 자세 · 그물 병렬 (사용자 2026-10-22)", "big": 0},
  {"b": 202, "v": "0.7", "d": "2026-10-22", "t": "레이 보상 36 · 특성 넷 · 레이와 인비디아 그림과 소리 (사용자 2026-10-22)", "big": 0},
@@ -23994,7 +24000,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=204;
+const BUILD_NO=205;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -41674,6 +41680,10 @@ function moveTo(h,to){
 }
 function infectFoe(f,n){
   if(!f.alive) return;
+  /* 감염도 부정적인 효과다 (사용자 2026-10-22) —
+     ① 부정 보호막이 걷는다 (addDeb 와 같은 꼴)  ② 「부정 효과를 부여할 때마다」가 울린다.
+     세는 쪽(foeAil · envyKinds)과 지우는 쪽(foePurge)과 두 배(오염된 조화)는 전부터 세고 있었다 */
+  if(f.negShield>0&&n>0){ n=negCut(f,"감염",n); if(n<=0) return }
   { const src=B.lastAttacker;
     if(src&&src.slot>0){ const a=ctrOf("mine",src.slot), b=ctrOf("foe",f.slot);
       if(a&&b) beamFX(a,b,"#8f5fd0",4) } }
@@ -41681,6 +41691,8 @@ function infectFoe(f,n){
   /* 받은 오라 띠 — 감염이 걸리는 자리 한 곳이라 여기 하나면 다 따라온다 (사용자 2026-10-22) */
   { const sl=f.slot; fx({side:"foe",slot:sl,ring:"#8f5fd0",txt:"감염"+f.infect,cls:"mag",
       fn:()=>sheetFX("fx_inv_infection_aura","foe",sl,{frames:8,cell:64,feet:1,z:2,ms:720,fade:200}),gap:80}) }
+  /* 「적에게 부정적인 효과를 부여할 때마다」 — 플로우의 악의 기운 약화 · 플레어의 소멸 (2026-10-22) */
+  try{ ffDebuffHook(B.lastAttacker,f) }catch(e){}
 }
 /* ═══ 도미니코 (노트 대개편 · 악마화, 사용자 2026-10-06) ═══
    축복은 다음 기술 하나가 쓴다(domBless). 참회의 기류는 축복받은 기류가 있을 때만 축복을 쓴다.
@@ -43282,7 +43294,9 @@ function runEffect0(h,i,s,target){
   }
   if(s.rayThunder){   /* 천둥의 기운 — 「이번 턴에」라 턴 번호를 쥔다 */
     h.rayThunderT=B.turn;
-    fx({side:"mine",slot:h.slot,s:"buffup",ring:"#f0d890",txt:"천둥",cls:"buf",glow:1,gap:80});
+    /* 받은 세로 번개가 레이에게 떨어진다 (사용자 2026-10-22) */
+    { const sl=h.slot; fx({side:"mine",slot:sl,ring:"#f0d890",txt:"천둥",cls:"buf",glow:1,
+        fn:()=>reiStrikeFX("mine",sl),gap:80}) }
     say(`천둥의 기운 — 이번 턴에 적에게 피해를 줄 때마다 체력을 ${1+((h.tag&&h.tag.reiThHeal)||0)} 회복합니다.`,"t1");
     /* 천둥의 보호막 · 천둥의 마력 (하급) */
     if(h.tag.reiThShield){ const v=addShield(h,h.tag.reiThShield);
@@ -43767,14 +43781,21 @@ function runEffect0(h,i,s,target){
           pass.slice().sort((a,b)=>a.slot-b.slot).forEach(f=>{
             fx({side:"foe",slot:f.slot,ring:"#9ecbf5",gap:70});
             asSrc(h,()=>hurt(f,dmg,s.n,"mag",0,CRIT,1)) });
-          /* 순환의 구체 (상급) — 되돌아오며 지나간 적들을 한 번 더 */
+          /* 순환의 구체 (상급) — 되돌아오며 지나간 적들을 한 번 더.
+             구체가 **대상 자리에서 돌아서** 적을 하나씩 건너뛰며 레이의 손으로 돌아온다.
+             ⚠️ 대상은 돌아서는 자리라 다시 맞지 않는다 — 노트가 「지나간 적들」이다 */
           if(T.reiOrbBack){
             say("순환의 구체 — 구체가 레이에게 돌아오며 다시 지나갑니다.","t1");
+            let from={side:"foe",slot:tgt.slot};
             pass.slice().sort((a,b)=>b.slot-a.slot).forEach(f=>{ if(!f.alive) return;
-              fx({side:"foe",slot:f.slot,ring:"#cfe4ff",gap:70});
-              asSrc(h,()=>hurt(f,dmg,s.n,"mag",0,CRIT,1)) });
-            if(tgt.alive){ fx({side:"foe",slot:tgt.slot,ring:"#cfe4ff",gap:70});
-              asSrc(h,()=>hurt(tgt,dmg,s.n,"mag",0,CRIT,1)) } }
+              const sl=f.slot, src=from;
+              fx({side:"foe",slot:sl,fn:()=>shotFX("foe",sl,src,
+                  {fly:"fx_rei_orb_fly_big",flyZ:2,hit:"fx_rei_orb_hit",hitZ:2,ms:260,fade:220}),gap:200});
+              asSrc(h,()=>hurt(f,dmg,s.n,"mag",0,CRIT,1));
+              from={side:"foe",slot:sl} });
+            /* 마지막으로 레이의 손으로 돌아온다 — 맞는 그림 없이 날아오기만 */
+            { const src=from, ms=h.slot;
+              fx({side:"mine",slot:ms,fn:()=>shotFX("mine",ms,src,{fly:"fx_rei_orb_fly_big",flyZ:2}),gap:260}) } }
         } else say("주술사의 다짐 — 구체가 지나간 적이 없습니다.","t2");
       }
       /* 구체 폭발 (중급) — 치명타면 거리 1 양옆에도 절반 */
