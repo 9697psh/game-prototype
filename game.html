@@ -6993,6 +6993,9 @@ const BGM_SRC={
   tower1 :"bgm/tower1.mp3",   /* 마력의 탑 — 마력과 탑 */
   tower2 :"bgm/tower2.mp3",   /* 마력의 탑 — 서고 */
   tower3 :"bgm/tower3.mp3",   /* 마력의 탑 — 시계와 시간 */
+  scrap1 :"bgm/scrap1.mp3",   /* 고철의 무덤 — 아직 돌아가는 라인 (사용자 2026-10-23) */
+  scrap2 :"bgm/scrap2.mp3",   /* 고철의 무덤 — 불티와 용광로 */
+  scrap3 :"bgm/scrap3.mp3",   /* 고철의 무덤 — 버려진 소리 */
   /* ── 우두머리 · 적 전용 ── */
   boss_warden  :"bgm/boss_warden.mp3",    /* 간수장 */
   boss_colossus:"bgm/boss_colossus.mp3",  /* 콜로서스 */
@@ -7012,6 +7015,8 @@ const BGM_GAIN={
   /* 전투 곡 열하나 — 2026-10-09 에 ffmpeg 으로 재어 넣었다 (기준 main -19.3dB) */
   forest1:0.56, forest2:0.59, forest3:0.60,
   tower1:0.65,  tower2:0.64,  tower3:0.63,
+  /* 고철의 무덤 셋 — 셋 다 -14.1dB 로 왔다 (사용자 2026-10-23, 같은 길로 재었다) */
+  scrap1:0.62, scrap2:0.62, scrap3:0.62,
   boss_warden:0.62, boss_colossus:0.59, boss_frost:0.65, boss_frost2:0.67,
   foe_puppeteer:0.62,
   ev_calm:0.50    /* -14.3dB — 정화의 샘은 나머지보다 한 단 더 낮게 둔다.
@@ -7046,7 +7051,9 @@ function bossBgm(){
 /* 곡은 라운드가 아니라 전투에 딸린다 — 라운드가 넘어가도 그대로 이어진다.
    방금 쓴 곡은 다음 전투에서 피해 같은 곡이 잇달아 나오지 않게 한다. */
 function pickBattleBgm(){
-  const pool0=FIELD_BGM[(run&&run.field)||0]||BATTLE_BGM;
+  /* 1막 변형이 제 곡을 가졌으면 그것 (고철의 무덤, 2026-10-23). 없으면 막 번호로 — fieldPick 과 같은 결 */
+  const a1=(typeof act1Of==="function")&&act1Of("bgm");
+  const pool0=(a1&&a1.length)?a1:(FIELD_BGM[(run&&run.field)||0]||BATTLE_BGM);
   const pool=pool0.filter(k=>k!==(run&&run.lastBattleBgm));
   return rnd(pool.length?pool:pool0);
 }
@@ -19634,6 +19641,7 @@ const ACT1={
  "핏빛 감옥":{},
  "고철의 무덤":{
    floor:"바닥-고철의 무덤.png",
+   bgm:["scrap1","scrap2","scrap3"],   /* 전투 곡 셋 (사용자 2026-10-23) — 아직 돌아가는 라인 · 불티와 용광로 · 버려진 소리 */
    bg:"bg/battle-scrap.webp", lay:"scrap",
    gim:{belt:0.7,furnace:0.55,depot:0.25,oil:0.5,care:0.45,crane:0.5,order:0.6},   /* 전용 구역 (사용자 2026-10-21). 자재 창고는 낮은 확률 */
    foes:["수거 드론","수거 드론","용접 팔","보급 레일","순찰기","재활용기",
@@ -22824,6 +22832,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 212, "v": "0.7", "d": "2026-10-23", "t": "고철의 무덤 전투 곡 셋 (사용자 2026-10-23)", "big": 0},
  {"b": 211, "v": "0.7", "d": "2026-10-22", "t": "레이 · 인비디아 지도 손 · 막기 자세 (사용자 2026-10-22)", "big": 0},
  {"b": 210, "v": "0.7", "d": "2026-10-22", "t": "레이 · 인비디아 지도 손 (사용자 2026-10-22)", "big": 0},
  {"b": 209, "v": "0.7", "d": "2026-10-22", "t": "공용 보상 · 보상 아이콘 손질 · 합성음 걷기 · 죄악의 기침 피해 3 (사용자 2026-10-22)", "big": 0},
@@ -24227,7 +24236,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=211;
+const BUILD_NO=212;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
