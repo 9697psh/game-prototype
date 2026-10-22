@@ -9419,6 +9419,28 @@ function ottoShiftFX(slot,n){
   setTimeout(()=>popText({x:p.x,y:p.y-(OT_BIG()?70:40)},"shd esh","에너지 보호막 +"+n),380);
   const k=ottoSnd("돌봄"); if(k) SFX.play(k);
 }
+/* 날아가 맞는 투사체 — **여기 한 곳**이다 (2026-10-22).
+   플레어의 불덩이(flareShotFX)가 열쇠를 박아 두고 쓰던 길을, 열쇠를 받게 넓혔다.
+   o : fly 날아가는 그림 · flyZ 그 크기 · hit 맞는 그림 · hitZ · hitFrames · ms · snd */
+function shotFX(side,slot,from,o){
+  o=o||{};
+  const fly=o.fly&&skinIcon(o.fly);
+  const p=bodyPoint(side,slot)||ctrOf(side,slot); if(!p) return 0;
+  const q=from&&ctrOf(from.side,from.slot);
+  let wait=0;
+  if(fly&&q){
+    const nd=spawn('<div class="arrowfly fire"></div>');
+    if(nd){ at(nd,q); nd.style.backgroundImage="url("+fly+")";
+      if(o.flyZ) nd.style.setProperty("--z",o.flyZ);
+      nd.style.setProperty("--dx",(p.x-q.x)+"px"); nd.style.setProperty("--dy",(p.y-q.y)+"px");
+      nd.style.setProperty("--rot",(Math.atan2(p.y-q.y,p.x-q.x)*180/Math.PI)+"deg");
+      setTimeout(()=>nd.remove(),290); wait=220 }
+  }
+  if(o.hit) setTimeout(()=>{
+    sheetFX(o.hit,side,slot,{z:o.hitZ||2.2,ms:o.ms||480,frames:o.hitFrames||1});
+    if(o.snd&&sfxHas(o.snd)) SFX.play(o.snd) },wait);
+  return wait;
+}
 function flareShotFX(side,slot,from){
   const fly=(typeof ICON_PNG!=="undefined")&&ICON_PNG.fx_ff_fly;
   const p=bodyPoint(side,slot)||ctrOf(side,slot); if(!p) return;
@@ -10592,6 +10614,10 @@ function hectoSlotFix(h){
    ⚠️ 갈아 끼우는 곳은 **여기 한 곳**이다 (헥토 공방전과 같은 결). 그리기 · onSummon 이 부른다 —
       라운드가 열릴 때 altReset 이 기본 꼴(전사)로 돌려놓고, 첫 그리기에서 이 함수가 칸에 맞춘다 */
 const rayStanceOf=sl=>(sl>0&&sl<=2)?"주술사":"전사";
+/* 지금 띄우고 있는 구체 수 — 처음 셋, 한 번 던지면 둘, 두 번 던지면 하나 (사용자 2026-10-22).
+   ⚠️ 자세 한 벌(skinSprite)과 기술 타일(skillIcon)이 **이 하나**를 같이 본다.
+      따로 세면 그림과 칸이 어긋난다 */
+const reiOrbsLeft=h=>3-(((h&&h.rayOrbs)||0)%3);
 /* force 를 주면 **지금 칸으로 다시 정한다** (배치하는 순간). 안 주면 **비어 있을 때만** 채운다 —
    노트가 「배치하면 **해당 라운드 동안**」이라, 라운드 중에 밀려나거나 움직여도 태세는 그대로다.
    ⚠️ 헥토 공방전(hectoSlotFix)은 움직이면 따라오는 결이다. 둘은 다르다 (사용자 2026-10-21) */
@@ -10621,6 +10647,8 @@ function reiFlip(h){
   if(!h||h.name!=="레이"||!h.tag||!h.tag.reiFlow||!(h.slot>0)) return;
   const want=(h.rayK==="주술사")?"전사":"주술사";
   reiSetStance(h,want,h.rayK);
+  /* 갈아탈 때마다 받은 여덟 칸 전환 띠 (사용자 2026-10-22) */
+  { const _h=h; fx({side:"mine",slot:h.slot,fn:()=>reiMorphFX(_h),gap:520}) }
 }
 /* 최후의 전사 (상급) — 추가 공격력과 추가 마법력이 서로 더해진다.
    늘 따라가는 결이라 **얹은 몫을 따로 적어 두고** 그 차이만 손본다 (진지 구축과 같은 꼴) */
@@ -10630,6 +10658,19 @@ function reiCrossSync(h){
   const ba=(h.atk||0)-ca, bm=(h.mag||0)-cm;   /* 둘 다 **먼저** 센다 — 한쪽을 고치면 다른 쪽 밑동이 흔들린다 */
   if(ca!==bm){ h.atk+=bm-ca; h.crossAtkOn=bm }
   if(cm!==ba){ h.mag+=ba-cm; h.crossMagOn=ba }
+}
+/* 낙뢰 · 뇌관 — 받은 세로 번개(64×256)가 내려꽂히고 발밑에 오라 띠가 돈다 (사용자 2026-10-22) */
+function reiStrikeFX(side,slot){
+  sheetFX("fx_rei_ground_aura",side,slot,{frames:8,cell:64,feet:1,z:2.2,ms:640,fade:180});
+  sheetFX("fx_rei_strike",side,slot,{cellW:64,cellH:256,frames:1,feet:1,z:1.5,ms:420,fade:160});
+}
+/* 배치 전환 — 받은 여덟 칸(1024×128). 구슬이 모여 검이 되거나, 구체 셋으로 흩어진다.
+   ⚠️ 칸 수와 칸마다의 길이를 꼭 넘긴다 — 안 주면 그림 폭에서 짐작하다 어긋난다 (규칙-그림소리.md) */
+const REI_TF_MS=[120,120,120,150,120,120,120,420];
+function reiMorphFX(h){
+  if(!h||h.slot<=0) return;
+  const k=(h.rayK==="주술사")?"fx_rei_tf_orbs":"fx_rei_tf_sword", sl=h.slot;
+  sheetFX(k,"mine",sl,{cell:128,frames:8,feet:1,z:1.1,frameMs:REI_TF_MS,fade:140});
 }
 /* 천둥의 기운 — 레이가 적에게 피해를 줄 때마다 체력 1 (노트 20-3).
    「이번 턴에」라 턴 번호를 쥐어 둔다 — 비우는 표에 빠져 남는 일이 없다 */
@@ -10656,6 +10697,8 @@ const reiFaceSlot=sl=>SLOTS+1-sl;
 function reiDeploy(h){
   if(!h||h.name!=="레이"||!(h.slot>0)||typeof B==="undefined"||!B||B.over) return;
   const T=h.tag||{}, mage=h.rayK==="주술사";
+  /* 받은 여덟 칸 전환 연출 — 선 자리에서 구슬이 모여 검이 된다 (사용자 2026-10-22) */
+  { const _h=h; fx({side:"mine",slot:h.slot,fn:()=>reiMorphFX(_h),gap:520}) }
   if(mage&&T.reiMageMana){ h.mana+=T.reiMageMana;
     say(`번개 마력 — ${h.name} 이번 턴 마나 +${T.reiMageMana}`,"t2") }
   if(!mage&&T.reiWarShield){ const v=addShield(h,T.reiWarShield);
@@ -10683,7 +10726,9 @@ function reiDeploy(h){
     h.reiChargeUp=0; }
   if(T.reiStrike){ const f=farthestFoe(h);
     if(f){ const v=T.reiStrike+(h.atk||0)+(h.mag||0);
-      fx({side:"foe",slot:f.slot,quake:1,ring:"#cfe4ff",txt:"낙뢰",cls:"crit",glow:1,s:sfxOr("레이 낙뢰","quake"),gap:200});
+      { const sl=f.slot;
+        fx({side:"foe",slot:sl,quake:1,ring:"#cfe4ff",txt:"낙뢰",cls:"crit",glow:1,s:sfxOr("레이 낙뢰","quake"),
+            fn:()=>reiStrikeFX("foe",sl),gap:200}); }
       say(`낙뢰 — ${f.name}에게 번개가 떨어져 피해 ${v}`,"t1");
       asSrc(h,()=>hurt(f,v,"낙뢰","mag")) } }
   if(T.reiStormZone){ h.reiZone=reiFaceSlot(h.slot);
@@ -10707,7 +10752,9 @@ function reiEndTurn(){
   { const h=reiOf();
     if(h&&h.slot>0&&h.hp>0&&h.reiZone&&h.tag&&h.tag.reiStormZone){
       const f=B.foes.find(x=>x.alive&&x.slot===h.reiZone), v=h.tag.reiStormZone+(h.atk||0)+(h.mag||0);
-      if(f){ fx({side:"foe",slot:f.slot,quake:1,ring:"#cfe4ff",txt:"뇌관",cls:"crit",glow:1,s:sfxOr("레이 낙뢰","quake"),gap:180});
+      if(f){ const _zs=f.slot;
+        fx({side:"foe",slot:_zs,quake:1,ring:"#cfe4ff",txt:"뇌관",cls:"crit",glow:1,s:sfxOr("레이 낙뢰","quake"),
+            fn:()=>reiStrikeFX("foe",_zs),gap:180});
         say(`뇌관 — 폭풍 지대에 번개가 떨어져 ${f.name}에게 피해 ${v}`,"t1");
         asSrc(h,()=>hurt(f,v,"뇌관","mag")); n++ }
       else say(`뇌관 — 폭풍 지대에 아무도 없습니다.`,"t3") } }
@@ -11847,7 +11894,11 @@ function skinSprite(name){
      ⚠️ 아직 안 선(손패) 레이는 전사 꼴로 보인다 — 칸이 정해져야 태세가 선다 */
   if(name==="레이"){ const r=(typeof reiOf==="function")&&reiOf();
     const k=(r&&r.slot>0)?rayStanceOf(r.slot):(r&&r.rayK);
-    if(k==="주술사"&&PNG_SPRITE["레이 (주술사)"]) return "레이 (주술사)" }
+    if(k==="주술사"){
+      /* 띄운 구체 수를 따라 자세가 바뀐다 (사용자 2026-10-22) */
+      const q=reiOrbsLeft(r), nm=(q>=3)?"레이 (주술사)":("레이 (주술사 "+q+")");
+      if(PNG_SPRITE[nm]) return nm;
+      if(PNG_SPRITE["레이 (주술사)"]) return "레이 (주술사)" } }
   const k=skinOn(name); if(k&&PNG_SPRITE[k.sp]) return k.sp;
   /* 소환물 — 주인이 입은 외형의 소환물 그림 (폭식의 군주 → 차원문 악마군, 2026-10-03). 주인이 파티에 있을 때만 */
   for(const hero in SKINS){ const kk=skinOn(hero), m=kk&&kk.minionSp&&kk.minionSp[name]; if(m&&PNG_SPRITE[m]&&skinOwnerIn(hero)){
@@ -12029,6 +12080,7 @@ function pxFigure(name,pose){
 /* 대원 정면 얼굴 (사용자 2026-09-30) — art/portraits-v1, 64×64. 없는 대원은 스프라이트로 물러선다.
    img.pxs 로 두어 자리마다 이미 있는 높이 규칙을 그대로 받는다 (정사각이라 너비는 따라온다) */
 const FACE={"오리온":"face_orion","데린저":"face_derringer",   /* 받은 얼굴 (2026-10-14) */
+ "레이":"face_rei","인비디아":"face_invidia",   /* 받은 얼굴 (사용자 2026-10-22) */
  "도미니코":"face_dominico","헥토":"face_hecto","굴라":"face_gula","나이코스":"face_naikos","카제":"face_kaze","쿠렘타이":"face_kurem",
   "트리스탄":"face_tristan","플레어와 플로우":"face_ff","이테리오":"face_iterio","오토":"face_otto","이라":"face_ira","파벨":"face_pavel"};   /* 이라 초상 (사용자 묶음 portraits-v1-ira, 2026-10-12) */   /* 오토 (사용자 2026-10-04) */
 function faceArt(name){
@@ -22497,6 +22549,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 203, "v": "0.7", "d": "2026-10-22", "t": "레이 · 인비디아 이펙트 · 정면 얼굴 · 구체 수 자세 · 그물 병렬 (사용자 2026-10-22)", "big": 0},
  {"b": 202, "v": "0.7", "d": "2026-10-22", "t": "레이 보상 36 · 특성 넷 · 레이와 인비디아 그림과 소리 (사용자 2026-10-22)", "big": 0},
  {"b": 201, "v": "0.7", "d": "2026-10-21", "t": "새 대원 레이 (태세 둘) · 인비디아 리메이크 (사용자 2026-10-21)", "big": 0},
  {"b": 200, "v": "0.7", "d": "2026-10-21", "t": "고철의 무덤 — 일반 조합 31 · 2·3라운드 28 (ppt 그대로)", "big": 0},
@@ -23891,7 +23944,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=202;
+const BUILD_NO=203;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -38235,6 +38288,7 @@ const AUTO_SK={"성장":1,"축복":1,"중무장":1,"대가 치르기":1,"준비 
   "지면 내려치기":1,"골렘 창조":1,   /* 파벨 — 겨눌 것이 없다. 한 번 눌러 바로 (사용자 2026-10-13) */
   "탄알 장전":1,"연막탄":1,   /* 데린저 — 제 몸에 거는 것이라 겨눌 칸이 없다. 한 번 눌러 바로 (사용자 2026-10-15) */
   "미끼 던지기":1,"사냥개 부리기":1,   /* 오리온 — 겨눌 칸이 없다. 한 번 눌러 바로 (사용자 2026-10-15) */
+  "전사의 다짐":1,"주술사의 다짐":1,"천둥의 기운":1,"전략 변경":1,   /* 레이 — 제 몸에 거는 것이라 겨눌 칸이 없다 (사용자 2026-10-22) */
   "착취":h=>guideOn(h)};   /* 인도 — 영혼 300 부터 모든 적이라 고를 것이 없다 (사용자 2026-10-03) */
 /* 고르는 순간 나가는 기술인가 — 표(AUTO_SK) 에 있거나, 소환물의 기술 중 대상을 스스로 정하는 것
    (제자리 · 가장 먼 적 · 모든 적 · 가장 가까운 적). 소환물은 표를 따로 두지 않는다 (사용자 2026-10-05) */
@@ -41574,7 +41628,9 @@ function infectFoe(f,n){
     if(src&&src.slot>0){ const a=ctrOf("mine",src.slot), b=ctrOf("foe",f.slot);
       if(a&&b) beamFX(a,b,"#8f5fd0",4) } }
   f.infect=(f.infect||0)+n;
-  fx({side:"foe",slot:f.slot,ring:"#8f5fd0",txt:"감염"+f.infect,cls:"mag",gap:80});
+  /* 받은 오라 띠 — 감염이 걸리는 자리 한 곳이라 여기 하나면 다 따라온다 (사용자 2026-10-22) */
+  { const sl=f.slot; fx({side:"foe",slot:sl,ring:"#8f5fd0",txt:"감염"+f.infect,cls:"mag",
+      fn:()=>sheetFX("fx_inv_infection_aura","foe",sl,{frames:8,cell:64,feet:1,z:2,ms:720,fade:200}),gap:80}) }
 }
 /* ═══ 도미니코 (노트 대개편 · 악마화, 사용자 2026-10-06) ═══
    축복은 다음 기술 하나가 쓴다(domBless). 참회의 기류는 축복받은 기류가 있을 때만 축복을 쓴다.
@@ -42953,6 +43009,10 @@ function runEffect0(h,i,s,target){
       /* 받은 녹음 (사용자 2026-10-22) — 감염이 깊은 적을 기침하면 기운을 빨아들인다 */
       fx({side:"mine",slot:h.slot,s:sfxOr("인비디아 감염 회복","heal"),txt:"+4",cls:"heal"});
       say(`${h.name} 체력 +4`) }
+    /* 받은 그림 (사용자 2026-10-22) — 역병 덩이가 날아가 터진다 */
+    { const sl=f.slot, ms=h.slot;
+      fx({side:"foe",slot:sl,fn:()=>shotFX("foe",sl,{side:"mine",slot:ms},
+          {fly:"fx_inv_plague_projectile",flyZ:1.8,hit:"fx_inv_plague_hit",hitZ:2.2,ms:500}),gap:220}) }
     hurt(f,s.dmg+mod(s,"dmg")+h.mag,"죄악의 기침","mag");
     infectFoe(f,h.tag.infectPlus||1);
     return;
@@ -42971,8 +43031,10 @@ function runEffect0(h,i,s,target){
       t2.weak=(t2.weak||0)+1;
       B.foes.filter(f=>f.alive&&f!==t2&&Math.abs(f.slot-t2.slot)<=r).forEach(f=>{
         pulseFX("foe",f.slot,"#8f5fd0",2); infectFoe(f,1);
-        /* 번질 때마다 — 받은 녹음 「확산_확산됨」 (사용자 2026-10-22) */
-        fx({side:"foe",slot:f.slot,s:sfxOr("인비디아 확산 번짐",null),gap:0}) });
+        /* 번질 때마다 — 받은 녹음과 그림 (사용자 2026-10-22) */
+        { const sl=f.slot;
+          fx({side:"foe",slot:sl,s:sfxOr("인비디아 확산 번짐",null),
+              fn:()=>sheetFX("fx_inv_infection_spread","foe",sl,{z:2.2,ms:460}),gap:60}) } });
       say("확산 — 감염이 번집니다.","t1");
     } else say(`확산 — ${t2.name}${jo(t2.name,"eul")} 감염시킵니다.`,"t2");
     return;
@@ -42989,7 +43051,10 @@ function runEffect0(h,i,s,target){
       if(!t2.alive) break;
     }
     if(got){ healUp(h,got);
-      fx({side:"mine",slot:h.slot,s:"heal",ring:"#c58fb0",txt:"+"+got,cls:"heal",gap:80}) }
+      /* 받은 여덟 칸 띠 — 빼앗은 기운이 인비디아에게 흘러든다 (사용자 2026-10-22) */
+      { const sl=h.slot; fx({side:"mine",slot:sl,s:"heal",ring:"#c58fb0",txt:"+"+got,cls:"heal",
+          fn:()=>sheetFX("fx_inv_talent_envy","mine",sl,{frames:8,cell:64,feet:1,z:2.2,ms:720}),gap:80}) }
+    }
     say(`재능 시기 — ${t2.name}에게서 ${n}번 빼앗아 체력 ${got}을 가져옵니다. (부정적 효과 ${kinds}종)`,"t1");
     return;
   }
@@ -42998,6 +43063,8 @@ function runEffect0(h,i,s,target){
     fx({side:"mine",slot:h.slot,pose:"bless",poseMs:900,glow:1,gap:0});
     B.foes.filter(f=>f.alive&&f.infect>0).forEach((f,k)=>
       setTimeout(()=>{ pulseFX("foe",f.slot,"#c58fb0",3);
+        /* 받은 여덟 칸 띠 (사용자 2026-10-22) */
+        sheetFX("fx_inv_host_explosion","foe",f.slot,{frames:8,cell:64,z:2.6,ms:640});
         fx({side:"foe",slot:f.slot,art:"boom",s:"boom",gap:0}); flushFX() },k*90));
     const x=h.tag.burstX||2;
     fx({side:"mine",slot:h.slot,quake:1,s:"boom",gap:200});
@@ -43597,14 +43664,19 @@ function runEffect0(h,i,s,target){
     /* ── 레이 벼락칼날 — 1칸 뒤에 적이 있으면 그 적에게 반복 (노트 20-1, 2026-10-21).
        노트 주석 그대로 : 3번을 때리면 4 · 5도 받고, 3 · 5만 있으면 4가 비어 이어지지 않는다 */
     if(s.rayBolt&&tgt){
+      /* 받은 그림 (사용자 2026-10-22) — 대상 자리에 번개 칼날이 지나간다 */
+      { const sl=tgt.slot; fx({side:"foe",slot:sl,fn:()=>sheetFX("fx_rei_blade_slash","foe",sl,{z:2.4,ms:420}),gap:120}) }
       let nx=tgt.slot+1, hit=0, cd=dmg;
       const up=(h.tag&&h.tag.reiChainUp)||0;   /* 연쇄 번개 (하급) — 반복마다 피해 +1씩 */
       while(nx<=SLOTS){
         const t2=B.foes.find(f=>f.alive&&f.slot===nx);
         if(!t2) break;
         cd+=up;
-        /* 받은 녹음 — 번개가 뒤의 적으로 옮겨가는 소리 (사용자 2026-10-21) */
-        fx({side:"foe",slot:nx,ring:"#cfe4ff",s:sfxOr("레이 벼락칼날 전이",null),gap:90});
+        /* 받은 녹음과 그림 — 번개가 뒤의 적으로 옮겨간다 (사용자 2026-10-21 · 10-22).
+           전류 그림 셋을 이어진 차례대로 돌려 쓴다 */
+        { const sl=nx, ck="fx_rei_chain_"+((hit%3)+1);
+          fx({side:"foe",slot:sl,ring:"#cfe4ff",s:sfxOr("레이 벼락칼날 전이",null),
+              fn:()=>sheetFX(ck,"foe",sl,{z:2.2,ms:380}),gap:90}) }
         asSrc(h,()=>hurt(t2,cd,s.n,"slash",0,CRIT,1));
         hit++; nx++;
       }
@@ -43629,7 +43701,12 @@ function runEffect0(h,i,s,target){
       /* 받은 녹음 (사용자 2026-10-21) — 치명타로 나가는 구체는 소리가 다르다.
          보통 구체는 skillSfx 가 「레이 번개 구체」로 저절로 울린다 */
       if(CRIT&&sfxHas("레이 치명타 구체")) fx({s:"레이 치명타 구체",gap:0});
-      if(sfxHas("레이 번개 구체 피격")) fx({s:"레이 번개 구체 피격",gap:0});
+      /* 받은 그림 (사용자 2026-10-22) — 구체가 날아가 터진다. 치명타는 강화된 구체 */
+      if(tgt){ const sl=tgt.slot, ms=h.slot, big=!!CRIT;
+        fx({side:"foe",slot:sl,fn:()=>shotFX("foe",sl,{side:"mine",slot:ms},
+            {fly:big?"fx_rei_orb_fly_big":"fx_rei_orb_fly",flyZ:big?2.2:1.7,
+             hit:"fx_rei_orb_hit",hitZ:big?2.6:2.1,ms:520,
+             snd:sfxHas("레이 번개 구체 피격")?"레이 번개 구체 피격":null}),gap:220}) }
       if(h.rayVow&&tgt){
         h.rayVow=0;
         const pass=B.foes.filter(f=>f.alive&&f!==tgt&&f.slot<tgt.slot);
@@ -44863,7 +44940,10 @@ function startMyTurn(){
       /* 받은 녹음 「감염 피해 틱」 (사용자 2026-10-22). 바로 위 화상과 같은 꼴 —
          제 녹음이 울면 hurt 의 합성 타격음(mag)은 뺀다 */
       const own=sfxHas("인비디아 감염 피해");
-      if(own){ fx({side:"foe",slot:f.slot,s:"인비디아 감염 피해",gap:0}); B._ownSnd=1 }
+      /* 받은 그림 — 턴이 끝날 때 감염이 갉는다 (사용자 2026-10-22) */
+      { const sl=f.slot; fx({side:"foe",slot:sl,s:own?"인비디아 감염 피해":null,
+          fn:()=>sheetFX("fx_inv_infection_damage","foe",sl,{z:2,ms:420}),gap:0}) }
+      if(own) B._ownSnd=1;
       try{ asSrc(inv,()=>hurt(f,v,"감염","mag")) } finally { if(own) B._ownSnd=0 }
       if(f.alive) f.infect--;
     } });
@@ -45393,8 +45473,8 @@ function skillIcon(name,plain,u){
   if(name==="물과 불"&&u&&typeof ffFlare==="function"&&ffFlare(u)) base="skill_primal_fire_pillar";
   /* 레이 번개 구체 — 쓸 때마다 셋 → 둘 → 강화된 하나 (받은 묶음 README2, 2026-10-21).
      세 번째가 치명타니 그림이 「하나 남았다」를 보여 주는 셈이다 */
-  if(name==="번개 구체"&&u&&u.name==="레이"){ const q=(u.rayOrbs||0)%3;
-    base=q===0?"skill_rei_lightning_orbs":q===1?"skill_rei_lightning_orbs_2":"skill_rei_lightning_orb_enhanced_1" }
+  if(name==="번개 구체"&&u&&u.name==="레이"){ const q=reiOrbsLeft(u);
+    base=(q>=3)?"skill_rei_lightning_orbs":(q===2)?"skill_rei_lightning_orbs_2":"skill_rei_lightning_orb_enhanced_1" }
   /* 🔴 테두리 없는 쪽이 없으면 **테두리 있는 쪽**으로 떨어진다 (사용자 2026-10-15).
      전에는 빈 글자라 지속 능력 자리가 통째로 비었고, 새 대원이 올 때마다 그랬다.
      (tools/art-gap.py 가 「_no_frame 이 없다」를 잡아 주니, 받으면 그때 채우면 된다) */
