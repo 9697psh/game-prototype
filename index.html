@@ -10727,6 +10727,79 @@ function rayThunderTick(h){
   const got=healUp(h,1+((h.tag&&h.tag.reiThHeal)||0));   /* 천둥 축적 (중급) */
   if(got) fx({side:"mine",slot:h.slot,s:"heal",txt:"+"+got,cls:"heal",gap:40});
 }
+/* ═══ 인비디아의 보상 (노트 7, 사용자 2026-10-22) ═══
+   도는 자리는 넷이다 — invDeploy(대원 배치 후) · invEndTurn(내 턴 끝) ·
+   invFoeDeath(적이 죽을 때) · invStudySync(늘 따라가는 것). 그 밖은 h.tag 를 읽는 쪽에서 센다 */
+const invOf=()=>((typeof run!=="undefined"&&run&&run.heroes)||[]).find(h=>h.name==="인비디아");
+/* 최대 체력을 빼앗아 올 수 있는 다른 대원 — 원정을 함께하고, 쓰러지지도 수련 중도 아닐 것 */
+function invStealable(h){
+  if(typeof run==="undefined"||!run||!run.heroes) return [];
+  /* ⚠️ 고독의 동굴에서 수련 중인 대원은 run.cave 로 빠져 **run.heroes 에 아예 없다** —
+     따로 거를 것이 없다. 쓰러진 대원과 최대 체력이 1 뿐인 대원만 뺀다 */
+  return run.heroes.filter(a=>a&&a!==h&&!a.down&&a.hp>0&&a.maxHp>1);
+}
+/* 대원 배치 후 */
+function invDeploy(h){
+  if(!h||h.name!=="인비디아"||!(h.slot>0)||typeof B==="undefined"||!B||B.over) return;
+  const T=h.tag||{};
+  if(T.invCarrier){ const f=nearestFoe(h);
+    if(f){ say(`보균자 — ${f.name}${jo(f.name,"ig")} 감염됩니다.`,"t2");
+      asSrc(h,()=>infectFoe(f,T.invCarrier)) } }
+}
+/* 내 턴이 끝날 때 — 센 수를 돌려준다 (endPhase 가 쓴다) */
+function invEndTurn(){
+  if(typeof B==="undefined"||!B||B.over) return 0;
+  const h=invOf(); if(!h||h.slot<=0||h.hp<=0) return 0;
+  const T=h.tag||{}; let n=0;
+  /* 등가교환 (중급) — 가장 앞의 아군이 아프고, 가장 가까운 적이 감염된다 */
+  if(T.invTrade){
+    const L=onField().filter(a=>a.hp>0).sort((a,b)=>b.slot-a.slot);
+    const a=L[0], f=nearestFoe(h);
+    if(a){ hurtAlly(h,a,3*T.invTrade,"등가교환"); n++ }
+    if(f&&f.alive){ asSrc(h,()=>infectFoe(f,T.invTrade)); n++ }
+    if(a||f) say(`등가교환 — 아군의 아픔을 적의 병으로 바꿉니다.`,"t2");
+  }
+  return n;
+}
+/* 적이 죽을 때 — 감염된 채 죽었나 (tag 는 무엇이 죽였나) */
+function invFoeDeath(f,tag){
+  const h=invOf(); if(!h||!f||h.hp<=0) return;
+  const T=h.tag||{};
+  const had=(f.infect||0)>0||(f.invBurstWas||0)>0;
+  if(!had) return;
+  if(T.invSpreadOnDeath){ const n=B.foes.filter(x=>x.alive&&x!==f)
+      .sort((a,b)=>dist(h.slot,a.slot)-dist(h.slot,b.slot))[0];
+    if(n){ say(`전염성 — ${n.name}에게 병이 옮습니다.`,"t2");
+      asSrc(h,()=>infectFoe(n,T.invSpreadOnDeath)) } }
+  if(T.invLord&&canGainMaxHp(h)){ h.maxHp+=T.invLord; h.hp+=T.invLord;
+    say(`질투의 군주 — ${h.name} 최대 체력 +${T.invLord}`,"t2") }
+  if(T.invFeed&&tag==="감염"){ const g=healUp(h,T.invFeed);
+    if(g) say(`질투의 양분 — ${h.name} 체력 +${g}`,"t2") }
+}
+/* 아군이 죽을 때 — 혈통(악마) · 모방(소환물) */
+function invAllyDeath(t){
+  const h=invOf(); if(!h||!t||t===h||h.slot<=0||h.hp<=0||typeof B==="undefined"||!B||B.over) return;
+  const T=h.tag||{};
+  if(T.invBlood&&!t.isMin&&(unitTags(t)||{}).race==="악마"){
+    const f=nearestFoe(h);
+    if(f){ say(`혈통 — ${f.name}${jo(f.name,"ig")} 감염됩니다.`,"t2");
+      asSrc(h,()=>infectFoe(f,T.invBlood)) } }
+  if(T.invMimic&&t.isMin){
+    let got=0;
+    ["atk","mag","def"].forEach(k=>{ const v=(t[k]||0)*T.invMimic;
+      if(v>0){ bumpTmp(h,k,v); got+=v } });
+    if(got) say(`모방 — ${h.name}${jo(h.name,"ig")} ${t.name}의 능력치를 베낍니다. (+${got})`,"t1");
+  }
+}
+/* 역병 연구 (하급) — 감염이 깊은 적이 있는 동안 마법력. 늘 따라가는 결이라 *Sync 가 맞춘다 */
+function invStudySync(h){
+  if(!h||h.name!=="인비디아"||!h.tag||!h.tag.invStudy) return;
+  if(typeof B==="undefined"||!B||!B.foes){ if(h.studyOn){ bumpTmp(h,"mag",-h.studyOn); h.studyOn=0 } return }
+  const want=B.foes.some(f=>f.alive&&(f.infect||0)>=5)?h.tag.invStudy:0, cur=h.studyOn||0;
+  if(want===cur) return;
+  bumpTmp(h,"mag",want-cur); h.studyOn=want;
+  if(want>cur) say(`역병 연구 — ${h.name} 마법력 +${want-cur}`,"t2");
+}
 /* ═══ 레이의 보상 (노트 20, 사용자 2026-10-21) ═══
    도는 자리는 셋뿐이다 — reiDeploy(대원 배치 후) · reiEndTurn(손패에 있는 동안, 내 턴 끝) ·
    runEffect(기술마다). 그 밖은 h.tag 에 값만 얹고 읽는 쪽에서 센다 */
@@ -12307,7 +12380,7 @@ HEROES["인비디아"]={title:"질투의 악마",role:"마법, 감염",hp:20,man
   skills:[
    {n:"죄악의 기침",cost:2,el:"마법",tg:"foe",nearest:1,dmg:2,infect:1,d:"가장 가까운 적에게 피해 2, 감염 1 (3중첩이면 체력 4 회복)"},
    {n:"확산",cost:2,el:"마법",tg:"foe",spread:1,spreadMin:2,d:"적을 감염시킵니다. 감염이 2 이상이면 보호약화 1, 거리 1 내도 감염"},
-   {n:"숙주 폭발",cost:1,el:"마법",tg:"self",lock:2,burst:1,d:"잠금(2), 모든 적에게 피해 3 + 감염×2, 감염 제거"},
+   {n:"숙주 폭발",cost:1,el:"마법",tg:"self",lock:2,burst:1,dmg:3,d:"잠금(2), 모든 적에게 피해 3 + 감염×2, 감염 제거"},
    /* 궁극기 — 전두엽 감염을 걷고 들어왔다 (노트, 사용자 2026-10-21).
       ⚠️ **부정적 효과의 종류 수**만큼 되풀이한다. 중첩이 아니라 종류다 */
    {n:"재능 시기",cost:2,el:"마법",tg:"foe",limit:1,envy:5,d:"사용한도(1), 적에게서 체력을 5 빼앗습니다. 대상의 부정적 효과 종류만큼 반복"}
@@ -13237,10 +13310,10 @@ const HERO_POOL=["나이코스","카제","굴라","헥토","트리스탄","인�
    나머지는 전용 보상이 아직 임시라 빼 두었다 — 여기에 이름을 도로 넣으면 된다.
    영웅 도감은 이 목록을 보지 않는다. 거기서는 열넷을 다 구경할 수 있다. */
 const PLAYABLE=["나이코스","카제","트리스탄","굴라","쿠렘타이","플레어와 플로우","이테리오","오토","헥토","도미니코","이라","파벨","오리온","데린저",
- "레이"];   /* 전용 보상 서른여섯이 다 들어왔다 (노트 20, 사용자 2026-10-21) */   /* 카제 2026-09-16 · 이테리오 2026-09-30 · 오토 2026-10-04 · 헥토 · 도미니코 2026-10-06 (사용자) */
+ "레이","인비디아"];   /* 전용 보상이 다 들어왔다 — 레이 36 (노트 20) · 인비디아 33 (노트 7) */   /* 카제 2026-09-16 · 이테리오 2026-09-30 · 오토 2026-10-04 · 헥토 · 도미니코 2026-10-06 (사용자) */
 /* 대원 고르기 화면의 난이도 — 사용자가 정한다. 여기 없는 대원은 표시하지 않는다 */
 const HERO_DIFF={"이라":"보통",   /* 사용자가 정했다 (2026-10-13) */
- "레이":"어려움",   /* 사용자가 정했다 (2026-10-22) */
+ "레이":"어려움","인비디아":"보통",   /* 사용자가 정했다 (2026-10-22) */
  "오리온":"쉬움",   /* 사용자가 정했다 (2026-10-15) */
  "데린저":"보통",   /* 사용자가 정했다 (2026-10-15) */
  "파벨":"보통",   /* 사용자가 정했다 (2026-10-15) */
@@ -14448,12 +14521,87 @@ const HERO_REWARDS={
   R("교류 전류","상급","전략 변경으로 돌아온 레이를 기존과 다른 태세가 되는 칸에 배치하면, 모든 적을 기절시키고 해당 태세의 추가 능력치를 5 얻습니다.",
     h=>h.tag.reiAC=(h.tag.reiAC||0)+5)
  ],
+ /* ═══ 인비디아 — 노트 7 의 보상 서른셋 (사용자 2026-10-22) ═══
+    도는 자리는 넷이다 — invDeploy(대원 배치 후) · invEndTurn(내 턴 끝) ·
+    invOnInfectKill(감염된 적이 죽을 때) · runEffect(기술마다). 그 밖은 h.tag 에 값만 얹는다 */
  "인비디아":[
-  R("깊은 기침","하급","죄악의 기침의 피해 +2",(h,rn)=>addMod(h,"죄악의 기침","dmg",2,rn)),
-  R("독한 숨","중급","감염 피해 +2",h=>h.tag.plaguePlus=(h.tag.plaguePlus||0)+2),
-  R("광범위 확산","중급","확산의 범위가 거리 2로 늘어남",h=>h.tag.spreadRange=2),
-  R("숙주 대폭발","상급","숙주 폭발의 감염 배수가 3배",h=>h.tag.burstX=3),
-  R("시기의 결정","상급","마법력 +5",h=>h.mag+=5)
+  /* ── 하급 열하나 ── */
+  R("죄악의 기침 강화","하급","죄악의 기침의 피해량이 영구히 1 증가합니다.",
+    (h,rn)=>addMod(h,"죄악의 기침","dmg",1,rn)),
+  R("깊은 기침","하급","죄악의 기침의 회복량이 영구히 1 증가합니다.",
+    (h,rn)=>addMod(h,"죄악의 기침","heal",1,rn)),
+  R("더 큰 폭발","하급","숙주 폭발의 피해량이 영구히 2 증가합니다.\n*[숙주 폭발] 기술이 없을 때 등장하지 않음",
+    (h,rn)=>addMod(h,"숙주 폭발","dmg",2,rn)),
+  R("보균자","하급","대원 배치 후, 가장 앞의 적을 감염시킵니다.",
+    h=>h.tag.invCarrier=(h.tag.invCarrier||0)+1),
+  R("역병군주 강화","하급","역병군주가 시기의 역병을 1장 더 가져옵니다.",
+    h=>h.tag.plagueMore=(h.tag.plagueMore||0)+1),
+  R("전염성","하급","감염된 적이 죽을 때, 가장 가까운 적을 감염시킵니다.",
+    h=>h.tag.invSpreadOnDeath=(h.tag.invSpreadOnDeath||0)+1),
+  R("질투의 양분","하급","감염으로 적을 처치하면 인비디아가 체력을 2 회복합니다.",
+    h=>h.tag.invFeed=(h.tag.invFeed||0)+2),
+  R("역병 연구","하급","감염 중첩이 5 이상인 적이 있으면 마법력을 1 얻습니다.",
+    h=>h.tag.invStudy=(h.tag.invStudy||0)+1),
+  R("재능 시기 강화","하급","재능 시기가 빼앗는 체력이 2 증가합니다.\n*[재능 시기] 기술이 없을 때 등장하지 않음",
+    (h,rn)=>addMod(h,"재능 시기","envy",2,rn)),
+  R("폭발 전염","하급","숙주 폭발을 사용한 후, 시기의 역병 1장을 얻습니다.\n*[숙주 폭발] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.invBurstCard=(h.tag.invBurstCard||0)+1),
+  R("합병증","하급","퀘스트: 적을 감염 10회 중첩 상태로 만들기\n보상: 죄악의 기침의 피해량이 영구히 4 증가합니다.",
+    h=>{ if(!questHas("합병증")) questAccept("합병증",h.name) },0.5),
+  /* ── 중급 열하나 ── */
+  R("역병의 손길","중급","시기의 역병 카드가 감염을 1 더 부여합니다.",
+    h=>h.tag.invCardPlus=(h.tag.invCardPlus||0)+1),
+  Object.assign(
+   R("시기심","중급","다른 대원들에게서 최대 체력을 5 빼앗아옵니다. 마법력을 1 얻습니다.",
+     h=>{ const L=invStealable(h);
+       let got=0; L.forEach(a=>{ const v=Math.min(5,Math.max(0,a.maxHp-1));
+         if(v>0){ a.maxHp-=v; a.hp=Math.min(a.hp,a.maxHp); got+=v } });
+       if(got){ h.maxHp+=got; h.hp+=got }
+       h.mag+=1;
+       toast(`시기심 — 최대 체력 ${got}${got?"을 빼앗았습니다":"은 빼앗지 못했습니다"}. 마법력 +1`) }),
+   /* 노트 주석 — 다른 대원이 원정을 함께하고 뺏어올 수 있을 때만 (사용자 2026-10-22) */
+   {okf:h=>invStealable(h).length>0}),
+  R("쇠약","중급","감염된 적에게 인비디아가 받는 피해가 1 감소합니다.",
+    h=>h.tag.invFrail=(h.tag.invFrail||0)+1),
+  R("연쇄 폭발","중급","숙주 폭발을 사용한 후, 숙주 폭발로 피해를 받은 적들을 감염시킵니다.\n*[숙주 폭발] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.invBurstInfect=(h.tag.invBurstInfect||0)+1),
+  R("역병 바람","중급","확산이 1번 더 감염시킵니다.",
+    h=>h.tag.invSpreadTwice=(h.tag.invSpreadTwice||0)+1,0.5),
+  R("오염 지대","중급","전투 시작 시, 역병 지대 1장을 얻습니다.",
+    h=>h.tag.invZoneCard=(h.tag.invZoneCard||0)+1,0.5),
+  R("혈통","중급","아군 악마가 죽은 후, 가장 가까운 적을 감염시킵니다.",
+    h=>h.tag.invBlood=(h.tag.invBlood||0)+1),
+  R("눈엣가시","중급","죄악의 기침이 정예와 우두머리에게 감염을 1번 더 중첩시킵니다.",
+    h=>h.tag.invEyesore=(h.tag.invEyesore||0)+1),
+  R("등가교환","중급","내 턴이 끝날 때, 가장 앞의 아군이 피해를 3 받습니다. 가장 가까운 적이 감염됩니다.",
+    h=>h.tag.invTrade=(h.tag.invTrade||0)+1),
+  R("이간질","중급","퀘스트: 쉼터에서 3번 휴식\n보상: 추가 마법력 2",
+    h=>{ if(!questHas("이간질")) questAccept("이간질",h.name) }),
+  R("가로채기","중급","다른 대원이 레벨업한 후, 인비디아가 경험치를 10 얻습니다.",
+    h=>h.tag.invSnatch=(h.tag.invSnatch||0)+10),
+  /* ── 상급 열하나 ── */
+  R("질투의 군주","상급","감염된 적이 죽을 때마다 최대 체력을 영구히 2 얻습니다.",
+    h=>h.tag.invLord=(h.tag.invLord||0)+2),
+  R("곪은 상처","상급","감염이 턴이 끝날 때 중첩을 잃지 않습니다.\n*획득시 보상에서 다시 등장하지 않음",
+    h=>h.tag.invFester=1,0.5),
+  R("본질 파괴","상급","숙주 폭발이 감염 중첩의 5배만큼 피해를 줍니다.\n*획득시 보상에서 다시 등장하지 않음\n*[숙주 폭발] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.burstX=5),
+  R("모방","상급","아군 소환물이 죽은 후, 해당 전투에서 그 소환물의 추가 능력치를 얻습니다.",
+    h=>h.tag.invMimic=(h.tag.invMimic||0)+1),
+  R("불사","상급","전투당 1회, 인비디아가 쓰러지는 대신 전장의 감염 중첩을 모두 소모하여 그만큼의 체력으로 되살아납니다.\n*획득시 보상에서 다시 등장하지 않음",
+    h=>h.tag.invUndying=1,0.5),
+  R("과시","상급","다른 아군에게 카드를 내면, 인비디아도 동일한 효과를 얻습니다.\n*획득시 보상에서 다시 등장하지 않음",
+    h=>h.tag.invShowOff=1,0.5),
+  R("시샘","상급","퀘스트: 다른 대원이 상급 보상을 얻어야 합니다.\n보상: 인비디아가 상급 보상을 둘 얻습니다.",
+    h=>{ if(!questHas("시샘")) questAccept("시샘",h.name) }),
+  R("접촉","상급","적이 아군에게 피해를 준 후, 그 적이 감염됩니다.",
+    h=>h.tag.invTouch=(h.tag.invTouch||0)+1),
+  R("통제","상급","숙주 폭발의 잠금이 해제됩니다. 대신 하나의 대상을 지정해 폭발시킬 수 있습니다.\n*획득시 보상에서 다시 등장하지 않음\n*[숙주 폭발] 기술이 없을 때 등장하지 않음",
+    h=>{ h.tag.invAim=1; (h.sk||[]).forEach(k=>{ if(k&&k.burst){ k.lock=0; k.tg="foe" } }) }),
+  R("악취","상급","죄악의 기침이 모든 적에게 적중합니다.\n*획득시 보상에서 다시 등장하지 않음",
+    h=>h.tag.invStench=1),
+  R("매개체","상급","시기의 역병 카드를 낸 대상에게 인비디아가 죄악의 기침을 비용없이 사용합니다.",
+    h=>h.tag.invVector=(h.tag.invVector||0)+1)
  ],
  "도미니코":[
   /* 노트 대개편 (사용자 2026-10-06) — 희귀(rare)는 등장 가중치 0.5 */
@@ -15343,6 +15491,13 @@ const REW_KIND={
  "하급|정원 손질":"기술 강화"};
 /* 보상 등장 조건 — 기획 노트 설명문의 * 줄을 그대로 옮긴 것 */
 const REW_COND={
+ /* 인비디아 (노트 7, 2026-10-22) — 노트가 *표로 적어 둔 것 그대로 */
+ "하급|더 큰 폭발":{need:["숙주 폭발"]}, "하급|폭발 전염":{need:["숙주 폭발"]},
+ "하급|재능 시기 강화":{need:["재능 시기"]},
+ "중급|연쇄 폭발":{need:["숙주 폭발"]}, "중급|시기심":{once:1},
+ "상급|곪은 상처":{once:1}, "상급|본질 파괴":{once:1,need:["숙주 폭발"]},
+ "상급|불사":{once:1}, "상급|과시":{once:1},
+ "상급|통제":{once:1,need:["숙주 폭발"]}, "상급|악취":{once:1},
  /* 레이 (노트 20, 2026-10-21) — 노트가 *표로 적어 둔 것과, 잠긴 3·4번 기술을 키우는 것 */
  "하급|천둥의 보호막":{need:["천둥의 기운"]}, "하급|천둥의 마력":{need:["천둥의 기운"]},
  "중급|천둥 축적":{need:["천둥의 기운"]}, "중급|전략 고정":{need:["전략 변경"]},
@@ -21642,6 +21797,9 @@ function grantRunReward(hero,r,progress=true){
       try{ skinRewardGot(hero,r) }catch(e){}   /* 무패의 장군 해금 셈 */
       hero.tag.taken=(hero.tag.taken||[]).concat(r.n);
       hero.tag.tk=(hero.tag.tk||[]).concat(rwKey(r));
+      /* 시샘 (상급 퀘스트) — **다른** 대원이 상급 보상을 얻어야 센다 (2026-10-22) */
+      if(r.g==="상급"&&hero.name!=="인비디아"&&typeof questProgress==="function")
+        questProgress("otherHigh",null);
       if(!progress) return;
       /* 전리품 사냥꾼 — 노트 6-0-1 (2026-10-15 사용자가 고침) : 하급 1 · 중급 2 · 상급 3,
          **GOLD_PER 점마다** 금화 1 (지금 5) · **TREA_PER 점마다** 공격력 +1 (지금 20).
@@ -22603,6 +22761,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 206, "v": "0.7", "d": "2026-10-22", "t": "인비디아 보상 33 · 특성 넷 · 판에 올림 (사용자 2026-10-22)", "big": 0},
  {"b": 205, "v": "0.7", "d": "2026-10-22", "t": "감염도 부정 효과 · 레이 연출 손질 · 마주 보는 칸 바로잡음 (사용자 2026-10-22)", "big": 0},
  {"b": 204, "v": "0.7", "d": "2026-10-22", "t": "레이 이펙트 손질 — 짧게 스르르 · 변신 강조 · 뇌관 폭풍 지대 보이게 (사용자 2026-10-22)", "big": 0},
  {"b": 203, "v": "0.7", "d": "2026-10-22", "t": "레이 · 인비디아 이펙트 · 정면 얼굴 · 구체 수 자세 · 그물 병렬 (사용자 2026-10-22)", "big": 0},
@@ -24000,7 +24159,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=205;
+const BUILD_NO=206;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -25064,6 +25223,73 @@ function codexModal(title,body){
   document.body.appendChild(ov); return ov;
 }
 const HERO_TRAITS={
+  "인비디아": [
+    {
+      "id": "plague",
+      "n": "감염",
+      "d": "병을 쌓고 퍼뜨려, 전장이 저절로 썩어 가게 만듭니다.",
+      "own": [
+        "하급|보균자",
+        "하급|전염성",
+        "하급|질투의 양분",
+        "하급|역병 연구",
+        "중급|역병 바람",
+        "중급|혈통",
+        "중급|등가교환",
+        "상급|곪은 상처",
+        "상급|접촉"
+      ],
+      "common": []
+    },
+    {
+      "id": "cough",
+      "n": "죄악의 기침",
+      "d": "가장 가까운 적을 거듭 기침해, 깊이 병든 적에게서 기운을 빨아들입니다.",
+      "own": [
+        "하급|죄악의 기침 강화",
+        "하급|깊은 기침",
+        "하급|합병증",
+        "중급|쇠약",
+        "중급|눈엣가시",
+        "상급|악취"
+      ],
+      "common": []
+    },
+    {
+      "id": "burst",
+      "n": "숙주 폭발",
+      "d": "쌓아 둔 병을 한 번에 터뜨립니다.",
+      "own": [
+        "하급|더 큰 폭발",
+        "하급|폭발 전염",
+        "하급|역병군주 강화",
+        "중급|역병의 손길",
+        "중급|연쇄 폭발",
+        "중급|오염 지대",
+        "상급|본질 파괴",
+        "상급|통제",
+        "상급|매개체"
+      ],
+      "common": []
+    },
+    {
+      "id": "envy",
+      "n": "질투",
+      "d": "남이 가진 것을 빼앗고, 남이 잘될수록 따라 큽니다.",
+      "own": [
+        "하급|재능 시기 강화",
+        "중급|시기심",
+        "중급|이간질",
+        "중급|가로채기",
+        "상급|질투의 군주",
+        "상급|모방",
+        "상급|불사",
+        "상급|과시",
+        "상급|시샘"
+      ],
+      "common": []
+    }
+  ],
   "레이": [
     {
       "id": "orb",
@@ -30160,9 +30386,17 @@ const CARD_LIB={
  /* 인비디아의 카드 — 역병군주가 전투 시작 시 쥐여 준다 (사용자 2026-10-21) */
  "시기의 역병":{single:1,d:"대상 적을 감염시킵니다.",foe:1,gone:1,
    use:f=>{ if(!f||!f.alive){ say("감염시킬 적이 없습니다.","t2"); return "keep" }
-     infectFoe(f,1);
+     const v=(typeof invOf==="function")&&invOf(), T=(v&&v.tag)||{};
+     infectFoe(f,1+(T.invCardPlus||0));   /* 역병의 손길 (중급) */
      fx({side:"foe",slot:f.slot,ring:"#8f5fd0",txt:"감염",cls:"shd",gap:90});
-     say(`시기의 역병 — ${f.name}${jo(f.name,"eul")} 감염시킵니다.`,"t2") }},
+     say(`시기의 역병 — ${f.name}${jo(f.name,"eul")} 감염시킵니다.`,"t2");
+     /* 매개체 (상급) — 그 대상에게 죄악의 기침을 비용 없이. 모션과 이펙트도 그대로 나간다 */
+     if(T.invVector&&v.slot>0&&v.hp>0&&f.alive){
+       const i=(v.sk||[]).findIndex(k=>k&&k.nearest);
+       if(i>=0){ say(`매개체 — ${v.name}${jo(v.name,"ig")} 곧바로 기침합니다.`,"t1");
+         for(let q=0;q<T.invVector;q++){ if(!f.alive) break;
+           fx({side:"mine",slot:v.slot,pose:"atk",poseMs:520,gap:0});
+           runEffect(v,i,v.sk[i],f.slot) } } } }},
  /* 고철의 무덤 전용 상점 카드 (사용자 2026-10-21) — 잔해를 부순다 */
  "분해기":{d:"전장의 잔해를 하나 파괴합니다.",
    use:()=>{ const W=(B&&B.foes||[]).filter(x=>!x.alive&&x.wreck&&x.slot>0);
@@ -30219,6 +30453,11 @@ function dutyGain(h,n){
 /* 레벨이 하나 오를 때 몸에 붙는 몫 — 여러 곳에서 부르므로 한곳에 모은다 */
 function levelUp(h){
   h.lv++;
+  /* 가로채기 (중급) — 다른 대원이 레벨업하면 인비디아가 경험치를 챙긴다 (2026-10-22) */
+  { const v=(typeof invOf==="function")&&invOf();
+    if(v&&v!==h&&!v.down&&v.tag&&v.tag.invSnatch){
+      addExp(v,v.tag.invSnatch);
+      toast(`가로채기 — ${v.name} 경험치 +${v.tag.invSnatch}`) } }
   addMaxHp(h,h.hpLv,"레벨업");
   if(h.name==="트리스탄") dutyGain(h,1+((h.tag&&h.tag.dutyPlus)||0));
 }
@@ -30742,7 +30981,22 @@ function restPerks(again,where){
   { const a=where==="camp"?0:tagSum("restAct");   /* 쪽잠 (공용 중급) — 주둔지 쉼터에서는 안 준다 (사용자 2026-10-14) */
     if(a){ run.act=(run.act||0)+a; toast(`쪽잠 — 활동량 +${a}`) } }
 }
-function restHeal(amt,from){ restRecord(()=>run.heroes.forEach(h=>{ if(!h.down) healUp(h,amt(h)) }),from) }
+function restHeal(amt,from){
+  /* 이간질 (중급 퀘스트) — **주둔지가 아닌 쉼터**에서, 퀘스트가 걸려 있는 동안
+     다른 아군의 회복량을 인비디아가 빼앗아 그만큼 더 회복한다 (노트 7, 2026-10-22) */
+  const inv=(typeof invOf==="function")&&invOf();
+  const steal=(from==="rest"&&inv&&!inv.down&&typeof questHas==="function"&&questHas("이간질"))?inv:null;
+  restRecord(()=>{
+    let got=0;
+    run.heroes.forEach(h=>{ if(h.down) return;
+      let v=amt(h);
+      if(steal&&h!==steal){ got+=v; v=0 }
+      if(v>0) healUp(h,v) });
+    if(steal&&got){ healUp(steal,got);
+      toast(`이간질 — ${steal.name}${jo(steal.name,"ig")} 다른 대원의 회복 ${got}${jo(String(got),"eul")} 빼앗았습니다.`) }
+  },from);
+  if(from==="rest"&&typeof questProgress==="function") questProgress("restIn",null);
+}
 /* 회복 앞뒤를 적는다 — fn 이 실제로 회복시킨다. rev : 쓰러졌다가 일어선 대원 (치료소) */
 function restRecord(fn,from){ const L=run.heroes.map(h=>({n:h.name,b:h.down?0:Math.max(0,h.hp),m:h.maxHp,down:!!h.down}));
   fn();
@@ -31744,6 +31998,13 @@ const evSay=(e,o)=>(o&&o.say)||(e&&e.say)||"";
    다 채우면 run.qDone 에 줄을 서고, 지도로 돌아갈 때(backToMap) 보상 화면(questdone)이 먼저 뜬다.
    field:1 인 퀘스트는 받은 구역을 벗어나면 사라진다. 저장은 run.quests 가 그대로 실린다 (대원은 이름으로) */
 const QUESTS={
+  /* 인비디아 (노트 7 보상, 2026-10-22) */
+  "합병증":{kind:"infect10",need:1,who:"hero",
+    d:"적 하나를 감염 10중첩으로 만들기 {n}",rd:"죄악의 기침의 피해량이 영구히 4 증가합니다.",reward:{coughUp:4}},
+  "이간질":{kind:"restIn",need:3,who:"hero",
+    d:"쉼터에서 {n}번 휴식",rd:"추가 마법력을 2 얻습니다.",reward:{magUp:2}},
+  "시샘":{kind:"otherHigh",need:1,who:"hero",
+    d:"다른 대원이 상급 보상을 {n}번 얻기",rd:"상급 보상을 둘 얻습니다.",reward:{gradeN:2,grade0:"상급"}},
   /* 레이 (노트 20 보상, 2026-10-21) — 태세마다 다섯씩 「각각」이라 each 로 센다 (작업 지시판과 같은 틀) */
   "태세 훈련":{kind:"stanceWin",need:10,who:"hero",each:{"주술사":5,"전사":5},
     d:"주술사, 전사 태세로 각각 전투에서 5번 승리",rd:"추가 공격력, 마법력을 1 얻습니다.",reward:{atkMag:1}},
@@ -32149,6 +32410,12 @@ function questClaim(id){
   if(R.allStat){ const h=run.heroes.find(x=>x.name===q.hero)||run.heroes.find(x=>!x.down)||run.heroes[0];
     if(h){ h.atk+=R.allStat; h.mag+=R.allStat; h.def+=R.allStat;
       toast(`파수꾼의 시험 — ${h.name}의 모든 추가 능력치 +${R.allStat}`) } }
+  /* 인비디아 (2026-10-22) */
+  if(R.coughUp){ const h=run.heroes.find(x=>x.name===q.hero)||run.heroes.find(x=>x.name==="인비디아");
+    if(h){ addMod(h,"죄악의 기침","dmg",R.coughUp,"합병증");
+      toast(`합병증 — 죄악의 기침 피해 +${R.coughUp}`) } }
+  if(R.magUp){ const h=run.heroes.find(x=>x.name===q.hero)||run.heroes.find(x=>x.name==="인비디아");
+    if(h){ h.mag+=R.magUp; toast(`이간질 — ${h.name}의 추가 마법력 +${R.magUp}`) } }
   /* 레이 (2026-10-21) */
   if(R.atkMag){ const h=run.heroes.find(x=>x.name===q.hero)||run.heroes.find(x=>x.name==="레이");
     if(h){ h.atk+=R.atkMag; h.mag+=R.atkMag;
@@ -33326,7 +33593,8 @@ const BATTLE_RESET={
   critAtkUsed:0, critMagUsed:0, soloOn:0,
   cutGrow:0, deathSaveUsed:0, lastRageUsed:0, countUp:0, chgOn:0, chg:0, shotBonus:0,   /* 복수는 끝나지 않았다 · 타락의 초읽기 — 전투 단위 (2026-10-13) */
   wanderBonus:0, archerBonus:0, gloryGuard:0, arenaHeal:0, echo:0,
-  reiChargeUp:0, reiKSeen:{}, crossAtkOn:0, crossMagOn:0};   /* 레이 — 전투 단위 (충 전 누적 · 거친 태세 · 벼락 과충전, 2026-10-21) */   /* 조합 몫 — applySynergy 가 다시 채운다 */
+  reiChargeUp:0, reiKSeen:{}, crossAtkOn:0, crossMagOn:0,
+  studyOn:0, invUndyingUsed:0};   /* 인비디아 — 전투 단위 (역병 연구 몫 · 불사, 2026-10-22) */   /* 레이 — 전투 단위 (충 전 누적 · 거친 태세 · 벼락 과충전, 2026-10-21) */   /* 조합 몫 — applySynergy 가 다시 채운다 */
 function resetVals(h,T){ for(const k in T){ const v=T[k]; h[k]=(v&&typeof v==="object")?(Array.isArray(v)?[]:{}):v } }
 function resetBattle(){
   if(run&&run.sandbox){sandRestartBattle();return}
@@ -36919,6 +37187,7 @@ function drawBattle(app){
   if(run&&run.heroes) run.heroes.forEach(h=>rayStance(h));   /* 레이 적응성 — 비어 있을 때만 채운다 (부활처럼 onSummon 을 안 지나는 길, 2026-10-21) */
   try{ reiHandSync() }catch(e){}                             /* 숲의 수호자 — 손패의 레이가 정령들을 지킨다 */
   try{ const _r=reiOf(); if(_r) reiCrossSync(_r) }catch(e){}  /* 최후의 전사 — 늘 맞춘다 */
+  try{ const _i=invOf(); if(_i) invStudySync(_i) }catch(e){}  /* 역병 연구 — 늘 맞춘다 */
   if(run&&run.heroes) run.heroes.forEach(fortSync);   /* 진지 구축 — 성벽 뒤면 추가 공격력 */
   if(run&&run.heroes) run.heroes.forEach(domHateSync);   /* 악마 혐오 — 상시 */
   if(run&&run.heroes) run.heroes.forEach(alwaysSync);   /* 늘 따라가는 몫 — 생명 · 복수귀 · 흡수 · 오염을 한 자리에서 (2026-10-13) */
@@ -38968,6 +39237,7 @@ function onSummon(h){
   handOpenFor(h);
   rayStance(h,1);   /* 레이 적응성 — 배치하는 그 순간에 태세가 정해진다 (노트 20-0, 2026-10-21) */
   reiDeploy(h);     /* 레이의 「대원 배치 후」 보상 — 태세를 보고 갈린다 (2026-10-21) */
+  invDeploy(h);     /* 인비디아의 「대원 배치 후」 보상 (2026-10-22) */
   const t=h.tag;
   if(h.name==="데린저"&&t.placeAmmoEsh){ const v=ammoMaxOf(h)*t.placeAmmoEsh;
     h.eshield=(h.eshield||0)+v;
@@ -39160,7 +39430,9 @@ function onSummon(h){
   h.summoned=1;
   /* 역병군주 — 노트 7-0-2 : 「**전투 시작 시**, 시기의 역병 1장을 가져옵니다」.
      ⚠️ 그래서 이 줄은 h.summoned 문 **아래**다 — 위에 두면 라운드마다(배치마다) 한 장씩 쥐게 된다 */
-  if(h.name==="인비디아") handAddCard("시기의 역병",{gone:1},1+((h.tag&&h.tag.plagueMore)||0));
+  if(h.name==="인비디아"){ handAddCard("시기의 역병",{gone:1},1+((h.tag&&h.tag.plagueMore)||0));
+    /* 오염 지대 (중급) — 전투 시작 시 역병 지대도 (2026-10-22) */
+    if(h.tag.invZoneCard) handAddCard("역병 지대",{gone:1},h.tag.invZoneCard) }
   if(h.name==="데린저"&&t.startShoes){
     /* 도착 연출이 없는 지급에는 arrive를 달지 않는다. 첫 턴부터 보이고 잡혀야 한다. */
     handAddCard("간이 신발",{gone:1},t.startShoes);
@@ -39316,6 +39588,7 @@ function alwaysSync(u){
   if(!u||u.isFoe||u.isMin||typeof B==="undefined"||!B) return;
   hpMagSync(u); iraRageSync(u); iraLeechSync(u); taintSync(u);
   reiCrossSync(u);   /* 레이 최후의 전사 (2026-10-21) */
+  invStudySync(u);   /* 인비디아 역병 연구 (2026-10-22) */
 }
 function iraRageVals(h){
   const t=(h&&h.tag)||{};
@@ -39719,6 +39992,11 @@ function playCardOne(i,slot,side){
     if(!h) return;   /* cardWhy 가 이미 걸렀다 */
     /* use 가 "keep" 을 돌려주면 쓰지 못한 것이다 — 카드를 도로 넣어 둔다 */
     if(c.use(h)==="keep"){ render(); return }
+    /* 과시 (상급) — **다른 아군**에게 낸 카드의 효과를 인비디아도 똑같이 받는다 (노트 7, 2026-10-22) */
+    { const v=(typeof invOf==="function")&&invOf();
+      if(v&&v!==h&&v.slot>0&&v.hp>0&&v.tag&&v.tag.invShowOff&&!h.isFoe){
+        say(`과시 — ${v.name}${jo(v.name,"ig")} 같은 것을 제게도 겁니다.`,"t2");
+        try{ c.use(v) }catch(e){} } }
     /* 낡은 투구끈 — 방어구 카드를 쓸 때마다 그 카드를 만든 대원이 회복한다 */
     if(ARMOR_CARDS[c.name]){
       const own=c.by&&run.heroes.find(x=>x.name===c.by);
@@ -40723,6 +41001,7 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
     (B.mins||[]).filter(m=>m.alive&&m.phantomOf===f.id).forEach(m=>{
       m.alive=0; m.slot=0; say(`환영이 흩어집니다.`,"t2") });
     onDeath("foe",f);
+    try{ invFoeDeath(f,tag) }catch(e){}   /* 인비디아 — 전염성 · 질투의 군주 · 질투의 양분 (2026-10-22) */
     foeDeath(f);            /* 죽음 — 쓰러질 때 터지는 지속 능력 (2026-09-29) */
     skReact(f);
     /* 고철의 무덤 전용 구역 퀘스트 (사용자 2026-10-21) —
@@ -41125,14 +41404,9 @@ function onDeath(kind,who){
       const got=healUp(h,h.tag.minDeathHeal);
       if(got){ fx({side:"mine",slot:h.slot,s:"heal",txt:"+"+got,cls:"heal",gap:60});
         say(`주인님을 받들어라 — ${h.name} 체력 +${got}`,"t2") } }
-    if(kind==="foe"&&h.name==="인비디아"&&h.slot>0&&h.hp>0){
-      const got=[];
-      if(Math.random()<0.25){ bumpTmp(h,"atk",1); got.push("공격력") }
-      if(Math.random()<0.25){ bumpTmp(h,"mag",1); got.push("마법력") }
-      if(Math.random()<0.25){ bumpTmp(h,"def",1); got.push("보호력") }
-      if(Math.random()<0.25&&canGainMaxHp(h)){ bumpTmp(h,"maxHp",4); got.push("최대 체력") }   /* ⚠️ 주사위를 **먼저** 굴린다 — 앞에 두면 막힐 때 뽑기가 밀린다 (2026-10-13) */
-      if(got.length) say(`재능 시기 — ${h.name}${jo(h.name,"ig")} 이번 전투 동안 ${got.join("")}${jo(got[got.length-1],"eul")} 흡수합니다.`,"t1");
-    }
+    /* ⚠️ 옛 지속 「재능 시기」(처치마다 25% 확률로 능력치)는 노트 리메이크로 사라졌다 (2026-10-22).
+       둘째 지속은 「역병군주」이고, 「재능 시기」는 **궁극기 이름**이다.
+       게다가 이 자리는 적이 죽을 때마다 **주사위를 넷** 굴려 같은 씨앗의 판을 밀어 놓고 있었다 */
   });
 }
 /* 그림을 띄운다 — 연출 큐에서 lift:1 로 부른다 */
@@ -41688,6 +41962,8 @@ function infectFoe(f,n){
     if(src&&src.slot>0){ const a=ctrOf("mine",src.slot), b=ctrOf("foe",f.slot);
       if(a&&b) beamFX(a,b,"#8f5fd0",4) } }
   f.infect=(f.infect||0)+n;
+  /* 합병증 (하급 퀘스트) — 적 하나가 감염 10중첩이 되면 바로 깬다 (노트 주석, 2026-10-22) */
+  if(f.infect>=10&&typeof questProgress==="function") questProgress("infect10",null);
   /* 받은 오라 띠 — 감염이 걸리는 자리 한 곳이라 여기 하나면 다 따라온다 (사용자 2026-10-22) */
   { const sl=f.slot; fx({side:"foe",slot:sl,ring:"#8f5fd0",txt:"감염"+f.infect,cls:"mag",
       fn:()=>sheetFX("fx_inv_infection_aura","foe",sl,{frames:8,cell:64,feet:1,z:2,ms:720,fade:200}),gap:80}) }
@@ -43065,18 +43341,28 @@ function runEffect0(h,i,s,target){
   }
   /* ── 인비디아 ── */
   if(s.nearest){
-    const f=foeAt(target)||nearestFoe(h);
-    if(!f){ say("적이 없습니다.","t2"); return }
-    if((f.infect||0)>=3){ healUp(h,4);
+    const T=h.tag||{};
+    const one=foeAt(target)||nearestFoe(h);
+    if(!one){ say("적이 없습니다.","t2"); return }
+    /* 악취 (상급) — 모든 적에게 적중한다 */
+    const L=T.invStench?B.foes.filter(x=>x.alive):[one];
+    if(T.invStench&&L.length>1) say(`악취 — 기침이 전장에 퍼집니다. (${L.length})`,"t1");
+    /* 회복은 **겨눈 적**을 본다. 회복 덤은 보상이 올린 몫 (깊은 기침) */
+    if((one.infect||0)>=3){ const hv=4+mod(s,"heal"); healUp(h,hv);
       /* 받은 녹음 (사용자 2026-10-22) — 감염이 깊은 적을 기침하면 기운을 빨아들인다 */
-      fx({side:"mine",slot:h.slot,s:sfxOr("인비디아 감염 회복","heal"),txt:"+4",cls:"heal"});
-      say(`${h.name} 체력 +4`) }
-    /* 받은 그림 (사용자 2026-10-22) — 역병 덩이가 날아가 터진다 */
-    { const sl=f.slot, ms=h.slot;
-      fx({side:"foe",slot:sl,fn:()=>shotFX("foe",sl,{side:"mine",slot:ms},
-          {fly:"fx_inv_plague_projectile",flyZ:1.8,hit:"fx_inv_plague_hit",hitZ:2.2,ms:500}),gap:220}) }
-    hurt(f,s.dmg+mod(s,"dmg")+h.mag,"죄악의 기침","mag");
-    infectFoe(f,h.tag.infectPlus||1);
+      fx({side:"mine",slot:h.slot,s:sfxOr("인비디아 감염 회복","heal"),txt:"+"+hv,cls:"heal"});
+      say(`${h.name} 체력 +${hv}`) }
+    const dv=s.dmg+mod(s,"dmg")+h.mag;
+    L.forEach(f=>{
+      /* 받은 그림 (사용자 2026-10-22) — 역병 덩이가 날아가 터진다 */
+      { const sl=f.slot, ms=h.slot;
+        fx({side:"foe",slot:sl,fn:()=>shotFX("foe",sl,{side:"mine",slot:ms},
+            {fly:"fx_inv_plague_projectile",flyZ:1.8,hit:"fx_inv_plague_hit",hitZ:2.2,ms:360,fade:240}),gap:200}) }
+      asSrc(h,()=>hurt(f,dv,"죄악의 기침","mag"));
+      if(!f.alive) return;
+      /* 눈엣가시 (중급) — 정예와 우두머리에게는 한 번 더 */
+      const big=!!(f.boss||f.elite||f.isElite);
+      infectFoe(f,(T.infectPlus||1)+(big?(T.invEyesore||0):0)) });
     return;
   }
   if(s.spread){
@@ -43086,13 +43372,14 @@ function runEffect0(h,i,s,target){
     /* 노트 리메이크 (사용자 2026-10-21) — **그 대상의 감염이 spreadMin 이상일 때만**
        보호약화와 번짐이 따라온다. 전에는 감염만 있으면 전부에게 보호약화를 걸었다 */
     const need=s.spreadMin||0, big=(t2.infect||0)>=need;
+    const more=1+((h.tag&&h.tag.invSpreadTwice)||0);   /* 역병 바람 (중급) — 한 번 더 감염 */
     pulseFX("foe",t2.slot,"#8f5fd0",2);
-    infectFoe(t2,1);
+    infectFoe(t2,more);
     if(big){
       const r=h.tag.spreadRange||1;
       t2.weak=(t2.weak||0)+1;
       B.foes.filter(f=>f.alive&&f!==t2&&Math.abs(f.slot-t2.slot)<=r).forEach(f=>{
-        pulseFX("foe",f.slot,"#8f5fd0",2); infectFoe(f,1);
+        pulseFX("foe",f.slot,"#8f5fd0",2); infectFoe(f,more);
         /* 번질 때마다 — 받은 녹음과 그림 (사용자 2026-10-22) */
         { const sl=f.slot;
           fx({side:"foe",slot:sl,s:sfxOr("인비디아 확산 번짐",null),
@@ -43105,10 +43392,11 @@ function runEffect0(h,i,s,target){
   if(s.envy){
     const t2=foeAt(target); if(!t2){ say("그 칸에는 적이 없습니다.","t2"); return }
     const kinds=envyKinds(t2), n=Math.max(1,kinds);
+    const ev=s.envy+mod(s,"envy");   /* 재능 시기 강화 (하급) */
     let got=0;
     for(let q=0;q<n;q++){
       const was=t2.hp;
-      asSrc(h,()=>hurt(t2,s.envy,"재능 시기","마법"));
+      asSrc(h,()=>hurt(t2,ev,"재능 시기","마법"));
       got+=Math.max(0,was-Math.max(0,t2.hp));
       if(!t2.alive) break;
     }
@@ -43128,10 +43416,26 @@ function runEffect0(h,i,s,target){
         /* 받은 여덟 칸 띠 (사용자 2026-10-22) */
         sheetFX("fx_inv_host_explosion","foe",f.slot,{frames:8,cell:64,z:2.6,ms:640});
         fx({side:"foe",slot:f.slot,art:"boom",s:"boom",gap:0}); flushFX() },k*90));
-    const x=h.tag.burstX||2;
+    const x=h.tag.burstX||2, T=h.tag||{};
     fx({side:"mine",slot:h.slot,quake:1,s:"boom",gap:200});
-    B.foes.filter(f=>f.alive).forEach(f=>{
-      const d=3+h.mag+(f.infect||0)*x; f.infect=0; hurt(f,d,"숙주 폭발","mag") });
+    /* 통제 (상급) — 잠금이 없어지는 대신 **하나만** 터뜨린다 */
+    const aim=T.invAim?foeAt(target):null;
+    const hit=aim?[aim]:B.foes.filter(f=>f.alive);
+    if(T.invAim&&!aim){ say("통제 — 터뜨릴 적을 고르세요.","t2"); return }
+    const base=(s.dmg!=null?s.dmg:3)+mod(s,"dmg");
+    const got=[];
+    hit.forEach(f=>{ if(!f.alive) return;
+      const d=base+h.mag+(f.infect||0)*x;
+      /* ⚠️ 감염은 **피해 뒤에** 지운다 — 먼저 지우면 「감염된 적이 죽을 때」가 안 걸린다 (2026-10-22) */
+      f.invBurstWas=f.infect||0;
+      asSrc(h,()=>hurt(f,d,"숙주 폭발","mag"));
+      f.infect=0; f.invBurstWas=0;
+      if(f.alive) got.push(f) });
+    /* 연쇄 폭발 (중급) — 피해를 받은 적들을 다시 감염시킨다 */
+    if(T.invBurstInfect&&got.length){ say(`연쇄 폭발 — 살아남은 ${got.length}이 다시 감염됩니다.`,"t1");
+      got.forEach(f=>infectFoe(f,T.invBurstInfect)) }
+    /* 폭발 전염 (하급) — 쓰고 나면 카드를 쥔다 */
+    if(T.invBurstCard) handAddCard("시기의 역병",{gone:1},T.invBurstCard);
     return;
   }
   if(s.frontal){
@@ -44036,6 +44340,16 @@ function battleLost(){
   foeViewLater(()=>{ toast(`쓰러진 대원은 주둔지 치료소에서 일으킬 수 있습니다. (성한 대원 ${standing}명)`);
     if(view!=="over") toMap() },1200);
 }
+/* 접촉 (상급) — 적이 아군에게 피해를 준 **뒤** 그 적이 감염된다 (노트 7, 2026-10-22).
+   ⚠️ 맞은 쪽이 인비디아가 아니어도 된다 — 「적이 아군에게」다 */
+function invTouchHit(f,t,d){
+  if(!(d>0)||!f||!f.alive||!t||t.isFoe) return;
+  const h=(typeof invOf==="function")&&invOf();
+  if(!h||h.slot<=0||h.hp<=0||!h.tag||!h.tag.invTouch) return;
+  if(typeof B==="undefined"||!B||B.over||!B.foes||B.foes.indexOf(f)<0) return;
+  say(`접촉 — ${f.name}${jo(f.name,"ig")} 병을 옮아갑니다.`,"t2");
+  asSrc(h,()=>infectFoe(f,h.tag.invTouch));
+}
 function critAlly(t){ fx({crit:1,side:"mine",slot:t.slot}) }   /* 큐에 넣기만 — 부르는 자리가 기술 한가운데다 (⑳) */
 /* el — 이 피해가 무엇인지. 적의 의도에 실려 오는 값(FOE[].el)을 그대로 받는다.
    안 넘기면 undefined 라 물리로 친다 — 가시가 그대로 할퀴기로 남는 것도 그 덕이다. */
@@ -44074,6 +44388,9 @@ function hurtAlly(f,t,raw,label,el,evMsg,pierce,ownFx){   /* evMsg — 회피했
     afterEvade(t,f);   /* 역풍 */
     return }
   { const pg=portalGuardOf(t); if(pg&&raw>0) raw=Math.max(0,raw-pg) }
+  /* 쇠약 (중급) — 감염된 적에게서 받는 피해가 준다 (2026-10-22) */
+  if(t&&t.name==="인비디아"&&t.tag&&t.tag.invFrail&&raw>0&&f&&(f.infect||0)>0)
+    raw=Math.max(0,raw-t.tag.invFrail);
   /* 플레어와 플로우(플로우) — 파도 보호막(부정 효과 가진 적에게서 −1) · 피해 흘리기(−1) */
   if(isFF(t)&&!ffFlare(t)&&raw>0){ const T=t.tag||{};
     if(T.flowGuard) raw=Math.max(0,raw-T.flowGuard);
@@ -44092,6 +44409,15 @@ function hurtAlly(f,t,raw,label,el,evMsg,pierce,ownFx){   /* evMsg — 회피했
     healUp(t,Math.round(t.maxHp*0.3));
     fx({side:"mine",slot:t.slot,ring:"#9ecbf5",txt:"인연",cls:"crit",gap:80});
     say(`뗄 수 없는 인연 — 둘이 서로를 붙듭니다. 체력 30% 회복, 이번 전투에서 변환을 쓸 수 없습니다.`,"t1");
+  }
+  /* 불사 (상급) — 전투당 1회, 쓰러지는 대신 전장의 감염을 모두 태워 그만큼 체력으로 (2026-10-22) */
+  else if(t.name==="인비디아"&&t.tag&&t.tag.invUndying&&!t.invUndyingUsed&&d>=t.hp){
+    t.invUndyingUsed=1;
+    let burn=0;
+    (B&&B.foes||[]).forEach(f=>{ if(f.alive&&f.infect>0){ burn+=f.infect; f.infect=0 } });
+    d=0; raw=0; t.hp=Math.max(1,burn);
+    fx({side:"mine",slot:t.slot,ring:"#8f5fd0",txt:"불사",cls:"crit",glow:1,gap:80});
+    say(`불사 — ${t.name}${jo(t.name,"ig")} 전장의 감염 ${burn}${jo(String(burn),"eul")} 태워 체력 ${t.hp}로 일어섭니다.`,"t1");
   }
   else if(!t.deathSaveUsed&&itemBt(t,"deathSave")&&d>=t.hp){
     t.deathSaveUsed=1; d=0; raw=0;
@@ -44158,6 +44484,7 @@ function hurtAlly(f,t,raw,label,el,evMsg,pierce,ownFx){   /* evMsg — 회피했
   if(t.hp>0&&!t.isMin&&!t.beastUsed&&t.hp<=t.maxHp/2&&hasTag(t,"야수")&&synOn("야수",2)){ t.beastUsed=1;
     const ev=3+synUp("야수"); t.evade=(t.evade||0)+ev;   /* 야수 2 (노트 2026-10-04) */
     fx({side:"mine",slot:t.slot,ring:"#c9d8ff",txt:"회피 +"+ev,cls:"shd",gap:80}); say(`야수 — ${t.name} 회피 +${ev}`,"t1"); synFlash("야수",[t]) }
+  try{ invTouchHit(f,t,d) }catch(e){}   /* 인비디아 접촉 — 때린 적이 병을 옮는다 (2026-10-22) */
   if(t.hp<=0){ if(!t.isMin&&run){ t.downBy=f?f.name:label; run.lastKiller=t.downBy; run.lastKillerBy=label } unitDown(t) }
   else if(raw>0) bark(t,"hurt");
   alwaysSync(t);   /* 체력이 내려갔다 — 늘 따라가는 몫이 따라와야 한다 (복수귀 · 갈증, 2026-10-13) */
@@ -44179,6 +44506,7 @@ function minDeathRun(t){
     gardenDeath(t) }
 }
 function unitDown(t){
+  try{ invAllyDeath(t) }catch(e){}   /* 인비디아 혈통(악마 아군) · 모방(소환물) — 2026-10-22 */
   if(t.echo&&(t.isMin||!t.down)){   /* 음악가 — 대원에게도 메아리 (노트 2026-10-04) */
     if(t.isMin) minDeathRun(t);   /* 메아리도 한 번 죽은 것이다 — 죽음 효과가 먼저 (사용자 2026-10-06) */
     if(!t.isMin&&hasTag(t,"음악가")&&synOn("음악가",3)) synFlash("음악가",[t]); t.echo=0; echoWipe(t); t.hp=Math.max(1,Math.ceil(t.maxHp/2));   /* 메아리 — 한 번 일어선다 (생명의 메아리) */   /* 걷는 것은 적 쪽과 한 함수로 (사용자 2026-10-12) */
@@ -44406,6 +44734,7 @@ function endPhase(){
     say(`감시 — ${h.name}${jo(h.name,"ig")} 피해를 5 받습니다.`,"t3") });
   n+=mimicTick();                        /* 망자들의 통솔자 — 환영이 예약한 흉내 */
   n+=reiEndTurn();                       /* 레이 — 폭풍 지대 · 손패에 있는 동안의 몫 (노트 20 보상, 2026-10-21) */
+  n+=invEndTurn();                       /* 인비디아 — 등가교환 (노트 7 보상, 2026-10-22) */
   /* 충전 완료 — 이번 턴에 안 썼으면 여기서 사라진다 (사용자 2026-10-13 : 「한 턴 안에 안 쓰면」).
      차는 중(chgOn)은 그대로 둔다 — 아직 완료가 아니다 */
   onField().forEach(h=>{ if(h.hp>0&&h.charge>0){ h.charge=0;
@@ -45018,7 +45347,8 @@ function startMyTurn(){
           fn:()=>sheetFX("fx_inv_infection_damage","foe",sl,{z:2,ms:420}),gap:0}) }
       if(own) B._ownSnd=1;
       try{ asSrc(inv,()=>hurt(f,v,"감염","mag")) } finally { if(own) B._ownSnd=0 }
-      if(f.alive) f.infect--;
+      /* 곪은 상처 (상급) — 턴이 끝나도 중첩을 잃지 않는다 (2026-10-22) */
+      if(f.alive&&!(inv&&inv.tag&&inv.tag.invFester)) f.infect--;
     } });
   /* 차원문의 아군 보호막은 여기서 주지 않는다 — 노트대로 **내 턴이 끝날 때**(endPhase) 준다.
      여기서 주면 방금 걷은 자리에 도로 얹혀 내 턴 내내 보이고, 노트와 어긋난다. */
