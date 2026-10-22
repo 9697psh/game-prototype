@@ -6517,7 +6517,7 @@ const MAP_HANDS={
  ,"이라":{held:"양피지-손-이라.png",scale:.39,point:{f:"손-가리킴-이라.png",w:241,h:225,tip:[48,24]},press:{f:"손-누름-이라.png",w:197,h:181,tip:[38,31]}}   /* 묶음 usage.json 의 assets 가 grip·pointing·pressing 셋을 못박았다 (2026-10-13). 왼손 그림이 125칸뿐이라 scale 이 남보다 크다 */
  ,"이테리오":{held:"양피지-손-이테리오.png",scale:.74,point:{f:"손-가리킴-이테리오.png",w:117,h:107,tip:[2,1]},press:{f:"손-누름-이테리오.png",w:132,h:87,tip:[1,45]}}   /* 기계 손 (사용자 2026-09-30) — 손 그림이 작게 잘려 .74 (가리킴 높이 79 — 트리스탄·플레어와 플로우와 같게, 사용자 2026-09-30) */
  ,"레이":{held:"양피지-손-레이.png",scale:.45,point:{f:"손-가리킴-레이.png",w:180,h:178,tip:[4,0]},press:{f:"손-누름-레이.png",w:180,h:158,tip:[0,53]}}   /* 번개로 얽은 손 (사용자 2026-10-22) */
- ,"인비디아":{held:"양피지-손-인비디아.png",scale:.45,point:{f:"손-가리킴-인비디아.png",w:172,h:167,tip:[2,3]},press:{f:"손-누름-인비디아.png",w:162,h:172,tip:[0,21]}}   /* 마른 가지 같은 손 (사용자 2026-10-22) */
+ ,"인비디아":{held:"양피지-손-인비디아.png",scale:.58,point:{f:"손-가리킴-인비디아.png",w:172,h:167,tip:[2,3]},press:{f:"손-누름-인비디아.png",w:162,h:172,tip:[0,21]}}   /* 마른 가지 같은 손 (사용자 2026-10-22) */
  ,"플레어와 플로우":{held:"양피지-손-플레어와 플로우.png",scale:.42,point:{f:"손-가리킴-플레어와 플로우.png",w:173,h:188,tip:[3,2]},press:{f:"손-누름-플레어와 플로우.png",w:175,h:167,tip:[3,22]}}   /* 왼손은 플레어(불), 오른손은 플로우(물) */
 };   /* scale — 오른손을 왼손과 비슷한 크기로 (사용자 2026-09-14). 그림 자체가 큰 쿠렘타이는 더 줄인다 */
 document.addEventListener("pointerup",()=>{ const st=document.querySelector(".pstage"); if(st&&st._up) st._up() });
@@ -10895,7 +10895,8 @@ function reiDeploy(h){
   /* 빛의 속도 · 결심 — 겹친 수만큼 다음 N 회가 공짜 (노트 주석 : 「중복 가능」) */
   if(T.reiOrbFree) h.reiOrbFree=(h.reiOrbFree||0)+T.reiOrbFree;
   if(T.reiVowFree) h.reiVowFree=(h.reiVowFree||0)+T.reiVowFree;
-  if(T.reiRally){ const n=onField().filter(a=>a.hp>0&&tagsOf(a.name).race==="정령").length*T.reiRally;
+  /* 「다른」 — 레이 자신도 정령이라 저를 빼고 센다 (사용자 2026-10-23) */
+  if(T.reiRally){ const n=onField().filter(a=>a!==h&&a.hp>0&&tagsOf(a.name).race==="정령").length*T.reiRally;
     if(n){ bumpRnd(h,"atk",n); bumpRnd(h,"mag",n);
       say(`정령 집결 — ${h.name} 추가 공격력, 마법력 +${n}`,"t2") } }
   if(T.reiAdapt){
@@ -13934,6 +13935,12 @@ function openDemonGates(n){
     run.grid[p.r][p.c].gate=1; k++ }
   return k;
 }
+/* 지도의 작업 지시판 칸 (생산 대기열, 2026-10-23) — 아직 안 끝낸 것 하나 */
+function orderSpot(){
+  let p=null;
+  ((run&&run.grid)||[]).forEach((row,r)=>row.forEach((c,ci)=>{ if(!p&&c.t==="order"&&!c.done) p={r:r,c:ci} }));
+  return p;
+}
 function bountySpots(){ const L=[];
   ((run&&run.grid)||[]).forEach((row,r)=>row.forEach((c,ci)=>{ if(c.t==="dungeon"&&!c.done&&!c.bounty) L.push({r:r,c:ci}) }));
   return L }
@@ -14527,7 +14534,7 @@ const HERO_REWARDS={
     h=>h.tag.reiBoltShield=(h.tag.reiBoltShield||0)+1),
   R("결심","하급","대원 배치 후, 다음 1회의 주술사의 다짐 비용이 0이 됩니다.",
     h=>h.tag.reiVowFree=(h.tag.reiVowFree||0)+1),
-  R("정령 집결","하급","대원 배치 후, 아군 전장 정령의 수만큼 추가 공격력, 마법력을 얻습니다.",
+  R("정령 집결","하급","대원 배치 후, 전장의 다른 아군 정령의 수만큼 추가 공격력, 마법력을 얻습니다.",
     h=>h.tag.reiRally=(h.tag.reiRally||0)+1),
   R("천둥의 보호막","하급","천둥의 기운을 사용한 후, 보호막을 4 얻습니다.\n*[천둥의 기운] 기술이 없을 때 등장하지 않음",
     h=>h.tag.reiThShield=(h.tag.reiThShield||0)+4),
@@ -19742,6 +19749,9 @@ const ACT1_LIST=Object.keys(ACT1);
    비워 두면 전처럼 시계로 뽑는다 — 게임에는 아무 것도 달라지지 않는다 */
 let ACT1_PIN=null;
 const act1Name=()=>(run&&run.act1&&ACT1[run.act1])?run.act1:ACT1_LIST[0];
+/* 고철의 무덤에 서 있나 — 전용 이벤트 · 전용 셈이 다 이 하나를 본다 (사용자 2026-10-23).
+   ⚠️ **1막일 때만**이다. act1Name 은 막을 안 보므로 run.field 를 여기서 함께 본다 */
+const onScrap=()=>!!(run&&run.field===0&&act1Name()==="고철의 무덤");
 /* 1막일 때만 갈아 끼운다. 2 · 3막이거나 적어 두지 않은 것은 undefined */
 const act1Of=k=>(run&&run.field===0)?ACT1[act1Name()][k]:undefined;
 /* 구역별 표를 고른다 — 1막 변형이 있으면 그것, 없으면 막 번호로 (2026-10-20) */
@@ -22832,6 +22842,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 214, "v": "0.7", "d": "2026-10-23", "t": "고철의 무덤 전용 이벤트 넷 · 보상 아이콘 · 정령 집결 · 지도 손 (사용자 2026-10-23)", "big": 0},
  {"b": 213, "v": "0.7", "d": "2026-10-23", "t": "상점 카드 최대 셋 · 전투 카드 등장 구역 (사용자 2026-10-23)", "big": 0},
  {"b": 212, "v": "0.7", "d": "2026-10-23", "t": "고철의 무덤 전투 곡 셋 (사용자 2026-10-23)", "big": 0},
  {"b": 211, "v": "0.7", "d": "2026-10-22", "t": "레이 · 인비디아 지도 손 · 막기 자세 (사용자 2026-10-22)", "big": 0},
@@ -24237,7 +24248,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=213;
+const BUILD_NO=214;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -28268,9 +28279,17 @@ const ENTER_FREE={boss:1,camp:1,fence:1,spring:1,croot:1,lockdoor:1,stair:1,hole
                   LOCK_T 에서도 빠져 있고 payEnter 를 거치지 않는다 — 여기까지 맞춰 둔다 (2026-10-10) */
 function enterCost(cell){
   if(!cell||cell.t==="empty"||cell.t==="wall"||cell.done||cell.visited) return 0;
-  if(cell.t==="rest") return restKindOf(cell).act;   /* 천막 0 · 야영지 1 · 요새 1 (사용자 2026-10-16) */
-  return ENTER_FREE[cell.t]?0:1;
+  let n;
+  if(cell.t==="rest") n=restKindOf(cell).act;   /* 천막 0 · 야영지 1 · 요새 1 (사용자 2026-10-16) */
+  else n=ENTER_FREE[cell.t]?0:1;
+  /* 과부하 「파편 줍기」 — 오늘 하루, **활동량을 쓰는 칸만** 1 더 든다 (사용자 2026-10-23).
+     0 인 칸(빈 칸 · 전투 · 천막)은 그대로다 — 「활동량을 소모하는 구역들」이라 했다 */
+  if(n>0&&overloadOn()) n+=1;
+  return n;
 }
+/* 과부하가 도는 날인가 — 고른 그 날 하루 (run.overload 에 날짜를 적어 둔다) */
+const overloadOn=()=>!!(run&&run.overload!=null&&run.overload===run.day);
+const OVERLOAD_GOLD=5;
 /* 구역에 들어갈 때 드는 **시간** — 활동량과 **같은 자리에서** 낸다 (사용자 2026-10-10: 「들어갈 때 시간이 지나게」).
    2026-09-10 에 「나설 때」로 두었던 까닭은 「도착하자마자 받으면 진열대를 들여다보기만 해도 30분이 날아간다」였는데,
    이제는 칸에 서는 것과 들어가는 것이 갈라져 **[입장]을 눌러야** 들어가니 그 걱정이 없어졌다.
@@ -28301,6 +28320,10 @@ function payEnter(cell,r,c){
   const n=enterCost(cell);
   if(n>Math.max(0,run.act||0)){ toast(`활동량이 모자랍니다 — 들어가려면 활동량 ${n}이 필요합니다.`); return false }
   if(n){ run.act=Math.max(0,run.act||0)-n; actPop(r,c,n) }   /* 칸 위에 「활동량 1 감소」 (사용자 2026-10-08) */
+  /* 과부하 — 어느 칸에 들어가든 바닥에 흩어진 파편을 줍는다 (사용자 2026-10-23) */
+  if(overloadOn()){ run.gold+=OVERLOAD_GOLD;
+    if(sfxHas("금화 얻기")) SFX.play("금화 얻기");
+    toast(`과부하 — 흩어진 파편을 줍습니다. 금화 +${OVERLOAD_GOLD}`) }
   return true;
 }
 /* 서 있는 칸으로 들어간다 — 판의 [입장] */
@@ -30073,6 +30096,7 @@ function dungeonCleared(){
   if(d.winItem){ const it=evItem(d.winItem); if(it) (run.after=run.after||[]).push({item:it}) }   /* 미믹의 이빨 */
   if(d.trial){ trialWon(d.trial); return }                          /* 시련의 문 — 상자 대신 그 화면으로 */
   if(d.kind==="boss"){ run.bossDone=1;
+    moldBreak();   /* 복제 틀 — 본뜬 것은 여기서 바스러진다 (사용자 2026-10-23) */
     /* 미래 계획 — 우두머리를 넘은 그 자리에서 (사용자 2026-10-14. 전에는 다음 구역에 들어설 때였다) */
     if(run.futureGold&&!run.sandbox){ run.gold+=run.futureGold;
       if(sfxHas("금화 얻기")) SFX.play("금화 얻기");
@@ -31202,6 +31226,54 @@ function drawRestRes(app){
 const EVENTS=[
 
  /* ── 2026-09-16 (사용자) 다섯 — 3/6/9 처럼 셋인 값은 1·2·3구역 순 ── */
+ /* ═══ 고철의 무덤 전용 넷 (사용자 2026-10-23) — onScrap 하나로 걸린다 ═══ */
+ {n:"도둑질",art:"bounty_bag", face:"밀수꾼",
+  when:()=>onScrap(),
+  t:"자고 일어나니 가방과 주머니가 텅텅 비어있는 것을 알아챕니다.\n남아있는 건 도망간 이의 발자국 뿐이군요.",
+  o:[{t:"복수하기",d:"금화를 모두 잃습니다. 퀘스트: 밀수꾼 또는 설계도 도둑 6회 처치. (보상: 잃은 금화의 2배를 얻습니다.)",
+      quest:"도둑질", when:()=>run.gold>0&&!questHas("도둑질"),
+      f:()=>{ run.theftGold=run.gold; run.gold=0;
+        return `발자국을 따라 나섭니다. 금화 ${run.theftGold}개를 잃었습니다.` }},
+     {t:"다짐하기",d:"금화를 15 잃습니다. 지도의 무작위 일반 전투 구역 5곳에 현상금 표식이 부여됩니다. 해당 전투에서 금화를 50% 추가로 얻습니다.",
+      when:()=>run.gold>=15&&bountySpots().length>0,
+      f:()=>{ run.gold-=15; const L=bountySpots(); let k=0;
+        while(k<5&&L.length){ const p=L.splice(Math.floor(Math.random()*L.length),1)[0];
+          run.grid[p.r][p.c].bounty=1; k++ }
+        return `금화 15개로 수배지를 찍어 붙입니다. 지도의 전투 ${k}곳에 현상금 표식이 붙었습니다.` }}]},
+
+ {n:"과부하",art:"fx_burn", face:"균열 용광로",
+  when:()=>onScrap(),
+  t:"용광로가 과부하됩니다!\n모두 피하세요!",
+  o:[{t:"파편 줍기",d:`오늘 동안 활동량을 소모하는 구역들의 활동량 비용이 1 증가하지만, 아무 구역이나 방문 시 금화를 ${OVERLOAD_GOLD}개 얻습니다.`,
+      when:()=>!overloadOn(),
+      f:()=>{ run.overload=run.day;
+        return "쏟아진 쇳물이 식기도 전에 파편을 주워 담습니다. 발밑이 뜨거워 걸음이 더딥니다." }},
+     {t:"불에 데이기",d:"오염도가 2배가 됩니다. 제련석을 6개 얻습니다.",
+      f:()=>{ const t0=run.taint||0; addTaint(t0); run.stone=(run.stone||0)+6;
+        return `불길 속으로 손을 뻗습니다. 오염도가 ${t0} 올라 ${run.taint}이 되었습니다. 제련석을 6개 얻었습니다.` }}]},
+
+ {n:"복제 틀",art:"forge", face:"해체공",
+  when:()=>onScrap()&&ownedItems().length>0,
+  t:"아직 식지 않은 따끈따끈한 틀을 발견했습니다.\n무엇을 만드려고 했을까요?",
+  o:[{t:"본뜨기",d:"보유하고 있는 장신구 1개를 선택하여, 동일한 장신구를 얻습니다. 그 장신구는 우두머리를 처치한 후 파괴됩니다. (제련해서 다른 장신구가 되면 파괴되지 않습니다.)",
+      f:()=>{ run.evSub={t:"gpick",keep:1,then:"mold"}; return null }},
+     {t:"틀 부수기",d:"보유하고 있는 장신구 1개를 선택하여, 파괴합니다. 무작위 파편 장신구를 셋 얻습니다.",
+      f:()=>{ run.evSub={t:"gpick",then:"moldSmash"}; return null }}]},
+
+ {n:"생산 대기열",art:"ink_sc_order", face:"미조립 개체",
+  when:()=>onScrap(),
+  t:"멈춰버린 벨트 위에 아직 조립되지 않은 기계들이 줄지어 서 있습니다.",
+  o:[{t:"대기열 확인",d:"지도 위 작업 지시판으로 이동합니다. 귀환서를 1장 얻습니다.",
+      when:()=>!!orderSpot(),
+      f:()=>{ const p=orderSpot();
+        if(p){ leaveVisited(); run.route=null; run.mapSel=null;
+          run.pos={r:p.r,c:p.c}; fogLift(p.r,p.c) }
+        addCard(run,"귀환서",1);
+        return "벨트를 따라 걸으니 작업 지시판 앞입니다. 쓰다 만 귀환서 한 장이 꽂혀 있습니다." }},
+     {t:"기계 넘어뜨리기",d:"분해기를 2장 얻습니다. 하급 보상을 1개 얻습니다.",
+      f:()=>{ addCard(run,"분해기",2); run.after=[{grade:"하급"}];
+        return "줄지어 선 기계들을 밀어 넘깁니다. 쓸 만한 분해기 둘과 부품 하나를 챙겼습니다." }}]},
+
  {n:"저항군 결성",art:"ink11_map_spire", face:"작은 죄수",
   when:()=>run.field===0&&run.grid.some(row=>row.some(c=>c.t==="tower")),
   t:"수감자들이 감옥 저항군을 결성하고 있습니다.\n그들 중 하나가 당신에게 다가와 묻습니다.\n\"함께할텐가?\"",
@@ -31640,6 +31712,18 @@ function ownedItems(){
   return out;
 }
 const hasGrade=g=>ownedItems().some(x=>x.it.g===g);
+/* 복제 틀 — 본뜬 장신구(mold)를 모두 부순다 (사용자 2026-10-23).
+   ⚠️ **제련해서 다른 장신구가 되면 안 부순다** — 제련은 made 를 새로 만들어 주므로
+      mold 표가 따라가지 않는다. 여기서 더 할 일이 없다 */
+function moldBreak(){
+  if(!run) return;
+  const gone=[];
+  ownedItems().filter(x=>x.it&&x.it.mold).sort((a,b)=>b.i-a.i).forEach(x=>{
+    gone.push(x.it.n);
+    if(x.bag) run.bag.splice(x.i,1); else unequip(x.h,x.i,1) });
+  if(gone.length) toast(`복제 틀 — ${gone.join(" · ")}${jo(gone[gone.length-1],"ig")} 바스러졌습니다.`);
+  return gone.length;
+}
 function takeGrade(g){
   const list=ownedItems().filter(x=>x.it.g===g);
   if(!list.length) return null;
@@ -31910,19 +31994,31 @@ EV_GAME.trial={draw(row,api){
 }};
 /* 가진 장신구 가운데 하나를 고른다 (st.g 등급만) — 떠돌이 감정사 (사용자 2026-10-06). 장착한 것은 그 대원의 이름이 붙는다 */
 const GPICK_THEN={
+  /* 복제 틀 (사용자 2026-10-23) — 본뜨기는 **안 빼고**(keep) 똑같은 것을 하나 더 준다.
+     준 것에는 mold 표를 달아 둔다 — 우두머리를 넘으면 moldBreak 이 부순다.
+     ⚠️ ITEMS 의 그 객체를 그대로 밀어 넣으면 **같은 몸**이라 표가 원본까지 번진다. 베껴서 넣는다 */
+  mold:{say:"어떤 장신구를 본뜰까요?",
+    f:it=>{ (run.after=run.after||[]).push({item:Object.assign({},it,{mold:1})});
+      return `틀에 ${it.n}${jo(it.n,"eul")} 눌러 담습니다. 똑같은 것이 하나 더 생겼습니다 — 다만 우두머리를 넘고 나면 바스러집니다.` }},
+  moldSmash:{say:"어떤 장신구를 틀에 넣어 부술까요?",
+    f:it=>{ const L=ITEMS.filter(i=>i.g==="파편");
+      for(let k=0;k<3&&L.length;k++) (run.after=run.after||[]).push({item:rnd(L)});
+      return `${it.n}${jo(it.n,"ig")} 틀 안에서 으스러집니다. 부스러기 가운데 쓸 만한 파편 셋을 골라 냅니다.` }},
   appraise:{say:"사내가 손을 내밉니다. 감정을 맡길 파편을 고르세요.",
     f:it=>{ if(Math.random()<0.5){ run.after=[{item:rnd(ITEMS.filter(i=>i.g==="일반"))}];
         return `${it.n}이 다듬어져 쓸 만한 물건이 됩니다.` }
       return `${it.n}이 사내의 손에서 바스러졌습니다.` }}};
+/* 등급(st.g)을 안 대면 **가진 것 모두**. st.keep 이면 고른 것을 빼지 않는다 (복제 틀, 2026-10-23) */
+const gpickList=g=>ownedItems().filter(x=>!g||x.it.g===g);
 EV_GAME.gpick={draw(row,api){
   const st=api.st(), T=GPICK_THEN[st.then]||{};
-  const L=api.act(()=>ownedItems().filter(x=>x.it.g===st.g).map(x=>({it:x.it,who:x.bag?"가방":(x.h&&x.h.name)||""})));
-  api.say(T.say||`${st.g} 장신구를 하나 고르세요.`);
+  const L=api.act(()=>gpickList(st.g).map(x=>({it:x.it,who:x.bag?"가방":(x.h&&x.h.name)||""})));
+  api.say(T.say||`${st.g?st.g+" ":""}장신구를 하나 고르세요.`);
   L.forEach((x,k)=>{
     const c=el(`<div class="choice evfoe"><span class="evfart">${rewardIcon(x.it)}</span><b>${esc(x.it.n)}</b><span>${esc(x.who)}${x.it.d?" — "+rich(x.it.d):""}</span></div>`);
     c.onclick=()=>{ SFX.play("click"); const msg=api.act(()=>{
-        const M=ownedItems().filter(y=>y.it.g===st.g), pick=M[k]; if(!pick) return "…";
-        if(pick.bag) run.bag.splice(pick.i,1); else unequip(pick.h,pick.i,1);
+        const M=gpickList(st.g), pick=M[k]; if(!pick) return "…";
+        if(!st.keep){ if(pick.bag) run.bag.splice(pick.i,1); else unequip(pick.h,pick.i,1) }
         return T.f?T.f(pick.it):"…" });
       api.finish(msg) };
     row.appendChild(c) });
@@ -32138,6 +32234,9 @@ const evSay=(e,o)=>(o&&o.say)||(e&&e.say)||"";
    다 채우면 run.qDone 에 줄을 서고, 지도로 돌아갈 때(backToMap) 보상 화면(questdone)이 먼저 뜬다.
    field:1 인 퀘스트는 받은 구역을 벗어나면 사라진다. 저장은 run.quests 가 그대로 실린다 (대원은 이름으로) */
 const QUESTS={
+  /* 고철의 무덤 전용 이벤트 (사용자 2026-10-23) */
+  "도둑질":{kind:"thiefKill",need:6,who:"all",
+    d:"밀수꾼 또는 설계도 도둑을 {n}명 처치",rd:"잃은 금화의 2배를 얻습니다.",reward:{theftBack:1}},
   /* 인비디아 (노트 7 보상, 2026-10-22) */
   "합병증":{kind:"infect10",need:1,who:"hero",
     d:"적 하나를 감염 10중첩으로 만들기 {n}",rd:"죄악의 기침의 피해량이 영구히 4 증가합니다.",reward:{coughUp:4}},
@@ -32567,6 +32666,10 @@ function questClaim(id){
     if(h){ addMod(h,"지면 내려치기","dmg",R.slamUp,"지면 파훼");
       toast(`지면 파훼 — 지면 내려치기 피해 +${R.slamUp}`) } }
   if(R.item){ afterChest(); return }
+  /* 도둑질 — 털린 만큼의 **두 배** (사용자 2026-10-23). 턴 뒤 금화가 아니라 **잃은 그 액수**가 잣대다 */
+  if(R.theftBack){ const v=(run.theftGold||0)*2; run.theftGold=0;
+    if(v>0){ run.gold+=v; if(sfxHas("금화 얻기")) SFX.play("금화 얻기") }
+    toast(v>0?`도둑질 — 되찾았습니다. 금화 +${v}`:"도둑질 — 되찾을 것이 없었습니다.") }
   if(R.gold){ run.gold+=R.gold; if(sfxHas("금화 얻기")) SFX.play("금화 얻기"); toast(`퀘스트 보상 — 금화 +${R.gold}`) }
   /* 고철의 무덤 전용 구역 퀘스트 (사용자 2026-10-21).
      ⚠️ R.stone 은 **위에서 이미** 넣는다 — 여기서 또 넣어 제련석이 두 배로 들어가던 것을 걷었다 */
@@ -41167,6 +41270,7 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
        소환물이 잡아도 센다. 대원이 잡은 것만 세려면 hero 를 대야 한다 */
     if(!f.summoned){ if(foeRace(f)==="기계") questProgress("mechKill",null);
       if(f.name==="수거 드론") questProgress("droneKill",null);
+      if(f.name==="밀수꾼"||f.name==="설계도 도둑") questProgress("thiefKill",null);   /* 도둑질 — 복수하기 (사용자 2026-10-23) */
       questEach(f.name) }   /* 작업 지시판 — 「각각 둘」 퀘스트 (2026-10-21) */
     orionKill(B.lastAttacker,f,tag);   /* 소환물이 잡아도 센다 — onKill 은 대원만 본다 (2026-10-15) */
     onKill(B.lastAttacker,f,tag) }
@@ -46162,7 +46266,9 @@ function rewardIcon(r){
      보상 칸은 테두리를 스스로 그리므로 테두리 없는 판을 고른다.
      그림이 아직 없는 기술이면 빈 글자가 와서 아래 옛 길로 내려간다. */
   /* 사용자가 직접 정한 그림이 먼저 (REW_FIX) */
-  { const fx=r&&r.n&&REW_FIX[r.n];
+  /* 같은 이름의 보상이 대원마다 있을 수 있다 — 「대원|보상」 열쇠를 먼저 본다 (2026-10-23).
+     「연쇄 폭발」이 인비디아와 굴라 둘에 있어, 이름만 보던 때는 굴라가 인비디아 그림을 썼다 */
+  { const fx=r&&r.n&&((r.own&&REW_FIX[r.own+"|"+r.n])||REW_FIX[r.n]);
     if(fx){ if(fx.spr&&PNG_SPRITE[fx.spr]) return `<span class="rwspr">${figure(fx.spr)}</span>`;
       if(fx.sk){ const im=skillIcon(fx.sk,1); if(im) return im }
       if(fx.ic){ const im=iconImg(fx.ic); if(im) return im } } }
@@ -46215,7 +46321,8 @@ const REW_FIX={
  "깊은 기침":{"sk":"죄악의 기침"}, "눈엣가시":{"sk":"죄악의 기침"}, "악취":{"sk":"죄악의 기침"},
  "매개체":{"ic":"card_invidia_envious_plague"}, "역병의 손길":{"ic":"card_invidia_envious_plague"},
  "역병 창고":{"ic":"card_invidia_envious_plague"},
- "더 큰 폭발":{"sk":"숙주 폭발"}, "폭발 전염":{"sk":"숙주 폭발"}, "연쇄 폭발":{"ic":"fx_inv_host_explosion"},
+ "더 큰 폭발":{"sk":"숙주 폭발"}, "폭발 전염":{"sk":"숙주 폭발"},
+ "인비디아|연쇄 폭발":{"sk":"숙주 폭발"},   /* 여덟 칸 띠를 쓰고 있었다 (사용자 2026-10-23). 이름만 쓰면 굴라 것까지 바뀐다 */
  "본질 파괴":{"sk":"숙주 폭발"}, "통제":{"sk":"숙주 폭발"},
  "보균자":{"ic":"status_invidia_infection"}, "전염성":{"ic":"fx_inv_infection_spread"},
  "질투의 양분":{"ic":"status_invidia_infection"}, "역병 연구":{"ic":"status_invidia_infection"},
@@ -46226,7 +46333,8 @@ const REW_FIX={
  "역병군주 강화":{"sk":"역병군주"}, "질투의 군주":{"sk":"역병군주"},
  "재능 시기 강화":{"sk":"재능 시기"}, "시기심":{"sk":"재능 시기"}, "모방":{"sk":"재능 시기"},
  "과시":{"sk":"질투의 악마"}, "시샘":{"sk":"질투의 악마"}, "가로채기":{"sk":"질투의 악마"},
- "이간질":{"sk":"질투의 악마"}, "불사":{"ic":"fx_inv_talent_envy"},
+ "이간질":{"sk":"질투의 악마"},
+ "인비디아|불사":{"ic":"status_invidia_infection"},   /* 전장의 감염을 모두 삼켜 되살아난다 — 띠 대신 감염 그림 (사용자 2026-10-23) */
  /* ── 데린저 (사용자 2026-10-15 : 「안 넣어진 곳이 많음」) ──
     총에 붙는 부착물은 **그 총 그림**, 탄알·조준·은신 따위는 그 상태 그림을 빌린다 */
  /* 변형 넷 — 설명 첫 줄의 「자동변환단총이 …」 때문에 넷 다 단총 그림으로 떨어졌다 (사용자 2026-10-15) */
