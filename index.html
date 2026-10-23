@@ -16222,6 +16222,18 @@ const ITEMS=[
  /* 우두머리 전리품 — 간수장 (사용자 2026-10-23). 뽑기 풀에는 안 들어간다 (전리품으로만) */
  Object.assign(IT("간수장의 철퇴","특수",null,0,{atk:3},{maceCrit:1},
    "이 장신구를 장착한 대원이 속박된 적에게 주는 피해가 치명타로 적중합니다."),{loot:1}),
+ /* 우두머리 전리품 — 콜로서스 (사용자 2026-10-23) */
+ Object.assign(IT("보호 프로토콜 작동기","특수",null,0,{def:6},{stunImm:1},
+   "이 장신구를 장착한 대원은 기절에 면역입니다."),{loot:1}),
+ Object.assign(IT("콜로서스의 팔","특수",null,0,{atk:2,mag:2,def:2},{colShove:50},
+   "대원 배치 후, 손을 발사하여 모든 적을 1칸 뒤로 이동시키고 피해를 50 줍니다.\n이동하지 못하는 상태라면, 기절시킵니다."),{loot:1}),
+ Object.assign(IT("보호막 충전기","특수",null,0,null,{eshCharge:40},
+   "대원 배치 후, 에너지 보호막을 40 얻습니다.\n이 능력이 발동할 때마다 보호막량이 영구히 5씩 감소합니다."),{loot:1}),
+ /* 우두머리 전리품 — 폐기물 더미 (사용자 2026-10-23) */
+ Object.assign(IT("본따기 틀","특수",null,0,null,{copyMold:1},
+   "이 장신구를 다른 장신구와 제련하면, 그 장신구를 둘 복사하여 얻습니다."),{loot:1}),
+ Object.assign(IT("녹슨 그리퍼","특수",null,0,null,{gripDeb:1},
+   "내 턴이 시작할 때, 가장 앞의 적에게 무작위 부정적인 효과를 1 부여합니다."),{loot:1}),
  /* 우두머리 전리품 — 실험 책임자 (사용자 2026-10-23) */
  Object.assign(IT("투척용 스패너","특수",null,0,null,{wrench:5},
    "이 장신구를 장착한 대원이 기술을 사용한 후, 가장 먼 적에게 스패너를 던져 피해를 5 줍니다."),{loot:1}),
@@ -16292,8 +16304,13 @@ function itemFits(h,it){
   const r=(typeof tagsOf==="function")&&(tagsOf(h.name)||{}).race;
   return it.onlyRace.indexOf(r)>=0||it.onlyRace.some(x=>hasTag(h,x));
 }
+/* 보호막 충전기 (콜로서스 전리품, 2026-10-23) — 발동할 때마다 5 씩 줄어든다.
+   ⚠️ 센 수를 **장신구 객체에 적지 않는다** — ITEMS 의 그 몸은 모두가 나눠 쓴다. 판(run)에 적는다 */
+const eshChargeNow=it=>Math.max(0,((it&&it.bt&&it.bt.eshCharge)||0)-5*((typeof run!=="undefined"&&run&&run.eshChargeUsed)||0));
 function itemLive(h,it,txt){
   let t=String(txt||"");
+  /* 보호막 충전기 — 다음에 얻을 몫 (사용자 2026-10-23). 0 밑으로는 안 내려간다 */
+  if(it&&it.bt&&it.bt.eshCharge) t=t.replace(/에너지 보호막을 \d+ 얻습니다/,`에너지 보호막을 ${eshChargeNow(it)} 얻습니다`);
   /* 과열된 장치 — 남은 턴과 지금 피해량을 살아 있는 수로 (사용자 2026-10-23) */
   if(it&&it.bt&&it.bt.overheat&&h){
     const base=it.bt.overheat, done=Math.floor((h.endCount||0)/3);
@@ -17635,8 +17652,8 @@ function itemSlots(h){
 const LV_GRADE=[0,
  "하급","하급","하급","하급","하급","하급","하급","하급","하급","하급",
  "하급","하급","중급","하급","중급","하급","하급","중급","하급","상급",
- "하급","하급","중급","하급","중급","하급","하급","중급","중급","상급"
-];
+ "중급","하급","중급","중급","중급","중급","하급","중급","중급","상급"
+];   /* 21 · 24 · 26 을 하급 → 중급 (사용자 2026-10-23) */
 
 /* ═══════════ 적 · 맵 ═══════════ */
 const FOE={
@@ -19242,6 +19259,10 @@ function addDeb(u,k,n,src){
   if(u.name==="카제"&&u.tag&&u.tag.debLift&&n>0&&B&&!B.over){ const L=B.foes.filter(f=>f.alive); if(L.length){ say("용오름 — 바람이 솟구쳐 모든 적을 띄웁니다.","t1");
     for(let q=0;q<u.tag.debLift;q++) L.slice().sort((a,b)=>a.slot-b.slot).forEach(f=>airborne(u,f)) } }   /* 용오름 (노트 2026-09-17) · 겹친 수만큼 (2026-10-11) */
   if(src&&isFF(src)&&n>0&&(u.isFoe||(B&&B.foes&&B.foes.indexOf(u)>=0))) setTimeout(()=>ffDebuffHook(src,u),0);
+  /* 보호 프로토콜 작동기 (콜로서스 전리품, 2026-10-23) — **대원**의 기절 면역 */
+  if(k==="stun"&&n>0&&itemBt(u,"stunImm")){
+    fx({side:"mine",slot:u.slot,txt:"기절 면역",cls:"miss",gap:80});
+    say(`보호 프로토콜 작동기 — ${u.name}${jo(u.name,"eun")} 기절하지 않습니다.`,"t2"); return }
   /* 보호 프로토콜 — 기절 면역 (콜로서스 1 · 2단계, (사용자 2026-10-07)) */
   if(k==="stun"&&n>0&&B&&B.foes&&B.foes.indexOf(u)>=0&&foePas(u,"stunImm")){
     fx({side:"foe",slot:u.slot,txt:"기절 면역",cls:"miss",gap:80}); say(`${foePas(u,"stunImm").n} — ${u.name}${jo(u.name,"eun")} 기절하지 않습니다.`,"t2"); return }
@@ -20256,7 +20277,7 @@ const REST_PLACE=2;   /* 한 번에 놓는 쉼터 수 */
 const REST_KIND={
  tent:{n:"천막 쉼터", act:0, grade:"하급", give:1, ink:"ink11_map_shelter",      sub:"바람을 가릴 천막 하나가 서 있습니다"},
  camp:{n:"야영지 쉼터", act:1, grade:"중급", give:1, ink:"ink11_map_camp_shelter", sub:"모닥불과 천막이 둘러선 야영지입니다"},
- fort:{n:"요새 쉼터", act:1, grade:"중급", give:2, ink:"ink11_map_fort_shelter", sub:"돌로 쌓아 올린 작은 요새입니다"}
+ fort:{n:"요새 쉼터", act:3, grade:"중급", give:2, ink:"ink11_map_fort_shelter", sub:"돌로 쌓아 올린 작은 요새입니다"}   /* 활동량 1 → 3 (사용자 2026-10-23) */
 };
 const restKind=k=>REST_KIND[k]||REST_KIND.tent;
 const restKindOf=cell=>restKind(cell&&cell.rk);
@@ -21811,7 +21832,8 @@ function nextField(){
   if(run.soloBonus){ const sb=run.soloBonus; run.soloBonus=null;
     run.after=[]; for(let i=0;i<sb.n;i++) run.after.push({grade:sb.grade});
     run.afterList=null; run.afterUsed=0;
-    toast(`홀로 떠난 값 — ${sb.grade} 보상 ${sb.n}개를 받습니다.`);
+    const st=soloStatGive(sb.stat||0);   /* 능력치는 바로 — 보상은 화면에서 고른다 (2026-10-23) */
+    toast(`홀로 떠난 값 — ${sb.grade} 보상 ${sb.n}개를 받습니다.${st?` ${st}.`:""}`);
     view="map"; afterChest(); return }
   view="map"; render();
 }
@@ -22899,6 +22921,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 220, "v": "0.7", "d": "2026-10-23", "t": "우두머리 전리품 (폐기물 더미 · 콜로서스) · 턴 한도 · 레벨 보상 · 홀로 떠나기 · 요새 쉼터 (사용자 2026-10-23)", "big": 0},
  {"b": 219, "v": "0.7", "d": "2026-10-23", "t": "실험 책임자 전리품 · 전리품 카드 꼴 통일 · 도감 차례 (사용자 2026-10-23)", "big": 0},
  {"b": 218, "v": "0.7", "d": "2026-10-23", "t": "우두머리 전리품 (간수장) · 증폭! 이벤트 · 고철의 무덤 그림 수정본 (사용자 2026-10-23)", "big": 0},
  {"b": 217, "v": "0.7", "d": "2026-10-23", "t": "밀수꾼 도망 남은 턴 · 획득 단추 (사용자 2026-10-23)", "big": 0},
@@ -24310,7 +24333,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=219;
+const BUILD_NO=220;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -28335,14 +28358,14 @@ function mapGo(r,c){
    ⚠️ 덩굴 수풀(thicket)은 사용자 목록에 없어 다른 기믹처럼 1 로 두었다 — 확인받을 것 */
 const ENTER_FREE={boss:1,camp:1,fence:1,spring:1,croot:1,lockdoor:1,stair:1,hole:1,
   oil:1,order:1,   /* 고철의 무덤 — 폐유 웅덩이 · 작업 지시판은 활동량 0 (사용자 2026-10-21) */
-  /* 쉼터는 **종류마다 다르다** (사용자 2026-10-16) — 천막 0 · 야영지 1 · 요새 1.
+  /* 쉼터는 **종류마다 다르다** (사용자 2026-10-16) — 천막 0 · 야영지 1 · 요새 3.
      수는 REST_KIND 한 곳에서 읽는다 (아래 enterCost). 시간 15분은 어느 쉼터나 그대로 낸다 */
   tunnel:1};   /* 땅굴 — 들어가는 구역이 아니라 지나가는 길이라 올라서는 데는 안 낸다 (사용자 2026-10-08).
                   LOCK_T 에서도 빠져 있고 payEnter 를 거치지 않는다 — 여기까지 맞춰 둔다 (2026-10-10) */
 function enterCost(cell){
   if(!cell||cell.t==="empty"||cell.t==="wall"||cell.done||cell.visited) return 0;
   let n;
-  if(cell.t==="rest") n=restKindOf(cell).act;   /* 천막 0 · 야영지 1 · 요새 1 (사용자 2026-10-16) */
+  if(cell.t==="rest") n=restKindOf(cell).act;   /* 천막 0 · 야영지 1 · 요새 3 (사용자 2026-10-16 · 요새 3 은 2026-10-23) */
   else n=ENTER_FREE[cell.t]?0:1;
   /* 과부하 「파편 줍기」 — 오늘 하루, **활동량을 쓰는 칸만** 1 더 든다 (사용자 2026-10-23).
      0 인 칸(빈 칸 · 전투 · 천막)은 그대로다 — 「활동량을 소모하는 구역들」이라 했다 */
@@ -29849,6 +29872,7 @@ function drawForge(app){
   run.forgePick=[pk[0]?pk[0].key:null,pk[1]?pk[1].key:null];
   const both=pk[0]&&pk[1];
   let made=both?findRecipe(pk[0].it.n,pk[1].it.n):null;
+  if(both&&!made) made=forgeCopy(pk[0].it,pk[1].it);   /* 본따기 틀 (2026-10-23) — 조합법보다 뒤, 섞기보다 앞 */
   if(both&&!made&&forgeMix(pk[0].it,pk[1].it)) made=FORGE_MIX;
   /* 사치품 — 파편 둘로 일반이 나올 자리를 희귀로 갈아 끼운다 (2026-10-14) */
   if(both&&made&&made.g==="일반"&&run.luxForge&&pk[0].it.g==="파편"&&pk[1].it.g==="파편")
@@ -29967,6 +29991,15 @@ const forgeCut=()=>tagSum("forgeCut");
 /* 사치품 (공용 상급, 2026-10-14) — 파편끼리 합쳐 일반이 나올 자리에 무작위 희귀 하나.
    무엇이 나올지는 FORGE_MIX 처럼 **제련할 때** 굴린다 (미리보기가 render 마다 바뀌지 않게) */
 const FORGE_LUX={n:"무작위 희귀 장신구",g:"희귀",cost:5,lux:1,d:"사치품 — 파편 둘을 녹여 무작위 희귀 장신구 하나를 만듭니다."};
+/* 본따기 틀 (폐기물 더미 전리품, 2026-10-23) — 틀과 아무 장신구를 함께 제련하면 **그 장신구를 둘** 얻는다.
+   틀은 어떤 조합법도 없으므로 여기서 짝을 알아본다 (파편 둘 섞기 · 사치품과 같은 결) */
+const isCopyMold=it=>!!(it&&it.bt&&it.bt.copyMold);
+const forgeCopyWith=(a,b)=>isCopyMold(a)?b:(isCopyMold(b)?a:null);
+function forgeCopy(a,b){
+  const t=forgeCopyWith(a,b);
+  if(!t||isCopyMold(t)) return null;   /* 틀 둘은 안 된다 */
+  return {n:t.n,g:t.g,cost:0,copy:t.n,d:`본따기 틀 — ${t.n}${jo(t.n,"eul")} 둘 복사해 얻습니다.`};
+}
 /* 제련한 것을 건넨다 — **여기 한 곳**이다 (2026-10-15).
    연출이 끝나서 부르든, 화면이 다시 그려져 「받는다」를 다시 눌러서 부르든 같은 길 */
 function forgeTake(){
@@ -29984,6 +30017,9 @@ function forgeRun(stage,pk,made){
   run.stone-=made.cost;
   if(made.mix){ run.gold-=made.gold||0; made=rnd(ITEMS.filter(i=>i.g==="파편")) }
   else if(made.lux){ made=rnd(ITEMS.filter(i=>i.g==="희귀")) }   /* 사치품 — 여기서 굴린다 */
+  else if(made.copy){ const it=itemDef(made.copy);
+    /* 둘 가운데 하나는 여느 길로 건네고(forgeHold), 나머지 하나는 받는 줄에 쌓는다 */
+    if(it){ (run.after=run.after||[]).push({item:it}); made=it } }
   const bags=pk.filter(p=>p.bag).sort((a,b)=>b.i-a.i);
   const eqs =pk.filter(p=>!p.bag).sort((a,b)=>b.i-a.i);
   bags.forEach(p=>run.bag.splice(p.i,1));
@@ -30535,6 +30571,7 @@ const CARD_META={
  "섬광이 담긴 병":{src:"상점"}, "산성 병":{src:"상점"}, "기름 항아리":{src:"상점"},
  "해독제":{src:"상점"}, "밧줄":{src:"상점"}, "마나 결정":{src:"상점"}, "각성초":{src:"상점"},
  "분해기":{src:"상점, 고철의 무덤"}, "자물쇠":{src:"간수장 전리품"}, "연료 장치":{src:"실험 책임자 전리품"},
+ "집게손":{src:"콜로서스 전리품"},
  "시기의 역병":{src:"인비디아",gone:1},
  "역병 지대":{src:"인비디아",gone:1}
 };
@@ -30592,6 +30629,15 @@ const CARD_LIB={
             a.shield=0;
             fx({side:foeSide?"foe":"mine",slot:a.slot,txt:v?"보호막 -"+v:"보호막 없음",cls:"miss",gap:80});
             say(`산성 병 — ${a.name}의 보호막이 모두 녹아내립니다. (보호막 ${v})`,"t2") }},
+ /* 우두머리 전리품 — 콜로서스 (사용자 2026-10-23).
+    콜로서스의 「집게손」과 **같은 연출** — 위에서 팔이 내려와 집어 간다 */
+ "집게손":{d:"대상을 3턴 동안 전투에서 제외시킵니다.",foe:1,
+   use:f=>{ if(!f||!f.alive){ say("집을 상대가 없습니다.","t2"); return "keep" }
+     if(f.boss){ say("집게손 — 우두머리는 집히지 않습니다.","t2"); return "keep" }
+     const sl=f.slot;
+     f.alive=0; f.held={back:(B.turn||1)+3,slot:sl};
+     fx({side:"foe",slot:sl,colFx:"grab",colName:f.name,gap:1300});
+     say(`집게손 — ${f.name}${jo(f.name,"ig")} 붙잡혀 3턴 동안 전투에서 빠집니다.`,"t1") }},
  /* 우두머리 전리품 — 간수장 (사용자 2026-10-23). 기절 1턴 */
  "자물쇠":{d:"모든 적을 기절시킵니다.",
    use:()=>{ const L=(B&&B.foes||[]).filter(x=>x.alive);
@@ -30825,6 +30871,11 @@ function makeShop(){
     goods.push({n:g.n,d:g.d,k:g.k,card:g.card,item:g.item,
                 cost:rr(pr), left:q0, qty:q0});
   }
+  /* 생산라인 (폐기물 더미 전리품, 2026-10-23) — **다음에 들어선 상점 한 번**만 */
+  if(run.lineShop){ run.lineShop=0;
+    const g0=SHOP_STOCK.find(x=>x.k==="pickrare");
+    if(g0){ goods.push({n:g0.n,d:g0.d,k:g0.k,cost:60,left:1,qty:1,line:1});
+      toast("생산라인 — 「희귀 장신구 선택」이 금화 60개에 올라와 있습니다.") } }
   /* 흥정 — 비용 1 이상의 무작위 품목 3개가 반값 (2026-09-16) */
   if(run.haggle>0){ run.haggle--;
     const cand=goods.filter(g=>g.cost>=1).slice(); let k=0;
@@ -31093,6 +31144,7 @@ function sellItem(i){
   if(x.bag) run.bag.splice(x.i,1);
   else { const back=unequip(x.h,x.i,1); if(!back){ toast("벗길 수 없는 물건입니다."); return } }
   run.gold+=g;         /* 소리는 goldWatch 가 낸다 */
+  if(typeof questProgress==="function") questProgress("sellItem",null);   /* 생산라인 (폐기물 더미 전리품, 2026-10-23) */
   toast(`${x.it.n}을 ${g} 금화에 팔았습니다.`);
   shopSay("sold"+(x.it.g==="파편"?"파편":x.it.g==="희귀"?"희귀":"일반"));   /* 팔 때는 늘 */
   shopVoice("sell"); shopLaugh();
@@ -31247,6 +31299,10 @@ function restRecord(fn,from){ const L=run.heroes.map(h=>({n:h.name,b:h.down?0:Ma
   run.restRes={from:from,L:L} }
 /* 훈련장 — 전 · 후 레벨과 경험치를 적어 두고 결과 판(drawRestRes 의 train)에 보인다 */
 function trainRecord(v){
+  /* 오염된 수목 성장제 (콜로서스 전리품, 2026-10-23) — 경험치 +150, 쓸 때마다 오염도 +30 */
+  if(run.growTonic){ const n=run.growTonic;
+    v+=150*n; addTaint(30*n);
+    toast(`오염된 수목 성장제 — 경험치 +${150*n}, 오염도 +${30*n}`) }
   const pool=run.heroes.filter(h=>!h.down);
   const L=run.heroes.map(h=>({n:h.name,lv0:h.lv,e0:h.exp,n0:needExp(h.lv),down:!!h.down}));
   giveExp(v,pool,true);
@@ -32354,6 +32410,20 @@ const BOSS_LOOT={
   {k:"item",n:"과열된 장치"},
   {k:"card",n:"연료 장치",c:3,d:"[연료 장치] 카드를 3장 얻습니다.\n[소환물] 체력 20 · 마나 1 — 공급(마나 1) : 사용한도(3). 양옆의 아군에게 이번 전투 동안 마법력을 1 부여합니다. 사용한도를 모두 소모하면 폭발하여 모든 대상에게 피해를 10 줍니다."},
   {k:"item",n:"고급 드라이버"}
+ ],
+ "폐기물 더미":[
+  {k:"item",n:"본따기 틀"},
+  {k:"rew", n:"용광로 잔해",ic:"trophy_heap_furnace"},
+  {k:"rew", n:"무기 거푸집",ic:"trophy_heap_weapon"},
+  {k:"rew", n:"생산라인",ic:"trophy_heap_line"},
+  {k:"item",n:"녹슨 그리퍼"}
+ ],
+ "콜로서스":[
+  {k:"item",n:"보호 프로토콜 작동기"},
+  {k:"card",n:"집게손",c:2,d:"[집게손] 카드를 2장 얻습니다.\n[집게손] : 카드를 낸 대상을 3턴 동안 전투에서 제외시킵니다."},
+  {k:"rew", n:"오염된 수목 성장제",ic:"trophy_col_tonic"},
+  {k:"item",n:"콜로서스의 팔"},
+  {k:"item",n:"보호막 충전기"}
  ]
 };
 /* 그 우두머리의 전리품 셋 — 한 전투에 한 번만 뽑는다 (화면을 다시 그려도 그대로) */
@@ -32392,6 +32462,10 @@ const BL_SKILL={
    d:"사용한도(1). 거리 2 내의 모든 적에게 피해를 2(추가 공격력)씩 5번 줍니다."}
 };
 const QUESTS={
+  /* 폐기물 더미 전리품 (사용자 2026-10-23) */
+  "생산라인":{kind:"sellItem",need:10,who:"all",
+    d:"상점에서 장신구를 {n}개 판매",
+    rd:"다음 방문하는 상점에서 「희귀 장신구 선택」을 금화 60개에 팝니다.",reward:{lineShop:1}},
   /* 고철의 무덤 전용 이벤트 (사용자 2026-10-23) */
   "도둑질":{kind:"thiefKill",need:6,who:"all",
     d:"밀수꾼 또는 설계도 도둑을 {n}명 처치",rd:"잃은 금화의 2배를 얻습니다.",reward:{theftBack:1}},
@@ -32799,6 +32873,8 @@ function questClaim(id){
     gimResShow(id,"퀘스트 완료",t||"무작위 보상을 받았습니다.",
                gimResTiles((run.after||[]).slice(a0),extra),"after");
     return; }
+  /* 생산라인 — 다음에 들어서는 상점에 싼 「희귀 장신구 선택」이 선다 (2026-10-23) */
+  if(R.lineShop){ run.lineShop=1; toast("생산라인 — 다음 상점에 「희귀 장신구 선택」이 금화 60개에 섭니다.") }
   if(R.stone){ run.stone=(run.stone||0)+R.stone; toast(`퀘스트 보상 — 제련석 +${R.stone}`) }
   if(R.item){ const L=ITEMS.filter(i=>i.g===R.item);
     if(L.length) for(let q=0;q<(R.itemN||1);q++) (run.after=run.after||[]).push({item:rnd(L)}) }
@@ -33030,18 +33106,27 @@ function drawRecruit(app){
   const solo=soloBonusFor(run.field);
   const sk=el(`<div style="margin-top:20px">
     ${pool.length?`<button class="go">홀로 떠나기</button>
-      <div class="hint" style="margin-top:8px;font-size:11.5px">동료를 선택하지 않습니다. 다음 스테이지 시작 후 ${solo?`<b>${esc(solo.grade)} 보상 ${solo.n}개</b>`:"추가 보상"}를 얻습니다.</div>`
+      <div class="hint" style="margin-top:8px;font-size:11.5px">동료를 선택하지 않습니다. 다음 스테이지 시작 후 ${solo?`<b>${esc(solo.grade)} 보상 ${solo.n}개</b>${solo.stat?`와 <b>모든 추가 능력치 +${solo.stat}</b>`:""}`:"추가 보상"}를 얻습니다.</div>`
       :`<button>더 합류할 대원이 없습니다 — 계속</button>`}</div>`);
   sk.querySelector("button").onclick=()=>{
-    if(pool.length&&solo){ run.soloBonus=solo; toast(`홀로 떠납니다 — 다음 구역에서 ${solo.grade} 보상 ${solo.n}개를 받습니다.`) }
+    if(pool.length&&solo){ run.soloBonus=solo;
+      toast(`홀로 떠납니다 — 다음 구역에서 ${solo.grade} 보상 ${solo.n}개${solo.stat?`와 모든 추가 능력치 +${solo.stat}`:""}를 받습니다.`) }
     afterChest() };
   wrap.appendChild(sk);
 }
-/* 이 구역의 우두머리를 넘고 홀로 떠날 때 다음 구역에서 받는 것 */
+/* 이 구역의 우두머리를 넘고 홀로 떠날 때 다음 구역에서 받는 것.
+   보상 말고 **모든 추가 능력치**도 함께 (사용자 2026-10-23) — 1→2막 2, 2→3막 4. 영구히 */
 function soloBonusFor(field){
-  if(field===0) return {grade:"중급",n:3};
-  if(field===1) return {grade:"상급",n:1};
+  if(field===0) return {grade:"중급",n:3,stat:2};
+  if(field===1) return {grade:"상급",n:1,stat:4};
   return null;
+}
+/* 떠나는 대원들에게 능력치를 얹는다 — 새 동료를 안 받았으니 지금 선 대원들이 그 몫을 진다 */
+function soloStatGive(v){
+  if(!v||!run) return "";
+  const L=run.heroes||[];
+  L.forEach(h=>{ h.atk=(h.atk||0)+v; h.mag=(h.mag||0)+v; h.def=(h.def||0)+v });
+  return L.length?`${L.map(h=>h.name).join(" · ")}의 모든 추가 능력치 +${v}`:"";
 }
 function drawPickHero(app){
   app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">${esc(pending.title)}</div>
@@ -33405,10 +33490,20 @@ function morphGun(h,g){
            hits:D.hits||1,near2x:D.near2x||0,farAdd:D.farAdd||0,d:D.d};
   if(typeof say==="function") say(`${h.name}의 자동변환단총이 ${g}으로 변형됩니다.`,"t1");
 }   /* 데린저의 최대 탄알 — 노트 6-0-2 「탄알집 챙기기」 (2026-10-14, 전엔 5) */
-/* 전투의 턴 한도 — **우두머리만 25**, 나머지는 20 (사용자 2026-10-12).
+/* 전투의 턴 한도 — **막마다 다르다** (사용자 2026-10-23).
+   일반 10 / 15 / 20 · 정예 15 / 20 / 25 · 우두머리 25 / 25 / 30 (3막만 사용자가 30 으로 정했다).
+   표에 없는 전투(밤의 습격 · 기믹 · 이벤트 싸움 · 시련의 문)는 예전 그대로 20.
    ⚠️ 규칙은 25 인데 **머리글만 「/ 20」으로 박혀 있어** 우두머리 판에서 「25턴 / 20」이 떴다
       (사용자 2026-10-13). 머리글과 물러나는 셈이 **이 함수 하나**를 보게 묶었다 — 규칙 하나는 함수 하나 */
-const turnLimit=k=>(((k==null?(typeof B!=="undefined"&&B&&B.kind):k)==="boss")?25:20);
+const TURN_LIMIT={battle:[10,15,20], elite:[15,20,25], boss:[25,25,30]};
+const TURN_LIMIT0=20;
+function turnLimit(k){
+  const kind=(k==null)?((typeof B!=="undefined"&&B)?B.kind:null):k;
+  const L=TURN_LIMIT[kind];
+  if(!L) return TURN_LIMIT0;
+  const fi=Math.min(Math.max((typeof run!=="undefined"&&run&&run.field)||0,0),L.length-1);
+  return L[fi];
+}
 const UNLOCK=[1,1,7,15];
 /* 기술 잠금을 볼 레벨 — 전투 중에는 그 전투를 시작할 때의 레벨(h._lvB). 전투 중에 레벨이 올라도 새 기술은 전투가 끝나야 열린다 (사용자 2026-10-04) */
 function skLv(h){ return (h&&h._lvB!=null)?h._lvB:(h?h.lv:1) }
@@ -36449,6 +36544,14 @@ function skTurnStart(){
     m.slot=sl; m.alive=1; m.held=null; m.formWait=Date.now()+4000;
     fx({side:"mine",slot:sl,colFx:"drop",colU:m,gap:1250});
     say(`${m.name}${jo(m.name,"ig")} 전장으로 돌아옵니다 → ${sl}번`,"t2") });
+  /* 집게손 카드에 집힌 **적** — 세 턴이 지나면 돌아온다 (콜로서스 전리품, 2026-10-23).
+     제자리가 막혔으면 빈 칸으로, 빈 칸이 없으면 날 때까지 기다린다 (소환물 쪽과 같은 결) */
+  (B.foes||[]).forEach(f=>{ if(!f.held||f.held.back>(B.turn||1)) return;
+    let sl=f.held.slot; if(foeBlock(sl)){ sl=0; for(let q=1;q<=SLOTS;q++) if(!foeBlock(q)){ sl=q; break } }
+    if(!sl) return;
+    f.slot=sl; f.alive=1; f.held=null;
+    fx({side:"foe",slot:sl,colFx:"drop",colU:f,gap:1250});
+    say(`${f.name}${jo(f.name,"ig")} 전장으로 돌아옵니다 → ${foeNo(sl)}번`,"t2") });
   /* 자폭 잔해 — 때가 되면 터진다 (2026-09-29) */
   if(B.bombs&&B.bombs.length){
     const now=B.turn||1, go=B.bombs.filter(b=>b.turn<=now); B.bombs=B.bombs.filter(b=>b.turn>now);
@@ -39652,11 +39755,36 @@ function soloCheck(h){
     say(`최후의 검투사 — 혼자가 아니게 되어 힘이 가라앉습니다.`,"t2");
   }
 }
+/* 콜로서스 전리품의 「대원 배치 후」 둘 (사용자 2026-10-23) */
+function colTrophyDeploy(h){
+  if(!h||!B||B.over||!(h.slot>0)) return;
+  /* 콜로서스의 팔 — 손을 쏘아 모든 적을 1칸 뒤로, 피해 50. 못 밀리면 기절.
+     연출은 콜로서스의 밀치기(colFx:"palm")를 **적 쪽으로** 돌려 쓴다 */
+  { const v=itemBt(h,"colShove");
+    if(v){ fx({side:"mine",slot:h.slot,colFx:"palm",colMine:1,gap:820});
+      const L=B.foes.filter(f=>f.alive).sort((a,b)=>b.slot-a.slot), stuck=[];
+      L.forEach(f=>{ const to=f.slot+1;
+        if(deb(f,"bind")>0||foeBound(f)||foeFixed(f)||f.big||to>SLOTS||foeBlock(to)){ stuck.push(f); return }
+        f.slot=to; fx({side:"foe",slot:to,s:"step",ring:"#9c8d77",txt:"밀려남!",cls:"moved",gap:50}) });
+      say(`콜로서스의 팔 — ${h.name}${jo(h.name,"ig")} 손을 쏘아 모두를 밀쳐냅니다.`,"t1");
+      B.foes.filter(f=>f.alive).forEach(f=>asSrc(h,()=>hurt(f,v,"콜로서스의 팔","atk")));
+      stuck.forEach(f=>{ if(!f.alive) return;
+        say(`${f.name}${jo(f.name,"eun")} 밀려날 수 없습니다 — 기절`,"t2"); addDeb(f,"stun",1,h) }) } }
+  /* 보호막 충전기 — 에너지 보호막. 발동할 때마다 몫이 영구히 5 줄어든다 */
+  { const it=(h.items||[]).find(x=>x&&x.bt&&x.bt.eshCharge);
+    if(it){ const v=eshChargeNow(it);
+      run.eshChargeUsed=(run.eshChargeUsed||0)+1;   /* 0 이어도 센다 — 「발동할 때마다」 */
+      if(v>0){ h.eshield=(h.eshield||0)+v;
+        fx({side:"mine",slot:h.slot,s:"pulse",ring:"#9ecbf5",txt:"에너지 +"+v,cls:"shd",gap:90});
+        say(`보호막 충전기 — ${h.name} 에너지 보호막 +${v} (다음은 ${eshChargeNow(it)})`,"t2") }
+      else say("보호막 충전기 — 더 채울 것이 남지 않았습니다.","t2") } }
+}
 function onSummon(h){
   handOpenFor(h);
   rayStance(h,1);   /* 레이 적응성 — 배치하는 그 순간에 태세가 정해진다 (노트 20-0, 2026-10-21) */
   reiDeploy(h);     /* 레이의 「대원 배치 후」 보상 — 태세를 보고 갈린다 (2026-10-21) */
   invDeploy(h);     /* 인비디아의 「대원 배치 후」 보상 (2026-10-22) */
+  try{ colTrophyDeploy(h) }catch(e){ console.error(e) }   /* 콜로서스 전리품 — 팔 · 보호막 충전기 (2026-10-23) */
   const t=h.tag;
   if(h.name==="데린저"&&t.placeAmmoEsh){ const v=ammoMaxOf(h)*t.placeAmmoEsh;
     h.eshield=(h.eshield||0)+v;
@@ -45747,7 +45875,7 @@ function startMyTurn(){
   if(!run.heroes.some(h=>h.hp>0)&&!lifeLeft()){ B.over=1; battleLost(); render(); return }
   if(!run.heroes.some(h=>!h.down)&&!lifeLeft()){ B.over=1; battleLost(); render(); return }
   B.turn++;
-  const TLIM=turnLimit();   /* 우두머리 전투만 25턴 (사용자 2026-10-12) — 머리글과 같은 함수를 본다 */
+  const TLIM=turnLimit();   /* 막과 갈래마다 다르다 (사용자 2026-10-23) — 머리글과 같은 함수를 본다 */
   if(B.turn>TLIM&&!(run&&run.sandbox)){ B.over=1; say(`${TLIM}턴이 지나 물러납니다.`,"t3");
     { const d=run.dun, c=d&&d.r!=null&&run.grid[d.r]&&run.grid[d.r][d.c];   /* 그 전투 칸은 지도에서 없앤다 (사용자 2026-10-05) */
       if(c&&(c.t==="dungeon"||c.t==="elite")&&!d.trial){ run.grid[d.r][d.c]={t:"empty"}; say("전투 구역이 흩어져 지도에서 사라집니다.","t3") } }
@@ -45914,6 +46042,16 @@ function startMyTurn(){
   (B.prepAtkQ||[]).forEach(([h,v])=>{ if(h.hp>0){ bumpTurn(h,"atk",v); fx({side:"mine",slot:h.slot,ring:"#e0705a",txt:"공격력 +"+v,cls:"buf",gap:80}); say(`대비책 — ${h.name} 이번 턴 추가 공격력 +${v}`,"t2") } }); B.prepAtkQ=null;
   run.heroes.forEach(h=>{ if(h.lastBas&&h.lastBas.v!=null&&h.hp>0){ const v=h.lastBas.v; h.lastBas=null;
     if(v>0){ const g=addShield(h,v); fx({side:"mine",slot:h.slot,s:"shield",ring:"#e0c85a",txt:"최후의 보루 +"+g,cls:"shd",gap:120}); say(`최후의 보루 — ${h.name} 보호막 +${g}`,"t1") } } });
+  /* 녹슨 그리퍼 (폐기물 더미 전리품, 2026-10-23) — 내 턴이 시작할 때 가장 앞의 적에게 무작위 부정 효과 1.
+     ⚠️ **부정 효과 감소가 다 끝난 뒤에** 건다. 위에서 걸면 같은 함수의 감소 줄이 그 자리에서 1 을 도로 깎는다
+        (흔적은 남고 중첩만 0 이라 아무 데서도 안 틀린다 — 그물로 잡았다).
+     여럿이 차고 있으면 차고 있는 수만큼 (대원마다 제 몫) */
+  onField().forEach(h=>{ if(!h||h.hp<=0||h.isMin) return;
+    const v=itemBt(h,"gripDeb"); if(!v) return;
+    const f=nearestFoe(h); if(!f||!f.alive) return;
+    for(let i=0;i<v;i++){ const k=rnd(DEB_KEYS);
+      addDeb(f,k,1);
+      say(`녹슨 그리퍼 — ${f.name}에게 ${DEBUFF[k].n} 1`,"t2") } });
   rollIntents(); keepSel();
   say(run&&run.sandbox?`— ${B.turn}턴, 연습장 —`:`— ${B.turn}턴 시작 —`,"t1");
   /* 적 연출은 이미 다 흘렀다. 보호막이 걷히는 모습만 보고 알린다 */
@@ -46127,6 +46265,17 @@ function afterListPanel(){
 const BL_REW={
  "호출용 호루라기":R("호출용 호루라기","상급","소환물 카드를 낸 후에, 그 소환물에게 공격력을 3 부여합니다.",
    h=>h.tag.whistleAtk=(h.tag.whistleAtk||0)+3),
+ /* 콜로서스 (2026-10-23) — 판 전체에 걸린다 */
+ "오염된 수목 성장제":R("오염된 수목 성장제","상급","이번 원정 동안 주둔지의 훈련장에서 획득할 수 있는 경험치량이 150 증가하지만, 훈련할 때마다 오염도를 30 얻습니다.",
+   h=>{ run.growTonic=(run.growTonic||0)+1 }),
+ /* 폐기물 더미 (2026-10-23) */
+ "용광로 잔해":R("용광로 잔해","상급","제련석을 30개 얻습니다.",
+   h=>{ run.stone=(run.stone||0)+30 }),
+ "무기 거푸집":R("무기 거푸집","상급","무작위 파편 장신구를 10개 얻습니다.",
+   h=>{ const L=ITEMS.filter(i=>i.g==="파편");
+     for(let k=0;k<10&&L.length;k++) (run.after=run.after||[]).push({item:rnd(L)}) }),
+ "생산라인":R("생산라인","상급","퀘스트: 상점에서 장신구 10개 판매\n보상: 다음 방문하는 상점에서 「희귀 장신구 선택」 품목을 금화 60개에 판매합니다.",
+   h=>{ if(!questHas("생산라인")) questAccept("생산라인",h&&h.name) }),
  /* 실험 책임자 (2026-10-23) — 일반 장신구 「균열석」을 함께 준다 */
  "실험 표본 균열석":R("실험 표본 균열석","상급","균열석을 얻습니다.\n부정 보호막을 잃은 후, 해당 전투 동안 마법력을 1 얻습니다.",
    h=>{ h.tag.specMag=(h.tag.specMag||0)+1;
