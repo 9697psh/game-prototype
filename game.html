@@ -16209,6 +16209,11 @@ const ITEMS=[
  Object.assign(IT("죄악의 목걸이","특수",null,0,null,{noHeal:1},
    "전투 중 회복할 수 없습니다.\n전투에서 얻는 금화가 50% 늘어납니다.\n벗을 수 없습니다."),{bind:1}),
  /* 노트 4-2 — [세상의 시작] 둘째 선택지로만 얻는다. 회중시계(h.tag.endTwice)와 같은 문을 쓴다 */
+ /* 우두머리 전리품 — 간수장 (사용자 2026-10-23). 뽑기 풀에는 안 들어간다 (전리품으로만) */
+ Object.assign(IT("간수장의 철퇴","특수",null,0,{atk:3},{maceCrit:1},
+   "이 장신구를 장착한 대원이 속박된 적에게 주는 피해가 치명타로 적중합니다."),{loot:1}),
+ Object.assign(IT("간수장의 방패","특수",null,0,{def:3},{shieldSame:5},
+   "이 장신구를 장착한 대원이 한 턴에 동일한 기술을 3번 사용할 때마다, 보호막을 5 얻습니다."),{loot:1}),
  IT("창조의 시침","특수",null,0,null,{endTwice:1},
    "턴이 끝날 때 발동하는 효과들이 1번 더 발동합니다."),
  /* 정령숲 (사용자 2026-10-01) — 벌목도는 [버려진 벌목도] 첫째 선택지로. 뿌리모체의 심장은 얻는 곳 미정 */
@@ -22311,6 +22316,7 @@ function render0(){
   if(view==="camp"){ view="map"; run.mapSel=null; return render() }   /* 주둔지 따로 화면은 없앴다 — 지도의 주둔지 판 (사용자 2026-10-05) */
   if(view==="battle")   return drawBattle(app);
   if(view==="chest")    return drawChest(app);
+  if(view==="bloot")     return drawBossLoot(app);   /* 우두머리 전리품 — 상자보다 먼저 (2026-10-23) */
   if(view==="reward")   return drawReward(app);
   if(view==="questpick") return drawQuestPick(app);
   if(view==="questdone") return drawQuestDone(app);
@@ -22856,6 +22862,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 218, "v": "0.7", "d": "2026-10-23", "t": "우두머리 전리품 (간수장) · 증폭! 이벤트 · 고철의 무덤 그림 수정본 (사용자 2026-10-23)", "big": 0},
  {"b": 217, "v": "0.7", "d": "2026-10-23", "t": "밀수꾼 도망 남은 턴 · 획득 단추 (사용자 2026-10-23)", "big": 0},
  {"b": 216, "v": "0.7", "d": "2026-10-23", "t": "용광로 장착 화면 · 결과 칸에 장신구 그림 (사용자 2026-10-23)", "big": 0},
  {"b": 215, "v": "0.7", "d": "2026-10-23", "t": "조합 효과 — 보상 설명의 「특성」 구분 (사용자 2026-10-23)", "big": 0},
@@ -24265,7 +24272,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=217;
+const BUILD_NO=218;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -30126,6 +30133,10 @@ function dungeonCleared(){
     run.after=null; run.pendingLv=null; run.qDone=[]; run.qShow=null; run.gimRes=null;
     backToMap(); return;
   }
+  /* 우두머리 전리품 — **상자보다 먼저** (사용자 2026-10-23). 고르고 나면 openChest 로 이어진다 */
+  if(d.kind==="boss"&&!run.sandbox&&!run.bloot){
+    const picks=blRoll(run.lastBoss||"");
+    if(picks.length){ run.bloot={boss:run.lastBoss,picks:picks,sel:null}; view="bloot"; render(); return } }
   if(run.gimRes){ view="gimres"; render(); return }               /* 전용 구역 — 결과 화면 먼저, 그 다음 상자 */
   if(d.cell&&d.cell.wagon&&d.rescued){ afterChest(); return }   /* 죄수를 살렸으면 상자 대신 중급 보상 하나 */
   openChest(d.kind);
@@ -30485,7 +30496,7 @@ const CARD_META={
  /* 상점 전투 카드 일곱 (사용자 2026-10-14) */
  "섬광이 담긴 병":{src:"상점"}, "산성 병":{src:"상점"}, "기름 항아리":{src:"상점"},
  "해독제":{src:"상점"}, "밧줄":{src:"상점"}, "마나 결정":{src:"상점"}, "각성초":{src:"상점"},
- "분해기":{src:"상점, 고철의 무덤"},
+ "분해기":{src:"상점, 고철의 무덤"}, "자물쇠":{src:"간수장 전리품"},
  "시기의 역병":{src:"인비디아",gone:1},
  "역병 지대":{src:"인비디아",gone:1}
 };
@@ -30542,6 +30553,11 @@ const CARD_LIB={
             a.shield=0;
             fx({side:foeSide?"foe":"mine",slot:a.slot,txt:v?"보호막 -"+v:"보호막 없음",cls:"miss",gap:80});
             say(`산성 병 — ${a.name}의 보호막이 모두 녹아내립니다. (보호막 ${v})`,"t2") }},
+ /* 우두머리 전리품 — 간수장 (사용자 2026-10-23). 기절 1턴 */
+ "자물쇠":{d:"모든 적을 기절시킵니다.",
+   use:()=>{ const L=(B&&B.foes||[]).filter(x=>x.alive);
+     say("자물쇠 — 쇠사슬이 철컥 잠깁니다.","t1");
+     L.forEach(x=>addDeb(x,"stun",1)) }},
  "기름 항아리":{d:"대상 적에게 화상을 4 부여합니다.",foe:1,
    use:f=>{ addDeb(f,"burn",4) }},
  "해독제":{single:1,d:"대상 아군의 부정적인 효과를 모두 제거합니다.",
@@ -31245,6 +31261,27 @@ function drawRestRes(app){
 const EVENTS=[
 
  /* ── 2026-09-16 (사용자) 다섯 — 3/6/9 처럼 셋인 값은 1·2·3구역 순 ── */
+ /* ═══ 증폭! (사용자 2026-10-23) — 2막부터 · 드물게 · 한 판에 한 번 ═══
+    「한 번 나오면 그만」은 pickEvent 가 적어 두는 run.evSeen 으로 본다 (seenW 0 보다 확실하다) */
+ {n:"증폭!",art:"cleanse", face:"늪 두꺼비", w:0.3,
+  when:()=>run.field>=1&&((run.evSeen||[]).indexOf("증폭!")<0),
+  t:"축하합니다! 뭐든지 복제할 수 있는 증폭기를\n세계 최초로 사용해볼 기회에 '우연히' 당첨되셨군요!",
+  o:[{t:"카드 증폭!",d:"보유한 카드들의 보유량이 2배가 됩니다. 활동량을 모두 소모합니다.",
+      when:()=>((run.cards||[]).length>0)&&run.act>0,
+      f:()=>{ let n=0; (run.cards||[]).forEach(c=>{ const was=c.c; c.c=Math.min(10,c.c*2); n+=c.c-was });
+        run.act=0; return `카드들을 증폭기에 털어넣습니다. (카드 ${n}장이 늘었습니다)` }},
+     {t:"장신구 증폭!",d:"보유한 장신구들의 보유량이 2배가 됩니다. 활동량을 모두 소모합니다.",
+      when:()=>ownedItems().length>0&&run.act>0,
+      f:()=>{ /* 가방에 있든 대원이 차고 있든 모두 — 늘어난 몫은 가방으로 간다 */
+        const L=ownedItems().map(x=>x.it); L.forEach(it=>(run.bag=run.bag||[]).push(it));
+        run.act=0; return `장신구들을 증폭기에 털어넣습니다. (장신구 ${L.length}개가 늘었습니다)` }},
+     {t:"주머니 증폭!",d:"보유한 금화와 제련석의 보유량이 2배가 됩니다. 활동량을 모두 소모합니다.",
+      when:()=>((run.gold||0)+(run.stone||0)>0)&&run.act>0,
+      f:()=>{ const g=run.gold||0, st=run.stone||0; run.gold=g*2; run.stone=st*2;
+        run.act=0; return `보유한 금화와 제련석들을 증폭기에 털어넣습니다. (금화 +${g}, 제련석 +${st})` }},
+     {t:"증폭기 부수기",d:"어인에게서 빠르게 도망칩니다. 오염도가 20 증가합니다.",
+      f:()=>{ addTaint(20); return "증폭기를 박살냅니다. 어인이 광분합니다!" }}]},
+
  /* ═══ 고철의 무덤 전용 넷 (사용자 2026-10-23) — onScrap 하나로 걸린다 ═══ */
  {n:"도둑질",art:"bounty_bag", face:"밀수꾼",
   when:()=>onScrap(),
@@ -31731,6 +31768,8 @@ function ownedItems(){
   return out;
 }
 const hasGrade=g=>ownedItems().some(x=>x.it.g===g);
+/* 전리품으로만 나오는 장신구 — 무작위 뽑기에서 뺀다 (사용자 2026-10-23) */
+const blItems=()=>ITEMS.filter(i=>i.loot);
 /* 복제 틀 — 본뜬 장신구(mold)를 모두 부순다 (사용자 2026-10-23).
    ⚠️ **제련해서 다른 장신구가 되면 안 부순다** — 제련은 made 를 새로 만들어 주므로
       mold 표가 따라가지 않는다. 여기서 더 할 일이 없다 */
@@ -32252,6 +32291,56 @@ const evSay=(e,o)=>(o&&o.say)||(e&&e.say)||"";
    진행은 questProgress(kind[,대원]) — kill 은 onKill, visit 는 미지의 구역에 들어설 때.
    다 채우면 run.qDone 에 줄을 서고, 지도로 돌아갈 때(backToMap) 보상 화면(questdone)이 먼저 뜬다.
    field:1 인 퀘스트는 받은 구역을 벗어나면 사라진다. 저장은 run.quests 가 그대로 실린다 (대원은 이름으로) */
+/* ═══ 우두머리 전리품 (사용자 2026-10-23) ═══
+   우두머리를 넘으면 **상자보다 먼저** 셋 가운데 하나를 고른다. 우두머리마다 제 것이 있다.
+   k — item 장신구 · rew 보상 · card 카드 · skill 추가 기술.
+   rew 와 skill 은 **받을 대원을 고른다**. rew 로 받은 것은 「상급 보상」으로 친다 (취급만).
+   새 우두머리를 더할 때는 여기 한 덩이만 적으면 된다 */
+const BL_KIND={item:"장신구",rew:"보상",card:"카드",skill:"추가 기술"};
+const BOSS_LOOT={
+ "간수장":[
+  {k:"item",n:"간수장의 철퇴"},
+  {k:"item",n:"간수장의 방패"},
+  {k:"rew", n:"호출용 호루라기",ic:"trophy_jailer_whistle"},
+  {k:"card",n:"자물쇠",c:2,d:"모든 적을 기절시키는 [자물쇠] 카드를 2장 얻습니다."},
+  {k:"skill",n:"발구르기"}
+ ]
+};
+/* 그 우두머리의 전리품 셋 — 한 전투에 한 번만 뽑는다 (화면을 다시 그려도 그대로) */
+function blRoll(boss){
+  const L=(BOSS_LOOT[boss]||[]).slice(), out=[];
+  while(out.length<3&&L.length) out.push(L.splice(Math.floor(Math.random()*L.length),1)[0].n);
+  return out;
+}
+function blFind(boss,name){ return (BOSS_LOOT[boss]||[]).find(x=>x.n===name)||null }
+/* 이름만으로 — 어느 우두머리 것인지 모를 때 (대원 자세히보기) */
+function blOf(name){
+  for(const b in BOSS_LOOT){ const t=(BOSS_LOOT[b]||[]).find(x=>x.n===name); if(t) return t }
+  return null;
+}
+/* 전리품 한 칸의 그림 · 설명 — 갈래마다 제 표를 본다 */
+function blIcon(t){
+  if(!t) return "";
+  if(t.ic){ const im=iconImg(t.ic); if(im) return im }   /* 못박아 둔 그림이 먼저 */
+  if(t.k==="item"){ const it=itemDef(t.n); if(it){ const im=rewardIcon(it); if(im) return im } }
+  if(t.k==="card"){ const im=cardArt(t.n); if(im) return im }
+  if(t.k==="skill"){ const im=skillIcon(t.n,1); if(im) return im }
+  if(t.k==="rew"){ const r=BL_REW[t.n]; if(r){ const im=rewardIcon(r); if(im) return im } }
+  return chestIcon("상급");
+}
+function blDesc(t){
+  if(!t) return "";
+  if(t.d) return t.d;
+  if(t.k==="item"){ const it=itemDef(t.n); return (it&&it.d)||"" }
+  if(t.k==="rew"){ const r=BL_REW[t.n]; return (r&&r.d)||"" }
+  if(t.k==="skill"){ const sk=BL_SKILL[t.n]; return (sk&&(sk.full||sk.d))||"" }
+  return "";
+}
+/* 전리품이 주는 추가 기술 — h.sk 에 그대로 밀어 넣는다 (다섯째 칸부터는 기술 창이 쪽을 나눈다) */
+const BL_SKILL={
+ "발구르기":{n:"발구르기",cost:1,el:"공격",tg:"self",limit:1,stomp:1,rng:2,dmg:2,hits:5,
+   d:"사용한도(1). 거리 2 내의 모든 적에게 피해를 2(추가 공격력)씩 5번 줍니다."}
+};
 const QUESTS={
   /* 고철의 무덤 전용 이벤트 (사용자 2026-10-23) */
   "도둑질":{kind:"thiefKill",need:6,who:"all",
@@ -34031,6 +34120,12 @@ function minHpBonus(){
   (run.heroes||[]).forEach(h=>{ v=Math.max(v,(h.tag&&h.tag.minHp)||0) });
   return v;
 }
+/* 호출용 호루라기 (간수장 전리품) — 세운 소환물에게 공격력. 여럿이 가졌으면 **가장 큰 몫** (꼭두각시 인형과 같은 결) */
+function minAtkBonus(){
+  let v=0;
+  ((run&&run.heroes)||[]).forEach(h=>{ v=Math.max(v,(h.tag&&h.tag.whistleAtk)||0) });
+  return v;
+}
 /* ── 오토의 정원 (노트 2026-10-04) ── */
 const isTree=m=>!!m&&(m.name==="수목"||m.name==="고대수목");
 const isSprout=m=>!!m&&m.name==="새싹";
@@ -34191,7 +34286,7 @@ function makeMin0(name,slot,card){
   const sk=(d.sk||[]).map(x=>Object.assign({},x));
   if(sdmg&&sk[0]) sk[0].dmg=(sk[0].dmg||0)+sdmg;
   /* 악마 하수인 강화 · 하수인 단련 — 장군도 같이 받는다 */
-  let matk=0;
+  let matk=minAtkBonus();   /* 호출용 호루라기 (간수장 전리품, 2026-10-23) */
   if(/^악마 (하수인|장군)$/.test(name)){ const ow=run&&run.heroes.find(x=>x.name==="굴라");
     if(ow&&ow.tag){ hp+=ow.tag.impHp||0; matk=ow.tag.impAtk||0 } }
   /* 오리온의 사냥개 — 주인의 보상이 몸집 · 마나 · 이빨을 키운다 (노트 2026-10-15).
@@ -38937,6 +39032,7 @@ function previewTargets0(h,s){
   if(s.elemental){ foes.filter(f=>T.elemAll?dist(h.slot,f.slot)<=2:dist(h.slot,f.slot)===2).forEach(F); return out }
   if(s.balance){ if(ffFlare(h)) foes.filter(f=>validTarget(h,s,f.slot)).forEach(F); else me(); return out }
   if(s.harmony){ foes.filter(f=>validTarget(h,s,f.slot)).forEach(F); return out }
+  if(s.stomp){ foes.filter(f=>dist(h.slot,f.slot)<=(s.rng||2)).forEach(F); return out }   /* 발구르기 (간수장 전리품, 2026-10-23) */
   if(s.burst||s.phantomPain||s.scaleBoom||s.lifeConv||s.warp||s.allHit||s.tune==="edge"){ foes.forEach(F); return out }
   if(s.shackle||s.nearest){ const f=nearestFoe(h); if(f) F(f); return out }
   if(s.drain&&guideOn(h)){ foes.forEach(F); return out }   /* 인도 — 모든 적 */
@@ -40327,6 +40423,8 @@ function critWhy(h,s,tgt){
   if(!h||!s) return null;
   const T=h.tag||{};
   if(tgt&&s.el==="마법"&&grimoireCount(tgt,h)>0)return "그리모어";
+  /* 간수장의 철퇴 (전리품) — 속박된 적에게 주는 피해는 치명타 (사용자 2026-10-23) */
+  if(tgt&&tgt.deb&&(tgt.deb.bind||0)>0&&itemBt(h,"maceCrit")) return "간수장의 철퇴";
   if(h.name==="트리스탄"){
     if(s.pierce&&T.pierceCrit) return "서릿빛 용의 비늘촉";                       /* 꿰뚫는 화살 — 늘 */
     if(tgt){   /* 대상에 걸린 규칙 — 대상을 모르면(기술 칸) 묻지 않는다 */
@@ -40436,6 +40534,7 @@ function predictDmg(h,s,tgt){
   /* 숙주 폭발 — 적마다 **제 감염 중첩**만큼 더 아프다 (노트 7-3).
      예고가 그 몫을 안 세고 있었다 (probe-foretell : 예고 10 / 실제 12, 2026-10-22).
      ⚠️ runEffect 와 같은 셈이어야 한다 — base + 마법력 + 감염×배수 */
+  else if(s.stomp){ if(dist(h.slot,tgt.slot)>(s.rng||2)) return null; dmg=bs("dmg")+ATK }   /* 발구르기 — 한 번 몫 (hits 는 아래에서 곱한다) */
   else if(s.burst)       dmg=bs("dmg")+MAG+(tgt.infect||0)*((h.tag&&h.tag.burstX)||2);
   else if(s.phantomPain){   /* phantomPain() 과 같은 셈 (2026-10-01 — 보상 몫이 예고에 빠져 있었다) */
     const T=h.tag||{}; dmg=MAG+(T.painPlus||0); if(!dmg) return null;
@@ -41217,6 +41316,7 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
     if(f.loot) foeLootBack(f,"죽음");   /* 훔친 카드 · 장신구를 돌려받는다 (2026-10-20) */
     if(run&&!f.isPhantom&&!f.summoned&&!run.sandbox&&f.bounty>0){ run.gold+=f.bounty;   /* 미믹 — 죽음 */
       fx({side:"foe",slot:f.slot,txt:"금화 +"+f.bounty,cls:"crit",gap:90}); say(`죽음 — ${f.name}이 쥐고 있던 금화 ${f.bounty}개를 얻습니다.`,"t1"); f.bounty=0 }
+    if(run&&f.boss&&!f.isPhantom&&!f.summoned&&!run.sandbox) run.lastBoss=f.name;   /* 전리품을 누구 것으로 줄지 (사용자 2026-10-23) */
     if(run&&!f.isPhantom&&!f.summoned&&!run.sandbox){ run.kills=(run.kills||0)+1; if(f.boss&&!(FOE[f.name]&&FOE[f.name].transcendTo)) run.bossKills=(run.bossKills||0)+1;   /* transcendTo — 초월하는 1페이즈는 우두머리 처치로 안 센다 (2026-10-12) */
       coreKillTick();   /* 세계핵 — 전투가 끝날 때 통산 처치 수에 더한다 (사용자 2026-10-09) */
       if(/^모형 /.test(f.name)&&f.name!=="모형 전략가") try{ keyQuestTick("모형 병사") }catch(e){}   /* 모형 토벌 (2026-10-10) */
@@ -42930,7 +43030,19 @@ function runEffect(h,i,s,target){
   try{ return runEffect0(h,i,s,target) }
   finally{ if(B){ B._efHero=sv[0]; B._efEl=sv[1] } if(B&&--B._ef<=0){ B._ef=0; const Q=B._efQ||[]; B._efQ=[]; Q.forEach(fn=>{ try{ fn() }catch(e){ console.error(e) } }) } }
 }
+/* 간수장의 방패 (전리품) — 한 턴에 **같은 기술**을 셋째로 쓸 때마다 보호막 (사용자 2026-10-23).
+   세는 자리는 기술이 실제로 도는 runEffect 한 곳이다. 턴이 바뀌면 startMyTurn 이 지운다 */
+function shieldSameTick(h,s){
+  const v=itemBt(h,"shieldSame"); if(!v||!h||!s||!s.n) return;
+  const T=(h.skTurn=h.skTurn||{});
+  T[s.n]=(T[s.n]||0)+1;
+  if(T[s.n]%3) return;
+  const got=addShield(h,v);
+  fx({side:"mine",slot:h.slot,s:"shield",txt:"+"+got,cls:"shd",gap:60});
+  say(`간수장의 방패 — ${h.name}${jo(h.name,"ig")} ${s.n}${jo(s.n,"eul")} 세 번 썼습니다. 보호막 +${got}`,"t2");
+}
 function runEffect0(h,i,s,target){
+  try{ shieldSameTick(h,s) }catch(e){ console.error(e) }
   B.lastAttacker=h;          /* 가시가 되받아칠 상대 */
   const tgt=foeAt(target);
   /* ── 쿠렘타이 ── */
@@ -43731,6 +43843,16 @@ function runEffect0(h,i,s,target){
     }
     /* ⚠️ 몰아서 회복하던 자리는 걷었다 — 위 고리가 빨 때마다 나눠 준다 (사용자 2026-10-22) */
     say(`재능 시기 — ${t2.name}에게서 ${n}번 빼앗아 체력 ${got}을 가져옵니다. (부정적 효과 ${kinds}종)`,"t1");
+    return;
+  }
+  if(s.stomp){   /* 발구르기 (간수장 전리품, 2026-10-23) — 거리 안의 모든 적에게 다섯 번 */
+    const R=s.rng||2, n=s.hits||5, base=(s.dmg!=null?s.dmg:2)+mod(s,"dmg")+(h.atk||0);
+    fx({side:"mine",slot:h.slot,quake:1,s:"boom",gap:160});
+    for(let k=0;k<n;k++){
+      const L=B.foes.filter(f=>f.alive&&dist(h.slot,f.slot)<=R);
+      if(!L.length) break;
+      L.forEach(f=>asSrc(h,()=>hurt(f,base,"발구르기","atk")));
+    }
     return;
   }
   if(s.burst){
@@ -45492,6 +45614,7 @@ function startMyTurn(){
   if(B&&B.foes) B.foes.forEach(f=>{ if(f.alive&&f.bounty>0){ f.bounty=Math.max(0,f.bounty-2); say(`죽음 — ${f.name}의 금화가 ${f.bounty}개로 줄었습니다.`,"t3") } });   /* 미믹 — 적 턴이 끝날 때마다 -2 */
   if(!B||B.over) return;
   B.disc={};
+  onField().forEach(u=>{ if(u) u.skTurn={} });   /* 간수장의 방패 — 「한 턴에 같은 기술」 셈을 턴마다 비운다 (2026-10-23) */
   if(B.hand) B.hand.forEach(c=>{ if(c.arrive) delete c.arrive });   /* 감시 카드 날아오기 — 연출이 끊겼어도 내 턴엔 보인다 */
   try{ foeEndPassives() }catch(e){ console.error(e) }   /* 적 턴이 끝난 뒤 지속 효과 */
   try{ vineEndPassives() }catch(e){ console.error(e) }   /* 오염된 덩굴 (2026-09-29) */
@@ -45908,6 +46031,73 @@ function afterListPanel(){
 }
 /* ─ 경험치 · 보상 ─ */
 
+/* 전리품으로 주는 **보상** — COMMON 에 넣지 않는다 (여느 보상 뽑기에 섞이면 안 된다).
+   꼴은 R() 과 같다. 「상급 보상으로 친다」는 여기 g 로 드러난다 (취급만) */
+const BL_REW={
+ "호출용 호루라기":R("호출용 호루라기","상급","소환물 카드를 낸 후에, 그 소환물에게 공격력을 3 부여합니다.",
+   h=>h.tag.whistleAtk=(h.tag.whistleAtk||0)+3)
+};
+/* 전리품 하나를 받는다. h 는 보상 · 추가 기술일 때만 (받을 대원) */
+function blTake(t,h){
+  if(!t) return "";
+  if(t.k==="item"){ const it=itemDef(t.n); if(it) (run.after=run.after||[]).push({item:it});
+    return `${t.n}${jo(t.n,"eul")} 챙겼습니다.` }
+  if(t.k==="card"){ addCard(run,t.n,t.c||1); if(sfxHas("카드 드로우")) SFX.play("카드 드로우");
+    return `[${t.n}] 카드를 ${t.c||1}장 얻었습니다.` }
+  if(!h) return "";
+  if(t.k==="rew"){ const r=BL_REW[t.n]; if(!r) return "";
+    try{ r.fx(h,r.n) }catch(e){ console.error(e) }
+    (h.tag.bloot=h.tag.bloot||[]).push(t.n);
+    /* 「상급 보상으로 친다」 — 시샘 퀘스트도 같이 센다 (취급만, 보상 목록에는 안 넣는다) */
+    if(h.name!=="인비디아"&&typeof questProgress==="function") questProgress("otherHigh",null);
+    return `${h.name}${jo(h.name,"ig")} ${t.n}${jo(t.n,"eul")} 받았습니다.` }
+  if(t.k==="skill"){ const sk=BL_SKILL[t.n]; if(!sk) return "";
+    /* 베껴 넣는다 — 표의 그 몸을 그대로 쥐여 주면 사용한도가 대원들 사이에서 섞인다 */
+    h.sk.push(Object.assign({},sk));
+    (h.tag.bloot=h.tag.bloot||[]).push(t.n);
+    return `${h.name}${jo(h.name,"ig")} [${t.n}]${jo(t.n,"eul")} 익혔습니다.` }
+  return "";
+}
+const blNeedHero=t=>!!(t&&(t.k==="rew"||t.k==="skill"));
+/* 전리품 고르기 화면 — 기존 보상 카드와 같은 꼴 (아이콘 · 이름 · 설명 · 아래 갈래) */
+function drawBossLoot(app){
+  const L=run.bloot||{}, T=(L.picks||[]).map(n=>blFind(L.boss,n)).filter(Boolean);
+  const done=()=>{ run.bloot=null; openChest("boss") };
+  if(!T.length){ done(); return }
+  const sel=L.sel?blFind(L.boss,L.sel):null;
+  /* 둘째 걸음 — 누구에게 줄까 */
+  if(sel&&blNeedHero(sel)){
+    app.appendChild(el(`<div class="center"><div class="whograde" style="--gc:#f0c040"><span class="wgi">${blIcon(sel)}</span><b>${esc(sel.n)}</b></div>
+      <div class="sub">${esc(BL_KIND[sel.k]||"")}을 받을 대원을 고르세요</div></div>`));
+    const row=el(`<div class="picks"></div>`);
+    const anyUp=run.heroes.some(h=>!h.down);
+    run.heroes.forEach(h=>{
+      const off=anyUp&&h.down;
+      const c=el(`<div class="pick${off?" off":""}" style="width:200px"><div class="art">${figure(h.name)}</div>
+        <h3>${esc(h.name)}</h3><p>Lv.${h.lv} ${ic("hp")}${h.hp}/${h.maxHp}${off?` <span style="color:#e08a8a">쓰러짐</span>`:""}</p></div>`);
+      if(!off) c.onclick=()=>{ SFX.play("click"); const msg=blTake(sel,h); if(msg) toast(msg); done() };
+      row.appendChild(c) });
+    app.querySelector(".center").appendChild(row);
+    return;
+  }
+  app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px;color:#f0c040">우두머리 전리품</div>
+    <div class="sub">${esc(L.boss||"")}${jo(L.boss||"","ig")} 남긴 것 가운데 하나를 고르세요</div></div>`));
+  const row=el(`<div class="rewards"></div>`);
+  T.forEach(t=>{
+    const c=el(`<div class="rw rwpick rogold"><div class="rwi">${blIcon(t)}</div>
+      <b>${esc(t.n)}</b>
+      <div class="rwd"><p>${rich(blDesc(t))}</p></div>
+      <div class="rwft"><span class="gd">전리품</span>
+        <span class="ow mine">${esc(BL_KIND[t.k]||"")}</span></div></div>`);
+    c.onclick=()=>{ if(run.bloot&&run.bloot.sel) return;
+      SFX.play("click"); pickBurst(c,"상급");
+      row.querySelectorAll(".rw").forEach(x=>{ if(x!==c) x.classList.add("faded") });
+      if(blNeedHero(t)){ run.bloot.sel=t.n; setTimeout(()=>render(),420); return }
+      const msg=blTake(t,null); if(msg) toast(msg);
+      setTimeout(done,420) };
+    row.appendChild(c) });
+  app.querySelector(".center").appendChild(row);
+}
 function drawReward(app){
   if(pending.free&&CHEST_C[pending.grade]&&!pending.chestDone){
     const gc={"하급":"#c9a27a","중급":"#d9dde6","상급":"#f0c040"}[pending.grade];
@@ -46571,6 +46761,15 @@ function heroPanel(h){
         <b>${esc(p.n)}</b>
         ${p.d?`<small>${rich(p.d)}</small>`:""}</div></div>`)));
     } }
+  /* 우두머리 전리품 — 파수꾼의 선물 바로 아래, 여느 보상과 **자리를 가른다** (사용자 2026-10-23) */
+  { const lt=(h.tag&&h.tag.bloot)||[];
+    if(lt.length){
+      box.appendChild(el(`<div class="hp-h">우두머리 전리품${lt.length>1?` ${lt.length}개`:""}</div>`));
+      lt.forEach(n=>{ const t=blOf(n);
+        box.appendChild(el(`<div class="hp-tr"><div class="tr1 withi">
+          <span class="ti">${t?blIcon(t):""}</span>
+          <b>${esc(n)}</b><span class="g2">상급, ${esc((t&&BL_KIND[t.k])||"")}</span>
+          ${t?`<small>${rich(blDesc(t))}</small>`:""}</div></div>`)) }) } }
   const list=takenList(h);
   const keep=list.filter(x=>REW_KEEP.indexOf(x.k)>=0);
   const show=REW_ALL?list:keep;
