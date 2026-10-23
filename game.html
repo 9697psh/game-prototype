@@ -1433,6 +1433,10 @@ body.vbattle .hand .card.ccard.arrived{animation:cardArrive .9s ease-out}
 /* 우두머리 전리품 카드 — 꼴은 **여느 상급 보상 카드 그대로**다 (사용자 2026-10-23 : 「통일성있게」).
    클래스도 `rw rwpick g3` 로 같이 쓴다. 다른 것은 아래 한 줄뿐 —
    등급 · 전용 두 칩 대신 갈래 글 하나를 가운데에 (장신구 카드의 .srccard .sg 와 같은 결) */
+/* 녹슨 그리퍼 — 위에서 내려와 적의 머리를 내려친다 (사용자 2026-10-23) */
+.gripslam{position:absolute;width:52px;height:52px;pointer-events:none;z-index:8}
+.gripslam img{width:100%;height:100%;display:block;image-rendering:pixelated;
+  filter:drop-shadow(0 3px 7px rgba(0,0,0,.7))}
 .rw .rwft .blk{font-size:12px;letter-spacing:.08em;color:var(--brass)}
 .rw .rwft{margin-top:auto;padding-top:9px;width:100%;display:flex;gap:6px;
   align-items:center;justify-content:center;position:relative;z-index:1}
@@ -5963,7 +5967,6 @@ function icGrow(k){
 /* 키워드 — 기획노트 원문 그대로 */
 const KW_TAB=[
  {n:"거리",c:"plain",d:"명시된 거리 내의 대상에게만 상호작용 가능"},
- {n:"선택",c:"plain",d:"제시된 선택지 중 하나를 골라 시전 가능"},
  {n:"전환",c:"plain",d:"전환 기술을 사용한 후 특정 기술로 변경됨"},
  {n:"소환물",c:"plain",d:"기술이나 카드에 의해 소환된 대상"},
  {n:"되감기",c:"buff",d:"다음 사용 기술이 한 번 더 발동합니다. (적의 경우에는 한 번 더 행동합니다)\n중첩 가능"},
@@ -12089,7 +12092,10 @@ function skinSprite(name){
     /* 아직 안 선(손패 · 도감) 레이는 **구슬도 검도 없는 전류 자세**다 (사용자 2026-10-22).
        받은 전환 띠가 「전류 자세 → 검 / 구체 셋」이니, 서기 전 모습이 그 출발점이다 */
     if(!(r&&r.slot>0)&&PNG_SPRITE["레이 (기본)"]) return "레이 (기본)";
-    const k=(r&&r.slot>0)?rayStanceOf(r.slot):(r&&r.rayK);
+    /* ⚠️ **h.rayK 가 태세다.** 칸 번호로 다시 세면 자리를 옮겼을 때
+       기술은 그대로인데 그림만 갈아입는다 (사용자 2026-10-23).
+       rayK 가 아직 없을 때만(손패 · 도감) 칸으로 어림한다 */
+    const k=(r&&r.rayK)||((r&&r.slot>0)?rayStanceOf(r.slot):null);
     if(k==="주술사"){
       /* 띄운 구체 수를 따라 자세가 바뀐다 (사용자 2026-10-22) */
       const q=reiOrbsLeft(r), nm=(q>=3)?"레이 (주술사)":("레이 (주술사 "+q+")");
@@ -12452,7 +12458,7 @@ HEROES["오리온"]={title:"눈먼 사냥꾼",role:"원거리, 사냥개",hp:20,
    {n:"쇠사슬 올가미",cost:2,el:"공격",tg:"foe",dmg:5,chainMove:1,d:"피해 5, 거리 1 내 원하는 자리로 옮긴다"},
    {n:"미끼 던지기",cost:1,el:"공격",tg:"self",allHit:1,limit:2,bait:1,dmg:20,d:"사용한도(2), 기류가 없는 모든 자리에 피해 20과 기절"}
   ]};
-HEROES["인비디아"]={title:"질투의 악마",role:"마법, 감염",hp:20,mana:4,hpLv:1,
+HEROES["인비디아"]={title:"질투의 악마",role:"마법, 감염",hp:30,mana:4,hpLv:3,   /* 체력 20 → 30 · 성장 1 → 3 (사용자 2026-10-23) */
   focus:"감염, 회복, 지속적인 피해, 보호약화",
   passive:{n:"질투의 악마",d:"감염된 적은 턴이 끝날 때 피해 1(+마법력)를 받고 중첩이 1 줄어든다"},
   skills:[
@@ -19834,6 +19840,10 @@ const act1Name=()=>(run&&run.act1&&ACT1[run.act1])?run.act1:ACT1_LIST[0];
 /* 고철의 무덤에 서 있나 — 전용 이벤트 · 전용 셈이 다 이 하나를 본다 (사용자 2026-10-23).
    ⚠️ **1막일 때만**이다. act1Name 은 막을 안 보므로 run.field 를 여기서 함께 본다 */
 const onScrap=()=>!!(run&&run.field===0&&act1Name()==="고철의 무덤");
+/* 핏빛 감옥에 서 있나 — 짝이 되는 문 (사용자 2026-10-23).
+   ⚠️ 1막 전용을 `run.field===0` 으로만 걸면 **고철의 무덤에도 뜬다** (둘 다 1막이다).
+      감옥의 죄수 · 채석장 · 감옥의 눈처럼 **그 막의 이야기**를 쓴 것은 이 문을 쓴다 */
+const onPrison=()=>!!(run&&run.field===0&&act1Name()==="핏빛 감옥");
 /* 1막일 때만 갈아 끼운다. 2 · 3막이거나 적어 두지 않은 것은 undefined */
 const act1Of=k=>(run&&run.field===0)?ACT1[act1Name()][k]:undefined;
 /* 구역별 표를 고른다 — 1막 변형이 있으면 그것, 없으면 막 번호로 (2026-10-20) */
@@ -22927,6 +22937,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 222, "v": "0.7", "d": "2026-10-23", "t": "벨트 · 벼락칼날 · 레이 태세 · 전용 이벤트 · 전리품 상자 (사용자 2026-10-23)", "big": 0},
  {"b": 221, "v": "0.7", "d": "2026-10-23", "t": "연료 장치 소환물 그림 · 1막 변형 이름 (사용자 2026-10-23)", "big": 0},
  {"b": 220, "v": "0.7", "d": "2026-10-23", "t": "우두머리 전리품 (폐기물 더미 · 콜로서스) · 턴 한도 · 레벨 보상 · 홀로 떠나기 · 요새 쉼터 (사용자 2026-10-23)", "big": 0},
  {"b": 219, "v": "0.7", "d": "2026-10-23", "t": "실험 책임자 전리품 · 전리품 카드 꼴 통일 · 도감 차례 (사용자 2026-10-23)", "big": 0},
@@ -24340,7 +24351,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=221;
+const BUILD_NO=222;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -28765,10 +28776,15 @@ function beltNode(cell,r,c){
     const ro=nm+jo(nm,"eu")+"로";   /* 왼쪽으로 · 위로 — 받침에 맞춰 (2026-10-21) */
     const to=beltRide(r,c,dr,dc);
     return {t:ro,d:`벨트를 타고 ${ro} 실려 갑니다 (${to.n}칸).`,end:1,
-      f:()=>{ run.pos={r:to.r,c:to.c}; run.mapSel=null; run.route=null;
+      f:()=>{ cell.visited=1;   /* 한 번 탔으면 그 칸은 더 발을 묶지 않는다 (2026-10-23) */
+        run.pos={r:to.r,c:to.c}; run.mapSel=null; run.route=null;
         return `벨트가 돌며 ${ro} ${to.n}칸 실어 갑니다.` }};
   });
-  o.push({t:"내려서기",d:"벨트에서 내려 지도로 돌아갑니다.",leave:1,f:()=>""});
+  /* ⚠️ 내려선 뒤에는 **발이 풀려야** 한다 — 벨트는 부서지지 않아 done 이 안 되고,
+     mapLocked 는 done · visited 를 보므로 이것이 없으면 이웃 칸을 눌러도 안 움직인다
+     (사용자 2026-10-23 : 「무조건 벨트를 들려야 해서」). 상점 · 제련소와 같은 길이다 */
+  o.push({t:"내려서기",d:"벨트에서 내려 지도로 돌아갑니다.",leave:1,
+    f:()=>{ cell.visited=1; return "" }});
   return {n:"컨베이어 벨트",art:INK_SCRAP[cell.t],face:"보급 레일",gim:1,
     t:"아직 돌고 있는 컨베이어 벨트입니다. 올라서면 끝까지 실려 갑니다.",o:o};
 }
@@ -30214,10 +30230,6 @@ function dungeonCleared(){
     run.after=null; run.pendingLv=null; run.qDone=[]; run.qShow=null; run.gimRes=null;
     backToMap(); return;
   }
-  /* 우두머리 전리품 — **상자보다 먼저** (사용자 2026-10-23). 고르고 나면 openChest 로 이어진다 */
-  if(d.kind==="boss"&&!run.sandbox&&!run.bloot){
-    const picks=blRoll(run.lastBoss||"");
-    if(picks.length){ run.bloot={boss:run.lastBoss,picks:picks,sel:null}; view="bloot"; render(); return } }
   if(run.gimRes){ view="gimres"; render(); return }               /* 전용 구역 — 결과 화면 먼저, 그 다음 상자 */
   if(d.cell&&d.cell.wagon&&d.rescued){ afterChest(); return }   /* 죄수를 살렸으면 상자 대신 중급 보상 하나 */
   openChest(d.kind);
@@ -30263,12 +30275,16 @@ function rollChest(kind){
 }
 function openChest(kind){
   let list=rollChest(kind);
+  /* 우두머리 전리품 — 목록 **맨 앞**에 (사용자 2026-10-23). 받는 차례도 첫 번째다 */
+  if(kind==="boss"&&!run.sandbox&&(BOSS_LOOT[run.lastBoss||""]||[]).length)
+    list.unshift({t:"전리품"});
   if(run.chestTwice&&kind==="elite"){ run.chestTwice=0; list.forEach(x=>x.copies=2); toast("현상 수배 — 같은 보상을 한 번 더 받습니다.") }
   if(run.dun&&run.dun.expGot) list.unshift({t:"경험치",v:run.dun.expGot,info:1});   /* 전투에서 이미 받은 경험치 — 금화처럼 보여만 준다 */
   run.chest={kind:kind,list:list,idx:0,opened:0};
   view="chest"; render();
 }
 function chestIcon(t){
+  if(t==="전리품"){ const im=iconImg("boss_loot"); if(im) return im }   /* 받은 전리품 아이콘 (2026-10-23) */
   const c={"금화":"#c9a227","경험치":"#7fd39a","파편":GRADE_FRAME["파편"],"일반":GRADE_FRAME["일반"],"희귀":GRADE_FRAME["희귀"],
            "하급":"#9c8d77","중급":"#e0a86a","상급":"#e0705a","동료":"#5fd8cf","회복":"#7fd39a","제련석":"#9c8d77","없음":"#6a6058"}[t]||"#c9a227";
   { /* 무작위 장신구 — 상점의 무작위 품목 그림 (파편 · 일반, 사용자 2026-10-05) */ const id={"하급":"chest_bronze","중급":"chest_silver","상급":"chest_gold","파편":"fragment","일반":"chest","희귀":"chest","금화":"currency_gold","경험치":"exp_arrow","동료":"recruit_new","회복":"life","제련석":"ore"}[t], u=id&&(typeof ICON_PNG!=="undefined")&&ICON_PNG[id];   /* 등급 상자 그림 (사용자 2026-10-03) · 금화 그림 (2026-10-05) */
@@ -30303,7 +30319,7 @@ function drawChest(app){
     const gm=run.goldMul||1;
     const label=x.t==="금화"?(gm>1?`금화 ${Math.round(x.v*gm)}`:`금화 ${x.v}`):x.t==="경험치"?(x.info?`전투 경험치 ${x.v}`:`경험치 ${x.v}`)
       :x.t==="파편"?"무작위 파편 장신구":x.t==="일반"?"무작위 일반 장신구"
-      :x.t==="동료"?"새로운 대원 영입":`${x.t} 보상`;
+      :x.t==="동료"?"새로운 대원 영입":x.t==="전리품"?"우두머리 전리품":`${x.t} 보상`;
     row.appendChild(el(`<div class="rw ro${gcls(x.t)}"><div class="rwi">${chestIcon(x.t)}</div>
       <b>${esc(label)}${x.copies===2?" ×2":""}</b>${(x.t==="금화"&&gm>1)
         ?`<p style="color:var(--brass)">죄악의 목걸이 +${Math.round((gm-1)*100)}% (원래 ${x.v})</p>`:""}${x.info?`<p style="color:var(--faint)">${esc(expByTxt())}</p>`:""}</div>`));
@@ -30423,6 +30439,7 @@ function takeChest(){
     }
     else if(x.t==="경험치"){ if(!x.info){exp+=x.v;expCopies=copies} }   /* 전투 경험치 칸은 보여 주기만 */
     else if(x.t==="파편"||x.t==="일반"){ const it=rnd(ITEMS.filter(i=>i.g===x.t)); x.it=it;for(let n=0;n<copies;n++)later.push({item:Object.assign({},it)}) }
+    else if(x.t==="전리품") later.push({bloot:run.lastBoss||""});   /* 우두머리 전리품 (2026-10-23) */
     else if(x.t==="동료") later.push({recruit:1});
     else later.push({grade:x.t,noRun:isBoss?1:0,bountyCopy:copies===2?1:0});
   });
@@ -30446,6 +30463,7 @@ function takeChest(){
 /* 이 뒷일이 목록에서 뭐라고 불리는가 */
 function afterName(x){
   if(!x) return "보상";
+  if(x.bloot!=null) return "전리품";
   if(x.recruit) return "동료";
   if(x.item) return x.item.g||"장신구";
   return x.grade||"보상";
@@ -30479,6 +30497,10 @@ function afterChest(){
   run.afterUsed=(run.afterUsed||0)+1;
   { const todo=run.afterList.filter(x=>!x.done), ord=run.afterUsed-1;
     run.afterAt=(ord<todo.length)?run.afterList.indexOf(todo[ord]):-1 }
+  if(nx.bloot!=null){   /* 우두머리 전리품 — 셋 가운데 하나 (2026-10-23) */
+    const picks=blRoll(nx.bloot);
+    if(!picks.length){ afterChest(); return }
+    run.bloot={boss:nx.bloot,picks:picks,sel:null}; view="bloot"; render(); return }
   if(nx.item){ pending={stage:"hero",list:[],item:nx.item,hero:null,back:"chain"}; view="item"; render(); return }
   if(nx.recruit){
     const owned=run.heroes.map(x=>x.name);
@@ -31437,7 +31459,7 @@ const EVENTS=[
         return "줄지어 선 기계들을 밀어 넘깁니다. 쓸 만한 분해기 둘과 부품 하나를 챙겼습니다." }}]},
 
  {n:"저항군 결성",art:"ink11_map_spire", face:"작은 죄수",
-  when:()=>run.field===0&&run.grid.some(row=>row.some(c=>c.t==="tower")),
+  when:()=>onPrison()&&run.grid.some(row=>row.some(c=>c.t==="tower")),
   t:"수감자들이 감옥 저항군을 결성하고 있습니다.\n그들 중 하나가 당신에게 다가와 묻습니다.\n\"함께할텐가?\"",
   o:[{t:"저항군 참가",d:"퀘스트: 첨탑 파괴. (보상: 중급 보상을 1개 얻습니다.)",
       quest:"첨탑 파괴", when:()=>!questHas("첨탑 파괴"),
@@ -31449,7 +31471,7 @@ const EVENTS=[
       f:()=>{ addTaint(-10); return "고개를 돌립니다. 등 뒤의 눈길이 오래 따라옵니다. 오염도가 10 내렸습니다." }}]},
 
  {n:"죄수의 떠도는 영혼",art:"fx_soul", face:"굶주린 그림자",
-  when:()=>run.field===0,
+  when:()=>onPrison(),
   t:"길을 지나가는 당신 등을 갑자기 나타난 영혼이 두드립니다.\n깜짝 놀란 당신은 뒤를 돌아봅니다.\n<wave>\"내 말을 들어주게...\"</wave>",
   o:[{t:"이야기 들어주기",d:"따분한 이야기를 3시간 동안 듣습니다. 모든 대원이 경험치를 30 얻습니다.",
       f:()=>{ spend(3,0); giveExp(30,run.heroes.filter(h=>!h.down),true); return "길고 긴 이야기였습니다. 3시간이 흘렀습니다. 모든 대원이 경험치를 30 얻었습니다." }},
@@ -31486,7 +31508,7 @@ const EVENTS=[
       f:()=>{ const v=evScale("feast"); run.heroes.forEach(h=>{ if(!h.down) healUp(h,v) }); return `꼬치에 남은 고기를 나눠 먹습니다. 모든 대원이 체력을 ${v} 회복했습니다.` }}]},
 
  {n:"채석장",art:"ore", face:"작은 죄수",
-  when:()=>run.field===0,
+  when:()=>onPrison(),
   t:"감옥의 채석장에 도착합니다.\n뭔지 모를 바닥에서 솟아난 보랏빛 기둥이 보입니다.\n저게 뭘까요?",
   o:[{t:"기둥 채석",d:"기둥을 채석합니다. 활동량을 1 잃고 균열석 파편을 얻습니다.",
       f:()=>{ run.act=Math.max(0,run.act-1); run.after=[{item:itemDef("균열석 파편")}]; return "곡괭이가 보랏빛 기둥을 파고듭니다. 활동량을 1 잃고 균열석 파편을 얻었습니다." }},
@@ -31850,7 +31872,7 @@ const EVENTS=[
       f:()=>"땅이 다시 닫히기 전에 서둘러 자리를 벗어납니다."}]},
 
  {n:"죄수들의 패 놀이",dex:{rate:"낮음 — 35%만 후보에 든다"},art:"cards", face:"작은 죄수",
-  when:()=>run.field===0&&Math.random()<0.35,
+  when:()=>onPrison()&&Math.random()<0.35,
   t:"저 멀리서 죄수들이 떠드는 소리가 들립니다.",
   o:[{t:"판에 끼기",d:"놀이에 참여합니다.",
       when:()=>run.gold>=1,
@@ -34126,6 +34148,18 @@ function say(t,c,hpUnit){ if(!B||!B.log) return;   /* 전투 밖(지도에서 �
 function stopped(u){ return !!(u&&(u.stop>0||u.swallowed)) }
 const onField=()=>run.heroes.filter(h=>h.slot>0&&h.hp>0&&!h.stop);
 const foeAt=s=>B.foes.find(f=>f.alive&&(f.slot===s||(f.big&&f.slot+1===s)));   /* big 은 뒤 칸도 차지 */
+/* ── 덩치 큰 적의 발자국 (사용자 2026-10-23) ──
+   f.slot 은 **앞 칸**뿐이다. 두 칸짜리를 앞 칸으로만 재면 뒤 칸에서 줄이 끊긴다
+   (벼락칼날이 폐기물 더미 뒤로 안 이어지던 까닭). 세는 자리를 여기 한 곳으로 */
+const foeEnd=f=>f?(f.slot+(f.big?1:0)):0;          /* 발자국의 끝 칸 */
+const foeBehind=f=>f?(foeAt(foeEnd(f)+1)||null):null;   /* 바로 뒤에 붙어 선 적 */
+const foeAhead=f=>f?(foeAt(f.slot-1)||null):null;       /* 바로 앞에 붙어 선 적 */
+/* 발자국에 **닿아 있는** 다른 적이 있나 — 앞이든 뒤든 */
+function foeTouch(f){
+  if(!f) return false;
+  const a=foeAhead(f), b=foeBehind(f);
+  return !!((a&&a!==f)||(b&&b!==f));
+}
 /* 화면에서만 적을 옛 자리에 붙잡아 둔다 (사용자 2026-09-30 · 시공간 폭탄·자기장 변환).
    규칙의 자리(f.slot)는 이미 바뀌었고, 연출이 터지는 순간 releaseHold() 가 놓는다.
    {map:{적id:보이는 자리}, until} — 연출이 끊겨도 until 이 지나면 저절로 풀린다 */
@@ -35332,6 +35366,32 @@ function puppetVisualSync(){
 }
 setInterval(puppetVisualSync,40);
 
+/* 녹슨 그리퍼 (폐기물 더미 전리품, 2026-10-23) — 집게가 위에서 내려와 머리를 내려친다.
+   부딪히는 순간에 칸이 부들대고 불티가 튄다. 걸리는 시간을 돌려준다 (fx 가 그만큼 기다리게) */
+function gripSlamFX(slot){
+  const c=(typeof ctrOf==="function")&&ctrOf("foe",slot);
+  const l=(typeof document!=="undefined")&&document.getElementById("fx");
+  const src=(typeof ICON_PNG!=="undefined")&&ICON_PNG.trophy_heap_gripper;
+  if(!c||!l||!src||!document.body||!document.body.animate) return 0;
+  const K=(typeof SPD==="number"&&SPD>0)?SPD:1, MS=Math.round(560*K);
+  const nd=el('<div class="gripslam"><img src="'+src+'" alt="" draggable="false"></div>');
+  l.appendChild(nd);
+  const up=c.y-92, hit=c.y-18;
+  nd.animate([
+    {left:c.x+"px",top:(up-28)+"px",opacity:0,transform:"translate(-50%,-50%) scale(1.12) rotate(-16deg)"},
+    {left:c.x+"px",top:up+"px",     opacity:1,transform:"translate(-50%,-50%) scale(1.16) rotate(-11deg)",offset:.30},
+    {left:c.x+"px",top:hit+"px",    opacity:1,transform:"translate(-50%,-50%) scale(1) rotate(5deg)",     offset:.52},
+    {left:c.x+"px",top:(hit-9)+"px",opacity:1,transform:"translate(-50%,-50%) scale(1) rotate(0deg)",     offset:.74},
+    {left:c.x+"px",top:(up-22)+"px",opacity:0,transform:"translate(-50%,-50%) scale(.94) rotate(-9deg)"}
+  ],{duration:MS,easing:"cubic-bezier(.35,.03,.2,1)",fill:"both"});
+  setTimeout(()=>{ if(nd.isConnected) nd.remove() },MS+80);
+  setTimeout(()=>{
+    try{ poseShake("foe",slot,Math.round(240*K)) }catch(e){}
+    try{ sparks({x:c.x,y:c.y-12},"#c8b48a",9) }catch(e){}
+    try{ SFX.play(sfxHas("타격")?"타격":"hit") }catch(e){}
+  },Math.round(MS*.5));
+  return MS;
+}
 function fuelWrenchFX(from,to){
   const a=ctrOf("foe",from),b=ctrOf("mine",to),layer=document.getElementById("fx");
   if(!a||!b||!layer||!ICON_PNG.fuel_wrench)return;
@@ -39174,7 +39234,10 @@ function spreadTargets(h,s,aim){
      빈 칸을 만나면 거기서 끊긴다 — runEffect 의 이어지는 고리와 같은 셈이다.
      ⚠️ 값은 안 띄운다 (이 함수의 집 규칙) — 이어질수록 세지므로 겨눈 칸 값과 다르다 */
   if(s.rayBolt) (aim||[]).forEach(t=>{ if(t.side!=="foe") return;
-    for(let nx=t.slot+1; nx<=SLOTS; nx++){ const f=foeAt(nx); if(!f||!f.alive) break; addF(nx) } });
+    /* **발자국**으로 센다 — 덩치 큰 적은 두 칸이라 앞 칸만 보면 거기서 끊긴다 (2026-10-23) */
+    let cur=foeAt(t.slot); const seen=[];
+    while(cur){ const nx=foeBehind(cur); if(!nx||seen.indexOf(nx)>=0) break;
+      seen.push(nx); addF(nx.slot); if(nx.big) addF(nx.slot+1); cur=nx } });
   /* 척추뼈 화살촉 — 꿰뚫는 화살이 모든 적에게 */
   if(s.pierce&&T.pierceAll) foes.forEach(f=>addF(f.slot));
   /* 연쇄 족쇄 — 가까운 적 다음으로 몇을 더 (족쇄 난사면 이미 전부라 건너뛴다) */
@@ -40786,7 +40849,7 @@ function predictDmg(h,s,tgt){
     else if(s.el!=="마법"&&deb(h,"atkDn")) dmg=Math.ceil(dmg*0.5);
     if(h.name==="이테리오"&&itCritEl(h,s)&&(tgt.mark||0)>0){ dmg=Math.round(dmg*itCritX(h)); crit=1 }
     /* 레이 되울림 — runEffect 와 **같은 차례**여야 예고가 맞는다 (2026-10-21) */
-    if(s.rayBolt&&h.tag&&h.tag.reiEcho&&!alive.some(f=>f!==tgt&&Math.abs(f.slot-tgt.slot)<=1))
+    if(s.rayBolt&&h.tag&&h.tag.reiEcho&&!foeTouch(tgt))   /* 예고와 실제가 같은 물음을 본다 (2026-10-23) */
       dmg+=h.tag.reiEcho;
     { if(critOnce(h,s)){ dmg*=2; crit=1 } MAINC=1 }   /* 치명적인 공격 · 마법 — 그 전투의 첫 한 방. 예고는 닳게 하지 않는다 (critOnce 한 곳에서 묻는다) */
     if(!crit&&critWhy(h,s,tgt)){ dmg*=2; crit=1 }   /* 보상으로 걸리는 치명타 — 실제와 같은 자리에서 묻는다 (2026-10-09) */
@@ -44541,7 +44604,7 @@ function runEffect0(h,i,s,target){
       if(T.chompLeech) addLeech(h,T.chompLeech);
     }
     /* 레이 되울림 (중급) — 대상 거리 1 내에 다른 적이 없으면 (노트 20). **치명타 앞**이라 예고와 같다 */
-    if(s.rayBolt&&h.tag.reiEcho&&!B.foes.some(f=>f.alive&&f!==tgt&&Math.abs(f.slot-tgt.slot)<=1))
+    if(s.rayBolt&&h.tag.reiEcho&&!foeTouch(tgt))   /* 덩치 큰 적도 발자국으로 센다 (2026-10-23) */
       dmg+=h.tag.reiEcho;
     /* 🔴 치명타는 **여기 한 곳**에서 묻는다 (사용자 2026-10-15).
        전에는 대원 이름마다 가지를 쳐 두어(골렘·트리스탄…) 거기 안 적힌 대원은 조용히 빠졌다 —
@@ -44712,11 +44775,15 @@ function runEffect0(h,i,s,target){
       /* 받은 그림 (사용자 2026-10-22) — 대상 자리에 번개 칼날이 지나간다 */
       { const sl=tgt.slot; fx({side:"foe",slot:sl,
           fn:()=>sheetFX("fx_rei_blade_slash","foe",sl,{z:2.4,ms:260,fade:260}),gap:120}) }   /* 짧게 번쩍이고 스르르 (사용자 2026-10-22) */
-      let nx=tgt.slot+1, hit=0, cd=dmg;
+      let cur=tgt, hit=0, cd=dmg;
       const up=(h.tag&&h.tag.reiChainUp)||0;   /* 연쇄 번개 (하급) — 반복마다 피해 +1씩 */
-      while(nx<=SLOTS){
-        const t2=B.foes.find(f=>f.alive&&f.slot===nx);
-        if(!t2) break;
+      const seen=[tgt];
+      while(true){
+        /* ⚠️ **발자국**으로 센다 — 덩치 큰 적은 두 칸이라 앞 칸만 보면 거기서 끊긴다 (2026-10-23) */
+        const t2=foeBehind(cur);
+        if(!t2||seen.indexOf(t2)>=0) break;
+        seen.push(t2); cur=t2;
+        const nx=t2.slot;
         cd+=up;
         /* 받은 녹음과 그림 — 번개가 뒤의 적으로 옮겨간다 (사용자 2026-10-21 · 10-22).
            전류 그림 셋을 이어진 차례대로 돌려 쓴다 */
@@ -44724,7 +44791,7 @@ function runEffect0(h,i,s,target){
           fx({side:"foe",slot:sl,ring:"#cfe4ff",s:sfxOr("레이 벼락칼날 전이",null),
               fn:()=>sheetFX(ck,"foe",sl,{z:2.2,ms:240,fade:220}),gap:90}) }
         asSrc(h,()=>hurt(t2,cd,s.n,"slash",0,CRIT,1));
-        hit++; nx++;
+        hit++;
       }
       if(hit) say(`벼락칼날 — 번개가 뒤의 적 ${hit}에게 이어집니다.`,"t2");
       /* ── 레이의 벼락칼날 보상 (노트 20, 2026-10-21) ── */
@@ -46061,6 +46128,7 @@ function startMyTurn(){
   onField().forEach(h=>{ if(!h||h.hp<=0||h.isMin) return;
     const v=itemBt(h,"gripDeb"); if(!v) return;
     const f=nearestFoe(h); if(!f||!f.alive) return;
+    { const sl=f.slot; fx({side:"foe",slot:sl,fn:()=>gripSlamFX(sl),gap:420}) }   /* 머리를 내려친다 (2026-10-23) */
     for(let i=0;i<v;i++){ const k=rnd(DEB_KEYS);
       addDeb(f,k,1);
       say(`녹슨 그리퍼 — ${f.name}에게 ${DEBUFF[k].n} 1`,"t2") } });
@@ -46318,7 +46386,7 @@ const blNeedHero=t=>!!(t&&(t.k==="rew"||t.k==="skill"));
 /* 전리품 고르기 화면 — 기존 보상 카드와 같은 꼴 (아이콘 · 이름 · 설명 · 아래 갈래) */
 function drawBossLoot(app){
   const L=run.bloot||{}, T=(L.picks||[]).map(n=>blFind(L.boss,n)).filter(Boolean);
-  const done=()=>{ run.bloot=null; openChest("boss") };
+  const done=()=>{ run.bloot=null; afterChest() };   /* 상자는 이미 지났다 — 줄의 다음 것으로 (2026-10-23) */
   if(!T.length){ done(); return }
   const sel=L.sel?blFind(L.boss,L.sel):null;
   /* 둘째 걸음 — 누구에게 줄까 */
@@ -46342,10 +46410,10 @@ function drawBossLoot(app){
   T.forEach(t=>{
     const c=el(`<div class="rw rwpick${gcls("상급")}"><div class="rwi">${blIcon(t)}</div>
       <b>${esc(t.n)}</b>
-      <div class="rwd"><p>${rich(blDesc(t))}</p></div>
+      <div class="rwd"><p>${rwDescHtml(blDesc(t),null)}</p></div>
       <div class="rwft"><span class="blk">${esc(BL_KIND[t.k]||"")}</span></div></div>`);
     c.onclick=()=>{ if(run.bloot&&run.bloot.sel) return;
-      SFX.play("click"); pickBurst(c,"상급");
+      SFX.play("click"); pickBurst(c,"상급","전리품");
       row.querySelectorAll(".rw").forEach(x=>{ if(x!==c) x.classList.add("faded") });
       if(blNeedHero(t)){ run.bloot.sel=t.n; setTimeout(()=>render(),420); return }
       const msg=blTake(t,null); if(msg) toast(msg);
@@ -47024,7 +47092,7 @@ function heroPanel(h){
         box.appendChild(el(`<div class="hp-tr"><div class="tr1 withi">
           <span class="ti">${t?blIcon(t):""}</span>
           <b>${esc(n)}</b><span class="g2">상급, ${esc((t&&BL_KIND[t.k])||"")}</span>
-          ${t?`<small>${rich(blDesc(t))}</small>`:""}</div></div>`)) }) } }
+          ${t?`<small>${rwDescHtml(blDesc(t),h)}</small>`:""}</div></div>`)) }) } }
   const list=takenList(h);
   const keep=list.filter(x=>REW_KEEP.indexOf(x.k)>=0);
   const show=REW_ALL?list:keep;
@@ -47063,7 +47131,7 @@ function expBar(h){
     <div class="expv">${h.exp}/${need}</div></div>`;
 }
 /* 보상 카드를 고를 때 — 등급이 높을수록 요란하게 */
-function pickBurst(card,grade){
+function pickBurst(card,grade,label){   /* label — 띄울 말을 따로 (전리품, 2026-10-23) */
   const lv={"하급":1,"중급":2,"상급":3}[grade]||1;
   SFX.play("pick"+lv);
   card.classList.add("taken","g"+lv);
@@ -47086,7 +47154,7 @@ function pickBurst(card,grade){
               sp.style.setProperty("--dy",(Math.sin(a2)*d)+"px") }
     },i*32);
   }
-  const w=spawn('<div class="pickword" style="color:'+col+'">'+esc(grade)+' 획득</div>');
+  const w=spawn('<div class="pickword" style="color:'+col+'">'+esc(label||grade)+' 획득</div>');
   if(w){ w.style.left=p.x+"px"; w.style.top=(p.y-14)+"px" }
 }
 /* 이 보상 자리가 '판 자원 보상을 빼야 하는' 자리인가 */
