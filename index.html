@@ -12300,7 +12300,12 @@ function figure(name,pose,u){
   /* 사슬에 묶인 마귀 — 각성하면 날개 편 그림 */
   if(name==="사슬에 묶인 마귀"&&u&&u.awake&&PNG_SPRITE["사슬에 묶인 마귀 (각성)"]) name="사슬에 묶인 마귀 (각성)";
   /* 간수장 — 2단계부터 갑옷이 깨진 그림 (축복 자리에 각성 자세). 3단계에 들어설 때 그 각성 자세를 보인다 (2026-10-03) */
-  if(name==="연료 장치"&&u&&!pose)pose=["idle","bless","guard","atk"][u.fuelHeat||0];
+  /* 연료 장치 — 과열 단계가 곧 자세다 (기본 0 · 축복 1 · 막기 2 · 공격 3).
+     ⚠️ **적과 소환물이 이름이 같다.** PNG_SPRITE 는 폴더 이름 하나로 묶이므로
+        대원 쪽 소환물은 좌우를 뒤집어 구운 「연료 장치 (소환물)」을 쓴다 (사용자 2026-10-23) */
+  if(name==="연료 장치"&&u){
+    if(!pose) pose=["idle","bless","guard","atk"][Math.min(3,u.fuelHeat||0)];
+    if(u.isMin&&PNG_SPRITE["연료 장치 (소환물)"]) name="연료 장치 (소환물)" }
   /* 폐기물 더미 — 단계마다 고철이 떨어져 **무덤이 낮아진다** (사용자 2026-10-21).
      간수장과 **같은 길**이다 — 스프라이트 이름만 갈아 끼운다.
      ⚠️ 세 몸은 art-cut 의 「기준」으로 **같은 배율**로 구웠다 (높이 56 → 34 → 18).
@@ -21645,7 +21650,8 @@ function nextDay(){
   /* addTaint(10) — 2026-09-16 뺌: 날이 바뀌는 것만으로는 오염도가 오르지 않는다 (노숙의 +10 은 그대로) */
   respawn();
   const left=FIELDS[run.field].days-run.day;
-  dayBreak(run.day, left>0?`${FIELDS[run.field].n} 남은 날 ${left}일`:`${FIELDS[run.field].n} 마지막 날`);
+  { const fn=fieldLabel()||FIELDS[run.field].n;
+    dayBreak(run.day, left>0?`${fn} 남은 날 ${left}일`:`${fn} 마지막 날`); }
   /* 어둠이 걷힌 뒤에 한 번 더 그린다 — 마차 · 뿌리의 연출이 그때부터 돈다 (사용자 2026-10-14) */
   setTimeout(()=>{ try{ if(typeof view!=="undefined"&&view==="map") render() }catch(e){} },Math.max(0,MAP_BO_UNTIL-Date.now())+60);
   toast(`${run.day}일차 아침이 밝았습니다.`);
@@ -21778,7 +21784,7 @@ function recordRun(result,reason){
   run.recorded=1;
   const rec={
     at:Date.now(), result:result, reason:reason||"",
-    field:Math.min(run.field,FIELDS.length-1), fieldN:FIELDS[Math.min(run.field,FIELDS.length-1)].n,
+    field:Math.min(run.field,FIELDS.length-1), fieldN:fieldLabel()||FIELDS[Math.min(run.field,FIELDS.length-1)].n,
     day:run.day, playMs:run.playMs||0, taint:run.taint, gold:run.gold, souls:run.souls||0,
     kills:run.kills||0, bossKills:run.bossKills||0, battles:run.battles||0, pack:run.pack||null,
     killer:run.lastKiller||null, killerBy:run.lastKillerBy||null,
@@ -22223,7 +22229,7 @@ function drawMapPeek(){
   const f=FIELDS[run.field]||{n:"균열"}, S=run.size;
   const ov=el(`<div class="peek"><div class="peekbox">
     <div class="peekhead">
-      <div class="title" style="font-size:18px">${esc(f.n)}</div>
+      <div class="title" style="font-size:18px">${esc(fieldLabel()||f.n)}</div>
       <span class="chip">${run.day}일차 / ${f.days||"-"}</span>
       <span class="chip ${run.night?"on":""}">${run.night?"밤":"낮"} ${clock()}</span>
       <span class="chip">활동량 ${Math.max(0,run.act)}</span>
@@ -22296,7 +22302,7 @@ function render0(){
     hr.innerHTML=`<span class="clock kw ${run.night?"night":""}"
         data-kw="${run.night?"밤":"낮"}" data-tip="${run.night?"빈 칸에서 습격당할 수 있습니다. 18시부터 밤입니다.":"18시가 지나면 밤이 됩니다."}">
         ${clockFace()}<b>${clock()}</b><i>${run.night?"밤":"낮"}</i></span>
-      <span class="fname">${esc(FIELDS[run.field].n)}</span>
+      <span class="fname">${esc(fieldLabel()||FIELDS[run.field].n)}</span>
       <span class="res rday kw ${dLeft<=1?"bad":dLeft<=2?"warn":""}" data-kw="일차" data-tip="${run.day}일차 / ${FIELDS[run.field].days}일. 오늘까지 세어 ${dLeft}일 남았습니다. 다 쓰면 그 자리에서 끝납니다.">
         ${resIcon("day")}<b>${run.day}</b><i>/${FIELDS[run.field].days}일</i></span>
       <span class="res act kw" data-kw="활동량" data-tip="구역에 들어갈 때 씁니다. 날이 밝으면 기본 +6 쌓입니다.">
@@ -22921,6 +22927,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 221, "v": "0.7", "d": "2026-10-23", "t": "연료 장치 소환물 그림 · 1막 변형 이름 (사용자 2026-10-23)", "big": 0},
  {"b": 220, "v": "0.7", "d": "2026-10-23", "t": "우두머리 전리품 (폐기물 더미 · 콜로서스) · 턴 한도 · 레벨 보상 · 홀로 떠나기 · 요새 쉼터 (사용자 2026-10-23)", "big": 0},
  {"b": 219, "v": "0.7", "d": "2026-10-23", "t": "실험 책임자 전리품 · 전리품 카드 꼴 통일 · 도감 차례 (사용자 2026-10-23)", "big": 0},
  {"b": 218, "v": "0.7", "d": "2026-10-23", "t": "우두머리 전리품 (간수장) · 증폭! 이벤트 · 고철의 무덤 그림 수정본 (사용자 2026-10-23)", "big": 0},
@@ -24333,7 +24340,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=220;
+const BUILD_NO=221;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -27750,7 +27757,7 @@ function drawMap(app){
   /* 위 띠 — 날짜 · 구역 이름 · 플레이 시간 */
   app.appendChild(el(`<div class="mtop"><div class="mtrow">
     <span class="res rday mchip kw ${dLeft<=1?"bad":dLeft<=2?"warn":""}" data-kw="일차" data-tip="${run.day}일차 / ${f.days}일. 오늘까지 세어 ${dLeft}일 남았습니다. 다 쓰면 그 자리에서 끝납니다.">${resIcon("day")}<b>${run.day}</b><i>/${f.days}일</i></span>
-    <span class="mfield">${esc(f.n)}</span>
+    <span class="mfield">${esc(fieldLabel()||f.n)}</span>
     <span class="mphase ${run.night?"night":""}">${run.night?"밤":"낮"} ${clock()}</span>
     <span class="res mchip kw" data-kw="원정 시간" data-tip="이번 원정을 붙잡고 있은 시간입니다. 창을 덮어 둔 동안은 세지 않습니다."><b id="ptv">${playTime(run.playMs)}</b></span>
   </div><div class="mres"></div></div>`));
@@ -44039,6 +44046,8 @@ function runEffect0(h,i,s,target){
   /* 연료 장치 「공급」 (실험 책임자 전리품, 2026-10-23) — 양옆의 아군을 북돋우고,
      사용한도를 다 쓰면 **아군 · 적군 모두**에게 피해를 주며 사라진다 */
   if(s.fuelFeed){
+    /* 쓸 때마다 한 단계 달아오른다 — 그림이 저절로 따라온다 (sprite 의 fuelHeat, 2026-10-23) */
+    h.fuelHeat=Math.min(3,(h.fuelHeat||0)+1);
     const v=1, L=onField().filter(a=>a!==h&&a.hp>0&&Math.abs((a.slot||0)-(h.slot||0))===1);
     L.forEach(a=>{ bumpTmp(a,"mag",v);
       fx({side:"mine",slot:a.slot,ring:"#e0a86a",txt:"마법력+"+v,cls:"mag",gap:70}) });
@@ -44046,13 +44055,16 @@ function runEffect0(h,i,s,target){
     /* 사용한도를 다 썼나 — 이 기술이 돌고 난 뒤의 셈을 본다 */
     const left=(s.limit||0)-((h.limitUsed&&h.limitUsed[i])||0);
     if(left<=0){
+      /* 받은 여덟 칸 폭발 띠 (1024×128) — 제자리에서 (사용자 2026-10-23) */
+      { const sl=h.slot;
+        fx({side:"mine",slot:sl,fn:()=>sheetFX("fx_fuel_boom","mine",sl,{frames:8,cell:128,feet:1,z:2.4,ms:720,fade:180}),gap:0}) }
       fx({side:"mine",slot:h.slot,quake:1,s:"boom",gap:220});
       const n=10;
       B.foes.filter(f=>f.alive).forEach(f=>asSrc(h,()=>hurt(f,n,"연료 장치 폭발","마법")));
       onField().filter(a=>a!==h&&a.hp>0).forEach(a=>asSrc(h,()=>hurtAlly(h,a,n,"연료 장치 폭발","마법")));
       say(`연료 장치가 폭발합니다 — 모든 대상에게 피해 ${n}`,"t1");
       /* 제 몸은 터져 사라진다 — 여느 피해 길로 보내 뒷정리를 맡긴다 */
-      asSrc(h,()=>hurtAlly(h,h,(h.hp||0)+(h.shield||0)+(h.eshield||0)+999,"연료 장치 폭발","마법"));
+      asSrc(h,()=>hurtAlly(h,h,(h.hp||0)+(h.shield||0)+(h.eshield||0),"연료 장치 폭발","마법"));   /* 제 몫만큼만 — 머리 위 수가 엉뚱하게 크지 않게 */
     }
     return;
   }
