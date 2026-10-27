@@ -7061,6 +7061,24 @@ function inkArt(t){ if(INK_SCRAP[t]) return iconImg(INK_SCRAP[t]); if(t==="fog"&
 function cellLabel(cell){ const t=cell&&cell.t;
   if(t==="rest") return restKindOf(cell).n;
   return ((typeof NODE!=="undefined"&&NODE[t])||{}).label||t||""; }
+/* ═══════════ 배경음악 — **어느 곡인지는 규칙이 고른다** ═══════════
+   곡을 고르는 쪽(BGM_SRC · sceneBgm · pickBattleBgm …)은 `src/rules/bgm-pick.js` 로
+   옮겼다 (2026-10-28). 화면이 없어도 「지금 어느 곡인가」는 그대로이기 때문이고,
+   유니티가 그 답을 그대로 받아 쓰기 때문이다.
+   여기 남은 것은 **트는 일**뿐이다 — <audio> 둘을 번갈아 겹쳐 넘긴다.
+   곡을 더 넣을 때는 규칙 쪽 BGM_SRC · sceneBgm 에 적는다. 여기는 손댈 곳이 없다. */
+/* ═══════ 어느 곡을 틀까 ═══════  (2026-10-28 에 `src/view/bgm.js` 에서 옮겨 왔다)
+ *
+ * ★ 트는 일(<audio> 둘을 겹쳐 넘기기)은 화면 쪽에, **고르는 일은 여기**.
+ *   「지금 지도고 밤이면 night」 · 「인형사가 서 있으면 그 곡」 은 화면이 없어도 그대로다.
+ *
+ * ⚠️ `pickBattleBgm` 은 `src/rules/battle-round.js` 가 부른다 — 규칙이 부르는데
+ *   화면 파일에 있었다. 유니티 덩이에서는 시늉이라 `run.dun.bgm` 이 undefined 였고,
+ *   전투 곡이 조용히 사라졌다 (조용한 구멍 열한째, 2026-10-28).
+ *
+ * 책 도감에서 돌아갈 화면(DEX_BACK)도 여기 둔다 — `openDex` 가 적고 `sceneBgm` 이 읽는다.
+ * ⚠️ **값은 시늉이 안 세워진다** (함수만 그렇다). 화면 파일에 두면 덩이에서 조용히 비는 게 아니라 넘어진다 */
+let DEX_BACK="title";
 /* ═══════════ 배경음악 ═══════════
    파일은 bgm/ 폴더에 따로 둔다. 한 파일 게임에 14MB 를 심을 수는 없다.
    곡을 더 넣을 때는 BGM_SRC 에 파일 이름을, sceneBgm() 에 어느 화면인지를
@@ -7515,9 +7533,6 @@ function fleeFX(to,from){
     {transform:`translateX(0px) rotate(0deg)`,              offset:1}
   ],{duration:Math.round(520*(typeof SPD!=="undefined"?SPD:1)),easing:"cubic-bezier(.35,0,.15,1)"});
 }
-/* 벌목도가 베는 소리 — 메아리 끊기와 덩굴 수풀 헤치기가 **같은 소리**를 쓴다 (사용자 2026-10-14).
-   art/소리/벌목도.wav 를 두면 그것이, 없으면 나이코스 베기, 그것도 없으면 합성음 */
-function bladeSnd(){ return sfxHas("벌목도")?"벌목도":(sfxHas("나이코스 베기")?"나이코스 베기":"slash") }
 /* 벌목도로 메아리 끊기 (사용자 2026-10-01) — 메아리 표식 위로 벌목도가 휘둘러 내려와 베고, 표식이 두 쪽으로 갈라져 떨어진다.
    표식은 f.echoCutAt 부터 ECHO_CUT_MS 동안 남아 있다가 다시 그릴 때 걷힌다 */
 const ECHO_CUT_MS=1500;
@@ -10583,6 +10598,40 @@ const skillPose=(h,s)=>{ if(!h||!s) return null; const b=SKILL_POSE[h.name+"|"+s
   return o?Object.assign({},b||{},o):b };
 /* 캐릭터 전용 공격 효과음 — art/소리/ 의 파일 이름을 그대로 적는다.
    없는 캐릭터는 적을 때리는 쪽에서 나는 기존 타격음만 난다. */
+/* 자세를 잡은 채 부들부들 — 그림 칸(.art)을 40ms 마다 ±2px (무패의 장군 명중, 2026-10-04). 끝나면 제자리 */
+function poseShake(side,slot,ms){ const c=ctrOf(side,slot), a=c&&c.e&&c.e.querySelector(".art"); if(!a) return;
+  const end=Date.now()+ms, k=()=>{ if(!a.isConnected) return;
+    if(Date.now()>=end){ a.style.translate=""; return }
+    const m=Math.min(1,(end-Date.now())/ms*1.6);   /* 끝으로 갈수록 세게 — 쏘기 직전이 가장 떨린다 */
+    const g=1-m, A=1.5+6*g*g;   /* 처음엔 잘게, 쏘기 직전으로 갈수록 크고 거칠게 — 힘겹게 버티는 시위 */
+    a.style.translate=((Math.random()*2-1)*A).toFixed(1)+"px "+((Math.random()*2-1)*A*0.5+(g>0.6?0.8:0)).toFixed(1)+"px"; setTimeout(k,g>0.6?30:45) }; k() }
+/* 카제의 진선풍도는 몇 번째로 쓰느냐에 따라 소리가 다르다 — 검이냐 회오리냐.
+   횟수(h.windUses)는 runEffect 안에서 오르므로, 자세를 잡는 쪽에서는
+   '다음 한 번'을 미리 세어 봐야 한다. 그래서 셈을 여기 하나로 모아 둔다. */
+/* ═══════ 어느 녹음을 울릴까 ═══════  (2026-10-28 에 `src/fx/effects.js` · `src/fx/hecto-death.js` 에서 옮겨 왔다)
+ *
+ * ★ **소리를 내는 일**(audio.js)과 **어느 소리인지 고르는 일**(여기)은 다르다.
+ *   고르는 쪽은 규칙이다 — 「굴라가 폭식의 군주를 입었으면 그 판의 녹음」 ·
+ *   「그 적만의 죽음 소리가 있으면 종족보다 먼저」 는 화면이 없어도 그대로다.
+ *
+ * ⚠️ 여기 있던 것이 `src/fx/` 에 남아 있던 동안, 유니티 덩이에서는 전부 **시늉**이었다.
+ *   `sfxHas` 가 늘 거짓이라 `sfxOr("금화 얻기",null)` 이 null 이 되고,
+ *   `if(sfxHas(…)) SFX.play(…)` 열 몇 군데가 **조용히** 지나갔다 (조용한 구멍 열한째).
+ *   소리는 안 울려도 아무도 안 넘어지니 끝까지 몰랐다.
+ *
+ * ⚠️ 이름의 바탕은 `SND` 다 — 브라우저는 `data/art.js` 에서, 덩이는
+ *   `sim/engine-standalone.js` 가 같은 파일에서 **이름만** 캐어 심는다. 한 곳이다.
+ */
+
+/* ── 그 이름의 녹음이 등록돼 있는가 ──
+   번호를 붙여 여럿 둔 것(악마 하수인 배치 1·2·3)도 있다 — SFX.pick 이 그중
+   하나를 고른다. 그래서 맨 이름만 보면 없다고 답해 버린다. 1번도 같이 본다 */
+function sfxHas(k){ return typeof SND!=="undefined"&&!!(SND[k]||SND[k+" 1"]) }
+/* 녹음이 있으면 그것을, 없으면 합성음을 — 소리를 손으로 걸 때 쓴다 */
+function sfxOr(k,alt){ return sfxHas(k)?k:alt }
+/* 외형 소리 — 착용한 외형의 「<외형 이름> <소리>」 녹음이 있으면 그것, 없으면 원래 소리 (없으면 null) */
+function skinSfxOr(hero,k){ const sk=(typeof skinOn==="function")&&skinOn(hero); const ks=sk&&(sk.n+" "+k); return (ks&&sfxHas(ks))?ks:(sfxHas(k)?k:null) }
+
 const ATK_SFX={"나이코스":"나이코스 공격"};
 /* 기술마다 따로 녹음한 소리 — art/소리/`<대원> <기술>.wav` 를 두면 저절로 걸린다.
    표를 적을 필요가 없다. 선택 기술은 지금 고른 갈래 이름으로 찾는다.
@@ -10593,6 +10642,7 @@ const ATK_SFX={"나이코스":"나이코스 공격"};
 const SFX_CAST={"굴라 응축 폭발":"굴라 응축","폭식의 군주 응축 폭발":"폭식의 군주 응축"};
 /* 굴라 소리 — 폭식의 군주를 입었으면 그 판(피치 -4 반음, 사용자 2026-10-03). 기술 밖에서 손으로 거는 자리(융합 · 터짐 · 먹기)가 쓴다 */
 function gulaSnd(k){ const sk=(typeof skinOn==="function")&&skinOn("굴라"), ks=sk&&(sk.n+" "+k); return (ks&&sfxHas(ks))?ks:("굴라 "+k) }
+function ottoSnd(k){ const sk=(typeof skinOn==="function")&&skinOn("오토"), ks=sk&&(sk.n+" "+k); return (ks&&sfxHas(ks))?ks:(sfxHas("오토 "+k)?"오토 "+k:null) }   /* 「봄의 정원사 터짐」이 있으면 그것, 없으면 「오토 터짐」 */
 function skillSfx(h,s){
   if(typeof SND==="undefined"||!h||!s) return null;
   /* 플레어와 플로우 — 자세마다 다른 녹음 (「… 불」「… 물」). 변환은 바뀐 뒤의 자세로 */
@@ -10606,20 +10656,18 @@ function skillSfx(h,s){
   const k=SFX_CAST[h.name+" "+s.n]||(h.name+" "+s.n);
   return (SND[k]||SND[k+" 1"])?k:null;   /* 「이름 1 · 2」 로 여럿 둔 것도 (SFX.play 가 그중 하나를 고른다 — 오토 쓰담쓰담 · 새싹 심기, 2026-10-04) */
 }
-/* 그 이름의 녹음이 등록돼 있는가.
-   번호를 붙여 여럿 둔 것(악마 하수인 배치 1·2·3)도 있다 — SFX.pick 이 그중
-   하나를 고른다. 그래서 맨 이름만 보면 없다고 답해 버린다. 1번도 같이 본다 */
 /* 일반 타격음 — 그 공격에 전용 녹음이 울렸으면 안 운다 (사용자 2026-10-08).
    hitSnd 는 「합성음만」 빼던 것이라, 녹음인 일반음(마법피해 · boom)은 전용 소리 위에 겹쳤다 */
 const genHit=k=>(typeof B!=="undefined"&&B&&B._ownSnd)?null:k;
 /* 맞는 소리 — 기술에 녹음이 있으면(B._ownSnd) 녹음이 아닌 합성음은 내지 않는다 (사용자 2026-10-04) */
 function hitSnd(k){ return (k&&typeof B!=="undefined"&&B&&B._ownSnd&&!sfxHas(k))?null:k }
-function sfxHas(k){ return typeof SND!=="undefined"&&!!(SND[k]||SND[k+" 1"]) }
 /* 적의 녹음 — 「<적 이름> 공격」 · 「<적 이름> 피해받음」 이 있으면 (미믹, 사용자 2026-10-06). 없으면 null */
+function foeSnd(f,k){ const n=f&&f.name+" "+k; return (n&&sfxHas(n))?n:null }
 /* 네 제공 음원을 기존 소리 추첨으로 고른다 — 전투 주사위는 쓰지 않는다. */
 function directorIdleSnd(){if(typeof SND!=="undefined")["연료 장치 대기 1","연료 장치 대기 2","실험 책임자 전장에 나설 때 1","실험 책임자 전장에 나설 때 2"].forEach((k,i)=>{if(SND[k])SND["실험 책임자 대기 "+(i+1)]=SND[k]});return "실험 책임자 대기"}
-function foeSnd(f,k){ const n=f&&f.name+" "+k; return (n&&sfxHas(n))?n:null }
-/* 외형 소리 — 착용한 외형의 「<외형 이름> <소리>」 녹음이 있으면 그것, 없으면 원래 소리 (없으면 null) */
+/* 벌목도가 베는 소리 — 메아리 끊기와 덩굴 수풀 헤치기가 **같은 소리**를 쓴다 (사용자 2026-10-14).
+   art/소리/벌목도.wav 를 두면 그것이, 없으면 나이코스 베기, 그것도 없으면 합성음 */
+function bladeSnd(){ return sfxHas("벌목도")?"벌목도":(sfxHas("나이코스 베기")?"나이코스 베기":"slash") }
 /* 이 소환물의 모습을 바꾸는 외형 (minionSp) — 입고 있을 때만 */
 function minionSkin(name){ if(typeof SKINS==="undefined") return null;
   for(const hero in SKINS){ const kk=skinOn(hero); if(kk&&kk.minionSp&&kk.minionSp[name]&&skinOwnerIn(hero)) return kk } return null }
@@ -10638,20 +10686,50 @@ function heroPlaceSnd(h){
   if(nm==="레이"&&h.slot>0){ const rk="레이 "+rayStanceOf(h.slot)+" 배치"; if(sfxHas(rk)) return rk }
   return sfxHas(nm+" 배치")?nm+" 배치":null;
 }
-/* 자세를 잡은 채 부들부들 — 그림 칸(.art)을 40ms 마다 ±2px (무패의 장군 명중, 2026-10-04). 끝나면 제자리 */
-function poseShake(side,slot,ms){ const c=ctrOf(side,slot), a=c&&c.e&&c.e.querySelector(".art"); if(!a) return;
-  const end=Date.now()+ms, k=()=>{ if(!a.isConnected) return;
-    if(Date.now()>=end){ a.style.translate=""; return }
-    const m=Math.min(1,(end-Date.now())/ms*1.6);   /* 끝으로 갈수록 세게 — 쏘기 직전이 가장 떨린다 */
-    const g=1-m, A=1.5+6*g*g;   /* 처음엔 잘게, 쏘기 직전으로 갈수록 크고 거칠게 — 힘겹게 버티는 시위 */
-    a.style.translate=((Math.random()*2-1)*A).toFixed(1)+"px "+((Math.random()*2-1)*A*0.5+(g>0.6?0.8:0)).toFixed(1)+"px"; setTimeout(k,g>0.6?30:45) }; k() }
-function ottoSnd(k){ const sk=(typeof skinOn==="function")&&skinOn("오토"), ks=sk&&(sk.n+" "+k); return (ks&&sfxHas(ks))?ks:(sfxHas("오토 "+k)?"오토 "+k:null) }   /* 「봄의 정원사 터짐」이 있으면 그것, 없으면 「오토 터짐」 */
-function skinSfxOr(hero,k){ const sk=(typeof skinOn==="function")&&skinOn(hero); const ks=sk&&(sk.n+" "+k); return (ks&&sfxHas(ks))?ks:(sfxHas(k)?k:null) }
-/* 녹음이 있으면 그것을, 없으면 합성음을 — 소리를 손으로 걸 때 쓴다 */
-function sfxOr(k,alt){ return sfxHas(k)?k:alt }
-/* 카제의 진선풍도는 몇 번째로 쓰느냐에 따라 소리가 다르다 — 검이냐 회오리냐.
-   횟수(h.windUses)는 runEffect 안에서 오르므로, 자세를 잡는 쪽에서는
-   '다음 한 번'을 미리 세어 봐야 한다. 그래서 셈을 여기 하나로 모아 둔다. */
+
+/* ── 죽음 소리 ── (`src/fx/hecto-death.js` 에서 그대로) */
+/* 죽음 발동 소리 (사용자 2026-10-06)
+   건물인 것(성벽 · 고요한 우물 · 악마 차원문 · 대포) — '건물 파괴'
+   그 밖은 종족마다 — 악마 · 기계 · 인간 · 정령 죽음 (1 · 2 중 무작위). 제 소리가 없는 종족(망자 등)은 인간 소리
+   오토의 새싹 · 수목은 종족이 없지만 '식물 죽음' (사용자 2026-10-06) */
+const NONLIVE={"고요한 우물":1,"악마 차원문":1,"대포":1};
+const DEATH_PLANT={"살아있는 덩굴":1};   /* 종족은 정령이지만 죽음 소리는 식물 (사용자 2026-10-06) */
+function nonLiving(u){ const n=u&&(u.of||u.name)||""; return !!(NONLIVE[n]||isWallName(n)) }
+/* 제 녹음이 아직 없는 종족은 가까운 종족의 소리로 — 골렘은 「골렘 죽음」 이 올 때까지 기계 (사용자 2026-10-07) */
+const DEATH_SND_FALL={"골렘":"기계","망령":"망자"};
+/* 아군 소환물의 종족 — 적은 foeRace 가 본다. 소환물은 **SUMMONS 표의 race** 한 곳에서 본다 (사용자 2026-10-16).
+   환영만 베낀 적을 따른다 (makeMin 이 of 에 그 적의 이름을 적어 둔다) */
+function minRace(u){
+  if(!u) return "";
+  if(u.of) return foeRace({name:u.of});
+  return ((typeof SUMMONS!=="undefined"&&SUMMONS[u.name])||{}).race||"";
+}
+/* 죽음 소리의 종족 — deathSnd · deathSndExact 가 같이 쓴다 (규칙 하나는 함수 하나) */
+function deathRace(u){
+  const n=u&&(u.of||u.name)||"";
+  let r=(DEATH_PLANT[n]||(u&&!u.isFoe&&(isSprout(u)||isTree(u))))?"식물":((u&&u.isFoe)?foeRace(u):minRace(u));
+  if(r&&!sfxHas(r+" 죽음")&&DEATH_SND_FALL[r]) r=DEATH_SND_FALL[r];
+  return r;
+}
+function deathSnd(u){
+  if(nonLiving(u)) return sfxOr("건물 파괴","인간 죽음");
+  /* 하수인 골렘 — 아군 소환물이라 foeRace 가 안 본다. 종족 소리를 손으로 이어 준다 (2026-10-13) */
+  if(u&&u.golem&&sfxHas("골렘 죽음")) return "골렘 죽음";
+  const n=u&&(u.of||u.name)||"";
+  if(sfxHas(n+"_죽음")) return n+"_죽음";   /* 그 적만의 죽음 소리가 있으면 종족보다 먼저 (간수장, 80) */
+  const r=deathRace(u);
+  return (r&&sfxHas(r+" 죽음"))?r+" 죽음":sfxOr("인간 죽음",null);
+}
+/* 그 종족(또는 그 적만)의 녹음이 **있을 때만** 이름을 돌려준다 — deathSnd 와 달리 없으면 「인간 죽음」으로 물러서지 않는다(null).
+   죽음 효과가 없는 적이 쓰러질 때의 소리 (녹음이 없는 종족은 예전처럼 공용 die) */
+function deathSndExact(u){
+  if(nonLiving(u)) return null;
+  if(u&&u.golem&&sfxHas("골렘 죽음")) return "골렘 죽음";   /* 하수인 골렘 (2026-10-13) */
+  const n=u&&(u.of||u.name)||"";
+  if(sfxHas(n+"_죽음")) return n+"_죽음";
+  const r=deathRace(u);
+  return (r&&sfxHas(r+" 죽음"))?r+" 죽음":null;
+}
 const isWallName=n=>n==="성벽"||n==="저주받은 성벽";
 /* 헥토 굳건함 — 성벽을 부수고 그 체력(+성벽 부수기)만큼 보호막 (기계화 성벽이면 에너지 보호막). 저주받은 성벽이면 죽음의 저주도 */
 function hectoBreakWall(h,w){
@@ -11416,48 +11494,6 @@ function wallBuildFX(side,slot,cursed){
 /* 죽음 발동 — 받은 8칸 띠(붉은 균열 → 뼛조각 → 두개골 · 사망 표식 → 죽음 문양, 사용자 2026-10-06). 칸별 시간은 받은 usage.json 그대로.
    적이든 아군 소환물이든 「죽음:」 이 일어나는 순간, 그 효과보다 먼저 */
 const DEATH_MS=[105,85,75,70,70,80,100,145];
-/* 죽음 발동 소리 (사용자 2026-10-06)
-   건물인 것(성벽 · 고요한 우물 · 악마 차원문 · 대포) — '건물 파괴'
-   그 밖은 종족마다 — 악마 · 기계 · 인간 · 정령 죽음 (1 · 2 중 무작위). 제 소리가 없는 종족(망자 등)은 인간 소리
-   오토의 새싹 · 수목은 종족이 없지만 '식물 죽음' (사용자 2026-10-06) */
-const NONLIVE={"고요한 우물":1,"악마 차원문":1,"대포":1};
-const DEATH_PLANT={"살아있는 덩굴":1};   /* 종족은 정령이지만 죽음 소리는 식물 (사용자 2026-10-06) */
-function nonLiving(u){ const n=u&&(u.of||u.name)||""; return !!(NONLIVE[n]||isWallName(n)) }
-/* 제 녹음이 아직 없는 종족은 가까운 종족의 소리로 — 골렘은 「골렘 죽음」 이 올 때까지 기계 (사용자 2026-10-07) */
-const DEATH_SND_FALL={"골렘":"기계","망령":"망자"};
-/* 아군 소환물의 종족 — 적은 foeRace 가 본다. 소환물은 **SUMMONS 표의 race** 한 곳에서 본다 (사용자 2026-10-16).
-   환영만 베낀 적을 따른다 (makeMin 이 of 에 그 적의 이름을 적어 둔다) */
-function minRace(u){
-  if(!u) return "";
-  if(u.of) return foeRace({name:u.of});
-  return ((typeof SUMMONS!=="undefined"&&SUMMONS[u.name])||{}).race||"";
-}
-/* 죽음 소리의 종족 — deathSnd · deathSndExact 가 같이 쓴다 (규칙 하나는 함수 하나) */
-function deathRace(u){
-  const n=u&&(u.of||u.name)||"";
-  let r=(DEATH_PLANT[n]||(u&&!u.isFoe&&(isSprout(u)||isTree(u))))?"식물":((u&&u.isFoe)?foeRace(u):minRace(u));
-  if(r&&!sfxHas(r+" 죽음")&&DEATH_SND_FALL[r]) r=DEATH_SND_FALL[r];
-  return r;
-}
-function deathSnd(u){
-  if(nonLiving(u)) return sfxOr("건물 파괴","인간 죽음");
-  /* 하수인 골렘 — 아군 소환물이라 foeRace 가 안 본다. 종족 소리를 손으로 이어 준다 (2026-10-13) */
-  if(u&&u.golem&&sfxHas("골렘 죽음")) return "골렘 죽음";
-  const n=u&&(u.of||u.name)||"";
-  if(sfxHas(n+"_죽음")) return n+"_죽음";   /* 그 적만의 죽음 소리가 있으면 종족보다 먼저 (간수장, 80) */
-  const r=deathRace(u);
-  return (r&&sfxHas(r+" 죽음"))?r+" 죽음":sfxOr("인간 죽음",null);
-}
-/* 그 종족(또는 그 적만)의 녹음이 **있을 때만** 이름을 돌려준다 — deathSnd 와 달리 없으면 「인간 죽음」으로 물러서지 않는다(null).
-   죽음 효과가 없는 적이 쓰러질 때의 소리 (녹음이 없는 종족은 예전처럼 공용 die) */
-function deathSndExact(u){
-  if(nonLiving(u)) return null;
-  if(u&&u.golem&&sfxHas("골렘 죽음")) return "골렘 죽음";   /* 하수인 골렘 (2026-10-13) */
-  const n=u&&(u.of||u.name)||"";
-  if(sfxHas(n+"_죽음")) return n+"_죽음";
-  const r=deathRace(u);
-  return (r&&sfxHas(r+" 죽음"))?r+" 죽음":null;
-}
 function deathMarkFX(side,slot,u){ const snd=deathSnd(u);
   fx({side:side,slot:slot,s:snd,fn:()=>hectoSheetFX("fx_death",side,slot,{px:188,y:.5,ms:DEATH_MS}),gap:420}) }
 function hectoSheetFX(key,side,slot,o){
@@ -16934,7 +16970,6 @@ function drawCardDex(app){
   out.querySelector("button").onclick=()=>{ view=DEX_BACK||"title"; render() };
   app.appendChild(out);
 }
-let DEX_BACK="title";
 function openDex(which){ DEX_BACK=view; DEX_TAB=which; view="dex"; render() }   /* 책 도감의 그 칸으로 (사용자 2026-10-05 — 예전 목록 화면이 떴다) */
 /* ═══════════ 적 도감의 **묶음** ═══════════ (2026-10-27)
    「이 적은 어느 구역 것인가」 — 전투 표(FIELD_FOES · ENCOUNTER · ELITE_ENC ·
@@ -24691,6 +24726,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 234, "v": "0.7", "d": "2026-10-28", "t": "유니티 — 전투 밖 소리와 곡 (조용한 구멍 열한째)", "big": 0},
  {"b": 233, "v": "0.7", "d": "2026-10-27", "t": "TUT · 연습장 세우기를 규칙으로 (유니티 포팅)", "big": 0},
  {"b": 232, "v": "0.7", "d": "2026-10-27", "t": "적 도감의 묶음을 규칙으로 (유니티 포팅)", "big": 0},
  {"b": 231, "v": "0.7", "d": "2026-10-27", "t": "끝 화면의 말을 규칙으로 (유니티 포팅)", "big": 0},
@@ -26116,7 +26152,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=233;
+const BUILD_NO=234;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
