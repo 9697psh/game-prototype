@@ -16936,6 +16936,56 @@ function drawCardDex(app){
 }
 let DEX_BACK="title";
 function openDex(which){ DEX_BACK=view; DEX_TAB=which; view="dex"; render() }   /* 책 도감의 그 칸으로 (사용자 2026-10-05 — 예전 목록 화면이 떴다) */
+/* ═══════════ 적 도감의 **묶음** ═══════════ (2026-10-27)
+   「이 적은 어느 구역 것인가」 — 전투 표(FIELD_FOES · ENCOUNTER · ELITE_ENC ·
+   ELITE_LEADS · BOSSES · ACT1 · EVENT_ENC)를 읽어 가른다. **규칙이다.**
+   화면(`drawFoeDex`)과 유니티가 **이 함수 하나**를 본다 — 베끼면 한쪽만 고쳐진다.
+
+   ⚠️ 줄은 화면에서 **글자 그대로** 떠 왔다. 차례도 그대로다
+      (핏빛 감옥 > 고철의 무덤 > 정령숲 > 마력의 탑 > 미지의 구역 > 그 밖).
+   ⚠️ 이름만 낸다 — 그리는 일은 화면이 한다. */
+function foeDexGroups(){
+  const all=Object.keys(FOE).filter(n=>!FOE[n].isPhantom&&!FOE[n].dexHide);
+  const out=[], used=new Set();
+  const order=n=>(FOE[n].boss?3:FOE[n].elite?2:FOE[n].strong?1:0);
+  const clean=L=>{ for(let q=L.length-1;q>=0;q--) if(!FOE[L[q]]||FOE[L[q]].dexHide||FOE[L[q]].isPhantom) L.splice(q,1); return L };
+  const add=(head,L)=>{ L.sort((a,b)=>order(a)-order(b)); clean(L); L.forEach(n=>used.add(n)); out.push({머리:head,목록:L}) };
+
+  /* 1막의 다른 갈래 — 제 묶음으로 따로, 핏빛 감옥 바로 뒤 */
+  const act1Dex=()=>ACT1_LIST.slice(1).forEach(k=>{
+    const A=ACT1[k]||{}, L=[];
+    const put=n=>{ if(FOE[n]&&L.indexOf(n)<0) L.push(n) };
+    (A.foes||[]).forEach(put);
+    (A.enc||[]).forEach(e=>(e.foes||[]).forEach(put));
+    (A.elite||[]).forEach(e=>(e.foes||[]).forEach(put));
+    if(A.boss) put(A.boss);
+    add(k,L);
+  });
+
+  FIELDS.forEach((F,i)=>{
+    const L=[];
+    FIELD_FOES[i].forEach(n=>{ if(L.indexOf(n)<0) L.push(n) });
+    if(typeof FOE_DEX_FIELD==="object") Object.keys(FOE_DEX_FIELD).forEach(n=>{
+      if(FOE_DEX_FIELD[n]===i&&FOE[n]&&L.indexOf(n)<0) L.push(n) });
+    (ENCOUNTER[i]||[]).forEach(e=>(e.foes||[]).forEach(n=>{ if(L.indexOf(n)<0&&FOE[n]) L.push(n) }));
+    (ELITE_ENC[i]||[]).forEach(e=>(e.foes||[]).forEach(n=>{ if(L.indexOf(n)<0&&FOE[n]) L.push(n) }));
+    (ELITE_LEADS[i]||[]).forEach(n=>{ if(FOE[n]&&L.indexOf(n)<0) L.push(n) });
+    if(ELITE_LEAD[i]&&L.indexOf(ELITE_LEAD[i])<0) L.push(ELITE_LEAD[i]);
+    if(BOSSES[i]&&L.indexOf(BOSSES[i])<0) L.push(BOSSES[i]);
+    if(i===0) ["실험 책임자","연료 장치","첨탑 관리자","감옥 경비병","억울한 죄수","울타리"].forEach(n=>{ if(FOE[n]&&L.indexOf(n)<0) L.push(n) });
+    add(F.n,L);
+    if(i===0) act1Dex();
+  });
+
+  /* 미지의 구역 — 이벤트로만 만나는 적 */
+  { const evL=[];
+    EVENT_ENC.forEach(e=>(e.foes||[]).forEach(n=>{ if(FOE[n]&&!used.has(n)&&evL.indexOf(n)<0) evL.push(n) }));
+    if(evL.length) add("미지의 구역",evL); }
+
+  const rest=all.filter(n=>!used.has(n));
+  if(rest.length) out.push({머리:"그 밖",목록:rest});
+  return out;
+}
 /* ═══════════ 이벤트 도감 ═══════════
    EVENTS 를 그대로 읽어 그린다. 등장 조건은 when 이 함수라 글로 못 읽으니 이벤트의 dex:{field,cond,rate} 를 본다 —
    when 을 고치면 dex 도 같이 고칠 것. 선택지 조건은 설명 맨 뒤 괄호(evOptHtml 규칙)를 그대로 보여 준다 */
@@ -17560,55 +17610,11 @@ function drawFoeDex(app){
     <b>적의 다음 행동은 의도로 미리 보입니다.</b> 고유 기술이 있는 적은 그 표에서 <em>무게</em>대로 고르고, 나머지는 즐겨 하는 짓의 무게로 고릅니다.
     기술의 피해, 보호막은 그 적이 얻은 능력치(강화, 간식 따위)만큼 오릅니다. 파란 칩은 <b>지속 기술</b> — 전장의 칸에 늘 표시됩니다.
     <span class="evdx-tag c">일반 !</span> 은 일반 중에서도 강한 적입니다.</div>`));
-  const used=new Set();
-  const order=n=>(FOE[n].boss?3:FOE[n].elite?2:FOE[n].strong?1:0);
-  /* 1막의 다른 갈래 — **제 묶음으로 따로** (사용자 2026-10-21 : 「도감에 핏빛감옥에 고철의 무덤애들 들어가있음」).
-     ⚠️ 차례는 **핏빛 감옥 바로 뒤**다 (사용자 2026-10-23 : 핏빛 감옥 > 고철의 무덤 > 정령숲 > 마력의 탑).
-     전에는 맨 끝에 붙어 정령숲 · 마력의 탑 뒤로 밀려 있었다 */
-  const act1Dex=()=>ACT1_LIST.slice(1).forEach(k=>{
-    const A=ACT1[k]||{}, L=[];
-    const put=n=>{ if(FOE[n]&&L.indexOf(n)<0) L.push(n) };
-    (A.foes||[]).forEach(put);
-    (A.enc||[]).forEach(e=>(e.foes||[]).forEach(put));
-    (A.elite||[]).forEach(e=>(e.foes||[]).forEach(put));
-    if(A.boss) put(A.boss);
-    L.sort((a,b)=>order(a)-order(b));
-    for(let q=L.length-1;q>=0;q--) if(!FOE[L[q]]||FOE[L[q]].dexHide||FOE[L[q]].isPhantom) L.splice(q,1);
-    L.forEach(n=>used.add(n));
-    wrap.appendChild(el(`<div class="dexhd">${esc(k)} ${L.length}</div>`));
-    wrap.appendChild(el(`<div class="evdx-grid">${L.map(fdxCard).join("")}</div>`));
+  /* 묶는 것은 규칙 한 곳 (src/rules/dex-groups.js) — 유니티도 그것을 본다 */
+  foeDexGroups().forEach(G=>{
+    wrap.appendChild(el(`<div class="dexhd">${esc(G.머리)}${G.머리==="그 밖"?",":""} ${G.목록.length}</div>`));
+    wrap.appendChild(el(`<div class="evdx-grid">${G.목록.map(fdxCard).join("")}</div>`));
   });
-  FIELDS.forEach((F,i)=>{
-    const L=[];
-    FIELD_FOES[i].forEach(n=>{ if(L.indexOf(n)<0) L.push(n) });
-    if(typeof FOE_DEX_FIELD==="object") Object.keys(FOE_DEX_FIELD).forEach(n=>{
-      if(FOE_DEX_FIELD[n]===i&&FOE[n]&&L.indexOf(n)<0) L.push(n) });   /* 도감 전용 표 (/foe) */
-    (ENCOUNTER[i]||[]).forEach(e=>(e.foes||[]).forEach(n=>{ if(L.indexOf(n)<0&&FOE[n]) L.push(n) }));
-    /* 정예 — 앞자리에 서는 놈들과 정예 조합의 적도 그 구역 것이다 (사용자 2026-09-29) */
-    (ELITE_ENC[i]||[]).forEach(e=>(e.foes||[]).forEach(n=>{ if(L.indexOf(n)<0&&FOE[n]) L.push(n) }));
-    (ELITE_LEADS[i]||[]).forEach(n=>{ if(FOE[n]&&L.indexOf(n)<0) L.push(n) });
-    if(ELITE_LEAD[i]&&L.indexOf(ELITE_LEAD[i])<0) L.push(ELITE_LEAD[i]);
-    if(BOSSES[i]&&L.indexOf(BOSSES[i])<0) L.push(BOSSES[i]);
-    if(i===0) ["실험 책임자","연료 장치","첨탑 관리자","감옥 경비병","억울한 죄수","울타리"].forEach(n=>{ if(FOE[n]&&L.indexOf(n)<0) L.push(n) });
-    L.sort((a,b)=>order(a)-order(b));
-    /* 도감에서 감춘 적은 구역 목록에서도 뺀다 (2026-10-12) — 가짓수의 분모에 없는 것이 칸으로 보이면 안 맞는다 */
-    for(let q=L.length-1;q>=0;q--) if(!FOE[L[q]]||FOE[L[q]].dexHide||FOE[L[q]].isPhantom) L.splice(q,1);
-    L.forEach(n=>used.add(n));
-    wrap.appendChild(el(`<div class="dexhd">${esc(F.n)} ${L.length}</div>`));
-    wrap.appendChild(el(`<div class="evdx-grid">${L.map(fdxCard).join("")}</div>`));
-    if(i===0) act1Dex();   /* 핏빛 감옥 바로 뒤에 고철의 무덤 (사용자 2026-10-23) */
-  });
-  /* 미지의 구역 — 이벤트로만 만나는 적 (사용자 2026-09-29) */
-  { const evL=[];
-    EVENT_ENC.forEach(e=>(e.foes||[]).forEach(n=>{ if(FOE[n]&&!used.has(n)&&evL.indexOf(n)<0) evL.push(n) }));
-    if(evL.length){ evL.sort((a,b)=>order(a)-order(b)); evL.forEach(n=>used.add(n));
-      wrap.appendChild(el(`<div class="dexhd">미지의 구역, ${evL.length}</div>`));
-      wrap.appendChild(el(`<div class="evdx-grid">${evL.map(fdxCard).join("")}</div>`)); } }
-  const rest=all.filter(n=>!used.has(n));
-  if(rest.length){
-    wrap.appendChild(el(`<div class="dexhd">그 밖, ${rest.length}</div>`));
-    wrap.appendChild(el(`<div class="evdx-grid">${rest.map(fdxCard).join("")}</div>`));
-  }
   app.appendChild(wrap);
   const out=el(`<div class="center" style="margin-top:24px"><button class="go">닫기</button></div>`);
   out.querySelector("button").onclick=()=>{ view=DEX_BACK||"title"; render() };
@@ -24680,6 +24686,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 232, "v": "0.7", "d": "2026-10-27", "t": "적 도감의 묶음을 규칙으로 (유니티 포팅)", "big": 0},
  {"b": 231, "v": "0.7", "d": "2026-10-27", "t": "끝 화면의 말을 규칙으로 (유니티 포팅)", "big": 0},
  {"b": 230, "v": "0.7", "d": "2026-10-27", "t": "성향 표를 규칙으로 — 레벨 10 보상 (유니티 포팅)", "big": 0},
  {"b": 229, "v": "0.7", "d": "2026-10-27", "t": "보상 뽑기 · 상자 말 · 전리품 챙기기를 규칙으로 (유니티 포팅)", "big": 0},
@@ -26103,7 +26110,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=231;
+const BUILD_NO=232;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
