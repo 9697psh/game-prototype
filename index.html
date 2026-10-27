@@ -16913,8 +16913,8 @@ function coreDexCard(c){
     </div></div>`;
 }
 function drawCoreDex(app){
-  app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">세 계 핵 도 감</div>
-    <div class="sub">판을 시작할 때 가진 것 가운데 하나를 고릅니다</div></div>`));
+  app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">${DEX_HEAD.core.t}</div>
+    <div class="sub">${dexSub("core")}</div></div>`));
   const all=coreCodex(), own=all.filter(c=>c.own), lock=all.filter(c=>!c.own);
   const wrap=el(`<div class="dexwrap"></div>`);
   if(own.length){
@@ -16931,8 +16931,8 @@ function drawCoreDex(app){
   app.appendChild(out);
 }
 function drawItemDex(app){
-  app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">장 신 구 도 감</div>
-    <div class="sub">조합법의 그림에 손을 올리면 그 장신구가 펼쳐집니다</div>
+  app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">${DEX_HEAD.item.t}</div>
+    <div class="sub">${dexSub("item")}</div>
     <div class="dexcnt">특수 ${dexCount(ITEMS.filter(x=>x.g==="특수").map(x=>x.n),"item")}</div></div>`));
   const wrap=el(`<div class="dexwrap"></div>`);
   ITEM_GRADES.forEach(g=>{
@@ -16953,8 +16953,8 @@ function drawItemDex(app){
 }
 /* ── 카드 도감 ───────────────────────────────────────── */
 function drawCardDex(app){
-  app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">카 드 도 감</div>
-    <div class="sub">얻는 곳으로 묶었습니다</div>
+  app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">${DEX_HEAD.card.t}</div>
+    <div class="sub">${dexSub("card")}</div>
     <div class="dexcnt">${dexCount(cardAll(),"card")}</div></div>`));
   const wrap=el(`<div class="dexwrap"></div>`);
   const names=cardAll();
@@ -16971,6 +16971,60 @@ function drawCardDex(app){
   app.appendChild(out);
 }
 function openDex(which){ DEX_BACK=view; DEX_TAB=which; view="dex"; render() }   /* 책 도감의 그 칸으로 (사용자 2026-10-05 — 예전 목록 화면이 떴다) */
+/* ═══════ 도감의 머리글 · 규칙 설명 글 ═══════  (2026-10-28)
+ *
+ * ★ **설명 글 속의 수는 규칙의 수다.** 「먼저 12% 는 뜻밖의 상점」 의 12 는
+ *   `UNKNOWN_ODDS.shop` 이고, 「최근 셋은 무게가 낮아 (0.35 0.55 0.8)」 는 `EV_RECENT_W` 다.
+ *   표를 고치면 글이 저절로 따라와야 한다 — 그래서 글이 표 옆에 있어야 한다.
+ *
+ * ⚠️ 여태 이 글들이 `src/view/dex.js` 에 박혀 있었고, 유니티 손잡이는 **손으로 베낀**
+ *   머리글을 따로 들고 있었다 (`driver.js` 의 `DEX_KIND`). 그래서 벌써 갈라졌다 —
+ *   적 도감의 밑줄이 브라우저는 「구역 배수(1, 1.5, 2)와」, 손잡이는 「구역 배수와」였다.
+ *   한쪽만 고치면 아무도 안 알려 준다. 이제 한 곳이다.
+ *
+ * ⚠️ 글에 꾸밈(`<b>` `<em>` `<span class="evdx-tag c">`)이 들었다 — 브라우저는 그대로 쓰고,
+ *   유니티는 `say()`(꾸밈을 걷고 되돌리기)로 받는다. **글을 두 벌로 적지 않는다.**
+ */
+
+/* 머리글과 밑줄. 밑줄에 수가 드는 것(조합)은 `dexSub` 가 짓는다 */
+const DEX_HEAD={
+  item:{t:"장 신 구 도 감", s:"조합법의 그림에 손을 올리면 그 장신구가 펼쳐집니다"},
+  card:{t:"카 드 도 감",    s:"얻는 곳으로 묶었습니다"},
+  ev:  {t:"이 벤 트 도 감", s:"미지의 구역 — 언제 나오고, 무엇을 고를 수 있는지"},
+  enc: {t:"조 합 도 감",    s:""},
+  gim: {t:"전 용 구 역 도 감", s:"구역마다 개성을 더하는 칸 — 어디에 놓이고, 무엇을 고를 수 있는지"},
+  foe: {t:"적 도 감",       s:"어디에 나오고, 무엇을 하는지. 수치는 구역 배수(1, 1.5, 2)와 성장이 붙기 전 기본값"},
+  core:{t:"세 계 핵 도 감", s:"판을 시작할 때 가진 것 가운데 하나를 고릅니다"},
+};
+/* 조합 도감의 수 — 일반 조합 + 정예 조합 */
+function encDexCount(){
+  return ENCOUNTER.reduce((a,L)=>a+L.length,0)+ELITE_ENC.reduce((a,L)=>a+L.length,0);
+}
+function dexSub(kind){
+  if(kind==="enc") return `전투 칸에 서는 적의 조합 ${encDexCount()}가지 — 자리와 확률, 특징`;
+  return (DEX_HEAD[kind]||{}).s||"";
+}
+/* 그 도감의 규칙 설명 글 (없으면 빈 글) — 수는 규칙의 표에서 나온다.
+   ⚠️ 글은 `src/view/dex.js` 에서 **떠낸 그대로**다. 손으로 다시 적지 말 것 */
+function dexRule(kind){
+  if(kind==="ev") return `
+    <b>미지의 구역에 들어서면</b> 먼저 ${Math.round(UNKNOWN_ODDS.shop*100)}% 는 뜻밖의 상점, ${Math.round(UNKNOWN_ODDS.forge*100)}% 는 버려진 제련소(재료가 있을 때)가 됩니다.
+    나머지는 아래 이벤트 가운데 <b>조건에 맞는 것</b>을 같은 무게로 하나 고릅니다.
+    최근에 나온 셋은 무게가 낮아(${EV_RECENT_W.join(" ")}) 같은 이벤트가 연달아 나오는 일이 드뭅니다.
+    '낮음' 이라 적힌 것은 조건이 맞아도 그 비율만큼만 후보에 듭니다.`;
+  if(kind==="enc") return `
+    <b>확률</b>은 가중치입니다 — 숫자가 클수록 자주 나옵니다(같은 구역 안에서 견줌). 칸은 1이 맨 앞(대원 쪽)입니다.
+    <b>배치 무작위</b>면 자리가 섞이고, 수 범위가 적힌 적은 그 안에서 몇이 설지 판마다 다릅니다. 정예 전투는 맨 앞에 단단한 적 하나가 더 섭니다.
+    라운드가 여럿인 전투는 절반은 라운드마다 무작위, 절반은 아래 <b>짜여진 구성</b>대로 이어집니다.`;
+  if(kind==="gim") return `
+    <b>전용 구역은 구역을 만들 때 먼저 놓이고</b>, 빈자리에 전투, 상점, 쉼터 같은 보통 칸이 들어갑니다. 확률이 낮아 판마다 있는 것도 없는 것도 있습니다.
+    주둔지 곁 2칸 안에는 놓이지 않는 것이 많습니다. <b>새로고침</b>은 주둔지에서 자고 일어나거나 지도를 재편성할 때 다시 놓이는지를 말합니다.`;
+  if(kind==="foe") return `
+    <b>적의 다음 행동은 의도로 미리 보입니다.</b> 고유 기술이 있는 적은 그 표에서 <em>무게</em>대로 고르고, 나머지는 즐겨 하는 짓의 무게로 고릅니다.
+    기술의 피해, 보호막은 그 적이 얻은 능력치(강화, 간식 따위)만큼 오릅니다. 파란 칩은 <b>지속 기술</b> — 전장의 칸에 늘 표시됩니다.
+    <span class="evdx-tag c">일반 !</span> 은 일반 중에서도 강한 적입니다.`;
+  return "";
+}
 /* ═══════════ 적 도감의 **묶음** ═══════════ (2026-10-27)
    「이 적은 어느 구역 것인가」 — 전투 표(FIELD_FOES · ENCOUNTER · ELITE_ENC ·
    ELITE_LEADS · BOSSES · ACT1 · EVENT_ENC)를 읽어 가른다. **규칙이다.**
@@ -17169,15 +17223,11 @@ function evDexPlay(card,op,e,oi){
 }
 function drawEventDex(app){
   const n=EVENTS.length;
-  app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">이 벤 트 도 감</div>
-    <div class="sub">미지의 구역 — 언제 나오고, 무엇을 고를 수 있는지</div>
+  app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">${DEX_HEAD.ev.t}</div>
+    <div class="sub">${dexSub("ev")}</div>
     <div class="dexcnt">${dexCount(EVENTS.map(e=>e.n),"ev")}</div></div>`));
   const wrap=el(`<div class="dexwrap"></div>`);
-  wrap.appendChild(el(`<div class="evdx-rule">
-    <b>미지의 구역에 들어서면</b> 먼저 ${Math.round(UNKNOWN_ODDS.shop*100)}% 는 뜻밖의 상점, ${Math.round(UNKNOWN_ODDS.forge*100)}% 는 버려진 제련소(재료가 있을 때)가 됩니다.
-    나머지는 아래 이벤트 가운데 <b>조건에 맞는 것</b>을 같은 무게로 하나 고릅니다.
-    최근에 나온 셋은 무게가 낮아(${EV_RECENT_W.join(" ")}) 같은 이벤트가 연달아 나오는 일이 드뭅니다.
-    '낮음' 이라 적힌 것은 조건이 맞아도 그 비율만큼만 후보에 듭니다.</div>`));
+  wrap.appendChild(el(`<div class="evdx-rule">${dexRule("ev")}</div>`));
   /* 구역별로 나눈다 (사용자 2026-10-01) — 책의 왼쪽 목록에 구역 제목이 선다 */
   const ZN=["모든 구역"].concat(FIELDS.map(F=>F.n+" 전용"),["2구역부터"]);
   ZN.forEach(zn=>{
@@ -17392,14 +17442,10 @@ function encFeat(e){
   return t;
 }
 function drawEncDex(app){
-  const total=ENCOUNTER.reduce((a,L)=>a+L.length,0)+ELITE_ENC.reduce((a,L)=>a+L.length,0);
-  app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">조 합 도 감</div>
-    <div class="sub">전투 칸에 서는 적의 조합 ${total}가지 — 자리와 확률, 특징</div></div>`));
+  app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">${DEX_HEAD.enc.t}</div>
+    <div class="sub">${dexSub("enc")}</div></div>`));
   const wrap=el(`<div class="dexwrap"></div>`);
-  wrap.appendChild(el(`<div class="evdx-rule">
-    <b>확률</b>은 가중치입니다 — 숫자가 클수록 자주 나옵니다(같은 구역 안에서 견줌). 칸은 1이 맨 앞(대원 쪽)입니다.
-    <b>배치 무작위</b>면 자리가 섞이고, 수 범위가 적힌 적은 그 안에서 몇이 설지 판마다 다릅니다. 정예 전투는 맨 앞에 단단한 적 하나가 더 섭니다.
-    라운드가 여럿인 전투는 절반은 라운드마다 무작위, 절반은 아래 <b>짜여진 구성</b>대로 이어집니다.</div>`));
+  wrap.appendChild(el(`<div class="evdx-rule">${dexRule("enc")}</div>`));
   ENCOUNTER.forEach((L,fi)=>{
     if(!L.length) return;
     const sum=L.reduce((a,e)=>a+(e.w||1),0);
@@ -17479,14 +17525,12 @@ function gdxFill(e){
 }
 function drawGimDex(app){ KW_SKIP=GIM_KW_SKIP; try{ drawGimDex0(app) } finally{ KW_SKIP=null } }
 function drawGimDex0(app){
-  app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">전 용 구 역 도 감</div>
-    <div class="sub">구역마다 개성을 더하는 칸 — 어디에 놓이고, 무엇을 고를 수 있는지</div>
+  app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">${DEX_HEAD.gim.t}</div>
+    <div class="sub">${dexSub("gim")}</div>
     <div class="dexcnt">${(()=>{ const all=GIM_DEX.length, got=GIM_DEX.filter(gdxSeen).length;
       return `${all}종 가운데 <b>${got}</b>종` })()}</div></div>`));
   const wrap=el(`<div class="dexwrap"></div>`);
-  wrap.appendChild(el(`<div class="evdx-rule">
-    <b>전용 구역은 구역을 만들 때 먼저 놓이고</b>, 빈자리에 전투, 상점, 쉼터 같은 보통 칸이 들어갑니다. 확률이 낮아 판마다 있는 것도 없는 것도 있습니다.
-    주둔지 곁 2칸 안에는 놓이지 않는 것이 많습니다. <b>새로고침</b>은 주둔지에서 자고 일어나거나 지도를 재편성할 때 다시 놓이는지를 말합니다.</div>`));
+  wrap.appendChild(el(`<div class="evdx-rule">${dexRule("gim")}</div>`));
   /* 구역별로 나눈다 (사용자 2026-10-01) — 책의 왼쪽 목록에 구역 제목이 선다 */
   const FN=[...new Set(GIM_DEX.map(e=>e.field))];
   FN.forEach(fn=>{
@@ -17637,14 +17681,11 @@ function dexCount(list,kind){
 }
 function drawFoeDex(app){
   const all=Object.keys(FOE).filter(n=>!FOE[n].isPhantom&&!FOE[n].dexHide);   /* dexHide — 도감에서만 감춘다 (서리 군주) */
-  app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">적 도 감</div>
-    <div class="sub">어디에 나오고, 무엇을 하는지. 수치는 구역 배수(1, 1.5, 2)와 성장이 붙기 전 기본값</div>
+  app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">${DEX_HEAD.foe.t}</div>
+    <div class="sub">${dexSub("foe")}</div>
     <div class="dexcnt">${dexCount(all,"foe")}</div></div>`));
   const wrap=el(`<div class="dexwrap"></div>`);
-  wrap.appendChild(el(`<div class="evdx-rule">
-    <b>적의 다음 행동은 의도로 미리 보입니다.</b> 고유 기술이 있는 적은 그 표에서 <em>무게</em>대로 고르고, 나머지는 즐겨 하는 짓의 무게로 고릅니다.
-    기술의 피해, 보호막은 그 적이 얻은 능력치(강화, 간식 따위)만큼 오릅니다. 파란 칩은 <b>지속 기술</b> — 전장의 칸에 늘 표시됩니다.
-    <span class="evdx-tag c">일반 !</span> 은 일반 중에서도 강한 적입니다.</div>`));
+  wrap.appendChild(el(`<div class="evdx-rule">${dexRule("foe")}</div>`));
   /* 묶는 것은 규칙 한 곳 (src/rules/dex-groups.js) — 유니티도 그것을 본다 */
   foeDexGroups().forEach(G=>{
     wrap.appendChild(el(`<div class="dexhd">${esc(G.머리)}${G.머리==="그 밖"?",":""} ${G.목록.length}</div>`));
@@ -24726,6 +24767,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 235, "v": "0.7", "d": "2026-10-28", "t": "도감의 규칙 설명 글과 세계핵 도감을 규칙으로", "big": 0},
  {"b": 234, "v": "0.7", "d": "2026-10-28", "t": "유니티 — 전투 밖 소리와 곡 (조용한 구멍 열한째)", "big": 0},
  {"b": 233, "v": "0.7", "d": "2026-10-27", "t": "TUT · 연습장 세우기를 규칙으로 (유니티 포팅)", "big": 0},
  {"b": 232, "v": "0.7", "d": "2026-10-27", "t": "적 도감의 묶음을 규칙으로 (유니티 포팅)", "big": 0},
@@ -26152,7 +26194,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=234;
+const BUILD_NO=235;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
