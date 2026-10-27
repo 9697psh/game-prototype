@@ -17717,6 +17717,25 @@ function drawFoeDex(app){
 
 /* ═══════════ 전용 구역 결과 화면 ═══════════
    run.gimRes={title, sub, msg, tiles:[{t,label}], next:"chest"|"after"} — tiles 는 chestIcon 의 갈래(금화·경험치·파편·일반·하급·중급·상급·동료·회복·제련석) */
+/* 결과 칸의 그림 — 장신구면 그 장신구 것, 아니면 등급 상자 (사용자 2026-10-23) */
+function tileIcon(x){
+  if(x&&x.it){ const it=itemDef(x.it); if(it){ const im=rewardIcon(it); if(im) return im } }
+  return chestIcon(x&&x.t);
+}
+/* ═══════ 전용 구역의 결과 판을 세운다 ═══════  (2026-10-28 에 `src/view/dex.js` 에서)
+ *
+ * 하는 일은 `run.gimRes` 를 적고 **화면 이름을 다는 것**뿐이다 — 그리는 일은 화면에 남는다
+ * (`drawGimRes`).
+ *
+ * ⚠️ 이것이 화면 파일에 있던 동안 덩이에서는 그루터기였다 — 기믹 칸에서
+ *   「활성화」·「부수기」처럼 **끝내는 선택지**를 고르면 결과 판이 안 서고
+ *   **그 자리에 그대로 멈췄다** (조용한 구멍 열넷째).
+ *   마력의 탑 「마나석 기둥」에서 `sim/probe-run.js` 가 잡았다.
+ */
+/* 결과 판의 칸 — `run.after` 에서 **짓는다** (「희귀 장신구 — 불꽃 반지」 · 「상급 보상」).
+   그림은 안 고른다 — 그것은 화면의 `tileIcon` 이 한다.
+   ⚠️ 이것은 **그루터기조차 안 세워졌다.** 시늉 목록은 돌려 보며 찾은 것이라, 기믹 이벤트의
+      끝내는 선택지를 아무도 안 밟아 봐서 목록에 없었다 — 조용히 비는 대신 넘어졌다 */
 function gimResTiles(afterList,extra){
   const out=[];
   (extra||[]).forEach(x=>out.push(x));
@@ -17727,15 +17746,23 @@ function gimResTiles(afterList,extra){
   });
   return out;
 }
-/* 결과 칸의 그림 — 장신구면 그 장신구 것, 아니면 등급 상자 (사용자 2026-10-23) */
-function tileIcon(x){
-  if(x&&x.it){ const it=itemDef(x.it); if(it){ const im=rewardIcon(it); if(im) return im } }
-  return chestIcon(x&&x.t);
-}
 function gimResShow(title,sub,msg,tiles,next){
   if(title==="기믹 보상") title="보상";
   run.gimRes={title:title,sub:sub||"",msg:msg||"",tiles:tiles||[],next:next||"after"};
   view="gimres"; render();
+}
+
+/* 「획득 · 계속」 — **나가는 셈**. 상자면 상자, 받을 것이 있으면 그 줄,
+   칸에 서 있으면 칸을 나가고, 아니면 지도.
+   ⚠️ 손잡이가 상자만 보고 나머지를 빠뜨려 **결과 판에 눌러앉았다** (2026-10-28).
+      `restDone` · `evNext` 와 같은 병이다 — 나가는 셈을 베끼다 흘렸다. 한 곳에 둔다 */
+function gimResGo(){
+  const R=run.gimRes||{}, nx=R.next;
+  run.gimRes=null;
+  if(nx==="chest"&&run.dun){ openChest(run.dun.kind); return }
+  if((run.after||[]).length){ afterChest(); return }
+  if(run.here){ leaveNode(); return }
+  backToMap();
 }
 function drawGimRes(app){
   const R=run.gimRes; if(!R){ backToMap(); return }
@@ -17750,13 +17777,7 @@ function drawGimRes(app){
     if(wg) wagonGive(sc,row,R); else sc.appendChild(el(`<div class="wf-pr in"><div class="wf-bub"></div><div class="wf-fig">${figure("억울한 죄수")}</div></div>`)) }
   else wrap.appendChild(row);
   const b=el(`<div style="margin-top:24px"><button class="go">${R.tiles.length?"획득":"계속"}</button></div>`);
-  b.querySelector("button").onclick=()=>{
-    const nx=R.next; run.gimRes=null; SFX.play("summon");
-    if(nx==="chest"&&run.dun){ openChest(run.dun.kind); return }
-    if((run.after||[]).length){ afterChest(); return }
-    if(run.here){ leaveNode(); return }
-    backToMap();
-  };
+  b.querySelector("button").onclick=()=>{ SFX.play("summon"); gimResGo(); render() };   /* 나가는 셈은 규칙이 쥔다 */
   wrap.appendChild(b);
 }
 /* 죄수 호송 마차 — 살려 낸 죄수가 다가와 고맙다 하고, 꾸러미를 던져 건네고, 그 자리에 남는다 (사용자 2026-10-03 — 달아나지 않게).
@@ -24788,6 +24809,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 240, "v": "0.7", "d": "2026-10-28", "t": "기믹 결과 판이 서고 나간다 (조용한 구멍 열넷째)", "big": 0},
  {"b": 239, "v": "0.7", "d": "2026-10-28", "t": "진 뒤에는 멈춘다 · 이벤트는 그 칸에 서 있을 때만", "big": 0},
  {"b": 238, "v": "0.7", "d": "2026-10-28", "t": "쉼터 차림표 · 제련소 나가기를 규칙으로 (판이 멈추던 세 자리)", "big": 0},
  {"b": 237, "v": "0.7", "d": "2026-10-28", "t": "이긴 뒤 [전투 종료] 를 누를 수 있다 (유니티)", "big": 0},
@@ -26219,7 +26241,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=239;
+const BUILD_NO=240;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
