@@ -7381,6 +7381,18 @@ function foeViewApply(o){
   render();
 }
 function foeViewFinish(){ const a=foeViewActive(); if(a){ a.finished=1; render() } }
+/* ═══════ 적 상세 보기가 닫힌 뒤에 ═══════  (2026-10-28 에 `src/fx/effects.js` 에서)
+ *
+ * 하는 일은 **미루는 것**뿐이다 — 「적 상세 보기」가 떠 있으면 그것이 닫힌 뒤에 한다.
+ * 화면이 없으면 그냥 `setTimeout` 이다 (첫 줄이 그렇게 적혀 있다).
+ *
+ * ⚠️ 이것이 화면 파일에 있던 동안 덩이에서는 그루터기였다 —
+ *   대원이 **모두 쓰러져도 `lose()` 가 아예 안 불렸다.** 전멸했는데 판이 안 끝나고
+ *   전투 화면에 그대로 앉는다 (조용한 구멍 열셋째). 아무도 안 넘어지니 끝까지 몰랐다.
+ *   `sim/probe-run.js` 가 「판이 멈췄다 — 산 대원 0」 으로 잡아냈다.
+ *
+ * ⚠️ `foeViewActive` 는 화면 것이다 (그루터기 → 거짓 → 바로 setTimeout). 그것이 맞다.
+ */
 /* 종료 처리는 이미 계산한다. 패배·지도 화면으로 넘어가는 기존 예약만 마지막 연출 뒤에 보인다. */
 function foeViewLater(fn,ms){
   if(!foeViewActive()) return setTimeout(fn,ms);
@@ -24773,6 +24785,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 238, "v": "0.7", "d": "2026-10-28", "t": "쉼터 차림표 · 제련소 나가기를 규칙으로 (판이 멈추던 세 자리)", "big": 0},
  {"b": 237, "v": "0.7", "d": "2026-10-28", "t": "이긴 뒤 [전투 종료] 를 누를 수 있다 (유니티)", "big": 0},
  {"b": 236, "v": "0.7", "d": "2026-10-28", "t": "룰렛 결과 글 · 외형 주인 셈을 규칙으로 (조용한 구멍 열둘째)", "big": 0},
  {"b": 235, "v": "0.7", "d": "2026-10-28", "t": "도감의 규칙 설명 글과 세계핵 도감을 규칙으로", "big": 0},
@@ -26202,7 +26215,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=237;
+const BUILD_NO=238;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -30541,6 +30554,25 @@ function forgePlan(){
   if(campOnce){ ok=false; note="주둔지 제련소에서는 하루에 한 번 제련합니다." }
   return {pk:pk, made:made, stock:stock, note:note, ok:ok, mood:mood, campOnce:campOnce, both:both};
 }
+/* ═══════ 제련소에서 나간다 ═══════  (2026-10-28 에 `src/view/forge.js` 에서)
+ *
+ * 나가는 일은 그냥 화면 넘김이 아니다 — **판을 바꾼다** :
+ *   · 아직 안 받은 제련물이 있으면 **먼저 건넨다** (연출이 날아가도 여기서 받는다)
+ *   · 지도의 제련소에서 왔으면 **칸을 나가고**, 주둔지면 주둔지 판으로
+ *   · 아무것도 안 만들고 그만두면 **오늘 방문을 돌려준다**
+ *
+ * ⚠️ 이것이 화면 파일에 있던 동안 유니티에는 **나가는 길이 아예 없었다** —
+ *   제련소에 들어가면 갇혔다 (조용한 구멍은 아니지만 판이 멈추는 것은 같다).
+ *   `sim/probe-run.js` 가 「제련소에서 할 일이 없다」로 잡았다.
+ */
+function forgeOut(){
+  if(run.forgeHold){ forgeTake(); return }   /* 아직 안 받은 것이 있으면 먼저 건넨다 */
+  run.forgePick=[]; run.forgeOpen=null;
+  const m=run.forgeMade; run.forgeMade=0;
+  if(run.here){ leaveNode(); return }        /* 지도의 제련소에서 왔다 */
+  if(!m) run.campDone=0;                     /* 아무것도 안 만들고 그만두면 오늘 방문을 돌려준다 */
+  view="map"; run.mapSel=null;               /* 지도의 주둔지 판으로 */
+}
 function drawForge(app){
   const P=forgePlan();   /* 셈은 규칙 한 곳 (src/rules/forge-plan.js) */
   const pk=P.pk, made=P.made, stock=P.stock, note=P.note, ok=P.ok, mood=P.mood;
@@ -30568,12 +30600,7 @@ function drawForge(app){
       npcTalk(stage,bb,rnd(P),L.say) } }
   bDex.onclick=()=>openDex("itemdex");
   bGear.onclick=()=>{ run.forgePick=[]; run.forgeOpen=null; run.gearPick=null; run.gearBack="forge"; view="gear"; render() };
-  bOut.onclick=()=>{ if(run.forgeHold){ forgeTake(); return }   /* 아직 안 받은 것이 있으면 먼저 건넨다 */
-    run.forgePick=[]; run.forgeOpen=null;
-    const m=run.forgeMade; run.forgeMade=0;
-    if(run.here){ leaveNode(); return }        /* 지도의 제련소에서 왔다 */
-    if(!m) run.campDone=0;                     /* 아무것도 안 만들고 그만두면 오늘 방문을 돌려준다 */
-    view="map"; run.mapSel=null; render() };   /* 지도의 주둔지 판으로 */
+  bOut.onclick=()=>{ forgeOut(); render() };   /* 나가는 셈은 규칙이 쥔다 (src/rules/forge-out.js) */
   if(made) bGo.onmouseenter=()=>shopTipShow(stage,bGo,`<b>${esc(made.n)}</b><i>${esc(made.g)} 장신구, 제련석 ${made.cost}${made.gold?`, 금화 ${made.gold}`:""}</i><p>${rich(made.d)}</p>${(made.mix||made.lux)?"":recipeHtml(made)}`);
   bGo.onmouseleave=shopTipHide;
   bGo.onclick=()=>{ if(!ok) return; shopTipHide(); forgeRun(stage,pk,made) };
@@ -31860,37 +31887,75 @@ function partyStrip(note){
       :`<span class="hint">${down?`쓰러짐 ${down}명, `:""}${hurt?`다친 대원 ${hurt}명`:"모두 멀쩡합니다"}</span>`}
   </div>`;
 }
+/* ═══════════ 쉼터(모닥불) — 차림표 ═══════════  (2026-10-28)
+   「무엇을 할 수 있나 · 무엇을 하나」는 판을 바꾸므로 **규칙**이다
+   (문서/규칙-엔진경계.md 의 한 줄 시험 — 들어내면 run 이 달라진다).
+   화면은 이것을 받아 **그리기만** 한다. 주둔지의 `campActs()` 와 같은 꼴이다.
+
+   ⚠️ 여태 이 셋이 `src/view/rest.js` 안에 글과 함께 박혀 있었다 — 유니티에는
+      **쉼터 화면이 아예 없었다.** 지도에서 모닥불 칸에 들어서면 `view="rest"` 가 되는데
+      유니티의 회복 화면은 **결과 판**(`run.restRes`)만 그릴 줄 알아 빈 화면이 떴고,
+      거기서 아무 데도 못 갔다 (2026-10-28 에 `sim/probe-run.js` 가 잡았다).
+   ⚠️ 보이는 글도 여기 한 곳에만 둔다 — 두 곳에 두면 한쪽만 고쳐져 어긋난다. */
 /* 이 구역에서는 쉼터에서 밤을 보내면 오염도가 오르지 않고 이만큼 내려간다 (마력의 탑 25, 사용자 2026-10-10).
    구역 번호를 적지 않고 FIELDS 에 묻는다 — 다른 구역에 같은 규칙을 줄 때도 거기 한 줄이면 된다 */
 function restCl(){ return (typeof run!=="undefined"&&run&&!run.sandbox&&(FIELDS[run.field]||{}).restCleanse)||0 }
+function restAct(key,n,d,ok,f,note){ return {key:key,n:n,d:d,ok:!!ok,f:f,note:note||""} }
+
+/* 셋 — 휴식하기 · 단련하기 · 노숙하기. `ok` 가 거짓이면 지금은 못 한다 */
+function restActs(){
+  const RK=restKind(run.restKind);          /* 쉼터 셋 — 들어설 때 적어 둔 종류 */
+  const n=RK.give+coreFx("trainMore");      /* 잔혹한 세계핵 — 하나 더 */
+  const grade=RK.grade;
+  const noRest=!!coreFx("noRest");          /* 잔혹한 세계핵 — 쉼터에서 휴식할 수 없다 */
+  return [
+   restAct("heal","휴식하기",
+     `쓰러지지 않은 모든 대원이 최대 체력의 ${restPct(30)}%를 회복합니다.${restUpNote()}`,
+     !noRest,
+     /* ⚠️ 셈은 restPct 한 곳에서 — 여기에 제 셈을 따로 적으면 보이는 값과 회복하는 값이 어긋난다 (2026-10-22) */
+     ()=>{ restHeal(h=>Math.round(h.maxHp*restPct(30)/100),"rest"); SFX.play("heal") },
+     noRest?"잔혹한 세계핵 — 쉼터에서 휴식할 수 없습니다.":"쓰러진 대원은 일어나지 않습니다."),
+   restAct("train","단련하기",`${grade} 보상을 ${n}개 고릅니다.`,true,
+     ()=>{ run.after=run.after||[]; for(let i=0;i<n;i++) run.after.push({grade:grade}); afterChest() }),
+   restAct("sleep","노숙하기",
+     `여기서 밤을 보내고 다음 날 아침을 맞습니다. ${restCl()?`오염도가 ${restCl()} 내려갑니다.`:"주둔지가 아니라 오염도가 10 오릅니다."}`,
+     !!run.night,
+     ()=>{ addTaint(restCl()?-restCl():10); nextDay();
+       if(view!=="over"){ run.here=null; toast("모닥불 곁에서 밤을 보냈습니다."); view="map"; render() } },
+     run.night?"":"해가 진 뒤에만 할 수 있습니다.")
+  ];
+}
+/* 머리글 — 쉼터 종류가 정한다 (「모 닥 불」 · 「버려진 야영지」 …) */
+function restHead(){ const RK=restKind(run.restKind);
+  return {제목:RK.n.split("").join(" "), 밑줄:`${RK.sub}. 잠깐 몸을 누일 수 있겠군요.`} }
+/* 하나를 고른다 — 키로. 못 하는 것은 하지 않는다 */
+function restDo(key){
+  const a=restActs().find(x=>x.key===key);
+  if(!a||!a.ok) return false;
+  a.f(); return true;
+}
+/* ★ 차림표(글 · 할 수 있나 · 무엇을 하나)는 **규칙이 쥔다** (`restActs`) — 주둔지와 같은 꼴.
+   여기서는 받아 **그리기만** 한다. 유니티도 그 차림표를 그대로 받는다 (2026-10-28) */
 function drawRest(app){
   if(run.restRes) return drawRestRes(app);
-  const RK=restKind(run.restKind);   /* 쉼터 셋 — 들어설 때 적어 둔 종류 (사용자 2026-10-16) */
-  app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">${esc(RK.n.split("").join(" "))}</div>
-    <div class="sub">${esc(RK.sub)}. 잠깐 몸을 누일 수 있겠군요.</div></div>`));
+  const RK=restKind(run.restKind);   /* 그림만 — 글은 restHead() 가 쥔다 */
+  const H=restHead();
+  app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">${esc(H.제목)}</div>
+    <div class="sub">${esc(H.밑줄)}</div></div>`));
   const wrap=app.querySelector(".center");
   wrap.appendChild(el(partyStrip(run.heroes.some(h=>h.down)
     ? "쓰러진 대원은 주둔지 치료소에서만 일어납니다" : null)));
-  /* 단련하기 — **쉼터 종류**가 정한다 (사용자 2026-10-16 : 전에는 구역이 정했다) */
-  const n=RK.give+coreFx("trainMore");   /* 잔혹한 세계핵 — 하나 더 */
-  const grade=RK.grade;
-  const noRest=!!coreFx("noRest");   /* 잔혹한 세계핵 — 쉼터에서 휴식할 수 없다 */
+  const ART={heal:()=>iconImg(RK.ink)||nodeArt("rest"),
+             train:()=>chestIcon(RK.grade),
+             sleep:()=>uiPng("clock")||nodeArt("camp")};
   const row=el(`<div class="rewards"></div>`);
-  const a=el(`<div class="rw ${noRest?"no":""}"><div class="rwi">${iconImg(RK.ink)||nodeArt("rest")}</div>
-    <b>휴식하기</b><p>쓰러지지 않은 모든 대원이 최대 체력의 ${restPct(30)}%를 회복합니다.${restUpNote()}</p>
-    <p style="color:var(--faint)">${noRest?"잔혹한 세계핵 — 쉼터에서 휴식할 수 없습니다.":"쓰러진 대원은 일어나지 않습니다."}</p></div>`);
-  /* ⚠️ 셈은 restPct 한 곳에서 — 여기에 제 셈을 따로 적으면 보이는 값과 회복하는 값이 어긋난다 (2026-10-22) */
-  if(!noRest) a.onclick=()=>{ restHeal(h=>Math.round(h.maxHp*restPct(30)/100),"rest"); SFX.play("heal"); render() };   /* 바로 나가지 않고 회복 결과를 보여 준다 (사용자 2026-10-04) */
-  const b=el(`<div class="rw"><div class="rwi">${chestIcon(grade)}</div>
-    <b>단련하기</b><p>${esc(grade)} 보상을 ${n}개 고릅니다.</p></div>`);
-  b.onclick=()=>{ run.after=run.after||[]; for(let i=0;i<n;i++) run.after.push({grade:grade});
-    afterChest() };
-  const c=el(`<div class="rw ${run.night?"":"no"}"><div class="rwi">${uiPng("clock")||nodeArt("camp")}</div>
-    <b>노숙하기</b><p>여기서 밤을 보내고 다음 날 아침을 맞습니다. ${restCl()?`오염도가 ${restCl()} 내려갑니다.`:"주둔지가 아니라 오염도가 10 오릅니다."}</p>
-    ${run.night?"":`<p style="color:var(--faint)">해가 진 뒤에만 할 수 있습니다.</p>`}</div>`);
-  if(run.night) c.onclick=()=>{ addTaint(restCl()?-restCl():10); nextDay();
-    if(view!=="over"){ run.here=null; toast("모닥불 곁에서 밤을 보냈습니다."); view="map"; render() } };
-  row.appendChild(a); row.appendChild(b); row.appendChild(c);
+  restActs().forEach(a=>{
+    const e=el(`<div class="rw ${a.ok?"":"no"}"><div class="rwi">${ART[a.key]()}</div>
+      <b>${esc(a.n)}</b><p>${a.d}</p>
+      ${a.note?`<p style="color:var(--faint)">${esc(a.note)}</p>`:""}</div>`);
+    if(a.ok) e.onclick=()=>{ restDo(a.key); render() };   /* 바로 나가지 않고 회복 결과를 보여 준다 (사용자 2026-10-04) */
+    row.appendChild(e);
+  });
   wrap.appendChild(row);
 }
 
