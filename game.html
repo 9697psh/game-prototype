@@ -6152,6 +6152,89 @@ function jo(w,p){const c=String(w||"").trim().slice(-1).charCodeAt(0);
   const h=(c>=0xAC00&&c<=0xD7A3)?((c-0xAC00)%28)!==0:false;
   return ({ig:["이","가"],eul:["을","를"],eun:["은","는"],gwa:["과","와"],eu:["으",""]})[p][h?0:1];}
 const rnd=a=>a[Math.floor(Math.random()*a.length)];
+/* ── 연출 전용 무작위 ─────────────────────────────────────────────
+   **규칙과 다른 줄에서 뽑는다.** 대사 · 유휴 동작처럼 **보이고 들리는 데서 끝나는** 뽑기는
+   여기서 뽑아야 한다.
+
+   왜 — 연출이 `Math.random()` 을 쓰면 **규칙의 무작위 줄이 밀린다.**
+   2026-10-27 에 재어 보니 한 판에서 대사 5~8번 · 유휴 동작 19~43번을 규칙과 **같은 줄**에서
+   뽑고 있었고, 그 때문에 적의 의도가 「공격」에서 「막기」로 바뀌었다
+   (`node sim/rng-diff.js` 가 441번째 뽑기에서 갈라지는 것을 짚어 냈다).
+
+   그래서 생기는 탈 둘
+     ㉠ 유니티로 규칙만 떼어 가면 연출이 빠져 **판이 통째로 달라진다** (포팅 4단계가 막힌다)
+     ㉡ **대사를 부르는 자리를 하나 더하면 그 뒤의 전투가 전부 달라진다** — 연출을 손대는
+        것이 밸런스를 흔든다. 이건 포팅과 상관없이 그 자체로 탈이다.
+
+   ⚠️ `barkDraw` 의 주석은 처음부터 **「화면 전용 추첨」**이라고 적고 있었다.
+      뜻은 본디 이것이었고, 줄만 안 갈라져 있었을 뿐이다.
+   ⚠️ 본보기는 이미 있었다 — `foeBarkRand()` (데린저 대사)가 제 씨앗으로 뽑는다.
+      그것은 그대로 두고, 나머지를 이 줄로 옮긴다.
+
+   ⚠️ **씨앗을 `Date.now()` 로 잡지 않는다.** 시뮬레이터는 판을 올리고 **나중에** 가짜
+      시계를 꽂으므로, 올릴 때 `Date.now()` 를 읽으면 그 값이 진짜 시각이 되어
+      판마다 달라진다 — 답지가 설 수 없다. 붙박이 씨앗이면 늘 같다.
+
+   ⚠️ **규칙에서는 절대 쓰지 말 것.** 규칙의 무작위는 `Math.random()` 이다
+      (씨앗을 꽂아 같은 판을 다시 돌릴 수 있어야 한다). 자세한 것은 `문서/규칙-엔진경계.md`. */
+let FX_SEED = 0x9E3779B9;
+function fxRand() {
+  FX_SEED = (Math.imul(1664525, FX_SEED) + 1013904223) >>> 0;
+  return FX_SEED / 4294967296;
+}
+/* 꾸러미에서 하나 — 규칙의 `rnd()` 와 같은 일을 하되 **연출 줄에서** 뽑는다 */
+const fxPick = a => a[Math.floor(fxRand() * a.length)];
+/* 망자의 육체 — **되살아날 때 판이 바뀌는 몫**. 연출이 아니라 규칙이다.
+   ⚠️ 이 몫이 `fx/effects.js` 의 `soulReviveFX` 안에 섞여 있었다 (2026-10-27).
+      연출을 떼면 **「되살아납니다」는 기록에 남는데 몸은 안 살아나고**, 그 뒤에
+      이어져야 할 `afterWave`(규칙)도 영영 안 돌았다. 기록이 안 바뀌니
+      **골든이 거의 못 잡는 결**이다 (232판 중 3판이 그 꼴로 걸렸다).
+   규약은 `문서/규칙-엔진경계.md` 「6-마 — 연출이 규칙을 업지 않는다」.
+
+   ⚠️ **한 벌만 둔다.** 연출(soulReviveFX)도 이것을 부르고, 연출이 없을 때
+      (유니티 엔진 · 시뮬레이터) 규칙도 이것을 부른다. 두 벌로 적으면 언젠가 어긋난다. */
+function soulReviveStand(r){
+  if(!r||!r.t) return;
+  r.t.hp=r.hp; r.t.down=0;
+  if(!r.t.slot&&r.to&&!allUnits().some(u=>u!==r.t&&u.slot===r.to)) r.t.slot=r.to;   /* 쓰러진 자리(downSlot)에서 일어선다 — 칸이 0 이면 그려지지 않아 사라져 보였다 */
+  r.t.downSlot=0; if(B) B.mins=(B.mins||[]).filter(m=>m!==r.m);
+}
+/* 연출을 보여 준 **뒤에** 이어지는 규칙 — 연출이 새도 규칙은 **반드시** 돈다.
+   ⚠️ 「반드시 돈다」를 **연출이 쥐면 안 된다.** 연출을 떼어 내는 순간(유니티 엔진)
+      그 몫이 통째로 사라진다 — 말만 기록에 남고 몸이 안 따라간다.
+      그래서 **때(ms)도 한 번만 돌게 막는 것도 규칙이 쥔다.**
+   규약은 `문서/규칙-엔진경계.md` 「6-마 — 연출이 규칙을 업지 않는다」.
+
+   쓰는 법
+     afterFX(6500, ()=>{ …판을 바꾼다… }, go=>golemCreationFX(go));
+   연출이 더 빨리 끝나면 그때 잇고, 안 끝나거나 아예 없으면 ms 뒤에 잇는다. */
+function afterFX(ms, fn, show){
+  let 끝남=0;
+  const 잇기=()=>{ if(끝남) return; 끝남=1; fn() };
+  const 배=(typeof SPD==="number"?SPD:1);
+  try{ setTimeout(잇기, Math.round(ms*배)) }catch(e){}
+  if(typeof show==="function"){ try{ show(잇기) }catch(e){} }
+  return 잇기;
+}
+/* 고르게 섞는다 (Fisher–Yates). **뽑기 횟수가 늘 n-1 로 정해져 있다.**
+
+   ⛔ **`sort(()=>Math.random()-0.5)` 를 쓰지 말 것.** 두 가지로 틀린다 :
+     ㉠ **고르게 안 섞인다.** 비교 함수가 제멋대로면 결과가 치우친다 (잘 알려진 잘못된 꼴).
+     ㉡ **비교 횟수가 엔진마다 다르다.** V8 은 TimSort, Jint 는 다른 알고리즘이라
+        같은 씨앗으로도 **뽑는 횟수가 달라져** 그 뒤의 판이 통째로 밀린다.
+        2026-10-27 에 유니티(Jint)에서 `newRun` 하나가 node 보다 **6번 더** 뽑아
+        조합(적 묶음)이 첫 줄부터 달라졌다 — 뿌리가 이것이었다.
+
+   규칙의 무작위는 `Math.random()` 이다 (연출은 `fxRand()` — `문서/규칙-엔진경계.md` 6-나).
+   연출을 섞을 일이 있으면 `fxShuffled` 를 따로 두고 이 함수를 베끼지 말 것. */
+function shuffled(a){
+  const L=(a||[]).slice();
+  for(let i=L.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    const t=L[i]; L[i]=L[j]; L[j]=t;
+  }
+  return L;
+}
 const el=s=>{const t=document.createElement("template");t.innerHTML=s.trim();return t.content.firstElementChild};
 
 /* 「미리 돌려 보는 중」 빗장 — 예고가 기술을 진짜로 한 번 돌려 보는 동안만 1 이다 (predictRun).
@@ -6770,9 +6853,11 @@ const IDLE_SAY={after:[12000,20000],gap:[18000,30000],apart:6000};
 /* 희귀 외형 특수 대기 행동 — 대사와 따로 (사용자 2026-10-04: 가만히 둬도 무작위로). 처음 6~11초 뒤, 그 뒤 10~18초마다 */
 const IDLE_MO={after:[6000,11000],gap:[10000,18000]};
 let IDLE_LAST=0;
-const idleRand=r=>r[0]+Math.random()*(r[1]-r[0]);
+/* ⚠️ **연출 줄에서 뽑는다** (src/fx/fx-rand.js) — 한 판에 19~43번이나 뽑아서
+   규칙의 무작위를 그만큼 밀고 있었다 (2026-10-27) */
+const idleRand=r=>r[0]+fxRand()*(r[1]-r[0]);
 /* 전투 번호 — 대원에 B 를 통째로 걸면 저장(JSON)이 돌고 도는 고리에 걸린다. 번호만 적는다 */
-const idleBid=()=>B?(B._iid||(B._iid=Date.now()+Math.random())):0;
+const idleBid=()=>B?(B._iid||(B._iid=Date.now()+fxRand())):0;
 /* 대기 띠에만 쓰는 ph — 띠 칸 안에서 몸이 작은 그림들 (사용자 2026-10-14).
    ⚠️ 값은 「기본.png 의 몸 높이 ÷ 띠 칸 안 몸 높이」로 잡는다.
       균열 애벌레 : 기본 60/60 · 띠 27/64 → 0.385 × (64/27) ≈ 0.91 */
@@ -8023,9 +8108,10 @@ function soulReviveFX(RV,done,tries){
   let left=RV.length; const fin=()=>{ if(--left<=0&&done) done() };
   RV.forEach((r,i)=>{
     const A=ctrOf("mine",r.from), T=ctrOf("mine",r.to);
-    const stand=()=>{ r.t.hp=r.hp; r.t.down=0;
-      if(!r.t.slot&&r.to&&!allUnits().some(u=>u!==r.t&&u.slot===r.to)) r.t.slot=r.to;   /* 쓰러진 자리(downSlot)에서 일어선다 — 칸이 0 이면 그려지지 않아 사라져 보였다 */
-      r.t.downSlot=0; if(B) B.mins=(B.mins||[]).filter(m=>m!==r.m); render(); fin();
+    /* ⚠️ **판이 바뀌는 몫은 규칙 것이다** — `src/rules/soul-revive.js` 의 soulReviveStand.
+       여기(연출) 안에 섞여 있던 것을 2026-10-27 에 떼어 냈다. 연출을 떼면 「되살아납니다」는
+       기록에 남는데 몸이 안 살아나던 탈이 그것이었다. 문서/규칙-엔진경계.md 6-마. */
+    const stand=()=>{ soulReviveStand(r); render(); fin();
       const T2=ctrOf("mine",r.to), im=T2&&T2.e.querySelector(".art img.pxs, .art svg");
       if(im&&im.animate) im.animate([{scale:"1 .55",filter:"brightness(2.6) drop-shadow(0 0 16px #bff6e8)",opacity:.4},{scale:"1 1.08",filter:"brightness(1.6) drop-shadow(0 0 10px #bff6e8)",opacity:1,offset:.5},{scale:"1 1",filter:"none"}],{duration:620,easing:"ease-out"});
       if(T2){ const g=spawn('<div class="ring" style="border-color:#bff6e8"></div>'); at(g,{x:T2.x,y:T2.y}); if(typeof sparks==="function") sparks({x:T2.x,y:T2.y-10},"#bff6e8",10) } };
@@ -13155,9 +13241,12 @@ function golemMerge(h){
   if(p) fx({side:"mine",slot:p,s:sfxOr("골렘 창조","summon"),ring:"#c9a227",glow:1,txt:"창조",cls:"shd",gap:120});
   say(`${m.part}${jo(m.part,"gwa")} ${so.part}${jo(so.part,"ig")} 하나로 합쳐집니다 — 하수인 골렘.`,"t1");
   /* 카드는 **연출이 끝난 뒤** 손에 들어온다 — 날아든 자리에서 카드가 생긴다 */
-  golemCreationFX(()=>{ if(!B||B.over) return;
+  /* ⚠️ **「카드는 반드시 들어온다」를 규칙이 쥔다** (2026-10-27). 전에는 연출
+     (golemCreationFX)이 제 안전줄로 쥐고 있어서, 연출을 떼면 카드가 영영 안 들어왔다.
+     문서/규칙-엔진경계.md 6-마. */
+  afterFX(6500, ()=>{ if(!B||B.over) return;
     handAdd({type:"summon",name:"하수인 골렘",mat:m.part,soul:so.part,gone:1});   /* ⚠️ arrive 를 달지 않는다 — 날아드는 연출을 거치지 않는 카드라 다음 턴까지 안 보인다 */
-    render() });
+    render() }, go=>golemCreationFX(go));
   return 1;
 }
 /* 하수인 골렘을 놓은 **뒤** — 파벨의 보상이 골렘을 키운다 (노트 lowRewards 넷).
@@ -13270,10 +13359,11 @@ function golemDeath(u,why,산채로){
       const kind=재료?"mat":"soul", nm=재료?u.golem.mat:u.golem.soul, sl=u.slot;
       say(`재조립 — ${partName(kind,nm)}${jo(partName(kind,nm),"eul")} 돌려받았습니다.`,"t2");
       /* 부서진 자리에서 카드가 **날아와** 든다 (사용자 2026-10-13) */
-      partFlyFX(sl,kind,nm,()=>{ if(!B||B.over) return;
+      /* ⚠️ 「부품은 반드시 돌아온다」도 규칙이 쥔다 (위와 같은 까닭) */
+      afterFX(1600, ()=>{ if(!B||B.over) return;
         handAdd({type:"part",kind:kind,part:nm,name:partName(kind,nm),
           d:((kind==="mat"?PAVEL_MAT:PAVEL_SOUL)[nm]||{}).d||"",gone:1});
-        golemMerge(ow); render() }) } }
+        golemMerge(ow); render() }, go=>partFlyFX(sl,kind,nm,go)) } }
   /* 창조의 고통 — 그 라운드 동안 보호력 (노트 : 「해당 라운드에서」 → bumpRnd) */
   if(!산채로&&ow&&ow.tag&&ow.tag.makePain&&ow.hp>0){ bumpRnd(ow,"def",ow.tag.makePain);
     say(`창조의 고통 — ${ow.name} 이번 라운드 보호력 +${ow.tag.makePain}`,"t2") }
@@ -19350,7 +19440,7 @@ function encByName(f,n){ return encOf(f).find(e=>e.n===n)||eliteOf(f).find(e=>e.
 function encLayout(enc){
   let L=enc.foes.map((nm,i)=>({n:nm,s:(enc.slots&&enc.slots[i])||(i+1)}));
   /* pick — 그림의 적 가운데 몇 종만 */
-  if(enc.pick){ const k=rr(enc.pick); L=L.slice().sort(()=>Math.random()-0.5).slice(0,k) }
+  if(enc.pick){ const k=rr(enc.pick); L=shuffled(L).slice(0,k) }
   /* vary — 그 적의 수를 범위 안에서 */
   if(enc.vary) Object.keys(enc.vary).forEach(nm=>{
     const k=rr(enc.vary[nm]); let have=L.filter(x=>x.n===nm).length;
@@ -19361,7 +19451,7 @@ function encLayout(enc){
   if(enc.rnd){
     const fixed=enc.fixed||[], back=enc.back||[];
     const free=L.filter(x=>fixed.indexOf(x.n)<0&&back.indexOf(x.n)<0);
-    const slots=free.map(x=>x.s).sort(()=>Math.random()-0.5);
+    const slots=shuffled(free.map(x=>x.s));
     free.forEach((x,i)=>{ x.s=slots[i] });
   }
   if(enc.back&&enc.back.length){
@@ -23201,6 +23291,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 225, "v": "0.7", "d": "2026-10-27", "t": "ⓒ 주둔지 — 차림표를 규칙으로 (유니티도 같은 것을 받는다)", "big": 0},
  {"b": 224, "v": "0.7", "d": "2026-10-27", "t": "쪼개기 1단계 끝 — game.html 794줄 (움직임은 그대로)", "big": 0},
  {"b": 223, "v": "0.7", "d": "2026-10-25", "t": "이테리오 수축 공격 거리 3", "big": 0},
  {"b": 222, "v": "0.7", "d": "2026-10-23", "t": "벨트 · 벼락칼날 · 레이 태세 · 전용 이벤트 · 전리품 상자 (사용자 2026-10-23)", "big": 0},
@@ -24617,7 +24708,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=224;
+const BUILD_NO=225;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -29791,19 +29882,20 @@ function trainExp(){
   const lv=pool.reduce((a,h)=>a+h.lv,0)/pool.length;
   return Math.max(5,Math.round(5+(lv-1)*1.4))+plus;   /* 3+0.9 → 5+1.4 : lv8 에 9 → 15 (사용자 2026-10-12) */
 }
-function drawCamp(app){
-  if(run.restRes) return drawRestRes(app);
-  const CAMP_CLEANSE=55;
-  app.appendChild(el(`<div class="center">
-    <div class="title" style="font-size:22px">주 둔 지</div>
-    <div class="sub">${run.day}일차 ${clock()} 시설은 하루에 <b style="color:var(--brass)">한 곳</b>만 들를 수 있습니다 (숙면, 장비 정리 제외)
-      ${run.stone?` 제련석 ${run.stone}`:""}</div></div>`));
-  const wrap=app.querySelector(".center");
+/* ═══════════ 주둔지 — 차림표 ═══════════
+   「무엇을 할 수 있나 · 무엇을 하나」는 판을 바꾸므로 **규칙**이다
+   (문서/규칙-엔진경계.md 의 한 줄 시험 — 들어내면 run 이 달라진다).
+   화면은 이것을 받아 **그리기만** 한다. 그래서 유니티도 같은 차림표를 받는다 (2026-10-27).
+   ⚠️ 보이는 글도 여기 한 곳에만 둔다 — 두 곳에 두면 한쪽만 고쳐져 어긋난다. */
+const CAMP_CLEANSE=55;   /* 숙면 — 씻어내는 오염도 */
+
+/* 시설 넷 — 하루 한 곳. `ok` 가 거짓이면 지금은 들를 수 없다 */
+function campActs(){
   const downed=run.heroes.filter(h=>h.down).length;
   const hurt=run.heroes.filter(h=>!h.down&&h.hp<h.maxHp).length;
   const shards=run.heroes.reduce((a,h)=>a+h.items.filter(i=>i.g==="파편"||i.g==="일반").length,0)
     +(run.bag||[]).filter(i=>i.g==="파편"||i.g==="일반").length;
-  const acts=[
+  return [
    campAct("revive","치료소","쓰러진 대원을 절반의 체력으로 일으킵니다.",downed>0,
      ()=>{ restRecord(()=>run.heroes.forEach(h=>{ if(h.down){ h.down=0; h.hp=Math.max(1,Math.round(h.maxHp*0.5)) } }),"revive"); SFX.play("heal") }),   /* 회복 결과 화면 (사용자 2026-10-04) */
    /* 다친 대원이 없어도 들어간다 (사용자 2026-10-09) — 쉼터는 회복만 하는 자리가 아니다. 지도의 휴식소와 결이 같다 */
@@ -29821,37 +29913,80 @@ function drawCamp(app){
      shards>=2&&(run.stone||0)>=Math.max(1,5-forgeCut()),
      ()=>{ run.smithMood=null; run.forgeMade=0; smithVoice("enter"); view="forge"; render(); return 1 })
   ];
+}
+
+/* 부지런한 아침 (공용 중급, 2026-10-14) — 하루 몫을 쓴 뒤 활동량 1을 들여 한 곳 더. 날마다 한 번 */
+function campExtraOk(){ return !!(run.campExtra&&run.campDone&&!run.campExtra2&&(run.act||0)>=1) }
+function campDoneToday(){ return !!(run.campDone&&!campExtraOk()) }
+/* 왜 못 들르는지 — 한 줄. 빈 글이면 들를 수 있다 */
+function campFacNote(a){
+  return campDoneToday()?"오늘 몫은 이미 썼습니다."
+    :campExtraOk()?"부지런한 아침 — 활동량 1을 들여 이용합니다."
+    :!a.ok?"지금은 할 일이 없습니다.":"" }
+/* 시설을 쓴다 — 돌아온 값이 참이면 화면이 그 자리에 머문다 (제련소) */
+function campTake(a){
+  if(campExtraOk()){ run.act=Math.max(0,(run.act||0)-1); run.campExtra2=1;
+    toast("부지런한 아침 — 활동량 1을 들여 시설을 한 곳 더 이용합니다.") }
+  run.campDone=1;
+  return a.fx();
+}
+
+/* ── 시설이 아닌 것들 — 하루 한 곳 제한 밖 ── */
+function campSleepOk(){ return !!run.night }
+function campSleepD(){ return `밤을 넘깁니다.<br>오염도가 ${CAMP_CLEANSE} 감소합니다.` }
+function campSleepNote(){ return campSleepOk()?`지금 오염도 ${run.taint}`:"18시가 지나야 잠자리에 들 수 있습니다." }
+function campSleep(){ addTaint(-CAMP_CLEANSE); nextDay() }
+
+/* 정찰대 — 구역마다 한 번. `gold` 는 금화 그림(화면이 넣는다) */
+function campScoutOk(){ return !run.remapUsed&&run.gold>=remapCost() }
+function campScoutD(gold){ return `정찰대를 풀어 쉼터 ${REST_PLACE}곳을 세웁니다.<br>${gold} ${remapCost()} 구역마다 한 번` }
+function campScoutNote(){ const c=remapCost();
+  return run.remapUsed?"이번 구역에서는 이미 썼습니다."
+    :run.gold<c?`금화가 ${c-run.gold} 부족합니다.`:"" }
+/* 세운 쉼터 수를 돌려준다. 0 이면 빈 칸이 없었다 (금화는 안 쓴다) */
+function campScout(){
+  const rcost=remapCost();
+  /* 쉼터 둘의 **종류가 다르다** (사용자 2026-10-16) — 표(REST_MIX.scout)가 정한다. 하나씩 놓는다 */
+  const put=restMix(run.field).scout.slice(0,REST_PLACE)
+    .reduce((a,k)=>a+sprinkleCell("rest",1,{rk:k}),0);            /* 빈 칸에만 놓는다 — 지도는 그대로 (사용자 2026-09-29) */
+  if(!put) return 0;
+  run.gold-=rcost;
+  run.remapUsed=1;
+  return put;
+}
+function drawCamp(app){
+  if(run.restRes) return drawRestRes(app);
+  app.appendChild(el(`<div class="center">
+    <div class="title" style="font-size:22px">주 둔 지</div>
+    <div class="sub">${run.day}일차 ${clock()} 시설은 하루에 <b style="color:var(--brass)">한 곳</b>만 들를 수 있습니다 (숙면, 장비 정리 제외)
+      ${run.stone?` 제련석 ${run.stone}`:""}</div></div>`));
+  const wrap=app.querySelector(".center");
+  const acts=campActs();
   const lay=el(`<div class="camp"></div>`);
 
   /* ── 왼쪽 큰 판 — 시설이 아닌 것들. 하루 한 곳 제한 밖 ── */
   const L=el(`<div class="camp-l"></div>`);
   const rcost=remapCost();
-  const sleepOk=!!run.night;
+  const sleepOk=campSleepOk();
   const sleep=el(`<div class="cbtn campsleep ${sleepOk?"":"off"}">
     <div class="ci round">${uiPng("clock")}</div>
     <b>숙면</b>
-    <small>밤을 넘깁니다.<br>오염도가 ${CAMP_CLEANSE} 감소합니다.</small>
-    <span class="cnote">${sleepOk?`지금 오염도 ${run.taint}`:"18시가 지나야 잠자리에 들 수 있습니다."}</span></div>`);
+    <small>${campSleepD()}</small>
+    <span class="cnote">${campSleepNote()}</span></div>`);
   if(sleepOk) sleep.onclick=()=>{
-    addTaint(-CAMP_CLEANSE);
     toast(`주둔지에서 밤을 보내며 오염도를 ${CAMP_CLEANSE} 씻어냈습니다.`);
-    nextDay(); if(view!=="over"){ view="map"; render() }
+    campSleep(); if(view!=="over"){ view="map"; render() }
   };
-  const remapOk=!run.remapUsed&&run.gold>=rcost;
+  const remapOk=campScoutOk();
   const remap=el(`<div class="cbtn campremap ${remapOk?"":"off"}">
     <div class="ci">${uiPng("explore")}</div>
     <b>정찰대 보내기</b>
-    <small>정찰대를 풀어 쉼터 ${REST_PLACE}곳을 세웁니다.<br>${resIcon("gold")} ${rcost} 구역마다 한 번</small>
-    <span class="cnote">${run.remapUsed?"이번 구역에서는 이미 썼습니다."
-      :run.gold<rcost?`금화가 ${rcost-run.gold} 부족합니다.`:""}</span></div>`);
+    <small>${campScoutD(resIcon("gold"))}</small>
+    <span class="cnote">${campScoutNote()}</span></div>`);
   if(remapOk) remap.onclick=()=>{
-    if(run.remapUsed||run.gold<rcost) return;
-    /* 쉼터 둘의 **종류가 다르다** (사용자 2026-10-16) — 표(REST_MIX.scout)가 정한다. 하나씩 놓는다 */
-    const put=restMix(run.field).scout.slice(0,REST_PLACE)
-      .reduce((a,k)=>a+sprinkleCell("rest",1,{rk:k}),0);            /* 빈 칸에만 놓는다 — 지도는 그대로 (사용자 2026-09-29) */
+    if(!campScoutOk()) return;
+    const put=campScout();
     if(!put){ toast("쉼터를 세울 빈 칸이 없습니다."); return }
-    run.gold-=rcost;
-    run.remapUsed=1;
     SFX.play("unlock");
     toast(`금화를 ${rcost} 들여 쉼터 ${put}곳을 세웠습니다.`);
     toMap();
@@ -29870,22 +30005,17 @@ function drawCamp(app){
 
   /* ── 오른쪽 — 시설 목록. 하루 한 곳. 세로로 굴러간다 ── */
   const R=el(`<div class="camp-r campacts"></div>`);
-  /* 부지런한 아침 (공용 중급, 2026-10-14) — 하루 몫을 쓴 뒤 활동량 1을 들여 한 곳 더. 날마다 한 번 */
-  const extraOk=!!(run.campExtra&&run.campDone&&!run.campExtra2&&(run.act||0)>=1);
-  const doneToday=run.campDone&&!extraOk;
+  const extraOk=campExtraOk();
+  const doneToday=campDoneToday();
   acts.forEach(a=>{
     const off=doneToday||!a.ok;
     const c=el(`<div class="cfac ${off?"off":""}" data-camp="${a.k}">
       <div class="fi">${campIcon(a.k)}</div>
       <div class="ft"><b>${esc(a.n)}</b><small>${rich(a.d)}</small>
-      ${doneToday?`<span class="cnote">오늘 몫은 이미 썼습니다.</span>`
-            :extraOk?`<span class="cnote">부지런한 아침 — 활동량 1을 들여 이용합니다.</span>`
-            :!a.ok?`<span class="cnote">지금은 할 일이 없습니다.</span>`:""}</div></div>`);
+      ${campFacNote(a)?`<span class="cnote">${campFacNote(a)}</span>`:""}</div></div>`);
     if(!off) c.onclick=()=>{
-      if(extraOk){ run.act=Math.max(0,(run.act||0)-1); run.campExtra2=1;
-        toast("부지런한 아침 — 활동량 1을 들여 시설을 한 곳 더 이용합니다.") }
-      run.campDone=1; { const kt=document.getElementById("kwtip"); if(kt) kt.style.display="none" }   /* 누른 시설의 풍선이 결과 위에 남지 않게 */
-      const stay=a.fx(); if(!stay) render() };
+      { const kt=document.getElementById("kwtip"); if(kt) kt.style.display="none" }   /* 누른 시설의 풍선이 결과 위에 남지 않게 */
+      const stay=campTake(a); if(!stay) render() };
     R.appendChild(c);
   });
   R.appendChild(el(`<div class="cfac soon"><div class="fi"></div><div class="ft"><b>공개 예정</b><small>새 시설이 여기에 들어섭니다.</small></div></div>`));
@@ -30331,7 +30461,7 @@ function startDungeon(cell,r,c){
   if(cell.seq){ run.dun.seq=cell.seq.slice(); run.dun.seqName=cell.seqName }   /* 칸을 놓을 때 정해 둔 구성 (encRoll) */
   else if(!cell.enc){ const f=Math.min(run.field,2), cands=(fieldPick("seq",ENC_SEQ,f)||[]).filter(q=>q.rounds.length===run.dun.waves&&floorFit(encFoesOf(f,q),towerKindAtRow(r)));   /* 탑 — 그 층에 맞는 묶음만 (없으면 라운드마다 고른다) */
     if(run.dun.waves>1&&cands.length&&Math.random()<0.5&&(cell.t==="dungeon"||cell.t==="elite")){
-      const q=rnd(cands); run.dun.seq=q.rnd?q.rounds.slice().sort(()=>Math.random()-0.5):q.rounds.slice(); run.dun.seqName=q.n } }
+      const q=rnd(cands); run.dun.seq=q.rnd?shuffled(q.rounds):q.rounds.slice(); run.dun.seqName=q.n } }
   if(cell.force) run.dun.forceFoes=cell.force.map(x=>x.slice());   /* 정해진 상대 (미믹 · 시련의 문, 2026-10-05) */
   if(cell.winItem) run.dun.winItem=cell.winItem;                    /* 이기면 이 장신구 */
   if(cell.trial) run.dun.trial=cell.trial;                          /* 시련의 문 몇 단 */
@@ -32172,7 +32302,7 @@ const TAROT={
  imp:{n:"악마",go:()=>{ run.heroes.forEach(h=>{ if(!h.down) h.hp=Math.max(1,h.hp-Math.ceil(h.maxHp*0.2)) }); return "악마 — 모든 대원이 최대 체력의 20%만큼 피해를 받습니다." }},
  rift:{n:"균열",go:()=>{ addTaint(20); return "균열 — 오염도가 20 오릅니다." }}
 };
-EV_GAME.tarot={init:()=>({t:"tarot",cards:Object.keys(TAROT).sort(()=>Math.random()-.5).slice(0,3),pos:[0,1,2],ph:"show",sel:[]}),
+EV_GAME.tarot={init:()=>({t:"tarot",cards:shuffled(Object.keys(TAROT)).slice(0,3),pos:[0,1,2],ph:"show",sel:[]}),
  draw(row,api){
   const st=api.st(), up=i=>st.ph==="show"||(st.ph==="done"&&st.sel.indexOf(i)>=0);
   api.say(st.ph==="show"?"점술가가 카드 세 장을 보여 줍니다.\n\"잘 보아 두게...\""
@@ -32210,7 +32340,7 @@ function tarotFlip(w,st,api){
 }
 /* 세 개의 상자 — 장신구 · 오염 · 미믹. 하나를 고르면 거대한 눈이 남은 둘 가운데 꽝 하나를 열어 보이고 바꿀지 묻는다 (바꾸는 쪽이 2/3) */
 EV_GAME.monty={init:()=>{ const g=["파편","일반","희귀"][evFi()], L=ITEMS.filter(i=>i.g===g&&!i.bind);
-   return {t:"monty",box:["item","taint","mimic"].sort(()=>Math.random()-.5),item:(rnd(L)||{}).n||"옥 파편",ph:"pick",pick:null,show:null,fin:null} },
+   return {t:"monty",box:shuffled(["item","taint","mimic"]),item:(rnd(L)||{}).n||"옥 파편",ph:"pick",pick:null,show:null,fin:null} },
  /* ph — pick 고르기 · switch 꽝 하나가 열리고 바꿀지 · opening 고른 상자가 흔들린다 · done 팡 열림.
     처음 열리는 순간만 움직이고(shownAnim · finAnim), 다시 그려지면 열린 채로 둔다 (사용자 2026-10-05) */
  draw(row,api){
@@ -33798,7 +33928,7 @@ function encRoll(kind,fi,waves,fk,opening){
   if(kind==="elite"&&eliteOf(f).length){ const L=eliteOf(f).filter(e=>(e.min||1)<=n&&!e.gim); enc=rnd(floorList(L.length?L:ELITE_ENC[f].filter(e=>!e.gim),e=>e.foes,fk)) }   /* gim — 기믹 구역 전용 (2026-09-30) */
   else {
     const cands=(fieldPick("seq",ENC_SEQ,f)||[]).filter(q=>q.rounds.length===(waves||1)&&floorFit(encFoesOf(f,q),fk));   /* 탑 — 그 층에 맞는 묶음만 */
-    if((waves||1)>1&&cands.length&&Math.random()<0.5){ const q=rnd(cands); seq=q.rnd?q.rounds.slice().sort(()=>Math.random()-0.5):q.rounds.slice(); seqName=q.n; enc=encByName(f,seq[0]) }
+    if((waves||1)>1&&cands.length&&Math.random()<0.5){ const q=rnd(cands); seq=q.rnd?shuffled(q.rounds):q.rounds.slice(); seqName=q.n; enc=encByName(f,seq[0]) }
     if(!enc) enc=pickEncounter(f,n,1,fk,opening&&f===0&&(waves||1)===1?OPENING_PRISON_SKIP:null);
   }
   const foes=enc?(enc.foes||[]).filter(x=>FOE[x]):[];
@@ -34209,7 +34339,8 @@ function startBattle(kind,pinned){
   const colI=!pinned&&B.foes.find(x=>x.alive&&x.name==="콜로서스");
   if(colI&&hasScreen()) colossusInFX(colI);
   setTimeout(()=>{ const f=B&&B.foes&&B.foes.filter(x=>x.alive);
-    if(f&&f.length&&!colI){const actor=f[0].boss?f[0]:rnd(f);bark(actor,"in",actor.name==="실험 책임자");if(actor.name==="실험 책임자"){SFX.play("실험 책임자 전장에 나설 때");flushFX()}} },700);
+    /* ⚠️ 누가 말할까는 **연출 줄에서** 뽑는다 (fxPick) — 입에서 끝난다 */
+    if(f&&f.length&&!colI){const actor=f[0].boss?f[0]:fxPick(f);bark(actor,"in",actor.name==="실험 책임자");if(actor.name==="실험 책임자"){SFX.play("실험 책임자 전장에 나설 때");flushFX()}} },700);
   say(`${FIELDS[run.field].n} — ${kind==="boss"?"우두머리":kind==="elite"?"정예":"교전"} `
      +`${run.dun&&run.dun.waves>1?`${run.dun.wave}/${run.dun.waves}라운드`:"시작"}`,"t1");
   say("손패의 대원 카드를 원하는 칸으로 끌어다 놓으세요.","t2");
@@ -36258,7 +36389,7 @@ function skExec0(f,I){
       morphFoe(t,"모형 기사단장",{}) }
     else say(`${s.n} — 포상을 받을 모형 창병이 없습니다.`,"t2") }
   if(s.randDebTwo){   /* 저주 — 무작위 대상 둘에게 무작위 부정적인 효과 */
-    const Q=s.randDebTwo, L=allUnits().filter(u=>u.hp>0&&!u.hide).sort(()=>Math.random()-0.5).slice(0,Q.n||2);
+    const Q=s.randDebTwo, L=shuffled(allUnits().filter(u=>u.hp>0&&!u.hide)).slice(0,Q.n||2);
     L.forEach(u=>{ const k=rnd(["burn","bind","stun","fear","chill","atkDn","defDn","magDn"]);
       addDeb(u,k,Q.v||2,f);
       fx({side:"mine",slot:u.slot,s:"mag",ring:"#7a4ab0",txt:(DEBUFF[k]||{}).n+" "+(Q.v||2),cls:"miss",gap:90});
@@ -36534,7 +36665,7 @@ function skExec0(f,I){
     if(s.heatDeb&&overheated(f)) Object.keys(s.heatDeb).forEach(k=>addDeb(t,k,s.heatDeb[k],f));   /* 과열 — 덤 */
     if(s.empAdd&&memEmp(f)) Object.keys(s.empAdd).forEach(k=>addDeb(t,k,s.empAdd[k],f));   /* 기억 — 강화되면 덤 */
     if(s.randDeb){   /* 강한 저주 — 무작위 디버프 n 개 (2026-10-01) */
-      const K=["burn","bind","stun","fear","chill","atkDn","defDn","magDn"].sort(()=>Math.random()-0.5).slice(0,s.randDeb.n||2);
+      const K=shuffled(["burn","bind","stun","fear","chill","atkDn","defDn","magDn"]).slice(0,s.randDeb.n||2);
       K.forEach(k=>addDeb(t,k,s.randDeb.v||1,f)) }
   });
   /* 때린 뒤에 강해지는 기술 (미믹 강한 물기 — '피해를 4 줍니다. 공격력을 2 얻습니다.' (점검 2026-10-07)) */
@@ -36687,7 +36818,12 @@ function foeDeath(f){
       say(`${d.n} — ${f.name}의 혼이 전장을 가로지릅니다.`,"t1");
       /* 자리를 재고 연출을 쌓는 일은 **fx/foe-death.js 한 곳**에서 — 규칙은 맞는 차례만 받는다.
          ⚠️ 자리는 **지금**(아직 죽은 칸이 남아 있을 때) 재어야 한다 — soulChargeFX 머리글 참고 */
-      const order=soulChargeFX(f,farA,L);
+      /* ⚠️ **연출이 없으면 칸 차례 그대로.** soulChargeFX 는 화면 좌표(ctrOf)로
+         「혼이 지나가며 하나씩 맞는 차례」를 재는데, 화면이 없으면 at 이 전부 0 이라
+         결국 L 그대로다 — 통짜 시뮬레이터도 그렇게 돌고 있었다.
+         규칙이 연출의 돌려주는 값에 **기대지 않도록** 여기서 받친다
+         (2026-10-27 : 유니티용 뭉치에서 order 가 undefined 라 판이 넘어졌다). */
+      const order=soulChargeFX(f,farA,L)||L.map(t=>({u:t,at:0}));
       order.forEach((o,i)=>{
         const t=o.u, nx=order[i+1];
         fx({side:"mine",slot:t.slot,hit:1,gap:nx?Math.max(40,nx.at-o.at):260,
@@ -37686,11 +37822,14 @@ function barkPool(u,cat,T){
 /* 새 데린저 대사는 화면 전용 추첨·간격을 쓴다. 기존 전투 추첨과 다른 대원의 말 간격을 건드리지 않는다. */
 let DERR_BARK_AT=0;
 const barkClock=u=>u&&u.name==="데린저"?DERR_BARK_AT:BARK_AT;
-const barkRoll=u=>u&&u.name==="데린저"?foeBarkRand():Math.random();
+/* ⚠️ **연출 줄에서 뽑는다** (src/fx/fx-rand.js) — 규칙의 무작위를 밀면 안 된다.
+   아래 barkDraw 의 주석이 처음부터 「화면 전용 추첨」이라 적고 있었다 (2026-10-27) */
+const barkRoll=u=>u&&u.name==="데린저"?foeBarkRand():fxRand();
 function barkStamp(u,t){ if(u&&u.name==="데린저") DERR_BARK_AT=t; else BARK_AT=t }
 function barkDraw(pool,u){
   const rare="책상엔 내리치진 마.", i=pool.indexOf(rare);
-  if(i<0||pool.length<2) return u&&u.name==="데린저"?pool[Math.floor(foeBarkRand()*pool.length)]:rnd(pool);
+  /* ⚠️ rnd 가 아니라 fxPick — 규칙의 무작위 줄을 밀지 않는다 (2026-10-27) */
+  if(i<0||pool.length<2) return u&&u.name==="데린저"?pool[Math.floor(foeBarkRand()*pool.length)]:fxPick(pool);
   /* 화면 전용 추첨 안에서 2%로 고른다. */
   const n=barkRoll(u); if(n<.02) return rare;
   const common=pool.filter(t=>t!==rare); return common[Math.min(common.length-1,Math.floor((n-.02)/.98*common.length))];
@@ -40039,7 +40178,7 @@ function onSummon(h){
     if(f) for(let i=0;i<t.placeShot;i++) derrFreeUse(h,f);   /* 「발사」는 **기술을 한 번 쓰는 것** — 기관총이면 여덟 발 (사용자 2026-10-15) */
     if(f) say(`부착: 속사 탄창 — ${h.name}${jo(h.name,"ig")} 선제 사격`,"t2") }
   if(B&&B.foes&&hasTag(h,"정령")&&synOn("정령",2)){   /* 정령 2 · 3 (노트 2026-10-04) */
-    const ks=DEB_KEYS.slice().sort(()=>Math.random()-.5).slice(0,synOn("정령",3)?3:1);
+    const ks=shuffled(DEB_KEYS).slice(0,synOn("정령",3)?3:1);
     B.foes.filter(f=>f.alive).forEach(f=>ks.forEach(k=>addDeb(f,k,1,h)));
     say(`정령 — 모든 적에게 ${ks.map(k=>DEBUFF[k].n).join(", ")} 1`,"t1"); synFlash("정령") }
   { const ex=(h.mana||0)-(h.maxMana||0);
@@ -42318,7 +42457,9 @@ function doSkill(target){
   alwaysSync(h);
   if(i===0&&(n||1)>=3&&target>0) B.tutTriple=1;   /* 튜토리얼 — 1번 기술을 적에게 3번 (btKeys) */
   /* 공격 자세가 둘(atk·atk2)이면 이번 시전에서 하나만 고른다 — 여러 번 쌓아 한 번에 쓸 때 자세가 마구 바뀌지 않게 (사용자 2026-10-02) */
-  ATK_PICK[skinSprite(h.name)]=Math.random()<0.5;   /* 참이면 이번 시전은 둘째 갈래(atk2 · expand2 …) */
+  /* ⚠️ **연출 줄에서 뽑는다** (src/fx/fx-rand.js) — 어느 그림을 쓸까는 눈에서 끝난다.
+     규칙 줄에서 뽑으면 시전마다 판의 무작위가 한 칸씩 밀린다 (2026-10-27). */
+  ATK_PICK[skinSprite(h.name)]=fxRand()<0.5;   /* 참이면 이번 시전은 둘째 갈래(atk2 · expand2 …) */
   if(s0&&s0.magnet&&h.tag&&h.tag.meissner&&h.magnetTurn){   /* 마이스너 변환 — 한 턴에 한 번 */
     say("마이스너 변환 — 자기장 변환은 한 턴에 한 번만 쓸 수 있습니다.","t2"); render(); return }
   if(isMoveSkill(s0)){
@@ -42492,9 +42633,11 @@ function doSkill(target){
     if(own==="카제 진선풍도"&&sfxHas("카제 진선풍도2")) fx({s:"카제 진선풍도2",gap:0});
     /* 승리의 일격 — 검 소리(나이코스 승리의 일격) 위에 관중의 함성 넷 중 둘을 겹친다. 둘은 서로 다르다 */
     if(h.name==="나이코스"&&s.n==="승리의 일격"&&sfxHas("관중의 함성")){
+      /* ⚠️ **연출 줄에서 뽑는다** — 소리 고르기다. 전에는 규칙 줄에서 **두 번** 뽑아서,
+         소리가 없는 데(유니티 뭉치 · 소리를 끈 판)서는 그 둘이 빠져 판이 통째로 달라졌다 (2026-10-27) */
       const pool=[1,2,3,4].filter(q=>sfxHas("관중의 함성 "+q));
-      const a=pool.splice(Math.floor(Math.random()*pool.length),1)[0];
-      const b=pool.length?pool[Math.floor(Math.random()*pool.length)]:null;
+      const a=pool.splice(Math.floor(fxRand()*pool.length),1)[0];
+      const b=pool.length?pool[Math.floor(fxRand()*pool.length)]:null;
       if(a) fx({s:"관중의 함성 "+a,gap:0});
       if(b) fx({s:"관중의 함성 "+b,gap:0});
     }
@@ -42521,7 +42664,7 @@ function doSkill(target){
         fx({side:"mine",slot:h.slot,pose:"atk",s:own||ATK_SFX[h.name],lunge:1,gap:0});
       else if(own) fx({side:"mine",slot:h.slot,s:own,gap:0}); }
     /* 자기나 아군에게 거는 기술은 자세를 잡지 않는다 — 소리만 (위 갈래에서 함께 다룬다) */
-    if(domDemon(h)&&Math.random()<0.3&&sfxHas("도미니코 악마 포효")) fx({side:"mine",slot:h.slot,s:"도미니코 악마 포효",gap:0});   /* 악마 포효 — 가끔 (사용자 2026-10-06) */
+    if(domDemon(h)&&fxRand()<0.3&&sfxHas("도미니코 악마 포효"))   /* ⚠️ 연출 줄 — 소리다 */ fx({side:"mine",slot:h.slot,s:"도미니코 악마 포효",gap:0});   /* 악마 포효 — 가끔 (사용자 2026-10-06) */
     B._ownSnd=!!(own||ATK_SFX[h.name]);   /* 이 기술에 녹음이 있다 — hurt 의 합성 타격음을 뺀다 */
     try{ if(h.name==="오토") ottoEshTally(()=>runEffect(h,i,s,target)); else runEffect(h,i,s,target) } finally { B._ownSnd=0 }   /* 오토 — 봄의 정원사 해금 셈 */
     /* 되감기 — 마지막 시전 뒤에 쌓인 만큼 한 번 더. 값은 더 치르지 않고 대상도 그대로 (사용자 2026-10-07) */
@@ -46041,7 +46184,7 @@ function disciplineTick(h,si){
 function colIdle(){
   const f=B&&!B.over&&B.foes.find(x=>x.alive&&x.name==="콜로서스"); if(!f||Math.random()>0.4) return;
   setTimeout(()=>{ if(!B||B.over||!f.alive) return; if(sfxHas("콜로서스 대기")) SFX.play("콜로서스 대기");
-    const L=(BARK["콜로서스"]||{}).idle; if(L&&L.length) barkShow(f,rnd(L),Date.now()) },900);
+    const L=(BARK["콜로서스"]||{}).idle; if(L&&L.length) barkShow(f,fxPick(L),Date.now()) },900);   /* ⚠️ 연출 줄 — 대사다 */
 }
 function startMyTurn(){
   FOE_VIEW=null;
@@ -46341,7 +46484,15 @@ function checkEnd(){
         say(`망자의 육체 — ${t.name}${jo(t.name,"ig")} 절반의 체력으로 되살아납니다.`,"t1") }
     });
     const T0=Date.now(), W0=B.kind==="boss"?(B.foes.some(f=>f.name==="콜로서스")?Math.round(3300*colK())+3300:3300):800;   /* 콜로서스 — 쓰러짐 연출만큼 더 (사용자 2026-10-07) */
-    if(RV.length) setTimeout(()=>soulReviveFX(RV,()=>setTimeout(afterWave,Math.max(500,W0-(Date.now()-T0)))),650);   /* 육체는 연출이 끝날 때까지 전장에 두고, 보상은 그 뒤에 */
+    /* ⚠️ **연출이 없으면 규칙이 스스로 세우고 다음 걸음을 잇는다** (유니티 엔진 · 시뮬레이터).
+       전에는 soulReviveFX 가 되살리기를 적용하고 afterWave 까지 제 콜백으로 불렀다 —
+       연출을 떼는 순간 몸도 안 살아나고 전투 뒤 처리도 영영 안 돌았다 (2026-10-27).
+       판을 바꾸는 것도, 다음 걸음을 잇는 것도 규칙이 쥔다. 문서/규칙-엔진경계.md 6-마. */
+    if(RV.length){ const goOn=()=>setTimeout(afterWave,Math.max(500,W0-(Date.now()-T0)));
+      /* ⚠️ `typeof soulReviveFX==="function"` 으로 가르면 안 된다 — 유니티 쪽 뭉치에서는
+         시늉도 함수라 참이다. **화면이 있나**로 가른다. 때(650)도 연출 길과 같게 맞춘다. */
+      if(onStage()) setTimeout(()=>soulReviveFX(RV,goOn),650);
+      else setTimeout(()=>{ RV.forEach(soulReviveStand); goOn() },650); }   /* 육체는 연출이 끝날 때까지 전장에 두고, 보상은 그 뒤에 */
     else B.mins=[];
     /* 전투 단위 몫(clearTmp)과 전장의 승자는 여기서 손대지 않는다.
        여기는 '라운드' 가 끝난 자리다. 전투가 정말 끝났는지는 afterWave 가 안다. */
