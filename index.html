@@ -5948,7 +5948,13 @@ const ICON={
  /* 손패 — 카드 두 장이 겹쳐 있다 */
  card:'M7.6 2.8 H19.4 A1.6 1.6 0 0 1 21 4.4 V16.2 A1.6 1.6 0 0 1 19.4 17.8 H7.6 A1.6 1.6 0 0 1 6 16.2 V4.4 A1.6 1.6 0 0 1 7.6 2.8 Z M4.4 6.4 V19.6 A1.6 1.6 0 0 0 6 21.2 H16.6 V19.4 H6.4 V6.4 Z'
 };
-const ic=(k,c)=>`<svg class="ic" viewBox="0 0 24 24" style="color:var(--${c||k})"><path fill="currentColor" d="${ICON[k]}"/></svg>`;
+/* 받은 그림이 있으면 그것부터 (전투 기호 여섯 — 사용자 2026-10-27, art/_받은묶음/combat-symbols-v1).
+   없는 열쇠말은 아래의 옛 도형으로 떨어진다. 유니티도 같은 이름(`combat_symbol_<열쇠>`)을 본다 */
+const ic=(k,c)=>{
+  const u=(typeof ICON_PNG!=="undefined")&&ICON_PNG["combat_symbol_"+k];
+  if(u) return '<img class="ic" src="'+u+'" alt="" draggable="false">';
+  return `<svg class="ic" viewBox="0 0 24 24" style="color:var(--${c||k})"><path fill="currentColor" d="${ICON[k]}"/></svg>`;
+};
 /* 기획 노트의 요약 카드가 쓰는 겹침 아이콘 —
    가운데 큰 것 하나에 높이가 다른 작은 것 둘. '레벨마다 늘어난다'는 뜻이다.
    노트(app.html)의 UI_ICONS 와 같은 그림이어야 하니 좌표를 그대로 옮겨 왔다. */
@@ -23291,6 +23297,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 227, "v": "0.7", "d": "2026-10-27", "t": "받은 전투 기호 여섯 — 공격·방어·치료·마법·이동·마나", "big": 0},
  {"b": 226, "v": "0.7", "d": "2026-10-27", "t": "의도의 말을 규칙 한 곳으로 (보이는 글자는 그대로)", "big": 0},
  {"b": 225, "v": "0.7", "d": "2026-10-27", "t": "ⓒ 주둔지 — 차림표를 규칙으로 (유니티도 같은 것을 받는다)", "big": 0},
  {"b": 224, "v": "0.7", "d": "2026-10-27", "t": "쪼개기 1단계 끝 — game.html 794줄 (움직임은 그대로)", "big": 0},
@@ -24709,7 +24716,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=226;
+const BUILD_NO=227;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -31159,6 +31166,16 @@ function giveExp(exp,pool,each,copies=1){
   toast(`경험치 — ${pool.map((h,i)=>h.name+" +"+got[i]).join(" ")}`);
 }
 
+
+/* 손패 카드에 **보이는 말** — 화면과 유니티가 한 표를 본다 (2026-10-27).
+   ⚠️ 새로 지어낸 말이 아니다. `src/view/battle.js` 가 쓰던 그 말을 옮겨 온 것이다 */
+const CARD_TYPE_W={hero:"대원",summon:"소환물",card:"카드",place:"빈 칸에 배치하세요"};
+function cardTypeText(c){
+  if(!c) return "";
+  if(c.type==="hero") return CARD_TYPE_W.hero;
+  if(c.type==="summon") return CARD_TYPE_W.summon;
+  return ((typeof cardKind==="function"?cardKind(c.name):"")+" "+CARD_TYPE_W.card).trim();
+}
 /* ═══════════ 상점 ═══════════ */
 const SHOP_STOCK=[
  {n:"빵",              d:"아군 대상의 체력을 2 회복시키는 카드",           p:[1,2],  q:[1,4], k:"card", card:"빵", s3p:[3,5]},   /* 3구역 값 올림 (사용자 2026-10-12) */
@@ -37956,6 +37973,25 @@ const INTENT_W = {
   taunt: "앞세워짐", retreat: "물러남", all: "전체", slot: "번 칸",
 };
 
+/* 그 의도에 붙는 그림의 열쇠 (`ic()` 와 같은 것). 빈 글이면 그림이 없다.
+   받은 그림은 `combat_symbol_<열쇠>` 다 (사용자 2026-10-27) — 화면과 유니티가 같은 것을 본다 */
+function intentIcon(f, I) {
+  if (!f || !f.alive || f.wallFoe) return "";
+  I = I || f.intent;
+  if (!I) return "";
+  if ((f.stun || 0) > 0 || (typeof deb === "function" && deb(f, "stun") > 0)) return "";
+  switch (I.t) {
+    case "move": case "back": case "push": return "move";
+    case "def":   return "def";
+    case "heal": case "beer": return "hp";
+    case "curse": return "mag";
+    case "buff": case "thorn": return "atk";
+    case "volley": return I.el === "마법" ? "mag" : "atk";
+    case "atk":    return I.el === "마법" ? "mag" : "atk";
+  }
+  return "";
+}
+
 /* 한 줄로 읽히는 의도. `I` 를 안 주면 그 적의 지금 의도 */
 function intentText(f, I) {
   if (!f || !f.alive || f.wallFoe) return "";
@@ -38485,13 +38521,13 @@ function drawBattle(app){
       if(CARD_LIB[key]&&CARD_LIB[key].any) tags.push("아군이나 적 대상");
     }
     const art=hero?faceArt(hero.name):(c.type==="summon"?figure(c.name):cardArt(c.name));   /* 소환물 외형은 주인 대원이 파티에 있을 때만 (skinOwnerIn) — 폭식의 군주로 할 땐 카드도 바뀌어도 된다 (사용자 2026-10-04) */   /* 대원 카드는 정면 얼굴 (사용자 2026-09-30) */
-    const type=hero?"대원":(c.type==="summon"?"소환물":esc(cardKind(c.name))+" 카드");
+    const type=hero?CARD_TYPE_W.hero:(c.type==="summon"?CARD_TYPE_W.summon:esc(cardKind(c.name))+" "+CARD_TYPE_W.card);
     const hst=hero?((hero.atk?`<span class="at">${ic("atk")} ${hero.atk}</span>`:"")
         +(hero.mag?`<span class="mg">${ic("mag")} ${hero.mag}</span>`:"")
         +(hero.def?`<span class="df">${ic("def")} ${hero.def}</span>`:"")):"";
-    const desc=hero?`${hst?`<div class="cc-hst">${hst}</div>`:""}빈 칸에 배치하세요`
+    const desc=hero?`${hst?`<div class="cc-hst">${hst}</div>`:""}${CARD_TYPE_W.place}`
       :(c.type==="summon"&&c.mat&&c.soul)?rich(golemCardText(c))   /* 하수인 골렘 — 부속 둘의 글 (2026-10-13) */
-      :c.type==="summon"?"빈 칸에 배치하세요":rich(c.d);
+      :c.type==="summon"?CARD_TYPE_W.place:rich(c.d);
     const st=hero
       ? `<span class="hp">${ic("hp")} ${hero.hp}/${hero.maxHp}</span><span class="mn">${ic("mana")} ${hero.maxMana}</span>`
       : S ? `<span class="hp">${ic("hp")} ${golemCardHp(c)||S.hp}</span>`
