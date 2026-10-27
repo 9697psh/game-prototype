@@ -23291,6 +23291,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 226, "v": "0.7", "d": "2026-10-27", "t": "의도의 말을 규칙 한 곳으로 (보이는 글자는 그대로)", "big": 0},
  {"b": 225, "v": "0.7", "d": "2026-10-27", "t": "ⓒ 주둔지 — 차림표를 규칙으로 (유니티도 같은 것을 받는다)", "big": 0},
  {"b": 224, "v": "0.7", "d": "2026-10-27", "t": "쪼개기 1단계 끝 — game.html 794줄 (움직임은 그대로)", "big": 0},
  {"b": 223, "v": "0.7", "d": "2026-10-25", "t": "이테리오 수축 공격 거리 3", "big": 0},
@@ -24708,7 +24709,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=225;
+const BUILD_NO=226;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -37942,6 +37943,52 @@ function barkSkill(h,s){ if(!s||BARK_LATE[s.n]) return;
   barkPick(h,["skill:"+s.n,"atk"]) }
 /* 기술 창의 쪽 (사용자 2026-10-12) — 한 쪽에 넉 장. 대원이 바뀌면 처음 쪽으로 */
 const SK_PER=4; let SK_PAGE=0, SK_PAGE_WHO=null;
+/* ═══════════ 적의 의도 — 보이는 말 ═══════════
+   화면(`intentHtml0`)은 **그림 + 숫자 + 말**로 그린다. 그림은 코드로 그린 SVG(`ic()`)라
+   유니티에는 없다 — 그래서 유니티는 **말과 숫자만** 받는다.
+
+   ⚠️ 여기 적힌 말은 **화면이 쓰던 그 말 그대로다.** 새 말을 지어내지 않았다
+      (그림으로만 보이던 자리는 숫자만 둔다 — 2026-10-27).
+   ⚠️ 말은 **한 곳에만** 둔다. `intentHtml0` 도 이 표를 보고 쓴다. */
+const INTENT_W = {
+  move: "전진", back: "후퇴", push: "앞으로", curse: "저주", wait: "대기",
+  thorn: "가시", buff: "강화", heal: "치료", beer: "맥주",
+  taunt: "앞세워짐", retreat: "물러남", all: "전체", slot: "번 칸",
+};
+
+/* 한 줄로 읽히는 의도. `I` 를 안 주면 그 적의 지금 의도 */
+function intentText(f, I) {
+  if (!f || !f.alive || f.wallFoe) return "";
+  I = I || f.intent;
+  if (!I) return INTENT_W.wait;
+  /* 기절 — 이번 차례에는 아무것도 못 한다 (화면도 여기서 갈라진다) */
+  if ((f.stun || 0) > 0 || (typeof deb === "function" && deb(f, "stun") > 0)) {
+    if (!(f.boss && I.t === "purge" && I.k !== "ward")) return "기절";
+  }
+  const hit = () => {
+    let e = I.v;
+    try { e = foeDmg(f, I.v, I.el) + (f.painBonus || 0) } catch (x) {}
+    return e;
+  };
+  switch (I.t) {
+    case "move":  return INTENT_W.move + (I.n > 1 ? ` ${I.n}칸` : "");
+    case "back":  return INTENT_W.back;
+    case "push":  return INTENT_W.push;
+    case "curse": return INTENT_W.curse;
+    case "thorn": return `${INTENT_W.thorn} ${I.v}`;
+    case "buff":  return `+${I.v} ${INTENT_W.buff}`;
+    case "heal":  return `+${I.v} ${INTENT_W.heal}`;
+    case "beer":  return `+${I.v} ${INTENT_W.beer}`;
+    /* 방어는 화면에서 **그림과 숫자뿐이다** — 말이 없으니 숫자만 둔다 */
+    case "def":   return String((typeof shieldAfter === "function") ? shieldAfter(f, I.v) : I.v);
+    case "deb":   return (typeof DEBUFF === "object" && DEBUFF[I.k] && DEBUFF[I.k].n) || "";
+    case "purge": return (typeof purgeName === "function") ? purgeName(f, I.k) : "";
+    case "wagon": return I.k === "taunt" ? INTENT_W.taunt : INTENT_W.retreat;
+    case "volley": return `${hit()} ${INTENT_W.all}`;
+    case "atk":   return `${hit()}${I.hits > 1 ? ` ×${I.hits}` : ""} ${I.to}${INTENT_W.slot}`;
+  }
+  return INTENT_W.wait;
+}
 function intentHtml(f,I2){
   if(f._viewDone) return "";
   const h=intentHtml0(f,I2), I=I2||f.intent;
@@ -37956,17 +38003,17 @@ function intentHtml0(f,I2){   /* I2 — 여분 부품의 둘째 의도 (기절�
     return `<span class="intent">${Math.min(3,(B&&B.turn)||1)}/3턴</span>`;
   if(!I2&&((f.stun||0)>0||deb(f,"stun")>0)&&!(f.boss&&I.t==="purge"&&I.k!=="ward"))   /* 기절 — 이번 차례에는 아무것도 못 한다 (사용자 2026-10-06) */
     return `<span class="intent istun">${typeof KW_ICON!=="undefined"&&ICON_PNG[KW_ICON["기절"]]?`<img class="ci" src="${ICON_PNG[KW_ICON["기절"]]}" alt="">`:""} 기절</span>`;
-  if(I.t==="move")  return `<span class="intent t-move">${ic("move")} 전진${I.n>1?` ${I.n}칸`:""}</span>`;
-  if(I.t==="back")  return `<span class="intent t-move">${ic("move")} 후퇴</span>`;
-  if(I.t==="push")  return `<span class="intent t-move">${ic("move")} 앞으로</span>`;
+  if(I.t==="move")  return `<span class="intent t-move">${ic("move")} ${INTENT_W.move}${I.n>1?` ${I.n}칸`:""}</span>`;
+  if(I.t==="back")  return `<span class="intent t-move">${ic("move")} ${INTENT_W.back}</span>`;
+  if(I.t==="push")  return `<span class="intent t-move">${ic("move")} ${INTENT_W.push}</span>`;
   if(I.t==="def")   return `<span class="intent t-def">${ic("def")}<b>${shieldAfter(f,I.v)}</b></span>`;
-  if(I.t==="thorn") return `<span class="intent t-atk kw" data-fintn="가시" data-fintd="맞을 때마다 되받아칩니다">가시 <b>${I.v}</b></span>`;
+  if(I.t==="thorn") return `<span class="intent t-atk kw" data-fintn="가시" data-fintd="맞을 때마다 되받아칩니다">${INTENT_W.thorn} <b>${I.v}</b></span>`;
   if(I.t==="buff")  return `<span class="intent t-atk up kw" data-fintn="강화" data-fintd="스스로를 벼려 공격력을 ${I.v} 올립니다${
-      f.atkUp?` 이미 +${f.atkUp} 올라 있습니다`:""}">${ic("atk")}<b>+${I.v}</b> 강화</span>`;
-  if(I.t==="heal")  return `<span class="intent t-heal kw" data-fintn="치료" data-fintd="동료 체력을 되돌립니다">${ic("hp")}<b>+${I.v}</b> 치료</span>`;
+      f.atkUp?` 이미 +${f.atkUp} 올라 있습니다`:""}">${ic("atk")}<b>+${I.v}</b> ${INTENT_W.buff}</span>`;
+  if(I.t==="heal")  return `<span class="intent t-heal kw" data-fintn="치료" data-fintd="동료 체력을 되돌립니다">${ic("hp")}<b>+${I.v}</b> ${INTENT_W.heal}</span>`;
   if(I.t==="beer")  return `<span class="intent t-heal kw" data-fintn="맥주" data-fintd="맥주를 들이켭니다 — 체력을 되찾지만 스스로 보호약화를 얻습니다">${
-      ic("hp")}<b>+${I.v}</b> 맥주</span>`;
-  if(I.t==="curse") return `<span class="intent t-mag kw" data-fintn="저주" data-fintd="다음 턴 마나 -1">${ic("mag")} 저주</span>`;
+      ic("hp")}<b>+${I.v}</b> ${INTENT_W.beer}</span>`;
+  if(I.t==="curse") return `<span class="intent t-mag kw" data-fintn="저주" data-fintd="다음 턴 마나 -1">${ic("mag")} ${INTENT_W.curse}</span>`;
   /* 디버프 — 이름 글자 대신 그 상태의 아이콘으로 (사용자 2026-10-12 : 떠도는 불씨의 화상이 글자로 떴다).
      ⚠️ 화상만의 일이 아니었다 — 이 줄을 지나는 모든 디버프가 글자였다. 윗줄 기절(istun)과 같은 꼴로 맞춘다.
      아이콘이 없는 상태는 전처럼 이름 글자로 떨어진다 */
@@ -37984,7 +38031,7 @@ function intentHtml0(f,I2){   /* I2 — 여분 부품의 둘째 의도 (기절�
   if(I.t==="volley"){
     const e=foeDmg(f,I.v,I.el)+(f.painBonus||0);
     return `<span class="intent${e<I.v?" cut":""} t-atk kw" data-fintn="일제사격" data-fintd="상대 전체${e<I.v?` 약화로 ${I.v} → ${e}`:""}">${
-      ic("atk")}<b>${e}</b>${e<I.v?`<s>${I.v}</s>`:""} 전체</span>`;
+      ic("atk")}<b>${e}</b>${e<I.v?`<s>${I.v}</s>`:""} ${INTENT_W.all}</span>`;
   }
   if(I.t==="atk"){
     const e=foeDmg(f,I.v,I.el)+(f.painBonus||0);
@@ -37999,7 +38046,7 @@ function intentHtml0(f,I2){   /* I2 — 여분 부품의 둘째 의도 (기절�
         return `<span class="tgt kw" data-fintn="${I.to}번 칸" data-fintd="이 칸의 대상을 공격합니다. 자리를 옮기면 빗나갑니다.">${(I.toId&&allUnits().find(x=>uid(x)===I.toId&&x.hp>0))?faceArt(allUnits().find(x=>uid(x)===I.toId&&x.hp>0).name):`${I.to}칸`}</span>`;
       })()}</span>`;
   }
-  return `<span class="intent">대기</span>`;
+  return `<span class="intent">${INTENT_W.wait}</span>`;
 }
 
 /* ── 전투 왼쪽 아래 「강화 정보」 (사용자 2026-10-19) ───────────────────────
