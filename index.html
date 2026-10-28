@@ -10532,23 +10532,8 @@ function hpAnim(){
   });
 }
 /* 연출 속도 — 1 보통 / 0.5 빠르게. 되풀이해 놀 때 기다리는 시간을 줄인다 */
-/* 처치 임팩트 효과 — 끌 수 있다 (턴 종료 줄의 단추). 저장된다 */
-const KIMP_KEY="kyunyeol.kimp.v1";
-let KIMP=1;
-try{ KIMP=(localStorage.getItem(KIMP_KEY)==="off")?0:1 }catch(e){}
-function setKimp(on){ KIMP=on?1:0; try{ localStorage.setItem(KIMP_KEY,on?"on":"off") }catch(e){} }
-const SPD_KEY="kyunyeol.speed.v1";
-let SPD=1;
-try{ SPD=(localStorage.getItem(SPD_KEY)==="fast")?0.5:1 }catch(e){}
-function setSpeed(fast){
-  SPD=fast?0.5:1;
-  try{ localStorage.setItem(SPD_KEY,fast?"fast":"slow") }catch(e){}
-  render();
-}
-const BARK_KEY="kyunyeol.bark.v1";
-let BARK_SHOW=1;
-try{ BARK_SHOW=(localStorage.getItem(BARK_KEY)==="off")?0:1 }catch(e){}
-function setBarkShow(on){ BARK_SHOW=on?1:0; try{ localStorage.setItem(BARK_KEY,on?"on":"off") }catch(e){} }
+/* 설정 셋(연출 속도 · 처치 임팩트 · 전투 대사)은 `src/rules/settings.js` 로 옮겼다 —
+   **적어 두고 다시 읽는 값**이라 화면 파일에 두면 덩이에서 사라진다 (2026-10-28) */
 const gapOf=o=>Math.round((o.gap==null?110:o.gap)*SPD);
 /* 연출 두 줄을 한 줄로 — 둘째(Z)는 첫째(A)와 off ms 뒤에 같이 흐른다. gap 은 SPD 를 곱하기 전 값으로 셈한다 (콜로서스 의도 둘, 2026-10-07) */
 function fxMerge(A,Z,off){
@@ -17374,6 +17359,56 @@ function winGo(){
 
 /* 파수꾼의 마지막 말. 글을 고치려면 **이 한 줄**만 고치면 된다 */
 const WINFACE_SAY="다음 세계에서 보자꾸나…";
+/* 설정 — **적어 두고 다시 읽는 값**이다 (그리는 코드가 아니다).
+
+   연출 속도 · 처치 임팩트 · 전투 대사. 원래 `src/fx/effects.js` 에 있었다.
+   그러면 다묶이에서 `KIMP`·`BARK_SHOW` 가 **아예 `undefined`** 이고 (값은 시늉이 안 세워진다)
+   바꾸는 함수 셋은 시늉이라 **눌러도 아무 일도 안 일어난다** — 유니티에 설정 화면을
+   붙일 수가 없었다 (2026-10-28, 조용한 구멍 열여덟째).
+
+   ⚠️ `SPD` 의 값 자체는 `src/engine/shim.js` 가 `var SPD = 1` 로 세운다.
+      여기서 `let SPD` 을 또 쓰면 덩이에서 둘이 된다 — **읽고 쓰기만** 여기 둔다.
+   ⚠️ 소리 크기는 여기 없다. 그것은 **화면이 쥔다** (브라우저 `BGM.vol` · 유니티 `BgmPlayer`) —
+      규칙은 소리를 울리지 않으니 크기도 모른다.  */
+
+const KIMP_KEY="kyunyeol.kimp.v1";
+let KIMP=1;
+try{ KIMP=(localStorage.getItem(KIMP_KEY)==="off")?0:1 }catch(e){}
+function setKimp(on){ KIMP=on?1:0; try{ localStorage.setItem(KIMP_KEY,on?"on":"off") }catch(e){} }
+
+const SPD_KEY="kyunyeol.speed.v1";
+try{ SPD=(localStorage.getItem(SPD_KEY)==="fast")?0.5:1 }catch(e){}
+function setSpeed(fast){
+  SPD=fast?0.5:1;
+  try{ localStorage.setItem(SPD_KEY,fast?"fast":"slow") }catch(e){}
+  render();
+}
+
+const BARK_KEY="kyunyeol.bark.v1";
+let BARK_SHOW=1;
+try{ BARK_SHOW=(localStorage.getItem(BARK_KEY)==="off")?0:1 }catch(e){}
+function setBarkShow(on){ BARK_SHOW=on?1:0; try{ localStorage.setItem(BARK_KEY,on?"on":"off") }catch(e){} }
+
+/* 설정 한 벌 — 무엇이 있고 지금 어떤가. **이름과 글도 여기서 쥔다**
+   (브라우저의 설정 판과 같은 말 : 「빠르게 ▶▶」 · 「보통 ▶」 · 「켬」 · 「끔」) */
+function settingList(){
+  return [
+    { 열쇠:"speed", 이름:"연출 속도", 값:(SPD<1?"fast":"slow"),
+      글:(SPD<1?"빠르게 ▶▶":"보통 ▶"), 묶음:"전투" },
+    { 열쇠:"kimp",  이름:"처치 임팩트", 값:(KIMP?"on":"off"),
+      글:(KIMP?"켬":"끔"), 묶음:"전투" },
+    { 열쇠:"bark",  이름:"전투 대사", 값:(BARK_SHOW?"on":"off"),
+      글:(BARK_SHOW?"켬":"끔"), 묶음:"전투" },
+  ];
+}
+/* 하나를 뒤집는다 — 값은 **적어 둔다** (다음에 켤 때도 그대로) */
+function settingToggle(key){
+  if(key==="speed") setSpeed(!(SPD<1));
+  else if(key==="kimp") setKimp(!KIMP);
+  else if(key==="bark") setBarkShow(!BARK_SHOW);
+  else return false;
+  return true;
+}
 /* ═══════════ 이벤트 도감 ═══════════
    EVENTS 를 그대로 읽어 그린다. 등장 조건은 when 이 함수라 글로 못 읽으니 이벤트의 dex:{field,cond,rate} 를 본다 —
    when 을 고치면 dex 도 같이 고칠 것. 선택지 조건은 설명 맨 뒤 괄호(evOptHtml 규칙)를 그대로 보여 준다 */
@@ -24863,6 +24898,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 245, "v": "0.7", "d": "2026-10-28", "t": "설정 · 업데이트 기록을 유니티에. 설정 셋을 규칙으로 (조용한 구멍 열여덟째)", "big": 0},
  {"b": 244, "v": "0.7", "d": "2026-10-28", "t": "화면 배치를 브라우저에서 재어 맞춘다 — 제목 · 이어하기 · 도감 책", "big": 0},
  {"b": 243, "v": "0.7", "d": "2026-10-28", "t": "제목 차림표 — 도감 여덟 칸 · 이어하기로 들어가는 길", "big": 0},
  {"b": 242, "v": "0.7", "d": "2026-10-28", "t": "이어하기 · 승리 뒤 두 화면. 구역 넘김이 넘어지던 흠 — 시늉을 글로도 세운다", "big": 0},
@@ -26299,7 +26335,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=244;
+const BUILD_NO=245;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
