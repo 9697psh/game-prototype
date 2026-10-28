@@ -17346,6 +17346,34 @@ const CHRONICLE=[
 const CH_ORD=["첫째","둘째","셋째","넷째","다섯째","여섯째","일곱째","여덟째","아홉째","열째",
   "열한째","열두째","열세째","열네째","열다섯째","열여섯째"];
 const CH_NO=(()=>{ let k=0; return CHRONICLE.map(c=>c.alt?null:(k++)) })();
+/* 이기고 판을 닫는 셈 — **그리는 코드가 아니다.**
+
+   `winEnd()` 가 이긴 칸의 저장본을 지운다. 이것이 `src/view/win.js` 에 있어서
+   다묶이에서 그루터기가 되었고, 유니티는 이겨도 저장본이 남았다 — 마지막 칸을
+   다시 밟게 된다 (2026-10-28, 조용한 구멍 열일곱째). 지는 쪽은 `lose()` 가 규칙이라
+   멀쩡했다. **이기는 쪽만 빠져 있었다.**
+
+   파수꾼의 마지막 말도 여기 둔다 — 글은 규칙이 쥔다 (`CLEAR_T` 와 같은 결).
+   배경 띄우기(`WINBG`) 와 한 글자씩 내보이기(`WINFACE_DONE`) 는 그리는 일이라 화면에 남는다.  */
+
+let WIN_NEW=null;   /* clear 로 들어설 때 떠 둔다 — 제목으로 돌아가며 지운다 */
+
+/* 승리 연출의 끝 — 이 자리에서만 이긴 판의 저장본을 지운다 (사용자 2026-10-13).
+   이긴 칸(SLOT) 하나만 지운다. 도감 · 세계핵 · 원정 기록은 열쇠가 달라 그대로다.
+   ⚠️ 화면이 뜰 때가 아니라 **단추를 누른 뒤**다 — 중간에 창을 닫으면 저장본이 남아
+      마지막 칸을 다시 밟게 된다 (넘긴 판이 적히지는 않는다 — saveGame 거름망). */
+function winEnd(){ clearSave(); WIN_NEW=null; run=null; startPicks=null; view="title"; render() }
+function winNextView(){ return "winface" }
+function winGo(){
+  const v=winNextView();
+  if(v==="title"){ winEnd(); return }
+  /* 한 글자씩 내보이기는 **화면이 쥔다** — 없으면(유니티) 조용히 지나간다 */
+  try{ WINFACE_DONE=0 }catch(e){}
+  view=v; render();
+}
+
+/* 파수꾼의 마지막 말. 글을 고치려면 **이 한 줄**만 고치면 된다 */
+const WINFACE_SAY="다음 세계에서 보자꾸나…";
 /* ═══════════ 이벤트 도감 ═══════════
    EVENTS 를 그대로 읽어 그린다. 등장 조건은 when 이 함수라 글로 못 읽으니 이벤트의 dex:{field,cond,rate} 를 본다 —
    when 을 고치면 dex 도 같이 고칠 것. 선택지 조건은 설명 맨 뒤 괄호(evOptHtml 규칙)를 그대로 보여 준다 */
@@ -22459,9 +22487,18 @@ function toast(t){ TOAST=t; TOAST_AT=Date.now();
 
 function nextField(){
   run.field++;
-  setTimeout(fieldBanner,260);   /* 막 입장 연출 (2026-10-21) */
+  /* 막 입장 연출 (2026-10-21) — **화면 쪽 이름이다.** 규칙이 화면 이름을 그냥 부르면
+     다묶이에서 `fieldBanner is not defined` 로 **넘어진다** (조용히 비지도 않는다).
+     시늉이 못 받치는 까닭 : 시늉 목록은 돌려 보며 찾은 것이라 안 밟은 길의 이름은 없다.
+     유니티가 1구역을 넘기는 순간 터지고 있었다 (2026-10-28). */
+  if(typeof fieldBanner==="function") setTimeout(fieldBanner,260);
   /* 저장본은 여기서 지우지 않는다 — 끝 단추(winEnd)에서 지운다 (사용자 2026-10-13) */
-  if(run.field>=FIELDS.length){ recordRun("win","마지막 우두머리를 넘고 균열을 닫았습니다."); view="clear"; render(); return }
+  if(run.field>=FIELDS.length){ recordRun("win","마지막 우두머리를 넘고 균열을 닫았습니다.");
+    /* ★ 「처음 만난 것」은 **여기서** 떠 둔다 — 끝 단추가 저장본을 지우기 전이어야 한다.
+       전에는 `drawClear`(화면)가 떴다. 그러면 화면이 없는 쪽(유니티)에서는 늘 비어
+       승리 뒤 둘째 화면이 영영 안 떴다 (2026-10-28). */
+    try{ WIN_NEW=unlockNew() }catch(e){ WIN_NEW=null }
+    view="clear"; render(); return }
   const f=FIELDS[run.field], S=f.size, mid=Math.floor(S/2);
   run.size=S; run.grid=buildGrid(run.field); run.mapUnfold=1;
   run.pos={r:S-1,c:mid};
@@ -24826,6 +24863,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 242, "v": "0.7", "d": "2026-10-28", "t": "이어하기 · 승리 뒤 두 화면. 구역 넘김이 넘어지던 흠 — 시늉을 글로도 세운다", "big": 0},
  {"b": 241, "v": "0.7", "d": "2026-10-28", "t": "도감 여덟 칸이 다 선다 — 전용 구역 · 조합 · 연대기. 적 꼬리표 표식은 받은 그림으로", "big": 0},
  {"b": 240, "v": "0.7", "d": "2026-10-28", "t": "기믹 결과 판이 서고 나간다 (조용한 구멍 열넷째)", "big": 0},
  {"b": 239, "v": "0.7", "d": "2026-10-28", "t": "진 뒤에는 멈춘다 · 이벤트는 그 칸에 서 있을 때만", "big": 0},
@@ -26259,7 +26297,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=241;
+const BUILD_NO=242;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -33988,7 +34026,6 @@ function overWhere(){
   const f=FIELDS[Math.min(run.field,FIELDS.length-1)];
   return `${f?f.n:""} ${run.day}일차, 오염도 ${run.taint}`;
 }
-let WIN_NEW=null;   /* clear 로 들어설 때 떠 둔다 — 제목으로 돌아가며 지운다 */
 /* 파수꾼 배경 — 시작 화면(start.json)과 똑같은 짜임이다. 여덟 칸이지만 서로 다른 그림은 다섯뿐이라
    0,1,2,3,4,3,2,1 로 갔다 돌아온다 (/art 2026-10-12) */
 /* ⚠️ 받은 fps 를 그대로 쓰지 않는다 — 사용자가 「훨씬 느리게」라 했다 (2026-10-13).
@@ -34011,20 +34048,6 @@ function winBg(app){
   step(); clearInterval(winbgTimer);
   winbgTimer=setInterval(()=>{ if(!b.isConnected){ clearInterval(winbgTimer); return } step() },1000/WINBG.fps);
 }
-/* 승리 연출의 끝 — 이 자리에서만 이긴 판의 저장본을 지운다 (사용자 2026-10-13).
-   이긴 칸(SLOT) 하나만 지운다. 도감 · 세계핵 · 원정 기록은 열쇠가 달라 그대로다.
-   ⚠️ 화면이 뜰 때가 아니라 **단추를 누른 뒤**다 — 중간에 창을 닫으면 저장본이 남아
-      마지막 칸을 다시 밟게 된다 (넘긴 판이 적히지는 않는다 — saveGame 거름망). */
-function winEnd(){ clearSave(); WIN_NEW=null; run=null; startPicks=null; view="title"; render() }
-function winNextView(){ return "winface" }
-function winGo(){
-  const v=winNextView();
-  if(v==="title"){ winEnd(); return }
-  WINFACE_DONE=0;   /* 들어설 때마다 처음부터 — 대사를 다시 보인다 */
-  view=v; render();
-}
-/* 파수꾼의 마지막 말. 글을 고치려면 **이 한 줄**만 고치면 된다 */
-const WINFACE_SAY="다음 세계에서 보자꾸나…";
 /* 대사를 다 보였나 — **다시 그려도** 처음부터 되풀이하지 않게 (지도 보기 · 창 크기 따위로 render 가 또 돈다) */
 let WINFACE_DONE=0;
 function drawWinFace(app){
@@ -34073,7 +34096,9 @@ function drawWinNew(app){
   app.appendChild(b);
 }
 function drawClear(app){
-  try{ if(WIN_NEW===null) WIN_NEW=unlockNew() }catch(e){ WIN_NEW=null }   /* 판을 지우기 전에 떠 둔다 */
+  /* 떠 두는 일은 규칙이 한다 (`nextField` 에서 clear 로 들어설 때) — 여기서 또 세지 않는다.
+     옛 저장본에서 바로 들어선 자리처럼 비어 있으면 그때만 받친다 (2026-10-28) */
+  try{ if(WIN_NEW===null) WIN_NEW=unlockNew() }catch(e){ WIN_NEW=null }
   SFX.play("win");
   veil("radial-gradient(circle,rgba(201,162,39,.45),transparent 70%)");
   app.appendChild(el(`<div class="center">
