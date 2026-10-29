@@ -25389,6 +25389,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 268, "v": "0.7", "d": "2026-10-30", "t": "장소 화면 언제나 판 안에", "big": 0},
  {"b": 267, "v": "0.7", "d": "2026-10-30", "t": "덧판 다듬기 · 스크롤 막대 숨김", "big": 0},
  {"b": 266, "v": "0.7", "d": "2026-10-30", "t": "지도 가운데 덧판 — 미지의 구역 · 전용 구역 · 쉼터", "big": 0},
  {"b": 265, "v": "0.7", "d": "2026-10-29", "t": "덮개 — 쉼터 · 미지의 구역 · 전용 구역 뺌", "big": 0},
@@ -26848,7 +26849,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=267;
+const BUILD_NO=268;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -30035,7 +30036,8 @@ function shutGate(){
   const want=!!PLACE_VIEWS[view];
   if(view==="map") PLACE_RESUME=0;
   if(SHUT_OK!==1){ PLACE_ON=0; return false }
-  if(!PLACE_ON&&want&&(_lastView==="map"||PLACE_RESUME)){ shutRun(1); return true }
+  /* 장소 화면은 **언제나** 판 안에 — 메인화면에서 이어 하기 · 전투 뒤 결과로 와도 (사용자 2026-10-30 「원래 화면은 이제 안 쓸 것」) */
+  if(!PLACE_ON&&want){ shutRun(1); return true }
   if(PLACE_ON&&!want){ shutRun(0); return true }
   return false;
 }
@@ -30108,13 +30110,11 @@ function shutRun(enter){
     SHUT_AFTER.splice(0).forEach(f=>{ try{ f() }catch(e){ console.error(e) } });
     shutCursor() };
   const refit=()=>document.querySelectorAll("#app .pstage > .shut").forEach(x=>x._fit&&x._fit());
-  /* 무대가 없으면(다른 화면에서 왔다 등) 그냥 바꾼다 */
-  if(!st0){ swap(); return }
+  /* 무대가 없으면(제목 · 전투 · 보상에서 왔다) — 나가는 길은 그냥 바꾸고, 들어가는 길은 닫힌 판으로 그려 열기만 한다 */
+  if(!st0&&!enter){ swap(); return }
   SHUT_BUSY=1; shutBlock(true); addEventListener("resize",refit); shutCursor();
   const dog=setTimeout(finish,SHUT.DOG);          /* 어디서 멈춰도 — 닫힌 채 갇히지 않게 */
-  st0.classList.add("shutting");
-  shutAttach(st0,0)._move(0,1,T.CLOSE,SHUT.EASE_CLOSE);
-  setTimeout(()=>{ if(done) return;
+  const opened=()=>{ if(done) return;
     swap();                                        /* 닫힌 채 — 가운데에서 바꾼다 */
     const st1=document.querySelector("#app .mb-mid .pstage");
     if(!st1||!mapLike()){ finish(); if(!placeMode()&&view!=="map") shutBlink(450); return }   /* 지도 판이 없는 화면(보상 · 전투 …) */
@@ -30124,7 +30124,11 @@ function shutRun(enter){
     shutImgs(box,SHUT.WAIT).then(()=>setTimeout(()=>{ if(done) return;
       if(L.isConnected) L._move(1,0,T.OPEN,SHUT.EASE_OPEN);
       setTimeout(finish,T.OPEN+30) },T.HOLD/2));
-  },T.CLOSE+T.HOLD/2);
+  };
+  if(!st0){ opened(); return }
+  st0.classList.add("shutting");
+  shutAttach(st0,0)._move(0,1,T.CLOSE,SHUT.EASE_CLOSE);
+  setTimeout(opened,T.CLOSE+T.HOLD/2);
 }
 
 /* 장소 화면의 꾸밈 — 전체 화면 때 쓰던 `body.vnew #app …` 규칙(선택지 카드 그림 · 보상 카드 · 대원 줄 …)을
