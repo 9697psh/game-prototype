@@ -11048,7 +11048,7 @@ function fxMuteOff(t){
    받은 아트 : GameProject2 art/ui/combat-result-art-v1 · art/effects/combat-result-effects-v1
              → art/UI/결과/*.png (25장, 바이트 그대로) → build.sh 가 web/result/ 로.
    움직임 · 시간은 독립 미리보기(GameProject2 art/effects/combat-result-preview-v1)를 그대로 옮겼다. **자리만** 게임 화면에 맞춘다.
-     ① 승리 — 마지막 라운드가 끝나 [전투 종료] 돌판이 설 때 (battle.js) : 철판 + 양피지 + 「전투 승리」.
+     ① 승리 — 마지막 라운드가 끝나면 화면 가운데에 철판 + 양피지 + 「전투 승리」가 크게 떴다 사라지고, 그 뒤에 [전투 전리품] 돌판이 내려온다 (battle.js).
         우두머리 전투도 같다 — 처치 순간의 기존 「격 파」 카드와 겹치지 않게 격파 장식(boss-result)은 쓰지 않는다 (사용자 고름)
      ② 패배 — 원정 실패 (defeatCard 를 바꿈, 사용자 고름) : 채도 · 밝기↓ + 좌우 균열 침식 + 석판 「원정 실패」 + 석편
      ③ 폐기물 더미 — 단계가 낮아질 때(phaseFocusFX) 고철 다섯 낙하 + 바닥 먼지 / 쓰러질 때(dieDone) 죽음 자세 + 핵 잔불 소멸 (사용자 고름)
@@ -11147,33 +11147,36 @@ function rText(ctx,str,x,y,px,color,a,sub){
 /* 논리 좌표(미리보기 764×408) → 화면. 기준점(lx0,ly0)이 화면 (X0,Y0) 에 오게 배율 s 로 */
 const rMap=(s,lx0,ly0,X0,Y0)=>({s, x:lx=>X0+(lx-lx0)*s, y:ly=>Y0+(ly-ly0)*s});
 
-/* ── ① 승리 — 돌판 위 빈자리에 (돌판 위 · 화면 위쪽 절반 아래로, 1.5배까지) ──
-   미리보기 그대로 그리면(배경 비율 2.2배) 턴 표시 · 기록 펼치기와 겹친다 → 돌판에 맞춰 세운다 (README 조정) */
-function resClaimFX(){
-  if(typeof B==="undefined"||!B||!run||!run.dun||B.resClaim) return;
-  B.resClaim=1; resLoad(); if(RES_OK<0) return;
-  const myB=B;
-  const place=(h,bottom)=>{   /* 논리 높이 h(위→bottom) 를 돌판 위에 */
-    const cb=document.querySelector(".claimbox"); if(!cb) return null;
-    const r=cb.getBoundingClientRect(), Y1=r.top-6, top=Math.max(r.top/2,0);
-    const s=Math.max(0.8,Math.min(1.5,(Y1-top)/h));
-    return rMap(s,382,bottom,r.left+r.width/2,Y1);
+/* ── ① 승리 — 화면 가운데에 크게 떴다 사라진다 (사용자 2026-10-29 : 「먼저 화면 중앙에 크게 · 사라진 뒤 돌판이 내려오게」) ──
+   battle.js 가 마지막 라운드의 돌판을 세우기 전에 부르고, 끝나면(done) 돌판을 세운다.
+   미리보기 시간 그대로 (철판 80 · 정착 80 · 양피지 320 · 먼지 220 · 제목 200) → 1500 까지 보이고 → 350ms 동안 사라진다.
+   크기는 화면 너비의 62% 까지, 3배를 넘지 않게 (양피지 320 → 960px) */
+function resVictoryFX(done){
+  if(typeof B==="undefined"||!B) return done&&done();
+  resLoad();
+  const myB=B; let fin=false; const end=()=>{ if(fin) return; fin=true; if(done) done() };
+  const t0=performance.now();
+  const wait=()=>{ if(RES_OK===1) go(); else if(RES_OK<0||performance.now()-t0>1500) end(); else setTimeout(wait,60) };
+  const go=()=>{
+    const k=resK(), FADE=[1500,1850];
+    setTimeout(end,Math.round(FADE[1]*k)+30);
+    resAdd({z:58,end:FADE[1]+40,keep:()=>!fin&&typeof view!=="undefined"&&view==="battle"&&B===myB,
+      draw:(ctx,t)=>{
+        const W=innerWidth, H=innerHeight, s=Math.min(3,W*0.62/320), up=8*rSmooth(rSeg(t,FADE[0],FADE[1]));
+        const M=rMap(s,382,77,W/2,H*0.42-up*s), a=1-rSmooth(rSeg(t,FADE[0],FADE[1]));
+        if(a<=0) return;
+        ctx.globalAlpha=a;
+        if(t>=0){ const dy=t<80?-12+14*rIn(rSeg(t,0,80)):2*(1-rOut(rSeg(t,80,160)));
+          const C=RES_IMG["victory-crest"]; if(C){ ctx.globalAlpha=a*rSmooth(rSeg(t,0,50)); ctx.drawImage(C,Math.round(M.x(334)),Math.round(M.y(30+dy)),Math.round(96*s),Math.round(40*s)); ctx.globalAlpha=a } }
+        ctx.save(); rUnroll(ctx,"victory-paper",M,[222,68],[48,272],112,rSmooth(rSeg(t,80,400)),a*rSmooth(rSeg(t,60,100))); ctx.restore();
+        if(t>=80&&t<300){ const q=rSeg(t,80,300), da=a*(1-rIn(q)), mv=6*rOut(q), D=RES_IMG["victory-settle-dust"];
+          if(D){ rImg(ctx,D,M.x(298-mv),M.y(46),64*s,24*s,da);
+            ctx.save(); ctx.translate(Math.round(M.x(402+mv)+64*s),Math.round(M.y(46))); ctx.scale(-1,1); rImg(ctx,D,0,0,64*s,24*s,da); ctx.restore() } }
+        rText(ctx,"전투 승리",M.x(382),M.y(96),18*s,"#3a2714",a*rSmooth(rSeg(t,400,600)));
+      }});
   };
-  resAdd({z:58,end:1300,keep:()=>typeof view!=="undefined"&&view==="battle"&&B===myB&&!!document.querySelector(".claimbox"),
-    draw:(ctx,t)=>{
-      if(RES_OK!==1) return;
-      /* 미리보기 시간에서 700 을 뺐다 — 처치 동작은 게임이 이미 보여 주었다 */
-      const M=place(94,124); if(!M) return; const T=t+700;
-      if(T>=700){ const dy=T<780?-12+14*rIn(rSeg(T,700,780)):2*(1-rOut(rSeg(T,780,860)));
-        rImg(ctx,"victory-crest",M.x(334),M.y(30+dy),96*M.s,40*M.s,rSmooth(rSeg(T,700,750))) }
-      rUnroll(ctx,"victory-paper",M,[222,68],[48,272],112,rSmooth(rSeg(T,780,1100)),rSmooth(rSeg(T,760,800)));
-      if(T>=780&&T<1000){ const q=rSeg(T,780,1000), a=1-rIn(q), mv=6*rOut(q), D=RES_IMG["victory-settle-dust"];
-        if(D){ rImg(ctx,D,M.x(298-mv),M.y(46),64*M.s,24*M.s,a);
-          ctx.save(); ctx.translate(Math.round(M.x(402+mv)+64*M.s),Math.round(M.y(46))); ctx.scale(-1,1); rImg(ctx,D,0,0,64*M.s,24*M.s,a); ctx.restore() } }
-      rText(ctx,"전투 승리",M.x(382),M.y(96),18*M.s,"#3a2714",rSmooth(rSeg(T,1100,1300)));
-    }});
+  wait();
 }
-
 /* ── ② 패배 — 원정 실패 (defeatCard 가 부른다). 화면 전체 : 균열은 화면 높이에 맞추고 좌우 끝에 붙인다 ── */
 function resDefeatFX(msg){
   resLoad();
@@ -25313,6 +25316,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 260, "v": "0.7", "d": "2026-10-29", "t": "승리 연출 · 전투 전리품 · 덮개 속도", "big": 0},
  {"b": 259, "v": "0.7", "d": "2026-10-29", "t": "전투 결과 · 원정 마무리 연출", "big": 0},
  {"b": 258, "v": "0.7", "d": "2026-10-29", "t": "덮개 페이드 · 적이 오른쪽에서 달려 들어온다", "big": 0},
  {"b": 257, "v": "0.7", "d": "2026-10-29", "t": "탁자 덮개 소리 · 둘레는 지도 판", "big": 0},
@@ -26764,7 +26768,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=259;
+const BUILD_NO=260;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -29747,8 +29751,10 @@ function coverTween(to,ms){
 }
 /* 보간(easeInOutCubic)이 y 에 닿는 진행률 p — 밀림 소리를 「100° 를 넘는 때」에 예약하려고 */
 const cvEaseAt=y=>y<=.5?Math.cbrt(y/4):1-Math.cbrt(2*(1-y))/2;
-/* 게임의 연출 빠르기(SPD — 설정 「빠르게」면 0.5)를 곱한다. 보통은 1 이라 위 수치 그대로 */
-const cvK=()=>(typeof SPD==="number"&&SPD>0)?SPD:1;
+/* ⚠️ 연출 빠르기(「빠르게」 SPD 0.5)를 **따르지 않는다** (사용자 2026-10-29 : 빠르게에서 문이 너무 빨리 닫히고 열렸다 → 「1번」).
+   덮개는 화면을 넘기는 연출이라 늘 승인한 시제품 속도(420 · 160 · 560ms)다. CV_TEST_K 는 시험이 느리게 찍을 때만 (보통 1) */
+let CV_TEST_K=1;
+const cvK=()=>CV_TEST_K>0?CV_TEST_K:1;
 const cvWait=ms=>new Promise(ok=>setTimeout(ok,ms));
 const cvFrames=()=>new Promise(ok=>requestAnimationFrame(()=>requestAnimationFrame(ok)));
 
@@ -39736,12 +39742,17 @@ function drawBattle(app){
   try{ colLoopSync() }catch(e){}            /* 콜로서스 — 빔 충전 띠 · 머리 움직임 */
   phLinkApply(field);                       /* 영혼 분리 — 고른 환영과 본체를 잇는 선 */
   if(B.claim){ const d=run.dun, mid=B.claim===2&&d;
+  /* 마지막 라운드 — 먼저 화면 가운데에 「전투 승리」가 크게 떴다 사라지고, **그 뒤에** 돌판이 위에서 내려온다 (사용자 2026-10-29).
+     B.resWinDone 이 서기 전에는 돌판을 세우지 않는다. 스페이스바(claimGo)는 그대로 먹는다 */
+  if(!mid&&!B.resWinDone&&typeof resVictoryFX==="function"&&RES_OK!==-1){
+    if(!B.resWinGo){ B.resWinGo=1; const myB=B;
+      setTimeout(()=>resVictoryFX(()=>{ if(B===myB&&B.claim===1){ B.resWinDone=1; if(view==="battle") render() } }),0) } }
+  else {
     uiBtnVars();
-    const cb=el(`<div class="claimbox ${mid?"cmid":"cend"}">${mid?"":`<i class="cchain l"></i><i class="cchain r"></i>`}<button class="claim cbtn2">${mid?`다음 라운드 <small>(${d.wave}/${d.waves})</small>`:"전투 종료"}</button></div>`);   /* 빈 전장 한가운데 (사용자 2026-10-03) · 라운드 사이도 (2026-10-04) · 문구는 단추 하나로 (2026-10-06) */
+    const cb=el(`<div class="claimbox ${mid?"cmid":"cend"}">${mid?"":`<i class="cchain l"></i><i class="cchain r"></i>`}<button class="claim cbtn2">${mid?`다음 라운드 <small>(${d.wave}/${d.waves})</small>`:"전투 전리품"}</button></div>`);   /* 빈 전장 한가운데 (사용자 2026-10-03) · 라운드 사이도 (2026-10-04) · 문구는 단추 하나로 (2026-10-06) */
     cb.querySelector("button").onclick=claimGo; field.appendChild(cb);
-    if(!mid&&typeof resClaimFX==="function") setTimeout(resClaimFX,0);   /* 승리 · 격파 장식 — 돌판 위에 (B.resClaim 이 한 번만) */
     if(!mid&&!B.claimShown){ B.claimShown=1; setTimeout(()=>{ const k=sfxOr("전투 종료",sfxOr("제련 부딪힘",null)); if(k) SFX.play(k) },420) }   /* 돌판이 떨어지는 소리 — 넷 중 하나 (사용자 2026-10-06) */
-    else if(!mid) cb.classList.add("still") }   /* 다시 그릴 때는 떨어지지 않는다 */
+    else if(!mid) cb.classList.add("still") } }   /* 다시 그릴 때는 떨어지지 않는다 */
   if(B&&run) run.heroes.forEach(h=>{ if(h.bomb>0&&h.slot>0&&h.hp>0){ const c=ctrOf("mine",h.slot);   /* 응축 폭발을 기다리는 동안 (2026-10-03) */
     if(c&&c.e){ c.e.classList.add("bombing"); if(h.bomb===1) c.e.classList.add("bomb1") } condLoop(h) } });
   { uiBtnVars();
