@@ -1841,6 +1841,7 @@ body.vbattle .tornado{transform:scale(4.6);margin-top:14px}   /* 회오리도 �
 #covergate.busy{z-index:9700;pointer-events:auto}
 #covergate .cg-perim{position:absolute;background-color:#080908;background-repeat:no-repeat;background-size:100% 100%;image-rendering:pixelated;opacity:0;pointer-events:none}   /* 둘레 = 지도 판 그림 (사용자 2026-10-29) */
 #covergate.night .cg-perim::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,rgba(10,12,30,.10),rgba(4,5,16,.42) 100%)}   /* #nightveil 과 같은 빛 */
+#covergate .cg-veil{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none}   /* 덮개 전환의 페이드 */
 #covergate .cg-clip{position:absolute;overflow:hidden;pointer-events:none}
 #covergate .cg-stage{position:absolute;left:0;top:0;width:1920px;height:1026px;transform-origin:0 0;isolation:isolate}
 #covergate .cg-space{position:absolute;inset:0;perspective:4720px;perspective-origin:50% 50%;z-index:4}
@@ -24189,6 +24190,59 @@ function foeSlideAfter(before){
   });
 }
 
+/* ── 적의 첫 등장 — 오른쪽 화면 밖에서 달려 들어온다 (사용자 2026-10-29 : 「소환되어 있는 게 아니고 우측에서 달려나오는 연출」) ──
+   전투 · 라운드(웨이브)의 첫 배치만 — 이 전투에서 **처음 보는 적**이면서 소환된 것(summoned)이 아닐 때.
+   빼는 것 : 못 움직이는 것(still · noMove · 큰 몸 · 잔해) · 그림자 이동(ghostMove) · 환영 ·
+            전용 등장이 있는 것(하늘에서 내려오는 우두머리 introDark · 콜로서스) · 우두머리 알림이 뜨는 우두머리.
+   칸 통째(몸 · 체력 막대 · 의도)를 무리째 같은 거리에서 밀어 넣고, 몸(.art)만 달리듯 들썩인다 — 받은 그림에 달리기 자세가 없어
+   「기본」 자세 그대로다. 다시 그려도 이어지게 FOE_SLIDES 와 같은 꼴로 시작 때를 쥔다.
+   덮개 전환 중이면 덮개가 열리기 시작할 때(foeEnterGo) 출발한다 — 닫힌 덮개 뒤에서 다 와 버리지 않게 */
+let FOE_ENTER=new Map(),FOE_ENTER_SEEN=new Set(),FOE_ENTER_B=null;
+const FOE_ENTER_MS=620, FOE_ENTER_BOB=150;
+function foeEnterSkip(u){
+  const D=(u&&FOE[u.name])||{};
+  return !u||!u.alive||u.summoned||u.isPhantom||u.big||u.boss||D.boss||D.still||D.noMove||D.wreck||D.introDark||D.ghostMove;
+}
+function foeEnterAfter(){
+  if(PRED_DRY||view!=="battle"||!B){ if(view!=="battle"){ FOE_ENTER.clear() } return }
+  if(FOE_ENTER_B!==B){ FOE_ENTER.clear(); FOE_ENTER_SEEN.clear(); FOE_ENTER_B=B }
+  const slots=[...document.querySelectorAll('#foeSide .slot[data-foe-id]')];
+  /* 새로 선 무리 — 같은 거리(가장 왼쪽 적이 화면 밖에 설 만큼)에서 함께 출발한다 */
+  const fresh=slots.filter(e=>!FOE_ENTER_SEEN.has(e.dataset.foeId));
+  if(fresh.length){
+    const go=fresh.filter(e=>!foeEnterSkip(B.foes.find(f=>String(f.id)===e.dataset.foeId)));
+    fresh.forEach(e=>FOE_ENTER_SEEN.add(e.dataset.foeId));
+    if(go.length){
+      const left=Math.min(...go.map(e=>e.getBoundingClientRect().left));
+      const dist=Math.max(200,innerWidth-left+40), k=(typeof SPD==="number"&&SPD>0)?SPD:1;
+      const wait=(typeof CV_BUSY!=="undefined"&&CV_BUSY)?-1:(document.querySelector(".blackout.gate")?260:0);   /* -1 = 덮개가 열릴 때 */
+      go.forEach((e,i)=>FOE_ENTER.set(e.dataset.foeId,{from:dist,at:wait<0?0:Date.now()+wait+i*55*k,dur:Math.round(FOE_ENTER_MS*k),hold:wait<0}));
+    }
+  }
+  const now=Date.now();
+  slots.forEach(e=>{
+    const m=FOE_ENTER.get(e.dataset.foeId), art=e.querySelector('.art');
+    /* 같은 칸에 걸어 둔 앞의 등장은 걷는다 — 덮개 뒤에서 멈춰 둔 것이 남으면 출발한 뒤에도 화면 밖에 붙들린다 */
+    [e,art].forEach(x=>{ if(x&&x._ent){ x._ent.cancel(); x._ent=null } });
+    if(!m) return;
+    if(!m.hold&&now-m.at>=m.dur){ FOE_ENTER.delete(e.dataset.foeId); return }
+    const a=e._ent=e.animate([{translate:m.from+'px 0px'},{translate:'0px 0px'}],{duration:m.dur,easing:'cubic-bezier(.25,.55,.3,1)',fill:'backwards'});
+    const bob=art&&(art._ent=art.animate([{translate:'0 0'},{translate:'0 -6px',offset:.45},{translate:'0 0'}],
+      {duration:Math.round(FOE_ENTER_BOB*(m.dur/FOE_ENTER_MS)),iterations:Math.max(1,Math.round(m.dur/FOE_ENTER_BOB)-1),easing:'ease-out',fill:'backwards'}));
+    if(m.hold){ a.pause(); a.currentTime=0; if(bob){ bob.pause(); bob.currentTime=0 } return }   /* 덮개 뒤 — 화면 밖에서 기다린다 */
+    const t=now-m.at;
+    if(t<0){ a.currentTime=0; a.pause(); setTimeout(()=>{ try{ a.play(); bob&&bob.play() }catch(x){} },-t); if(bob){ bob.currentTime=0; bob.pause() } }
+    else { a.currentTime=t; if(bob) bob.currentTime=t }
+  });
+}
+/* 덮개가 열리기 시작할 때 (cover-gate.js 가 부른다) — 기다리던 적이 출발한다 */
+function foeEnterGo(){
+  if(!FOE_ENTER.size) return;
+  let i=0; const now=Date.now(), k=(typeof SPD==="number"&&SPD>0)?SPD:1;
+  FOE_ENTER.forEach(m=>{ if(m.hold){ m.hold=false; m.at=now+(i++)*55*k } });
+  foeEnterAfter();
+}
+
 /* 다시 그리기는 선택 표시만 바꾼다. 같은 대원의 대기 띠와 지도 왼쪽 판은 이어 쓴다. */
 function idleFramesBefore(){
   if(view!=="battle"||!B)return null;
@@ -24260,6 +24314,7 @@ function render(){
   if(typeof coverIdle==="function") coverIdle();   /* 탐험 탁자 덮개 — 지도에서만 경첩 (그린 판 자리에 맞춘다) */
   idleFramesAfter(oldIdle);mapPanelAfter(oldMap);
   foeSlideAfter(oldFoes);
+  foeEnterAfter();   /* 적의 첫 등장 — 오른쪽에서 달려 들어온다 */
   directorVisualSync();
   puppetVisualSync();
   driftFxSync();
@@ -24997,6 +25052,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 258, "v": "0.7", "d": "2026-10-29", "t": "덮개 페이드 · 적이 오른쪽에서 달려 들어온다", "big": 0},
  {"b": 257, "v": "0.7", "d": "2026-10-29", "t": "탁자 덮개 소리 · 둘레는 지도 판", "big": 0},
  {"b": 256, "v": "0.7", "d": "2026-10-29", "t": "탐험 탁자 덮개 — 지도와 전투 · 상점 · 제련소 사이", "big": 0},
  {"b": 255, "v": "0.7", "d": "2026-10-29", "t": "데스크톱 판 스스로 받기", "big": 0},
@@ -26446,7 +26502,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=257;
+const BUILD_NO=258;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -29301,7 +29357,8 @@ function nightVeil(){
      덮개가 가리는 것은 [32,88,1888,928) 뿐이라, 그 바깥은 둘레 가림(.cg-perim)이 닫히기 전에 검게 덮는다.
    ⚠️ 덮개는 지도 판 그림(MAP_BOARD)이 아니라 GameProject2 의 「탁자 v2」에 맞춰 그려졌다 — 판 그림은 안 바꿨다.
    ⚠️ 그림을 못 읽으면 덮개를 안 쓰고 원래 암전으로 간다. 움직임 줄이기면 움직이지 않고 바로 바꾼다. */
-const CV={W:1920,H:1026,TOP:88,BW:928,BH:840,OPEN:150,CLOSE_MS:420,HOLD_MS:160,OPEN_MS:560,SLIDE:112,PERSP:4720,WAIT_MS:1500};
+const CV={W:1920,H:1026,TOP:88,BW:928,BH:840,OPEN:150,CLOSE_MS:420,HOLD_MS:160,OPEN_MS:560,SLIDE:112,PERSP:4720,WAIT_MS:1500,
+  FADE:0.55};   /* 페이드 — 닫힐 때 앞 화면이 이만큼 어두워지고, 열릴 때 새 화면이 여기서 밝아진다 (사용자 2026-10-29 「살짝」) */
 const COVER_CELL={dungeon:1,elite:1,boss:1,shop:1,dryshop:1,forge:1};   /* 들어서면 전투 · 상점 · 제련소가 되는 칸 */
 const CV_PARTS=["outer","inner","edge-vertical","edge-horizontal","hinge-fixed","hinge-moving","hinge-pin"];
 let CV_ROOT=null, CV_OK=0, CV_ANG=CV.OPEN, CV_AWAY=0, CV_BUSY=0, CV_TRIP=null, CV_NEXT=[];
@@ -29352,7 +29409,7 @@ function coverLoad(){
 function coverBuild(){
   if(CV_ROOT) return CV_ROOT;
   const root=document.createElement("div"); root.id="covergate";
-  root.innerHTML=`<div class="cg-perim"></div><div class="cg-clip"><div class="cg-stage">
+  root.innerHTML=`<div class="cg-veil"></div><div class="cg-perim"></div><div class="cg-clip"><div class="cg-stage">
     <div class="cg-shadow l"></div><div class="cg-shadow r"></div><div class="cg-fixed"></div><div class="cg-space"></div></div></div>`;
   /* 둘레 — 검정 대신 **지도 판 그림**을 깐다 (사용자 2026-10-29 : 「열리기 전까지 기존 지도 화면이 보이게」).
      지도 판은 그림을 창 전체로 늘려 깔기에, 지도에서 닫히면 둘레는 그대로 지도처럼 보이고 글자만 스러진다 */
@@ -29470,6 +29527,7 @@ async function coverInto(fn){
       const k=cvK(), C=CV.CLOSE_MS*k, S=CV_SND.닫힘, hit=(S.충돌+(S.앞당김||0))*1000;   /* 앞당김만큼 더 일찍 튼다 */
       /* 닫힘 — 충돌 봉우리가 각도 0(C ms 뒤)에 오게. 닫히는 시간이 더 짧으면 앞을 건너뛰어 지금 튼다 */
       if(hit<=C) cvSndAt(C-hit,()=>cvSnd("닫힘")); else cvSnd("닫힘",(hit-C)/1000);
+      cvFade(0,CV.FADE,C,"ease-in");                          /* 앞 화면이 살짝 어두워진다 (덮개 사이로 보이는 곳) */
       await coverTween(0,C);                                   /* 경첩이 밖에 나가 있었으면 들어오며 닫힌다 */
       await cvWait(CV.HOLD_MS*k);
       run1();
@@ -29478,6 +29536,8 @@ async function coverInto(fn){
       await coverReady();
       const O=CV.OPEN_MS*k;
       cvSnd("열림");                                           /* 펼쳐지기 시작하는 순간 */
+      cvFade(CV.FADE,0,O,"ease-in-out");                       /* 새 화면이 어둠에서 밝아지며 드러난다 */
+      if(typeof foeEnterGo==="function") try{ foeEnterGo() }catch(e){}   /* 기다리던 적이 달려 들어온다 */
       if(CV_AWAY){                                             /* 밀려나기 시작(100°) — 목적지에서만. 시간으로 예약한다 */
         cvSndAt(O*cvEaseAt(100/CV.OPEN),()=>cvSnd("밀림"));
         cvSndAt(O+(CV_SND.밀림.꼬리||0)*k,()=>{ try{ SFX.stop(CV_SND.밀림.k) }catch(e){} }) }
@@ -29486,9 +29546,17 @@ async function coverInto(fn){
   }catch(e){ console.error(e); cvSndCancel(true); run1(); coverAngle(CV.OPEN) }
   finally{ clearTimeout(dog); coverEnd() }
 }
+/* 덮개 아래 어둠 — 덮개 · 둘레보다 밑, 게임 화면보다 위 */
+function cvFade(a,b,ms,ease){
+  const v=CV_ROOT&&CV_ROOT.querySelector(".cg-veil"); if(!v) return;
+  try{ v.getAnimations().forEach(x=>x.cancel()); v.animate([{opacity:a},{opacity:b}],{duration:Math.max(1,ms),easing:ease,fill:"forwards"}) }
+  catch(e){ v.style.opacity=String(b) }
+}
 function coverEnd(){
   if(!CV_BUSY) return;
   CV_BUSY=0;
+  { const v=CV_ROOT&&CV_ROOT.querySelector(".cg-veil"); if(v){ try{ v.getAnimations().forEach(x=>x.cancel()) }catch(e){} v.style.opacity="0" } }
+  if(typeof foeEnterGo==="function") try{ foeEnterGo() }catch(e){}   /* 움직임 줄이기 · 안전장치로 끝나도 적이 화면 밖에 남지 않게 */
   if(CV_ROOT) CV_ROOT.classList.remove("busy");
   CV_TRIP=(typeof run!=="undefined"&&run&&view!=="map")?run:null;
   coverIdle();
