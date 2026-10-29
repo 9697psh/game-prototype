@@ -5944,7 +5944,22 @@ body.vnew #app .rewards:has(.trait-guarantee){margin-top:48px}
 @media(max-width:1000px){.trait-choices{gap:14px;grid-template-columns:repeat(3,minmax(0,232px))}.trait-icon{width:76px;height:76px}.trait-choice>b{font-size:17px}}
 @media(max-width:620px){.trait-choices{grid-template-columns:minmax(0,232px);gap:16px}.trait-icon{width:86px;height:86px}#app.trait-stage .title{font-size:22px}}
 @media(prefers-reduced-motion:reduce){.trait-chosen,body.vnew #app .rw.rwpick.trait-guarantee{animation:none!important}}
-
+/* ── 전투 결과 · 원정 마무리 (src/fx/result-fx.js, 사용자 2026-10-29) ── */
+#resfx{position:fixed;left:0;top:0;pointer-events:none;image-rendering:pixelated;z-index:58}
+.resdim{position:fixed;inset:0;z-index:9640;pointer-events:auto;opacity:0;
+  backdrop-filter:saturate(.25) brightness(.7);-webkit-backdrop-filter:saturate(.25) brightness(.7)}   /* 원정 실패 — 채도 0.25 · 밝기 0.7 */
+.resclear{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 70px)}
+.resclear .rcbox{position:relative;flex:none}
+.resclear .rct,.resclear .rcs,.resclear .rcnode{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;text-align:center}
+.resclear .rct{font-size:34px;font-weight:700;color:#3a2714;letter-spacing:.04em}
+.resclear .rcs{font-size:14px;color:#5a4128}
+.resclear .rcnode{font-size:13px;color:#4a3019;font-weight:700}
+.resclear .rcroster{position:absolute;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:12px;margin:0}
+.resclear .rcgo{margin-top:16px}
+.resclear .rcin{animation-name:rcIn;animation-fill-mode:both;animation-timing-function:ease-out}
+.resclear .rcnode.rcin,.resclear .rct.rcin,.resclear .rcs.rcin{animation-name:rcInC}
+@keyframes rcIn{from{opacity:0;translate:0 10px}to{opacity:1;translate:0 0}}
+@keyframes rcInC{from{opacity:0}to{opacity:1}}
 </style>
 </head>
 <body>
@@ -8727,6 +8742,7 @@ function playFX(o){
   if(o.debIc) debInFX(o.side,o.slot,o.debIc);   /* 상태 이상 — 아이콘이 몸 속으로 (글씨는 아래에서 그대로) */
   if(o.dieDone){ const f=o.dieDone, c=ctrOf("foe",o.slot);   /* 쓰러짐 — 흐려지며 칸에서 빠진다 */
     if(f&&f.name==="콜로서스") colDeathFX(f);   /* 머리가 떨어져 잔해로 (사용자 2026-10-07) */
+    if(f&&/^폐기물 더미/.test(f.name)&&typeof resBossDeathFX==="function") resBossDeathFX(f,c);   /* 죽음 자세 · 핵 잔불 소멸 (2026-10-29) */
     if(c&&c.e) c.e.classList.add("fall");
     /* 처치 임팩트(.field.kimp)가 도는 동안은 다시 그리지 않는다 — 판을 새로 그리면 임팩트가 중간에 끊긴다 (2026-10-03) */
     const tidy=(n)=>{ if((document.querySelector(".field.kimp")||f.dieWait)&&n<40){ setTimeout(()=>tidy(n+1),100); return }   /* dieWait — 제 마지막 연출이 끝날 때까지 칸에 남는다 (초월체, 2026-10-13) */
@@ -11027,6 +11043,241 @@ function fxMuteOff(t){
   if(!t) return;
   if(t.hasB) t.dBody.appendChild=t.kB; else delete t.dBody.appendChild;
   if(t.dFx){ if(t.hasF) t.dFx.appendChild=t.kF; else delete t.dFx.appendChild }
+}
+/* ═══════════ 전투 결과 · 원정 마무리 연출 (사용자 2026-10-29 「이 미리보기 게임에 적용해줘」) ═══════════
+   받은 아트 : GameProject2 art/ui/combat-result-art-v1 · art/effects/combat-result-effects-v1
+             → art/UI/결과/*.png (25장, 바이트 그대로) → build.sh 가 web/result/ 로.
+   움직임 · 시간은 독립 미리보기(GameProject2 art/effects/combat-result-preview-v1)를 그대로 옮겼다. **자리만** 게임 화면에 맞춘다.
+     ① 승리 — 마지막 라운드가 끝나 [전투 종료] 돌판이 설 때 (battle.js) : 철판 + 양피지 + 「전투 승리」.
+        우두머리 전투도 같다 — 처치 순간의 기존 「격 파」 카드와 겹치지 않게 격파 장식(boss-result)은 쓰지 않는다 (사용자 고름)
+     ② 패배 — 원정 실패 (defeatCard 를 바꿈, 사용자 고름) : 채도 · 밝기↓ + 좌우 균열 침식 + 석판 「원정 실패」 + 석편
+     ③ 폐기물 더미 — 단계가 낮아질 때(phaseFocusFX) 고철 다섯 낙하 + 바닥 먼지 / 쓰러질 때(dieDone) 죽음 자세 + 핵 잔불 소멸 (사용자 고름)
+     ④ 원정 성공 — 완료 화면(drawClear) : 기록지 · 거친 구역을 잇는 점선 · 완료 인장 · 정산 받침 위 대원 카드 (사용자 고름)
+   ★ 시간 t 로 그 순간을 처음부터 다시 그린다 — 다시 그려도 · 화면이 바뀌어도 쌓이지 않는다 (미리보기 renderer 와 같은 꼴).
+   ★ 그리는 판은 body 에 붙는 캔버스 하나(#resfx, 누름은 지나간다). 층마다 「언제까지 남나」(keep)를 쥐고, 화면 · 전투가 바뀌면 걷힌다.
+   ★ 규칙은 한 줄도 안 바뀐다 — 부르는 곳은 모두 화면 · 연출 쪽이다. 그림을 못 읽으면 조용히 건너뛴다. */
+const RES_DIR="result/";
+const RES_NAMES=["victory-crest","victory-paper-left","victory-paper-center","victory-paper-right","victory-settle-dust",
+  "defeat-left","defeat-right","defeat-slab","stone-1","stone-2","stone-3","stone-4",
+  "scrap-1","scrap-2","scrap-3","scrap-4","scrap-5","boss-dust-8f","core-ember-8f",
+  "expedition-paper-left","expedition-paper-center","expedition-paper-right","route-terminal-ink","completion-seal","settlement-backing"];
+const RES_IMG={}; let RES_OK=0, RES_CV=null, RES_LAYERS=[], RES_RAF=0;
+/* 폐기물 더미 — 원본(192×128) 안 그림 테두리. 게임 그림은 이 테두리를 꼭 맞게 잘라 같은 배율로 줄인 것이다 (잰 값 2026-10-29) */
+const RES_BOSS_BB={"폐기물 더미":[5,8,188,128],"폐기물 더미 (무너짐)":[3,56,189,128],"폐기물 더미 (바닥)":[4,90,188,128],dead:[2,104,189,128]};
+/* 미리보기 값 (원본 좌표 = 미리보기 논리 좌표를 보스 2배 자리에서 되돌린 것) */
+const RES_SCRAP={from:[[44,53.5],[65,67],[86,80.5],[107,53.5],[128,67]], restX:[37,61,84,113,136], bottom:[13,15,13,20,12],
+  fall:[460,420,380,470,430], gap:55, spin:[215,-170,250,-235,190], bounce:5};
+const RES_DUST=[70,80,100,120,140,170,200,120], RES_EMBER=[60,80,460,700,600,180,220,150];
+
+function resLoad(){
+  if(RES_OK) return;
+  RES_OK=0.5;
+  Promise.all(RES_NAMES.map(n=>new Promise((ok,no)=>{ const im=new Image();
+    im.onload=()=>{ RES_IMG[n]=im; (im.decode?im.decode():Promise.resolve()).then(ok,ok) }; im.onerror=()=>no(n); im.src=RES_DIR+encodeURIComponent(n)+".png" })))
+    .then(()=>{ RES_OK=1; resKick() },n=>{ RES_OK=-1; console.warn("결과 연출 그림을 못 읽었다 — 건너뛴다 : "+n) });
+}
+const resK=()=>(typeof SPD==="number"&&SPD>0)?SPD:1;
+const rClamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
+const rSeg=(t,a,b)=>rClamp((t-a)/Math.max(1,b-a));
+const rSmooth=x=>{ x=rClamp(x); return x*x*(3-2*x) };
+const rOut=x=>{ x=rClamp(x); return 1-Math.pow(1-x,3) };
+const rIn=x=>{ x=rClamp(x); return x*x };
+function rFrame(durs,t){ if(t<0) return -1; let a=0; for(let i=0;i<durs.length;i++){ a+=durs[i]; if(t<a) return i } return -1 }
+
+/* 판 — 창 크기 그대로 (CSS 화소). 층이 하나도 없으면 숨긴다 */
+function resCanvas(){
+  if(!RES_CV){ RES_CV=document.createElement("canvas"); RES_CV.id="resfx"; document.body.appendChild(RES_CV);
+    addEventListener("resize",()=>resKick()) }
+  if(RES_CV.width!==innerWidth||RES_CV.height!==innerHeight){ RES_CV.width=innerWidth; RES_CV.height=innerHeight;
+    RES_CV.style.width=innerWidth+"px"; RES_CV.style.height=innerHeight+"px" }
+  return RES_CV;
+}
+/* 층 하나 = {t0, end(ms, 이 뒤로는 마지막 모습 그대로), keep(), draw(ctx,t), z} */
+function resAdd(L){ L.t0=performance.now(); RES_LAYERS.push(L); resKick(); return L }
+function resKick(){ if(!RES_RAF) RES_RAF=requestAnimationFrame(resTick) }
+function resTick(now){
+  RES_RAF=0;
+  RES_LAYERS=RES_LAYERS.filter(L=>{ try{ return L.keep() }catch(e){ return false } });
+  const cv=resCanvas(), ctx=cv.getContext("2d");
+  ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,cv.width,cv.height);
+  cv.style.display=RES_LAYERS.length?"":"none";
+  if(!RES_LAYERS.length) return;
+  cv.style.zIndex=String(Math.max(...RES_LAYERS.map(L=>L.z||58)));
+  ctx.imageSmoothingEnabled=false;
+  let live=false;
+  RES_LAYERS.forEach(L=>{
+    if(L.wait&&L.wait()){ L.t0=now; live=true; return }   /* 앞 연출(처치 임팩트)이 덮고 있는 동안은 시작하지 않는다 */
+    const t=(now-L.t0); if(t<L.end*resK()+50) live=true;
+    ctx.save(); try{ L.draw(ctx,t/resK()) }catch(e){ console.error(e) } ctx.restore() });
+  if(live) resKick();
+}
+/* render 가 부른다 — 화면이 바뀌었으면 걷는다 (다시 그리기 한 번) */
+function resTidy(){ if(RES_LAYERS.length) resKick() }
+
+/* 그리기 손 — 정수 자리 · 최근접 */
+function rImg(ctx,n,x,y,w,h,a=1,sx,sy,sw,sh){
+  const im=RES_IMG[n]||n; if(!im||!im.width||a<=0) return;
+  ctx.globalAlpha=rClamp(a);
+  if(sw!=null) ctx.drawImage(im,sx,sy,sw,sh,Math.round(x),Math.round(y),Math.round(w),Math.round(h));
+  else ctx.drawImage(im,Math.round(x),Math.round(y),Math.round(w),Math.round(h));
+  ctx.globalAlpha=1;
+}
+function rRot(ctx,n,px,py,pivot,deg,s,a=1,scale=1){
+  const im=RES_IMG[n]; if(!im||a<=0) return;
+  ctx.save(); ctx.globalAlpha=rClamp(a); ctx.translate(Math.round(px),Math.round(py)); if(deg) ctx.rotate(deg*Math.PI/180);
+  const k=s*scale; ctx.drawImage(im,-pivot[0]*k,-pivot[1]*k,im.width*k,im.height*k); ctx.restore();
+}
+/* 펼쳐지는 종이 — 가운데는 마스크, 양끝은 travel×(1-p) 안쪽에서 제자리로. off 를 정수로 한 번만 정해 접합부 2px 겹침을 지킨다 */
+function rUnroll(ctx,pre,M,pos,center,travel,p,a){
+  if(a<=0) return;
+  const C=RES_IMG[pre+"-center"]; if(!C) return;
+  const off=Math.round(travel*(1-p)), half=travel-off, mid=pos[0]+(center[0]+center[1])/2;
+  if(half>0){ ctx.save(); ctx.beginPath(); const x0=M.x(mid-half), x1=M.x(mid+half); ctx.rect(x0,M.y(pos[1]),x1-x0,C.height*M.s); ctx.clip();
+    rImg(ctx,pre+"-center",M.x(pos[0]),M.y(pos[1]),C.width*M.s,C.height*M.s,a); ctx.restore() }
+  rImg(ctx,pre+"-left",M.x(pos[0]+off),M.y(pos[1]),C.width*M.s,C.height*M.s,a);
+  rImg(ctx,pre+"-right",M.x(pos[0]-off),M.y(pos[1]),C.width*M.s,C.height*M.s,a);
+}
+function rText(ctx,str,x,y,px,color,a,sub){
+  if(a<=0||!str) return;
+  ctx.globalAlpha=rClamp(a); ctx.textAlign="center"; ctx.textBaseline="middle";
+  ctx.font=`${sub?"":"bold "}${Math.round(px)}px ${getComputedStyle(document.body).fontFamily}`;
+  ctx.fillStyle="rgba(0,0,0,.45)"; ctx.fillText(str,Math.round(x)+1,Math.round(y)+2);
+  ctx.fillStyle=color; ctx.fillText(str,Math.round(x),Math.round(y)); ctx.globalAlpha=1;
+}
+/* 논리 좌표(미리보기 764×408) → 화면. 기준점(lx0,ly0)이 화면 (X0,Y0) 에 오게 배율 s 로 */
+const rMap=(s,lx0,ly0,X0,Y0)=>({s, x:lx=>X0+(lx-lx0)*s, y:ly=>Y0+(ly-ly0)*s});
+
+/* ── ① 승리 — 돌판 위 빈자리에 (돌판 위 · 화면 위쪽 절반 아래로, 1.5배까지) ──
+   미리보기 그대로 그리면(배경 비율 2.2배) 턴 표시 · 기록 펼치기와 겹친다 → 돌판에 맞춰 세운다 (README 조정) */
+function resClaimFX(){
+  if(typeof B==="undefined"||!B||!run||!run.dun||B.resClaim) return;
+  B.resClaim=1; resLoad(); if(RES_OK<0) return;
+  const myB=B;
+  const place=(h,bottom)=>{   /* 논리 높이 h(위→bottom) 를 돌판 위에 */
+    const cb=document.querySelector(".claimbox"); if(!cb) return null;
+    const r=cb.getBoundingClientRect(), Y1=r.top-6, top=Math.max(r.top/2,0);
+    const s=Math.max(0.8,Math.min(1.5,(Y1-top)/h));
+    return rMap(s,382,bottom,r.left+r.width/2,Y1);
+  };
+  resAdd({z:58,end:1300,keep:()=>typeof view!=="undefined"&&view==="battle"&&B===myB&&!!document.querySelector(".claimbox"),
+    draw:(ctx,t)=>{
+      if(RES_OK!==1) return;
+      /* 미리보기 시간에서 700 을 뺐다 — 처치 동작은 게임이 이미 보여 주었다 */
+      const M=place(94,124); if(!M) return; const T=t+700;
+      if(T>=700){ const dy=T<780?-12+14*rIn(rSeg(T,700,780)):2*(1-rOut(rSeg(T,780,860)));
+        rImg(ctx,"victory-crest",M.x(334),M.y(30+dy),96*M.s,40*M.s,rSmooth(rSeg(T,700,750))) }
+      rUnroll(ctx,"victory-paper",M,[222,68],[48,272],112,rSmooth(rSeg(T,780,1100)),rSmooth(rSeg(T,760,800)));
+      if(T>=780&&T<1000){ const q=rSeg(T,780,1000), a=1-rIn(q), mv=6*rOut(q), D=RES_IMG["victory-settle-dust"];
+        if(D){ rImg(ctx,D,M.x(298-mv),M.y(46),64*M.s,24*M.s,a);
+          ctx.save(); ctx.translate(Math.round(M.x(402+mv)+64*M.s),Math.round(M.y(46))); ctx.scale(-1,1); rImg(ctx,D,0,0,64*M.s,24*M.s,a); ctx.restore() } }
+      rText(ctx,"전투 승리",M.x(382),M.y(96),18*M.s,"#3a2714",rSmooth(rSeg(T,1100,1300)));
+    }});
+}
+
+/* ── ② 패배 — 원정 실패 (defeatCard 가 부른다). 화면 전체 : 균열은 화면 높이에 맞추고 좌우 끝에 붙인다 ── */
+function resDefeatFX(msg){
+  resLoad();
+  const dim=document.createElement("div"); dim.className="resdim"; document.body.appendChild(dim);
+  const k=resK();
+  try{ dim.animate([{opacity:0},{opacity:1}],{duration:850*k,delay:650*k,easing:"ease-in-out",fill:"both"}) }catch(e){ dim.style.opacity="1" }
+  [[1100,"지도 바닥","tock"]].forEach(([at,a,b])=>setTimeout(()=>SFX.play(sfxHas(a)?a:b),at*k));
+  setTimeout(()=>{ SFX.play(sfxHas("boom")?"boom":"tock"); if(sfxHas("shbreak")) SFX.play("shbreak") },1850*k);   /* 기존 원정 실패 카드의 소리 */
+  let gone=false;
+  const L=resAdd({z:9650,end:2900,keep:()=>!gone,
+    draw:(ctx,t)=>{
+      if(RES_OK!==1) return;
+      const W=innerWidth, H=innerHeight, sy=H/408, M=rMap(sy,382,0,W/2,0);
+      const wl=Math.round(112*rOut(rSeg(t,1100,1900))), wr=Math.round(112*rOut(rSeg(t,1250,2050)));   /* 오른쪽은 150ms 늦게 (비대칭) */
+      if(wl>0){ ctx.save(); ctx.beginPath(); ctx.rect(0,0,wl*sy,H); ctx.clip(); rImg(ctx,"defeat-left",0,0,112*sy,H); ctx.restore() }
+      if(wr>0){ ctx.save(); ctx.beginPath(); ctx.rect(W-wr*sy,0,wr*sy,H); ctx.clip(); rImg(ctx,"defeat-right",W-112*sy,0,112*sy,H); ctx.restore() }
+      const sp=rSmooth(rSeg(t,1800,2200));
+      rImg(ctx,"defeat-slab",M.x(238),M.y(45-4*(1-sp)),288*sy,64*sy,sp);
+      [[272,106],[335,115],[398,106],[461,115]].forEach((p,i)=>{ const t0=1850+i*70; if(t<t0) return; const q=rClamp((t-t0)/300);
+        rRot(ctx,"stone-"+(i+1),M.x(p[0]+12),M.y(p[1]+12+[16,12,18,14][i]*rIn(q)),[12,12],[-18,24,-12,20][i]*rOut(q),sy,rClamp((t-t0)/60)) });
+      const tp=rSmooth(rSeg(t,2000,2300));
+      rText(ctx,"원정 실패",M.x(382),M.y(77),18*sy,"#d8d2c8",tp);
+      rText(ctx,msg||"대원이 모두 쓰러졌습니다.",M.x(382),M.y(128),7*sy,"#cfc6b8",tp,1);   /* 기존 카드의 아래 글 */
+    }});
+  return ()=>{ gone=true; dim.remove(); resKick() };
+}
+
+/* ── ③ 폐기물 더미 — 게임 그림 자리로 원본 좌표를 옮긴다 (아래 맞춤 · 같은 배율). 효과 1px = 원본 0.5px ── */
+function resBossMap(img,nm){
+  const bb=RES_BOSS_BB[nm]||RES_BOSS_BB["폐기물 더미"], r=img.getBoundingClientRect(), k=r.width/(bb[2]-bb[0]);
+  return {k, e:k/2, x:ox=>r.left+(ox-bb[0])*k, y:oy=>r.bottom-(128-oy)*k, r};
+}
+/* 단계가 낮아질 때 — 고철 다섯이 원래 높이에서 떨어지고 바닥 먼지가 낮게 퍼진다 (phaseFocusFX 가 부른다) */
+function resScrapFX(f){
+  if(typeof B==="undefined"||!B||!f) return; resLoad(); if(RES_OK<0) return;
+  const c=ctrOf("foe",f.slot), im=c&&c.e&&c.e.querySelector(".art img.pxs"); if(!im) return;
+  const myB=B, id=f.id, S=RES_SCRAP;
+  const mp=()=>{ const e=document.querySelector(`#foeSide .slot[data-foe-id="${id}"] .art img.pxs`)||im; return resBossMap(e,e.dataset.nm||f.name) };
+  const last=S.fall.reduce((a,x,i)=>Math.max(a,200+i*S.gap+x),0);
+  resAdd({z:58,end:last+1300,keep:()=>view==="battle"&&B===myB,
+    draw:(ctx,t)=>{
+      if(RES_OK!==1) return; const M=mp();
+      const df=rFrame(RES_DUST,t-120);   /* 무너지는 순간 바닥 먼지 (1000ms 단발, 바닥선 고정) */
+      if(df>=0) rImg(ctx,"boss-dust-8f",M.x(96)-128*M.e,M.y(128)-72*M.e,256*M.e,80*M.e,1,df*256,0,256,80);
+      S.from.forEach((p0,i)=>{ const t0=200+i*S.gap; if(t<t0) return;
+        const q=rClamp((t-t0)/S.fall[i]), rest=[S.restX[i],128-S.bottom[i]/2];
+        let x=p0[0]+(rest[0]-p0[0])*q, y=p0[1]+(rest[1]-p0[1])*rIn(q); const after=t-t0-S.fall[i];
+        if(after>0&&after<180) y-=S.bounce/2*Math.sin(Math.PI*after/180);
+        rRot(ctx,"scrap-"+(i+1),M.x(x),M.y(y),[24,24],S.spin[i]*q,M.e,1-rSmooth(rSeg(t,last+700,last+1100))) });
+    }});
+}
+/* 쓰러질 때 — 죽음 자세(게임 그림 묶음의 dead)를 남기고, 핵 잔불이 5번 칸부터 꺼진다 (dieDone 이 부른다) */
+let RES_DEAD_IM=null;
+function resBossDeathFX(f,c){
+  if(typeof B==="undefined"||!B||!f||!c||!c.e) return; resLoad(); if(RES_OK<0) return;
+  const im=c.e.querySelector(".art img.pxs"); if(!im) return;
+  const M0=resBossMap(im,im.dataset.nm||"폐기물 더미 (바닥)"), r=M0.r, myB=B;
+  const P=(typeof PNG_SPRITE!=="undefined")&&PNG_SPRITE["폐기물 더미 (바닥)"];
+  if(P&&P.dead&&!RES_DEAD_IM){ RES_DEAD_IM=new Image(); RES_DEAD_IM.src=P.dead.u }
+  const bd=RES_BOSS_BB.dead, k=M0.k, X=ox=>r.left+(ox-RES_BOSS_BB["폐기물 더미 (바닥)"][0])*k, Y=oy=>r.bottom-(128-oy)*k;
+  /* 죽음 자세는 곧바로 — 게임이 그림을 흐리게 지우는 동안(0.42초) 그 자리에 들어선다 */
+  resAdd({z:58,end:600,keep:()=>view==="battle"&&B===myB,
+    draw:(ctx,t)=>{ if(RES_DEAD_IM&&RES_DEAD_IM.complete) rImg(ctx,RES_DEAD_IM,X(bd[0]),Y(bd[1]),(bd[2]-bd[0])*k,(bd[3]-bd[1])*k,rSmooth(rSeg(t,60,460))) }});
+  resAdd({z:58,end:1300,keep:()=>view==="battle"&&B===myB,
+    wait:()=>!!document.querySelector(".field.kimp,.bfcard"),   /* 잔불은 처치 임팩트 · 우두머리 「격 파」 카드가 걷힌 뒤에 — 그 밑에서 다 지나가 버렸다 */
+    draw:(ctx,t)=>{
+      if(RES_OK!==1) return;
+      const ef=rFrame(RES_EMBER.slice(4),t);   /* 5~8 칸 — 600 · 180 · 220 · 150 (마지막 칸은 투명) */
+      if(ef>=0) rImg(ctx,"core-ember-8f",X(96)-32*M0.e,Y(114)-48*M0.e,64*M0.e,64*M0.e,1,(ef+4)*64,0,64,64);   /* 바닥 자세의 핵 (532,228) → 원본 (96,114) */
+    }});
+}
+
+/* ── ④ 원정 성공 — 완료 화면. 기록지 · 정산 받침은 이 캔버스, 글 · 대원 카드 · 단추는 DOM (drawClear 가 짓는다) ──
+   논리 묶음 (110,42)~(654,372) 을 1.5배로 화면 가운데에 */
+function resClearFX(box,fields){
+  resLoad(); if(RES_OK<0) return;
+  const pts=[]; const n=Math.max(1,fields.length);
+  for(let i=0;i<n;i++) pts.push([206+(512-206)*(n>1?i/(n-1):0.5),i%2?202:180]);   /* 거친 구역 — 경로 공간 [190,132,384,86] 안 */
+  pts.push([556,192]);   /* 완료 인장 자리 (잉크 받침 가운데) */
+  const len=pts.slice(1).reduce((a,p,i)=>a+Math.hypot(p[0]-pts[i][0],p[1]-pts[i][1]),0);
+  resAdd({z:1,end:3300,keep:()=>view==="clear"&&document.body.contains(box),   /* 글 · 카드(.resclear z2) 아래 */
+    draw:(ctx,t)=>{
+      if(RES_OK!==1) return;
+      const r=box.getBoundingClientRect(), s=r.width/544, M=rMap(s,110,42,r.left,r.top);
+      rUnroll(ctx,"expedition-paper",M,[122,42],[40,480],220,rSmooth(rSeg(t,600,1200)),rSmooth(rSeg(t,570,620)));
+      /* 점선 — 1px 씩 따라가며 2×2(×배율) 픽셀로 */
+      if(t>=1800){ const L=len*rSmooth(rSeg(t,1800,2500)); let w=0; ctx.fillStyle="#5d3f22"; const d=Math.max(2,Math.round(2*s));
+        for(let i=1;i<pts.length&&w<=L;i++){ const [x0,y0]=pts[i-1],[x1,y1]=pts[i], g=Math.hypot(x1-x0,y1-y0);
+          for(let q=0;q<g&&w<=L;q++,w++) if(w%7<4) ctx.fillRect(Math.round(M.x(x0+(x1-x0)*q/g))-d/2,Math.round(M.y(y0+(y1-y0)*q/g))-d/2,d,d) }
+        pts.slice(0,-1).forEach((p,i)=>{ const at=pts.slice(1,i+1).reduce((a,q,j)=>a+Math.hypot(q[0]-pts[j][0],q[1]-pts[j][1]),0);
+          if(L>=at){ ctx.fillStyle="#4a3019"; const b=Math.round(5*s); ctx.fillRect(Math.round(M.x(p[0]))-b/2,Math.round(M.y(p[1]))-b/2,b,b) } }) }
+      rImg(ctx,"route-terminal-ink",M.x(540),M.y(176),32*s,32*s,rSmooth(rSeg(t,2380,2480)));
+      if(t>=2500){ const q=rSeg(t,2500,2700), e=rOut(q); rRot(ctx,"completion-seal",M.x(556),M.y(192-8*(1-e)),[24,24],0,s,rClamp(q*4),1.08-0.08*e) }
+      const sp=rSmooth(rSeg(t,3000,3300));
+      if(sp>0) resNine(ctx,"settlement-backing",M.x(110),M.y(300+12*(1-sp)),544*s,72*s,[24,14,24,14],s,sp);
+    }});
+  return pts;
+}
+/* 9-slice — 모서리 고정 · 가운데만 늘린다 (정산 받침만) */
+function resNine(ctx,n,x,y,w,h,[l,t,rr,b],s,a){
+  const im=RES_IMG[n]; if(!im) return; const iw=im.width, ih=im.height;
+  const xs=[[0,l,x,l*s],[l,iw-l-rr,x+l*s,w-(l+rr)*s],[iw-rr,rr,x+w-rr*s,rr*s]];
+  const ys=[[0,t,y,t*s],[t,ih-t-b,y+t*s,h-(t+b)*s],[ih-b,b,y+h-b*s,b*s]];
+  for(const [sx,sw,dx,dw] of xs) for(const [sy2,sh,dy,dh] of ys) if(sw>0&&sh>0&&dw>0&&dh>0) rImg(ctx,n,dx,dy,dw,dh,a,sx,sy2,sw,sh);
 }
 /* 제련 연출 — 재료가 가운데로 모이고, 브란이 망치질하고, 번쩍이며 결과물이 놓인다
    (사용자 2026-10-26 에 규칙 forgeRun 에서 떼어 냈다 — 유니티 포팅 1단계 ④).
@@ -22565,7 +22816,16 @@ function lose(msg){ clearSave(); run.lost=msg; recordRun("lose",msg);
   defeatCard(msg,()=>{ if(run&&run.lost){ view="over"; render() } }) }
 /* 원 정 실 패 — 화면이 검게 가라앉고 네 글자가 하나씩 떨어져 박힌다(글자마다 쿵, 마지막에 크게). 빛 없이 묵직하게.
    소리는 녹음만 — 글자 '지도 바닥', 마지막 'boom' 과 'shbreak' (옛 합성음 down 은 안 쓴다) */
+/* 원정 실패 — 새 결과 연출 (균열 침식 · 석판, result-fx.js, 사용자 2026-10-29). 그림을 못 읽었으면 옛 카드 */
 function defeatCard(msg,done){
+  document.querySelectorAll(".defcard,.defveil,.resdim").forEach(x=>x.remove());
+  if(typeof resDefeatFX==="function"&&RES_OK!==-1){
+    const off=resDefeatFX(msg), k=(typeof SPD==="number"&&SPD>0)?SPD:1;
+    setTimeout(()=>{ if(done) done(); setTimeout(off,60) },Math.round(3700*k));
+    return }
+  defeatCardOld(msg,done);
+}
+function defeatCardOld(msg,done){
   document.querySelectorAll(".defcard,.defveil").forEach(x=>x.remove());
   const vl=el(`<div class="defveil"></div>`); document.body.appendChild(vl);
   const W=["원","정","실","패"];
@@ -24312,6 +24572,7 @@ function render(){
   const oldFoes=foeSlideBefore(),oldIdle=idleFramesBefore(),oldMap=mapPanelBefore();
   render0();
   if(typeof coverIdle==="function") coverIdle();   /* 탐험 탁자 덮개 — 지도에서만 경첩 (그린 판 자리에 맞춘다) */
+  if(typeof resTidy==="function"){ if(!RES_OK) resLoad(); resTidy() }   /* 결과 연출 — 미리 받고, 화면이 바뀌면 걷는다 */
   idleFramesAfter(oldIdle);mapPanelAfter(oldMap);
   foeSlideAfter(oldFoes);
   foeEnterAfter();   /* 적의 첫 등장 — 오른쪽에서 달려 들어온다 */
@@ -25052,6 +25313,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 259, "v": "0.7", "d": "2026-10-29", "t": "전투 결과 · 원정 마무리 연출", "big": 0},
  {"b": 258, "v": "0.7", "d": "2026-10-29", "t": "덮개 페이드 · 적이 오른쪽에서 달려 들어온다", "big": 0},
  {"b": 257, "v": "0.7", "d": "2026-10-29", "t": "탁자 덮개 소리 · 둘레는 지도 판", "big": 0},
  {"b": 256, "v": "0.7", "d": "2026-10-29", "t": "탐험 탁자 덮개 — 지도와 전투 · 상점 · 제련소 사이", "big": 0},
@@ -26502,7 +26764,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=258;
+const BUILD_NO=259;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -30394,6 +30656,7 @@ function phaseFocusFX(f,p,D,S){
   PHFOCUS={id:f.id,until:Date.now()+D}; phFocusApply();
   const c=ctrOf("foe",f.slot), im=c&&c.e&&c.e.querySelector(".art img.pxs");
   if(c) quakeFX(c);
+  if(/^폐기물 더미/.test(f.name)&&typeof resScrapFX==="function") resScrapFX(f);   /* 단계가 낮아지며 고철 낙하 · 바닥 먼지 (2026-10-29) */
   SFX.play(sfxOr("bossfall","danger"));
   const ms=D/SPD;   /* setPose 는 SPD 를 곱한다 */
   if(p>=3){   /* 각성 — 팔을 들어 올린 자세로 오래, 보랏빛이 숨쉬듯 세 번 부푼다 */
@@ -34577,6 +34840,7 @@ function drawClear(app){
   try{ if(WIN_NEW===null) WIN_NEW=unlockNew() }catch(e){ WIN_NEW=null }
   SFX.play("win");
   veil("radial-gradient(circle,rgba(201,162,39,.45),transparent 70%)");
+  if(typeof resClearFX==="function"&&RES_OK!==-1&&typeof FIELDS!=="undefined"){ drawClearRes(app); return }   /* 원정 기록지 (2026-10-29) */
   app.appendChild(el(`<div class="center">
     <div class="title" style="font-size:36px">${CLEAR_T}</div>
     <div class="sub" style="font-size:15px;color:var(--brass);margin-top:10px">
@@ -34591,6 +34855,27 @@ function drawClear(app){
   const b=el(`<div style="margin-top:26px"><button class="go">${winNextView()==="title"?"새 원정을 떠난다":"계속"}</button></div>`);
   b.querySelector("button").onclick=()=>{ winGo() };
   wrap.appendChild(b);
+}
+/* 원정 성공 — 기록지(result-fx.js 의 캔버스) 위에 제목 · 거친 구역 · 완료 인장, 정산 받침 위에 대원 카드 (사용자 2026-10-29).
+   논리 묶음 (110,42)~(654,372) 을 1.5배로. 글 · 카드 · 단추는 DOM 이고, 연출 시간에 맞춰 나타난다 (연출 빠르기를 곱한다) */
+function drawClearRes(app){
+  const s=1.5, k=(typeof SPD==="number"&&SPD>0)?SPD:1, X=lx=>(lx-110)*s, Y=ly=>(ly-42)*s, at=ms=>`animation-delay:${Math.round(ms*k)}ms;animation-duration:${Math.round(260*k)}ms`;
+  const wrap=el(`<div class="resclear"><div class="rcbox" style="width:${544*s}px;height:${330*s}px">
+      <div class="rct rcin" style="left:${X(382)}px;top:${Y(84)}px;${at(1250)}">${CLEAR_T}</div>
+      <div class="rcs rcin" style="left:${X(382)}px;top:${Y(108)}px;${at(1400)}">${CLEAR_SUB}</div>
+      <div class="rcroster roster rcin" style="top:${Y(300)}px;height:${72*s}px;${at(3150)}"></div></div>
+    <div class="rcgo rcin" style="${at(3350)}"><button class="go">${winNextView()==="title"?"새 원정을 떠난다":"계속"}</button></div></div>`);
+  app.appendChild(wrap);
+  const box=wrap.querySelector(".rcbox"), names=FIELDS.map(f=>f.n);
+  const pts=resClearFX(box,names)||[];
+  names.forEach((n,i)=>{ const p=pts[i]; if(!p) return;
+    box.appendChild(el(`<div class="rcnode rcin" style="left:${X(p[0])}px;top:${Y(p[1]+14)}px;${at(1800+700*i/Math.max(1,names.length))}">${esc(n)}</div>`)) });
+  const rs=wrap.querySelector(".rcroster");
+  run.heroes.forEach(h=>rs.appendChild(el(`<div class="rost">
+    <div class="art">${figure(h.name)}</div>
+    <div><b>${esc(h.name)}</b><small>Lv.${h.lv}</small>
+      <small>${ic("atk")}${h.atk} ${ic("mag")}${h.mag} ${ic("def")}${h.def}</small></div></div>`)));
+  wrap.querySelector("button").onclick=()=>{ winGo() };
 }
 /* ── 원정 기록 화면 ── */
 let RUNS_OPEN=null;
@@ -39454,6 +39739,7 @@ function drawBattle(app){
     uiBtnVars();
     const cb=el(`<div class="claimbox ${mid?"cmid":"cend"}">${mid?"":`<i class="cchain l"></i><i class="cchain r"></i>`}<button class="claim cbtn2">${mid?`다음 라운드 <small>(${d.wave}/${d.waves})</small>`:"전투 종료"}</button></div>`);   /* 빈 전장 한가운데 (사용자 2026-10-03) · 라운드 사이도 (2026-10-04) · 문구는 단추 하나로 (2026-10-06) */
     cb.querySelector("button").onclick=claimGo; field.appendChild(cb);
+    if(!mid&&typeof resClaimFX==="function") setTimeout(resClaimFX,0);   /* 승리 · 격파 장식 — 돌판 위에 (B.resClaim 이 한 번만) */
     if(!mid&&!B.claimShown){ B.claimShown=1; setTimeout(()=>{ const k=sfxOr("전투 종료",sfxOr("제련 부딪힘",null)); if(k) SFX.play(k) },420) }   /* 돌판이 떨어지는 소리 — 넷 중 하나 (사용자 2026-10-06) */
     else if(!mid) cb.classList.add("still") }   /* 다시 그릴 때는 떨어지지 않는다 */
   if(B&&run) run.heroes.forEach(h=>{ if(h.bomb>0&&h.slot>0&&h.hp>0){ const c=ctrOf("mine",h.slot);   /* 응축 폭발을 기다리는 동안 (2026-10-03) */
