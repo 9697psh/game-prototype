@@ -6243,6 +6243,21 @@ function shuffled(a){
   }
   return L;
 }
+/* ═══════════ 원정 시간을 글로 ═══════════
+   원래 `src/view/screen.js` 에 있었다. 2026-10-28 에 규칙으로 옮겼다 (조용한 구멍 스물한째).
+
+   왜 — `src/engine/driver.js` 의 윗띠(`topBar`)가 이 함수를 부르는데 화면 파일에 살아서
+   덩이에서는 시늉이었다. 잰 값 : `GYU.top().원정시간` → **undefined**.
+   원정 기록의 판마다 붙는 시간(`0:00`)도 같은 함수를 쓴다.
+
+   ⚠️ 시간을 **세는** 것(`playTick`)은 화면에 남겨 두었다 — 창을 덮어 둔 동안은 안 센다.
+      그것은 브라우저가 아는 일이다. 여기 있는 것은 밀리초를 글로 펴는 셈뿐이다. */
+function playTime(ms){
+  const s=Math.max(0,Math.floor((ms||0)/1000));
+  const h=Math.floor(s/3600), m=Math.floor(s%3600/60), q=s%60;
+  const p2=n=>String(n).padStart(2,"0");
+  return h?`${h}:${p2(m)}:${p2(q)}`:`${m}:${p2(q)}`;
+}
 const el=s=>{const t=document.createElement("template");t.innerHTML=s.trim();return t.content.firstElementChild};
 
 /* 「미리 돌려 보는 중」 빗장 — 예고가 기술을 진짜로 한 번 돌려 보는 동안만 1 이다 (predictRun).
@@ -12287,6 +12302,20 @@ function poseNow(u){
   if(u.deb&&u.deb.stun) return "stun";
   return null;
 }
+/* ═══════════ 외형(스킨) — 표와 **남는 상태** ═══════════
+   원래 `src/view/sprite.js` 에 있었다. 2026-10-28 에 규칙으로 옮겼다 (조용한 구멍 스무째).
+
+   왜 — 유니티가 싣는 덩이에서 `typeof SKINS` 가 `undefined` 였고
+   `skinKillCheck` · `skinEventCheck` · `skinRewardGot` 은 시늉이었다. 곧 적을 처치해도
+   사건을 봐도 전용 보상을 모아도 **외형이 하나도 안 열렸다.** 설정(구멍 18)과 같은 결 —
+   「판을 넘어 남는 값」이 화면 파일에 살았다.
+
+   ⚠️ 그림을 **고르는** 일은 여기 없다. `skinTable` · `skinIcon` · `skinSprite` ·
+      정보창(`skinInfo` · `SKIN_FEAT`) · 칩(`skinGradeChip`) 은 화면에 남겨 두었다.
+   ⚠️ 표 안의 `sp` · `icons` · `fx` 는 **그림 열쇠말**이다 — 규칙이 쥐고 화면에 건넨다
+      (`INK_NODE` · `cellIconKey` 를 옮긴 것과 같은 결).
+   ⚠️ `?skins=all` · `?skins=reset` 은 주소줄을 읽으니 화면에 남는다. 그 블록이
+      `SKIN_ST` 를 만지므로 이 조각은 **sprite.js 의 그 자리에서** 끼워진다. */
 /* ═══ 스킨 (사용자 2026-10-01) ═══ 대원마다 [{id, n 이름, sp 그림 묶음 이름, cond 얻는 조건 글, kill 처치하면 얻는 적}]
    얻은 것 · 입은 것은 판을 넘어 남는다 — SKIN_KEY. 입은 스킨은 그 대원이 그려지는 모든 곳(전투·지도·도감·손패)에 */
 const SKINS={
@@ -12358,6 +12387,47 @@ const SKINS={
 };
 /* 외형 등급 (사용자 2026-10-03) — 일반 / 희귀 / 특수. 색은 장신구 등급 틀과 같게 */
 const SKIN_GRADE={"일반":{c:"#c3ccd6"},"희귀":{c:"#e0c85a"},"특수":{c:"#a06ae0"}};   /* 장신구 틀(GRADE_FRAME)과 같게 — 실버, 골드, 보랏빛 (사용자 2026-10-03) */
+const SKIN_KEY="kyunyeol.skins.v1";
+let SKIN_ST=(()=>{ try{ return JSON.parse(localStorage.getItem(SKIN_KEY)||"null")||{own:{},use:{}} }catch(e){ return {own:{},use:{}} } })();
+function skinSave(){ try{ localStorage.setItem(SKIN_KEY,JSON.stringify(SKIN_ST)) }catch(e){} }
+const skinOwned=(hero,id)=>!!(SKIN_ST.own||{})[hero+":"+id];
+function skinUse(hero,id){ SKIN_ST.use=SKIN_ST.use||{}; if(id) SKIN_ST.use[hero]=id; else delete SKIN_ST.use[hero]; skinSave() }
+/* 지금 입은 스킨 — 없거나 아직 못 얻었으면 null */
+function skinOn(hero){ const id=(SKIN_ST.use||{})[hero]; if(!id||!skinOwned(hero,id)) return null;
+  return (SKINS[hero]||[]).find(x=>x.id===id)||null }
+/* 누적 조건 (집행관 — 사형 선고로 10번 처치, 2026-10-03). 판을 넘어 이 브라우저에 남는다 */
+function skinProg(key,n){
+  if(!run||run.sandbox) return;
+  SKIN_ST.prog=SKIN_ST.prog||{}; SKIN_ST.prog[key]=(SKIN_ST.prog[key]||0)+(n||1); skinSave();
+  skinGrantIf(k=>k.prog&&k.prog.k===key&&SKIN_ST.prog[key]>=k.prog.need);
+}
+/* 모으기 해금 — 대원의 한 등급 전용 보상을 한 번씩 다 받기 (무패의 장군 = 트리스탄 중급). 원정을 넘어 SKIN_ST.got 에 이름을 모은다 */
+function skinCollectNeed(k){ return (HERO_REWARDS[k.collect.hero]||[]).filter(x=>x.g===k.collect.g).length }
+function skinCollectN(k){ const L=((SKIN_ST.got||{})[k.collect.hero+":"+k.collect.g])||[];
+  return (HERO_REWARDS[k.collect.hero]||[]).filter(x=>x.g===k.collect.g&&L.indexOf(x.n)>=0).length }
+function skinRewardGot(h,r){
+  if(!run||run.sandbox||!h||!r||!(HERO_REWARDS[h.name]||[]).some(x=>x.n===r.n&&x.g===r.g)) return;
+  SKIN_ST.got=SKIN_ST.got||{}; const L=SKIN_ST.got[h.name+":"+r.g]=SKIN_ST.got[h.name+":"+r.g]||[];
+  if(L.indexOf(r.n)<0){ L.push(r.n); skinSave() }
+  skinGrantIf(k=>k.collect&&k.collect.hero===h.name&&k.collect.g===r.g&&skinCollectN(k)>=skinCollectNeed(k));
+}
+function skinCondText(hero,k){
+  if(skinOwned(hero,k.id)) return "획득함";
+  if(k.collect) return (k.cond||"")+` (${skinCollectN(k)}/${skinCollectNeed(k)})`;
+  const n=k.prog?Math.min(k.prog.need,((SKIN_ST.prog||{})[k.prog.k]||0)):null;
+  return (k.cond||"")+(k.prog?` (${n}/${k.prog.need})`:"");
+}
+/* 사건으로 얻는 외형 — 칸에 들어설 때 따위 (거대한 기계의 잔해 발견, 2026-10-02) */
+function skinEventCheck(ev){ skinGrantIf(k=>k.ev===ev) }
+function skinKillCheck(foeName){ skinGrantIf(k=>k.kill===foeName) }
+function skinGrantIf(test){
+  Object.keys(SKINS).forEach(hero=>SKINS[hero].forEach(k=>{
+    if(!test(k)||skinOwned(hero,k.id)) return;
+    SKIN_ST.own=SKIN_ST.own||{}; SKIN_ST.own[hero+":"+k.id]=Date.now(); skinSave();
+    setTimeout(()=>{ try{ skinGetShow([[hero,k]],`조건: ${k.cond}`) }catch(e){} },Math.round(1400*SPD));   /* 처치 연출이 끝난 뒤 */
+    if(typeof say==="function") say(`새로운 외형: ${k.n} ([대원] 에서 착용)`,"t1");
+  }));
+}
 /* 외형이 바꾸는 것 — 정보창에 줄마다 적는다. 일반 등급은 대개 이 셋 */
 const SKIN_FEAT={battle:"전투 단계 캐릭터 외형",skillfx:"새로운 기술 효과, 자세, 음향",maphand:"전용 손 외형",lines:"새로운 대사",aura:"새로운 영혼 오오라",phantom:"소환물 외형",idle:"전투 대기 특수 행동",hold:"오른손 뽐내기",card:"전용 카드 틀",kill:"전용 처치 연출"};
 function skinGradeChip(k){ const g=(k&&k.grade)||"일반", G=SKIN_GRADE[g]||SKIN_GRADE["일반"];
@@ -12433,15 +12503,7 @@ function skinInfo(hero,id){
       setTimeout(go,x.ms) };
     go() }
 }
-const SKIN_KEY="kyunyeol.skins.v1";
 let SKIN_UNLOCKED_ALL=0;
-let SKIN_ST=(()=>{ try{ return JSON.parse(localStorage.getItem(SKIN_KEY)||"null")||{own:{},use:{}} }catch(e){ return {own:{},use:{}} } })();
-function skinSave(){ try{ localStorage.setItem(SKIN_KEY,JSON.stringify(SKIN_ST)) }catch(e){} }
-const skinOwned=(hero,id)=>!!(SKIN_ST.own||{})[hero+":"+id];
-function skinUse(hero,id){ SKIN_ST.use=SKIN_ST.use||{}; if(id) SKIN_ST.use[hero]=id; else delete SKIN_ST.use[hero]; skinSave() }
-/* 지금 입은 스킨 — 없거나 아직 못 얻었으면 null */
-function skinOn(hero){ const id=(SKIN_ST.use||{})[hero]; if(!id||!skinOwned(hero,id)) return null;
-  return (SKINS[hero]||[]).find(x=>x.id===id)||null }
 /* 이 브라우저(PC)에서만 조건 없이 모두 해금 — 주소 끝에 ?skins=all 을 붙여 한 번 열면 된다 (사용자 2026-10-01).
    기록은 이 브라우저의 SKIN_KEY 에만 남는다 — 다른 PC·브라우저는 그대로 조건대로 */
 try{ if(typeof location!=="undefined"&&/[?&]skins=all(&|$)/.test(location.search)){
@@ -12519,39 +12581,6 @@ function skinIcon(key){
   if(typeof ICON_PNG==="undefined") return null;
   for(const hero in SKINS){ const k=skinOn(hero); if(k&&k.icons&&k.icons[key]&&ICON_PNG[k.icons[key]]) return ICON_PNG[k.icons[key]] }
   return ICON_PNG[key]||null;
-}
-/* 누적 조건 (집행관 — 사형 선고로 10번 처치, 2026-10-03). 판을 넘어 이 브라우저에 남는다 */
-function skinProg(key,n){
-  if(!run||run.sandbox) return;
-  SKIN_ST.prog=SKIN_ST.prog||{}; SKIN_ST.prog[key]=(SKIN_ST.prog[key]||0)+(n||1); skinSave();
-  skinGrantIf(k=>k.prog&&k.prog.k===key&&SKIN_ST.prog[key]>=k.prog.need);
-}
-/* 모으기 해금 — 대원의 한 등급 전용 보상을 한 번씩 다 받기 (무패의 장군 = 트리스탄 중급). 원정을 넘어 SKIN_ST.got 에 이름을 모은다 */
-function skinCollectNeed(k){ return (HERO_REWARDS[k.collect.hero]||[]).filter(x=>x.g===k.collect.g).length }
-function skinCollectN(k){ const L=((SKIN_ST.got||{})[k.collect.hero+":"+k.collect.g])||[];
-  return (HERO_REWARDS[k.collect.hero]||[]).filter(x=>x.g===k.collect.g&&L.indexOf(x.n)>=0).length }
-function skinRewardGot(h,r){
-  if(!run||run.sandbox||!h||!r||!(HERO_REWARDS[h.name]||[]).some(x=>x.n===r.n&&x.g===r.g)) return;
-  SKIN_ST.got=SKIN_ST.got||{}; const L=SKIN_ST.got[h.name+":"+r.g]=SKIN_ST.got[h.name+":"+r.g]||[];
-  if(L.indexOf(r.n)<0){ L.push(r.n); skinSave() }
-  skinGrantIf(k=>k.collect&&k.collect.hero===h.name&&k.collect.g===r.g&&skinCollectN(k)>=skinCollectNeed(k));
-}
-function skinCondText(hero,k){
-  if(skinOwned(hero,k.id)) return "획득함";
-  if(k.collect) return (k.cond||"")+` (${skinCollectN(k)}/${skinCollectNeed(k)})`;
-  const n=k.prog?Math.min(k.prog.need,((SKIN_ST.prog||{})[k.prog.k]||0)):null;
-  return (k.cond||"")+(k.prog?` (${n}/${k.prog.need})`:"");
-}
-/* 사건으로 얻는 외형 — 칸에 들어설 때 따위 (거대한 기계의 잔해 발견, 2026-10-02) */
-function skinEventCheck(ev){ skinGrantIf(k=>k.ev===ev) }
-function skinKillCheck(foeName){ skinGrantIf(k=>k.kill===foeName) }
-function skinGrantIf(test){
-  Object.keys(SKINS).forEach(hero=>SKINS[hero].forEach(k=>{
-    if(!test(k)||skinOwned(hero,k.id)) return;
-    SKIN_ST.own=SKIN_ST.own||{}; SKIN_ST.own[hero+":"+k.id]=Date.now(); skinSave();
-    setTimeout(()=>{ try{ skinGetShow([[hero,k]],`조건: ${k.cond}`) }catch(e){} },Math.round(1400*SPD));   /* 처치 연출이 끝난 뒤 */
-    if(typeof say==="function") say(`새로운 외형: ${k.n} ([대원] 에서 착용)`,"t1");
-  }));
 }
 /* 그림 스프라이트를 가진 캐릭터의 자세 하나. 없는 자세는 기본으로 돌아간다 */
 function poseOf(name,pose){
@@ -13813,6 +13842,13 @@ const CODEX_ONLY=[];   /* 데린저는 2026-10-15 에 HERO_POOL · PLAYABLE 로 
 function codexHeroes(){ return playableHeroes().concat(CODEX_ONLY.filter(n=>HEROES[n])) }
 
 /* 조합 아이콘 — 받은 그림 (2026-09-19). 진영·직업·종족 이름 → 아이콘 id. 없는 것은 금빛 느낌표 */
+/* ═══════════ 조합 그림 열쇠 ═══════════
+   원래 `src/view/syn-card.js` 에 있었다. 2026-10-28 에 규칙으로 옮겼다 —
+   대원 도감(훈련장)의 묶음 머리에 이 그림이 붙는데, 손잡이(`GYU.codex`)가
+   유니티에 열쇠를 건네야 한다. 열쇠말을 건네는 것은 규칙 쪽 일이다
+   (`INK_NODE` · `cellIconKey` 를 옮긴 것과 같은 결).
+
+   ⚠️ 열쇠로 **그림을 만드는** `synIcon()` 은 화면에 남겨 두었다. */
 const SYN_ICON={"투사":"syn_fighter","수호자":"syn_guardian","영광 숭배자":"syn_hero_worshipper","마법사":"syn_mage","음악가":"syn_musician","약탈자":"syn_raider","학살자":"syn_slayer","지원가":"syn_supporter","모험가":"syn_adventurer","수확자":"syn_harvester","궁수":"syn_archer","방랑자":"syn_wanderer","무기 전문가":"syn_weapon_specialist",
   "사후":"syn_afterlife","피의 투기장":"syn_blood_arena","악마":"syn_demon","인간":"syn_human","기계":"syn_machine","균열":"syn_rift","왕실":"syn_royal_court","골렘":"syn_golem","고철의 무덤":"syn_scrap_graveyard","정령숲":"syn_spirit_forest","망자":"syn_undead","정령":"syn_spirit","야수":"syn_beast","초월":"syn_transcendent","사막 바다":"syn_sand_sea","초월체":"syn_transcendent","모래 바다":"syn_sand_sea"};
 function synIcon(n){ const id=SYN_ICON[n]; return (id&&iconImg(id))||uiPng("ui_quest")||"" }
@@ -24231,12 +24267,6 @@ function playTick(){
     run.playMs=(run.playMs||0)+Math.min(5000,now-_ptAt);
   _ptAt=now;
 }
-function playTime(ms){
-  const s=Math.max(0,Math.floor((ms||0)/1000));
-  const h=Math.floor(s/3600), m=Math.floor(s%3600/60), q=s%60;
-  const p2=n=>String(n).padStart(2,"0");
-  return h?`${h}:${p2(m)}:${p2(q)}`:`${m}:${p2(q)}`;
-}
 setInterval(()=>{
   playTick();
   if(run) document.querySelectorAll("#ptv").forEach(e=>{ e.textContent=playTime(run.playMs) });
@@ -24920,6 +24950,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 249, "v": "0.7", "d": "2026-10-29", "t": "대원 도감 · 끝 · 원정 기록 — 다시 재서 맞추고, 구멍 넷을 막다", "big": 0},
  {"b": 248, "v": "0.7", "d": "2026-10-28", "t": "제련소 · 장신구 · 가방 · 라운드 사이 · 퀘스트 — 잰 자리와 윗띠", "big": 0},
  {"b": 247, "v": "0.7", "d": "2026-10-28", "t": "판 안 화면 — 상점 무대 · 쉼터 차림표 · 윗띠", "big": 0},
  {"b": 246, "v": "0.7", "d": "2026-10-28", "t": "지도를 웹과 같은 판으로 — 칸 그림 열쇠를 규칙이 보낸다. IL2CPP 로 돈다", "big": 0},
@@ -26360,7 +26391,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=248;
+const BUILD_NO=249;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -39378,70 +39409,19 @@ function livePlace(h,sk){
   return null;
 }
 /* 노트 문장 + 어떤 값을 이미 문장 안에서 보여 줬는지 */
-function richLive(h,sk,txt){
-  const done={};
-  let txt0=String(txt||"");
-  /* 카제 진선풍도 — 산들바람 강화가 남아 있으면 거리도 그만큼 올려 보인다 (사용자 2026-09-16). 피해는 extraParts 가 얹는다 */
-  if(h&&h.name==="카제"&&sk&&(sk.n==="진선풍도"||sk.n==="회오리")&&h.windBuff)
-    txt0=txt0.replace(/거리 (\d+)/g,(m,n)=>"거리 "+NUM_A+(+n+h.windBuff)+NUM_B+"산들바람 +"+h.windBuff+NUM_C);
-  /* 산들바람 — 싹쓸바람(추진력)·산들바람 강화(피해 증가량)가 칸에 살아서 보인다 (사용자 2026-09-16) */
-  if(h&&h.name==="카제"&&sk&&sk.n==="산들바람"&&h.tag){
-    const mp=h.tag.momPlus||0, gp=h.tag.gustPlus||0;
-    if(mp) txt0=txt0.replace(/추진력을 (\d+)/,(m,n)=>"추진력을 "+NUM_A+(+n+mp)+NUM_B+"추진력 강화 +"+mp+NUM_C);
-    if(gp) txt0=txt0.replace(/피해량이 (\d+)/,(m,n)=>"피해량이 "+NUM_A+(+n+gp)+NUM_B+"산들바람 강화 +"+gp+NUM_C);
-  }
-  if(h&&sk&&sk.bomb&&h.tag&&h.maxHp){   /* 응축 폭발 — 지금 체력으로 터지면 얼마인지 (2026-10-03). startMyTurn 의 셈과 같다 */
-    const bp=h.tag.bombPct||0, pct=20+bp, v=bombDmg(h);
-    txt0=txt0.replace(/현재 체력의 20%만큼의 피해/,`현재 체력의 ${pct}%만큼의 피해 `+NUM_A+v+NUM_B+`현재 체력 ${Math.max(0,h.hp)}의 ${pct}%`+(bp?` / 폭발력 강화 +${bp}%`:"")+NUM_C) }
-  if(h&&sk&&sk.swap&&isFF(h)) txt0=txt0.replace("플레어가 나섭니다",ffFlare(h)?"플로우가 나섭니다":"플레어가 나섭니다");   /* 변환 — 지금 태세의 반대쪽 (사용자 2026-10-07) */
-  /* 거리 제한이 사라진 기술 — 「(거리 N)」 자리에 그렇게 뜬다. 무엇이 풀었는지는 reachOf 한 곳에서 가른다
-     (무한 팽창 : rng 0 · 폭풍칼날 : noRange · 달래주기 다음 턴 : patFree). 사용자 2026-10-08 */
-  if(h&&sk&&reachOf(h,sk)==null) txt0=txt0.replace(/\(거리 \d+\)/g,"(거리 제한 없음)");
-  /* 전리품 사냥꾼 — 「얻은 공격력 ( )」 에 **지금까지 얻은 몫**을 채운다 (사용자 2026-10-16).
-     ⚠️ 빈 괄호가 그대로 보이던 자리다. 수를 쥔 곳은 h.treaAtk 하나다 */
-  if(h&&sk&&sk.n==="전리품 사냥꾼")
-    txt0=txt0.replace(/얻은 공격력 \*\(\s*\)\s*\*/,"얻은 공격력 "+NUM_A+(h.treaAtk||0)+NUM_B+"지금까지 얻은 몫"+NUM_C);
-  /* 마력탄환의 추가 마법력은 derrGunParts → extraParts에서 한 번만 반영한다. */
-  if(h&&sk&&sk.lifeConv){   /* 생명 에너지 전환 — 지금 쓰면 얼마인지 (사용자 2026-10-04, 응축 폭발처럼) */
-    const e=h.eshield||0, add=(sk.dmg||0)+mod(sk,"dmg"), v=e*2+add;
-    txt0=txt0.replace(/모든 적에게 피해를 줍니다/,"모든 적에게 피해를 "+NUM_A+v+NUM_B+`에너지 보호막 ${e}의 2배`+(add?` / 생명 에너지 전환 강화 +${add}`:"")+NUM_C+" 줍니다") }
-  if(h&&sk&&skillFlat(sk)&&portalImpAtk(h))   /* 상급 찌르기 — 숫자 표시가 없어도 물량 공세 몫은 붙는다 */
-    txt0=txt0.replace(/피해를 (\d+)/,(m,n)=>"피해를 "+NUM_A+(+n+portalImpAtk(h))+NUM_B+"물량 공세 +"+portalImpAtk(h)+NUM_C);
-  /* 독서 중첩 수 — 밑줄 긋기 (사용자 2026-10-07) */
-  if(h&&sk&&sk.read&&!sk.penance) txt0=txt0.replace(/_독서 중첩_을 (\d+) 얻습니다/,(m,n)=>+n===sk.read?m:
-    "_독서 중첩_을 "+NUM_A+sk.read+NUM_B+"밑줄 긋기 +"+(sk.read-n)+NUM_C+" 얻습니다");
-  /* 사형 선고 — 배치 후 잠금 (더 빠른 선고) */
-  if(h&&sk&&sk.verdict&&sk.startLock!=null) txt0=txt0.replace(/대원 배치 후 (\d+)턴 잠금/,(m,n)=>+n===sk.startLock?m:
-    "대원 배치 후 "+NUM_A+sk.startLock+NUM_B+"더 빠른 선고 −"+(n-sk.startLock)+NUM_C+"턴 잠금");
-  if(h&&sk&&sk.n==="영혼 분리"&&h.tag&&h.tag.phantomHp)   /* 환영 성장 — 상한을 산 숫자로 (2026-10-03) */
-    txt0=txt0.replace("(내 전장에 소환되면 최대 30)",`(내 전장에 소환되면 최대 ${phantomHpCap(h)}, 환영 성장 +${h.tag.phantomHp})`);
-  if(/\*\( \)\*/.test(txt0)){
-    const lp=livePlace(h,sk);
-    /* ⚠️ 앞뒤 글자에 **안 붙게** 빈칸을 끼운다 — 노트가 「이하*( )*일」로 붙여 적은 자리가 있다 (2026-10-13) */
-    txt0=txt0.replace(/(\S?)\*\( \)\*(\S?)/g, (m,pre,post)=> (pre?pre+" ":"") + (lp
-      ? NUM_A+lp.total+NUM_B+lp.parts.map(p=>p.n+" "+(typeof p.v==="number"?(p.v>0?"+":"")+p.v:p.v)).join(" / ")+NUM_C
-      : "") + (post?" "+post:""));
-  }
-  const marked=txt0.replace(
-    /(\d+)\(추가 ?([\u2020\u00a4\u2234][\u2020\u00a4\u2234\u2261 ,\u00b7]*)?([^)]*)\)/g,
-    function(m,n,syms,rest,off,whole){
-      const pre=whole.slice(Math.max(0,off-18),off);
-      const key=keyBefore(pre,sk);
-      const r=liveVal(h,sk,key,+n,syms);
-      if(r.own) done[key]=1;
-      const bits=r.parts.map(p=>p.n+" "+(p.v>0?"+":"")+p.v);
-      /* 기호로 못 적는 덧말은 그대로 남긴다 — 우리가 셈할 수 없는 몫이다 */
-      let ex=String(rest||"").replace(/^[\s+]+/,"").trim();
-      /* 영혼 분리 — 최대 체력 비례 몫을 실제로 (영혼 40개당 · 영혼 분리 강화, 2026-10-03) */
-      if(sk&&sk.n==="영혼 분리"&&h&&/최대 체력의 10%/.test(ex)){ const sp=Math.floor((run&&run.souls||0)/40)*2.5, rp=(h.tag&&h.tag.phantomPct)||0;
-        if(sp||rp) ex=ex.replace("최대 체력의 10%",`최대 체력의 ${10+sp+rp}% (기본 10%${sp?` / 영혼 +${sp}%`:""}${rp?` / 영혼 분리 강화 +${rp}%`:""})`) }
-      if(ex) bits.push(ex);
-      return NUM_A+r.total+NUM_B+bits.join(" / ")+NUM_C;
-    });
-  const html=rich(marked).replace(/\u0001([^\u0002]*)\u0002([^\u0003]*)\u0003/g,
-    (m,tot,brk)=>`<b class="big">${tot}</b>`+(brk?`<span class="brk">(${brk})</span>`:""));
-  return {html:html, done:done};
-}
+/* ═══════════ 지속 기술 표 ═══════════
+   원래 `src/view/hero-panel.js` 에 있었다. 2026-10-28 에 규칙으로 옮겼다 —
+   `src/rules/rewards.js` 의 `skillNamesOf()` 가 이 표를 읽는데, 유니티가 싣는
+   덩이에는 화면 조각이 안 들어가서 **PASSIVE_INFO is not defined 로 터졌다**.
+   (보상 갈래를 가르는 길 `first-seen.js` → `skillNamesOf` 가 지나는 자리다.)
+
+   ⚠️ 여기 있는 `d:` 는 **글을 짜는 틀**이고 h(대원의 몸)를 받는다. 규칙 데이터다.
+      그림 · 칩을 만드는 `passHtml()` 은 화면에 남겨 두었다. */
+/* 숫자 쪼개어 보이기 — 「7 (기본 4 / 추가 공격력 3)」.
+   원래 `src/view/hero-panel.js` 에 있었다. 2026-10-29 에 규칙으로 옮겼다 —
+   이 표의 글틀(`d:h=>…`)이 부르는데 화면 파일에 살아 `rules-in-view` 그물에 걸렸다.
+   DOM 을 한 자리도 안 만진다. 숫자를 더해 글로 짜는 셈이니 규칙 쪽이다
+   (`say` · `rich` · `icoify` 와 같은 결). 부르는 데도 이 표 하나뿐이다. */
 function bk(base,parts){
   const list=parts.filter(p=>p.v);
   const total=base+list.reduce((a,p)=>a+p.v,0);
@@ -39542,13 +39522,77 @@ const PASSIVE_INFO={
 };
 /* 파벨 — 지속 능력을 기술창에 띄운다 (사용자 2026-10-13 : 「기술창에도 누락」).
    ⚠️ passHtml 은 **PASSIVE_INFO 에 있는 대원만** 그린다. HEROES.passive 만 적어 두면 전투 화면에는 한 줄도 안 뜬다 */
-/* 하수인 골렘 — 때리는 기술에는 공격 자세를 (받은 그림에 공격·피격이 있다).
-   ⚠️ SKILL_POSE 에 없으면 자세를 **아예 안 잡는다** — 소환물은 표에 한 줄씩 적어야 선다 */
-["찌르기","별똥별","영혼부르기"].forEach(n=>{ SKILL_POSE["하수인 골렘|"+n]={p:"atk",ms:420} });
 PASSIVE_INFO["파벨"]=[{n:"파수꾼의 은총",
   d:h=>{ const v=(h.def||0)+((h.tag&&h.tag.graceUp)||0);
     return `내 턴에 적이 공중에 뜸 상태가 된 후에, 추가 보호력만큼 보호막을 얻습니다. (지금 ${v})`
       +((h.tag&&h.tag.graceBoom)?` 은총의 폭발 — 그만큼 모든 적에게 피해도 줍니다.`:``) }}];
+function richLive(h,sk,txt){
+  const done={};
+  let txt0=String(txt||"");
+  /* 카제 진선풍도 — 산들바람 강화가 남아 있으면 거리도 그만큼 올려 보인다 (사용자 2026-09-16). 피해는 extraParts 가 얹는다 */
+  if(h&&h.name==="카제"&&sk&&(sk.n==="진선풍도"||sk.n==="회오리")&&h.windBuff)
+    txt0=txt0.replace(/거리 (\d+)/g,(m,n)=>"거리 "+NUM_A+(+n+h.windBuff)+NUM_B+"산들바람 +"+h.windBuff+NUM_C);
+  /* 산들바람 — 싹쓸바람(추진력)·산들바람 강화(피해 증가량)가 칸에 살아서 보인다 (사용자 2026-09-16) */
+  if(h&&h.name==="카제"&&sk&&sk.n==="산들바람"&&h.tag){
+    const mp=h.tag.momPlus||0, gp=h.tag.gustPlus||0;
+    if(mp) txt0=txt0.replace(/추진력을 (\d+)/,(m,n)=>"추진력을 "+NUM_A+(+n+mp)+NUM_B+"추진력 강화 +"+mp+NUM_C);
+    if(gp) txt0=txt0.replace(/피해량이 (\d+)/,(m,n)=>"피해량이 "+NUM_A+(+n+gp)+NUM_B+"산들바람 강화 +"+gp+NUM_C);
+  }
+  if(h&&sk&&sk.bomb&&h.tag&&h.maxHp){   /* 응축 폭발 — 지금 체력으로 터지면 얼마인지 (2026-10-03). startMyTurn 의 셈과 같다 */
+    const bp=h.tag.bombPct||0, pct=20+bp, v=bombDmg(h);
+    txt0=txt0.replace(/현재 체력의 20%만큼의 피해/,`현재 체력의 ${pct}%만큼의 피해 `+NUM_A+v+NUM_B+`현재 체력 ${Math.max(0,h.hp)}의 ${pct}%`+(bp?` / 폭발력 강화 +${bp}%`:"")+NUM_C) }
+  if(h&&sk&&sk.swap&&isFF(h)) txt0=txt0.replace("플레어가 나섭니다",ffFlare(h)?"플로우가 나섭니다":"플레어가 나섭니다");   /* 변환 — 지금 태세의 반대쪽 (사용자 2026-10-07) */
+  /* 거리 제한이 사라진 기술 — 「(거리 N)」 자리에 그렇게 뜬다. 무엇이 풀었는지는 reachOf 한 곳에서 가른다
+     (무한 팽창 : rng 0 · 폭풍칼날 : noRange · 달래주기 다음 턴 : patFree). 사용자 2026-10-08 */
+  if(h&&sk&&reachOf(h,sk)==null) txt0=txt0.replace(/\(거리 \d+\)/g,"(거리 제한 없음)");
+  /* 전리품 사냥꾼 — 「얻은 공격력 ( )」 에 **지금까지 얻은 몫**을 채운다 (사용자 2026-10-16).
+     ⚠️ 빈 괄호가 그대로 보이던 자리다. 수를 쥔 곳은 h.treaAtk 하나다 */
+  if(h&&sk&&sk.n==="전리품 사냥꾼")
+    txt0=txt0.replace(/얻은 공격력 \*\(\s*\)\s*\*/,"얻은 공격력 "+NUM_A+(h.treaAtk||0)+NUM_B+"지금까지 얻은 몫"+NUM_C);
+  /* 마력탄환의 추가 마법력은 derrGunParts → extraParts에서 한 번만 반영한다. */
+  if(h&&sk&&sk.lifeConv){   /* 생명 에너지 전환 — 지금 쓰면 얼마인지 (사용자 2026-10-04, 응축 폭발처럼) */
+    const e=h.eshield||0, add=(sk.dmg||0)+mod(sk,"dmg"), v=e*2+add;
+    txt0=txt0.replace(/모든 적에게 피해를 줍니다/,"모든 적에게 피해를 "+NUM_A+v+NUM_B+`에너지 보호막 ${e}의 2배`+(add?` / 생명 에너지 전환 강화 +${add}`:"")+NUM_C+" 줍니다") }
+  if(h&&sk&&skillFlat(sk)&&portalImpAtk(h))   /* 상급 찌르기 — 숫자 표시가 없어도 물량 공세 몫은 붙는다 */
+    txt0=txt0.replace(/피해를 (\d+)/,(m,n)=>"피해를 "+NUM_A+(+n+portalImpAtk(h))+NUM_B+"물량 공세 +"+portalImpAtk(h)+NUM_C);
+  /* 독서 중첩 수 — 밑줄 긋기 (사용자 2026-10-07) */
+  if(h&&sk&&sk.read&&!sk.penance) txt0=txt0.replace(/_독서 중첩_을 (\d+) 얻습니다/,(m,n)=>+n===sk.read?m:
+    "_독서 중첩_을 "+NUM_A+sk.read+NUM_B+"밑줄 긋기 +"+(sk.read-n)+NUM_C+" 얻습니다");
+  /* 사형 선고 — 배치 후 잠금 (더 빠른 선고) */
+  if(h&&sk&&sk.verdict&&sk.startLock!=null) txt0=txt0.replace(/대원 배치 후 (\d+)턴 잠금/,(m,n)=>+n===sk.startLock?m:
+    "대원 배치 후 "+NUM_A+sk.startLock+NUM_B+"더 빠른 선고 −"+(n-sk.startLock)+NUM_C+"턴 잠금");
+  if(h&&sk&&sk.n==="영혼 분리"&&h.tag&&h.tag.phantomHp)   /* 환영 성장 — 상한을 산 숫자로 (2026-10-03) */
+    txt0=txt0.replace("(내 전장에 소환되면 최대 30)",`(내 전장에 소환되면 최대 ${phantomHpCap(h)}, 환영 성장 +${h.tag.phantomHp})`);
+  if(/\*\( \)\*/.test(txt0)){
+    const lp=livePlace(h,sk);
+    /* ⚠️ 앞뒤 글자에 **안 붙게** 빈칸을 끼운다 — 노트가 「이하*( )*일」로 붙여 적은 자리가 있다 (2026-10-13) */
+    txt0=txt0.replace(/(\S?)\*\( \)\*(\S?)/g, (m,pre,post)=> (pre?pre+" ":"") + (lp
+      ? NUM_A+lp.total+NUM_B+lp.parts.map(p=>p.n+" "+(typeof p.v==="number"?(p.v>0?"+":"")+p.v:p.v)).join(" / ")+NUM_C
+      : "") + (post?" "+post:""));
+  }
+  const marked=txt0.replace(
+    /(\d+)\(추가 ?([\u2020\u00a4\u2234][\u2020\u00a4\u2234\u2261 ,\u00b7]*)?([^)]*)\)/g,
+    function(m,n,syms,rest,off,whole){
+      const pre=whole.slice(Math.max(0,off-18),off);
+      const key=keyBefore(pre,sk);
+      const r=liveVal(h,sk,key,+n,syms);
+      if(r.own) done[key]=1;
+      const bits=r.parts.map(p=>p.n+" "+(p.v>0?"+":"")+p.v);
+      /* 기호로 못 적는 덧말은 그대로 남긴다 — 우리가 셈할 수 없는 몫이다 */
+      let ex=String(rest||"").replace(/^[\s+]+/,"").trim();
+      /* 영혼 분리 — 최대 체력 비례 몫을 실제로 (영혼 40개당 · 영혼 분리 강화, 2026-10-03) */
+      if(sk&&sk.n==="영혼 분리"&&h&&/최대 체력의 10%/.test(ex)){ const sp=Math.floor((run&&run.souls||0)/40)*2.5, rp=(h.tag&&h.tag.phantomPct)||0;
+        if(sp||rp) ex=ex.replace("최대 체력의 10%",`최대 체력의 ${10+sp+rp}% (기본 10%${sp?` / 영혼 +${sp}%`:""}${rp?` / 영혼 분리 강화 +${rp}%`:""})`) }
+      if(ex) bits.push(ex);
+      return NUM_A+r.total+NUM_B+bits.join(" / ")+NUM_C;
+    });
+  const html=rich(marked).replace(/\u0001([^\u0002]*)\u0002([^\u0003]*)\u0003/g,
+    (m,tot,brk)=>`<b class="big">${tot}</b>`+(brk?`<span class="brk">(${brk})</span>`:""));
+  return {html:html, done:done};
+}
+/* 하수인 골렘 — 때리는 기술에는 공격 자세를 (받은 그림에 공격·피격이 있다).
+   ⚠️ SKILL_POSE 에 없으면 자세를 **아예 안 잡는다** — 소환물은 표에 한 줄씩 적어야 선다 */
+["찌르기","별똥별","영혼부르기"].forEach(n=>{ SKILL_POSE["하수인 골렘|"+n]={p:"atk",ms:420} });
 function passHtml(h){
   const list=PASSIVE_INFO[h.name];
   if(!list) return "";
