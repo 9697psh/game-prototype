@@ -1839,7 +1839,8 @@ body.vbattle .tornado{transform:scale(4.6);margin-top:14px}   /* 회오리도 �
    쉬는 동안(지도의 경첩)은 밤 장막(250) · 암전(300) 아래, 도는 동안(.busy)은 맨 위에서 누름을 먹는다 */
 #covergate{position:fixed;inset:0;z-index:240;pointer-events:none}
 #covergate.busy{z-index:9700;pointer-events:auto}
-#covergate.busy.intro{z-index:240}   /* 처음 펼침 — 지도만 가리고 막 이름 띠 · 안내는 위에 */
+#covergate.busy.intro{z-index:240}
+#covergate .cg-black{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none}   /* 처음 펼침의 페이드인 — 덮개 위의 검은 막 */   /* 처음 펼침 — 지도만 가리고 막 이름 띠 · 안내는 위에 */
 #covergate .cg-perim{position:absolute;background-color:#080908;background-repeat:no-repeat;background-size:100% 100%;image-rendering:pixelated;opacity:0;pointer-events:none}   /* 둘레 = 지도 판 그림 (사용자 2026-10-29) */
 #covergate.night .cg-perim::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,rgba(10,12,30,.10),rgba(4,5,16,.42) 100%)}   /* #nightveil 과 같은 빛 */
 #covergate .cg-veil{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none}   /* 덮개 전환의 페이드 */
@@ -25336,6 +25337,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 262, "v": "0.7", "d": "2026-10-29", "t": "처음 펼침 페이드인", "big": 0},
  {"b": 261, "v": "0.7", "d": "2026-10-29", "t": "처음 펼침 덮개 · 승리 강조 · 원정 실패 5초", "big": 0},
  {"b": 260, "v": "0.7", "d": "2026-10-29", "t": "승리 연출 · 전투 전리품 · 덮개 속도", "big": 0},
  {"b": 259, "v": "0.7", "d": "2026-10-29", "t": "전투 결과 · 원정 마무리 연출", "big": 0},
@@ -26789,7 +26791,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=261;
+const BUILD_NO=262;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -29873,6 +29875,10 @@ function coverIntroCheck(){
   const root=CV_ROOT; root.classList.add("busy","intro"); root.style.display="";
   CV_AWAY=0; coverPlace(); coverAngle(0);
   { const v=root.querySelector(".cg-veil"); if(v){ try{ v.getAnimations().forEach(x=>x.cancel()) }catch(e){} v.style.opacity="0" } }
+  /* 어둠에서 서서히 — 닫힌 탁자가 한 번에 「확」 나오지 않게 (사용자 2026-10-29). 덮개 · 둘레 위에 검은 막을 얹어 걷는다 */
+  { let b=root.querySelector(".cg-black"); if(!b){ b=document.createElement("div"); b.className="cg-black"; root.appendChild(b) }
+    try{ b.getAnimations().forEach(x=>x.cancel()); b.animate([{opacity:1},{opacity:0}],{duration:Math.round(700*k),easing:"ease-out",fill:"forwards"}) }
+    catch(e){ b.style.opacity="0" } }
   const dog=setTimeout(()=>{ coverAngle(CV.OPEN); root.classList.remove("intro"); coverEnd() },H+O+4000);
   setTimeout(async()=>{
     try{ cvSnd("열림"); await coverTween(CV.OPEN,O) }catch(e){ coverAngle(CV.OPEN) }
