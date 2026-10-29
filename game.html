@@ -5968,6 +5968,35 @@ body.vnew #app .rewards:has(.trait-guarantee){margin-top:48px}
 @keyframes rcIn{from{opacity:0;translate:0 10px}to{opacity:1;translate:0 0}}
 @keyframes rcInC{from{opacity:0}to{opacity:1}}
 .resfade{position:fixed;inset:0;z-index:9800;background:#000;opacity:0;pointer-events:none}   /* 원정 실패 → 결과 화면 페이드 (2026-10-29) */
+
+/* ── 지도 가운데 덧판 · 장소 화면 (src/fx/map-shutter.js, 사용자 2026-10-30) ──
+   안쪽 영역 = 지도틀(MAP_FRAME_OUT, ::after z 7)의 안쪽 구멍. 무대(.pstage) 기준 % — 틀이 무대에 inset -1.6% 로 늘어나 같이 따라간다.
+   덧판(.shut)은 틀 밑(z 6), 장소(.placebox)는 그 밑(z 3). 움직이는 판은 위아래로만 잘린다 (가로 남는 몫은 틀 밑) */
+.pstage .shut,.pstage .placebox{position:absolute;top:5.25%;right:1.95%;bottom:3.61%;left:.85%}
+.pstage .shut{z-index:6;pointer-events:none;clip-path:inset(0 -24px)}
+.pstage .shut .shin{position:absolute;left:0;top:0;width:764px;height:702px;transform-origin:0 0}
+.pstage .shut i{position:absolute;display:block;background-size:100% 100%;background-repeat:no-repeat;image-rendering:pixelated;will-change:transform}
+.pstage .shut .sh-under{z-index:1} .pstage .shut .sh-top,.pstage .shut .sh-bottom{z-index:2} .pstage .shut .sh-gtop,.pstage .shut .sh-gbot{z-index:3}
+.pstage.shutting .mhand{display:none!important}
+#shutblock{position:fixed;inset:0;z-index:9790;cursor:wait}
+.pstage.placemode{cursor:auto}
+.pstage.placemode::before{display:none}
+.placebox{z-index:3}
+.placebox .pmat{position:absolute;inset:0;background-size:100% 100%;background-repeat:no-repeat;image-rendering:pixelated}
+.placebox .pin{position:absolute;inset:5.2% 5.6% 5% 5.6%;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;outline:none;
+  display:flex;flex-direction:column;align-items:center;scrollbar-width:thin;scrollbar-color:#6b5232 transparent}
+.placebox .pin>*{flex:none;max-width:100%}
+.placebox .evbox{margin:0;width:100%;max-width:none}
+.placebox .evart{width:120px;height:120px;margin-top:2px}
+.placebox .evart.wide{width:min(100%,470px);height:auto}
+.placebox .evpanel{width:100%}
+.placebox .evtitle{margin-top:6px}
+.placebox .evopts{width:100%;margin-top:8px}
+.placebox .center{width:100%;margin:0}
+.placebox .center .title{margin-top:4px}
+.placebox .rewards{gap:10px;margin-top:12px}
+.placebox .rw{width:158px;min-height:0;padding-bottom:10px}
+.placebox .party{width:100%;box-sizing:border-box;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -11990,6 +12019,8 @@ function strikeFX(side,slot,c){
 }
 /* 구역에 들어설 때 — 습격·우두머리 카드보다 훨씬 작게 스쳐 지나간다 */
 function stepBanner(word,sub){
+  /* 지도 가운데 덧판이 도는 중이면 — 열린 뒤에 (닫힌 판 위에 이름이 먼저 뜨지 않게, 2026-10-30) */
+  if(typeof SHUT_BUSY!=="undefined"&&SHUT_BUSY&&typeof SHUT_AFTER!=="undefined"){ SHUT_AFTER.push(()=>stepBanner(word,sub)); return }
   document.querySelectorAll(".stepban").forEach(x=>x.remove());
   const nd=el(`<div class="stepban"><b>${esc(word)}</b>${sub?`<span>${esc(sub)}</span>`:""}</div>`);
   document.body.appendChild(nd);
@@ -24575,6 +24606,7 @@ function mapPanelAfter(saved){
 function render(){
   if(FOE_CAPTURING||CARD_BATCH) return;   /* 적의 셈 도중 다시 그리면 아직 모으는 연출 큐가 먼저 흘러간다 */
   if(PRED_DRY) return;   /* 미리 돌려 보는 중 — 그리지 않는다. 안 막으면 되돌이로 화면이 멈춘다 */
+  if(typeof shutGate==="function"&&shutGate()) return;   /* 지도 ↔ 쉼터 · 미지의 구역 · 전용 구역 — 가운데 덧판이 닫힌 뒤에 그린다 */
   if(FOE_VIEW&&(B!==FOE_VIEW.battle||view!=="battle")) FOE_VIEW=null;
   /* 전투를 떠나면 되풀이 녹음을 끈다 (사용자 2026-10-13 : 훈련장에서 복수귀가 켜진 채 나오면 소리가 따라왔다).
      ⚠️ 끄는 자리가 iraAuraHtml **안에만** 있었다 — 그 함수는 전투 화면을 그릴 때만 돈다.
@@ -24619,7 +24651,7 @@ function render(){
   goldWatch();
   hpAnim();
   tutPanel();
-  if(run&&run.mapPeek&&view!=="map"&&view!=="title") drawMapPeek();
+  if(run&&run.mapPeek&&view!=="map"&&view!=="title"&&!(typeof placeMode==="function"&&placeMode())) drawMapPeek();
   flushFX();
   try{ BGM.sync() }catch(e){}
   try{ dexTick() }catch(e){}        /* 겪고 있는 것을 도감에 적는다 */
@@ -24724,7 +24756,7 @@ function drawMapPeek(){
   document.body.appendChild(ov);
 }
 document.addEventListener("keydown",e=>{
-  if(!run||view==="title"||view==="map") return;
+  if(!run||view==="title"||view==="map"||(typeof placeMode==="function"&&placeMode())) return;
   if(e.key==="m"||e.key==="M"||e.key==="ㅡ"){ run.mapPeek=!run.mapPeek; mapTipHide(); render() }
 });
 const NEW_UI=["chest","reward","bloot","questpick","questdone","winnew","item","shop","relic","rest","recruit","pickhero","clear","wavegap","forge","gear","over","runs","bag","camp","gimres"];
@@ -24737,19 +24769,19 @@ function render0(){
   document.getElementById("_sandbarf")?.remove();
   document.querySelector(".sandstudio")?.remove();
   document.body.classList.toggle("vtitle",view==="title"||view==="saves"||view==="heropick"||view==="corepick"||view==="winface");   /* 머리줄 없는 화면 — 파수꾼 화면도 (2026-10-12) */
-  document.body.classList.toggle("vmap",view==="map");
+  document.body.classList.toggle("vmap",view==="map"||(typeof placeMode==="function"&&placeMode()));   /* 장소 화면도 지도 판 안에 (덧판, 2026-10-30) */
   document.body.classList.toggle("ghand",gHandOn()); try{ gHandDraw() }catch(e){}   /* 손 커서 — 전투 밖 (2026-10-01) */   /* 지도 — 머리줄 대신 제 띠를 그린다 (2026-09-18) */
   document.body.classList.toggle("vbattle",view==="battle"||view==="wavegap");
   document.body.classList.toggle("vchest",view==="chest");   /* 보상 상자 — 전투 배경 유지 */     /* 전투 — 전장 그림 위 (2026-09-19) */
   document.body.classList.toggle("vsand",!!(run&&run.sandbox)&&(view==="battle"||view==="wavegap"));   /* 연습장 — 손잡이·적 세우기가 아래에 있으니 화면을 굴릴 수 있게 (2026-09-29) */
-  document.body.classList.toggle("vpage",!["title","saves","heropick","corepick","map","battle","wavegap"].includes(view));
+  document.body.classList.toggle("vpage",!["title","saves","heropick","corepick","map","battle","wavegap"].includes(view)&&!(typeof placeMode==="function"&&placeMode()));
   /* 화면 정비 (사용자 2026-10-05) — 시작 · 지도 · 전투 · 도감을 뺀 화면은 한 판 위에 그린다 */
-  document.body.classList.toggle("vnew",NEW_UI.includes(view));   /* 나머지 화면 — 감옥 방 배경 + 철 테 판 (2026-09-19) */
+  document.body.classList.toggle("vnew",NEW_UI.includes(view)&&!(typeof placeMode==="function"&&placeMode()));   /* 나머지 화면 — 감옥 방 배경 + 철 테 판 (2026-09-19) */
   app.classList.remove("bt2","trait-stage");       /* 전투 화면만 두 단이다 — drawBattle 이 다시 단다 */
   const hr=document.getElementById("hRun");
   /* 마지막 구역을 넘기면 run.field 가 FIELDS 밖으로 나간다.
      그때도 머리줄을 그리려 들면 FIELDS[3] 이 없어 화면이 통째로 죽는다. */
-  if(run&&view!=="title"&&view!=="map"&&FIELDS[run.field]){   /* 지도는 제 띠를 그린다 — 숨은 머리줄의 #ptv 가 앞서 잡혀 시간이 안 오르던 것 (2026-09-19) */
+  if(run&&view!=="title"&&view!=="map"&&!(typeof placeMode==="function"&&placeMode())&&FIELDS[run.field]){   /* 지도는 제 띠를 그린다 — 숨은 머리줄의 #ptv 가 앞서 잡혀 시간이 안 오르던 것 (2026-09-19) */
     /* 오늘까지 세어 남은 날 — 지도 목표 줄과 같은 셈이어야 한다 */
     const dLeft=Math.max(0,FIELDS[run.field].days-run.day+1);
     const tPct=Math.min(100,run.taint/taintMax()*100);
@@ -24789,7 +24821,7 @@ function render0(){
     const hb2=el(`<button class="kw" data-kw="메인화면" data-tip="시작 화면으로 돌아갑니다. 판은 저장되어 있습니다.">메인화면</button>`);
     hb2.onclick=()=>{ saveGame(); run=null; B=null; view="title"; render() }; hb.appendChild(hb2);
   }
-  if(run&&view!=="title"&&view!=="map"&&view!=="over"&&view!=="clear"){
+  if(run&&view!=="title"&&view!=="map"&&view!=="over"&&view!=="clear"&&!(typeof placeMode==="function"&&placeMode())){
     const mb=el(`<button class="kw" data-kw="${run.mapPeek?"지도 닫기":"지도 보기"}" data-tip="M 키로도 여닫을 수 있습니다.">${run.mapPeek?"지도 닫기":"지도 보기"}</button>`);
     mb.onclick=()=>{ run.mapPeek=!run.mapPeek; mapTipHide(); render() };
     hb.appendChild(mb);
@@ -24843,6 +24875,7 @@ function render0(){
   if(view==="winnew") return drawWinNew(app);
   if(view==="item")     return drawItem(app);
   if(view==="shop")     return drawShop(app);
+  if((typeof placeMode==="function"&&placeMode())) return drawPlace(app);   /* 쉼터 · 미지의 구역 · 전용 구역 — 지도 판 가운데에 (src/fx/map-shutter.js) */
   if(view==="relic")    return drawRelic(app);
   if(view==="rest")     return drawRest(app);
   if(view==="recruit")  return drawRecruit(app);
@@ -25348,6 +25381,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 266, "v": "0.7", "d": "2026-10-30", "t": "지도 가운데 덧판 — 미지의 구역 · 전용 구역 · 쉼터", "big": 0},
  {"b": 265, "v": "0.7", "d": "2026-10-29", "t": "덮개 — 쉼터 · 미지의 구역 · 전용 구역 뺌", "big": 0},
  {"b": 264, "v": "0.7", "d": "2026-10-29", "t": "상자 연타 · 밀수꾼 도망 배지", "big": 0},
  {"b": 263, "v": "0.7", "d": "2026-10-29", "t": "원정 실패 가운데 · 지도 글줄 · 화면 크기 설정 · 나가기", "big": 0},
@@ -26805,7 +26839,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=265;
+const BUILD_NO=266;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -29638,7 +29672,7 @@ function enterCell(r,c){
 function nightVeil(){
   let v=document.getElementById("nightveil");
   if(!v){ v=document.createElement("div"); v.id="nightveil"; document.body.appendChild(v) }
-  const on=!!(run&&run.night&&!run.lost&&view==="map");   /* 지도 화면에서만 (사용자 2026-09-15 — 전투는 밝게) */
+  const on=!!(run&&run.night&&!run.lost&&(view==="map"||(typeof placeMode==="function"&&placeMode())));   /* 지도 화면에서만 (사용자 2026-09-15 — 전투는 밝게) */
   v.classList.toggle("on",on);
 }
 /* 어두워지고(0.55초) → fn 으로 화면을 바꾸고 → 걷힌다(0.7초). 그동안 누름은 먹지 않는다.
@@ -29907,14 +29941,195 @@ function coverIdle(){
   if(typeof document==="undefined") return;
   if(!CV_OK) coverLoad();
   if(CV_BUSY) return;
-  const on=CV_OK===1&&typeof run!=="undefined"&&!!run&&view==="map";
+  const on=CV_OK===1&&typeof run!=="undefined"&&!!run&&(view==="map"||(typeof placeMode==="function"&&placeMode()));   /* 장소 화면도 지도 판 그대로 — 경첩도 */
   if(view==="map") CV_TRIP=null;   /* 지도에 섰으면 나간 길은 끝났다 (구역 넘김 등 다른 길로 왔어도) */
   if(!on){ if(CV_ROOT) CV_ROOT.style.display="none"; return }
   coverBuild(); CV_ROOT.style.display=""; CV_AWAY=0;
   coverPlace(); coverAngle(CV.OPEN);
 }
+/* ═══════════ 지도 가운데 덧판 — 미지의 구역 · 전용 구역 · 쉼터 (사용자 2026-10-30) ═══════════
+   받은 아트 : GameProject2/art/ui/map-panel-shutters-v1 (논리 1배 다섯 장 → art/지도/덧판-*.png, 바이트 그대로).
+   뒷받침 : GameProject2/art/ui/expedition-choice-mats-v1/event-record-mat.png → art/지도/기록-받침.png.
+
+   ★ 무엇 — 지도 화면은 그대로 두고, **가운데 지도틀 안쪽만** 위 · 아래 목재 판이 닫혔다 열리며 지도 ↔ 장소를 바꾼다.
+     지역 이름 · 날짜 · 시각, 좌우 정보창, 지도틀 외곽과 탁자는 움직이지 않는다.
+     장소 화면(drawRelic · drawRest · drawGimRes)은 **그대로** 그 틀 안(.placebox)에 그린다 — 규칙은 한 줄도 안 바뀐다.
+   ★ 고르는 자리 — render() 맨 앞의 shutGate 한 곳 :
+       · 지도를 그린 뒤에 장소 화면(PLACE_VIEWS)으로 가면           → 닫고 · 바꾸고 · 연다 (PLACE_ON=1)
+       · 장소 화면에서 다른 화면으로 가면                          → 닫고 · 바꾸고 → 지도면 연다, 다른 화면(보상 · 전투 …)이면 그 화면을 그린다
+     fadeInto 는 이 길에서 암전하지 않고 바로 넘긴다 (shutWants). 탁자 덮개(cover-gate)는 전투 · 상점 · 제련소만.
+   ★ 시간은 SHUT 한 곳. 닫기 650 → 닫힌 채 400(가운데에서 바꾼다) → 열기 750. 그림이 늦으면 닫힌 채 WAIT 까지 기다린다.
+   ★ 자리 — 참고 캡처(1911×998)의 수치를 **안쪽 가림 영역 764×702 기준의 로컬 좌표**로 옮겼다 (아래 SH_PART).
+     게임의 안쪽 영역(.placebox · .shut — 지도틀 MAP_FRAME_OUT 의 안쪽 구멍) 높이에 맞춰 한 배율 s 로 키운다 (가로세로 같은 배율).
+     가로가 조금 남거나 모자라면 가운데 맞춤 — 남는 몫은 틀(z 7) 밑으로 들어간다.
+   ⚠️ 판 몸체를 351 로 찌그러뜨리지 않는다 — 352 그대로, 위 판 맨 위 1px · 아래 판 맨 아래 1px 이 가림 영역 밖이다 (원본 문서).
+   ⚠️ 그림을 못 읽으면 덧판을 안 쓰고 옛길(전체 화면 · 암전)로 간다. */
+const SHUT={CLOSE:650,HOLD:400,OPEN:750,WAIT:1500,DOG:6000,
+  EASE_CLOSE:"cubic-bezier(.55,0,.25,1)",   /* 짧게 떼고 부드럽게 내려앉는다 — 튕김 없음 */
+  EASE_OPEN:"cubic-bezier(.5,0,.2,1)",
+  REDUCE:0.25};                              /* 움직임 줄이기 — 이만큼만 (짧은 전환) */
+const PLACE_VIEWS={relic:1,rest:1,gimres:1};
+const SHUT_FILES={top:"덧판-위.png",bottom:"덧판-아래.png",under:"덧판-가림.png",gtop:"덧판-홈-위.png",gbot:"덧판-홈-아래.png",mat:"기록-받침.png"};
+/* 안쪽 가림 영역(764×702, 원점 = 참고 캡처 578,184) 기준 — 캔버스 왼쪽 위 · 크기 (표시 2배 단위). 원본 usage.json 그대로 */
+const SH_W=764, SH_H=702, SH_TRAVEL=372;
+const SH_PART={
+  under:{x:-16,y:335,w:796,h:32,  move:-1},   /* 위 판에 붙어 함께 간다 · 아래 판보다 뒤 */
+  top:  {x:-16,y:-17,w:796,h:384, move:-1},
+  bottom:{x:-16,y:335,w:796,h:384,move:1},
+  gtop: {x:-16,y:-8, w:796,h:24,  move:0},    /* 고정 홈 — 판 위에 */
+  gbot: {x:-16,y:686,w:796,h:24,  move:0}};
+let SHUT_OK=0, PLACE_ON=0, PLACE_RESUME=0, SHUT_BUSY=0, SHUT_DIRTY=0, SHUT_SWAP=0;
+const SHUT_AFTER=[];   /* 열린 뒤에 할 일 — 장소 이름 띠(stepBanner) 등 */
+const shutReduce=()=>{ try{ return matchMedia("(prefers-reduced-motion: reduce)").matches }catch(e){ return false } };
+
+function shutLoad(){
+  if(SHUT_OK||typeof document==="undefined") return; SHUT_OK=0.5;
+  Promise.all(Object.values(SHUT_FILES).map(f=>new Promise((ok,no)=>{ const im=new Image();
+    im.onload=()=>(im.decode?im.decode():Promise.resolve()).then(ok,ok); im.onerror=()=>no(f); im.src=mapPng(f) })))
+    .then(()=>{ SHUT_OK=1 }, f=>{ SHUT_OK=-1; console.warn("덧판 그림을 못 읽었다 — 옛길(전체 화면)로 : "+f) });
+}
+/* 장소 화면을 지도 판 안에 그리는 중인가 — 머리줄 · 경첩 · 밤 등 「지도처럼」 다뤄야 하는 곳이 묻는다 */
+const placeMode=()=>!!(PLACE_ON&&typeof view!=="undefined"&&PLACE_VIEWS[view]);
+const mapLike=()=>typeof view!=="undefined"&&(view==="map"||placeMode());
+
+/* 이 칸에 들어서면 장소 화면인가 — 쉼터 · 미지의 구역 · 전용 구역(기믹). 성벽 · 뇌물 받은 초소는 지도에 남는다 */
+function placeCell(c){
+  if(!c||c.done) return false;
+  if(c.t==="rest"||c.t==="event") return true;
+  if(typeof GIM_T==="undefined"||!GIM_T[c.t]) return false;
+  if(c.t==="wall") return false;
+  if(c.t==="post"&&c.quiet>=run.day) return false;
+  return true;
+}
+/* fadeInto 가 묻는다 — 이 넘김은 덧판이 맡나 (그러면 암전하지 않고 바로 넘긴다) */
+function shutWants(){
+  if(SHUT_OK===0) shutLoad();
+  if(SHUT_OK!==1||typeof run==="undefined"||!run) return false;
+  if(PLACE_ON) return true;
+  if(view!=="map") return false;
+  const p=run.pos, c=p&&run.grid&&run.grid[p.r]&&run.grid[p.r][p.c];
+  return placeCell(c);
+}
+/* 미지의 구역이 상점 · 제련소로 바뀌었을 때처럼 덧판 없이 화면이 통째로 바뀌면 — 짧게 어둠에서 밝아진다 */
+function shutBlink(ms){
+  document.querySelectorAll(".blackout.gate").forEach(x=>x.remove());
+  const bo=el(`<div class="blackout gate"></div>`); document.body.appendChild(bo);
+  setTimeout(()=>bo.classList.add("out"),40); setTimeout(()=>bo.remove(),(ms||700)+80);
+}
+
+/* render() 맨 앞 — true 면 지금은 그리지 않는다 (넘김이 맡았다) */
+function shutGate(){
+  if(SHUT_SWAP) return false;                    /* 넘김이 스스로 부른 그리기 */
+  if(SHUT_BUSY){ SHUT_DIRTY=1; return true }     /* 도는 동안의 그리기는 끝난 뒤 한 번 */
+  if(typeof run==="undefined"||!run){ PLACE_ON=0; PLACE_RESUME=0; return false }
+  if(SHUT_OK===0) shutLoad();
+  const want=!!PLACE_VIEWS[view];
+  if(view==="map") PLACE_RESUME=0;
+  if(SHUT_OK!==1){ PLACE_ON=0; return false }
+  if(!PLACE_ON&&want&&(_lastView==="map"||PLACE_RESUME)){ shutRun(1); return true }
+  if(PLACE_ON&&!want){ shutRun(0); return true }
+  return false;
+}
+
+/* 판 한 벌을 무대(.pstage)에 붙인다. c — 닫힘 비율 (0 열림 · 1 닫힘) */
+function shutAttach(stage,c){
+  let root=stage.querySelector(":scope > .shut"); if(root) root.remove();
+  root=el(`<div class="shut"><div class="shin"></div></div>`);
+  const inn=root.querySelector(".shin");
+  const P={};
+  ["under","top","bottom","gtop","gbot"].forEach(k=>{ const q=SH_PART[k], d=document.createElement("i");
+    d.className="sh-"+k; Object.assign(d.style,{left:q.x+"px",top:q.y+"px",width:q.w+"px",height:q.h+"px",
+      backgroundImage:`url("${mapPng(SHUT_FILES[k])}")`});
+    inn.appendChild(d); P[k]=d });
+  stage.appendChild(root);
+  const fit=()=>{ if(!root.isConnected) return; const w=root.clientWidth, h=root.clientHeight, s=h/SH_H;
+    inn.style.transform=`translateX(${((w-SH_W*s)/2).toFixed(2)}px) scale(${s.toFixed(5)})` };
+  fit(); root._fit=fit;
+  const at=v=>["under","top","bottom"].forEach(k=>{ P[k].style.transform=`translateY(${Math.round(SH_PART[k].move*SH_TRAVEL*(1-v))}px)` });
+  at(c);
+  root._move=(from,to,ms,ease)=>{ ["under","top","bottom"].forEach(k=>{ const m=SH_PART[k].move*SH_TRAVEL;
+      P[k].getAnimations().forEach(a=>a.cancel());
+      try{ P[k].animate([{transform:`translateY(${m*(1-from)}px)`},{transform:`translateY(${m*(1-to)}px)`}],{duration:ms,easing:ease,fill:"forwards"}) }
+      catch(e){} });
+    at(to) };   /* 애니메이션이 못 돌아도(숨은 탭 등) 끝 자리는 이미 서 있다 */
+  return root;
+}
+/* 판 안의 그림이 다 읽힐 때까지 (최대 ms) — 늦은 삽화가 열린 뒤에 튀어나오지 않게 */
+function shutImgs(box,ms){
+  const L=[...box.querySelectorAll("img")].filter(im=>!im.complete||!im.naturalWidth);
+  if(!L.length) return Promise.resolve();
+  return Promise.race([Promise.all(L.map(im=>new Promise(r=>{ im.addEventListener("load",r,{once:true}); im.addEventListener("error",r,{once:true}) }))),
+    new Promise(r=>setTimeout(r,ms))]);
+}
+let SHUT_KEYS=0;
+function shutBlock(on){
+  let b=document.getElementById("shutblock");
+  if(on&&!b){ b=document.createElement("div"); b.id="shutblock"; document.body.appendChild(b) }
+  if(!on&&b) b.remove();
+  if(!SHUT_KEYS){ SHUT_KEYS=1;
+    /* 도는 동안 키는 먹는다 (지도 · 장소 둘 다) — 맨 앞(capture)에서 */
+    window.addEventListener("keydown",e=>{ if(SHUT_BUSY&&e.key!=="F11"){ e.stopImmediatePropagation(); e.preventDefault() } },true) }
+}
+/* 넘김 하나 — enter : 지도 → 장소(1) · 장소 → 다른 화면(0) */
+function shutRun(enter){
+  const st0=document.querySelector("#app .mb-mid .pstage");
+  const K=shutReduce()?SHUT.REDUCE:1, T={CLOSE:SHUT.CLOSE*K,HOLD:SHUT.HOLD*K,OPEN:SHUT.OPEN*K};
+  let swapped=false, done=false;
+  const swap=()=>{ if(swapped) return; swapped=true;
+    PLACE_ON=enter?1:0;
+    if(!enter) PLACE_RESUME=view!=="map"?1:0;   /* 가방 · 보상 등을 거쳐 이 장소로 돌아오면 다시 판 안에 */
+    SHUT_SWAP=1; try{ render() }catch(e){ console.error(e) } finally{ SHUT_SWAP=0 } };
+  const finish=()=>{ if(done) return; done=true; clearTimeout(dog);
+    swap();
+    document.querySelectorAll("#app .pstage > .shut").forEach(x=>x.remove());
+    document.querySelectorAll("#app .pstage.shutting").forEach(x=>x.classList.remove("shutting"));
+    removeEventListener("resize",refit);
+    SHUT_BUSY=0; shutBlock(false);
+    if(SHUT_DIRTY){ SHUT_DIRTY=0; render() }        /* 도는 동안 미뤄 둔 그리기 — 포커스보다 먼저 (다시 그리면 판이 새로 선다) */
+    if(placeMode()){ const pin=document.querySelector("#app .placebox .pin"); if(pin) try{ pin.focus({preventScroll:true}) }catch(e){} }
+    else if(document.activeElement&&document.activeElement.blur) document.activeElement.blur();
+    SHUT_AFTER.splice(0).forEach(f=>{ try{ f() }catch(e){ console.error(e) } }) };
+  const refit=()=>document.querySelectorAll("#app .pstage > .shut").forEach(x=>x._fit&&x._fit());
+  /* 무대가 없으면(다른 화면에서 왔다 등) 그냥 바꾼다 */
+  if(!st0){ swap(); return }
+  SHUT_BUSY=1; shutBlock(true); addEventListener("resize",refit);
+  const dog=setTimeout(finish,SHUT.DOG);          /* 어디서 멈춰도 — 닫힌 채 갇히지 않게 */
+  st0.classList.add("shutting");
+  shutAttach(st0,0)._move(0,1,T.CLOSE,SHUT.EASE_CLOSE);
+  setTimeout(()=>{ if(done) return;
+    swap();                                        /* 닫힌 채 — 가운데에서 바꾼다 */
+    const st1=document.querySelector("#app .mb-mid .pstage");
+    if(!st1||!mapLike()){ finish(); if(!placeMode()&&view!=="map") shutBlink(450); return }   /* 지도 판이 없는 화면(보상 · 전투 …) */
+    st1.classList.add("shutting");
+    const L=shutAttach(st1,1);
+    const box=st1.querySelector(".placebox")||st1;
+    shutImgs(box,SHUT.WAIT).then(()=>setTimeout(()=>{ if(done) return;
+      if(L.isConnected) L._move(1,0,T.OPEN,SHUT.EASE_OPEN);
+      setTimeout(finish,T.OPEN+30) },T.HOLD/2));
+  },T.CLOSE+T.HOLD/2);
+}
+
+/* 장소 화면 — 지도를 그대로 그리고, 가운데 무대만 장소로 갈아 끼운다 */
+function drawPlace(app){
+  drawMap(app);
+  const old=app.querySelector(".mb-mid .pstage"); if(!old) return;
+  const st=old.cloneNode(false);                 /* 틀 · 바닥 변수만 — 지도 누름 · 손 커서 짝은 따라오지 않는다 */
+  st.classList.remove("unfolding"); st.classList.add("placemode");
+  old.replaceWith(st);
+  const box=el(`<div class="placebox"><div class="pmat"></div><div class="pin" tabindex="-1"></div></div>`);
+  box.querySelector(".pmat").style.backgroundImage=`url("${mapPng(SHUT_FILES.mat)}")`;
+  st.appendChild(box);
+  const pin=box.querySelector(".pin");
+  ({relic:drawRelic,rest:drawRest,gimres:drawGimRes})[view](pin);
+}
 function fadeInto(fn){
   if(typeof coverInto==="function"&&(CV_BUSY||coverWants())){ coverInto(fn); return }   /* 도는 중이면 줄을 선다 */
+  /* 쉼터 · 미지의 구역 · 전용 구역 — 암전 없이 바로 넘긴다. 지도 판 가운데 덧판은 render 의 shutGate 가 맡는다 */
+  if(typeof shutWants==="function"&&shutWants()){ const fromMap=view==="map";
+    if(SHUT_BUSY) return;   /* 도는 중에 또 들어오는 부탁은 버린다 — 한 번만 (두 번 누름) */
+    try{ fn() }catch(e){ console.error(e) }
+    if(fromMap&&view!=="map"&&!PLACE_VIEWS[view]&&!SHUT_BUSY) shutBlink();   /* 미지의 구역이 상점 · 제련소였다 */
+    return }
   document.querySelectorAll(".blackout.gate").forEach(x=>x.remove());
   const bo=el(`<div class="blackout gate"></div>`);
   document.body.appendChild(bo);
