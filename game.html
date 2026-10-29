@@ -5982,8 +5982,10 @@ body.vnew #app .rewards:has(.trait-guarantee){margin-top:48px}
 .pstage.placemode{cursor:auto}
 .pstage.placemode::before{display:none}
 .placebox{z-index:3}
-.placebox .pmat{position:absolute;inset:0;background-size:100% 100%;background-repeat:no-repeat;image-rendering:pixelated}
-.placebox .pin{position:absolute;inset:5.2% 5.6% 5% 5.6%;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;outline:none;
+/* 받침의 제 테두리는 안 쓴다 — 지도틀이 테두리다 (사용자 2026-10-30 「따로 테두리 안 써도 돼」).
+   받침 그림(424×396, 테두리 15~21px)을 키워 안쪽 결만 판에 깐다 */
+.placebox .pmat{position:absolute;inset:0;background-size:117% 118%;background-position:center;background-repeat:no-repeat;image-rendering:pixelated}
+.placebox .pin{position:absolute;inset:3.4% 4% 3.2% 4%;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;outline:none;
   display:flex;flex-direction:column;align-items:center;scrollbar-width:thin;scrollbar-color:#6b5232 transparent}
 .placebox .pin>*{flex:none;max-width:100%}
 .placebox .evbox{margin:0;width:100%;max-width:none}
@@ -5997,6 +5999,12 @@ body.vnew #app .rewards:has(.trait-guarantee){margin-top:48px}
 .placebox .rewards{gap:10px;margin-top:12px}
 .placebox .rw{width:158px;min-height:0;padding-bottom:10px}
 .placebox .party{width:100%;box-sizing:border-box;flex-wrap:wrap}
+
+/* 스크롤 막대(슬라이드바)는 어디에도 안 보인다 — 휠 · 끌기로는 그대로 굴러간다 (사용자 2026-10-30 「슬라이드바 사용하는 거 다 없애 줘」) */
+*{scrollbar-width:none!important}
+*::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
+/* 지도(장소 화면 포함)의 알림 띠 — 떠 있게. 흐름에 끼면 지역 이름 줄이 아래로 밀렸다 (2026-10-30) */
+body.vmap #app>.toast{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:30;margin:0;width:max-content;max-width:60%}
 </style>
 </head>
 <body>
@@ -6910,7 +6918,7 @@ function gHandDraw(){
 }
 if(typeof window!=="undefined"&&window.addEventListener){
   window.addEventListener("pointermove",e=>{ if(e.pointerType&&e.pointerType!=="mouse") return; GHAND_XY=[e.clientX,e.clientY];
-    GHAND_IN_STAGE=!!(e.target&&e.target.closest&&e.target.closest(".pstage")); gHandDraw() },{passive:true});
+    GHAND_IN_STAGE=!!(e.target&&e.target.closest&&e.target.closest(".pstage:not(.placemode)")); gHandDraw() },{passive:true});   /* 장소 화면(덧판 안)은 제 손이 없다 — 이 손을 쓴다 (2026-10-30) */
   window.addEventListener("pointerdown",e=>{ if(e.pointerType==="mouse"){ GHAND_MODE="press"; gHandDraw();
       /* 꾹 누르기 — 빈 곳에서만, 카드를 들거나 연출이 도는 중이 아니면 */
       const H=holdPick(holdBase());
@@ -25381,6 +25389,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 267, "v": "0.7", "d": "2026-10-30", "t": "덧판 다듬기 · 스크롤 막대 숨김", "big": 0},
  {"b": 266, "v": "0.7", "d": "2026-10-30", "t": "지도 가운데 덧판 — 미지의 구역 · 전용 구역 · 쉼터", "big": 0},
  {"b": 265, "v": "0.7", "d": "2026-10-29", "t": "덮개 — 쉼터 · 미지의 구역 · 전용 구역 뺌", "big": 0},
  {"b": 264, "v": "0.7", "d": "2026-10-29", "t": "상자 연타 · 밀수꾼 도망 배지", "big": 0},
@@ -26839,7 +26848,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=266;
+const BUILD_NO=267;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -30056,10 +30065,18 @@ function shutAttach(stage,c){
 }
 /* 판 안의 그림이 다 읽힐 때까지 (최대 ms) — 늦은 삽화가 열린 뒤에 튀어나오지 않게 */
 function shutImgs(box,ms){
-  const L=[...box.querySelectorAll("img")].filter(im=>!im.complete||!im.naturalWidth);
+  /* ⚠️ src 가 빈 그림(지도의 펼침 · 손 자리)은 load 가 영영 안 온다 — 빼야 한다.
+     안 뺐더니 지도로 돌아올 때마다 닫힌 채 WAIT(1.5초)를 다 기다렸다 (사용자 2026-10-30 「열리는 시간이 오래 걸린다」) */
+  const L=[...box.querySelectorAll("img")].filter(im=>im.getAttribute("src")&&!im.complete);
   if(!L.length) return Promise.resolve();
   return Promise.race([Promise.all(L.map(im=>new Promise(r=>{ im.addEventListener("load",r,{once:true}); im.addEventListener("error",r,{once:true}) }))),
     new Promise(r=>setTimeout(r,ms))]);
+}
+/* 손 커서 — 마우스가 안 움직여도 지금 밑에 무엇이 있나로 다시 (지도 무대의 손 ↔ 화면의 손, 사용자 2026-10-30 「커서가 안 보임」) */
+function shutCursor(){
+  if(typeof GHAND_XY==="undefined"||!GHAND_XY||typeof gHandDraw!=="function") return;
+  const t=document.elementFromPoint(GHAND_XY[0],GHAND_XY[1]);
+  GHAND_IN_STAGE=!!(t&&t.closest&&t.closest(".pstage:not(.placemode)")); gHandDraw();
 }
 let SHUT_KEYS=0;
 function shutBlock(on){
@@ -30088,11 +30105,12 @@ function shutRun(enter){
     if(SHUT_DIRTY){ SHUT_DIRTY=0; render() }        /* 도는 동안 미뤄 둔 그리기 — 포커스보다 먼저 (다시 그리면 판이 새로 선다) */
     if(placeMode()){ const pin=document.querySelector("#app .placebox .pin"); if(pin) try{ pin.focus({preventScroll:true}) }catch(e){} }
     else if(document.activeElement&&document.activeElement.blur) document.activeElement.blur();
-    SHUT_AFTER.splice(0).forEach(f=>{ try{ f() }catch(e){ console.error(e) } }) };
+    SHUT_AFTER.splice(0).forEach(f=>{ try{ f() }catch(e){ console.error(e) } });
+    shutCursor() };
   const refit=()=>document.querySelectorAll("#app .pstage > .shut").forEach(x=>x._fit&&x._fit());
   /* 무대가 없으면(다른 화면에서 왔다 등) 그냥 바꾼다 */
   if(!st0){ swap(); return }
-  SHUT_BUSY=1; shutBlock(true); addEventListener("resize",refit);
+  SHUT_BUSY=1; shutBlock(true); addEventListener("resize",refit); shutCursor();
   const dog=setTimeout(finish,SHUT.DOG);          /* 어디서 멈춰도 — 닫힌 채 갇히지 않게 */
   st0.classList.add("shutting");
   shutAttach(st0,0)._move(0,1,T.CLOSE,SHUT.EASE_CLOSE);
@@ -30109,8 +30127,48 @@ function shutRun(enter){
   },T.CLOSE+T.HOLD/2);
 }
 
+/* 장소 화면의 꾸밈 — 전체 화면 때 쓰던 `body.vnew #app …` 규칙(선택지 카드 그림 · 보상 카드 · 대원 줄 …)을
+   판 안쪽(.placebox .pin)으로 옮겨 한 번 깐다 (사용자 2026-10-30 「선택 카드 아트들 안 쓰고 왜 기본 버튼으로」).
+   body.vnew 를 켜면 화면 바탕 · #app 자리까지 바뀌어 지도가 무너진다 — 그래서 #app 안쪽 꾸밈만 베낀다.
+   style.css 를 고치면 저절로 따라온다. 판에 맞춘 크기(PLACE_FIT)는 그 뒤에 덮는다 */
+const PLACE_FIT=`
+body.vmap #app .placebox{--pk-ink:#f0e2c4;--pk-dim:#c7b696;--pk-faint:#a8977a}
+body.vmap #app .placebox .pin .rewards{gap:12px;margin-top:12px}
+body.vmap #app .placebox .pin .rw{width:172px;min-height:0;padding:20px 12px 16px}
+body.vmap #app .placebox .pin .rw .rwi img.ricon,body.vmap #app .placebox .pin .rw .rwi img.npx{width:56px;height:56px}
+body.vmap #app .placebox .pin .rw b{font-size:14px}
+body.vmap #app .placebox .pin .rw p{font-size:12px;line-height:1.55}
+body.vmap #app .placebox .pin .title{font-size:22px!important}
+body.vmap #app .placebox .pin .evbox>.evopts{margin-top:14px;gap:9px}
+body.vmap #app .placebox .pin .evbox>.party{margin-top:10px}
+body.vmap #app .placebox .pin>.center+.center,body.vmap #app .placebox .pin>.center+div{margin-top:12px}
+body.vmap #app .placebox .pin .rewards.chestgot{gap:22px;margin-top:16px}`;
+let PLACE_CSS=0;
+/* 고르개 묶음을 쉼표로 가른다 — :is( … , … ) 안의 쉼표는 가르지 않는다 */
+function splitSel(s){
+  const out=[]; let d=0, cur="";
+  for(const ch of s){ if(ch==="("||ch==="[") d++; else if(ch===")"||ch==="]") d--;
+    if(ch===","&&d===0){ out.push(cur.trim()); cur="" } else cur+=ch }
+  if(cur.trim()) out.push(cur.trim());
+  return out;
+}
+function placeCss(){
+  if(PLACE_CSS||typeof document==="undefined") return; PLACE_CSS=1;
+  const out=[], P="body.vmap #app .placebox .pin";
+  const walk=rules=>{ for(const r of rules){
+    if(r.cssRules&&r.media){ const keep=out.length; walk(r.cssRules); const got=out.splice(keep); if(got.length) out.push(`@media ${r.media.mediaText}{${got.join("")}}`); continue }
+    if(!r.selectorText||r.selectorText.indexOf("body.vnew #app")<0) continue;
+    const sel=splitSel(r.selectorText).map(s=>
+      s.startsWith("body.vnew #app ")?P+" "+s.slice(15):s.startsWith("body.vnew #app>")?P+">"+s.slice(15):null).filter(Boolean);
+    if(sel.length) out.push(`${sel.join(",")}{${r.style.cssText}}`) } };
+  for(const sh of document.styleSheets){ try{ walk(sh.cssRules) }catch(e){} }
+  const st=document.createElement("style"); st.id="placevnew"; st.textContent=out.join("\n")+PLACE_FIT;
+  document.head.appendChild(st);
+}
+
 /* 장소 화면 — 지도를 그대로 그리고, 가운데 무대만 장소로 갈아 끼운다 */
 function drawPlace(app){
+  placeCss();
   drawMap(app);
   const old=app.querySelector(".mb-mid .pstage"); if(!old) return;
   const st=old.cloneNode(false);                 /* 틀 · 바닥 변수만 — 지도 누름 · 손 커서 짝은 따라오지 않는다 */
