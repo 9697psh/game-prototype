@@ -7197,6 +7197,9 @@ const BGM=(()=>{
   let on=true, cur=null, want=null, unlocked=false;
   let a=null, b=null, live=null;   /* 두 개를 번갈아 쓴다 */
   let sting=null, hidden=false;
+  /* 내보내는 꼴 — 규칙은 `bgm/x.mp3` 로 **어느 곡인지**만 가리킨다. 실제로 나르는 파일은
+     압축한 `.opus` 다 (`tools/sound-pack.py`, 2026-10-29). 꼴은 트는 쪽의 일이라 여기서 바꾼다 */
+  const 파일=k=>String(BGM_SRC[k]||"").replace(/\.mp3$/,".opus");
   function make(){
     const e=new Audio(); e.loop=true; e.preload="none"; e.volume=0;
     e.addEventListener("error",()=>{},false);
@@ -7223,7 +7226,7 @@ const BGM=(()=>{
   function swap(key){
     els();
     const nxt=(live===a)?b:a, old=live;
-    nxt.src=BGM_SRC[key]; nxt.volume=0;
+    nxt.src=파일(key); nxt.volume=0;
     const p=nxt.play();
     /* src 를 바꾸면 앞서 부른 play() 가 AbortError 로 거절된다.
        화면을 빠르게 넘길 때 늘 나는 일이므로 잠그면 안 된다.
@@ -7258,7 +7261,7 @@ const BGM=(()=>{
     once(key){
       if(!on||!unlocked||!BGM_SRC[key]) return;
       try{ if(sting){ sting.pause() } }catch(e){}
-      sting=new Audio(BGM_SRC[key]); sting.volume=lv(key)*1.25;
+      sting=new Audio(파일(key)); sting.volume=lv(key)*1.25;
       if(live) fade(live,lv(cur)*0.35,300);
       const back=()=>{ sting=null; if(live) fade(live,lv(cur),700) };
       sting.addEventListener("ended",back);
@@ -24959,6 +24962,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 251, "v": "0.7", "d": "2026-10-29", "t": "배경음 압축 — 85MB → 44MB (Opus)", "big": 0},
  {"b": 250, "v": "0.7", "d": "2026-10-29", "t": "효과음 압축 — 37MB → 6.4MB (Ogg Vorbis)", "big": 0},
  {"b": 249, "v": "0.7", "d": "2026-10-29", "t": "대원 도감 · 끝 · 원정 기록 — 다시 재서 맞추고, 구멍 넷을 막다", "big": 0},
  {"b": 248, "v": "0.7", "d": "2026-10-28", "t": "제련소 · 장신구 · 가방 · 라운드 사이 · 퀘스트 — 잰 자리와 윗띠", "big": 0},
@@ -26401,7 +26405,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=250;
+const BUILD_NO=251;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
