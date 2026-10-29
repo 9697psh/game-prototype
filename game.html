@@ -24962,6 +24962,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 252, "v": "0.7", "d": "2026-10-29", "t": "예고 고침 — 이라 대가 치르기·악마의 가면, 파벨 다중 내려치기", "big": 0},
  {"b": 251, "v": "0.7", "d": "2026-10-29", "t": "배경음 압축 — 85MB → 44MB (Opus)", "big": 0},
  {"b": 250, "v": "0.7", "d": "2026-10-29", "t": "효과음 압축 — 37MB → 6.4MB (Ogg Vorbis)", "big": 0},
  {"b": 249, "v": "0.7", "d": "2026-10-29", "t": "대원 도감 · 끝 · 원정 기록 — 다시 재서 맞추고, 구멍 넷을 막다", "big": 0},
@@ -26405,7 +26406,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=251;
+const BUILD_NO=252;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -41192,6 +41193,11 @@ function iraClawFree(h,s){ return !!(s&&s.claw&&iraCharged(h)) }
    ⚠️ 충전을 쓰기 **전에** 물어야 한다. 그리고 배로 만드는 것은 **부르는 쪽**이다 —
       hurt 의 crit 인자는 「이미 치명타다」는 표시일 뿐이다 (domShackle 과 같은 결) */
 function iraMask(h){ return !!(h&&h.tag&&h.tag.demonMask&&iraCharged(h)) }
+/* 악마의 가면이 **이 기술에** 걸리나 — 할퀴기 · 찢어발기기 · 대가 치르기 (2026-10-29).
+   실제(iraClaw · iraRend · iraPay)는 셋 다 iraMask 로 묻고 한 대마다 두 배로 친다.
+   예고도 이 한 곳에 묻는다 — 예고가 할퀴기 · 찢어발기기 몫을 안 세고 있었다 (probe-foretell).
+   ⚠️ critWhy 에 넣지 않는다 — breakdown 이 critWhy 를 불러 이미 두 배를 하므로 실제가 네 배가 된다 */
+function iraMaskCrit(h,s){ return !!(s&&(s.claw||s.rend||s.payPrice)&&iraMask(h)) }
 /* 체력으로 치른다 — **피해가 아니라 비용**이다 (사용자 2026-10-12).
    보호막 · 부정 보호막 · 갑피가 끼지 않고, 가시 · 보복도 되돌아오지 않는다.
    ⚠️ 모자라도 막지 않는다 — 치르고 쓰러진다. 쓰러짐만 집안의 한 길(unitDown)로 보낸다. */
@@ -41804,6 +41810,13 @@ function predictDmg(h,s,tgt){
 
   if(s.n==="방패 밀치기"&&!(h.tag&&h.tag.pushAll)&&near0&&tgt!==near0) return null;   /* 가장 가까운 적만 */
   if(s.justice)          dmg=h.shield||0;
+  /* 이라 「대가 치르기」 — **충전일 때만** 모든 적을 때린다. 실제(`iraPay`)와 **같은 물음 · 같은 셈**.
+     예고가 이 기술을 몰라서 「모든 적 피해」로만 셈했다 — 충전이 아니면 예고 3 / 실제 0,
+     충전이면 한 번 몫만 보였다 (probe-foretell, 2026-10-29). 반복 수도 실제와 같이 2 (+날 선 대가) */
+  else if(s.payPrice){ if(!iraCharged(h)) return null;
+    dmg=breakdown(h,s,"dmg").total+((h.tag&&h.tag.payHitUp)||0);
+    if(iraMaskCrit(h,s)){ dmg*=2; crit=1 }   /* 악마의 가면 — 충전이면 한 대마다 치명타 (iraMaskCrit 한 곳) */
+    times=2+((h.tag&&h.tag.payRepeat)||0) }
   /* 플레어와 플로우 — 균형은 플레어일 때만 때리고, 조화는 마법력+보호력에 플레어면 치명타 */
   else if(s.balance){ if(!ffFlare(h)) return null; dmg=bs("dmg")+MAG+(h.balFirst||0) }
   else if(s.harmony){ dmg=bs("dmg")+MAG+(h.def||0); if(critWhy(h,s,tgt)){ dmg*=2; crit=1 } }   /* 플레어 · 부조화 — critWhy 한 곳에서 (2026-10-09) */
@@ -41852,6 +41865,9 @@ function predictDmg(h,s,tgt){
     if(h.tag.pressAtk&&dist(h.slot,tgt.slot)>2) return null;
     if(s.bait&&driftHas(tgt.slot)) return null;   /* 미끼 던지기 — 기류 자리는 안 맞는다 (2026-10-14) */
     dmg=bs("dmg")+ATK+(s.slam?(h.mag||0):0);   /* 지면 내려치기 — 실제(runEffect)와 같은 셈 */
+    /* 다중 내려치기 — 실제는 **한 번 더**(1 + slamTwice 번) 쏜다. 예고가 한 번 몫만 보였다
+       (probe-foretell : 예고 22 / 실제 44, 2026-10-29) */
+    if(s.slam&&h.tag&&h.tag.slamTwice) times=1+h.tag.slamTwice;
     if(critWhy(h,s,tgt)){ dmg*=2; crit=1 }   /* 지진파 따위 — 실제와 같은 자리에서 (2026-10-13) */
     if(h.name==="이테리오"&&s.n==="팽창 공격"&&(tgt.mark||0)>0&&h.tag.aimFix) dmg+=h.tag.aimFix;
     if(h.name==="이테리오"&&itCritEl(h,s)&&(tgt.mark||0)>0){ dmg=Math.round(dmg*itCritX(h)); crit=1 }
@@ -41885,6 +41901,7 @@ function predictDmg(h,s,tgt){
       dmg+=h.tag.reiEcho;
     { if(critOnce(h,s)){ dmg*=2; crit=1 } MAINC=1 }   /* 치명적인 공격 · 마법 — 그 전투의 첫 한 방. 예고는 닳게 하지 않는다 (critOnce 한 곳에서 묻는다) */
     if(!crit&&critWhy(h,s,tgt)){ dmg*=2; crit=1 }   /* 보상으로 걸리는 치명타 — 실제와 같은 자리에서 묻는다 (2026-10-09) */
+    if(!crit&&iraMaskCrit(h,s)){ dmg*=2; crit=1 }   /* 이라 악마의 가면 — 할퀴기 · 찢어발기기 (2026-10-29) */
     if(h.name==="그슨대"&&h.hide&&s.el==="공격"){ dmg*=2; crit=1 }
     if(h.name==="데린저"){
       /* 저격소총 — 「2(추가 † + 대상과의 거리)」. runEffect 와 **같은 차례**여야 예고가 맞는다
