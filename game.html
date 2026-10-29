@@ -342,6 +342,7 @@ img.pxs.face{image-rendering:pixelated;width:auto;filter:drop-shadow(0 2px 0 rgb
 .setbox .vopt{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 0;font-size:12.5px}
 .setbox .vopt button,.setbox .vhelp{font-size:12px;padding:4px 10px}
 .setbox .vhelp{width:100%;margin-top:2px}
+.setbox .vwin{font:inherit;font-size:12px;padding:3px 6px;color:#e8d6ae;background:#2a2219;border:1px solid rgba(201,162,39,.45);border-radius:3px;color-scheme:dark;cursor:pointer}
 .claimbox{position:absolute;left:50%;top:30%;transform:translate(-50%,-50%);z-index:55;animation:claimIn .45s ease-out both}
 .claimbox button.claim{font-size:22px;padding:14px 46px;letter-spacing:.06em;animation:claimPulse 1.4s ease-in-out infinite}
 .rwskip{display:flex;justify-content:center;align-items:stretch;gap:10px;margin-top:18px}
@@ -3943,6 +3944,10 @@ body.vmap #hSkip{display:none}
 body.vmap .wrap{padding:0}
 body.vmap .mtop{position:relative;z-index:6;margin:0;padding:6px 0 0}
 body.vmap .mtop .mtrow{justify-content:center}
+/* 날짜 · 구역 이름 · 시각 — 천막 아래, 양피지 틀 위의 빈 띠 가운데로 (사용자 2026-10-29).
+   바탕(.mboard)이 화면에 늘어나므로 그 띠도 화면 높이를 따른다 : 천막 끝 9.4vh · 틀 위 18.4vh → 가운데 13.9vh.
+   글줄의 가운데는 원래 39px — 자리만 옮기고 흐름(아래 지도)은 그대로 두려고 transform 으로 */
+body.vmap .mtop .mtrow{transform:translateY(calc(13.9vh - 39px))}
 .mtop .mphase{font-family:var(--serif);font-size:15px;color:#e8d6ae;letter-spacing:.06em;text-shadow:0 1px 0 #000,0 0 6px #000}
 .mtop .mphase.night{color:#c9c0f0}
 /* 원정 시간 — 틀 왼쪽 아래 (시안) */
@@ -11200,7 +11205,8 @@ function resDefeatFX(msg){
   const L=resAdd({z:9650,end:2900,keep:()=>!gone,
     draw:(ctx,t)=>{
       if(RES_OK!==1) return;
-      const W=innerWidth, H=innerHeight, sy=H/408, M=rMap(sy,382,0,W/2,0);
+      /* 석판 · 석편 · 아래 글 묶음(논리 45~132)의 가운데(88)를 화면 가운데에 (사용자 2026-10-29 「밑으로 내려 중앙에」) */
+      const W=innerWidth, H=innerHeight, sy=H/408, M=rMap(sy,382,88,W/2,H/2);
       const wl=Math.round(112*rOut(rSeg(t,1100,1900))), wr=Math.round(112*rOut(rSeg(t,1250,2050)));   /* 오른쪽은 150ms 늦게 (비대칭) */
       if(wl>0){ ctx.save(); ctx.beginPath(); ctx.rect(0,0,wl*sy,H); ctx.clip(); rImg(ctx,"defeat-left",0,0,112*sy,H); ctx.restore() }
       if(wr>0){ ctx.save(); ctx.beginPath(); ctx.rect(W-wr*sy,0,wr*sy,H); ctx.clip(); rImg(ctx,"defeat-right",W-112*sy,0,112*sy,H); ctx.restore() }
@@ -24922,6 +24928,10 @@ function drawTitle(app){
   { const n=loadRuns().length; link(`원정 기록${n?` <small>${n}판</small>`:""}`,"",()=>{ RUNS_OPEN=null; view="runs"; render() }) }
   link("대원","",()=>{ CODEX.pick=playableHeroes()[0]; view="codex"; render() });   /* 훈련장 → 대원 (사용자 2026-10-06) */
   link("도감","",()=>{ DEX_BACK="title"; view="dex"; render() });
+  /* 맨 밑 — 나가기 = 게임 끄기 (사용자 2026-10-29). 데스크톱 앱에서만 — 브라우저는 스크립트로 탭을 닫지 못한다.
+     새 껍데기는 preload 의 `균열창.나가기`, 옛 껍데기는 window.close (Electron 창은 그것으로 닫힌다) */
+  if(/Electron/.test(navigator.userAgent||""))
+    link("나가기","",()=>{ const W=window.균열창; if(W&&W.나가기) W.나가기(); else window.close() });
   /* 왼쪽 아래 — 문구 수정 */
   const bl=el(`<div class="tcorner l"></div>`); app.appendChild(bl);
   link("문구 수정","small",()=>{ view="text"; render() },bl);
@@ -25337,6 +25347,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 263, "v": "0.7", "d": "2026-10-29", "t": "원정 실패 가운데 · 지도 글줄 · 화면 크기 설정 · 나가기", "big": 0},
  {"b": 262, "v": "0.7", "d": "2026-10-29", "t": "처음 펼침 페이드인", "big": 0},
  {"b": 261, "v": "0.7", "d": "2026-10-29", "t": "처음 펼침 덮개 · 승리 강조 · 원정 실패 5초", "big": 0},
  {"b": 260, "v": "0.7", "d": "2026-10-29", "t": "승리 연출 · 전투 전리품 · 덮개 속도", "big": 0},
@@ -26791,7 +26802,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=262;
+const BUILD_NO=263;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -41195,6 +41206,8 @@ function setPanel(anchor){
     <div class="vopt"><span>연출 속도</span><button class="vspd">${SPD<1?"빠르게 ▶▶":"보통 ▶"}</button></div>
     <div class="vopt"><span>처치 임팩트</span><button class="vkimp">${KIMP?"켬":"끔"}</button></div>
     <div class="vopt"><span>전투 대사</span><button class="vbark">${BARK_SHOW?"켬":"끔"}</button></div>
+    <div class="vhd">화면</div>
+    <div class="vopt"><span>화면 크기</span><select class="vwin"></select></div>
     <div class="vhd">도움말</div>
     <button class="vhelp">단축키와 요령 보기 (? 키)</button>
   </div>`);
@@ -41208,11 +41221,30 @@ function setPanel(anchor){
   b.querySelector(".vkimp").onclick=ev=>{ ev.stopPropagation(); setKimp(!KIMP); ev.currentTarget.textContent=KIMP?"켬":"끔"; SFX.play("click") };
   b.querySelector(".vbark").onclick=ev=>{ ev.stopPropagation(); setBarkShow(!BARK_SHOW); ev.currentTarget.textContent=BARK_SHOW?"켬":"끔"; SFX.play("click") };
   b.querySelector(".vhelp").onclick=ev=>{ ev.stopPropagation(); b.remove(); HELP_ON=true; drawHelp() };
+  winSizeSel(b.querySelector(".vwin"));
   b.onclick=ev=>ev.stopPropagation();
   document.body.appendChild(b);
   const r=anchor.getBoundingClientRect(), W=innerWidth||document.documentElement.clientWidth||9999;
   b.style.top=(r.bottom+6)+"px"; b.style.left=Math.max(6,Math.min(W-b.offsetWidth-6,r.right-b.offsetWidth))+"px";
   setTimeout(()=>{ const off=e=>{ if(!b.contains(e.target)){ b.remove(); document.removeEventListener("mousedown",off) } }; document.addEventListener("mousedown",off) },0);
+}
+/* 화면 크기 (사용자 2026-10-29 : 「전체 화면이랑 1920×1080 같은 규격」).
+   데스크톱 껍데기(desktop/preload.js 의 `균열창`)면 창 크기를 고르고 — 모니터에 들어가는 규격만 껍데기가 내놓는다.
+   브라우저 · 옛 껍데기면 전체 화면 켬/끔 둘뿐 (창 크기는 브라우저가 쥔다). 게임은 어느 크기든 1600×900 을 늘려 그린다 */
+function winSizeSel(s){
+  if(!s) return;
+  const fill=(L,now)=>{ s.innerHTML=L.map(o=>`<option value="${o.값}"${o.값===now?" selected":""}>${o.글}</option>`).join("") };
+  s.onclick=ev=>ev.stopPropagation();
+  const W=window.균열창;
+  if(W&&W.목록){
+    W.목록().then(r=>fill(r.목록,r.지금)).catch(()=>{});
+    s.onchange=()=>{ SFX.play("click"); W.바꾸기(s.value) };
+    return;
+  }
+  const full=()=>document.fullscreenElement?"full":"win";
+  fill([{값:"full",글:"전체 화면"},{값:"win",글:"창"}],full());
+  s.onchange=()=>{ SFX.play("click");
+    try{ if(s.value==="full") document.documentElement.requestFullscreen().catch(()=>{}); else if(document.fullscreenElement) document.exitFullscreen() }catch(e){} };
 }
 /* ⚠️ 소리 크기 판(volPanel)은 2026-10-13 에 지웠다 — 머리띠 「설정」(setPanel) 이 그 일을 한다.
    「소리 크기 판에 문이 없다」고 적혀 있던 것은 **이 죽은 짝**을 보고 적은 것이었다.
