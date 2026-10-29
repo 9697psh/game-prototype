@@ -1835,6 +1835,26 @@ body.vbattle .tornado{transform:scale(4.6);margin-top:14px}   /* 회오리도 �
 @keyframes boIn{to{opacity:1}}
 .blackout.out{animation:boOut .7s ease-out forwards}
 .blackout.gate{pointer-events:auto}   /* 칸에 들어서는 암전 — 걷힐 때까지 누름을 삼킨다 */
+/* ── 탐험 탁자 덮개 (src/fx/cover-gate.js, 사용자 2026-10-29) — 승인된 시제품(prototype/style.css)의 값 그대로.
+   쉬는 동안(지도의 경첩)은 밤 장막(250) · 암전(300) 아래, 도는 동안(.busy)은 맨 위에서 누름을 먹는다 */
+#covergate{position:fixed;inset:0;z-index:240;pointer-events:none}
+#covergate.busy{z-index:9700;pointer-events:auto}
+#covergate .cg-perim{position:absolute;box-shadow:0 0 0 300vmax #080908;opacity:0;pointer-events:none}
+#covergate .cg-clip{position:absolute;overflow:hidden;pointer-events:none}
+#covergate .cg-stage{position:absolute;left:0;top:0;width:1920px;height:1026px;transform-origin:0 0;isolation:isolate}
+#covergate .cg-space{position:absolute;inset:0;perspective:4720px;perspective-origin:50% 50%;z-index:4}
+#covergate .cg-cover{position:absolute;top:88px;width:928px;height:840px;transform-style:preserve-3d;will-change:transform}
+#covergate .cg-face{position:absolute;inset:0;background-repeat:no-repeat;background-size:1024px 896px;background-position:-48px -28px;image-rendering:pixelated;backface-visibility:hidden}
+#covergate .cg-face::after{content:"";position:absolute;inset:0;background:#050403;opacity:var(--shade,0);pointer-events:none}
+#covergate .cg-face.inner{transform:translateZ(-16px) rotateY(180deg) scaleX(-1)}
+#covergate .cg-mhinge{position:absolute;inset:0;background-size:1024px 896px;background-position:-48px -28px;backface-visibility:hidden;transform:translateZ(.2px);image-rendering:pixelated}
+#covergate .cg-edge{position:absolute;background-size:1024px 896px;background-position:-48px -28px;image-rendering:pixelated;backface-visibility:hidden}
+#covergate .cg-edge.v{width:16px;height:840px;transform-origin:0 0}
+#covergate .cg-edge.h{width:928px;height:16px;transform-origin:0 0}
+#covergate .cg-under{position:absolute;left:920px;top:0;width:16px;height:840px;background-size:1024px 896px;background-position:-968px -28px;transform:translateZ(-16.5px);image-rendering:pixelated}
+#covergate .cg-fixed{position:absolute;inset:0;z-index:3;pointer-events:none}
+#covergate .cg-fix{position:absolute;top:60px;width:1024px;height:896px;max-width:none;image-rendering:pixelated}
+#covergate .cg-shadow{position:absolute;top:88px;height:840px;background:#000;opacity:0;z-index:1;box-shadow:0 0 48px 22px #0008;pointer-events:none}
 @keyframes boOut{from{opacity:1}to{opacity:0}}
 .daycard{position:fixed;inset:0;z-index:310;display:flex;flex-direction:column;
   align-items:center;justify-content:center;gap:6px;pointer-events:none;
@@ -24225,6 +24245,7 @@ function render(){
   nightVeil();
   const oldFoes=foeSlideBefore(),oldIdle=idleFramesBefore(),oldMap=mapPanelBefore();
   render0();
+  if(typeof coverIdle==="function") coverIdle();   /* 탐험 탁자 덮개 — 지도에서만 경첩 (그린 판 자리에 맞춘다) */
   idleFramesAfter(oldIdle);mapPanelAfter(oldMap);
   foeSlideAfter(oldFoes);
   directorVisualSync();
@@ -24964,6 +24985,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 256, "v": "0.7", "d": "2026-10-29", "t": "탐험 탁자 덮개 — 지도와 전투 · 상점 · 제련소 사이", "big": 0},
  {"b": 255, "v": "0.7", "d": "2026-10-29", "t": "데스크톱 판 스스로 받기", "big": 0},
  {"b": 254, "v": "0.7", "d": "2026-10-29", "t": "이라 복수 명단", "big": 0},
  {"b": 253, "v": "0.7", "d": "2026-10-29", "t": "오리온 미끼 던지기 예고에 사냥개 몫", "big": 0},
@@ -26411,7 +26433,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=255;
+const BUILD_NO=256;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -29247,8 +29269,187 @@ function nightVeil(){
   const on=!!(run&&run.night&&!run.lost&&view==="map");   /* 지도 화면에서만 (사용자 2026-09-15 — 전투는 밝게) */
   v.classList.toggle("on",on);
 }
-/* 어두워지고(0.55초) → fn 으로 화면을 바꾸고 → 걷힌다(0.7초). 그동안 누름은 먹지 않는다 */
+/* 어두워지고(0.55초) → fn 으로 화면을 바꾸고 → 걷힌다(0.7초). 그동안 누름은 먹지 않는다.
+   지도 ↔ 전투 · 상점 · 제련소 는 암전 대신 **탐험 탁자 덮개** (cover-gate.js — 고르는 것도 거기) */
+/* ═══════════ 탐험 탁자 덮개 — 지도 ↔ 전투 · 상점 · 제련소 (사용자 2026-10-29) ═══════════
+   받은 아트 : GameProject2/art/ui/map-table-hinged-covers-v1 (부품 15장 → art/지도/덮개-*.png, 바이트 그대로).
+   승인된 시제품(prototype/preview.js)의 움직임을 그대로 옮겼다 — 조절 UI · 배경 예시는 빼고 전환만.
+
+   ★ 고르는 것은 **fadeInto 한 곳**이다 (veil-fade.js). 규칙은 한 줄도 안 바뀐다 —
+     시뮬 · 유니티 뭉치는 fadeInto 를 「바로 실행」으로 바꿔 끼우므로 이 파일을 아예 안 탄다.
+       · 지도에서 전투 · 상점 · 제련소 칸에 들어설 때      → 덮개 (그 칸의 갈래로 안다 : COVER_CELL)
+       · 그렇게 나간 길이 지도로 돌아올 때 (toMap)          → 덮개 (보상 · 상자 화면을 거쳐 와도 마지막 한 번)
+       · 나머지 (미지의 구역 · 쉼터 · 기믹 …)               → 원래 암전 그대로
+   ★ 순서 : 닫힘 420ms → 닫힌 채 160ms → fn() 으로 화면을 바꾼다 → 첫 그림 · 그림 파일을 기다린다(최대 1.5초) → 열림 560ms.
+     fn 은 **한 번만** 부른다. 도는 동안 누름 · 키는 먹는다. 도중에 또 부르면 줄을 세워 끝난 뒤에 한다.
+   ★ 경첩 — 지도에서는 제자리. 전투 · 상점 · 제련소에서는 열림 끝(100~150°)에 덮개와 함께 좌우 화면 밖으로 112px 밀려난다
+     (사용자가 승인한 슬라이드. display:none · 투명도로 갑자기 지우지 않는다). 거기서 다시 떠나면 역순으로 들어오며 닫힌다.
+   ★ 자리 — 덮개 기준 캔버스 1920×1026 을 지도 판(.mboard)처럼 **창 전체**에 한 변환으로 얹는다 (coverPlace).
+     덮개가 가리는 것은 [32,88,1888,928) 뿐이라, 그 바깥은 둘레 가림(.cg-perim)이 닫히기 전에 검게 덮는다.
+   ⚠️ 덮개는 지도 판 그림(MAP_BOARD)이 아니라 GameProject2 의 「탁자 v2」에 맞춰 그려졌다 — 판 그림은 안 바꿨다.
+   ⚠️ 그림을 못 읽으면 덮개를 안 쓰고 원래 암전으로 간다. 움직임 줄이기면 움직이지 않고 바로 바꾼다. */
+const CV={W:1920,H:1026,TOP:88,BW:928,BH:840,OPEN:150,CLOSE_MS:420,HOLD_MS:160,OPEN_MS:560,SLIDE:112,PERSP:4720,WAIT_MS:1500};
+const COVER_CELL={dungeon:1,elite:1,boss:1,shop:1,dryshop:1,forge:1};   /* 들어서면 전투 · 상점 · 제련소가 되는 칸 */
+const CV_PARTS=["outer","inner","edge-vertical","edge-horizontal","hinge-fixed","hinge-moving","hinge-pin"];
+let CV_ROOT=null, CV_OK=0, CV_ANG=CV.OPEN, CV_AWAY=0, CV_BUSY=0, CV_TRIP=null, CV_NEXT=[];
+const cvPng=n=>mapPng("덮개-"+n+".png");
+
+/* 그림 15장을 미리 풀어 둔다 — 다 풀려야(CV_OK=1) 덮개를 쓴다. 하나라도 못 읽으면 -1 (원래 암전) */
+function coverLoad(){
+  if(CV_OK) return;
+  CV_OK=0.5;
+  const L=[];
+  ["left","right"].forEach(s=>CV_PARTS.forEach(p=>L.push(s+"-"+p)));
+  L.push("left-center-underlap");
+  Promise.all(L.map(n=>new Promise((ok,no)=>{ const im=new Image();
+    im.onload=()=>(im.decode?im.decode():Promise.resolve()).then(ok,ok); im.onerror=()=>no(n); im.src=cvPng(n) })))
+    .then(()=>{ CV_OK=1; coverIdle() }, n=>{ CV_OK=-1; console.warn("덮개 그림을 못 읽었다 — 원래 암전으로 : "+n); coverIdle() });
+}
+
+/* 판을 짓는다 (한 번). 시제품의 #stage 구조 그대로 — 덮개 그룹은 바깥 세로축에서 돈다 */
+function coverBuild(){
+  if(CV_ROOT) return CV_ROOT;
+  const root=document.createElement("div"); root.id="covergate";
+  root.innerHTML=`<div class="cg-perim"></div><div class="cg-clip"><div class="cg-stage">
+    <div class="cg-shadow l"></div><div class="cg-shadow r"></div><div class="cg-fixed"></div><div class="cg-space"></div></div></div>`;
+  const space=root.querySelector(".cg-space"), fixed=root.querySelector(".cg-fixed");
+  const layer=(par,cls,file,st)=>{ const d=document.createElement("div"); d.className=cls;
+    d.style.backgroundImage=`url("${cvPng(file)}")`; if(st) Object.assign(d.style,st); par.appendChild(d); return d };
+  ["left","right"].forEach(side=>{ const left=side==="left";
+    const c=document.createElement("div"); c.className="cg-cover "+side;
+    c.style.left=(left?32:960)+"px"; c.style.transformOrigin=left?"0px 420px":"928px 420px";
+    space.appendChild(c);
+    layer(c,"cg-face outer",side+"-outer"); layer(c,"cg-face inner",side+"-inner"); layer(c,"cg-mhinge",side+"-hinge-moving");
+    layer(c,"cg-edge v",side+"-edge-vertical",{left:"928px",transform:"rotateY(90deg)"});
+    layer(c,"cg-edge v",side+"-edge-vertical",{left:"0px",transform:"translateZ(-16px) rotateY(-90deg)"});
+    layer(c,"cg-edge h",side+"-edge-horizontal",{top:"0px",transform:"rotateX(-90deg)"});
+    layer(c,"cg-edge h",side+"-edge-horizontal",{top:"840px",transform:"translateZ(-16px) rotateX(90deg)"});
+    if(left) layer(c,"cg-under","left-center-underlap");
+    ["fixed","pin"].forEach(t=>{ const im=document.createElement("img"); im.className="cg-fix "+side; im.alt="";
+      im.draggable=false; im.src=cvPng(side+"-hinge-"+t); im.style.left=(left?-16:912)+"px"; fixed.appendChild(im) });
+  });
+  /* 도는 동안 키를 먹는다 — 누름은 판 자체가 먹는다 (pointer-events) */
+  window.addEventListener("keydown",e=>{ if(CV_BUSY){ e.stopImmediatePropagation(); e.preventDefault() } },true);
+  window.addEventListener("resize",()=>{ if(CV_ROOT&&CV_ROOT.style.display!=="none") coverPlace() });
+  document.body.appendChild(root);
+  CV_ROOT=root; return root;
+}
+
+/* 판 자리 — 창 전체. 지도 판(.mboard)이 그림을 **창 전체로 늘려** 깐다 (1600×900 이면 판도 1600×900, 잰 값 2026-10-29).
+   덮개 캔버스 1920×1026 도 같은 한 변환(scale sx,sy)으로 늘린다 — 부품마다 따로 맞추지 않는다.
+   어느 화면에서든 같은 자리라 닫힌 채 화면이 바뀌어도 덮개가 튀지 않는다 */
+function coverPlace(){
+  if(!CV_ROOT) return;
+  const W=innerWidth, H=innerHeight, sx=W/CV.W, sy=H/CV.H;
+  const clip=CV_ROOT.querySelector(".cg-clip"), per=CV_ROOT.querySelector(".cg-perim");
+  Object.assign(clip.style,{left:"0px",top:"0px",width:W+"px",height:H+"px"});
+  CV_ROOT.querySelector(".cg-stage").style.transform=`scale(${sx},${sy})`;
+  /* 둘레 가림 — 덮개가 가리는 칸 [32,88,1888,928) 바깥을 화면 끝까지.
+     ⚠️ 3px 안쪽으로 들여 덮개 **밑에** 겹친다 — 배율 때문에 경계가 픽셀 사이에 걸리면 둘 다 반만 칠해져
+        아래 화면이 1px 새었다 (shot-cover-gate ② 가 잡았다) */
+  const IN=3;
+  Object.assign(per.style,{left:(32*sx+IN)+"px",top:(CV.TOP*sy+IN)+"px",width:(1856*sx-IN*2)+"px",height:(CV.BH*sy-IN*2)+"px"});
+}
+
+/* 각도 하나로 다 맞춘다 (시제품 setAngle + updateHardwareVisibility) */
+function coverAngle(a){
+  CV_ANG=Math.max(0,Math.min(CV.OPEN,a));
+  if(!CV_ROOT) return;
+  const rad=CV_ANG*Math.PI/180;
+  const covers=CV_ROOT.querySelectorAll(".cg-cover");
+  covers.forEach(c=>c.style.setProperty("--shade",String(Math.sin(rad)*.33)));
+  CV_ROOT.querySelector(".cg-perim").style.opacity=String(Math.max(0,1-CV_ANG/80));   /* 바꾸기 전에 둘레는 완전히 검다 */
+  const w=Math.max(0,928*Math.cos(rad)), op=Math.sin(rad)*.45;
+  CV_ROOT.querySelectorAll(".cg-shadow").forEach(sh=>{ const l=sh.classList.contains("l");
+    sh.style.width=w+"px"; sh.style.left=(l?32:1888-w)+"px"; sh.style.opacity=String(w>0?op:0) });
+  /* 경첩과 덮개를 함께 밀어낸다 — 목적지에서만 (지도는 0) */
+  const p=CV_AWAY?Math.max(0,Math.min(1,(CV_ANG-100)/50)):0, sl=CV.SLIDE*p*p*(3-2*p);
+  CV_ROOT.querySelectorAll(".cg-fix").forEach(im=>im.style.transform=`translateX(${im.classList.contains("left")?-sl:sl}px)`);
+  covers[0].style.transform=`translateX(${-sl}px) rotateY(${-CV_ANG}deg)`;
+  covers[1].style.transform=`translateX(${sl}px) rotateY(${CV_ANG}deg)`;
+}
+
+function coverTween(to,ms){
+  const from=CV_ANG;
+  return new Promise(ok=>{ let t0=null;
+    const step=now=>{ if(t0==null) t0=now;
+      const p=Math.min(1,(now-t0)/Math.max(1,ms)), e=p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
+      coverAngle(from+(to-from)*e);
+      if(p<1) requestAnimationFrame(step); else ok() };
+    requestAnimationFrame(step) });
+}
+/* 게임의 연출 빠르기(SPD — 설정 「빠르게」면 0.5)를 곱한다. 보통은 1 이라 위 수치 그대로 */
+const cvK=()=>(typeof SPD==="number"&&SPD>0)?SPD:1;
+const cvWait=ms=>new Promise(ok=>setTimeout(ok,ms));
+const cvFrames=()=>new Promise(ok=>requestAnimationFrame(()=>requestAnimationFrame(ok)));
+
+/* 새 화면이 쓰는 그림이 다 풀릴 때까지 (그림 태그 · style 의 url) — 늦으면 WAIT_MS 에서 그냥 연다 */
+function coverReady(){
+  const app=document.getElementById("app"); if(!app) return cvFrames();
+  const urls=new Set();
+  app.querySelectorAll("img").forEach(i=>{ if(i.src&&!i.complete) urls.add(i.src) });
+  app.querySelectorAll('[style*="url("]').forEach(x=>{ const m=String(x.getAttribute("style")).match(/url\(["']?([^"')]+)/g);
+    (m||[]).forEach(u=>{ const s=u.replace(/^url\(["']?/,""); if(!/^data:/.test(s)) urls.add(s) }) });
+  const all=Promise.all([...urls].slice(0,40).map(u=>new Promise(ok=>{ const im=new Image();
+    im.onload=()=>(im.decode?im.decode():Promise.resolve()).then(ok,ok); im.onerror=ok; im.src=u })));
+  return Promise.race([all.then(cvFrames),cvWait(CV.WAIT_MS)]);
+}
+
+/* 고르기 — fadeInto 가 묻는다. 덮개를 쓸 길이면 true */
+function coverWants(){
+  if(typeof run==="undefined"||!run||CV_OK<0) return false;
+  if(view==="map"){ const p=run.pos, c=p&&run.grid&&run.grid[p.r]&&run.grid[p.r][p.c];
+    return !!(c&&COVER_CELL[c.t]&&!c.done) }
+  return CV_TRIP===run;   /* 덮개로 나간 길이 지도로 돌아온다 (toMap — fadeInto 의 다른 손님은 이것뿐) */
+}
+
+/* 덮개 전환 — fn 은 정확히 한 번. 무슨 일이 나도 마지막에는 열고 누름을 돌려준다 */
+async function coverInto(fn){
+  if(CV_BUSY){ CV_NEXT.push(fn); return }   /* 도는 중 — 끝난 뒤에 (fn 을 두 번 부르거나 버리지 않는다) */
+  coverBuild(); CV_BUSY=1;
+  const root=CV_ROOT; root.classList.add("busy"); root.style.display=""; coverPlace();
+  let done=false;
+  const run1=()=>{ if(done) return; done=true; try{ fn() }catch(e){ console.error(e) } };
+  const dog=setTimeout(()=>{ run1(); CV_AWAY=view!=="map"?1:0; coverAngle(CV.OPEN); coverEnd() },6000*Math.max(1,cvK()));   /* 어디서 멈춰도 6초면 푼다 */
+  try{
+    const reduce=matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if(reduce||CV_OK!==1){ run1(); CV_AWAY=view!=="map"?1:0; coverAngle(CV.OPEN) }
+    else {
+      const k=cvK();
+      await coverTween(0,CV.CLOSE_MS*k);                       /* 경첩이 밖에 나가 있었으면 들어오며 닫힌다 */
+      await cvWait(CV.HOLD_MS*k);
+      run1();
+      CV_AWAY=view!=="map"?1:0;
+      coverPlace();
+      await coverReady();
+      await coverTween(CV.OPEN,CV.OPEN_MS*k);
+    }
+  }catch(e){ console.error(e); run1(); coverAngle(CV.OPEN) }
+  finally{ clearTimeout(dog); coverEnd() }
+}
+function coverEnd(){
+  if(!CV_BUSY) return;
+  CV_BUSY=0;
+  if(CV_ROOT) CV_ROOT.classList.remove("busy");
+  CV_TRIP=(typeof run!=="undefined"&&run&&view!=="map")?run:null;
+  coverIdle();
+  const nx=CV_NEXT.shift(); if(nx) setTimeout(()=>fadeInto(nx),0);
+}
+
+/* 쉬는 동안 — 지도에서만 경첩이 보인다 (덮개는 열린 채 판 밖). 다른 화면에서는 판을 접어 둔다.
+   render() 가 그릴 때마다 부른다 */
+function coverIdle(){
+  if(typeof document==="undefined") return;
+  if(!CV_OK) coverLoad();
+  if(CV_BUSY) return;
+  const on=CV_OK===1&&typeof run!=="undefined"&&!!run&&view==="map";
+  if(view==="map") CV_TRIP=null;   /* 지도에 섰으면 나간 길은 끝났다 (구역 넘김 등 다른 길로 왔어도) */
+  if(!on){ if(CV_ROOT) CV_ROOT.style.display="none"; return }
+  coverBuild(); CV_ROOT.style.display=""; CV_AWAY=0;
+  coverPlace(); coverAngle(CV.OPEN);
+}
 function fadeInto(fn){
+  if(typeof coverInto==="function"&&(CV_BUSY||coverWants())){ coverInto(fn); return }   /* 도는 중이면 줄을 선다 */
   document.querySelectorAll(".blackout.gate").forEach(x=>x.remove());
   const bo=el(`<div class="blackout gate"></div>`);
   document.body.appendChild(bo);
