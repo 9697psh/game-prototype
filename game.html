@@ -1839,7 +1839,8 @@ body.vbattle .tornado{transform:scale(4.6);margin-top:14px}   /* 회오리도 �
    쉬는 동안(지도의 경첩)은 밤 장막(250) · 암전(300) 아래, 도는 동안(.busy)은 맨 위에서 누름을 먹는다 */
 #covergate{position:fixed;inset:0;z-index:240;pointer-events:none}
 #covergate.busy{z-index:9700;pointer-events:auto}
-#covergate .cg-perim{position:absolute;box-shadow:0 0 0 300vmax #080908;opacity:0;pointer-events:none}
+#covergate .cg-perim{position:absolute;background-color:#080908;background-repeat:no-repeat;background-size:100% 100%;image-rendering:pixelated;opacity:0;pointer-events:none}   /* 둘레 = 지도 판 그림 (사용자 2026-10-29) */
+#covergate.night .cg-perim::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,rgba(10,12,30,.10),rgba(4,5,16,.42) 100%)}   /* #nightveil 과 같은 빛 */
 #covergate .cg-clip{position:absolute;overflow:hidden;pointer-events:none}
 #covergate .cg-stage{position:absolute;left:0;top:0;width:1920px;height:1026px;transform-origin:0 0;isolation:isolate}
 #covergate .cg-space{position:absolute;inset:0;perspective:4720px;perspective-origin:50% 50%;z-index:4}
@@ -6358,7 +6359,8 @@ const SFX=(()=>{
   function sndRand(){ SRND=(SRND*16807)%2147483647; return (SRND-1)/2147483646 }
   const SDEAD={};
   const LIVE={};   /* 이름 → 지금 울리는 녹음들 (stop 이 쓴다) */
-  function sample(k0,lp){
+  /* o.from — 이 초부터 튼다 (앞을 건너뛴다) · o.v — 음량에 곱한다. 탁자 덮개 소리가 쓴다 (2026-10-29) */
+  function sample(k0,lp,o){
     const k=pick(k0);
     const d=(typeof SND!=="undefined")&&SND[k]; if(!d) return false;
     /* 한 번 못 받은 것은 다시 붙들지 않는다 — 합성음으로 내려보낸다.
@@ -6367,6 +6369,18 @@ const SFX=(()=>{
     /* 처음 한 번만 받아 두고, 틀 때마다 복제해서 튼다.
        복제본은 받아 둔 것을 다시 쓰므로 두 번 내려받지 않는다.
        겹쳐 울려야 하기 때문에 하나를 돌려 쓸 수 없다 (금화·화상이 그렇다). */
+    const a=SEL[k]||load(k,d); if(!a) return false;
+    const p=a.cloneNode(); if(lp) p.loop=true;
+    p.volume=Math.max(0,Math.min(1,(d.v==null?1:d.v)*vol*(o&&o.v!=null?o.v:1)));
+    if(o&&o.from>0){ try{ p.currentTime=o.from }catch(e){} }
+    (LIVE[k0]=LIVE[k0]||[]).push(p); p.addEventListener("ended",()=>{ const L=LIVE[k0]; if(L){ const i=L.indexOf(p); if(i>=0) L.splice(i,1) } },{once:true});
+    const q=p.play();
+    if(q&&q.catch) q.catch(()=>{});
+    return true;
+  }
+  /* 받아 두기만 — 처음 울 때 늦지 않게 (prep 이 부른다) */
+  function load(k,d){
+    if(SDEAD[k]) return null;
     let a=SEL[k];
     if(!a){
       a=SEL[k]=new Audio(SFX_DIR+encodeURIComponent(d.f)); a.preload="auto";
@@ -6375,12 +6389,7 @@ const SFX=(()=>{
           console.warn("효과음을 못 가져왔습니다 — "+SFX_DIR+" 폴더를 확인하세요. 합성음으로 냅니다.") }
       },{once:true});
     }
-    const p=a.cloneNode(); if(lp) p.loop=true;
-    p.volume=Math.max(0,Math.min(1,(d.v==null?1:d.v)*vol));
-    (LIVE[k0]=LIVE[k0]||[]).push(p); p.addEventListener("ended",()=>{ const L=LIVE[k0]; if(L){ const i=L.indexOf(p); if(i>=0) L.splice(i,1) } },{once:true});
-    const q=p.play();
-    if(q&&q.catch) q.catch(()=>{});
-    return true;
+    return a;
   }
   const K={
    click :()=>tone({w:"square",f:520,f2:700,d:0.05,v:0.05}),
@@ -6585,8 +6594,11 @@ const SFX=(()=>{
      저절로 갈린다 — s:"shield" 를 부르는 곳을 하나도 안 고쳐도 된다.
      녹음이 없는 열쇠말만 합성음으로 내려간다. */
   return { loop(k){ if(PRED_DRY||!on||!k||vol<=0||(LIVE[k]||[]).length) return; try{ sample(k,1) }catch(e){} },   /* 되풀이 — stop(k) 로 끈다 (콜로서스 빔 충전, 2026-10-07) */
-           play(k){ if(PRED_DRY||!on||!k||vol<=0) return;
-             try{ if(!sample(k)&&K[k]) K[k]() }catch(e){} },
+           play(k,o){ if(PRED_DRY||!on||!k||vol<=0) return;
+             try{ if(!sample(k,false,o)&&K[k]) K[k]() }catch(e){} },
+           /* 미리 받아 둔다 (울리지 않는다) — 번호 붙은 짝이면 다 */
+           prep(k){ try{ if(typeof SND==="undefined"||!k) return;
+             (SND[k]?[k]:Object.keys(SND).filter(x=>x.indexOf(k+" ")===0)).forEach(x=>load(x,SND[x])) }catch(e){} },
            /* 그 이름으로 울리는 녹음을 0.08초에 걸쳐 끈다 — 뒤 소리가 묻히지 않게 (봄의 정원사 씨앗 흔들기, 2026-10-04) */
            stop(k){ (LIVE[k]||[]).splice(0).forEach(p=>{ const v0=p.volume; let n=4; const t=setInterval(()=>{ n--; p.volume=Math.max(0,v0*n/4); if(n<=0){ clearInterval(t); try{ p.pause() }catch(e){} } },20) }) },
            /* 이제부터 ms 동안 합성음을 mul 배로 줄인다 (녹음은 그대로).
@@ -24985,6 +24997,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 257, "v": "0.7", "d": "2026-10-29", "t": "탁자 덮개 소리 · 둘레는 지도 판", "big": 0},
  {"b": 256, "v": "0.7", "d": "2026-10-29", "t": "탐험 탁자 덮개 — 지도와 전투 · 상점 · 제련소 사이", "big": 0},
  {"b": 255, "v": "0.7", "d": "2026-10-29", "t": "데스크톱 판 스스로 받기", "big": 0},
  {"b": 254, "v": "0.7", "d": "2026-10-29", "t": "이라 복수 명단", "big": 0},
@@ -26433,7 +26446,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=256;
+const BUILD_NO=257;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -29294,6 +29307,33 @@ const CV_PARTS=["outer","inner","edge-vertical","edge-horizontal","hinge-fixed",
 let CV_ROOT=null, CV_OK=0, CV_ANG=CV.OPEN, CV_AWAY=0, CV_BUSY=0, CV_TRIP=null, CV_NEXT=[];
 const cvPng=n=>mapPng("덮개-"+n+".png");
 
+/* ── 소리 (사용자 2026-10-29) — 음량 · 시작 보정은 **여기 한 곳**에서 고친다 ──
+   받은 녹음 Downloads/1·2·3.wav → art/소리/_원본/탁자 덮개 닫힘 · 열림 · 밀림.wav (원본 그대로)
+   → art-cut 가공본 art/소리/탁자 덮개 *.wav (앞 무음을 자르고 봉우리를 0.92 로 맞춘 것. 보정.json 크기는 1 로 두었다)
+     크기   — 게임의 효과음 음량 · 음소거(SFX)를 그대로 따르고, 거기에 곱한다. 처음 기준 닫힘 > 열림 > 밀림
+              (가공본 실효값 닫힘 −21.7 · 열림 −19.8 · 밀림 −17.1dB 을 재서 4dB 쯤씩 내려가게 잡았다)
+     충돌   — 닫힘 가공본에서 나무가 맞부딪는 가장 큰 봉우리의 자리(초, 잰 값). 덮개가 맞닿는 순간(각도 0)에 맞춘다.
+              닫히는 시간보다 길면 그만큼 앞을 건너뛰어 튼다 (빠르기를 바꿔도 피치는 안 바꾼다)
+     앞당김 — <audio> 가 실제로 소리를 내기까지의 틈 (초)
+     꼬리   — 밀림은 덮개가 다 밀려난 뒤 이만큼(ms, 빠르기를 곱한다) 더 울고 0.08초에 걸쳐 줄어든다 (원음은 1초 남짓이라)
+   열림은 펼쳐지기 시작하는 순간, 밀림은 목적지에서 열림이 100° 를 넘는 순간(밀려나기 시작) — 지도에서는 안 운다 */
+const CV_SND={
+  닫힘:{k:"탁자 덮개 닫힘", 크기:0.30, 충돌:0.360, 앞당김:0.02},
+  열림:{k:"탁자 덮개 열림", 크기:0.15},
+  밀림:{k:"탁자 덮개 밀림", 크기:0.07, 꼬리:120}
+};
+let CV_SND_T=[];   /* 예약해 둔 소리 — 끝내거나 풀 때 지운다 */
+function cvSnd(w,from){
+  const s=CV_SND[w]; if(!s||typeof SFX==="undefined") return;
+  try{ SFX.stop(s.k); SFX.play(s.k,{v:s.크기,from:Math.max(0,from||0)}) }catch(e){}   /* 같은 소리는 겹치지 않게 앞엣것을 끈다 */
+}
+function cvSndAt(ms,fn){ CV_SND_T.push(setTimeout(fn,Math.max(0,ms))) }
+/* 예약을 지운다. stop 이면 울리는 것도 0.08초에 걸쳐 줄여 끈다 (SFX.stop) */
+function cvSndCancel(stop){
+  CV_SND_T.forEach(clearTimeout); CV_SND_T=[];
+  if(stop&&typeof SFX!=="undefined") Object.keys(CV_SND).forEach(w=>{ try{ SFX.stop(CV_SND[w].k) }catch(e){} });
+}
+
 /* 그림 15장을 미리 풀어 둔다 — 다 풀려야(CV_OK=1) 덮개를 쓴다. 하나라도 못 읽으면 -1 (원래 암전) */
 function coverLoad(){
   if(CV_OK) return;
@@ -29301,8 +29341,10 @@ function coverLoad(){
   const L=[];
   ["left","right"].forEach(s=>CV_PARTS.forEach(p=>L.push(s+"-"+p)));
   L.push("left-center-underlap");
-  Promise.all(L.map(n=>new Promise((ok,no)=>{ const im=new Image();
-    im.onload=()=>(im.decode?im.decode():Promise.resolve()).then(ok,ok); im.onerror=()=>no(n); im.src=cvPng(n) })))
+  const U=L.map(cvPng).concat([mapPng("MAP_BOARD.png")]);   /* 둘레에 까는 지도 판도 */
+  try{ Object.keys(CV_SND).forEach(w=>SFX.prep(CV_SND[w].k)) }catch(e){}   /* 소리도 미리 — 못 받아도 넘김은 간다 */
+  Promise.all(U.map(u=>new Promise((ok,no)=>{ const im=new Image();
+    im.onload=()=>(im.decode?im.decode():Promise.resolve()).then(ok,ok); im.onerror=()=>no(u); im.src=u })))
     .then(()=>{ CV_OK=1; coverIdle() }, n=>{ CV_OK=-1; console.warn("덮개 그림을 못 읽었다 — 원래 암전으로 : "+n); coverIdle() });
 }
 
@@ -29312,6 +29354,9 @@ function coverBuild(){
   const root=document.createElement("div"); root.id="covergate";
   root.innerHTML=`<div class="cg-perim"></div><div class="cg-clip"><div class="cg-stage">
     <div class="cg-shadow l"></div><div class="cg-shadow r"></div><div class="cg-fixed"></div><div class="cg-space"></div></div></div>`;
+  /* 둘레 — 검정 대신 **지도 판 그림**을 깐다 (사용자 2026-10-29 : 「열리기 전까지 기존 지도 화면이 보이게」).
+     지도 판은 그림을 창 전체로 늘려 깔기에, 지도에서 닫히면 둘레는 그대로 지도처럼 보이고 글자만 스러진다 */
+  root.querySelector(".cg-perim").style.backgroundImage=`url("${mapPng("MAP_BOARD.png")}")`;
   const space=root.querySelector(".cg-space"), fixed=root.querySelector(".cg-fixed");
   const layer=(par,cls,file,st)=>{ const d=document.createElement("div"); d.className=cls;
     d.style.backgroundImage=`url("${cvPng(file)}")`; if(st) Object.assign(d.style,st); par.appendChild(d); return d };
@@ -29344,11 +29389,12 @@ function coverPlace(){
   const clip=CV_ROOT.querySelector(".cg-clip"), per=CV_ROOT.querySelector(".cg-perim");
   Object.assign(clip.style,{left:"0px",top:"0px",width:W+"px",height:H+"px"});
   CV_ROOT.querySelector(".cg-stage").style.transform=`scale(${sx},${sy})`;
-  /* 둘레 가림 — 덮개가 가리는 칸 [32,88,1888,928) 바깥을 화면 끝까지.
-     ⚠️ 3px 안쪽으로 들여 덮개 **밑에** 겹친다 — 배율 때문에 경계가 픽셀 사이에 걸리면 둘 다 반만 칠해져
+  /* 둘레 가림 — 창 전체에 지도 판을 깔고, 덮개가 가리는 칸 [32,88,1888,928) 만 구멍을 낸다 (evenodd).
+     ⚠️ 구멍을 3px 안쪽으로 줄여 덮개 **밑에** 겹친다 — 배율 때문에 경계가 픽셀 사이에 걸리면 둘 다 반만 칠해져
         아래 화면이 1px 새었다 (shot-cover-gate ② 가 잡았다) */
-  const IN=3;
-  Object.assign(per.style,{left:(32*sx+IN)+"px",top:(CV.TOP*sy+IN)+"px",width:(1856*sx-IN*2)+"px",height:(CV.BH*sy-IN*2)+"px"});
+  const IN=3, x1=32*sx+IN, y1=CV.TOP*sy+IN, x2=1888*sx-IN, y2=(CV.TOP+CV.BH)*sy-IN;
+  Object.assign(per.style,{left:"0px",top:"0px",width:W+"px",height:H+"px",
+    clipPath:`polygon(evenodd,0 0,${W}px 0,${W}px ${H}px,0 ${H}px,0 0,${x1}px ${y1}px,${x1}px ${y2}px,${x2}px ${y2}px,${x2}px ${y1}px,${x1}px ${y1}px)`});
 }
 
 /* 각도 하나로 다 맞춘다 (시제품 setAngle + updateHardwareVisibility) */
@@ -29369,15 +29415,19 @@ function coverAngle(a){
   covers[1].style.transform=`translateX(${sl}px) rotateY(${CV_ANG}deg)`;
 }
 
+/* ⚠️ 시간은 **부른 순간부터** 센다 (첫 프레임부터가 아니라) — 소리 예약(setTimeout)과 같은 시계라야
+   프레임이 느린 기계에서도 충돌음이 맞닿는 순간에 온다 (헤드리스에서 40~110ms 어긋났다, 2026-10-29) */
 function coverTween(to,ms){
-  const from=CV_ANG;
-  return new Promise(ok=>{ let t0=null;
-    const step=now=>{ if(t0==null) t0=now;
-      const p=Math.min(1,(now-t0)/Math.max(1,ms)), e=p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
+  const from=CV_ANG, t0=performance.now();
+  return new Promise(ok=>{
+    const step=now=>{
+      const p=Math.max(0,Math.min(1,(now-t0)/Math.max(1,ms))), e=p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
       coverAngle(from+(to-from)*e);
       if(p<1) requestAnimationFrame(step); else ok() };
     requestAnimationFrame(step) });
 }
+/* 보간(easeInOutCubic)이 y 에 닿는 진행률 p — 밀림 소리를 「100° 를 넘는 때」에 예약하려고 */
+const cvEaseAt=y=>y<=.5?Math.cbrt(y/4):1-Math.cbrt(2*(1-y))/2;
 /* 게임의 연출 빠르기(SPD — 설정 「빠르게」면 0.5)를 곱한다. 보통은 1 이라 위 수치 그대로 */
 const cvK=()=>(typeof SPD==="number"&&SPD>0)?SPD:1;
 const cvWait=ms=>new Promise(ok=>setTimeout(ok,ms));
@@ -29406,25 +29456,34 @@ function coverWants(){
 /* 덮개 전환 — fn 은 정확히 한 번. 무슨 일이 나도 마지막에는 열고 누름을 돌려준다 */
 async function coverInto(fn){
   if(CV_BUSY){ CV_NEXT.push(fn); return }   /* 도는 중 — 끝난 뒤에 (fn 을 두 번 부르거나 버리지 않는다) */
-  coverBuild(); CV_BUSY=1;
+  coverBuild(); CV_BUSY=1; cvSndCancel(false);
   const root=CV_ROOT; root.classList.add("busy"); root.style.display=""; coverPlace();
+  root.classList.toggle("night",!!(typeof run!=="undefined"&&run&&run.night&&!run.lost));   /* 둘레의 지도 판도 밤이면 어둡게 */
   let done=false;
   const run1=()=>{ if(done) return; done=true; try{ fn() }catch(e){ console.error(e) } };
-  const dog=setTimeout(()=>{ run1(); CV_AWAY=view!=="map"?1:0; coverAngle(CV.OPEN); coverEnd() },6000*Math.max(1,cvK()));   /* 어디서 멈춰도 6초면 푼다 */
+  /* 어디서 멈춰도 6초면 푼다 — 예약한 소리는 지우고 울리는 것은 짧게 줄여 끈다 */
+  const dog=setTimeout(()=>{ cvSndCancel(true); run1(); CV_AWAY=view!=="map"?1:0; coverAngle(CV.OPEN); coverEnd() },6000*Math.max(1,cvK()));
   try{
     const reduce=matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if(reduce||CV_OK!==1){ run1(); CV_AWAY=view!=="map"?1:0; coverAngle(CV.OPEN) }
+    if(reduce||CV_OK!==1){ cvSndCancel(true); run1(); CV_AWAY=view!=="map"?1:0; coverAngle(CV.OPEN) }   /* 움직임이 없으니 소리도 없다 */
     else {
-      const k=cvK();
-      await coverTween(0,CV.CLOSE_MS*k);                       /* 경첩이 밖에 나가 있었으면 들어오며 닫힌다 */
+      const k=cvK(), C=CV.CLOSE_MS*k, S=CV_SND.닫힘, hit=(S.충돌+(S.앞당김||0))*1000;   /* 앞당김만큼 더 일찍 튼다 */
+      /* 닫힘 — 충돌 봉우리가 각도 0(C ms 뒤)에 오게. 닫히는 시간이 더 짧으면 앞을 건너뛰어 지금 튼다 */
+      if(hit<=C) cvSndAt(C-hit,()=>cvSnd("닫힘")); else cvSnd("닫힘",(hit-C)/1000);
+      await coverTween(0,C);                                   /* 경첩이 밖에 나가 있었으면 들어오며 닫힌다 */
       await cvWait(CV.HOLD_MS*k);
       run1();
       CV_AWAY=view!=="map"?1:0;
       coverPlace();
       await coverReady();
-      await coverTween(CV.OPEN,CV.OPEN_MS*k);
+      const O=CV.OPEN_MS*k;
+      cvSnd("열림");                                           /* 펼쳐지기 시작하는 순간 */
+      if(CV_AWAY){                                             /* 밀려나기 시작(100°) — 목적지에서만. 시간으로 예약한다 */
+        cvSndAt(O*cvEaseAt(100/CV.OPEN),()=>cvSnd("밀림"));
+        cvSndAt(O+(CV_SND.밀림.꼬리||0)*k,()=>{ try{ SFX.stop(CV_SND.밀림.k) }catch(e){} }) }
+      await coverTween(CV.OPEN,O);
     }
-  }catch(e){ console.error(e); run1(); coverAngle(CV.OPEN) }
+  }catch(e){ console.error(e); cvSndCancel(true); run1(); coverAngle(CV.OPEN) }
   finally{ clearTimeout(dog); coverEnd() }
 }
 function coverEnd(){
