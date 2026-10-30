@@ -6064,6 +6064,13 @@ body.vmap #app>.toast{position:absolute;top:8px;left:50%;transform:translateX(-5
 .gridmap .cell .unt.er{--er:url("map/미완성-경계-오른.png")}
 /* 새로 밝힌 칸 — 어둠이 앞 꼭짓점부터 퍼지듯 걷힌다 (사용자 2026-10-30) */
 /* → 2026-10-30 받은 띠로 : 같은 판 좌표의 바탕을 가림판(8칸)으로 오려 가운데부터 뚫고(.seemask), 그 가장자리에 먹(.seeink). 64ms × 8 */
+/* 우두머리 칸 — 처음 펼침에 아래에서 스윽 떠오른다 (boss-map-intro.js, 사용자 2026-10-30) */
+.gridmap .cell.k-boss.bosswait .cico,.gridmap .cell.k-boss.bosswait .cl{opacity:0}
+.gridmap .cell.k-boss.bossrise .cico{animation:bossRise 1.3s cubic-bezier(.2,.8,.3,1) both}
+.gridmap .cell.k-boss.bossrise .cl{animation:bossRiseL .6s ease-out .9s both}
+@keyframes bossRise{from{opacity:0;translate:0 45%;filter:brightness(.25)}55%{opacity:1}to{opacity:1;translate:0 0;filter:none}}
+@keyframes bossRiseL{from{opacity:0}to{opacity:1}}
+.bark.bossbark{position:fixed;z-index:950;animation-duration:3.2s}
 .gridmap .cell .seemask,.gridmap .cell .seeink{position:absolute;inset:0;pointer-events:none;image-rendering:pixelated}
 .gridmap .cell .seemask{z-index:4;background:url("map/안밝힌-바탕.png") calc(var(--c) / (1.0563 * var(--n) - 1) * 100%) calc(var(--r) / (1.0563 * var(--n) - 1) * 100%)/calc(105.63% * var(--n)) calc(105.63% * var(--n)) repeat;
   -webkit-mask:url("map/밝힘-가림.png") 0 0/800% 100% no-repeat;mask:url("map/밝힘-가림.png") 0 0/800% 100% no-repeat;
@@ -22306,7 +22313,7 @@ const fogAt=(r,c)=>!!(run&&run.fog&&run.fog.cells.indexOf(r+"-"+c)>=0)||!!(run&&
 const SEE_R=1;   /* 마름모 반경 — 가로세로 합 1 (선 칸 + 상하좌우, 5칸). 사용자 2026-10-30 : 3 → 1 */
 function seeAlways(r,c){
   const cl=run.grid&&run.grid[r]&&run.grid[r][c]; if(!cl) return false;
-  if(cl.t==="camp"||cl.ceil) return true;
+  if(cl.t==="camp"||cl.ceil||cl.t==="boss") return true;   /* 우두머리 칸도 처음부터 (사용자 2026-10-30 — 전에는 숨겼다) */
   const F=FIELDS[run.field]; return !!(F&&F.ceil&&F.ceil.indexOf(r)>=0);
 }
 const unseenAt=(r,c)=>!!(run&&run.seen&&!run.seen[r+"-"+c]&&!seeAlways(r,c));
@@ -25595,6 +25602,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 290, "v": "0.7", "d": "2026-10-30", "t": "우두머리 칸 등장", "big": 0},
  {"b": 289, "v": "0.7", "d": "2026-10-30", "t": "새날 문구 띠 뺌", "big": 0},
  {"b": 288, "v": "0.7", "d": "2026-10-30", "t": "행운의 금화 3%씩", "big": 0},
  {"b": 287, "v": "0.7", "d": "2026-10-30", "t": "새날 탁자 · 체력 막대", "big": 0},
@@ -27075,7 +27083,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=289;
+const BUILD_NO=290;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -29090,7 +29098,7 @@ function mapGridEl(peek){
       <span class="cbg"></span>
       ${(wpAt[r+"-"+c]||[]).map(w=>`<i class="wp${w.hz?" hz":""}" style="left:${w.x}%;top:${w.y}%;background-image:url(${ICON_PNG["map_wp"+w.v]})"></i>`).join("")}
       
-      ${kind!=="empty"?`<span class="cico">${gimCellArt(cell)||nodeArt(kind)}</span>`:(cell.stair?`<span class="cico">${gimCellArt(cell)}</span>`:(!uns&&onPatrol(r,c)?`<span class="cico foot">${iconImg("ink11_map_guard_footprints")}</span>`:""))}
+      ${kind!=="empty"?`<span class="cico">${gimCellArt(cell)||(kind==="boss"&&typeof bossCellArt==="function"&&bossCellArt())||nodeArt(kind)}</span>`:(cell.stair?`<span class="cico">${gimCellArt(cell)}</span>`:(!uns&&onPatrol(r,c)?`<span class="cico foot">${iconImg("ink11_map_guard_footprints")}</span>`:""))}
       ${kind==="dungeon"||kind==="elite"?`<span class="cw">${cell.waves||1}</span>`:""}
       ${here?((typeof ICON_PNG!=="undefined"&&ICON_PNG.ui_move_down)
         ?`<span class="you arw"><img src="${ICON_PNG.ui_map_you||ICON_PNG.ui_move_down}" alt="현재 위치" draggable="false"></span>`   /* 붉은 붓 화살표 (사용자 2026-10-06) */
@@ -29110,6 +29118,7 @@ function mapGridEl(peek){
     /* ⚠️ 밝힘 분기는 `if(uns)` 의 else 다 — 그 사이에 다른 줄을 끼우면 밝힘 연출이 통째로 죽는다 (2026-10-30 격자 줄이 끼어 그랬다) */
     /* 덜 그린 지도 (사용자 2026-10-30, art/_받은묶음/map-unrevealed-v2-center-2026-10-30) —
        못 본 칸 밑에 바탕 한 장을 **판 좌표로** 깐다(.unt, 칸이 몇 개든 한 장으로 이어진다). 본 칸과 맞닿는 변에만 그리다 만 먹 가장자리 */
+    if(kind==="boss"&&!peek&&typeof bossMapWait==="function"&&bossMapWait()) d.classList.add("bosswait");   /* 처음 펼침 — 떠오를 때까지 (boss-map-intro) */
     if(uns){ d.classList.add("unseen"); d.style.setProperty("--r",r); d.style.setProperty("--c",c);
       const ed=[]; if(r>0&&!unAt(r-1,c)) ed.push("et"); if(r<S-1&&!unAt(r+1,c)) ed.push("eb"); if(c>0&&!unAt(r,c-1)) ed.push("el"); if(c<S-1&&!unAt(r,c+1)) ed.push("er");
       d.appendChild(el(`<i class="unt ${ed.join(" ")}"></i>`)) }
@@ -30214,6 +30223,7 @@ function coverEnd(){
   coverIdle();
   const nx=CV_NEXT.shift(); if(nx) setTimeout(()=>fadeInto(nx),0);
   else if(typeof mapNewsGo==="function") mapNewsGo();   /* 덮개가 다 열린 뒤 — 붙들어 둔 밝힘 · 새 칸 */
+  if(!nx&&typeof bossMapGo==="function") bossMapGo();   /* 처음 펼침이면 우두머리 칸이 떠오른다 */
 }
 
 /* ── 처음 펼침 — 새 원정 · 다음 막의 지도가 처음 펼쳐질 때 (사용자 2026-10-29) ──
@@ -30234,13 +30244,15 @@ function coverIntroCheck(){
   /* 다음 막 — 전투에서 돌아오는 덮개가 닫혀 있는 가운데 그렸다. 덮개는 그대로 두고 깃발만 맡긴다 (열기 전에 coverInto 가 띄운다).
      날이 바뀌는 암전이 걷힌 뒤에 날아오고, 지도는 탁자가 반쯤 열렸을 때 펴진다 */
   if(CV_BUSY){
-    if(CV_MID&&useF){ CV_INTRO_SEEN={run:run,field:run.field};
+    if(CV_MID&&useF){ CV_INTRO_SEEN={run:run,field:run.field}; if(typeof bossMapArm==="function") bossMapArm();
       const at=Math.max(Date.now(),typeof MAP_BO_UNTIL!=="undefined"?MAP_BO_UNTIL:0);
       CV_FLAG_PEND=Object.assign(fw,{at});
       if(typeof MAP_BO_UNTIL!=="undefined") MAP_BO_UNTIL=Math.max(MAP_BO_UNTIL,at+FLAG_T.clear+FLAG_T.open+CV.OPEN_MS*cvK()*0.55) }
     return }
   CV_INTRO_SEEN={run:run,field:run.field};
-  if(matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches){ if(useF){ fw.reduce=1; flagShow(fw) } return }   /* 짧고 조용히 — 탁자 없이 */
+  if(typeof bossMapArm==="function") bossMapArm();   /* 우두머리 칸이 지도가 펴진 뒤 떠오른다 (boss-map-intro.js) */
+  if(matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches){ if(useF){ fw.reduce=1; flagShow(fw) }
+    if(typeof bossMapGo==="function") setTimeout(bossMapGo,0); return }   /* 짧고 조용히 — 탁자 없이 */
   const k=cvK(), O=CV.OPEN_MS*k, H=useF?FLAG_T.clear+FLAG_T.open:CV_INTRO_HOLD*k;   /* 깃발이 다 빠진 뒤에 연다 */
   if(typeof MAP_BO_UNTIL!=="undefined") MAP_BO_UNTIL=Math.max(MAP_BO_UNTIL,Date.now()+H+O*0.55);   /* 반쯤 열렸을 때 지도가 펴지기 시작 */
   coverBuild(); CV_BUSY=1; cvSndCancel(false);
@@ -30799,6 +30811,42 @@ function dawnPlay(day){
 }
 /* 화면을 떠날 때(제목 · 새 원정) 도는 것을 끊는다 */
 function dawnStop(){ if(DAWN_CUR) DAWN_CUR.stop() }
+/* ═══════════ 우두머리 칸 — 지도가 처음 펼쳐질 때 스윽 떠오르며 한마디 (사용자 2026-10-30) ═══════════
+   ★ 우두머리 칸은 처음부터 보인다 (지도 밝히기 seeAlways). 첫 원정 · 다음 막으로 지도가 **처음** 펼쳐질 때만
+     (탁자 덮개 · 깃발이 다 끝나고 지도가 펴진 뒤) 칸 그림이 아래에서 떠오르고, 그 위에 대사 말풍선.
+   ★ 거는 곳 : coverIntroCheck 가 처음 펼침을 맡을 때 bossMapArm → 그리는 쪽(map-grid)은 떠오르기 전까지 칸 그림을 숨기고(bosswait) →
+     덮개가 끝나는 곳(coverEnd)이 bossMapGo. 자동화 브라우저 · 처음 펼침이 아닌 그리기에는 걸리지 않는다.
+   ★ 대사 — 이미 있는 글만 쓴다 (지어내지 않는다) : BOSS_MAP_LINE → 전투 등장 한마디(INTRO_SAY) → 전투 대사 표의 등장(BARK[이름].in) → 없으면 말풍선 없이.
+   ★ 우두머리마다 전용 칸 그림 — BOSS_CELL_ICON 에 { "우두머리 이름":"아이콘 id" } 를 적으면 map-grid 가 그것을 쓴다 (없으면 공용 우두머리 그림) */
+const BOSS_MAP_LINE={"콜로서스":["외부인 확인. 정화 활동 시작"]};   /* colIntro 의 등장 글 */
+const BOSS_CELL_ICON={};
+let BOSS_MAP_PEND=null;
+function bossNameNow(){ return (typeof expeditionBoss==="function"&&run)?expeditionBoss(run.field):"" }
+function bossCellArt(){ const id=BOSS_CELL_ICON[bossNameNow()]; return id&&typeof iconImg==="function"?iconImg(id)||"":"" }
+function bossLine(n){ const L=BOSS_MAP_LINE[n]||((typeof INTRO_SAY!=="undefined"&&INTRO_SAY[n])?[INTRO_SAY[n]]:null)||((typeof BARK!=="undefined"&&BARK[n]&&BARK[n].in)||null);
+  return L&&L.length?L[Date.now()%L.length]:"" }   /* 게임 주사위는 건드리지 않는다 */
+function bossMapArm(){ if(typeof run!=="undefined"&&run) BOSS_MAP_PEND={run:run,field:run.field} }
+const bossMapWait=()=>!!(BOSS_MAP_PEND&&typeof run!=="undefined"&&BOSS_MAP_PEND.run===run&&BOSS_MAP_PEND.field===run.field);
+function bossMapGo(){
+  if(!bossMapWait()){ BOSS_MAP_PEND=null; return }
+  if(typeof view==="undefined"||view!=="map"||(typeof mapHold==="function"&&mapHold())) return;   /* 지도가 보일 때 다시 불린다 */
+  const P=BOSS_MAP_PEND;
+  /* 지도가 펴지는 것(MAP_BO_UNTIL 뒤)을 기다렸다가 */
+  const wait=Math.max(0,(typeof MAP_BO_UNTIL!=="undefined"?MAP_BO_UNTIL:0)-Date.now())+700;
+  setTimeout(()=>{
+    if(BOSS_MAP_PEND!==P) return;
+    BOSS_MAP_PEND=null;
+    const d=document.querySelector("#app .gridmap .cell.k-boss"); if(!d) return;
+    d.classList.remove("bosswait"); d.classList.add("bossrise");
+    const line=bossLine(bossNameNow()); if(!line) return;
+    setTimeout(()=>{
+      if(!d.isConnected) return;
+      const r=d.getBoundingClientRect();
+      const b=el(`<div class="bark f big bossbark">${esc(line)}</div>`);
+      b.style.left=Math.round(r.left+r.width/2)+"px"; b.style.top=Math.round(r.top-4)+"px";
+      document.body.appendChild(b); setTimeout(()=>b.remove(),3200) },650);
+  },wait);
+}
 function fadeInto(fn){
   if(typeof coverInto==="function"&&(CV_BUSY||coverWants())){ coverInto(fn); return }   /* 도는 중이면 줄을 선다 */
   /* 쉼터 · 미지의 구역 · 전용 구역 — 암전 없이 바로 넘긴다. 지도 판 가운데 덧판은 render 의 shutGate 가 맡는다 */
