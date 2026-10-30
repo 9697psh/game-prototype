@@ -4310,6 +4310,13 @@ body.vbattle #upg strong{font-family:var(--serif);font-size:16px;letter-spacing:
 body.vbattle #upg .green{color:#92c99c}
 body.vbattle #upg .gold{color:#e6c367}
 body.vbattle #upg .blue{color:#91b5cf}
+/* 턴 표시 줄 안 (사용자 2026-10-30) — 단추는 칩만 하게, 목록은 단추 밑으로 떨어진다 */
+body.vbattle #upg.intop{position:relative;left:auto;bottom:auto;width:auto;display:inline-block;z-index:30}
+body.vbattle #upg.intop .uptoggle{height:24px;width:auto;padding:0 8px;gap:6px;font-size:11px}
+body.vbattle #upg.intop.open .uptoggle{border-radius:3px 3px 0 0}
+body.vbattle #upg.intop .upchevron{transform:rotate(180deg)}
+body.vbattle #upg.intop .upbody{position:absolute;top:100%;left:0;width:230px;box-sizing:border-box;border:1px solid #655039;border-top:0;
+  border-radius:0 0 3px 3px;box-shadow:inset 0 0 0 3px #17130e,0 6px 18px #0006}
 /* 차원문 — 무대에선 3배 (사용자 2026-09-19) */
 .bfstage .art .portal{transform:translateX(-50%) scale(3);transform-origin:50% 100%;bottom:-6px}
 .bfstage .slot.empty > .portal{transform:translate(-50%,-50%) scale(3);top:auto;bottom:6px}
@@ -25533,6 +25540,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 283, "v": "0.7", "d": "2026-10-30", "t": "강화 정보 위치", "big": 0},
  {"b": 282, "v": "0.7", "d": "2026-10-30", "t": "밝힘 위치 고침", "big": 0},
  {"b": 281, "v": "0.7", "d": "2026-10-30", "t": "미지의 구역 배경 (나침반 뺌)", "big": 0},
  {"b": 280, "v": "0.7", "d": "2026-10-30", "t": "전투 승리 소리", "big": 0},
@@ -27006,7 +27014,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=282;
+const BUILD_NO=283;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -40672,11 +40680,12 @@ function drawBattle(app){
   { const n=B.hand.length, mid=(n-1)/2;   /* 부채꼴 — 가운데를 두고 살짝 기울고 내려간다 (2026-09-19) */
     [...hand.children].forEach((c,i)=>{ const k=i-mid; c.style.setProperty("--rot",(k*4)+"deg"); c.style.setProperty("--dy",(Math.abs(k)*7)+"px"); c.style.zIndex=10+i }) }
   app.appendChild(hand);
-  /* 강화 정보 — 손패 **바로 위**에 선다. 손패 높이가 화면마다 달라 그때그때 잰다 (사용자 2026-10-19) */
+  /* 강화 정보 — 턴 표시 줄의 「적 강화」 오른쪽에. 펼치면 아래로 내려온다 (사용자 2026-10-30 「대원을 가리니까 턴 표시 오른쪽으로」).
+     예전엔 손패 바로 위 왼쪽(2026-10-19)이라 1번 칸 대원을 덮었다 */
   { const up=upgradePanel();
-    if(up){ app.appendChild(up);
-      const hb=hand.getBoundingClientRect();
-      up.style.bottom=Math.max(180,Math.round(window.innerHeight-hb.top+24))+"px" } }
+    if(up){ const ht=stage.querySelector(".bfturn");
+      if(ht){ up.classList.add("intop"); ht.appendChild(up) }
+      else { app.appendChild(up); const hb=hand.getBoundingClientRect(); up.style.bottom=Math.max(180,Math.round(window.innerHeight-hb.top+24))+"px" } } }
   drawInAnim(hand);   /* 라운드 첫 손패 — 한 장씩 들어온다 */
   /* 기술 창이 떠도 손패는 그 위에 작게 (사용자 2026-10-01 — 예전엔 가려졌다). 바뀌는 순간에는 줄어들며 올라가고 / 커지며 내려온다 */
   { const sk=hand.previousElementSibling, mini=!!(sk&&sk.classList.contains("skwrap"));
