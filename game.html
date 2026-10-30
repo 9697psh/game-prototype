@@ -6021,10 +6021,27 @@ body.vnew #app .rewards:has(.trait-guarantee){margin-top:48px}
 /* 지도(장소 화면 포함)의 알림 띠 — 떠 있게. 흐름에 끼면 지역 이름 줄이 아래로 밀렸다 (2026-10-30) */
 body.vmap #app>.toast{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:30;margin:0;width:max-content;max-width:60%}
 /* 지도 밝히기 — 아직 못 본 칸은 조금 어둡게 (사용자 2026-10-30 「안 가 본 곳은 조금 어두운 표현」). 무엇인지는 그리지 않는다 (빈 길로) */
-.gridmap .cell.unseen{box-shadow:inset 0 0 0 999px rgba(34,20,8,.34)}   /* 칸이 비어 있어 filter 로는 안 어두워진다 — 안쪽 그림자로 덮는다 */
+/* → 2026-10-30 덜 그린 지도 바탕으로 갈았다 (.unt). 192px 바탕 한 장이 지도 그림과 같은 배율(판 256 기준 ×0.75 = 격자 71% 의 105.63%)로,
+   칸마다 판 좌표 (--c, --r / --n) 의 제 조각을 보여 한 장으로 이어진다. 경계(32×6)도 같은 배율 · 같은 위상.
+   z-index:-1 — 격자(.gridmap.pmap 이 쌓임 맥락) 바탕 위, 칸의 절취선(칸 background) 밑 */
+.gridmap .cell .unt{position:absolute;inset:0;z-index:-1;pointer-events:none;image-rendering:pixelated;
+  background-image:var(--et,none),var(--eb,none),var(--el,none),var(--er,none),url("map/안밝힌-바탕.png");
+  background-size:calc(17.605% * var(--n)) calc(3.301% * var(--n)),calc(17.605% * var(--n)) calc(3.301% * var(--n)),calc(3.301% * var(--n)) calc(17.605% * var(--n)),calc(3.301% * var(--n)) calc(17.605% * var(--n)),calc(105.63% * var(--n)) calc(105.63% * var(--n));
+  background-repeat:repeat-x,repeat-x,repeat-y,repeat-y,repeat;
+  background-position:calc(var(--c) / (0.17605 * var(--n) - 1) * 100%) 0,calc(var(--c) / (0.17605 * var(--n) - 1) * 100%) 100%,0 calc(var(--r) / (0.17605 * var(--n) - 1) * 100%),100% calc(var(--r) / (0.17605 * var(--n) - 1) * 100%),calc(var(--c) / (1.0563 * var(--n) - 1) * 100%) calc(var(--r) / (1.0563 * var(--n) - 1) * 100%)}
+.gridmap .cell .unt.et{--et:url("map/미완성-경계.png")}
+.gridmap .cell .unt.eb{--eb:url("map/미완성-경계-아래.png")}
+.gridmap .cell .unt.el{--el:url("map/미완성-경계-왼.png")}
+.gridmap .cell .unt.er{--er:url("map/미완성-경계-오른.png")}
 /* 새로 밝힌 칸 — 어둠이 앞 꼭짓점부터 퍼지듯 걷힌다 (사용자 2026-10-30) */
-.gridmap .cell.seego{animation:seeGo .45s ease-out var(--sd,0ms) both}
-@keyframes seeGo{from{box-shadow:inset 0 0 0 999px rgba(34,20,8,.34)}to{box-shadow:inset 0 0 0 999px rgba(34,20,8,0)}}
+/* → 2026-10-30 받은 띠로 : 같은 판 좌표의 바탕을 가림판(8칸)으로 오려 가운데부터 뚫고(.seemask), 그 가장자리에 먹(.seeink). 64ms × 8 */
+.gridmap .cell .seemask,.gridmap .cell .seeink{position:absolute;inset:0;pointer-events:none;image-rendering:pixelated}
+.gridmap .cell .seemask{z-index:4;background:url("map/안밝힌-바탕.png") calc(var(--c) / (1.0563 * var(--n) - 1) * 100%) calc(var(--r) / (1.0563 * var(--n) - 1) * 100%)/calc(105.63% * var(--n)) calc(105.63% * var(--n)) repeat;
+  -webkit-mask:url("map/밝힘-가림.png") 0 0/800% 100% no-repeat;mask:url("map/밝힘-가림.png") 0 0/800% 100% no-repeat;
+  animation:seeMask .512s steps(7,jump-none) var(--sd,0ms) both}
+.gridmap .cell .seeink{z-index:5;background:url("map/밝힘-먹.png") 0 0/800% 100% no-repeat;animation:seeInk .512s steps(7,jump-none) var(--sd,0ms) both}
+@keyframes seeMask{from{-webkit-mask-position:0% 0;mask-position:0% 0}to{-webkit-mask-position:100% 0;mask-position:100% 0}}
+@keyframes seeInk{from{background-position:0% 0}to{background-position:100% 0}}
 /* 지도 격자 — 평소엔 안 보인다. 고른 칸 · 가는 길의 칸만 네 변 절취선 (사용자 2026-10-30 「클릭한 구역 테두리에만 · 가야 하는 경로에도」).
    절취선 규칙(.gridmap.pmap .cell.cell 과 끝줄 nth-child)은 그대로 두고 색(--dash)만 비운다 */
 .gridmap.pmap .cell.cell{--dash:transparent}
@@ -25513,6 +25530,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 279, "v": "0.7", "d": "2026-10-30", "t": "덜 그린 지도 · 쉼터 · 도둑질 금액", "big": 0},
  {"b": 277, "v": "0.7", "d": "2026-10-30", "t": "짧은 선 걷음", "big": 0},
  {"b": 276, "v": "0.7", "d": "2026-10-30", "t": "반경 둘레 선", "big": 0},
  {"b": 275, "v": "0.7", "d": "2026-10-30", "t": "밝히기 반경 1", "big": 0},
@@ -26982,7 +27000,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=277;
+const BUILD_NO=279;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -28942,11 +28960,14 @@ function mapGridEl(peek){
   if(!peek) try{ floorTouch() }catch(e){}   /* 서 있는 층은 본 것으로 — 빠뜨린 길을 메운다 */
   if(!peek&&run.seen) try{ seeAround(run.pos.r,run.pos.c) }catch(e){}   /* 지도 밝히기 — 걸음 말고 다른 길로 옮겨졌어도 (밀려남 등) */
   const S=run.size;
-  const g=el(`<div class="gridmap pmap${peek?" peekgrid":""}" data-n="${S}" style="grid-template-columns:repeat(${S},1fr)"></div>`);
+  const g=el(`<div class="gridmap pmap${peek?" peekgrid":""}" data-n="${S}" style="grid-template-columns:repeat(${S},1fr);--n:${S}"></div>`);
   const rstep={};
   if(run.route&&!peek) run.route.path.forEach((p,i)=>{ rstep[p.r+"-"+p.c]=i+1 });
   /* 길의 붉은 점 — 칸 가운데 사이 28% · 72% 자리. 그 점이 떨어지는 칸에 담아 그림 뒤에 깐다 */
   const wpAt={}; let bornN=0;
+  /* 못 본 칸인가 — 선 칸 · 안개 지대는 아니다. 붙드는 동안(hold)은 밝힐 칸도 아직 못 본 칸 (아래 SEE_NEW 셈이 hold 를 쓴다) */
+  const unAt=(a,b)=>a>=0&&b>=0&&a<S&&b<S&&!(run.pos.r===a&&run.pos.c===b)&&!fogAt(a,b)&&
+    ((typeof unseenAt==="function"&&unseenAt(a,b))||(hold&&SEE_NEW.some(x=>x.k===a+"-"+b&&!x.t0)));
   /* 오염된 뿌리가 번진다 — 처음 그린 때부터 4초 동안. 다시 그려도 그 시각에 맞춰 이어진다 */
   const RN=Date.now();
   /* ⚠️ 날이 바뀌는 암전(dayBreak) 동안에는 지도가 안 보인다 — 거기서 연출을 시작하면
@@ -28978,7 +28999,7 @@ function mapGridEl(peek){
   for(let r=0;r<S;r++) for(let c=0;c<S;c++){
     const here=(run.pos.r===r&&run.pos.c===c), fogged=fogAt(r,c)&&!here;
     /* 지도 밝히기 — 못 본 칸은 빈 길처럼, 조금 어둡게 (.unseen). 안개 지대가 먼저 (밝혀진 자리에서도 가린다) */
-    const uns=!here&&!fogged&&((typeof unseenAt==="function"&&unseenAt(r,c))||(hold&&SEE_NEW.some(x=>x.k===r+"-"+c&&!x.t0))), hid=fogged||uns;
+    const uns=unAt(r,c), hid=fogged||uns;
     const cell=fogged?{t:"fog"}:uns?{t:"empty",unseen:1}:run.grid[r][c];   /* 안개 지대는 무엇인지 가린다 */
     const adj=near(run.pos,{r:r,c:c});
     const rn=rstep[r+"-"+c]||0;
@@ -29012,9 +29033,14 @@ function mapGridEl(peek){
     /* 격자 — 평소엔 안 보이고, 고른 칸과 가는 길의 칸에만 네 변 절취선 (사용자 2026-10-30) */
     if(!peek){ const tg=run.route?run.route.to:run.mapSel; if(rn||(tg&&tg.r===r&&tg.c===c&&!here)) d.classList.add("gline") }
     /* ⚠️ 밝힘 분기는 `if(uns)` 의 else 다 — 그 사이에 다른 줄을 끼우면 밝힘 연출이 통째로 죽는다 (2026-10-30 격자 줄이 끼어 그랬다) */
-    if(uns) d.classList.add("unseen");
-    else if(!peek&&typeof SEE_NEW!=="undefined"&&SEE_NEW.length){ const x=SEE_NEW.find(y=>y.k===r+"-"+c);   /* 어둠이 퍼지듯 걷힌다 — 다시 그려도 그 시각에 이어서 */
-      if(x){ d.classList.add("seego"); d.style.setProperty("--sd",(x.wait-(RN-x.t0))+"ms") } }
+    /* 덜 그린 지도 (사용자 2026-10-30, art/_받은묶음/map-unrevealed-v2-center-2026-10-30) —
+       못 본 칸 밑에 바탕 한 장을 **판 좌표로** 깐다(.unt, 칸이 몇 개든 한 장으로 이어진다). 본 칸과 맞닿는 변에만 그리다 만 먹 가장자리 */
+    if(uns){ d.classList.add("unseen"); d.style.setProperty("--r",r); d.style.setProperty("--c",c);
+      const ed=[]; if(r>0&&!unAt(r-1,c)) ed.push("et"); if(r<S-1&&!unAt(r+1,c)) ed.push("eb"); if(c>0&&!unAt(r,c-1)) ed.push("el"); if(c<S-1&&!unAt(r,c+1)) ed.push("er");
+      d.appendChild(el(`<i class="unt ${ed.join(" ")}"></i>`)) }
+    else if(!peek&&typeof SEE_NEW!=="undefined"&&SEE_NEW.length){ const x=SEE_NEW.find(y=>y.k===r+"-"+c);   /* 바탕이 가운데부터 뚫리며 그려진다 — 다시 그려도 그 시각에 이어서 */
+      if(x){ d.classList.add("seego"); d.style.setProperty("--sd",(x.wait-(RN-x.t0))+"ms"); d.style.setProperty("--r",r); d.style.setProperty("--c",c);
+        d.appendChild(el(`<i class="seemask"></i>`)); d.appendChild(el(`<i class="seeink"></i>`)) } }
     /* ⚠️ 가려진 칸(안개 · 못 본 칸)에는 움직임 연출을 걸지 않는다 — 걸면 가림이 같이 움직였다 (사용자 2026-10-30) */
     { const bi=(peek||hid)?-1:MAP_BORN.indexOf(r+"-"+c);
       if(bi>=0){ d.classList.add("born"); d.style.setProperty("--bd",hold?"600000ms":(700+bi*380)+"ms"); if(!hold) bornN=Math.max(bornN,bi+1) } }   /* 붙드는 동안은 숨긴 채 (지우지 않는다) */
@@ -30390,11 +30416,12 @@ body.vmap #app .placebox.p-relic .pin .evbox>.evopts{margin-top:8px;gap:5px}
 body.vmap #app .placebox.p-relic .pin .evopts .choice span{line-height:1.35}
 /* 선택지 — 이름 칸 150 + 홈 2 + 늘어나는 면 + 오른끝 24. 위아래 14 는 두께 (글이 길어 높아지면 가운데만 늘어난다) */
 body.vmap #app .placebox.p-relic .pin .evopts .choice:not(.evfoe):not(.go2){min-height:72px;background:none;border:0;box-shadow:none;filter:none;
-  border-image:url("map/선택지-기본.png") 14 24 14 152 fill/14px 24px 14px 152px stretch;grid-template-columns:150px minmax(0,1fr);image-rendering:pixelated}
+  border-image:url("map/선택지-기본.png") 20 24 20 152 fill/20px 24px 20px 152px stretch round;grid-template-columns:150px minmax(0,1fr);image-rendering:pixelated}
 body.vmap #app .placebox.p-relic .pin .evopts .choice:not(.evfoe):not(.go2):not(.no):hover{border-image-source:url("map/선택지-올림.png");filter:none}
 body.vmap #app .placebox.p-relic .pin .evopts .choice.no:not(.evfoe):not(.go2){border-image-source:url("map/선택지-막힘.png");opacity:1}
 body.vmap #app .placebox.p-relic .pin .evopts .choice:not(.evfoe):not(.go2)>b{background:none;border-right:0;padding:10px 10px 10px 18px}
-body.vmap #app .placebox.p-relic .pin .evopts .choice:not(.evfoe):not(.go2)>span{padding:8px 30px 8px 18px}
+body.vmap #app .placebox.p-relic .pin .evopts .choice:not(.evfoe):not(.go2)>span{padding:6px 30px 6px 18px;font-size:12px}
+body.vmap #app .placebox.p-relic .pin .evopts .choice:not(.evfoe):not(.go2)>span+span{padding-top:0}   /* 세 줄(설명 둘 + 조건 하나)까지 72 안에 — 버튼 그림을 세로로 늘이지 않게 (사용자 2026-10-30 「늘어난 느낌」) */
 body.vmap #app .placebox.p-relic .pin .evopts .choice.no:not(.evfoe):not(.go2)>*{opacity:.55}
 /* ── 쉼터 (배경 자리 : 이름 띠 32,96 704×156 · 카드 홈 212×330 셋 — x 44 · 278 · 512, y 286) ── */
 body.vmap #app .placebox.p-rest .pin{padding:0}
@@ -30403,7 +30430,10 @@ body.vmap #app .placebox.p-rest .pin>.center>.title{position:absolute;left:32px;
 body.vmap #app .placebox.p-rest .pin>.center>.sub{position:absolute;left:32px;top:146px;width:704px;margin:0}
 body.vmap #app .placebox.p-rest .pin>.center>.party{position:absolute;left:52px;top:190px;width:664px;margin:0}
 body.vmap #app .placebox.p-rest .pin>.center>.rewards{position:absolute;left:0;top:292px;width:768px;margin:0;gap:34px;justify-content:center}
-body.vmap #app .placebox.p-rest .pin>.center>.rewards>.rw{width:200px;height:318px;min-height:0;box-sizing:border-box;padding:24px 14px 16px}`;
+body.vmap #app .placebox.p-rest .pin>.center>.rewards>.rw{width:200px;height:318px;min-height:0;box-sizing:border-box;padding:24px 14px 16px}
+/* 판 없이 배경 위에 새겨지게 (사용자 2026-10-30 「이 판 빼면 될듯. 그냥 여기 위에 새겨지게」) — 카드 틀 · 대원 줄 틀을 걷는다. 홈 · 이름 띠는 배경 그림이다 */
+body.vmap #app .placebox.p-rest .pin>.center>.party,body.vmap #app .placebox.p-rest .pin>.center>.rewards>.rw{border-image:none;box-shadow:none;background:none}
+body.vmap #app .placebox.p-rest .pin>.center>.rewards>.rw:not(.no):hover{transform:none;filter:brightness(1.18) drop-shadow(0 0 6px rgba(201,162,39,.35))}`;
 let PLACE_CSS=0;
 /* 고르개 묶음을 쉼표로 가른다 — :is( … , … ) 안의 쉼표는 가르지 않는다 */
 function splitSel(s){
@@ -34909,7 +34939,13 @@ function questHas(id){ return !!(run&&(run.quests||[]).some(q=>q.id===id)) }
    QUESTS 의 d · rd 를 그대로 읽는다 — 글을 두 군데 적지 않는다 */
 function questLine(id){
   const Q=QUESTS[id]||{};
-  return `퀘스트: ${String(Q.d||"").replace("{n}",Q.need)}\n보상: ${Q.rd||""}`;
+  return `퀘스트: ${String(Q.d||"").replace("{n}",Q.need)}\n보상: ${questRd(Q)}`;
+}
+/* 보상 글 — 받을 양이 판마다 다른 것은 지금 얼마인지 ( ) 로 붙인다 (사용자 2026-10-30 「도둑질 … 금화 얼마」) */
+function questRd(Q){
+  let s=(Q&&Q.rd)||"";
+  if(Q&&Q.reward&&Q.reward.theftBack) s+=` (금화 ${((typeof run!=="undefined"&&run&&run.theftGold)||0)*2})`;   /* 받는 양 = 잃은 금화 × 2 (questClaim 의 theftBack) */
+  return s;
 }
 /* 「방문 후 파괴」 구역을 **진짜로 부순다** (사용자 2026-10-21).
    회색(cell.done)만 세우면 칸이 그대로 남아 다시 들어갈 수 있었다 —
@@ -35039,7 +35075,7 @@ function questCard(q,isNew,small){
   return `<div class="qcard${q.done?" done":""}${claim?" claim":""}${isNew?" new":""}"${claim?` data-claim="${esc(q.id)}"${q.core?` data-core="1"`:""}`:""}>
     <div class="qt"><b class="${q.core?"qcore":""}">${esc(q.id)}</b><span>${q.core?`<b class="qrepb">반복 퀘스트</b>`:q.key?`<b class="qrepb">열쇠방의 시험</b>`:`수락자 : <b>${esc(q.hero||"전원")}</b>`}</span></div>
     <div class="qb">${questDesc(q)}${q.done?` <i class="qok">완료</i>`:""}</div>
-    <div class="qr">${rich(Q.rd)}</div>
+    <div class="qr">${rich(questRd(Q))}</div>
     ${claim?`<div class="qgo">눌러서 보상 받기${q.core&&q.rdy>1?` (${q.rdy}번)`:""}</div>`:""}</div>`;
 }
 /* 지도 — 목록. 방금 받은 것은 '퀘스트 추가!' 와 함께 빛난다 (한 번) */
@@ -35153,7 +35189,7 @@ function drawQuestPick(app){
   const Pk=run.qPick; if(!Pk||!QUESTS[Pk.id]){ run.qPick=null; view="relic"; render(); return }
   const Q=QUESTS[Pk.id];
   app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">퀘스트를 수락할 대원을 선택하세요</div>
-    <div class="sub">${esc(Pk.id)} — ${rich(Q.d).replace("{n}",Q.need)} ${rich(Q.rd)}</div></div>`));
+    <div class="sub">${esc(Pk.id)} — ${rich(Q.d).replace("{n}",Q.need)} ${rich(questRd(Q))}</div></div>`));
   const row=el(`<div class="picks"></div>`);
   const anyUp=run.heroes.some(h=>!h.down);
   run.heroes.forEach(h=>{
@@ -35201,7 +35237,7 @@ function drawQuestDone(app){
   app.appendChild(el(`<div class="center"><div class="qbig">${uiPng("ui_quest")}
     <div class="title" style="font-size:22px">퀘스트 완료</div>
     <b class="qn">${esc(id)}</b><span class="qwho">수락자 : ${esc(q.hero||"전원")}</span>
-    <p>${questDesc(q)}</p><p class="qrw">보상: ${rewArt(Q.rd)}</p>
+    <p>${questDesc(q)}</p><p class="qrw">보상: ${rewArt(questRd(Q))}</p>
     <button class="go">보상 받기</button></div></div>`));
   app.querySelector("button").onclick=()=>questClaim(id);
 }
