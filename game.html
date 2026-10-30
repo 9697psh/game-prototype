@@ -95,6 +95,7 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
   padding:1px 7px;border-radius:11px;line-height:1.55;pointer-events:none;
   border:1px solid rgba(0,0,0,.55);box-shadow:0 1px 5px rgba(0,0,0,.55);
   font-variant-numeric:tabular-nums;white-space:nowrap}
+.hitpv.kw,.incm.kw{pointer-events:auto;cursor:help}   /* 커서를 올리면 피해의 출처 (사용자 2026-10-30) — 누름은 칸으로 그대로 올라간다 */
 .hitpv+.hitpv{top:11px}
 .hitpv.dmg{background:#c9503f;color:#fff2ee}
 .hitpv.shd{background:#e0c85a;color:#241d06}
@@ -11324,7 +11325,7 @@ function resDefeatFX(msg){
         rRot(ctx,"stone-"+(i+1),M.x(p[0]+12),M.y(p[1]+12+[16,12,18,14][i]*rIn(q)),[12,12],[-18,24,-12,20][i]*rOut(q),sy,rClamp((t-t0)/60)) });
       const tp=rSmooth(rSeg(t,2000,2300));
       rText(ctx,"원정 실패",M.x(382),M.y(77),18*sy,"#d8d2c8",tp);
-      rText(ctx,msg||"대원이 모두 쓰러졌습니다.",M.x(382),M.y(128),7*sy,"#cfc6b8",tp,1);   /* 기존 카드의 아래 글 */
+      /* 아래 작은 글(쓰러진 까닭)은 뺐다 (사용자 2026-10-30 「돌판 밑에 작은 문구 삭제」) */
     }});
   return ()=>{ gone=true; dim.remove(); resKick() };
 }
@@ -25547,6 +25548,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 285, "v": "0.7", "d": "2026-10-30", "t": "피해 출처 툴팁", "big": 0},
  {"b": 284, "v": "0.7", "d": "2026-10-30", "t": "장소 배경 틀 밑까지", "big": 0},
  {"b": 283, "v": "0.7", "d": "2026-10-30", "t": "강화 정보 위치", "big": 0},
  {"b": 282, "v": "0.7", "d": "2026-10-30", "t": "밝힘 위치 고침", "big": 0},
@@ -27022,7 +27024,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=284;
+const BUILD_NO=285;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -43576,7 +43578,7 @@ function incoming(){
   if(!B||B.over||!B.foes||!B.foes.length) return map;
   const list=allUnits();
   const ahead=B.foeAct?{}:endShieldAhead();   /* 적 차례 도중에는 이미 붙어 있다 */
-  const get=u=>map[u.slot]||(map[u.slot]={raw:0,hp:0,ev:0,
+  const get=u=>map[u.slot]||(map[u.slot]={raw:0,hp:0,ev:0,src:[],   /* src — 한 방마다 {f 친 것, v 피해, ev 회피, n 이름} : 받을 피해에 커서를 올리면 보인다 (inc-tag) */
       _e:(u.eshield||0)+((ahead[uid(u)]||{}).e||0),_s:(u.shield||0)+((ahead[uid(u)]||{}).s||0),_v:u.evade||0});
   /* 정지 — 움직이지도, 겨눠지지도, 맞지도 않는다. 실제 셈 세 곳과 짝이다 :
        움직이지 않는다  actOne  `if(f.stop>0) return`
@@ -43609,8 +43611,8 @@ function incoming(){
     /* 부착: 방탄판 — 조준 중에는 받는 피해가 줄어든다 (노트 2026-10-15) */
     if(u.name==="데린저"&&u.aimAt!=null&&raw>0){ const g=(u.tag&&u.tag.aimGuard)||0; if(g) raw=Math.max(0,raw-g) }
     if(u.armor>0&&raw>u.armor) raw=u.armor;   /* 갑피는 한 방을 잘라낸다 */
-    if(m._v>0){ m._v--; m.ev++; return }      /* 회피는 한 방을 통째로 흘린다 */
-    m.raw+=raw;
+    if(m._v>0){ m._v--; m.ev++; m.src.push({f,ev:1}); return }      /* 회피는 한 방을 통째로 흘린다 */
+    m.raw+=raw; m.src.push({f,v:raw,pierce:!!pierce});
     let d=raw;
     const eh=pierce?0:Math.min(m._e,d); m._e-=eh; d-=eh;   /* 관통 피해는 막을 건너뛴다 */
     const sh=pierce?0:Math.min(m._s,d); m._s-=sh; d-=sh;
@@ -43619,9 +43621,9 @@ function incoming(){
   /* 화상 — 내 턴 끝 효과의 맨 마지막(burnTickEnd)에, 적보다 먼저 탄다. 턴 끝에 얻을 보호막(ahead)까지 붙은 막을
      에너지 보호막 → 보호막 차례로 깎는다 — 예고도 같은 차례로 (사용자 2026-10-06) */
   if(!B.foeAct) list.forEach(u=>{ const b=deb(u,"burn"); if(!b||u.hp<=0||vStopped(u)) return;   /* 정지 — 지속 피해도 안 받는다 */
-    { const m=get(u); if(m._v>0){ m._v--; m.ev++; return } }   /* 회피가 화상을 먼저 막는다 (burnTickEnd 와 같게) */
+    { const m=get(u); if(m._v>0){ m._v--; m.ev++; m.src.push({n:"화상",ev:1}); return } }   /* 회피가 화상을 먼저 막는다 (burnTickEnd 와 같게) */
     const m=get(u), e0=Math.min(m._e,b); let d=b-e0; const s0=Math.min(m._s,d); d-=s0;
-    m._e-=e0; m._s-=s0; m.raw+=b; m.hp+=d; m.burn=b });
+    m._e-=e0; m._s-=s0; m.raw+=b; m.hp+=d; m.burn=b; m.src.push({n:"화상",v:b}) });
   const mate={};   /* 단체 잠복 — 먼저 움직인 동료가 걸어 준 공격력 (foePhase 와 같은 차례, 2026-10-01) */
   const up=f=>mate[f.id]||0;
   /* 자리 바뀜을 따라간다 — vs 적, hv 대원 (실제 자리는 건드리지 않는다) */
@@ -43776,12 +43778,32 @@ function incoming(){
   return map;
 }
 /* 그 칸에 서 있는 아군 머리 위에 붙일 쪽지 */
+/* 받을 피해의 출처 — 「누가 · 무엇으로 · 얼마」 를 한 줄씩 (사용자 2026-10-30 「커서를 대면 그 피해의 출처」).
+   incoming() 이 한 방마다 적어 둔 m.src 를 읽기만 한다 — 셈을 다시 하지 않는다 */
+function incSrcName(x){
+  if(x.n) return x.n;
+  const f=x.f; if(!f) return "알 수 없음";
+  const I=f.intent||{};
+  const how=I.t==="sk"?(((FOE[f.name]||{}).sk||[])[I.i]||{}).n:I.t==="volley"?"일제 공격":I.t==="atk"?"공격":"";
+  return f.name+(how?" · "+how:"");
+}
+function incWhy(u,m){
+  const G=[], at={};
+  (m.src||[]).forEach(x=>{ const k=incSrcName(x)+(x.ev?"|ev":"|"+x.v+(x.pierce?"p":""));
+    if(at[k]) at[k].n++; else G.push(at[k]={name:incSrcName(x),v:x.v,ev:x.ev,pierce:x.pierce,n:1}) });
+  const L=G.map(g=>`${g.name} — ${g.ev?"회피":g.v+(g.pierce?" (관통)":"")}${g.n>1?" ×"+g.n:""}`);
+  const cut=m.raw-Math.max(0,m.hp);
+  if(cut>0) L.push(`보호막 · 에너지 보호막이 ${cut} 막음`);
+  if(m.hp>0) L.push(`체력 −${m.hp}${m.hp>=u.hp?" (쓰러짐)":""}`);
+  return L.join("\n");
+}
 function incHtml(u,m){
   if(!m) return "";
-  if(!m.raw) return m.ev?`<span class="incm safe">회피</span>`:"";
+  const why=esc(incWhy(u,m));   /* 머리말(#kwtip b)은 block — 앞에 줄바꿈을 두지 않는다 */
+  if(!m.raw) return m.ev?`<span class="incm safe kw" data-kw="받을 피해" data-own="1" data-tip="${why}">회피</span>`:"";
   const lethal=m.hp>0&&m.hp>=u.hp;
   const note=m.hp>0?(m.hp<m.raw?`체력 ${m.hp}`:""):"막힘";
-  return `<span class="incm${lethal?" lethal":""}${m.hp?"":" safe"}">`
+  return `<span class="incm kw${lethal?" lethal":""}${m.hp?"":" safe"}" data-kw="받을 피해" data-own="1" data-tip="${why}">`
     +`<i class="ci${iconImg("combat_damage")?"":" noart"}">${iconImg("combat_damage")}</i>`
     +m.raw+(note?`<em>${note}</em>`:"")+`</span>`;
 }
@@ -43986,8 +44008,25 @@ function foeHitTag(h,s,f,count){
   let tot=(p.tot!=null&&n===p.times)?p.tot:null;
   if(c>1){ const q=predictQueue(h,s,f,c); if(q&&q.tot!==p.v*n) tot=q.tot }
   const note=[tot!=null?n+"번 합쳐":(n>1?"×"+n:""), p.eat?"막"+p.eat:"", p.tail||""].filter(Boolean).join(" ");
-  return `<span class="hitpv dmg${p.crit?" crit":""}">`+"−"+(tot!=null?tot:p.v)
+  const why=esc(hitWhy(h,s,f,p,n,tot));
+  return `<span class="hitpv dmg kw${p.crit?" crit":""}" data-kw="줄 피해" data-own="1" data-tip="${why}">`+"−"+(tot!=null?tot:p.v)
     +(note?`<em>${note}</em>`:"")+`</span>`;
+}
+/* 줄 피해의 출처 (사용자 2026-10-30) — 기술 칸 숫자와 같은 breakdown 으로 기본 · 보탬을 적고,
+   이 적에게만 붙는 몫(대상 · 상태 · 기술 고유 셈)은 예고(predictDmg)와의 차이로 한 줄. 셈을 새로 만들지 않는다 */
+function hitWhy(h,s,f,p,n,tot){
+  const L=[`${h.name} · ${s.n}`];
+  let sum=null;
+  try{ const bd=breakdown(h,s,"dmg"); sum=bd.total;
+    L.push(`기본 피해 ${s.dmg||0}`);
+    bd.parts.forEach(x=>L.push(typeof x.v==="number"?`${x.v>=0?"+":"−"}${Math.abs(x.v)} ${x.n}`:`${x.n} ${x.v}`)) }catch(e){}
+  const cr=p.crit&&!L.some(x=>/치명타/.test(x));
+  if(cr){ L.push("치명타 ×2"); if(sum!=null) sum*=2 }
+  if(sum!=null&&p.v!==sum){ const d=p.v-sum; L.push(`${d>0?"+":"−"}${Math.abs(d)} 이 적 · 상태 · 기술 고유 셈`) }
+  if(n>1) L.push(tot!=null?`${n}번 합쳐 ${tot}`:`× ${n}번`);
+  if(p.eat) L.push(`적 보호막이 ${p.eat} 막음`);
+  if(p.tail) L.push(p.tail);
+  return L.join("\n");
 }
 function selfHitTag(h,s,count){
   const p=predictSelf(h,s);
