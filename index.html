@@ -5989,6 +5989,11 @@ body.vnew #app .rewards:has(.trait-guarantee){margin-top:48px}
 .placebox .pin{position:absolute;inset:3.4% 4% 3.2% 4%;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;outline:none;
   display:flex;flex-direction:column;align-items:center;scrollbar-width:thin;scrollbar-color:#6b5232 transparent}
 .placebox .pin>*{flex:none;max-width:100%}
+/* 작은 놀이 화면 — 그 놀이만 (사용자 2026-10-30). 놀이가 하는 말(api.say)이 있으면 그 한 줄만 위에, 없으면 판째 숨긴다 */
+.placebox .evbox.evgame>.evart,.placebox .evbox.evgame .evtitle{display:none}
+.placebox .evbox.evgame .evpanel:has(.evdesc:empty){display:none}
+.placebox .evbox.evgame{margin:auto 0}
+.placebox .evbox.evgame>.evopts{margin-top:10px}
 .placebox .evbox{margin:0;width:100%;max-width:none}
 .placebox .evart{width:120px;height:120px;margin-top:2px}
 .placebox .evart.wide{width:min(100%,470px);height:auto}
@@ -25498,6 +25503,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 272, "v": "0.7", "d": "2026-10-30", "t": "작은 놀이 화면", "big": 0},
  {"b": 271, "v": "0.7", "d": "2026-10-30", "t": "보상 아이콘 · 밝힘 연출 · 손", "big": 0},
  {"b": 270, "v": "0.7", "d": "2026-10-30", "t": "덧판 · 문짝 소리", "big": 0},
  {"b": 269, "v": "0.7", "d": "2026-10-30", "t": "지도 밝히기 · 격자 숨김 · 공용 보상 19", "big": 0},
@@ -26961,7 +26967,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=271;
+const BUILD_NO=272;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -30360,6 +30366,26 @@ function drawPlace(app){
   st.appendChild(box);
   const pin=box.querySelector(".pin");
   ({relic:drawRelic,rest:drawRest,gimres:drawGimRes})[view](pin);
+  placeFit(pin);
+}
+/* 판 안에 다 들어가게 — 넘치면 안의 것을 통째로 줄인다 (사용자 2026-10-30 「스크롤로 넘기지 않고 딱 그 화면에만」).
+   놀이가 그리기 없이 판을 바꿔도(카드 뒤집기 · 패 받기) 따라가게 안을 지켜본다. 아주 길면(PLACE_FIT_MIN 밑) 그만큼만 줄이고 나머지는 휠로 */
+const PLACE_FIT_MIN=0.62;
+function placeFit(pin){
+  if(!pin||typeof requestAnimationFrame==="undefined") return;
+  let q=0;
+  const fit=()=>{ q=0; if(!pin.isConnected){ mo&&mo.disconnect(); return }
+    const kids=[...pin.children]; kids.forEach(k=>{ k.style.transform=""; k.style.marginBottom="" });
+    const need=pin.scrollHeight, have=pin.clientHeight; if(!have||need<=have+1) return;
+    /* 줄이면 위아래 사이(gap · margin)도 같이 준다 — 한 번 더 재지 않고 비율 하나로 */
+    const z=Math.max(PLACE_FIT_MIN,have/need);
+    kids.forEach(k=>{ const h=k.offsetHeight; k.style.transformOrigin="top center"; k.style.transform=`scale(${z.toFixed(4)})`;
+      k.style.marginBottom=`${(-(1-z)*h).toFixed(1)}px` }) };
+  const mo=typeof MutationObserver!=="undefined"?new MutationObserver(()=>{ if(!q) q=requestAnimationFrame(fit) }):null;
+  if(mo) mo.observe(pin,{childList:true,subtree:true});
+  fit();
+  /* 그림이 늦게 풀리면 높이가 바뀐다 */
+  pin.querySelectorAll("img").forEach(im=>{ if(!im.complete) im.addEventListener("load",()=>{ if(!q) q=requestAnimationFrame(fit) },{once:true}) });
 }
 function fadeInto(fn){
   if(typeof coverInto==="function"&&(CV_BUSY||coverWants())){ coverInto(fn); return }   /* 도는 중이면 줄을 선다 */
@@ -35150,14 +35176,17 @@ function drawRelic0(app){
     desc.innerHTML=say?evSayHtml(say):evText(e.t);
   } else desc.innerHTML=evText(e.t);
 
+  /* ★ 작은 놀이 화면 (룰렛 · EV_GAME 전부, 앞으로 넣을 것도) — box 에 evgame 을 달면 그 놀이만 보인다 (사용자 2026-10-30).
+     이벤트 그림 · 제목 · 처음 설명은 숨기고, 놀이가 api.say 로 하는 말만 위에 한 줄. 판 안에 다 들어가게 줄이는 것은 placeFit */
   if(run.evSpin){
+    box.classList.add("evgame"); desc.innerHTML="";
     row.appendChild(el(rouletteHTML(e,null)));
     row.appendChild(el(`<div class="hint" style="text-align:center;margin-top:8px;width:100%">바늘이 돌아갑니다…</div>`));
     return;
   }
   /* 이벤트 안의 작은 놀이 (2026-10-05) — 대원 고르기 · 카드 · 상자 셋 · 스물하나 · 시련의 문 */
   if(!run.evSub&&!run.evMsg&&e.game&&EV_GAME[e.game]) run.evSub=EV_GAME[e.game].init(e);
-  if(run.evSub&&EV_GAME[run.evSub.t]){ box.classList.add("evgame"); EV_GAME[run.evSub.t].draw(row,evApiReal(desc)); return }
+  if(run.evSub&&EV_GAME[run.evSub.t]){ box.classList.add("evgame"); desc.innerHTML=""; EV_GAME[run.evSub.t].draw(row,evApiReal(desc)); return }
   if(run.evMsg&&run.evSub&&run.evSub.t==="cave"){   /* 고독의 동굴 — 남길 대원을 고른다 (2026-10-01) */
     const sub=run.evSub;
     row.appendChild(el(`<div class="evres"><div class="evi">${chestIcon("경험치")}</div><div><b>${sub.shelf?"고대 서적 읽기":"동굴 수련"}</b><p>${sub.shelf?"2일 동안 고대 서적을 읽습니다.":"2일 동안 동굴에 남아 수련합니다."} 그동안은 전투에 나서지 않습니다.</p></div></div>`));
