@@ -5987,7 +5987,8 @@ body.vnew #app .rewards:has(.trait-guarantee){margin-top:48px}
 /* 받침의 제 테두리는 안 쓴다 — 지도틀이 테두리다 (사용자 2026-10-30 「따로 테두리 안 써도 돼」).
    받침 그림(424×396, 테두리 15~21px)을 키워 안쪽 결만 판에 깐다 */
 .placebox .pmat{position:absolute;inset:0;background-size:117% 118%;background-position:center;background-repeat:no-repeat;image-rendering:pixelated}
-.placebox .pin{position:absolute;inset:3.4% 4% 3.2% 4%;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;outline:none;
+.placebox.pbg .pmat{background-size:100% 100%}   /* 장소 배경(768×720)은 판에 그대로 */
+.placebox .pin{position:absolute;left:0;top:0;width:768px;height:720px;box-sizing:border-box;padding:24px 31px 23px;transform:scale(var(--pk,1));transform-origin:0 0;   /* 768×720 판 (map-shutter PLACE_W) */overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;outline:none;
   display:flex;flex-direction:column;align-items:center;scrollbar-width:thin;scrollbar-color:#6b5232 transparent}
 .placebox .pin>*{flex:none;max-width:100%}
 /* 작은 놀이 화면 — 그 놀이만 (사용자 2026-10-30). 놀이가 하는 말(api.say)이 있으면 그 한 줄만 위에, 없으면 판째 숨긴다 */
@@ -25505,6 +25506,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 274, "v": "0.7", "d": "2026-10-30", "t": "장소 화면 그림", "big": 0},
  {"b": 273, "v": "0.7", "d": "2026-10-30", "t": "구역 깃발", "big": 0},
  {"b": 272, "v": "0.7", "d": "2026-10-30", "t": "작은 놀이 화면", "big": 0},
  {"b": 271, "v": "0.7", "d": "2026-10-30", "t": "보상 아이콘 · 밝힘 연출 · 손", "big": 0},
@@ -26970,7 +26972,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=273;
+const BUILD_NO=274;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -30178,6 +30180,12 @@ const SH_SND={
   열림:{k:"위아래 덮개 열림", 크기:[0.10,0.13,0.13,0.09]}
 };
 const SHUT_FILES={top:"덧판-위.png",bottom:"덧판-아래.png",under:"덧판-가림.png",gtop:"덧판-홈-위.png",gbot:"덧판-홈-아래.png",mat:"기록-받침.png"};
+/* 장소마다 바닥 (사용자 2026-10-30, art/_받은묶음/place-screens-2026-10-30) — 768×720 한 장, 자리가 그려져 있다.
+   없는 장소(전용 구역 결과 · 쉼터 회복 결과)는 기록 받침 */
+const PLACE_BG={relic:"미지의-구역-배경.png",rest:"쉼터-배경.png"};
+/* 장소 화면 안쪽은 **768×720 판 하나**로 그리고, 지도틀 안쪽 크기에 맞춰 통째로 키우고 줄인다 (--pk).
+   배경에 그려진 자리(그림 틀 · 설명 판 · 선택지 · 카드 홈)와 내용이 창 크기와 상관없이 맞는다 */
+const PLACE_W=768, PLACE_H=720;
 /* 안쪽 가림 영역(764×702, 원점 = 참고 캡처 578,184) 기준 — 캔버스 왼쪽 위 · 크기 (표시 2배 단위). 원본 usage.json 그대로 */
 const SH_W=764, SH_H=702, SH_TRAVEL=372;
 const SH_PART={
@@ -30348,7 +30356,36 @@ body.vmap #app .placebox .pin .title{font-size:22px!important}
 body.vmap #app .placebox .pin .evbox>.evopts{margin-top:14px;gap:9px}
 body.vmap #app .placebox .pin .evbox>.party{margin-top:10px}
 body.vmap #app .placebox .pin>.center+.center,body.vmap #app .placebox .pin>.center+div{margin-top:12px}
-body.vmap #app .placebox .pin .rewards.chestgot{gap:22px;margin-top:16px}`;
+body.vmap #app .placebox .pin .rewards.chestgot{gap:22px;margin-top:16px}
+/* ── 미지의 구역 (배경 자리 : 그림 틀 40,30 688×292 · 설명 40,334 688×110 · 선택지 40,470 688×230) ── */
+body.vmap #app .placebox.p-relic .pin{padding:46px 40px 8px}
+body.vmap #app .placebox.p-relic .pin .evbox{width:688px}
+body.vmap #app .placebox.p-relic .pin .evart.wide{width:640px;height:256px;margin:0 auto;position:relative;overflow:visible;border:0;border-image:none;background:none;box-shadow:none;padding:0}
+body.vmap #app .placebox.p-relic .pin .evart.wide>img{width:640px;height:256px;display:block;image-rendering:pixelated}
+body.vmap #app .placebox.p-relic .pin .evart.wide::after{content:"";position:absolute;inset:-16px;pointer-events:none;
+  background:url("map/이벤트-그림틀.png") 0 0/100% 100% no-repeat;image-rendering:pixelated}
+body.vmap #app .placebox.p-relic .pin .evbox>.evpanel{margin-top:18px;box-sizing:border-box;padding:10px 18px 8px}
+body.vmap #app .placebox.p-relic .pin .evbox>.evpanel .evtitle{margin-top:0;line-height:1.3}
+body.vmap #app .placebox.p-relic .pin .evbox>.evpanel .evdesc .evp{font-size:13px;line-height:1.55;margin-bottom:2px}
+body.vmap #app .placebox.p-relic .pin .evbox>.evpanel .evdesc .evsay{font-size:15px;line-height:1.5;margin:6px 0;padding-top:4px;padding-bottom:4px}
+body.vmap #app .placebox.p-relic .pin .evbox>.evopts{margin-top:8px;gap:5px}
+body.vmap #app .placebox.p-relic .pin .evopts .choice span{line-height:1.35}
+/* 선택지 — 이름 칸 150 + 홈 2 + 늘어나는 면 + 오른끝 24. 위아래 14 는 두께 (글이 길어 높아지면 가운데만 늘어난다) */
+body.vmap #app .placebox.p-relic .pin .evopts .choice:not(.evfoe):not(.go2){min-height:72px;background:none;border:0;box-shadow:none;filter:none;
+  border-image:url("map/선택지-기본.png") 14 24 14 152 fill/14px 24px 14px 152px stretch;grid-template-columns:150px minmax(0,1fr);image-rendering:pixelated}
+body.vmap #app .placebox.p-relic .pin .evopts .choice:not(.evfoe):not(.go2):not(.no):hover{border-image-source:url("map/선택지-올림.png");filter:none}
+body.vmap #app .placebox.p-relic .pin .evopts .choice.no:not(.evfoe):not(.go2){border-image-source:url("map/선택지-막힘.png");opacity:1}
+body.vmap #app .placebox.p-relic .pin .evopts .choice:not(.evfoe):not(.go2)>b{background:none;border-right:0;padding:10px 10px 10px 18px}
+body.vmap #app .placebox.p-relic .pin .evopts .choice:not(.evfoe):not(.go2)>span{padding:8px 30px 8px 18px}
+body.vmap #app .placebox.p-relic .pin .evopts .choice.no:not(.evfoe):not(.go2)>*{opacity:.55}
+/* ── 쉼터 (배경 자리 : 이름 띠 32,96 704×156 · 카드 홈 212×330 셋 — x 44 · 278 · 512, y 286) ── */
+body.vmap #app .placebox.p-rest .pin{padding:0}
+body.vmap #app .placebox.p-rest .pin>.center{position:relative;width:768px;height:720px}
+body.vmap #app .placebox.p-rest .pin>.center>.title{position:absolute;left:32px;top:104px;width:704px;margin:0}
+body.vmap #app .placebox.p-rest .pin>.center>.sub{position:absolute;left:32px;top:146px;width:704px;margin:0}
+body.vmap #app .placebox.p-rest .pin>.center>.party{position:absolute;left:52px;top:190px;width:664px;margin:0}
+body.vmap #app .placebox.p-rest .pin>.center>.rewards{position:absolute;left:0;top:292px;width:768px;margin:0;gap:34px;justify-content:center}
+body.vmap #app .placebox.p-rest .pin>.center>.rewards>.rw{width:200px;height:318px;min-height:0;box-sizing:border-box;padding:24px 14px 16px}`;
 let PLACE_CSS=0;
 /* 고르개 묶음을 쉼표로 가른다 — :is( … , … ) 안의 쉼표는 가르지 않는다 */
 function splitSel(s){
@@ -30381,8 +30418,13 @@ function drawPlace(app){
   st.classList.remove("unfolding"); st.classList.add("placemode");
   old.replaceWith(st);
   const box=el(`<div class="placebox"><div class="pmat"></div><div class="pin" tabindex="-1"></div></div>`);
-  box.querySelector(".pmat").style.backgroundImage=`url("${mapPng(SHUT_FILES.mat)}")`;
+  const pk=view==="rest"&&run.restRes?"restres":view;   /* 쉼터 회복 결과는 카드 홈이 없는 받침에 */
+  box.classList.add("p-"+pk);
+  if(PLACE_BG[pk]) box.classList.add("pbg");
+  box.querySelector(".pmat").style.backgroundImage=`url("${mapPng(PLACE_BG[pk]||SHUT_FILES.mat)}")`;
   st.appendChild(box);
+  { const fitK=()=>{ if(!box.isConnected){ ro&&ro.disconnect(); return } box.style.setProperty("--pk",(box.clientWidth/PLACE_W).toFixed(5)) };
+    const ro=typeof ResizeObserver!=="undefined"?new ResizeObserver(fitK):null; if(ro) ro.observe(box); fitK() }
   const pin=box.querySelector(".pin");
   ({relic:drawRelic,rest:drawRest,gimres:drawGimRes})[view](pin);
   placeFit(pin);
