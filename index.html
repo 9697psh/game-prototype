@@ -4020,6 +4020,7 @@ body.vmap .mtop .mtrow{transform:translateY(calc(13.9vh - 39px))}
 .mb-mid .pstage{padding:0;background:none}
 .mb-mid .pstage::before{content:"";position:absolute;inset:3.4% 0 1.2%;background:var(--map-floor);pointer-events:none}
 .mb-mid .pstage::after{inset:3.4% -1.6% 1.2% -1.6%}
+.mb-mid .pstage .pmapimg{clip-path:inset(0 0 1.2% 0)}   /* 양피지를 쥔 손이 틀 바깥 아래끝(1.2%) 밑으로 나가지 않게 — 이테리오 · 카제 … 손 그림은 맨 아래 줄까지 찬다 (사용자 2026-10-30) */
 /* ⚠️ 아래는 1.2% 만 — 손 그림이 256줄 가운데 255줄까지 내려오는 것이 여럿이라
    아래를 많이 들이면 손끝이 액자 밖으로 삐져 나온다 (사용자 2026-10-15) */
 .mapwrap.m3{display:grid;grid-template-columns:560px 190px minmax(0,1fr);gap:20px;align-items:start;margin-top:4px}
@@ -22233,7 +22234,11 @@ function seeKindSpots(T){ const L=[]; if(!run||!run.seen||!run.grid) return L;
   for(let r=0;r<run.size;r++) for(let c=0;c<run.size;c++){ const x=run.grid[r][c]; if(x&&T.indexOf(x.t)>=0&&!x.done&&unseenAt(r,c)) L.push({r,c}) }
   return L }
 function seeKind(T,n){ const L=seeKindSpots(T); let k=0;
-  for(;k<n&&L.length;k++){ const p=L.splice(Math.floor(Math.random()*L.length),1)[0]; run.seen[p.r+"-"+p.c]=1; SEE_NEW.push({k:p.r+"-"+p.c,wait:200+k*220}) }
+  for(;k<n&&L.length;k++){ const p=L.splice(Math.floor(Math.random()*L.length),1)[0]; run.seen[p.r+"-"+p.c]=1;
+    /* 멀리 떨어진 칸 하나가 옅게 밝아지면 눈에 안 띈다 — 새 칸처럼 솟는 연출(MAP_BORN · 지도표시 소리)을 같이 걸고,
+       어둠은 그 솟음 바로 앞에 걷히게 맞춘다 (map-grid : born --bd = 700 + 순번×380). 지도가 보일 때 시작한다 (mapHold) */
+    const bi=(typeof MAP_BORN!=="undefined"&&!run.sandbox)?MAP_BORN.push(p.r+"-"+p.c)-1:k;
+    SEE_NEW.push({k:p.r+"-"+p.c,wait:500+bi*380}) }
   return k }
 function seeStart(){ if(!run||!run.pos) return; run.seen={}; SEE_LAST=null; SEE_NEW=[]; seeAround(run.pos.r,run.pos.c,true) }
 function fogLift(r,c){
@@ -25493,6 +25498,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 271, "v": "0.7", "d": "2026-10-30", "t": "보상 아이콘 · 밝힘 연출 · 손", "big": 0},
  {"b": 270, "v": "0.7", "d": "2026-10-30", "t": "덧판 · 문짝 소리", "big": 0},
  {"b": 269, "v": "0.7", "d": "2026-10-30", "t": "지도 밝히기 · 격자 숨김 · 공용 보상 19", "big": 0},
  {"b": 268, "v": "0.7", "d": "2026-10-30", "t": "장소 화면 언제나 판 안에", "big": 0},
@@ -26955,7 +26961,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=270;
+const BUILD_NO=271;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -28902,6 +28908,15 @@ function moveTaint(){
 const near=(a,b)=>Math.abs(a.r-b.r)+Math.abs(a.c-b.c)===1;
 /* 지도 칸 판 — 지도 화면과 [지도 보기](M) 가 같은 것을 쓴다 (사용자 2026-09-16: 미리보기가 옛 그림으로 그려지던 것).
    peek 이면 길 번호를 안 찍고 누르지 못한다. 풍선(mapTip)은 둘 다 뜬다 */
+/* 지도가 지금 보이지 않는다 — 장소 화면 · 덧판 · 탁자 덮개가 도는 동안 */
+function mapHold(){
+  return !!((typeof placeMode==="function"&&placeMode())||(typeof SHUT_BUSY!=="undefined"&&SHUT_BUSY)||(typeof CV_BUSY!=="undefined"&&CV_BUSY));
+}
+/* 붙들어 둔 지도 소식이 있으면 다시 그려 시작한다 — 전환이 끝나는 곳(shutRun · coverEnd)이 부른다 */
+function mapNewsGo(){
+  try{ if(typeof view==="undefined"||view!=="map"||!run||mapHold()) return;
+    if((typeof SEE_NEW!=="undefined"&&SEE_NEW.some(x=>!x.t0))||(typeof MAP_BORN!=="undefined"&&MAP_BORN.length)) render() }catch(e){ console.error(e) }
+}
 function mapGridEl(peek){
   if(!peek) try{ floorTouch() }catch(e){}   /* 서 있는 층은 본 것으로 — 빠뜨린 길을 메운다 */
   if(!peek&&run.seen) try{ seeAround(run.pos.r,run.pos.c) }catch(e){}   /* 지도 밝히기 — 걸음 말고 다른 길로 옮겨졌어도 (밀려남 등) */
@@ -28927,7 +28942,11 @@ function mapGridEl(peek){
     .forEach(A=>{ if(!A||!A.forEach) return; A.forEach(x=>{ if(!x.t0) x.t0=RN });
       for(let i=A.length-1;i>=0;i--) if(RN-A[i].t0>4000) A.splice(i,1) });
   if(!peek){ MAP_GONE.forEach(x=>{ if(!x.t0) x.t0=RN }); MAP_GONE=MAP_GONE.filter(x=>RN-x.t0<4000) }
-  if(!peek&&typeof SEE_NEW!=="undefined"){ SEE_NEW.forEach(x=>{ if(!x.t0) x.t0=RN }); SEE_NEW=SEE_NEW.filter(x=>RN-x.t0<x.wait+700) }   /* 지도 밝히기 — 새로 밝힌 칸 */
+  /* ★ 지도 소식(새로 밝힌 칸 · 새로 솟은 칸)은 **지도가 보일 때** 시작한다 (사용자 2026-10-30 「화면 나와서 밝혀지는 연출」).
+     장소 화면(덧판 안, 지도를 그려 놓고 가린다) · 덧판 · 탁자 덮개가 도는 동안 그린 지도는 보이지 않는다 —
+     그때는 시계를 걸지 않고 붙들어 둔다(밝힐 칸은 아직 어둡게, 솟을 칸은 숨겨). 전환이 끝나면 mapNewsGo 가 다시 그린다 */
+  const hold=!peek&&mapHold();
+  if(!peek&&!hold&&typeof SEE_NEW!=="undefined"){ SEE_NEW.forEach(x=>{ if(!x.t0) x.t0=RN }); SEE_NEW=SEE_NEW.filter(x=>RN-x.t0<x.wait+700) }   /* 지도 밝히기 — 새로 밝힌 칸 */
   const goneSnd=!peek&&MAP_GONE.some(x=>(x.t==="wreck"||x.t==="crane")&&x.t0===RN);
   const wagonSnd=!peek&&wagonNew;
   if(run.route&&!peek&&typeof ICON_PNG!=="undefined"&&ICON_PNG.map_wp1){
@@ -28938,7 +28957,7 @@ function mapGridEl(peek){
   for(let r=0;r<S;r++) for(let c=0;c<S;c++){
     const here=(run.pos.r===r&&run.pos.c===c), fogged=fogAt(r,c)&&!here;
     /* 지도 밝히기 — 못 본 칸은 빈 길처럼, 조금 어둡게 (.unseen). 안개 지대가 먼저 (밝혀진 자리에서도 가린다) */
-    const uns=!here&&!fogged&&(typeof unseenAt==="function"&&unseenAt(r,c)), hid=fogged||uns;
+    const uns=!here&&!fogged&&((typeof unseenAt==="function"&&unseenAt(r,c))||(hold&&SEE_NEW.some(x=>x.k===r+"-"+c&&!x.t0))), hid=fogged||uns;
     const cell=fogged?{t:"fog"}:uns?{t:"empty",unseen:1}:run.grid[r][c];   /* 안개 지대는 무엇인지 가린다 */
     const adj=near(run.pos,{r:r,c:c});
     const rn=rstep[r+"-"+c]||0;
@@ -28969,14 +28988,15 @@ function mapGridEl(peek){
       ${kind!=="empty"&&!cell.done?`<span class="cl">${esc(cell.ceil?"천장":cellLabel(cell))}</span>`:""}
     </div>`);
     d.dataset.rc=r+"-"+c;
-    if(uns) d.classList.add("unseen");
     /* 격자 — 평소엔 안 보이고, 고른 칸과 가는 길의 칸에만 네 변 절취선 (사용자 2026-10-30) */
     if(!peek){ const tg=run.route?run.route.to:run.mapSel; if(rn||(tg&&tg.r===r&&tg.c===c&&!here)) d.classList.add("gline") }
+    /* ⚠️ 밝힘 분기는 `if(uns)` 의 else 다 — 그 사이에 다른 줄을 끼우면 밝힘 연출이 통째로 죽는다 (2026-10-30 격자 줄이 끼어 그랬다) */
+    if(uns) d.classList.add("unseen");
     else if(!peek&&typeof SEE_NEW!=="undefined"&&SEE_NEW.length){ const x=SEE_NEW.find(y=>y.k===r+"-"+c);   /* 어둠이 퍼지듯 걷힌다 — 다시 그려도 그 시각에 이어서 */
       if(x){ d.classList.add("seego"); d.style.setProperty("--sd",(x.wait-(RN-x.t0))+"ms") } }
     /* ⚠️ 가려진 칸(안개 · 못 본 칸)에는 움직임 연출을 걸지 않는다 — 걸면 가림이 같이 움직였다 (사용자 2026-10-30) */
     { const bi=(peek||hid)?-1:MAP_BORN.indexOf(r+"-"+c);
-      if(bi>=0){ d.classList.add("born"); d.style.setProperty("--bd",(700+bi*380)+"ms"); bornN=Math.max(bornN,bi+1) } }
+      if(bi>=0){ d.classList.add("born"); d.style.setProperty("--bd",hold?"600000ms":(700+bi*380)+"ms"); if(!hold) bornN=Math.max(bornN,bi+1) } }   /* 붙드는 동안은 숨긴 채 (지우지 않는다) */
     if(!peek&&!uns&&MAP_GONE.length){ const k=r+"-"+c;
       MAP_GONE.filter(x=>x.k===k).forEach(x=>{
         if(x.t==="fog"&&!fogAt(r,c)){   /* 안개가 옆으로 밀려 흩어지며 옅어지고, 밑의 칸이 흐릿하다 또렷해진다 */
@@ -29110,7 +29130,11 @@ function drawMap(app){
   { const hand=stage.querySelector(".mhand"); let mode=null, last=window.__mapLast||null;
     const SC=H.scale||1;
     const put=()=>{ if(!last) return; const b=stage.getBoundingClientRect(), k=b.width/256*SC, v=H[mode];
-      hand.style.left=(last[0]-b.left-v.tip[0]*k)+"px"; hand.style.top=(last[1]-b.top-v.tip[1]*k)+"px"; hand.style.display="block" };
+      hand.style.left=(last[0]-b.left-v.tip[0]*k)+"px"; hand.style.top=(last[1]-b.top-v.tip[1]*k)+"px"; hand.style.display="block"; handClip() };
+    /* 지도틀 바깥 아래끝(::after 의 bottom) 밑으로 나간 팔은 자른다 — 잘린 소매 끝이 틀 밑 탁자에 비쳤다 (사용자 2026-10-30 이테리오) */
+    const handClip=()=>{ const fb=parseFloat(getComputedStyle(stage,"::after").bottom)||0;
+      const ov=hand.offsetTop+hand.offsetHeight-(stage.clientHeight-fb); hand.style.clipPath=ov>0?`inset(0 0 ${ov}px 0)`:"" };
+    hand.addEventListener("load",()=>{ if(hand.style.display==="block") handClip() });
     const set=m=>{ if(mode===m) return; mode=m; const v=H[m];
       hand.src=mapPng(v.f); hand.style.width=(v.w/256*100*SC)+"%"; put() };
     stage.onmousemove=e=>{ last=[e.clientX,e.clientY]; window.__mapLast=last; if(hand.dataset.hold){ mapHoldDraw(); return } if(!mode) set("point"); else put() };
@@ -29123,7 +29147,7 @@ function drawMap(app){
         const jx=hf.shake?(Math.random()*5-2.5):0, jy=hf.shake?(Math.random()*5-2.5):0;   /* 부들부들 */
         const PA=(GHOLD.phase==="tap"&&!hf.H.follow&&GHOLD.anc)||last;   /* 마무리는 뗀 자리에서 — follow(동전)는 커서를 따라 */
         hand.style.left=(PA[0]-b.left-hf.H.tip[0]*k+jx)+"px"; hand.style.top=(PA[1]-b.top-hf.H.tip[1]*k+jy)+"px";
-        hand.style.display="block"; hand.dataset.hold="1"; return }
+        hand.style.display="block"; hand.dataset.hold="1"; handClip(); return }
       if(hand.dataset.hold){ delete hand.dataset.hold; hand.style.filter=""; const m=mode||"point"; mode=null; set(m); handFadeIn(hand) } };
     window.__mapHoldDraw=mapHoldDraw;
     stage.onmouseleave=()=>{ hand.style.display="none"; last=null; window.__mapLast=null };
@@ -30054,6 +30078,7 @@ function coverEnd(){
   CV_TRIP=(typeof run!=="undefined"&&run&&view!=="map")?run:null;
   coverIdle();
   const nx=CV_NEXT.shift(); if(nx) setTimeout(()=>fadeInto(nx),0);
+  else if(typeof mapNewsGo==="function") mapNewsGo();   /* 덮개가 다 열린 뒤 — 붙들어 둔 밝힘 · 새 칸 */
 }
 
 /* ── 처음 펼침 — 새 원정 · 다음 막의 지도가 처음 펼쳐질 때 (사용자 2026-10-29) ──
@@ -30257,6 +30282,7 @@ function shutRun(enter){
     if(placeMode()){ const pin=document.querySelector("#app .placebox .pin"); if(pin) try{ pin.focus({preventScroll:true}) }catch(e){} }
     else if(document.activeElement&&document.activeElement.blur) document.activeElement.blur();
     SHUT_AFTER.splice(0).forEach(f=>{ try{ f() }catch(e){ console.error(e) } });
+    if(typeof mapNewsGo==="function") mapNewsGo();   /* 판이 다 열린 뒤 — 붙들어 둔 밝힘 · 새 칸 */
     shutCursor() };
   const refit=()=>document.querySelectorAll("#app .pstage > .shut").forEach(x=>x._fit&&x._fit());
   /* 무대가 없으면(제목 · 전투 · 보상에서 왔다) — 나가는 길은 그냥 바꾸고, 들어가는 길은 닫힌 판으로 그려 열기만 한다 */
@@ -49018,7 +49044,23 @@ function rewardIcon(r){
     const im=id?iconImg(id):"";
     if(im) return im;
   }
+  { const id=rewAutoIcon(r); const im=id?iconImg(id):""; if(im) return im }
   return rewardIcon0(r);
+}
+/* 그림이 정해지지 않은 보상 — 이름 · 설명의 낱말로 **받은 그림**을 고른다 (사용자 2026-10-30 「추후에도 자동으로」).
+   위에서부터 먼저 맞는 것. 맞는 게 없으면 skill(두루마리). 손으로 정하려면 REW_FIX 에 적는다 (그것이 먼저 이긴다).
+   ⚠️ 지도용 ink 그림(ink_*)은 넣지 않는다 (사용자 2026-10-30) */
+const REW_AUTO=[
+  [/상점/,"map_shop"],[/제련소/,"facility_forge"],[/미지의 구역/,"map_unknown"],[/정예/,"map_elite"],[/전투 구역/,"map_battle"],
+  [/쉼터|천막|요새/,"map_shelter"],[/장신구/,"reward_trinket_choice_common"],[/오염/,"corruption"],[/카드/,"cards"],
+  [/경험치|레벨/,"experience"],[/제련석/,"ore"],[/금화/,"currency_gold"],[/마나/,"mana"],[/보호막|막기|방어력/,"shield"],
+  [/최대 체력|체력|회복/,"life"],[/활동량|밤|아침|날이/,"clock"],[/지도/,"explore"],[/공격력|피해/,"combat_symbol_atk"],[/마법력/,"magic"]
+];
+function rewAutoIcon(r){
+  if(!r||!r.n||typeof ICON_PNG==="undefined") return "";
+  const t=r.n+" "+(r.d||"");
+  for(const [re,id] of REW_AUTO) if(re.test(t)&&ICON_PNG[id]) return id;
+  return ICON_PNG.skill?"skill":"";
 }
 /* 보상 이름만으로 아이콘 열쇠를 찾는다 — 「등급|이름」 에서 등급이 어긋났을 때의 받침 (2026-10-12).
    한 번 찾으면 적어 둔다 (보상 칸을 그릴 때마다 표를 훑지 않게) */
@@ -49154,6 +49196,14 @@ const REW_FIX={
  "잔향":{"sk":"바람처럼 사라져라"},"불바람":{"sk":"바람처럼 사라져라"},"역풍":{"sk":"기류 흘리기"},
  "청풍검법":{"sk":"산들바람"},"허공답보":{"sk":"산들바람"},"방어의 바람":{"sk":"산들바람"},"보법":{"sk":"산들바람"},"싹쓸바람":{"sk":"산들바람"},
  "소용돌이":{"sk":"진선풍도"},"날카로운 칼끝":{"sk":"진선풍도"},"폭풍칼날":{"sk":"진선풍도"},"눈보다 빠르게":{"ic":"charge"},"자취 감추기":{"ic":"status_evade"},"나눠먹기": {"ic": "starter_health"}, "도발적인 몸": {"sk": "응축 폭발"}, "주인님을 받들어라": {"ic": "puppet"}, "망자의 끈기": {"spr": "망자의 육체"}, "망자는 전리품을 남기고": {"ic": "experience"}, "그림자 위장": {"ic": "status_evade"}, "육체 정화": {"spr": "망자의 육체"}, "대상 포착": {"ic": "victory"}, "영광스러운 귀환": {"ic": "victory"}, "수확자": {"sk": "영혼 수확"}, "대가를 치뤄라": {"sk": "영혼 수확"}, "직접 거두기": {"sk": "영혼 수확"}, "영혼 흡수": {"ic": "starter_health"}, "으스스한 기운": {"sk": "영혼 분리"}, "환영 성장": {"sk": "영혼 분리"}, "등가 교환": {"ic": "magic"}, "망자들의 통솔자": {"sk": "영혼 분리"}, "망자의 위엄": {"ic": "slash_heart"}, "영혼 둔갑": {"ic": "status_stealth"}, "플로우의 악의 기운 약화": {"ic": "poison"}, "플레어의 악의 기운 소멸": {"ic": "poison"}, "불태우기": {"ic": "status_burn"}, "점화": {"ic": "status_burn"}, "파도 보호막": {"ic": "helmet"}, "피해 흘리기": {"ic": "helmet"}, "재빠른 이동": {"ic": "card_shoes"}, "빗물": {"ic": "card_shoes"}, "잿불": {"ic": "card_shoes"}, "밀물": {"ic": "wind"}, "썰물": {"ic": "wind"}, "불씨 폭발": {"ic": "status_burn"}, "화상 전이": {"ic": "status_burn"}};
+/* 공용 보상 (사용자 2026-10-30) — 받은 그림 가운데서 골랐다. ⚠️ 지도용 ink 그림(ink_* · ink7_* · ink11_*)은 보상에 쓰지 않는다 */
+Object.assign(REW_FIX,{
+ "야행성":{"ic":"clock"},"숙취":{"ic":"card_beer"},"책 읽기":{"ic":"skill"},"선제 호흡":{"ic":"mana"},"샛길":{"ic":"map_shelter"},
+ "낡은 복권":{"ic":"reward_gambler_box"},"동전 던지기":{"ic":"currency_gold"},"더러운 손":{"ic":"corruption"},"더러운 돈":{"ic":"bounty_bag"},
+ "기름칠":{"ic":"fuel_wrench"},"끈기":{"ic":"life"},"상점 탐색":{"ic":"map_shop"},"제련소 탐색":{"ic":"facility_forge"},
+ "미지의 탐색":{"ic":"map_unknown"},"위험 탐색":{"ic":"map_battle"},"경고장":{"ic":"map_elite"},"오솔길":{"ic":"camp"},
+ "장신구 벨트":{"ic":"reward_trinket_choice_common"},"최종성장":{"ic":"exp_arrow"}
+});
 const REW_SKILL_ART={"식욕을 참을 수 없어":"폭식의 악마","뺏어먹기":"폭식의 악마","썩어가는 육체":"저주받은 육체"};
 const REW_MINION_ART={"악마 하수인 강화":"악마 하수인","하수인 단련":"악마 하수인","임프 무리":"악마 하수인","굶주린 시선":"악마 하수인","물량 공세":"악마 하수인","진두지휘":"악마 하수인","악마 장군 소환":"악마 장군"};
 const GCLS={"하급":"g1","중급":"g2","상급":"g3","파편":"g4","일반":"g5","희귀":"g6","특수":"g7","전설":"g8"};
