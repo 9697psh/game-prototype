@@ -6334,6 +6334,26 @@ body.vbattle .bagbtn,body.vnew .bagbtn{top:7px;left:20px;height:32px;box-sizing:
   border-image:url("ui/menu-tile-trim.png") 24 fill / 9px round;image-rendering:pixelated;text-shadow:0 1px 0 #000}
 body.vbattle .bagbtn:hover,body.vnew .bagbtn:hover{background:none;filter:brightness(1.2)}
 body.vbattle .bagbtn img.npx,body.vnew .bagbtn img.npx{width:26px;height:26px;margin:-4px 0}
+/* ── 보상 카드 고르기 — 원정 탁자 (사용자 2026-10-31, art/배경/reward-table · reward-mat, 원본 GameProject2/art/backgrounds/reward-table-v1)
+   목재 탁자 + 가죽 매트 두 겹만. 상자 · 두루마리 소품은 쓰지 않는다.
+   두 그림은 같은 배율 : 960×540 논리 판의 1칸 = --rpx (화면을 덮는 배율, background-size:cover 와 같은 셈) */
+body.rwtable{--rpx:max(calc(100vw / 960),calc(100vh / 540));background:#1a120c url("bg/reward-table.webp") center/cover no-repeat}
+body.rwtable #app .rewards.rwmat{position:relative;isolation:isolate;width:fit-content;max-width:100%;margin-left:auto;margin-right:auto}
+body.rwtable #app .rewards.rwmat::before{content:"";position:absolute;left:50%;top:50%;z-index:-1;pointer-events:none;
+  --m:max(var(--rpx),var(--need,0px));width:calc(632 * var(--m));height:calc(282 * var(--m));transform:translate(-50%,-50%);
+  background:url("bg/reward-mat.webp") center/100% 100% no-repeat}
+/* 카드 반응 — 들림 · 그림자 넓어짐. 그림자는 카드 틀 모양을 따른다(drop-shadow) — 네모 box-shadow 는 틀 바깥 여백까지 그렸다.
+   고르면 고른 것만 밝게, 나머지는 흐리게 (기존 .faded) */
+body.rwtable #app .rw.rwpick{transition:transform .16s ease-out,filter .2s ease-out,opacity .35s;box-shadow:none!important;outline:0;
+  filter:drop-shadow(0 6px 5px rgba(0,0,0,.6))}
+body.rwtable #app .rw.rwpick:hover,body.rwtable #app .rw.rwpick:focus-visible{transform:translateY(-7px);filter:drop-shadow(0 18px 14px rgba(0,0,0,.65))}
+body.rwtable #app .rw.rwpick:focus-visible{filter:drop-shadow(0 18px 14px rgba(0,0,0,.65)) drop-shadow(0 0 3px #f4d67c)}
+body.rwtable #app .rewards.picked .rw.rwpick{pointer-events:none}
+body.rwtable #app .rw.rwpick.chosen{transform:translateY(-7px);filter:brightness(1.12) drop-shadow(0 18px 14px rgba(0,0,0,.65)) drop-shadow(0 0 6px rgba(244,214,124,.7))}
+body.rwtable #app .rw.rwpick.faded{opacity:.3;filter:grayscale(.6) drop-shadow(0 4px 4px rgba(0,0,0,.5))}
+body.rwtable #app .rw.rwpick.taken{animation:rwtTake .45s cubic-bezier(.3,1.4,.5,1)}   /* 기존 tkA(1.09배)는 들린 자리를 놓쳐 두 번 움직였다 */
+@keyframes rwtTake{0%{transform:translateY(-7px) scale(1)}40%{transform:translateY(-10px) scale(1.04)}100%{transform:translateY(-7px) scale(1)}}
+@media(prefers-reduced-motion:reduce){body.rwtable #app .rw.rwpick,body.rwtable #app .rw.rwpick.taken{transition:none;animation:none}}
 </style>
 </head>
 <body>
@@ -14537,6 +14557,7 @@ const HERO_DIFF={"이라":"보통",   /* 사용자가 정했다 (2026-10-13) */
  "오리온":"쉬움",   /* 사용자가 정했다 (2026-10-15) */
  "데린저":"보통",   /* 사용자가 정했다 (2026-10-15) */
  "파벨":"보통",   /* 사용자가 정했다 (2026-10-15) */
+ "오볼":"보통",   /* 사용자가 정했다 (2026-10-31 : 중간) */
  "나이코스":"쉬움","카제":"어려움","쿠렘타이":"쉬움","트리스탄":"보통","굴라":"쉬움","플레어와 플로우":"어려움","이테리오":"어려움","오토":"보통","헥토":"쉬움","도미니코":"보통"};
 const DIFF_CLS={"쉬움":"d1","보통":"d2","어려움":"d3"};
 function diffChip(n){ const d=HERO_DIFF[n]; return d?`<span class="diff kw ${DIFF_CLS[d]||""}" data-kw="난이도" data-tip="이 대원을 다루기가 얼마나 어려운지입니다.">${esc(d)}</span>`:"" }
@@ -24832,6 +24853,7 @@ function drawTraitStep(app,cur){
   const h=cur.hero;
   if(cur.lv!==7||(h.tag&&h.tag.traitDecided))return false;
   const morphs=derrMorphRewards(h),morph=morphs.length>0;
+  if(!morph&&!heroRewardTraits(h.name).length)return false;   /* 특성이 아직 없는 대원(오볼, 2026-10-31) — 빈 고르기 화면 대신 그 레벨 보상으로 */
   if(!morph&&!cur.traitOffers){cur.traitOffers=traitCandidates(h).map(t=>t.id);saveGame()}
   if(morph&&!cur.morphOffers){cur.morphOffers=derrMorphChoices(h).map(rwKey);saveGame()}
   const choices=morph?(cur.morphOffers||[]).map(k=>morphs.find(r=>rwKey(r)===k)).filter(Boolean):(cur.traitOffers||[]).map(id=>heroRewardTraits(h.name).find(t=>t.id===id)).filter(Boolean);
@@ -25263,7 +25285,8 @@ function render0(){
   document.body.classList.toggle("vpage",!["title","saves","heropick","corepick","map","battle","wavegap"].includes(view)&&!(typeof placeMode==="function"&&placeMode()));
   /* 화면 정비 (사용자 2026-10-05) — 시작 · 지도 · 전투 · 도감을 뺀 화면은 한 판 위에 그린다 */
   document.body.classList.toggle("vnew",NEW_UI.includes(view)&&!(typeof placeMode==="function"&&placeMode()));   /* 나머지 화면 — 감옥 방 배경 + 철 테 판 (2026-09-19) */
-  app.classList.remove("bt2","trait-stage");       /* 전투 화면만 두 단이다 — drawBattle 이 다시 단다 */
+  app.classList.remove("bt2","trait-stage");
+  document.body.classList.remove("rwtable");   /* 보상 탁자 — 카드를 고르는 자리에서만 offerCards 가 다시 단다 (2026-10-31) */       /* 전투 화면만 두 단이다 — drawBattle 이 다시 단다 */
   const hr=document.getElementById("hRun");
   /* 마지막 구역을 넘기면 run.field 가 FIELDS 밖으로 나간다.
      그때도 머리줄을 그리려 들면 FIELDS[3] 이 없어 화면이 통째로 죽는다. */
@@ -25868,6 +25891,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 309, "v": "0.7", "d": "2026-10-31", "t": "보상 카드 고르기 원정 탁자 · 오볼 유령 등불 · 선박 품목 · 난이도 보통", "big": 0},
  {"b": 308, "v": "0.7", "d": "2026-10-31", "t": "새 대원 오볼 (선박 상점 · 짐칸 · 물자)", "big": 0},
  {"b": 307, "v": "0.7", "d": "2026-10-30", "t": "상단 띠 임시 틀", "big": 0},
  {"b": 306, "v": "0.7", "d": "2026-10-30", "t": "피해 예고 바로잡음 · 상점 파는 값 · 턴 제한 종료 연출", "big": 0},
@@ -27367,7 +27391,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=308;
+const BUILD_NO=309;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -33746,10 +33770,10 @@ function dryCostKills(c){ return run.taint+c>=taintMax() }   /* 오염도 100 �
  * · 유령 금화(run.ghost) — 오볼만의 재화. 선박 상점에서 금화로 산다.
  * · 선박 상점(run.ship, 지도 칸 t:"ship") — 오볼이 있으면 날이 밝을 때마다 지도 위 무작위 자리로 옮겨 가고 진열이 바뀐다.
  *   들어가도 사라지지 않는다. 들어갈 때마다 활동량 1 · 15분. 5단계까지 강화 — 단계마다 진열 +1, 그 단계 · 한 단계 아래 물자가 나온다.
- * · 짐칸(run.cargo · run.cargoMax) — 선박 상점에서 산 물자 카드가 담긴다. 처음 4장, 「짐칸 넓히기」 로 +2.
+ * · 짐칸(run.cargo · run.cargoMax) — 선박 상점에서 산 물자 카드가 담긴다. 처음 4장, 진열 품목 「짐칸 추가」 로 +2.
  *   「물자 뒤지기」 가 짐칸에서 무작위 한 장을 손패로 가져온다 (가져오면 짐칸에서 빠진다).
  * · 물자 카드 — 이름 + 단계(Ⅰ~Ⅴ). 값은 막마다(1막 · 2막 · 3막) 다르다.
- *   황금 닻 · 좌초된 상자 · 해초에 묶인 칼날 · 무쇠 닻은 **보상으로 해금** — 해금 보상이 노트에 들어오기 전까지 잠가 둔다 (run.supOpen).
+ *   황금 닻 · 좌초된 상자 · 해초에 묶인 칼날 · 무쇠 닻 · 유령 등불은 **보상으로 해금** — 해금 보상이 노트에 들어오기 전까지 잠가 둔다 (run.supOpen).
  * · 「해적의 부름」 — 전투에서 도망쳐(귀환서와 같은 셈) 선박 상점으로 간다. 오볼이 1장 가진 채로 원정을 시작한다.
  *
  * 그리는 일(상점 진열 · 가방의 짐칸 · 「물자 뒤지기」 설명창)은 src/view/obol-ui.js 와 src/view/shop.js. */
@@ -33780,7 +33804,9 @@ const SUPPLY={
    gold:[[[3,5],[4,6]],[[4,8],[8,10]],[[8,10],[10,12]],[[8,10],[10,12],[15,20]],[[8,10],[10,12],[15,20]]], ghost:[1,2,3,4,4],
    d:(v)=>`이번 전투 동안 추가 공격력을 ${v} 부여합니다.`},
  "무쇠 닻":{tg:"foe", lock:1, v:[1,1,1,1,1], q:[1,1], ghost:[2,3,2,4,4],
-   d:(v,lv)=>lv>=5?"모든 적을 기절시킵니다.":"적을 기절시킵니다."}
+   d:(v,lv)=>lv>=5?"모든 적을 기절시킵니다.":"적을 기절시킵니다."},
+ "유령 등불":{tg:"ally", tg5:"none", lock:1, v:[1,1,2,2,2], q:[1,2], ghost:[1,1,3,3,4],   /* 사용자 2026-10-31 */
+   d:(v,lv)=>lv>=5?`모든 아군에게 회피를 ${v} 부여합니다.`:`아군에게 회피를 ${v} 부여합니다.`}
 };
 const supOpen=n=>!!(SUPPLY[n]&&(!SUPPLY[n].lock||(run&&run.supOpen&&run.supOpen[n])));
 const supCardName=(n,lv)=>`${n} ${SUP_ROMAN[lv]||lv}`;
@@ -33792,8 +33818,9 @@ const supDesc=(n,lv)=>SUPPLY[n].d(supVal(n,lv),lv);
   Object.keys(SUPPLY).forEach(n=>{ for(let lv=1;lv<=5;lv++){
     const S=SUPPLY[n], v=S.v[lv-1], key=supCardName(n,lv);
     const L={d:S.d(v,lv),gone:1,obolSup:{n:n,lv:lv}};
-    if(S.tg==="foe") L.foe=1;
-    if(S.tg==="none") L.noTarget=1;
+    const tg=(lv>=5&&S.tg5)||S.tg;   /* 5단계에서 모두에게 걸리는 것은 대상을 안 고른다 (유령 등불) */
+    if(tg==="foe") L.foe=1;
+    if(tg==="none") L.noTarget=1;
     L.use=a=>obolSupUse(n,lv,a);
     CARD_LIB[key]=L;
     if(typeof CARD_META!=="undefined") CARD_META[key]={src:"오볼의 짐칸",gone:1};
@@ -33814,6 +33841,9 @@ function obolSupUse(n,lv,a){
     say(`${tag} — 이기면 무작위 보상 ${v}개`); return }
   if(n==="해초에 묶인 칼날"){ bumpTmp(a,"atk",v); fx({side:"mine",slot:a.slot,txt:"공격력 +"+v,cls:"crit",gap:60});
     say(`${tag} — ${a.name} 이번 전투 동안 추가 공격력 +${v}`); return }
+  if(n==="유령 등불"){ (lv>=5?onField():[a]).filter(h=>h&&!h.down).forEach(h=>{ h.evade=(h.evade||0)+v;
+      fx({side:"mine",slot:h.slot,s:"wind",ring:"#5fd8cf",txt:"회피",cls:"shd"}) });
+    say(`${tag} — ${lv>=5?"모든 아군":a.name} 회피 +${v}`); return }
   if(n==="무쇠 닻"){ (lv>=5?B.foes.filter(f=>f.alive&&!f.isPhantom):[a]).forEach(f=>addDeb(f,"stun",1,by)); return }
 }
 /* 해적 방패 — 다음 턴이 시작할 때 (보호막이 걷힌 뒤) 한 번 더. startMyTurn 이 부른다 */
@@ -33867,7 +33897,6 @@ function shipNewDay(){
 }
 /* ── 선박 상점 진열 ── */
 const shipUpCost=lv=>[5,10,20,40][lv-1];   /* 5단계는 강화가 없다 */
-const cargoUpCost=()=>3+2*((run&&run.cargoUps)||0);
 /* 일반 상점과 같은 값 (SHOP_STOCK 의 그 막 값) */
 function stockPrice(k){
   const g=SHOP_STOCK.find(x=>x.k===k||x.card===k); if(!g) return null;
@@ -33879,6 +33908,8 @@ function shipStock(){
   const lv=(run.ship&&run.ship.lv)||1, P=[];
   const add=(n,d,k,o)=>P.push(Object.assign({n:n,d:d,k:k},o));
   add("유령 금화","유령 선박에서 쓰는 금화입니다.","ghost",{cost:rr([3,5]),q:[[1,4],[3,8],[7,20],[10,30],[1,4]][lv-1]});
+  add("짐칸 추가",`오볼의 물자 카드 최대 보유량이 ${CARGO_UP} 증가합니다.`,"cargoup",{gcost:actPick([2,2,2]),q:[1,2]});
+  add("해적의 부름","전투에서 도망쳐 유령 선박으로 갑니다.","card",{card:"해적의 부름",gcost:actPick([4,5,6]),q:[1,2]});
   add("귀환서","전투에서 벗어나 주둔지로 즉시 복귀하는 카드","card",{card:"귀환서",cost:stockPrice("귀환서"),gcost:rr([2,3]),q:[1,1]});
   add("튼튼한 부츠","활동량을 1 얻습니다.","act",{cost:stockPrice("act"),q:[1,2]});
   add("무작위 파편 장신구","어떤 파편이 나올지는 열어봐야 압니다.","shard",{cost:stockPrice("shard"),gcost:rr([2,3]),q:[1,1]});
@@ -33901,7 +33932,7 @@ function shipStock(){
   });
   return P;
 }
-/* 진열을 짠다 — 단계 + 2 개 (1단계 3개) + 늘 있는 「선박 상점 강화」 · 「짐칸 넓히기」 */
+/* 진열을 짠다 — 단계 + 2 개 (1단계 3개) + 늘 있는 「선박 상점 강화」 */
 function makeShipShop(){
   const lv=(run.ship&&run.ship.lv)||1, pool=shipStock(), goods=[];
   while(goods.length<lv+2&&pool.length){ const g=pool.splice(Math.floor(Math.random()*pool.length),1)[0];
@@ -33913,7 +33944,6 @@ function shipFixed(goods){
   const lv=(run.ship&&run.ship.lv)||1;
   for(let i=goods.length-1;i>=0;i--) if(goods[i].k==="shipup"||goods[i].k==="cargoup") goods.splice(i,1);
   if(lv<SHIP_MAX) goods.unshift({n:"선박 상점 강화",d:`선박 상점을 ${lv+1}단계로 강화합니다. 진열이 하나 늘고 더 좋은 물자가 나옵니다.`,k:"shipup",gcost:shipUpCost(lv),left:1,qty:1});
-  goods.splice(lv<SHIP_MAX?1:0,0,{n:"짐칸 넓히기",d:`오볼의 짐칸을 ${CARGO_UP}칸 넓힙니다. (지금 ${cargoMax()}칸)`,k:"cargoup",gcost:cargoUpCost(),left:1,qty:1});
 }
 /* 선박 상점에 들어선다 — 지도 칸(enterCell0)과 해적의 부름이 같이 쓴다 */
 function shipOpen(){
@@ -33932,7 +33962,7 @@ function shipBought(g){
     if(pool.length){ const x=rnd(pool), q0=rr(x.q); run.ship.goods.push(Object.assign({},x,{left:q0,qty:q0})) }
     shipFixed(run.ship.goods); run.shop.goods=run.ship.goods;
     toast(`선박 상점이 ${run.ship.lv}단계가 되었습니다.`); return true }
-  if(g.k==="cargoup"){ run.cargoMax=cargoMax()+CARGO_UP; run.cargoUps=(run.cargoUps||0)+1; shipFixed(run.ship.goods); run.shop.goods=run.ship.goods;
+  if(g.k==="cargoup"){ run.cargoMax=cargoMax()+CARGO_UP; run.cargoUps=(run.cargoUps||0)+1;
     toast(`오볼의 짐칸이 ${run.cargoMax}칸이 되었습니다.`); return true }
   return false;
 }
@@ -50744,6 +50774,14 @@ function pickBurst(card,grade,label){   /* label — 띄울 말을 따로 (전�
   if(w){ w.style.left=p.x+"px"; w.style.top=(p.y-14)+"px" }
 }
 /* 이 보상 자리가 '판 자원 보상을 빼야 하는' 자리인가 */
+/* 가죽 매트 — 탁자와 **같은 배율**(--rpx = 화면을 덮는 배율)로 깐다. 카드 묶음이 그보다 크면
+   (작은 창 · 긴 설명) 매트만 묶음을 받칠 만큼 키운다 (--need). 매트 그림의 가죽은 620×270 */
+function rwMatFit(row){
+  const fit=()=>{ if(!row.isConnected) return;
+    row.style.setProperty("--need",Math.max((row.offsetWidth+56)/620,(row.offsetHeight+44)/270)+"px") };
+  fit();
+  try{ const ro=new ResizeObserver(()=>{ if(!row.isConnected){ ro.disconnect(); return } fit() }); ro.observe(row) }catch(e){}
+}
 function offerCards(app,hero,grade,done,lvUp){
   const O=rewardOffer(hero,grade,lvUp);   /* 뽑기는 규칙 한 곳 (src/rules/reward-offer.js) */
   const picks=O.picks, pkey=O.pkey, traitPlan=O.traitPlan, pool=O.pool, ownOnly=O.ownOnly;
@@ -50774,8 +50812,9 @@ function offerCards(app,hero,grade,done,lvUp){
     app.querySelector(".center").appendChild(el(`<div class="sub pendantx">${ai?`<img src="${ai}" alt="">`:""} ${esc(label)}: 전용 보상만 나옵니다 (${left}/${mx})</div>`));   /* '남은 N번' 대신 N/최대 (사용자 2026-10-07) */
     if(pending.armorAt!==(pending.idx==null?-1:pending.idx)){ pending.armorAt=(pending.idx==null?-1:pending.idx);   /* 레벨업이 여럿이면 그때마다 */ setTimeout(()=>pendantFX(()=>{},"맞춤 갑옷","이번 레벨업 보상은 전용 보상만 나옵니다",label),250) } }   /* 금속 펜던트처럼 (사용자 2026-10-06) */
   if(pending&&pending.pendantShow) app.querySelector(".center").appendChild(el(`<div class="sub pendantx">${(PACK_ICON["금속 펜던트"]&&typeof ICON_PNG!=="undefined"&&ICON_PNG[PACK_ICON["금속 펜던트"]])?`<img src="${ICON_PNG[PACK_ICON["금속 펜던트"]]}" alt="">`:""}금속 펜던트: 중급 보상을 하나 더 고릅니다</div>`));
-  const row=el(`<div class="rewards${pending&&pending.rise?" rise r"+pending.rise:""}"></div>`);
+  const row=el(`<div class="rewards rwmat${pending&&pending.rise?" rise r"+pending.rise:""}"></div>`);   /* 가죽 매트 위 (rwMatFit) */
   if(pending) pending.rise=0;
+  document.body.classList.add("rwtable");   /* 원정 탁자 — 보상 카드를 고르는 이 자리에만 (2026-10-31) */
   picks.forEach((r,index)=>{
     const mine=!!r.own,guaranteed=traitPlan.enabled&&index===0&&!!(pending&&pending.traitSlotMode||traitPlan.mode);
     const traitMark=guaranteed?(pending&&pending.traitSlotMode||traitPlan.mode)==="trait":false;
@@ -50786,9 +50825,12 @@ function offerCards(app,hero,grade,done,lvUp){
       <div class="rwft"><span class="gd">${esc(r.g)}</span>
         <span class="ow${mine?" mine":""}">${mine?"전용":"공용"}</span></div>
     </div>`);
+    c.tabIndex=0; c.setAttribute("role","button");   /* 키보드 — Tab 으로 들고 Enter · 스페이스로 고른다 */
+    c.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); c.click() } };
     c.onclick=()=>{
       if(잠겼나()) return;
       잠근다();
+      c.classList.add("chosen"); row.classList.add("picked");
       pickBurst(c,r.g);
       if(ownOnly) spendOwnReward();
       row.querySelectorAll(".rw").forEach(x=>{ if(x!==c) x.classList.add("faded") });
@@ -50811,6 +50853,7 @@ function offerCards(app,hero,grade,done,lvUp){
     row.appendChild(c);
   });
   app.querySelector(".center").appendChild(row);
+  rwMatFit(row);
   const skip=el(`<div class="rwskip"><button>건너뛰기</button></div>`);   /* 새로고침과 한 줄 — 높이를 맞춘다 (사용자 2026-10-06) */
   skip.querySelector("button").onclick=()=>{ if(잠겼나()) return; 잠근다();   /* 고른 뒤 바로 건너뛰기를 눌러 done 이 두 번 돌지 않게 */
     if(lvUp&&pending&&pending.queue){ const q=pending.queue[pending.idx]; if(q) (hero.tag.lvGot=hero.tag.lvGot||{})[q.lv]={skip:1} } done() };
