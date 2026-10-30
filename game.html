@@ -3655,6 +3655,12 @@ img.ri{width:14px;height:14px;vertical-align:-2px;image-rendering:auto}
 .mcard .gear .gs.on{background:url("map/장신구칸.png") 0 0/100% 100% no-repeat;box-shadow:none}
 .mcard .gear .gs.on::before{content:"";position:absolute;inset:3px;box-shadow:inset 0 0 0 1px var(--fr);pointer-events:none}
 .placebox .gimres-opts{align-items:center} .placebox .gimres-go{margin-top:14px;text-align:center}
+/* 턴 제한 — 「전투 종료」 (turnOutLeave). 화면 한가운데, 흰 글 · 검은 그림자만 */
+.turnout{position:fixed;left:50%;top:44%;transform:translate(-50%,-50%);z-index:700;pointer-events:none;text-align:center;
+  display:flex;flex-direction:column;align-items:center;gap:8px;animation:turnoutIn .45s ease-out both}
+.turnout b{font-family:var(--serif);font-size:44px;letter-spacing:.08em;color:#f0e2c4;text-shadow:0 3px 0 #000,0 0 18px rgba(0,0,0,.9)}
+.turnout span{font-size:15px;color:#cbb995;text-shadow:0 1px 0 #000,0 0 10px rgba(0,0,0,.9)}
+@keyframes turnoutIn{from{opacity:0;transform:translate(-50%,-40%)}to{opacity:1;transform:translate(-50%,-50%)}}
 .title.resttitle{font-size:30px!important;letter-spacing:.04em!important;margin-bottom:8px}   /* 쉼터 이름 — 「천 막 쉼 터」 처럼 벌리지 않는다 (사용자 2026-10-30) */
 .pmap .cell.unseen.onroute:not(.adj):not(.here){opacity:.82}   /* 멀리 찍어도 못 본 칸은 못 본 칸 그대로 — 밝혀진 듯 보였다 (사용자 2026-10-30) */
 /* 길 — 칸 빛 대신 붉은 점선 (2026-10-05). 차례 숫자만 작게 */
@@ -12345,6 +12351,19 @@ function stepBanner(word,sub){
   { const tb=document.querySelector(".bftop");   /* 턴 종료 줄 · [기록 펼치기] 밑으로 — 겹치지 않게 (2026-10-05) */
     if(tb){ const y=tb.getBoundingClientRect().bottom+14; if(y>innerHeight*0.23) nd.style.top=y+"px" } }
   setTimeout(()=>nd.remove(),1600);
+}
+/* 턴 제한으로 물러난다 — 화면 한가운데 「전투 종료」 · 밑에 작게 「전투가 너무 길어졌습니다」, 잠시 뒤 탁자 문짝이 닫혔다 열리며 지도 (사용자 2026-10-30).
+   문짝(coverInto)을 못 쓰면 예전 길(toMap) */
+function turnOutLeave(){
+  document.querySelectorAll(".turnout").forEach(x=>x.remove());
+  const nd=el(`<div class="turnout"><b>전투 종료</b><span>전투가 너무 길어졌습니다</span></div>`);
+  document.body.appendChild(nd);
+  { const k=sfxOr("전투 종료",null); if(k) SFX.play(k) }
+  const go=()=>{ if(typeof run==="undefined"||!run||run.lost||view==="over") return;
+    if(typeof coverInto==="function"&&CV_OK>=0) coverInto(()=>{ nd.remove(); if(run&&!run.lost&&view!=="over"){ view="map"; render() } });
+    else { nd.remove(); toMap() } };
+  setTimeout(go,1800);
+  setTimeout(()=>nd.remove(),6000);
 }
 /* 내 턴이 돌아왔다 */
 function turnBanner(){
@@ -25809,6 +25828,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 306, "v": "0.7", "d": "2026-10-30", "t": "피해 예고 바로잡음 · 상점 파는 값 · 턴 제한 종료 연출", "big": 0},
  {"b": 305, "v": "0.7", "d": "2026-10-30", "t": "쉼터 · 전용 구역 결과 · 대원 창 그림 · 새날 문구", "big": 0},
  {"b": 304, "v": "0.7", "d": "2026-10-30", "t": "우두머리 칸 · 경로 · 예상 피해량 · 숫자판 그림 · 장신구 그림", "big": 0},
  {"b": 303, "v": "0.7", "d": "2026-10-30", "t": "상단 단추 새 띠 틀", "big": 0},
@@ -27305,7 +27325,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=305;
+const BUILD_NO=306;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -33582,6 +33602,17 @@ const SHOP_STOCK=[
 ];
 /* 파는 값 — 파편 1~3 · 일반 8~12 · 희귀 30~50 */
 const SELL_PRICE={"파편":[1,3],"일반":[8,12],"희귀":[30,50],"특수":[8,12],"전설":[30,50]};
+/* 파는 값 — **상점에 들른 그때** 범위 안에서 하나로 정한다. 그 방문 동안 같은 이름은 같은 값 (사용자 2026-10-30 「1~3 처럼 범위 말고 확정된 수치」).
+   화면 · 실제로 받는 값 · 유니티(driver)가 모두 이 함수 하나를 본다. 고물 장수(junkGold)는 받는 쪽에서 더한다 */
+function sellPrice(it){
+  if(!it) return 0;
+  if(it.sell) return it.sell;
+  const pr=SELL_PRICE[it.g]||[1,3], sh=run&&run.shop;
+  if(!sh) return pr[0];
+  const P=sh.sellPx||(sh.sellPx={});
+  if(P[it.n]==null) P[it.n]=rr(pr);
+  return P[it.n];
+}
 const rr=a=>a[0]+Math.floor(Math.random()*(a[1]-a[0]+1));
 /* 상점 주인은 「떠돌이 상인」 하나로 고정 (2026-09-11). 나중에 주인마다 품목을 가를 때 여기서 다시 늘린다 */
 const SHOP_NPC=["떠돌이 상인"];
@@ -33641,6 +33672,7 @@ function makeShop(){
         goods.push({n:g0.n,d:g0.d,k:g0.k,cost:Math.ceil(c/2),cost0:c,haggled:1,left:1,qty:1}) }
       toast("뒷골목 거래 — 반값 하급 보상 둘이 진열됐습니다.") } }
   run.shop={npc:rnd(SHOP_NPC),goods:goods,sold:[]}; run.shopGreet=1;
+  sellList().forEach(x=>sellPrice(x.it));   /* 들어선 그때 가진 것의 파는 값을 정해 둔다 */
   if(run.shopKind==="dry") dryShop(run.shop);
 }
 /* 마른숲 상점 (사용자 2026-10-01) — 금화 대신 오염도로 값을 치른다. 대신 물건마다 수량은 1~2개
@@ -33865,15 +33897,15 @@ function drawShop(app){
     if(!list.length) bl.appendChild(el(`<div class="shnone">팔 물건이 없습니다.</div>`));
     list.slice(from,from+SHOP_SELL_PER).forEach((x,k)=>{
       const i=from+k;
-      const pr=x.it.sell?[x.it.sell,x.it.sell]:(SELL_PRICE[x.it.g]||[1,3]);
+      const px=sellPrice(x.it)+tagSum("junkGold");   /* 받는 값 그대로 — 범위가 아니다 (사용자 2026-10-30) */
       const on=(run.sellPick===i);
       const c=el(`<div class="shs${gcls(x.it.g)}${on?" on":""}">
         <b class="shn">${esc(x.it.n)}</b>
         <div class="shic">${rewardIcon(x.it)}</div>
-        <span class="shp">${resIcon("gold")} ${pr[0]}~${pr[1]}<i>${esc(x.bag?"가방":x.h.name)}</i></span>
+        <span class="shp">${resIcon("gold")} ${px}<i>${esc(x.bag?"가방":x.h.name)}</i></span>
         ${on?`<em>한 번 더 누르면 팝니다</em>`:""}</div>`);
       c.onmouseenter=()=>shopTipShow(stage,c.querySelector(".shic"),`<b>${esc(x.it.n)}</b><i>${esc(x.it.g)} 장신구, ${esc(x.bag?"가방":x.h.name+" 착용")}</i>
-        <p>${rich(x.it.d||"")}</p>${recipeHtml(x.it)}<em>${resIcon("gold")} ${pr[0]}~${pr[1]} 에 팝니다. 되돌릴 수 없습니다.</em>`);
+        <p>${rich(x.it.d||"")}</p>${recipeHtml(x.it)}<em>${resIcon("gold")} ${px} 에 팝니다. 되돌릴 수 없습니다.</em>`);
       c.onmouseleave=shopTipHide;
       c.onclick=()=>{ shopTipHide(); sellItem(i) };
       bl.appendChild(c);
@@ -33886,11 +33918,11 @@ function drawShop(app){
 function sellItem(i){
   const own=sellList(), x=own[i];
   if(!x) return;
-  const pr=x.it.sell?[x.it.sell,x.it.sell]:(SELL_PRICE[x.it.g]||[1,3]);   /* 금덩어리 파편은 값이 정해져 있다 */
-  /* 한 번 더 물어본다 — 되돌릴 수 없고 값도 그때그때 다르다 */
+  /* 값은 상점에 들른 그때 정해 둔 것 (sellPrice — 금덩어리 파편처럼 값이 박힌 것은 그 값) */
+  /* 한 번 더 물어본다 — 되돌릴 수 없다 */
   if(run.sellPick!==i){ run.sellPick=i; render(); return }
   run.sellPick=null;
-  const g=rr(pr)+tagSum("junkGold");   /* 고물 장수 */
+  const g=sellPrice(x.it)+tagSum("junkGold");   /* 고물 장수 */
   if(x.bag) run.bag.splice(x.i,1);
   else { const back=unequip(x.h,x.i,1); if(!back){ toast("벗길 수 없는 물건입니다."); return } }
   run.gold+=g;         /* 소리는 goldWatch 가 낸다 */
@@ -44095,7 +44127,9 @@ function incoming(){
   const map={};
   if(!B||B.over||!B.foes||!B.foes.length) return map;
   const list=allUnits();
-  const ahead=B.foeAct?{}:endShieldAhead();   /* 적 차례 도중에는 이미 붙어 있다 */
+  /* 턴 끝 보호막 — 아직 안 붙었을 때만 미리 더한다. endPhase 가 붙인 뒤(적이 움직이기 전 연출 대기 · 적 차례)에는 이미 u.shield 에 들어 있다.
+     ⚠️ 전에는 B.foeAct 만 봐서 그 사이에 **두 번** 셌다 — 차원문 6 이 12 로 보여 「산다」 고 했다 (사용자 2026-10-30 녹화) */
+  const ahead=(B.foeAct||B.endDone)?{}:endShieldAhead();
   const get=u=>map[u.slot]||(map[u.slot]={raw:0,hp:0,ev:0,src:[],   /* src — 한 방마다 {f 친 것, v 피해, ev 회피, n 이름} : 받을 피해에 커서를 올리면 보인다 (inc-tag) */
       _e:(u.eshield||0)+((ahead[uid(u)]||{}).e||0),_s:(u.shield||0)+((ahead[uid(u)]||{}).s||0),_v:u.evade||0});
   /* 정지 — 움직이지도, 겨눠지지도, 맞지도 않는다. 실제 셈 세 곳과 짝이다 :
@@ -44659,7 +44693,8 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
   if(d>0&&!f.isPhantom){ const k=foeSnd(f,"피해받음"); if(k) fx({s:k,gap:0}) }   /* 적의 녹음 — 맞는 소리와 함께 (미믹) */
   say(`${tag} → ${f.name}(${foeNo(f.slot)}번) ${crit?"치명타 ":""}피해 ${amt}${
     pr?` (관통 ${pr}%${pr<100?`, 체력 ${thru}`:""})`:""}${s?` (보호막 ${s})`:""} 남은 ${Math.max(0,f.hp)}`,crit?"t1":undefined);
-  if(f.thorn&&f.alive&&amt>0&&!f.thornBusy){   /* 보호막에 막혀도 맞은 것 — 대원 가시와 같게 (사용자 2026-10-07) */
+  if(f.thorn&&f.alive&&amt>0&&!f.thornBusy&&tag!=="화상"&&tag!=="감염"){   /* 보호막에 막혀도 맞은 것 — 대원 가시와 같게 (사용자 2026-10-07).
+     화상 · 감염이 타는 것은 때린 게 아니다 — 가시가 되받지 않는다. 전에는 마지막에 때린 대원(B.lastAttacker)이 턴 끝에 가시를 맞았고, 예고에도 없었다 (2026-10-30 probe-endshield) */
     /* ⚠️ **되받는 것은 「이름」이 아니라 「몸」이다.** 하수인 골렘의 죽음 몫은 주인(파벨) 이름으로
        때려서 B.lastAttacker 가 파벨이다 — 그대로 두면 **파벨이 가시를 맞는다** (사용자 2026-10-13).
        때린 몸이 따로 있으면(B._golemHit) 그쪽이 맞는다. 몸이 죽어 없으면 아래 문에서 걸러져 아무도 안 맞는다 */
@@ -48189,8 +48224,12 @@ function battleLost(){
   }
   addTaint(30);
   say("물러납니다. 오염도가 30 올랐습니다.","t3");
+  /* 턴 제한으로 물러날 때 — 가운데 「전투 종료」 를 보이고 탁자 문짝이 닫혔다 열리며 지도로 (turnOutLeave, 사용자 2026-10-30).
+     화면이 없는 덩이(driver · 시뮬)는 예전처럼 바로 지도로 */
+  const out=!!(B&&B.turnOut)&&typeof turnOutLeave==="function";
   foeViewLater(()=>{ toast(`쓰러진 대원은 주둔지 치료소에서 일으킬 수 있습니다. (성한 대원 ${standing}명)`);
-    if(view!=="over") toMap() },1200);
+    if(view==="over") return;
+    if(out) turnOutLeave(); else toMap() },out?500:1200);
 }
 /* 접촉 (상급) — 적이 아군에게 피해를 준 **뒤** 그 적이 감염된다 (노트 7, 2026-10-22).
    ⚠️ 맞은 쪽이 인비디아가 아니어도 된다 — 「적이 아군에게」다 */
@@ -48576,6 +48615,7 @@ function endTurn(){
 }
 /* 마당 ① — 턴이 끝날 때 발동하는 것들. 적이 움직이기 전에 전부 여기서 끝난다 */
 function endPhase(){
+  B.endDone=1;   /* 턴 끝 보호막을 여기서 붙인다 — 이 뒤로는 예고(incoming)가 미리 더하지 않는다. startMyTurn 이 끈다 (사용자 2026-10-30) */
   let n=0; const bump=()=>{ n++ };
   const mark=B.log.length;              /* 머리말은 나중에 이 자리에 끼워 넣는다 */
   /* [감시] — 손패에 들고 있으면 내 턴이 끝날 때 무작위 대원이 피해를 5 받는다 (첨탑 관리자) */
@@ -49031,6 +49071,7 @@ function startMyTurn(){
   try{ foeEndPassives() }catch(e){ console.error(e) }   /* 적 턴이 끝난 뒤 지속 효과 */
   try{ vineEndPassives() }catch(e){ console.error(e) }   /* 오염된 덩굴 (2026-09-29) */
   B.foeAct=0;   /* 여기부터 내 턴 (바람처럼 사라져라 — 2026-09-30) */
+  B.endDone=0;
   /* 사냥의 기류 — 오리온이 서 있는 동안, 매 턴 무작위 적 자리 하나에 기류가 흐른다 (노트 18-0, 2026-10-14).
      그 자리의 대상에게 주는 **오리온의** 피해는 치명타다 — 묻는 곳은 critWhy 한 군데다.
      ⚠️ 연출이 아니라 **규칙**이라 게임 주사위(Math.random)로 뽑는다 */
@@ -49069,7 +49110,7 @@ function startMyTurn(){
   if(!run.heroes.some(h=>!h.down)&&!lifeLeft()){ B.over=1; battleLost(); render(); return }
   B.turn++;
   const TLIM=turnLimit();   /* 막과 갈래마다 다르다 (사용자 2026-10-23) — 머리글과 같은 함수를 본다 */
-  if(B.turn>TLIM&&!(run&&run.sandbox)){ B.over=1; say(`${TLIM}턴이 지나 물러납니다.`,"t3");
+  if(B.turn>TLIM&&!(run&&run.sandbox)){ B.over=1; B.turnOut=1; say(`${TLIM}턴이 지나 물러납니다.`,"t3");   /* turnOut — 물러나는 연출을 따로 (battleLost) */
     { const d=run.dun, c=d&&d.r!=null&&run.grid[d.r]&&run.grid[d.r][d.c];   /* 그 전투 칸은 지도에서 없앤다 (사용자 2026-10-05) */
       if(c&&(c.t==="dungeon"||c.t==="elite")&&!d.trial){ run.grid[d.r][d.c]={t:"empty"}; say("전투 구역이 흩어져 지도에서 사라집니다.","t3") } }
     battleLost(); render(); return }   /* 연습장은 턴 제한 없음 (사용자 2026-09-29) */
