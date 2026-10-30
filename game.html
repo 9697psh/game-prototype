@@ -14928,7 +14928,7 @@ const COMMON=[
  R("각성제","하급","다음 1회의 전투에서 아군 대원들이 모든 능력치를 2 얻습니다.",h=>{ run.stimNext=(run.stimNext||0)+2 }),
  R("동전 마술","하급","카드를 낸 후에, 10% 확률로 금화를 1개 얻습니다.\n*선택할수록 확률이 10% 누적",
    h=>h.tag.cardGold=(h.tag.cardGold||0)+1),
- R("행운의 금화","하급","소환물이 아닌 적을 처치한 후에, 3% 확률로 금화를 1개 얻습니다.\n*선택할수록 확률이 10% 누적",
+ R("행운의 금화","하급","소환물이 아닌 적을 처치한 후에, 3% 확률로 금화를 1개 얻습니다.\n*선택할수록 확률이 3% 누적",
    h=>h.tag.luckGold=(h.tag.luckGold||0)+1),
  R("탐험 정신","중급","미지의 구역에 도착하면 활동량을 1 얻습니다. 금화를 4개 얻습니다.",   /* 하급 → 중급 (사용자 2026-10-08) */
    h=>{ h.tag.exploreAct=(h.tag.exploreAct||0)+1; run.gold+=4 }),
@@ -25595,6 +25595,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 288, "v": "0.7", "d": "2026-10-30", "t": "행운의 금화 3%씩", "big": 0},
  {"b": 287, "v": "0.7", "d": "2026-10-30", "t": "새날 탁자 · 체력 막대", "big": 0},
  {"b": 286, "v": "0.7", "d": "2026-10-30", "t": "의도 아이콘 · 과열 폭발 예고", "big": 0},
  {"b": 285, "v": "0.7", "d": "2026-10-30", "t": "피해 출처 툴팁", "big": 0},
@@ -27073,7 +27074,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=287;
+const BUILD_NO=288;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -40344,9 +40345,9 @@ const UPG_ROWS=[
  {n:"소환물 체력",tone:"green",rw:()=>COMMON.find(r=>r.n==="하급: 꼭두각시 인형"),
   v:()=>{ const b=minHpBonus(); return b?"+"+b+"%":"" },
   tip:()=>`꼭두각시 인형 — 소환물의 최대 체력이 그만큼 늘어납니다. 여럿이 가지면 **가장 큰 것**만 걸립니다.`},
- /* 행운의 금화 — 셈하는 자리는 onKill 쪽 `0.03+0.10*(lg-1)` */
+ /* 행운의 금화 — 셈하는 자리는 onKill 쪽 `0.03*lg` (고른 수마다 3%) */
  {n:"처치 시 금화",tone:"gold",sandboxOff:1,rw:()=>COMMON.find(r=>r.n==="행운의 금화"),
-  v:()=>{ const n=tagSum("luckGold"); return n?(3+10*(n-1))+"%":"" },
+  v:()=>{ const n=tagSum("luckGold"); return n?(3*n)+"%":"" },
   tip:()=>`행운의 금화 — 소환물이 아닌 적을 처치한 뒤 그 확률로 금화 +1 (겹친 수 ${tagSum("luckGold")})`},
  /* 동전 마술 — ⚠️ **대원마다 따로** 구른다 (cardMagic 의 `T.cardGold*0.10`). 더하면 거짓이다 */
  {n:"카드 사용 시 금화",tone:"gold",sandboxOff:1,rw:()=>COMMON.find(r=>r.n==="동전 마술"),
@@ -44318,10 +44319,11 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
       coreKillTick();   /* 세계핵 — 전투가 끝날 때 통산 처치 수에 더한다 (사용자 2026-10-09) */
       if(/^모형 /.test(f.name)&&f.name!=="모형 전략가") try{ keyQuestTick("모형 병사") }catch(e){}   /* 모형 토벌 (2026-10-10) */
       try{ skinKillCheck(f.name) }catch(e){}   /* 스킨 — 간수장 처치 따위 (2026-10-01) */
-      /* 행운의 금화 — **3%** + 고른 수마다 10% 누적 (사용자 2026-10-16) */
-      const lg=tagSum("luckGold"); if(lg&&Math.random()<(0.03+0.10*(lg-1))){ run.gold+=1;
+      /* 행운의 금화 — 고른 수마다 **3%** 씩 (3 → 6 → 9%). 적힌 값 그대로 더한다 (사용자 2026-10-30 「그냥 적힌대로 누적」 —
+         전에는 3% 에 10% 씩이라 13 · 23% 로 뛰었다) */
+      const lg=tagSum("luckGold"); if(lg&&Math.random()<0.03*lg){ run.gold+=1;
         { const sl=f.slot; fx({side:"foe",slot:sl,s:sfxOr("금화 얻기",null),fn:()=>luckyCoinFX("foe",sl),txt:"금화 +1",cls:"crit",gap:90}) }
-        say(`행운의 금화 — 금화 +1 (${3+10*(lg-1)}%)`,"t2") } }
+        say(`행운의 금화 — 금화 +1 (${3*lg}%)`,"t2") } }
     /* f.exp 는 전투가 끝날 때 더해지는 바로 그 값이다 — 지금까지 안 보여 줬을 뿐이다. 소환물은 없다 */
     f.dieHold=Date.now();   /* 마지막 타격 연출까지 칸에 남는다 */
     const dsnd=(!(foePas(f,"death")||f.dthTag)&&deathSndExact(f))||"die";   /* 죽음 효과가 있는 적은 deathMarkFX 가 종족 소리를 내니 여기서는 공용 die */
