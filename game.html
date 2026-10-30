@@ -5223,6 +5223,15 @@ kbd{display:inline-block;min-width:20px;text-align:center;padding:1px 7px;font-s
   background:#181410;border:1px solid var(--brass);box-shadow:0 6px 22px rgba(0,0,0,.6);
   font-size:12.5px;line-height:1.55;color:#e8dfcc;pointer-events:none;display:none}
 #kwtip b{display:block;margin-bottom:3px;font-size:13px}
+/* 피해 출처 쪽지 — 게임 판의 틀 그림(menu-tile-trim) · 피해 아이콘 머리 (사용자 2026-10-30 「간단한 박스 말고 게임 스타일대로」) */
+#kwtip.dmgtip{white-space:normal;background:none;border:0;border-radius:0;padding:12px 16px 11px;min-width:170px;max-width:300px;
+  border-style:solid;border-image:url("ui/menu-tile-trim.png") 24 fill/14px stretch;box-shadow:0 8px 20px rgba(0,0,0,.6);
+  color:#e6d6b2;text-shadow:0 1px 0 #000;font-size:12.5px;line-height:1.6}
+#kwtip.dmgtip .dt-h{display:flex;align-items:center;gap:6px;font-family:var(--serif);font-size:13.5px;color:#f0d892;
+  padding-bottom:5px;margin-bottom:5px;border-bottom:1px solid rgba(201,162,39,.35)}
+#kwtip.dmgtip .dt-h img{width:18px;height:18px;image-rendering:pixelated}
+#kwtip.dmgtip .dt-r{white-space:nowrap}
+#kwtip.dmgtip .dt-s{margin-top:5px;padding-top:4px;border-top:1px dashed rgba(201,162,39,.28);color:#c9b48e}
 /* 지도 칸 카드 */
 #maptip{position:fixed;z-index:1200;width:250px;border-radius:9px;background:#181410;border:1px solid var(--brass);
   box-shadow:0 8px 26px rgba(0,0,0,.65);color:#e8dfcc;pointer-events:none;display:none;overflow:hidden;font-size:12.5px;line-height:1.55}
@@ -25602,6 +25611,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 291, "v": "0.7", "d": "2026-10-30", "t": "피해 출처 쪽지 모양", "big": 0},
  {"b": 290, "v": "0.7", "d": "2026-10-30", "t": "우두머리 칸 등장", "big": 0},
  {"b": 289, "v": "0.7", "d": "2026-10-30", "t": "새날 문구 띠 뺌", "big": 0},
  {"b": 288, "v": "0.7", "d": "2026-10-30", "t": "행운의 금화 3%씩", "big": 0},
@@ -27083,7 +27093,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=290;
+const BUILD_NO=291;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -42053,7 +42063,19 @@ function pickCount(n){
   const box=()=>tip||(tip=document.getElementById("kwtip"));
   function show(el2){
     const b=box(); if(!b) return;
-    b.classList.remove("wide"); b.classList.remove("tidtip"); b.classList.remove("pkcard");
+    b.classList.remove("wide"); b.classList.remove("tidtip"); b.classList.remove("pkcard"); b.classList.remove("dmgtip");
+    if(el2.dataset.dmgtip){   /* 피해 출처 (받을 · 줄 피해, 사용자 2026-10-30) — 게임 틀 그림에 피해 아이콘 머리 */
+      const rows=(el2.dataset.tip||"").split("\n").filter(Boolean), sum=(el2.dataset.tipsum||"").split("\n").filter(Boolean);
+      const ic=(typeof iconImg==="function"&&iconImg("combat_damage"))||"";
+      b.innerHTML=`<div class="dt-h">${ic}<span>${esc(el2.dataset.kw||"")}</span></div>`
+        +rows.map(x=>`<div class="dt-r">${esc(x)}</div>`).join("")
+        +(sum.length?`<div class="dt-s">${sum.map(x=>`<div>${esc(x)}</div>`).join("")}</div>`:"");
+      b.classList.add("dmgtip"); b.style.display="block";
+      const rd=el2.getBoundingClientRect(), wd=b.offsetWidth, hd=b.offsetHeight;
+      let xd=rd.left+rd.width/2-wd/2, yd=rd.top-hd-9; if(yd<6) yd=rd.bottom+9;
+      b.style.left=Math.max(6,Math.min(innerWidth-wd-6,xd))+"px"; b.style.top=Math.max(6,Math.min(innerHeight-hd-6,yd))+"px";
+      return;
+    }
     if(el2.dataset.item){
       const it=itemDef(el2.dataset.item);
       if(!it) return;
@@ -43905,7 +43927,7 @@ function incoming(){
       /* 균열 용광로 과열 — 이번 가열로 HEAT_MAX 를 넘으면 터진다 : 모든 대원(소환물 빼고 — foeBoom 의 onField)에게 마법 피해 (사용자 2026-10-30).
          return 하지 않는다 — 같은 기술의 다른 몫은 아래에서 그대로 */
       if(s&&s.heat&&((f.heat||0)+s.heat)>HEAT_MAX){ const D=foeDmg(f,HEAT_BOOM.dmg,HEAT_BOOM.el||"마법");
-        list.filter(u=>u.hp>0&&!u.isMin&&u.slot>0).forEach(u=>hitOn(u,D,f,false,f.name+" · 과열 폭발")) }
+        list.filter(u=>u.hp>0&&!u.isMin&&u.slot>0).forEach(u=>hitOn(u,D,f,false,f.name+": 과열 폭발")) }
       if(s&&s.lifeDrain){   /* 양분 흡수 — 대원에게 마법 피해 (소환물은 빼고, skExec 와 같게) */
         list.filter(u=>u.hp>0&&!u.isMin).forEach(u=>hitOn(u,foeDmg(f,s.lifeDrain,"마법"),f));
         return }
@@ -43970,25 +43992,26 @@ function incSrcName(x){
   const f=x.f; if(!f) return "알 수 없음";
   const I=f.intent||{};
   const how=I.t==="sk"?(((FOE[f.name]||{}).sk||[])[I.i]||{}).n:I.t==="volley"?"일제 공격":I.t==="atk"?"공격":"";
-  return f.name+(how?" · "+how:"");
+  return f.name+(how?": "+how:"");
 }
 function incWhy(u,m){
   const G=[], at={};
   (m.src||[]).forEach(x=>{ const k=incSrcName(x)+(x.ev?"|ev":"|"+x.v+(x.pierce?"p":""));
     if(at[k]) at[k].n++; else G.push(at[k]={name:incSrcName(x),v:x.v,ev:x.ev,pierce:x.pierce,n:1}) });
-  const L=G.map(g=>`${g.name} — ${g.ev?"회피":g.v+(g.pierce?" (관통)":"")}${g.n>1?" ×"+g.n:""}`);
-  const cut=m.raw-Math.max(0,m.hp);
-  if(cut>0) L.push(`보호막 · 에너지 보호막이 ${cut} 막음`);
-  if(m.hp>0) L.push(`체력 −${m.hp}${m.hp>=u.hp?" (쓰러짐)":""}`);
-  return L.join("\n");
+  /* 꼴 — 「화상 (2)」 · 「재활용기: 휘두르기 (2)」 (사용자 2026-10-30). 여러 번이면 「(2) ×3」 */
+  const L=G.map(g=>`${g.name} (${g.ev?"회피":g.v+(g.pierce?", 관통":"")})${g.n>1?" ×"+g.n:""}`);
+  const S=[], cut=m.raw-Math.max(0,m.hp);
+  if(cut>0) S.push(`막아 낸 피해 (${cut})`);
+  if(m.hp>0) S.push(`잃을 체력 (${m.hp})${m.hp>=u.hp?" 쓰러짐":""}`);
+  return {rows:L.join("\n"), sum:S.join("\n")};
 }
 function incHtml(u,m){
   if(!m) return "";
-  const why=esc(incWhy(u,m));   /* 머리말(#kwtip b)은 block — 앞에 줄바꿈을 두지 않는다 */
-  if(!m.raw) return m.ev?`<span class="incm safe kw" data-kw="받을 피해" data-own="1" data-tip="${why}">회피</span>`:"";
+  const W=incWhy(u,m), why=`data-kw="받을 피해" data-dmgtip="1" data-tip="${esc(W.rows)}" data-tipsum="${esc(W.sum)}"`;   /* 틀 그림 쪽지 (battle-ui show) */
+  if(!m.raw) return m.ev?`<span class="incm safe kw" ${why}>회피</span>`:"";
   const lethal=m.hp>0&&m.hp>=u.hp;
   const note=m.hp>0?(m.hp<m.raw?`체력 ${m.hp}`:""):"막힘";
-  return `<span class="incm kw${lethal?" lethal":""}${m.hp?"":" safe"}" data-kw="받을 피해" data-own="1" data-tip="${why}">`
+  return `<span class="incm kw${lethal?" lethal":""}${m.hp?"":" safe"}" ${why}>`
     +`<i class="ci${iconImg("combat_damage")?"":" noart"}">${iconImg("combat_damage")}</i>`
     +m.raw+(note?`<em>${note}</em>`:"")+`</span>`;
 }
@@ -44193,25 +44216,26 @@ function foeHitTag(h,s,f,count){
   let tot=(p.tot!=null&&n===p.times)?p.tot:null;
   if(c>1){ const q=predictQueue(h,s,f,c); if(q&&q.tot!==p.v*n) tot=q.tot }
   const note=[tot!=null?n+"번 합쳐":(n>1?"×"+n:""), p.eat?"막"+p.eat:"", p.tail||""].filter(Boolean).join(" ");
-  const why=esc(hitWhy(h,s,f,p,n,tot));
-  return `<span class="hitpv dmg kw${p.crit?" crit":""}" data-kw="줄 피해" data-own="1" data-tip="${why}">`+"−"+(tot!=null?tot:p.v)
+  const W=hitWhy(h,s,f,p,n,tot);
+  return `<span class="hitpv dmg kw${p.crit?" crit":""}" data-kw="줄 피해" data-dmgtip="1" data-tip="${esc(W.rows)}" data-tipsum="${esc(W.sum)}">`+"−"+(tot!=null?tot:p.v)
     +(note?`<em>${note}</em>`:"")+`</span>`;
 }
 /* 줄 피해의 출처 (사용자 2026-10-30) — 기술 칸 숫자와 같은 breakdown 으로 기본 · 보탬을 적고,
    이 적에게만 붙는 몫(대상 · 상태 · 기술 고유 셈)은 예고(predictDmg)와의 차이로 한 줄. 셈을 새로 만들지 않는다 */
 function hitWhy(h,s,f,p,n,tot){
-  const L=[`${h.name} · ${s.n}`];
+  /* 꼴 — 받을 피해와 같게 「이름 (값)」 (사용자 2026-10-30) */
+  const L=[`${h.name}: ${s.n}`], S=[];
   let sum=null;
   try{ const bd=breakdown(h,s,"dmg"); sum=bd.total;
-    L.push(`기본 피해 ${s.dmg||0}`);
-    bd.parts.forEach(x=>L.push(typeof x.v==="number"?`${x.v>=0?"+":"−"}${Math.abs(x.v)} ${x.n}`:`${x.n} ${x.v}`)) }catch(e){}
+    L.push(`기본 피해 (${s.dmg||0})`);
+    bd.parts.forEach(x=>L.push(typeof x.v==="number"?`${x.n} (${x.v>=0?"+":"−"}${Math.abs(x.v)})`:`${x.n} (${x.v})`)) }catch(e){}
   const cr=p.crit&&!L.some(x=>/치명타/.test(x));
-  if(cr){ L.push("치명타 ×2"); if(sum!=null) sum*=2 }
-  if(sum!=null&&p.v!==sum){ const d=p.v-sum; L.push(`${d>0?"+":"−"}${Math.abs(d)} 이 적 · 상태 · 기술 고유 셈`) }
-  if(n>1) L.push(tot!=null?`${n}번 합쳐 ${tot}`:`× ${n}번`);
-  if(p.eat) L.push(`적 보호막이 ${p.eat} 막음`);
-  if(p.tail) L.push(p.tail);
-  return L.join("\n");
+  if(cr){ L.push("치명타 (×2)"); if(sum!=null) sum*=2 }
+  if(sum!=null&&p.v!==sum){ const d=p.v-sum; L.push(`이 적과 상태, 기술 고유 셈 (${d>0?"+":"−"}${Math.abs(d)})`) }
+  if(n>1) S.push(tot!=null?`${n}번 합쳐 (${tot})`:`번 수 (×${n})`);
+  if(p.eat) S.push(`적 보호막이 막음 (${p.eat})`);
+  if(p.tail) S.push(p.tail);
+  return {rows:L.join("\n"), sum:S.join("\n")};
 }
 function selfHitTag(h,s,count){
   const p=predictSelf(h,s);
