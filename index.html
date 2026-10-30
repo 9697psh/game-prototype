@@ -4365,7 +4365,7 @@ body.vbattle #upg.intop .upbody{position:absolute;top:100%;left:0;width:230px;bo
 .bfstage .slot.foe .art.lead::after{width:100px;height:14px} .bfstage .slot.foe .art.boss::after{width:120px;height:16px}
 .bfstage .slot .art::after{width:80px;height:12px;bottom:-4px}
 /* 비용 — 고른 대원만 */
-.bfstage .slot .res{display:none;position:absolute;left:50%;transform:translateX(-50%);bottom:calc(100% - 40px);background:rgba(10,9,10,.8);border:1px solid rgba(240,212,136,.35);border-radius:4px;padding:3px 8px;white-space:nowrap;z-index:5;flex-wrap:nowrap}
+.bfstage .slot .res{display:none;position:absolute;left:50%;transform:translateX(-50%);bottom:calc(100% - 40px);background:none;border:0;padding:1px 4px;filter:drop-shadow(0 1px 0 #000) drop-shadow(0 0 3px rgba(0,0,0,.85));text-shadow:0 1px 0 #000;white-space:nowrap;z-index:5;flex-wrap:nowrap}   /* 뒤 상자는 뺐다 — 그림자로만 (사용자 2026-10-30) */
 .bfstage .slot.selh .res{display:flex;position:static;left:auto;bottom:auto;transform:none;margin:0 auto 3px;width:max-content;max-width:100%}   /* 버프 줄에 가리지 않게 흐름 안으로 (사용자 2026-09-29) */
 .bfstage .slot.selh .art img.pxs{filter:drop-shadow(0 3px 0 rgba(0,0,0,.6)) drop-shadow(0 0 8px rgba(244,214,124,.7))}   /* 고르면 커지던 것(scale 1.12)은 걷었다 — 빛무리만 (사용자 2026-10-15) */   /* 고른 대원은 조금 크게 (사용자 2026-09-19) */
 /* 장신구 — 머리 위 */
@@ -15014,7 +15014,7 @@ const COMMON=[
    h=>{ if(Math.random()<0.5){ run.gold+=10; if(sfxHas("금화 얻기")) SFX.play("금화 얻기"); toast("도박꾼의 상자 — 금화 +10") }
      else { addTaint(10); toast("도박꾼의 상자 — 오염도 +10") } }),
  /* ── 공용 보상 (사용자 2026-10-30) — 하급 ── */
- R("야행성","하급","밤이 될 때, 활동량을 2 얻습니다.",h=>h.tag.nightAct=(h.tag.nightAct||0)+2),
+ R("야행성","하급","이번 원정 동안 밤이 될 때, 활동량을 2 얻습니다.",h=>h.tag.nightAct=(h.tag.nightAct||0)+2),
  R("숙취","하급","날이 밝을 때, [맥주] 카드를 2장 얻습니다. 그날의 첫 전투에서 모든 대원이 보호약화를 1 얻습니다.",
    h=>h.tag.hangover=(h.tag.hangover||0)+1),   /* 날이 밝을 때 crystal.js nextDay → run.hangNext → 첫 전투 run.hangOn → 배치(onSummon) */
  R("책 읽기","하급","경험치를 8 얻습니다. 금화를 3개 얻습니다.",h=>{ addExp(h,8); run.gold+=3 }),
@@ -19359,8 +19359,8 @@ const FOE={
          d:"폐기물 더미는 고철을 사용해서 행동합니다. 3번 피해받을 때마다 고철을 1개 잃습니다."}],
    sk:[
     /* ── 1페이즈부터 ── */
-    {n:"뱉어내기",phMin:1,phMax:1,w:5,wBoost:{cond:"noSpawn",w:16},tg:"none",cond:"고철3",scrapCost:3,spit:{pool:"normal",n:1,hp:20},
-      d:"고철을 3개 소모하여 기계를 소환합니다."},
+    {n:"뱉어내기",phMin:1,phMax:1,w:5,wBoost:{cond:"noSpawn",w:16},tg:"none",cond:"고철3",scrapCost:3,selfHp:15,spit:{pool:"normal",n:1,hp:20},
+      d:"고철을 3개와 체력 15를 소모하여 무작위 기계를 소환합니다."},
     {n:"흡수하기",phMin:1,w:5,tg:"self",cond:"hasWreck",wreckEat:{shield:8,scrap:4},
       d:"가까운 잔해를 수집합니다. 보호막 8과 고철을 4 얻습니다."},
     {n:"녹슨 기운",phMin:1,phMax:2,w:4,tg:"all",cond:"고철2",scrapCost:2,negUp:3,deb:{defDn:2},
@@ -19369,8 +19369,8 @@ const FOE={
       d:"고철을 2개 소모하여 무작위 대원에게 기절을 2 부여합니다."},
     {n:"고철 수집",phMin:1,phMax:1,w:5,tg:"none",scrapGain:4,d:"고철을 4개 얻습니다."},
     /* ── 2페이즈 ── */
-    {n:"뱉어내기",phMin:2,phMax:2,w:5,wBoost:{cond:"noSpawn",w:16},tg:"none",cond:"고철3",scrapCost:3,spit:{pool:"normal",n:1,hp:25},
-      d:"고철을 3개 소모하여 기계를 소환합니다."},
+    {n:"뱉어내기",phMin:2,phMax:2,w:5,wBoost:{cond:"noSpawn",w:16},tg:"none",cond:"고철3",scrapCost:3,selfHp:15,spit:{pool:"normal",n:1,hp:25},
+      d:"고철을 3개와 체력 15를 소모하여 무작위 기계를 소환합니다."},
     {n:"마구 뱉어내기",phMin:2,phMax:2,w:1,tg:"none",cond:"고철4",spit:{pool:"normal",all:1,per:2,hp:25},
       d:"고철을 모두 소모하여, 소모한 고철 2개당 기계를 하나 소환합니다."},
     {n:"고철 수집",phMin:2,phMax:2,w:5,tg:"none",scrapGain:5,d:"고철을 5개 얻습니다."},
@@ -25639,6 +25639,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 300, "v": "0.7", "d": "2026-10-30", "t": "우두머리 칸 그림 · 뱉어내기", "big": 0},
  {"b": 299, "v": "0.7", "d": "2026-10-30", "t": "머리 위 · 체력 밑 칸 그림", "big": 0},
  {"b": 298, "v": "0.7", "d": "2026-10-30", "t": "장소 배경 둘", "big": 0},
  {"b": 297, "v": "0.7", "d": "2026-10-30", "t": "쉼터 배경 v3", "big": 0},
@@ -27129,7 +27130,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=299;
+const BUILD_NO=300;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -29144,7 +29145,7 @@ function mapGridEl(peek){
       <span class="cbg"></span>
       ${(wpAt[r+"-"+c]||[]).map(w=>`<i class="wp${w.hz?" hz":""}" style="left:${w.x}%;top:${w.y}%;background-image:url(${ICON_PNG["map_wp"+w.v]})"></i>`).join("")}
       
-      ${kind!=="empty"?`<span class="cico">${gimCellArt(cell)||(kind==="boss"&&typeof bossCellArt==="function"&&bossCellArt())||nodeArt(kind)}</span>`:(cell.stair?`<span class="cico">${gimCellArt(cell)}</span>`:(!uns&&onPatrol(r,c)?`<span class="cico foot">${iconImg("ink11_map_guard_footprints")}</span>`:""))}
+      ${kind!=="empty"?`<span class="cico">${(kind==="boss"&&typeof bossCellArt==="function"&&bossCellArt())||gimCellArt(cell)||nodeArt(kind)}</span>`:(cell.stair?`<span class="cico">${gimCellArt(cell)}</span>`:(!uns&&onPatrol(r,c)?`<span class="cico foot">${iconImg("ink11_map_guard_footprints")}</span>`:""))}
       ${kind==="dungeon"||kind==="elite"?`<span class="cw">${cell.waves||1}</span>`:""}
       ${here?((typeof ICON_PNG!=="undefined"&&ICON_PNG.ui_move_down)
         ?`<span class="you arw"><img src="${ICON_PNG.ui_map_you||ICON_PNG.ui_move_down}" alt="현재 위치" draggable="false"></span>`   /* 붉은 붓 화살표 (사용자 2026-10-06) */
@@ -30865,10 +30866,15 @@ function dawnStop(){ if(DAWN_CUR) DAWN_CUR.stop() }
    ★ 대사 — 이미 있는 글만 쓴다 (지어내지 않는다) : BOSS_MAP_LINE → 전투 등장 한마디(INTRO_SAY) → 전투 대사 표의 등장(BARK[이름].in) → 없으면 말풍선 없이.
    ★ 우두머리마다 전용 칸 그림 — BOSS_CELL_ICON 에 { "우두머리 이름":"아이콘 id" } 를 적으면 map-grid 가 그것을 쓴다 (없으면 공용 우두머리 그림) */
 const BOSS_MAP_LINE={"콜로서스":["외부인 확인. 정화 활동 시작"]};   /* colIntro 의 등장 글 */
-const BOSS_CELL_ICON={};
+/* 우두머리마다 전용 칸 그림 (사용자 2026-10-30, GameProject2 art/icons/map-boss-faces-v1 → art/지도/) — 파일 이름이면 지도 그림, 아니면 아이콘 id.
+   검은숨은 아직 게임에 없는 우두머리 — 들어오면 저절로 붙는다 */
+const BOSS_CELL_ICON={"간수장":"map_boss_prison_warden-64.png","실험 책임자":"map_boss_fuel_director-64.png","검은숨":"map_boss_black_breath-64.png",
+  "탑의 주인":"map_boss_tower_master-64.png","폐기물 더미":"map_boss_scrap_grave-64.png","콜로서스":"map_boss_colossus-64.png"};
 let BOSS_MAP_PEND=null;
 function bossNameNow(){ return (typeof expeditionBoss==="function"&&run)?expeditionBoss(run.field):"" }
-function bossCellArt(){ const id=BOSS_CELL_ICON[bossNameNow()]; return id&&typeof iconImg==="function"?iconImg(id)||"":"" }
+function bossCellArt(){ const id=BOSS_CELL_ICON[bossNameNow()]; if(!id) return "";
+  if(/\.png$/.test(id)) return typeof mapPng==="function"?'<img class="npx" src="'+mapPng(id)+'" alt="" draggable="false">':"";
+  return typeof iconImg==="function"?iconImg(id)||"":"" }
 function bossLine(n){ const L=BOSS_MAP_LINE[n]||((typeof INTRO_SAY!=="undefined"&&INTRO_SAY[n])?[INTRO_SAY[n]]:null)||((typeof BARK!=="undefined"&&BARK[n]&&BARK[n].in)||null);
   return L&&L.length?L[Date.now()%L.length]:"" }   /* 게임 주사위는 건드리지 않는다 */
 function bossMapArm(){ if(typeof run!=="undefined"&&run) BOSS_MAP_PEND={run:run,field:run.field} }
@@ -38340,6 +38346,11 @@ function skExec0(f,I){
   if(s.scrapCost){                     /* 고철을 쓴다. 모자라면 cond 가 먼저 막는다 */
     f.scrap=Math.max(0,(f.scrap||0)-s.scrapCost);
     fx({side:"foe",slot:f.slot,txt:"고철 −"+s.scrapCost,cls:"miss",gap:50}) }
+  /* 체력을 대가로 치른다 (폐기물 더미 뱉어내기, 사용자 2026-10-30) — 맞는 피해가 아니라 **대가**라 막 · 회피를 건너뛰고 바로 깎는다.
+     이것으로 스스로 쓰러지지는 않는다(체력 1 에서 멈춘다). 단계는 체력으로 정해지므로 바로 본다 */
+  if(s.selfHp&&f.alive){ const v=Math.min(s.selfHp,Math.max(0,(f.hp||0)-1));
+    if(v>0){ f.hp-=v; fx({side:"foe",slot:f.slot,txt:"체력 −"+v,cls:"miss",gap:50}); say(`${f.name} — 체력 ${v} 소모`,"t3");
+      try{ foePhaseCheck(f) }catch(e){} } }
   if(s.scrapGain){                     /* 고철 수집 */
     const D0=FOE[f.name]||{}, cap=D0.scrapMax||99;
     const was=f.scrap||0; f.scrap=Math.min(cap,was+s.scrapGain);
