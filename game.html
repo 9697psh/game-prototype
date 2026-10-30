@@ -1843,6 +1843,20 @@ body.vbattle .tornado{transform:scale(4.6);margin-top:14px}   /* 회오리도 �
 #regionflag{position:fixed;inset:0;width:100%;height:100%;z-index:245;pointer-events:none}   /* 구역 깃발 — 덮개(240) 위, 밤 막(250) · 암전(300) 밑 */
 #covergate.busy{z-index:9700;pointer-events:auto}
 #covergate.busy.intro{z-index:240}
+/* 새날 (dawn-table.js) — 덮개 · 둘레 위의 빛 두 겹. 밤빛(차갑게, 나뭇결이 비치게) · 아침빛(왼쪽 위에서, 섞기 screen) */
+#covergate .cg-dawn{position:absolute;inset:0;pointer-events:none;z-index:20}
+#covergate .cg-dawn i{position:absolute;inset:0;opacity:0}
+#covergate .cg-dawn .dn-night{background:linear-gradient(165deg,rgba(5,12,28,.63),rgba(3,7,20,.78))}
+#covergate .cg-dawn .dn-warm{mix-blend-mode:screen;background:linear-gradient(150deg,rgba(255,214,139,.19) 0%,rgba(239,175,83,.072) 55%,rgba(225,155,80,0) 100%)}
+#dawntitle{position:fixed;inset:0;z-index:9750;pointer-events:none;opacity:0;display:flex;align-items:center;justify-content:center;
+  --u:min(calc(100vw / 764),calc(100vh / 408))}
+#dawntitle .dt-band{width:100%;height:calc(124 * var(--u));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(4 * var(--u));
+  transform:translateY(calc(var(--dy,0) * var(--u)));
+  background:linear-gradient(180deg,rgba(15,12,8,0),rgba(15,12,8,.8) 25%,rgba(15,12,8,.8) 75%,rgba(15,12,8,0))}
+#dawntitle small{font-size:calc(9 * var(--u));color:#c4ad7d;font-weight:bold;letter-spacing:.08em}
+#dawntitle b{font-size:calc(27 * var(--u));color:#f3e5c5;font-family:var(--serif);text-shadow:0 0 0 #180f09,1px 1px 0 #180f09,-1px -1px 0 #180f09,1px -1px 0 #180f09,-1px 1px 0 #180f09;line-height:1.1}
+#dawntitle span{font-size:calc(14 * var(--u));color:#e0c38a;font-weight:bold;text-shadow:1px 1px 0 #180f09,-1px -1px 0 #180f09;display:flex;align-items:center;gap:calc(10 * var(--u))}
+#dawntitle span::before,#dawntitle span::after{content:"";width:calc(25 * var(--u));height:max(1px,calc(1 * var(--u)));background:#b89b65}
 #covergate .cg-black{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none}   /* 처음 펼침의 페이드인 — 덮개 위의 검은 막 */   /* 처음 펼침 — 지도만 가리고 막 이름 띠 · 안내는 위에 */
 #covergate .cg-perim{position:absolute;background-color:#080908;background-repeat:no-repeat;background-size:100% 100%;image-rendering:pixelated;opacity:0;pointer-events:none}   /* 둘레 = 지도 판 그림 (사용자 2026-10-29) */
 #covergate.night .cg-perim::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,rgba(10,12,30,.10),rgba(4,5,16,.42) 100%)}   /* #nightveil 과 같은 빛 */
@@ -6074,6 +6088,37 @@ body.vmap #app>.toast{position:absolute;top:8px;left:50%;transform:translateX(-5
 .pmap .cell:is(.k-beltH,.k-beltV,.k-beltT,.k-crane,.k-mwreck){padding:0}
 .pmap .cell:is(.k-beltH,.k-beltV,.k-beltT,.k-crane,.k-mwreck) .cico{inset:0}
 .pmap .cell:is(.k-beltH,.k-beltV,.k-beltT,.k-crane,.k-mwreck) .cico img{width:100%;height:100%;max-width:none;max-height:none}
+
+/* ═══ 체력 막대 그림 (사용자 2026-10-30, art/_받은묶음/health-bars-2026-10-30 → art/지도/체력-*.png) ═══
+   틀은 border-image — 양 끝(마구리)은 고정, 가운데만 되풀이(round). 홈 = 틀의 안쪽(padding 상자)이라 채움 · 자국 · 막이 그 안에 그대로 깔린다.
+   채움은 8×8 띠를 가로로 되풀이 (% 만큼 잘린다 — 지금의 width 셈 그대로). 셈 · 깎이는 연출 · 회복 연출은 안 바꿨다 */
+/* 전투 — 틀 160×16, 홈 148×8 (6,4) */
+.bfstage .ublw .bar{width:calc(78% + 12px);height:16px;box-sizing:border-box;background:none;border-radius:0;
+  border-style:solid;border-color:transparent;border-width:4px 6px;
+  border-image:url("map/체력-틀.png") 4 8 4 8 fill / 4px 8px 4px 8px round;image-rendering:pixelated}
+.bfstage .ublw .bar > i{background:url("map/체력-대원.png") 0 0/8px 100% repeat-x;image-rendering:pixelated}
+.bfstage .slot.foe .ublw .bar > i{background-image:url("map/체력-적.png")}
+.bfstage .ublw .bar.mn > i{background:var(--mana)}
+.bfstage .ublw .bar > em.gh{background:url("map/체력-잃은자국.png") 0 0/8px 100% repeat-x;image-rendering:pixelated}
+.bfstage .ublw .bar.healed > em.gh{background-image:url("map/체력-회복자국.png")}
+.bfstage .ublw .bar > u.sh{background:url("map/체력-보호막.png") 0 0/8px 100% repeat-x;box-shadow:none;image-rendering:pixelated}
+.bfstage .ublw .bar > u.es{background:url("map/체력-에너지.png") 0 0/8px 100% repeat-x;box-shadow:none;image-rendering:pixelated}
+/* 눈금 — 받은 눈금(2×8 : 짙은 1px + 옅은 빛 1px)을 12px 마다. 띄어 되풀이할 수 없어 같은 두 색을 그대로 그린다 */
+.bfstage .ublw .bar::after{background:repeating-linear-gradient(90deg,transparent 0 10px,rgba(31,20,13,.75) 10px 11px,rgba(228,205,157,.31) 11px 12px)}
+/* 우두머리 — 틀 176×20, 홈 148×10 (14,5). 채움은 세로로 10 에 맞춰 늘인다 */
+.bfstage .slot.t-boss .ublw .bar{width:calc(78% + 28px);height:20px;border-width:5px 14px;
+  border-image:url("map/체력-틀-우두머리.png") 5 14 5 14 fill / 5px 14px 5px 14px round}
+/* 대원 줄 — 틀 64×8, 홈 60×4 (2,2). 위태로우면(체력 1/3 이하) 붉은 띠 */
+.party .ph i{width:64px;height:8px;box-sizing:border-box;border-radius:0;background:none;box-shadow:none;
+  border-style:solid;border-color:transparent;border-width:2px;border-image:url("map/체력-작은틀.png") 2 fill / 2px round;image-rendering:pixelated}
+.party .ph i u{background:url("map/체력-대원-작은.png") 0 0/4px 100% repeat-x;border-radius:0;image-rendering:pixelated}
+.party .ph.p-mid i u{background:url("map/체력-대원-작은.png") 0 0/4px 100% repeat-x;filter:hue-rotate(-60deg) saturate(1.3)}
+.party .ph.p-low i u{background:url("map/체력-적.png") 0 0/4px 100% repeat-x}
+/* 쉼터 회복 결과 — 틀 208×14, 홈 200×8 (4,3). 있던 몫 = 대원 띠, 찬 몫 = 회복 자국 */
+.restres .rbar{height:14px;box-sizing:border-box;border-radius:0;background:none;box-shadow:none;
+  border-style:solid;border-color:transparent;border-width:3px 4px;border-image:url("map/체력-큰틀.png") 3 4 3 4 fill / 3px 4px 3px 4px round;image-rendering:pixelated}
+.restres .rb{background:url("map/체력-대원.png") 0 0/8px 100% repeat-x;image-rendering:pixelated}
+.restres .rg{background:url("map/체력-회복자국.png") 0 0/8px 100% repeat-x;image-rendering:pixelated}
 </style>
 </head>
 <body>
@@ -22932,11 +22977,12 @@ function nextDay(){
   /* addTaint(10) — 2026-09-16 뺌: 날이 바뀌는 것만으로는 오염도가 오르지 않는다 (노숙의 +10 은 그대로) */
   respawn();
   const left=FIELDS[run.field].days-run.day;
-  { const fn=fieldLabel()||FIELDS[run.field].n;
-    dayBreak(run.day, left>0?`${fn} 남은 날 ${left}일`:`${fn} 마지막 날`); }
+  /* 새날 — 탁자가 닫힌 채 아침빛을 맞고 열린다 (사용자 2026-10-30, dawnBreak). 못 쓰면 예전 암전(dayBreak) */
+  { const fn=fieldLabel()||FIELDS[run.field].n, lb=left>0?`${fn} 남은 날 ${left}일`:`${fn} 마지막 날`;
+    if(typeof dawnBreak==="function") dawnBreak(run.day,lb); else dayBreak(run.day,lb); }
   /* 어둠이 걷힌 뒤에 한 번 더 그린다 — 마차 · 뿌리의 연출이 그때부터 돈다 (사용자 2026-10-14) */
   setTimeout(()=>{ try{ if(typeof view!=="undefined"&&view==="map") render() }catch(e){} },Math.max(0,MAP_BO_UNTIL-Date.now())+60);
-  toast(`${run.day}일차 아침이 밝았습니다.`);
+  if(!(typeof DAWN_ON!=="undefined"&&DAWN_ON)) toast(`${run.day}일차 아침이 밝았습니다.`);   /* 탁자 연출은 가운데 문구가 날을 알린다 — 겹치지 않게 */
 }
 /* 눈을 감았다 뜬다 — 화면이 어두워졌다가 일차가 크게 떠오른다 */
 function dayBreak(day,label){
@@ -24773,6 +24819,7 @@ function mapPanelAfter(saved){
 function render(){
   if(FOE_CAPTURING||CARD_BATCH) return;   /* 적의 셈 도중 다시 그리면 아직 모으는 연출 큐가 먼저 흘러간다 */
   if(PRED_DRY) return;   /* 미리 돌려 보는 중 — 그리지 않는다. 안 막으면 되돌이로 화면이 멈춘다 */
+  if(typeof dawnGate==="function"&&dawnGate()) return;   /* 새날 — 탁자 덮개가 다 닫힐 때까지 밤 지도를 그대로 (dawn-table.js) */
   if(typeof shutGate==="function"&&shutGate()) return;   /* 지도 ↔ 쉼터 · 미지의 구역 · 전용 구역 — 가운데 덧판이 닫힌 뒤에 그린다 */
   if(FOE_VIEW&&(B!==FOE_VIEW.battle||view!=="battle")) FOE_VIEW=null;
   /* 전투를 떠나면 되풀이 녹음을 끈다 (사용자 2026-10-13 : 훈련장에서 복수귀가 켜진 채 나오면 소리가 따라왔다).
@@ -25548,6 +25595,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 287, "v": "0.7", "d": "2026-10-30", "t": "새날 탁자 · 체력 막대", "big": 0},
  {"b": 286, "v": "0.7", "d": "2026-10-30", "t": "의도 아이콘 · 과열 폭발 예고", "big": 0},
  {"b": 285, "v": "0.7", "d": "2026-10-30", "t": "피해 출처 툴팁", "big": 0},
  {"b": 284, "v": "0.7", "d": "2026-10-30", "t": "장소 배경 틀 밑까지", "big": 0},
@@ -27025,7 +27073,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=286;
+const BUILD_NO=287;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -30669,6 +30717,86 @@ function flagShow(o){
   });
 }
 function flagCancel(){ if(FLAG_CUR) FLAG_CUR.cancel() }
+/* ═══════════ 새날 — 탁자가 닫힌 채 아침빛을 맞고 다시 열린다 (사용자 2026-10-30 승인) ═══════════
+   받은 시제품 : GameProject2/art/ui/daybreak-table-v1 (motion.js 의 시간 · 빛 · 문구를 옮겼다. 배경 스크린숏 · 시각 덮어쓰기는 안 옮긴다).
+   ★ 어디서 — nextDay 끝의 날 바뀜(전에는 dayBreak 암전 + 날짜 카드). 같은 구역의 다음 날만 — 막 이동(nextField)은 그대로 dayBreak.
+   ★ 차례 (ms, DAWN_T) :
+       0~450 밤 지도 그대로 → 450~1400 양옆 덮개가 닫힌다 → 1400~1650 닫힌 밤의 판 →
+       1650~3650 닫힌 채 아침빛 (차가운 밤빛이 걷히고 왼쪽 위부터 따뜻한 빛) → 3650~3950 밝아진 판 →
+       3950~5150 덮개가 열린다 · 4120~4670 가운데 문구(새로운 하루 / 구역 이름 / N일차) → 6500~7200 문구가 걷힌다 → 7400 끝
+   ★ 상태는 nextDay 가 이미 바꿨다 — **화면만** 덮개가 다 닫힐 때까지 붙든다(dawnGate : render 맨 앞). 닫히면 아침 지도를 그린다.
+   ★ 덮개 · 소리는 탁자 덮개(cover-gate)의 것을 그대로 (coverBuild · coverAngle · cvSnd). 새 소리 없음.
+   ★ 탭이 숨으면 시계가 멈춘다(rAF 한 줄). 끝 · 끊김 · 오류 모두 dawnEnd 한 곳에서 덮개 · 빛 · 문구 · 누름 잠금을 걷는다.
+   ⚠️ 덮개를 못 쓰면(그림 못 읽음 · 다른 넘김이 도는 중 · 움직임 줄이기 · 자동화 브라우저) 예전 dayBreak 로 간다 */
+const DAWN_T={close:[450,1400],dawn:[1650,3650],open:[3950,5150],title:[4120,4670],out:[6500,7200],end:7400};
+let DAWN_ON=0, DAWN_DEFER=0, DAWN_DIRTY=0, DAWN_FORCE=0, DAWN_CUR=null;
+const dSm=x=>{ x=Math.max(0,Math.min(1,x)); return x*x*(3-2*x) };
+const dSeg=(t,[a,b])=>dSm((t-a)/(b-a));
+const dEase=p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;   /* coverTween 과 같은 보간 */
+/* render 맨 앞 — 덮개가 닫히기 전에는 그리지 않고 미뤄 둔다 (밤 지도가 그대로 보인 채 닫혀야 한다) */
+function dawnGate(){ if(!DAWN_DEFER) return false; DAWN_DIRTY=1; return true }
+/* nextDay 가 부른다 — 탁자로 맞거나, 못 쓰면 예전 암전(dayBreak). 값은 돌려주지 않는다 (규칙이 화면의 결과에 기대지 않게 — 탁자가 도는지는 DAWN_ON) */
+function dawnBreak(day,label){
+  const can=typeof document!=="undefined"&&typeof coverBuild==="function"&&CV_OK===1&&!CV_BUSY&&!DAWN_ON
+    &&!(typeof matchMedia!=="undefined"&&matchMedia("(prefers-reduced-motion: reduce)").matches)
+    &&!(typeof navigator!=="undefined"&&navigator.webdriver&&!DAWN_FORCE)
+    &&typeof run!=="undefined"&&run&&!run.lost;
+  if(can) dawnPlay(day); else dayBreak(day,label);
+}
+function dawnPlay(day){
+  DAWN_ON=1; DAWN_DEFER=1; DAWN_DIRTY=0;
+  const region=(typeof fieldLabel==="function"&&fieldLabel())||((FIELDS[run.field]||{}).n)||"";
+  /* 지도는 덮개가 반쯤 열렸을 때 펴지게 (nextDay 가 mapUnfold 를 켰다) */
+  if(typeof MAP_BO_UNTIL!=="undefined") MAP_BO_UNTIL=Math.max(MAP_BO_UNTIL,Date.now()+DAWN_T.open[0]+420);
+  coverBuild(); CV_BUSY=1; cvSndCancel(false);
+  const root=CV_ROOT; root.classList.add("busy"); root.style.display=""; root.classList.add("night");
+  CV_AWAY=0; coverPlace(); coverAngle(CV.OPEN);
+  { const v=root.querySelector(".cg-veil"); if(v){ try{ v.getAnimations().forEach(x=>x.cancel()) }catch(e){} v.style.opacity="0" } }
+  /* 빛 — 덮개 · 둘레 위에 두 겹 (밤빛 · 아침빛). 검은 막으로 가리지 않는다 — 밤에도 나뭇결이 보이게 */
+  const L=document.createElement("div"); L.className="cg-dawn"; L.innerHTML=`<i class="dn-night"></i><i class="dn-warm"></i>`; root.appendChild(L);
+  const night=L.querySelector(".dn-night"), warm=L.querySelector(".dn-warm");
+  const T=document.createElement("div"); T.id="dawntitle";
+  T.innerHTML=`<div class="dt-band"><small>새로운 하루</small><b>${esc(region)}</b><span>${day}일차</span></div>`;
+  document.body.appendChild(T);
+  const S=CV_SND.닫힘, si=sndNth(S.k,S.충돌.length), hit=(S.충돌[si]+(S.앞당김||0))*1000;
+  let t=0, last=0, raf=0, done=false, swapped=false, played={};
+  const me={stop:()=>fin()};
+  DAWN_CUR=me;
+  function swap(){ if(swapped) return; swapped=true;   /* 다 닫혔다 — 아침 지도 · 머리말을 그린다 */
+    DAWN_DEFER=0; root.classList.remove("night");
+    try{ render() }catch(e){ console.error(e) } DAWN_DIRTY=0 }
+  function fin(){ if(done) return; done=true; cancelAnimationFrame(raf);
+    swap(); L.remove(); T.remove(); DAWN_ON=0; DAWN_DEFER=0; if(DAWN_CUR===me) DAWN_CUR=null;
+    coverAngle(CV.OPEN); coverEnd() }
+  const once=(k,at,fn)=>{ if(played[k]||t<at) return; played[k]=1; try{ fn() }catch(e){} };
+  function frame(now){
+    if(done) return;
+    const dt=last&&!document.hidden?Math.min(100,now-last):0; last=now; t+=dt/cvK();
+    try{
+      /* 덮개 — 닫힘 · 열림 (각도 하나) */
+      let a=CV.OPEN;
+      if(t>=DAWN_T.close[0]&&t<DAWN_T.close[1]) a=CV.OPEN*(1-dEase((t-DAWN_T.close[0])/(DAWN_T.close[1]-DAWN_T.close[0])));
+      else if(t>=DAWN_T.close[1]&&t<DAWN_T.open[0]) a=0;
+      else if(t>=DAWN_T.open[0]&&t<DAWN_T.open[1]) a=CV.OPEN*dEase((t-DAWN_T.open[0])/(DAWN_T.open[1]-DAWN_T.open[0]));
+      coverAngle(a);
+      once("닫힘",DAWN_T.close[1]-hit,()=>cvSnd("닫힘",0,si));   /* 쿵이 맞닿는 순간에 */
+      once("바꿈",DAWN_T.close[1],swap);
+      once("열림",DAWN_T.open[0],()=>cvSnd("열림"));
+      /* 빛 — 밤빛은 닫히며 짙어졌다가(이미 밤인 지도라 갑자기 어두워지지 않게) 아침에 걷힌다. 아침빛은 열리며 줄어든다 */
+      const dawn=dSeg(t,DAWN_T.dawn), open=dSeg(t,DAWN_T.open), nightIn=dSeg(t,DAWN_T.close);
+      night.style.opacity=String(nightIn*(1-dawn));
+      warm.style.opacity=String(dawn*(1-0.53*open)*(1-dSeg(t,[DAWN_T.open[1],DAWN_T.end])));
+      /* 문구 */
+      const ti=dSeg(t,DAWN_T.title)*(1-dSeg(t,DAWN_T.out));
+      T.style.opacity=String(ti); T.style.setProperty("--dy",(4*(1-dSeg(t,DAWN_T.title))).toFixed(2));
+    }catch(e){ console.error(e); fin(); return }
+    if(t>=DAWN_T.end){ fin(); return }
+    raf=requestAnimationFrame(frame);
+  }
+  raf=requestAnimationFrame(frame);
+}
+/* 화면을 떠날 때(제목 · 새 원정) 도는 것을 끊는다 */
+function dawnStop(){ if(DAWN_CUR) DAWN_CUR.stop() }
 function fadeInto(fn){
   if(typeof coverInto==="function"&&(CV_BUSY||coverWants())){ coverInto(fn); return }   /* 도는 중이면 줄을 선다 */
   /* 쉼터 · 미지의 구역 · 전용 구역 — 암전 없이 바로 넘긴다. 지도 판 가운데 덧판은 render 의 shutGate 가 맡는다 */
