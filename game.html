@@ -96,6 +96,7 @@ h1{font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--bras
   border:1px solid rgba(0,0,0,.55);box-shadow:0 1px 5px rgba(0,0,0,.55);
   font-variant-numeric:tabular-nums;white-space:nowrap}
 .hitpv.kw,.incm.kw{pointer-events:auto;cursor:help}   /* 커서를 올리면 피해의 출처 (사용자 2026-10-30) — 누름은 칸으로 그대로 올라간다 */
+.bfstage .ublw .stats span.kw{pointer-events:auto;cursor:help}   /* 능력치 줄 — 커서를 올리면 그 수의 출처 (stat-src.js, 사용자 2026-10-30) */
 .hitpv+.hitpv{top:11px}
 .hitpv.dmg{background:#c9503f;color:#fff2ee}
 .hitpv.shd{background:#e0c85a;color:#241d06}
@@ -1853,10 +1854,9 @@ body.vbattle .tornado{transform:scale(4.6);margin-top:14px}   /* 회오리도 �
 #dawntitle .dt-band{width:100%;height:calc(124 * var(--u));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(4 * var(--u));
   transform:translateY(calc(var(--dy,0) * var(--u)));
   background:none}   /* 뒤의 검은 띠는 뺐다 — 문구만 (사용자 2026-10-30) */
-#dawntitle small{font-size:calc(9 * var(--u));color:#c4ad7d;font-weight:bold;letter-spacing:.08em}
-#dawntitle b{font-size:calc(27 * var(--u));color:#f3e5c5;font-family:var(--serif);text-shadow:0 0 0 #180f09,1px 1px 0 #180f09,-1px -1px 0 #180f09,1px -1px 0 #180f09,-1px 1px 0 #180f09;line-height:1.1}
-#dawntitle span{font-size:calc(14 * var(--u));color:#e0c38a;font-weight:bold;text-shadow:1px 1px 0 #180f09,-1px -1px 0 #180f09;display:flex;align-items:center;gap:calc(10 * var(--u))}
-#dawntitle span::before,#dawntitle span::after{content:"";width:calc(25 * var(--u));height:max(1px,calc(1 * var(--u)));background:#b89b65}
+#dawntitle small{font-size:calc(9 * var(--u));color:#fff;font-weight:bold;letter-spacing:.08em}   /* 흰색 한 가지 · 테두리 없음 (사용자 2026-10-30) */
+#dawntitle b{font-size:calc(27 * var(--u));color:#fff;font-family:var(--serif);line-height:1.1}
+#dawntitle span{font-size:calc(14 * var(--u));color:#fff;font-weight:bold}
 #covergate .cg-black{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none}   /* 처음 펼침의 페이드인 — 덮개 위의 검은 막 */   /* 처음 펼침 — 지도만 가리고 막 이름 띠 · 안내는 위에 */
 #covergate .cg-perim{position:absolute;background-color:#080908;background-repeat:no-repeat;background-size:100% 100%;image-rendering:pixelated;opacity:0;pointer-events:none}   /* 둘레 = 지도 판 그림 (사용자 2026-10-29) */
 #covergate.night .cg-perim::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,rgba(10,12,30,.10),rgba(4,5,16,.42) 100%)}   /* #nightveil 과 같은 빛 */
@@ -25612,6 +25612,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 294, "v": "0.7", "d": "2026-10-30", "t": "능력치 출처 · 새날 문구", "big": 0},
  {"b": 293, "v": "0.7", "d": "2026-10-30", "t": "승리 소리 크게", "big": 0},
  {"b": 292, "v": "0.7", "d": "2026-10-30", "t": "보호막 노랑", "big": 0},
  {"b": 291, "v": "0.7", "d": "2026-10-30", "t": "피해 출처 쪽지 모양", "big": 0},
@@ -27096,7 +27097,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=293;
+const BUILD_NO=294;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -30755,7 +30756,7 @@ function flagCancel(){ if(FLAG_CUR) FLAG_CUR.cancel() }
    ★ 덮개 · 소리는 탁자 덮개(cover-gate)의 것을 그대로 (coverBuild · coverAngle · cvSnd). 새 소리 없음.
    ★ 탭이 숨으면 시계가 멈춘다(rAF 한 줄). 끝 · 끊김 · 오류 모두 dawnEnd 한 곳에서 덮개 · 빛 · 문구 · 누름 잠금을 걷는다.
    ⚠️ 덮개를 못 쓰면(그림 못 읽음 · 다른 넘김이 도는 중 · 움직임 줄이기 · 자동화 브라우저) 예전 dayBreak 로 간다 */
-const DAWN_T={close:[450,1400],dawn:[1650,3650],open:[3950,5150],title:[4120,4670],out:[6500,7200],end:7400};
+const DAWN_T={close:[450,1400],dawn:[1650,3650],open:[3950,5150],title:[1700,2150],out:[3350,3800],end:5300};   /* 문구는 닫혀 멈춘 동안 (사용자 2026-10-30 — 전에는 열린 뒤 4120~7200) */
 let DAWN_ON=0, DAWN_DEFER=0, DAWN_DIRTY=0, DAWN_FORCE=0, DAWN_CUR=null;
 const dSm=x=>{ x=Math.max(0,Math.min(1,x)); return x*x*(3-2*x) };
 const dSeg=(t,[a,b])=>dSm((t-a)/(b-a));
@@ -37437,9 +37438,10 @@ function foeHasMag(f){ const D=FOE[f.name]||{}; return (D.el==="마법")||(foeMa
 function foeStatLine(f){
   const D=FOE[f.name]||{}, th=foeAtkCond(f);
   const mv=foeMagShow(f);
-  return `<div class="stats fstats"><span>${ic("atk")}${foeAtkTxt(f,th)}${f.willAtk?` <em class="fdn">(-${f.willAtk})</em>`:""}</span>`
-    +(foeHasMag(f)?`<span>${ic("mag")}${mv>=0?"+"+mv:String(mv)}</span>`:"")
-    +`<span>${ic("def")}${foeDefTxt(f)}${f.willDef?` <em class="fdn">(-${f.willDef})</em>`:""}</span></div>`;   /* 의지 약화 — 추가 능력치 칸에 (-N) */
+  /* 커서를 올리면 그 수의 출처 (stat-src.js, 사용자 2026-10-30) */
+  return `<div class="stats fstats"><span${statTipAttr(f,"atk",f.atk||0)}>${ic("atk")}${foeAtkTxt(f,th)}${f.willAtk?` <em class="fdn">(-${f.willAtk})</em>`:""}</span>`
+    +(foeHasMag(f)?`<span${statTipAttr(f,"mag",f.mag||0)}>${ic("mag")}${mv>=0?"+"+mv:String(mv)}</span>`:"")
+    +`<span${statTipAttr(f,"def",f.def||0)}>${ic("def")}${foeDefTxt(f)}${f.willDef?` <em class="fdn">(-${f.willDef})</em>`:""}</span></div>`;   /* 의지 약화 — 추가 능력치 칸에 (-N) */
 }
 function foePeekHtml(f){
   const D=FOE[f.name]||{};
@@ -40630,9 +40632,9 @@ function drawBattle(app){
           h.eshield?` <span class="esh kw" data-kw="에너지 보호막">◆${h.eshield}</span>`:""}${
           h.shield?` <span class="shd">${ic("def")}${h.shield}</span>`:""}</div>
         <div class="stats">
-          ${(()=>{ const pa=portalImpAtk(h), a=(h.atk||0)+pa; return a?`<span${pa?` class="pup kw" data-kw="물량 공세" data-tip="차원문 위 +${pa}."`:""}>${ic("atk")}${a}</span>`:"" })()}
-          ${h.mag?`<span>${ic("mag")}${h.mag}</span>`:""}
-          ${h.def?`<span>${ic("def")}${h.def}</span>`:""}
+          ${(()=>{ const pa=portalImpAtk(h), a=(h.atk||0)+pa; return a?`<span${pa?` class="pup kw" data-kw="물량 공세" data-tip="차원문 위 +${pa}."`:statTipAttr(h,"atk",h.atk||0)}>${ic("atk")}${a}</span>`:"" })()}
+          ${h.mag?`<span${statTipAttr(h,"mag",h.mag)}>${ic("mag")}${h.mag}</span>`:""}
+          ${h.def?`<span${statTipAttr(h,"def",h.def)}>${ic("def")}${h.def}</span>`:""}
         </div>
         ${heroStatusRows(h)}`;
       d.onclick=()=>{
@@ -42069,8 +42071,8 @@ function pickCount(n){
     b.classList.remove("wide"); b.classList.remove("tidtip"); b.classList.remove("pkcard"); b.classList.remove("dmgtip");
     if(el2.dataset.dmgtip){   /* 피해 출처 (받을 · 줄 피해, 사용자 2026-10-30) — 게임 틀 그림에 피해 아이콘 머리 */
       const rows=(el2.dataset.tip||"").split("\n").filter(Boolean), sum=(el2.dataset.tipsum||"").split("\n").filter(Boolean);
-      const ic=(typeof iconImg==="function"&&iconImg("combat_damage"))||"";
-      b.innerHTML=`<div class="dt-h">${ic}<span>${esc(el2.dataset.kw||"")}</span></div>`
+      const hic=(el2.dataset.tipic&&typeof ic==="function")?ic(el2.dataset.tipic):((typeof iconImg==="function"&&iconImg("combat_damage"))||"");   /* 능력치 출처는 그 능력치 아이콘 */
+      b.innerHTML=`<div class="dt-h">${hic}<span>${esc(el2.dataset.kw||"")}</span></div>`
         +rows.map(x=>`<div class="dt-r">${esc(x)}</div>`).join("")
         +(sum.length?`<div class="dt-s">${sum.map(x=>`<div>${esc(x)}</div>`).join("")}</div>`:"");
       b.classList.add("dmgtip"); b.style.display="block";
@@ -49104,6 +49106,86 @@ function claimReward(){
   battleWon();
   dungeonCleared();
 }
+/* ═══════════ 추가 능력치의 출처 — 공격력 · 마법력 · 보호력이 어디서 왔나 (사용자 2026-10-30) ═══════════
+   수치는 마흔 곳이 넘는 자리에서 그냥 더하고 빼므로 출처가 남지 않는다. 그 자리를 다 고치는 대신
+   **수치를 바꾸는 길목**(보상 받기 · 대원 기술 · 카드 · 적 기술 · 턴 시작/끝 · 배치 · 레벨업)을 감싸
+   그 길목 전후로 바뀐 몫을 「길목 이름」으로 적는다 (statWatch). 셈은 하나도 안 바뀐다 — 적어 두기만.
+   ★ 적는 곳 :
+       · 원정 내내 남는 것(보상 · 레벨업) — 대원의 h.ssrc (저장에 실린다)
+       · 전투 안에서 생긴 것 — STAT_B (그 전투 · 그 라운드 동안만, 바뀌면 비운다)
+     장신구 몫은 적지 않는다 — 끼운 장신구(it.st)에서 바로 센다 (statRows).
+   ★ 보이는 곳 : 대원 · 적을 눌렀을 때 그림 왼쪽의 능력치 줄 → 커서를 올리면 「이름 (값)」 쪽지. 다 더해도 남는 몫은 「기본」.
+   ⚠️ 길목 안에서 또 길목을 지나면 **안쪽 이름**이 그 몫을 가져가고 바깥은 나머지만 적는다 */
+const STAT_K=["atk","mag","def"];
+let STAT_B=null, STAT_BKEY=null;
+function statBattleKey(){ return (typeof B!=="undefined"&&B)?B:null }
+function statBStore(){
+  const k=statBattleKey(), w=(typeof run!=="undefined"&&run&&run.dun)?run.dun.wave:0;
+  if(!k){ STAT_B=null; STAT_BKEY=null; return null }
+  if(STAT_BKEY!==k||STAT_B._w!==w){ STAT_B=new WeakMap(); STAT_B._w=w; STAT_BKEY=k }   /* 새 전투 · 새 라운드면 비운다 */
+  return STAT_B;
+}
+function statUnits(){
+  const L=[];
+  if(typeof run!=="undefined"&&run&&run.heroes) run.heroes.forEach(h=>L.push(h));
+  if(typeof B!=="undefined"&&B){ (B.foes||[]).forEach(x=>L.push(x)); (B.mins||[]).forEach(x=>{ if(L.indexOf(x)<0) L.push(x) }) }
+  return L;
+}
+/* 적어 둔 몫의 일지 — 바깥 길목은 「전체 변화 − 안쪽이 그동안 적은 몫」만 적는다 */
+const STAT_J=new WeakMap();
+const statJ=(u,k)=>{ const m=STAT_J.get(u); return (m&&m[k])||0 };
+function statNote(u,k,label,d,persist){
+  if(!u||!d||!label) return;
+  { const m=STAT_J.get(u)||{}; m[k]=(m[k]||0)+d; STAT_J.set(u,m) }
+  const hero=typeof run!=="undefined"&&run&&run.heroes&&run.heroes.indexOf(u)>=0;
+  let box;
+  if(persist&&hero) box=u.ssrc=u.ssrc||{};
+  else{ const S=statBStore(); if(!S) return; box=S.get(u); if(!box){ box={}; S.set(u,box) } }
+  const m=box[k]=box[k]||{}; m[label]=(m[label]||0)+d; if(!m[label]) delete m[label];
+}
+/* 길목 감싸기 — 전후로 바뀐 몫을 label 로. persist 면 원정 내내 (대원만) */
+function statWatch(label,persist,fn){
+  if(!label) return fn();
+  const U=statUnits(), S=U.map(u=>STAT_K.map(k=>[u[k]||0,statJ(u,k)]));
+  try{ return fn() }
+  finally{
+    U.forEach((u,i)=>STAT_K.forEach((k,j)=>{
+      const d=((u[k]||0)-S[i][j][0])-(statJ(u,k)-S[i][j][1]);
+      if(d) statNote(u,k,label,d,persist) }));
+  }
+}
+/* 쪽지에 쓸 줄 — [{n, v}] 와 「기본」 몫. total 은 화면에 보인 값 */
+function statRows(u,k,total){
+  const R=[];
+  ((u&&u.items)||[]).forEach(it=>{ const v=it&&it.st&&it.st[k]; if(v) R.push({n:it.n||"장신구",v}) });
+  const P=(u&&u.ssrc&&u.ssrc[k])||{}; Object.keys(P).forEach(n=>{ if(P[n]) R.push({n,v:P[n]}) });
+  const S=statBStore(), bx=S&&S.get(u), BB=(bx&&bx[k])||{}; Object.keys(BB).forEach(n=>{ if(BB[n]) R.push({n,v:BB[n]}) });
+  const sum=R.reduce((a,x)=>a+x.v,0), base=(total||0)-sum;
+  if(base) R.unshift({n:"기본",v:base});
+  return R;
+}
+/* 능력치 칸에 붙일 쪽지 글 — 「이름 (+2)」 줄들 (battle-ui 의 피해 출처 쪽지 꼴, data-tipic 이 머리 아이콘) */
+const STAT_NAME={atk:"공격력",mag:"마법력",def:"보호력"};
+function statTipAttr(u,k,total){
+  const R=statRows(u,k,total).map(x=>`${x.n} (${x.v>0?"+":x.v<0?"−":""}${Math.abs(x.v)})`);
+  const q=t=>String(t).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
+  return ` class="kw" data-kw="${STAT_NAME[k]}" data-dmgtip="1" data-tipic="${k}" data-tip="${q(R.join("\n"))}" data-tipsum=""`;
+}
+/* ── 길목에 건다 (규칙 파일이 다 선 뒤 — 이 파일은 그 뒤에 붙는다) ── */
+(function(){
+  const G=typeof globalThis!=="undefined"?globalThis:this;
+  const W=(name,lab,persist)=>{ const f=G[name]; if(typeof f!=="function"||f._statW) return;
+    const w=function(){ const a=arguments; let L=null; try{ L=lab.apply(this,a) }catch(e){} return statWatch(L,persist,()=>f.apply(this,a)) };
+    w._statW=1; G[name]=w };
+  W("grantRunReward",(h,r)=>r&&r.n,1);
+  W("levelUp",()=>"레벨업",1);
+  W("runEffect",(h,i,s)=>h&&s&&s.n?`${h.name}: ${s.n}`:null);
+  W("playCard",i=>{ const c=typeof B!=="undefined"&&B&&B.hand&&B.hand[i]; return c?(c.name||(c.hero&&c.hero.name)||"카드"):"카드" });
+  W("skExec",(f,I)=>{ const s=f&&I&&((FOE[f.name]||{}).sk||[])[I.i]; return f?`${f.name}: ${(s&&s.n)||I.n||"기술"}`:null });
+  W("onSummon",h=>h?`${h.name}: 배치 효과`:"배치 효과");
+  W("startMyTurn",()=>"턴 시작 효과");
+  W("endPhase",()=>"턴 끝 효과");
+})();
 function drawWaveGap(app){
   const d=run.dun;
   app.appendChild(el(`<div class="center">
