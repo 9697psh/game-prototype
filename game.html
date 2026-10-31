@@ -6349,8 +6349,8 @@ body.vbattle .bagbtn img.npx,body.vnew .bagbtn img.npx{width:26px;height:26px;ma
    두 그림은 같은 배율 : 960×540 논리 판의 1칸 = --rpx (화면을 덮는 배율, background-size:cover 와 같은 셈) */
 body.rwtable{--rpx:max(calc(100vw / 960),calc(100vh / 540));background:#1a120c url("bg/reward-table.webp") center/cover no-repeat}
 .rwfade{position:fixed;inset:0;z-index:9500;background:#0b0705;pointer-events:none}   /* 보상 탁자 — 어둠에서 서서히 (rwFadeIn) */
-body.rwtable #app .rewards.rwmat{position:relative;isolation:isolate;width:fit-content;max-width:100%;margin-left:auto;margin-right:auto}
-body.rwtable #app .rewards.rwmat::before{content:"";position:absolute;left:50%;top:50%;z-index:-1;pointer-events:none;
+body.rwtable #app .rwmat{position:relative;isolation:isolate;width:fit-content;max-width:100%;margin-left:auto;margin-right:auto}
+body.rwtable #app .rwmat::before{content:"";position:absolute;left:50%;top:50%;z-index:-1;pointer-events:none;
   --m:max(var(--rpx),var(--need,0px));width:calc(632 * var(--m));height:calc(282 * var(--m));transform:translate(-50%,-50%);
   background:url("bg/reward-mat.webp") center/100% 100% no-repeat}
 /* 카드 반응 — 들림 · 그림자 넓어짐. 그림자는 카드 틀 모양을 따른다(drop-shadow) — 네모 box-shadow 는 틀 바깥 여백까지 그렸다.
@@ -25090,7 +25090,8 @@ function drawTraitStep(app,cur){
   app.appendChild(el(`<div class="center"><div class="title">${morph?"변형 선택":"특성 선택"}</div>
     <div class="sub">${morph?"자동변환단총의 변형 형태를 선택하세요":"이번 원정동안 강화할 대원의 특성을 선택하세요"}</div>
     <div class="trait-owner">${esc(h.name)} · Lv.7</div></div>`));
-  const row=el(`<div class="trait-choices${morph?" morph-choices":""}"></div>`);
+  const row=el(`<div class="trait-choices rwmat${morph?" morph-choices":""}"></div>`);   /* 보상 카드처럼 가죽 매트 위 (사용자 2026-11-01) */
+  document.body.classList.add("rwtable");   /* 원정 탁자 배경 */
   const P=pending;let locked=false;
   choices.forEach(x=>{
     const card=el(`<button type="button" class="trait-choice" ${morph?`data-morph="${esc(x.n)}"`:`data-trait-choice="${esc(x.id)}"`}>
@@ -25110,8 +25111,9 @@ function drawTraitStep(app,cur){
     row.appendChild(card);
   });
   app.querySelector(".center").appendChild(row);
+  rwMatFit(row);
   { const dk=h.name+"|"+(morph?"m":"t");
-    if(TRAIT_DEALT!==dk){ TRAIT_DEALT=dk;
+    if(TRAIT_DEALT!==dk){ TRAIT_DEALT=dk; rwFadeIn(null);   /* 처음 한 번 어둠에서 (보상 탁자와 같이) */
       [...row.children].forEach((c,i)=>{ const d=i*110;
         c.classList.add("deal"); c.style.animationDelay=d+"ms";
         setTimeout(()=>{ try{ SFX.play(SND_FLIP()) }catch(e){} },d);
@@ -26121,6 +26123,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 319, "v": "0.7", "d": "2026-11-01", "t": "특성 선택도 보상 탁자", "big": 0},
  {"b": 318, "v": "0.7", "d": "2026-10-31", "t": "기술 풍선 틀 · 미지의 구역 상점 문 · 세 개의 상자 그림/가운데", "big": 0},
  {"b": 317, "v": "0.7", "d": "2026-10-31", "t": "보상 글 — 지속 능력 · 카드 이름에도 밑줄과 풍선", "big": 0},
  {"b": 316, "v": "0.7", "d": "2026-10-31", "t": "분해 광선 빔 네 번 · 밀수꾼 훔치기/도망 연출", "big": 0},
@@ -27630,7 +27633,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=318;
+const BUILD_NO=319;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
