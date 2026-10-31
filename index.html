@@ -10121,6 +10121,30 @@ function stealFlyFX(f,iconKey,from){
   setTimeout(()=>{ if(nd.parentNode) nd.remove() },640);
   return 560;
 }
+/* 손패의 카드를 훔친다 (밀수꾼, 사용자 2026-10-31) — 손패의 그 카드를 그 자리에 떼어 두었다가(stealCardGrab),
+   타격이 들어간 뒤 도둑에게 빨려 든다(stealCardFly). 쌓인 카드(n>1)는 손패의 것을 그대로 두고 한 장만 떼어 간다 */
+function stealCardGrab(i,hide){
+  const e=document.querySelector(`#hand .card[data-i="${i}"]`); if(!e) return null;
+  const r=e.getBoundingClientRect(); if(!r.width) return null;
+  const cl=e.cloneNode(true); cl.classList.remove("arrive","picked","sel"); cl.classList.add("stealcard");
+  Object.assign(cl.style,{position:"fixed",left:(r.left+r.width/2-e.offsetWidth/2)+"px",top:(r.top+r.height/2-e.offsetHeight/2)+"px",
+    width:e.offsetWidth+"px",height:e.offsetHeight+"px",margin:"0",zIndex:"9000",pointerEvents:"none",animation:"none",
+    transform:`scale(${r.width/(e.offsetWidth||r.width)})`});
+  document.body.appendChild(cl); if(hide) e.style.visibility="hidden";
+  setTimeout(()=>{ if(cl.isConnected) cl.remove() },8000);   /* 연출 줄이 끊겨도 남지 않게 */
+  return cl;
+}
+function stealCardFly(cl,slot){
+  if(!cl||!cl.isConnected) return;
+  const p=bodyPoint("foe",slot)||ctrOf("foe",slot); if(!p){ cl.remove(); return }
+  const r=cl.getBoundingClientRect(), dx=p.x-(r.left+r.width/2), dy=p.y-(r.top+r.height/2);
+  const s0=cl.style.transform||"scale(1)", ms=Math.round(640*(typeof SPD==="number"?SPD:1));
+  const a=cl.animate([{transform:`translate(0,0) ${s0} rotate(0deg)`,opacity:1,filter:"brightness(1)"},
+    {transform:`translate(${dx*.1}px,${dy*.1-46}px) ${s0} rotate(-8deg)`,opacity:1,filter:"brightness(1.3) drop-shadow(0 0 8px rgba(255,214,120,.8))",offset:.28},
+    {transform:`translate(${dx}px,${dy}px) scale(.16) rotate(20deg)`,opacity:.15,filter:"brightness(1.6)"}],
+    {duration:ms,easing:"cubic-bezier(.45,0,.7,1)",fill:"forwards"});
+  a.onfinish=a.oncancel=()=>cl.remove();
+}
 function wreckSuckFX(name,fromSlot,toSlot){
   const q=ctrOf("foe",fromSlot), p=bodyPoint("foe",toSlot)||ctrOf("foe",toSlot);
   if(!q||!p) return 0;
@@ -11446,10 +11470,23 @@ function hopSparkFX(side,sl){
     if(p){ try{ sparks(p,"#c9a227",6) }catch(e){} } },Math.round(300*(typeof SPD==="number"?SPD:1)));
 }
 
-/* 달아나는 적 — 몸이 스러진다 (밀수꾼, 사용자 2026-10-22) */
+/* 달아나는 적 — 몸을 좌우로 뒤집고 오른쪽(바깥)으로 뛰어나간다 (밀수꾼, 사용자 2026-10-31).
+   ⚠️ 전에는 `.slot[data-foe]` 를 찾았는데 그런 칸이 없어 **아무 일도 안 일어났다.**
+   칸은 곧 다시 그려져 비므로 몸 그림을 떼어 화면 위에서 달린다 (보이는 그림의 뒤집힘 · 크기를 그대로 들고) */
 function fleeOutFX(slot){
-  const d=document.querySelector(`.slot[data-foe="${slot}"]`)||null;
-  const art=d&&d.querySelector(".art"); if(art) art.classList.add("fleeout");
+  const c=ctrOf("foe",slot), im=c&&c.e&&(c.e.querySelector(".art img")||c.e.querySelector(".art")); if(!im) return;
+  const r=im.getBoundingClientRect(); if(!r.width) return;
+  const base=getComputedStyle(im).transform, b0=(base&&base!=="none")?base+" ":"";
+  const cl=im.cloneNode(true);
+  Object.assign(cl.style,{position:"fixed",left:r.left+"px",top:r.top+"px",width:r.width+"px",height:r.height+"px",margin:"0",zIndex:"60",pointerEvents:"none",imageRendering:"pixelated",transformOrigin:"50% 100%",transform:b0||"none"});
+  document.body.appendChild(cl); im.style.visibility="hidden";
+  const far=Math.max(200,innerWidth-r.left+40), ms=Math.round(1000*(typeof SPD==="number"?SPD:1));
+  const k=(x,y,fl)=>`translate(${x}px,${y}px) ${fl?"scaleX(-1) ":""}${b0}`;
+  const a=cl.animate([{transform:k(0,0,0)},{transform:k(0,0,1),offset:.14},
+    {transform:k(far*.08,-7,1),offset:.3},{transform:k(far*.2,0,1),offset:.42},{transform:k(far*.36,-7,1),offset:.56},
+    {transform:k(far*.56,0,1),offset:.7},{transform:k(far*.78,-6,1),offset:.85},{transform:k(far,0,1)}],
+    {duration:ms,easing:"linear",fill:"forwards"});
+  a.onfinish=a.oncancel=()=>cl.remove();
 }
 
 /* 착취 — 적마다 빛줄기가 대원에게 흘러든다 (도미니코).
@@ -26057,6 +26094,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 316, "v": "0.7", "d": "2026-10-31", "t": "분해 광선 빔 네 번 · 밀수꾼 훔치기/도망 연출", "big": 0},
  {"b": 315, "v": "0.7", "d": "2026-10-31", "t": "오볼 — 난파 빈 칸 · 유령선 죽음 효과 · 카드 날아듦 · 선박 칸 · 보상 탁자 · 유령 금화 위치", "big": 0},
  {"b": 314, "v": "0.7", "d": "2026-10-31", "t": "오볼 효과음 · 선박 상점 강화 연출 · 상인 한마디", "big": 0},
  {"b": 313, "v": "0.7", "d": "2026-10-31", "t": "오볼 유령의 몸 — 발끝에서", "big": 0},
@@ -27563,7 +27601,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=315;
+const BUILD_NO=316;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -39536,7 +39574,7 @@ function skExec0(f,I){
     fx({side:"foe",slot:f.slot,s:"buffup",ring:"#5fd8cf",txt:"공격 범위 +"+s.rngUp,cls:"buf",gap:90});
     say(`${s.n} — ${f.name} 공격 범위 +${s.rngUp} (${f.rng})`,"t3") }
   { const k=foeSnd(f,"행동"); if(k) SFX.play(k) }   /* 「<이름> 행동」 녹음이 있으면 수를 쓸 때마다 (2026-10-21) */
-  if(s.scBeam) try{ scrapBeamFX(f.slot) }catch(e){ console.error(e) }   /* 분해 빔 (2026-10-21) */
+  if(s.scBeam&&!s.dmg) try{ scrapBeamFX(f.slot) }catch(e){ console.error(e) }   /* 분해 빔 (2026-10-21) — 때리는 빔(분해 광선)은 아래에서 타마다 */
   if(s.eshDump){                       /* 에너지 보호막을 모두 쏟아 그만큼 — 1세대 돌보미 에너지 전환 */
     const v=f.eshield||0; f.eshield=0;
     if(v>0){ say(`${s.n} — 에너지 보호막 ${v}를 모두 쏟아붓습니다.`,"t1");
@@ -40109,8 +40147,19 @@ function skExec0(f,I){
     else if(!s.shoveAll) fx({side:"foe",slot:f.slot,colFx:"fist",colTo:T[0].slot,colAlt:f._act2?1:0,gap:910,s2:foeSnd(f,"공격")}) }   /* 콜로서스 — 아래에서 솟는 주먹 · 밀치기는 손바닥이 이미 (사용자 2026-10-07) */
   else if(s.deb&&f.name!=="콜로서스") fx({side:"foe",slot:f.slot,pose:"atk",gap:0,s:foeSnd(f,"공격")});   /* 디버프만 걸 때도 공격 자세 (2026-10-08) */
   const kindN=s.kindHits?debKindsOnField():0;   /* 균열 폭발 — 상대에게 걸린 부정적인 효과의 종류 수 */
+  /* 분해 광선 — 빔이 타수만큼 나가고, 빔마다 모든 대상이 **같이** 한 대씩 (사용자 2026-10-31 밤).
+     전에는 빔은 한 번, 피해는 대상마다 네 번씩 차례로 떴다. 같은 빔의 타격은 연출 줄에서 간격을 0 으로 묶는다 (마지막만 제 간격) */
+  if(s.dmg&&s.scBeam){ const hits=skHits(f,s), one=foeDmg(f,skDmg(f,s),I.el), sl=f.slot;
+    for(let q=0;q<hits;q++){
+      const L=T.filter(t=>t.hp>0); if(!L.length) break;
+      fx({side:"foe",slot:sl,fn:()=>{ try{ scrapBeamFX(sl) }catch(e){} },gap:140});   /* 빔이 대원 전장에 닿을 때쯤 피해 */
+      const i0=FXQ.length;
+      L.forEach(t=>{ const before=t.hp; hurtAlly(f,t,one,s.n+(hits>1?` ${q+1}/${hits}`:""),I.el,`${s.n} — ${t.name} 회피!`,s.pierce); foeDrain(f,t,before) });
+      for(let k=i0;k<FXQ.length-1;k++) FXQ[k].gap=0;
+      if(FXQ.length>i0) FXQ[FXQ.length-1].gap=Math.max(FXQ[FXQ.length-1].gap||0,260);   /* 다음 빔까지 */
+    } }
   T.forEach(t=>{
-    if(s.dmg){
+    if(s.dmg&&!s.scBeam){
       let hits=skHits(f,s);
       if(s.kindHits){ hits=Math.max(1,kindN); say(`${s.n} — 부정적인 효과 ${kindN}종류, ${hits}번 터집니다.`,"t3") }
       if(foePas(f,"dist4Double")&&dist(t.slot,f.slot)===4){ hits*=2; say(`죽음과 저주 — 거리 4, ${s.n}이 두 번!`,"t1") }
@@ -45814,10 +45863,13 @@ function foeSteal(f,what,n){
     const idx=(B.hand||[]).map((c,i)=>[c,i]).filter(([c])=>c&&c.type==="item");
     if(!idx.length){ say(`${f.name} — 훔칠 카드가 없습니다.`,"t3"); return 0 }
     const [c,i]=idx[idx.length-1];
+    /* 손패의 그 카드를 떼어 낸다 (화면) — 아래 fx 에서 도둑에게 날아간다 (사용자 2026-10-31 : 「손패에서 가져가는 것처럼」) */
+    let grab=null; try{ if(typeof stealCardGrab==="function") grab=stealCardGrab(i,(c.n||1)<=1) }catch(e){}
     if((c.n||1)>1) c.n--; else B.hand.splice(i,1);
     f.loot.cards.push({name:c.name,gone:!!c.gone});
     /* 손패의 그 카드가 도둑에게 빨려 든다 (사용자 2026-10-21) */
-    try{ const ik=(typeof CARD_ICON!=="undefined")&&CARD_ICON[c.name];
+    if(grab){ const sl=f.slot; fx({side:"foe",slot:sl,fn:()=>stealCardFly(grab,sl),gap:Math.round(560*(typeof SPD==="number"?SPD:1))}) }
+    else try{ const ik=(typeof CARD_ICON!=="undefined")&&CARD_ICON[c.name];   /* 손패에 안 보이면(화면 없음) 옛 아이콘 */
       if(!stealFlyFX(f,ik||"card_watch")) stealFlyFX(f,"card_watch") }catch(e){ console.error(e) }
     fx({side:"foe",slot:f.slot,txt:"["+c.name+"]",cls:"miss",gap:90});
     say(`${f.name}${jo(f.name,"ig")} [${c.name}] 카드를 훔쳤습니다. (쓰러뜨리면 돌려받습니다)`,"t2");
@@ -49755,8 +49807,7 @@ function foePhase(){
     if(f.standAt==null) f.standAt=B.turn||1;
     if((B.turn||1)-f.standAt < need) return;
     foeShout(f,"도망쳐!");
-    try{ setPose("foe",f.slot,"stun",700) }catch(e){}
-    fleeOutFX(f.slot);
+    fleeOutFX(f.slot);   /* 몸을 뒤집어 오른쪽으로 뛰어나간다 (사용자 2026-10-31 — 전에 걸던 기절 자세는 뺐다) */
     say(`${f.name}${jo(f.name,"ig")} 전투에서 달아납니다!${(f.bounty||0)||((f.loot&&(f.loot.cards.length+f.loot.items.length))||0)?" 훔친 것을 가지고 갑니다." :""}`,"t1");
     f.alive=0; f.expTaken=1; f.fled=1; f.loot=null; f.bounty=0;
   });
