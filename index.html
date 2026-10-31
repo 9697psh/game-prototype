@@ -5406,6 +5406,7 @@ body.vnew #app:has(>.shopstage)>.toast{position:absolute;top:12px;left:50%;trans
 #app .shmerch .npcface{width:100%;height:auto;border:0;background:none;box-shadow:none;padding:0;border-radius:0;flex:none}
 .shmerch .npcface img,.shmerch .npcface svg{display:block;width:100%;height:auto;image-rendering:pixelated;filter:drop-shadow(0 .4cqw .6cqw rgba(0,0,0,.6))}
 .shfg{position:absolute;inset:0;background:center/100% 100% no-repeat;image-rendering:pixelated;pointer-events:none}   /* 계산대 앞 겹 */
+.shipupold{position:absolute;inset:0;background:center/100% 100% no-repeat;image-rendering:pixelated;pointer-events:none}   /* 선박 상점 강화 — 걷히는 옛 단계 (shipUpFX) */
 .shopstage .shbark{text-shadow:none;z-index:7}
 /* 제련소 — 상점 무대를 그대로 쓰고 칸 · 브란 · 글자만 더한다 */
 .fgbran{position:absolute;transform:translate(-50%,-100%);cursor:pointer}
@@ -11261,6 +11262,25 @@ function rubbleArt(flip){ const u=typeof ICON_PNG!=="undefined"&&ICON_PNG.fx_cur
   return u?`<i class="rubble" style="background-image:url(${u})${flip?";transform:scaleX(-1)":""}"></i>`:WALL_SVG }
 /* 오볼 난파 — 유령선이 왼쪽 위에서 대각선으로 날아와 그 칸 바닥에 닿는다 (사용자 2026-10-31).
    닿은 뒤의 충격 띠 · 좌초한 몸은 규칙(obolWreck)이 잇는다 */
+/* 선박 상점 강화 (사용자 2026-10-31) — 옛 단계 배경 · 계산대 앞 겹을 덮어 두었다가 스르르 걷는다 (새 단계가 드러난다).
+   그동안 화면이 살짝 흔들리고, 새로 생긴 품목 칸이 한 번 빛나며 나타난다. 받은 단계별 배경만 쓴다.
+   t — 이미 지난 시간 (다시 그려졌을 때 이어서) */
+function shipUpFX(ow,stage,U,ms,t){
+  const go=(nd,kf,o)=>{ const a=nd.animate(kf,Object.assign({duration:ms,fill:"forwards"},o||{})); a.currentTime=t; return a };
+  const FADE=[{opacity:1},{opacity:1,offset:.18},{opacity:0}];
+  const old=document.createElement("div"); old.className="shipupold"; old.style.backgroundImage=`url('bg/shop-ship-${U.from}.webp')`;
+  ow.insertBefore(old,ow.firstChild);   /* 장면(.shscene) 밑 — 상인 · 품목은 그대로 위에 */
+  go(old,FADE,{easing:"ease-in-out"}).onfinish=()=>old.remove();
+  const fg=stage.querySelector(".shfg");
+  if(fg){ const of=document.createElement("div"); of.className="shfg shipupold"; of.style.backgroundImage=`url('bg/shop-ship-${U.from}-fg.webp')`;
+    fg.after(of); go(of,FADE,{easing:"ease-in-out"}).onfinish=()=>of.remove() }
+  go(ow,[{translate:"0 0"},{translate:"-3px 1px",offset:.22},{translate:"3px -1px",offset:.3},{translate:"-2px 1px",offset:.38},
+    {translate:"2px 0",offset:.46},{translate:"-1px 0",offset:.54},{translate:"0 0",offset:.62},{translate:"0 0"}],{fill:"none"});
+  const nw=U.nw||[];
+  stage.querySelectorAll(".shi").forEach(c=>{ const n=c.querySelector(".shn"); if(!n||!nw.includes(n.textContent)) return;
+    go(c,[{opacity:0,filter:"brightness(1)"},{opacity:0,offset:.5},{opacity:1,filter:"brightness(2.2) drop-shadow(0 0 10px #5fd8cf)",offset:.68},
+      {opacity:1,filter:"brightness(1)"}],{fill:"none"}) });
+}
 function obolShipFlyFX(sl){
   const u=(typeof ICON_PNG!=="undefined")&&ICON_PNG.fx_obol_ship_fly, p=feetOf("foe",sl); if(!u||!p) return;
   const ms=Math.round(430*SPD);
@@ -26015,6 +26035,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 314, "v": "0.7", "d": "2026-10-31", "t": "오볼 효과음 · 선박 상점 강화 연출 · 상인 한마디", "big": 0},
  {"b": 313, "v": "0.7", "d": "2026-10-31", "t": "오볼 유령의 몸 — 발끝에서", "big": 0},
  {"b": 312, "v": "0.7", "d": "2026-10-31", "t": "오볼 연출 — 유령의 몸 크게 · 물자 뒤지기 상자에서 카드 · 유령선 크게", "big": 0},
  {"b": 311, "v": "0.7", "d": "2026-10-31", "t": "오볼 — 시작 짐칸 2 · 뼛속까지 해적 · 망자의 보물 · 물욕 따라감 · 특성 넷 · 유령선 뱃머리부터", "big": 0},
@@ -27519,7 +27540,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=313;
+const BUILD_NO=314;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -33969,17 +33990,17 @@ const SUP_FX={
   "무쇠 닻":{k:"fx_obol_sup_iron_anchor",ms:[55,65,95,95,90,90,95,100],hit:215,cell:128,feet:1},
   "유령 등불":{k:"fx_obol_sup_ghost_lantern",ms:[70,75,90,100,90,90,90,100],hit:235}
 };
-function supFx(n,side,slot,gap){ const F=SUP_FX[n]; if(!F||!slot) return;
-  const k="물자 "+n;   /* 녹음 열쇠 — 「물자 해적 방패」 · 「물자 황금 닻 금화」 … */
-  fx({side:side,slot:slot,s:(typeof sfxHas==="function"&&sfxHas(k))?k:null,sheet:F.k,sheetOpt:Object.assign({frames:8,z:F.cell===128?1.3:2,frameMs:F.ms},F.cell?{cell:F.cell}:{},F.feet?{feet:1}:{}),gap:gap==null?F.hit:gap}) }
+function supFx(n,side,slot,gap,quiet){ const F=SUP_FX[n]; if(!F||!slot) return;
+  const k="물자 "+n;   /* 녹음 열쇠 — 「물자 해적 방패」 · 「물자 황금 닻 금화」 … quiet — 여럿을 동시에 칠 때 둘째부터는 띠만 */
+  fx({side:side,slot:slot,s:(!quiet&&typeof sfxHas==="function"&&sfxHas(k))?k:null,sheet:F.k,sheetOpt:Object.assign({frames:8,z:F.cell===128?1.3:2,frameMs:F.ms},F.cell?{cell:F.cell}:{},F.feet?{feet:1}:{}),gap:gap==null?F.hit:gap}) }
 /* 물자 카드를 쓴다 — 카드 하나에 효과 하나 */
 function obolSupUse(n,lv,a){
   const v=supVal(n,lv), by=obolHero()||((B&&B.lastAttacker&&!B.lastAttacker.isFoe)?B.lastAttacker:null);
   const tag=supCardName(n,lv);
   if(n==="해적 방패"){ supFx(n,"mine",a.slot); addShield(a,v); a.nextShd=(a.nextShd||0)+v;
-    fx({side:"mine",slot:a.slot,s:"shield",txt:"+"+v,cls:"shd",gap:60}); say(`${tag} — ${a.name} 보호막 +${v} (다음 턴 시작에도)`); return }
+    fx({side:"mine",slot:a.slot,s:sfxHas("물자 해적 방패")?null:"shield",txt:"+"+v,cls:"shd",gap:60}); say(`${tag} — ${a.name} 보호막 +${v} (다음 턴 시작에도)`); return }
   if(n==="해적의 검"){ for(let t=0;t<2;t++){ const L=B.foes.filter(f=>f.alive&&!f.wreck);   /* 적마다 동시에 — 두 번 */
-      L.forEach((f,i)=>supFx(n,"foe",f.slot,i===L.length-1?null:0));
+      L.forEach((f,i)=>supFx(n,"foe",f.slot,i===L.length-1?null:0,i>0));
       L.forEach(f=>asSrc(by,()=>hurt(f,v,tag,"slash"))) }
     say(`${tag} — 모든 적에게 피해 ${v} × 2`); return }
   if(n==="갈고리 손"){ supFx(n,"foe",a.slot); asSrc(by,()=>hurt(a,v,tag,"slash")); return }
@@ -33990,11 +34011,11 @@ function obolSupUse(n,lv,a){
   if(n==="해초에 묶인 칼날"){ supFx(n,"mine",a.slot); bumpTmp(a,"atk",v); fx({side:"mine",slot:a.slot,txt:"공격력 +"+v,cls:"crit",gap:60});
     say(`${tag} — ${a.name} 이번 전투 동안 추가 공격력 +${v}`); return }
   if(n==="유령 등불"){ const L=(lv>=5?onField():[a]).filter(h=>h&&!h.down);
-    L.forEach((h,i)=>supFx(n,"mine",h.slot,i===L.length-1?null:0));
+    L.forEach((h,i)=>supFx(n,"mine",h.slot,i===L.length-1?null:0,i>0));
     L.forEach(h=>{ h.evade=(h.evade||0)+v; fx({side:"mine",slot:h.slot,txt:"회피",cls:"shd",gap:0}) });
     say(`${tag} — ${lv>=5?"모든 아군":a.name} 회피 +${v}`); return }
   if(n==="무쇠 닻"){ const L=lv>=5?B.foes.filter(f=>f.alive&&!f.isPhantom):[a];
-    L.forEach((f,i)=>supFx(n,"foe",f.slot,i===L.length-1?null:0));
+    L.forEach((f,i)=>supFx(n,"foe",f.slot,i===L.length-1?null:0,i>0));
     L.forEach(f=>addDeb(f,"stun",1,by)); return }
 }
 /* 해적 방패 — 다음 턴이 시작할 때 (보호막이 걷힌 뒤) 한 번 더. startMyTurn 이 부른다 */
@@ -34248,14 +34269,17 @@ function supRand(){
 /* 선박 상점 단계 올리기 — 강화 품목 · 배를 버려라 · 선장 출두 가 같이 쓴다 (늘어난 단계마다 진열 한 칸) */
 function obolShipUp(n,why){
   obolEnsure(); if(!run.ship) return;
-  const to=Math.min(SHIP_MAX,(run.ship.lv||1)+n), up=to-(run.ship.lv||1); if(up<=0) return;
+  const lv0=run.ship.lv||1, to=Math.min(SHIP_MAX,lv0+n), up=to-lv0; if(up<=0) return;
   run.ship.lv=to;
+  const had=new Set((run.ship.goods||[]).map(g=>g.n));
   try{ if(sfxHas("선박 상점 강화")) SFX.play("선박 상점 강화") }catch(e){}
   if(run.ship.goods){
     for(let k=0;k<up;k++){ const pool=shipStock().filter(x=>!run.ship.goods.some(y=>y.n===x.n));
       if(pool.length){ const x=rnd(pool), q0=rr(x.q); run.ship.goods.push(oneCoin(Object.assign({},x,{left:q0,qty:q0}))) } }
     shipFixed(run.ship.goods);
     if(run.shop&&run.shop.ship) run.shop.goods=run.ship.goods }
+  /* 상점 안에서 올랐으면 화면이 넘기기 연출을 한다 (shipUpPlay) — 옛 단계 · 새로 생긴 품목 */
+  if(run.shop&&run.shop.ship) run.ship.upFx={from:lv0,nw:(run.ship.goods||[]).filter(g=>!had.has(g.n)&&g.k!=="shipup").map(g=>g.n)};
   toast(`${why?why+" — ":""}선박 상점이 ${run.ship.lv}단계가 되었습니다.`);
 }
 /* 물자 카드를 낸 뒤 — 숙련된 갑판장 · 미끼 물자 */
@@ -34472,6 +34496,8 @@ const SHOP_SAY={
   sold희귀:["이렇게 귀한 것을!","꼭 살게요.","장신구가 너무 좋아요!"],
   /* 마른숲 상점 — 정령 상인 (2026-10-01) */
   dryGreet:["좋은 물건...많다!","이거는...어때?","반가워!"],
+  /* 유령 선박 — 「선박 상점 강화」 를 샀을 때 (사용자 2026-10-31) */
+  shipUp:["배가 한결 튼튼해졌네! 선반도 하나 늘려 뒀어.","새 돛을 달았지. 이제 더 좋은 물건을 실을 수 있어!","흐흐, 이 낡은 배도 아직 쓸 만하다니까!"],
   click:[], dryClick:[]   /* 주인을 눌렀을 때 — 설명 고치기에서 적는다 */
 };
 /* 상인의 소리 — 들어올 때 환영/상호작용, 살 때 웃음, 팔 때 웃음/상호작용. 녹음이 없으면 조용하다 */
@@ -34557,6 +34583,16 @@ function shopTipShow(stage,node,html){
 function shopTipHide(){ document.querySelectorAll(".shtip").forEach(x=>x.remove()) }
 /* 주인을 눌렀다 — 몸이 번쩍 빛나고 말풍선이 뜬다. 너무 잦으면 무시 */
 let NPC_TALK_AT=0;
+/* 선박 상점 강화 — 규칙(obolShipUp)이 남긴 run.ship.upFx 를 받아 넘기기 연출 (shipUpFX, 사용자 2026-10-31).
+   연출 중에 다시 그려져도 이어서 돈다 — 시작 때(t0)를 들고 있다가 남은 만큼만 */
+let SHIP_UP=null;
+function shipUpPlay(ow,stage){
+  const U=run.ship&&run.ship.upFx; if(U){ delete run.ship.upFx; SHIP_UP=Object.assign({t0:performance.now()},U) }
+  if(!SHIP_UP) return;
+  const ms=Math.round(1600*SPD), t=performance.now()-SHIP_UP.t0;
+  if(t>=ms){ SHIP_UP=null; return }
+  shipUpFX(ow,stage,SHIP_UP,ms,t);
+}
 function npcTalk(scene,who,line,pos){
   const now=Date.now(); if(now-NPC_TALK_AT<500||!line) return; NPC_TALK_AT=now;
   who.classList.remove("talk"); void who.offsetWidth; who.classList.add("talk");
@@ -34670,7 +34706,8 @@ function drawShop(app){
     });
     stage.appendChild(bar);
   }
-  { const ow=el(`<div class="shopstage" style="background-image:url('${LY.bg}')"></div>`); ow.appendChild(stage); app.appendChild(ow) }
+  { const ow=el(`<div class="shopstage" style="background-image:url('${LY.bg}')"></div>`); ow.appendChild(stage); app.appendChild(ow);
+    if(sh.ship) shipUpPlay(ow,stage) }
   if(run.shopLaughAt) setTimeout(shopLaughRun,0);
 }
 /* ═══ 오볼 — 화면 (사용자 2026-10-31) ═══
@@ -34734,7 +34771,7 @@ function buy(g,via){
     g.left--; addTaint(g.cost); if(run.lost) return }   /* 마른숲 상점 — 오염도로 치른다 (수정이 닳을 수 있다) */
   else { if(run.gold<g.cost) return;
     run.gold-=g.cost; g.left-- }   /* 소리는 goldWatch 가 낸다 */
-  if(sh&&(sh.ship||g.k==="supply")&&shipBought(g)){ shopSay("buy",0.35); render(); return }   /* 선박 상점에서만 나는 품목 (물자는 물자 수출로 일반 상점에도) */
+  if(sh&&(sh.ship||g.k==="supply")&&shipBought(g)){ if(g.k==="shipup"){ shopSay("shipUp"); shopLaugh() } else shopSay("buy",0.35); render(); return }   /* 강화 — 상인이 꼭 한마디 */   /* 선박 상점에서만 나는 품목 (물자는 물자 수출로 일반 상점에도) */
   shopSay("buy",0.35);          /* 살 때는 가끔 */
   shopVoice("buy"); shopLaugh();
   if(g.k==="card"){ addCard(run,g.card,1);
@@ -44575,7 +44612,8 @@ function playCardOne(i,slot,side){
     }
     cardMagic();   /* 카드 마술 · 동전 마술 */
     if(cardGone(c)) goneFX("mine",slot);
-    if(!c.stock||!CARD_LIB[c.stock]) SFX.play("shield");
+    { const S=CARD_LIB[c.name]&&CARD_LIB[c.name].obolSup;   /* 오볼 물자 — 제 녹음(「물자 <이름>」)이 있으면 일반 소리를 겹치지 않는다 (2026-10-31) */
+      if((!c.stock||!CARD_LIB[c.stock])&&!(S&&sfxHas("물자 "+S.n))) SFX.play("shield") }
     spendHandCard(c);
   }
   render();return true;
@@ -48369,7 +48407,10 @@ function runEffect0(h,i,s,target){
       say(`기류 흘리기 — ${h.name} 에너지 보호막 +${h.tag.flowShield}`) }
     if(h.name==="오볼") obolGhostBody(h);   /* 유체화 (오볼 보상) */
     if(h.name==="오볼") fx({side:"mine",slot:h.slot,sheet:"fx_obol_ghost_body",sheetOpt:{frames:8,z:4.2,feet:1,dy:4,frameMs:[90,90,100,120,110,100,90,90]},gap:0});   /* 유령의 몸 — 안개가 몸을 다 가린다 · 밑바닥(그림 59/64)을 발끝에 (dy 는 그림 픽셀 × z, 사용자 2026-10-31) */
-    fx({side:"mine",slot:h.slot,sheet:(h.name==="카제")?"fx_kaze_shield":null,sheetOpt:{z:2.0,ms:560},s:"wind",ring:"#5fd8cf",txt:"회피",cls:"shd"});   /* 기류 흘리기 = wind-shield 띠 (사용자 2026-09-16) */
+    /* 오볼 — 제 녹음(「오볼 유령의 몸」, 기술을 쓸 때 저절로)이 있으면 바람 소리를 겹치지 않는다. 가끔(시계로 넷에 하나) 오볼의 웃음이 같이 (사용자 2026-10-31) */
+    const obolOwn=h.name==="오볼"&&sfxHas("오볼 유령의 몸");
+    if(obolOwn&&Date.now()%4===0&&sfxHas("오볼 웃음")) fx({side:"mine",slot:h.slot,s:"오볼 웃음",gap:0});
+    fx({side:"mine",slot:h.slot,sheet:(h.name==="카제")?"fx_kaze_shield":null,sheetOpt:{z:2.0,ms:560},s:obolOwn?null:"wind",ring:"#5fd8cf",txt:"회피",cls:"shd"});   /* 기류 흘리기 = wind-shield 띠 (사용자 2026-09-16) */
     say(`${h.name} 회피 +${ev}`) }
   /* 연막탄 — 노트 6-3 (2026-10-14). 은신만 여기서 — 회피는 **바로 위 s.evade** 가 건다.
      ⚠️ 이 덩이를 s.evade 앞에 두고 return 하면 **회피가 통째로 안 걸린다** (2026-10-14 에 그물이 잡았다).
