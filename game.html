@@ -5975,6 +5975,8 @@ body.vnew #app .evopts .evres p{color:#e6d6b2;font-size:15px;line-height:1.7;tex
 /* 보상 설명 — 조합 이름 굵게 · 기술 이름 밑줄 (2026-10-05) */
 .rw .rwd .rwsyn{font-weight:800;color:inherit;cursor:help}
 .rw .rwd .rwsk{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;cursor:help;font-weight:inherit}
+/* 기술 · 지속 능력 풍선 — 전투 기술 칸과 같은 받은 틀(skill-description-card) 을 씌운다 (사용자 2026-10-31 : 「아트 사용해서」) */
+#kwtip.tidtip:has(>.sktip){background:none;border-radius:0;border-style:solid;border-width:14px;border-image:url("ui/skill-description-card-menu-card-1364x256.png") 22 fill / 14px round;padding:4px 8px;box-shadow:0 10px 24px rgba(0,0,0,.6);image-rendering:pixelated}
 #kwtip .sktip{min-width:220px;max-width:300px;text-align:left;white-space:normal}
 #kwtip .sktip .skth{display:flex;align-items:center;gap:7px;padding-bottom:6px;margin-bottom:6px;border-bottom:1px solid var(--rule)}
 #kwtip .sktip .skth img,#kwtip .sktip .skth svg{width:26px;height:26px;image-rendering:pixelated}
@@ -6144,7 +6146,9 @@ body.vnew #app .rewards:has(.trait-guarantee){margin-top:48px}
   display:flex;flex-direction:column;align-items:center;scrollbar-width:thin;scrollbar-color:#6b5232 transparent}
 .placebox .pin>*{flex:none;max-width:100%}
 /* 작은 놀이 화면 — 그 놀이만 (사용자 2026-10-30). 놀이가 하는 말(api.say)이 있으면 그 한 줄만 위에, 없으면 판째 숨긴다 */
-.placebox .evbox.evgame>.evart,.placebox .evbox.evgame .evtitle{display:none}
+.placebox .evbox.evgame:not(.gart)>.evart,.placebox .evbox.evgame .evtitle{display:none}
+.placebox .evbox.evgame.gart>.evart{width:min(100%,430px)}   /* 사건이 gameArt 를 들면 그 그림을 놀이 위에 (사용자 2026-10-31 : 세 개의 상자) */
+.placebox .evsay{margin-left:auto;margin-right:auto;max-width:100%;box-sizing:border-box}   /* 장소 판 안에서 여백이 0 으로 덮여 왼쪽에 붙던 것 (2026-10-31) */
 .placebox .evbox.evgame .evpanel:has(.evdesc:empty){display:none}
 .placebox .evbox.evgame{margin:auto 0}
 .placebox .evbox.evgame>.evopts{margin-top:10px}
@@ -26117,6 +26121,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 318, "v": "0.7", "d": "2026-10-31", "t": "기술 풍선 틀 · 미지의 구역 상점 문 · 세 개의 상자 그림/가운데", "big": 0},
  {"b": 317, "v": "0.7", "d": "2026-10-31", "t": "보상 글 — 지속 능력 · 카드 이름에도 밑줄과 풍선", "big": 0},
  {"b": 316, "v": "0.7", "d": "2026-10-31", "t": "분해 광선 빔 네 번 · 밀수꾼 훔치기/도망 연출", "big": 0},
  {"b": 315, "v": "0.7", "d": "2026-10-31", "t": "오볼 — 난파 빈 칸 · 유령선 죽음 효과 · 카드 날아듦 · 선박 칸 · 보상 탁자 · 유령 금화 위치", "big": 0},
@@ -27625,7 +27630,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=317;
+const BUILD_NO=318;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -30527,6 +30532,8 @@ function enterCell(r,c){
   { const h=enterHours(cell);
     if(h){ if(gimCanFight(cell.t)) run.nodeCost=h; else spend(h,0) } }
   if(run.lost) return;              /* 시간이 흘러 판이 끝났으면 화면을 덮지 않는다 */
+  /* 미지의 구역 — 무엇이 나올지 **먼저** 굴린다. 상점 · 제련소면 덮개(문)가 닫혔다 열린다 (coverCell 이 cell.pre 를 본다, 사용자 2026-10-31) */
+  if(cell.t==="event"&&cell.pre==null) cell.pre=unknownKind();
   fadeInto(()=>{ if(run&&!run.lost&&run.pos.r===r&&run.pos.c===c) enterCell0(r,c) });
 }
 /* 밤 — 화면 전체가 살짝 어두워진다 (사용자 2026-09-15). 제목·도감·종료 화면은 빼고, 판이 밤일 때만 */
@@ -30559,7 +30566,7 @@ function nightVeil(){
 const CV={W:1920,H:1026,TOP:88,BW:928,BH:840,OPEN:150,CLOSE_MS:420,HOLD_MS:160,OPEN_MS:560,SLIDE:112,PERSP:4720,WAIT_MS:1500,
   FADE:0.55};   /* 페이드 — 닫힐 때 앞 화면이 이만큼 어두워지고, 열릴 때 새 화면이 여기서 밝아진다 (사용자 2026-10-29 「살짝」) */
 const COVER_CELL={dungeon:1,elite:1,boss:1,shop:1,dryshop:1,forge:1,ship:1};   /* 들어서면 전투 · 상점 · 제련소가 되는 칸 (쉼터 · 미지의 구역 · 전용 구역은 뺐다, 사용자 2026-10-29) */
-const coverCell=c=>!!(c&&!c.done&&COVER_CELL[c.t]);
+const coverCell=c=>!!(c&&!c.done&&(COVER_CELL[c.t]||(c.t==="event"&&(c.pre==="shop"||c.pre==="forge"))));   /* 미지의 구역이 상점 · 제련소일 때도 (2026-10-31) */
 const CV_PARTS=["outer","inner","edge-vertical","edge-horizontal","hinge-fixed","hinge-moving","hinge-pin"];
 let CV_ROOT=null, CV_OK=0, CV_ANG=CV.OPEN, CV_AWAY=0, CV_BUSY=0, CV_TRIP=null, CV_NEXT=[];
 const cvPng=n=>mapPng("덮개-"+n+".png");
@@ -31482,7 +31489,7 @@ function enterCell0(r,c){
       questProgress("visit");   /* 퀘스트 — 미지의 구역 방문 (무엇이 나오든 한 번) */
       if(!again) coreTally("unknown",1);   /* 세계핵 — 미지의 구역 방문 (다시 들어온 것은 안 센다) */
       { const a=again?0:tagSum("exploreAct"); if(a){ run.act+=a; toast(`탐험 정신 — 활동량 +${a}`) } }   /* 최대치가 없어져 자르지 않는다 (2026-10-08) */
-      const k=unknownKind();
+      const k=cell.pre||unknownKind(); delete cell.pre;   /* enterCell 이 미리 굴렸으면 그것 */
       if(k==="shop"){ run.shopKind=null; makeShop(); view="shop"; shopVoice("enter");
         questProgress("shopVisit",null);   /* 작업 지시판 — 뜻밖의 상점도 센다 (2026-10-21) */
         setTimeout(()=>stepBanner("뜻 밖 의 상 점","길가에 좌판이 펼쳐져 있습니다"),40) }
@@ -35632,7 +35639,7 @@ const EVENTS=[
       f:()=>{ const it=evItem("도박용 기계 파편"); if(it) (run.after=run.after||[]).push({item:it});
         return "기계를 걷어차 떨어져 나온 파편을 줍습니다. 아직 릴이 덜그럭거립니다." }}]},
 
- {n:"세 개의 상자",art:"chest", face:"감옥의 눈", game:"monty",
+ {n:"세 개의 상자",art:"chest", face:"감옥의 눈", game:"monty", gameArt:1,   /* 놀이 위에도 그림 (사용자 2026-10-31) */
   t:"깊은 동굴 속에서 상자 셋을 발견합니다. 상자를 열려는 순간, 거대한 눈이 바라봅니다.\n<shake>\"선택해라\"</shake>",
   o:[]},
 
@@ -36882,7 +36889,7 @@ function drawRelic0(app){
   }
   /* 이벤트 안의 작은 놀이 (2026-10-05) — 대원 고르기 · 카드 · 상자 셋 · 스물하나 · 시련의 문 */
   if(!run.evSub&&!run.evMsg&&e.game&&EV_GAME[e.game]) run.evSub=EV_GAME[e.game].init(e);
-  if(run.evSub&&EV_GAME[run.evSub.t]){ box.classList.add("evgame"); desc.innerHTML=""; EV_GAME[run.evSub.t].draw(row,evApiReal(desc)); return }
+  if(run.evSub&&EV_GAME[run.evSub.t]){ box.classList.add("evgame"); if(e.gameArt) box.classList.add("gart"); desc.innerHTML=""; EV_GAME[run.evSub.t].draw(row,evApiReal(desc)); return }
   if(run.evMsg&&run.evSub&&run.evSub.t==="cave"){   /* 고독의 동굴 — 남길 대원을 고른다 (2026-10-01) */
     const sub=run.evSub;
     row.appendChild(el(`<div class="evres"><div class="evi">${chestIcon("경험치")}</div><div><b>${sub.shelf?"고대 서적 읽기":"동굴 수련"}</b><p>${sub.shelf?"2일 동안 고대 서적을 읽습니다.":"2일 동안 동굴에 남아 수련합니다."} 그동안은 전투에 나서지 않습니다.</p></div></div>`));
