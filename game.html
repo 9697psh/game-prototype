@@ -17251,7 +17251,13 @@ function rwDescHtml(d,h){
   const syn=SYNERGY.map(x=>x.n).sort((a,b)=>b.length-a.length);
   const esc2=x=>x.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
   const reSyn=syn.length?new RegExp("("+syn.map(esc2).join("|")+")(?=\\s*(?:진영|직업|종족|대원))","g"):null;
-  const skN=sks.map(x=>x.n).sort((a,b)=>b.length-a.length);
+  /* 밑줄을 칠 이름 — 기술 · 지속 능력 · 카드 · 소환물 (사용자 2026-10-31 : 「역병군주」 · 「시기의 역병」 이 그냥 글이었다).
+     한 번에 훑는다 — 따로 훑으면 앞에서 친 밑줄 안을 다시 건드린다. 긴 이름이 먼저 (「골렘 창조」 가 「골렘」 보다) */
+  const terms={};
+  sks.forEach(sk=>{ terms[sk.n]={sk:sk} });
+  if(h&&typeof heroPassives==="function") heroPassives(h.name).forEach(p=>{ if(p.n&&p.n.length>=2&&!terms[p.n]) terms[p.n]={pas:p} });
+  rwTermCards(h).forEach(([shown,card])=>{ if(shown&&!terms[shown]) terms[shown]={card:card} });
+  const skN=Object.keys(terms).sort((a,b)=>b.length-a.length);
   const reSk=skN.length?new RegExp("("+skN.map(esc2).join("|")+")","g"):null;
   /* 파벨의 부속 이름 — 「재료 부속 목록에 부유석을」의 '부유석' 에 밑줄과 카드 풍선 (사용자 2026-10-13).
      앞말(재료/영혼)까지 함께 봐야 '금속' '죽음' 같은 여느 낱말을 잘못 집지 않는다 */
@@ -17264,8 +17270,10 @@ function rwDescHtml(d,h){
     let t=n.nodeValue, out=esc(t), hit=0;
     if(reSyn) out=out.replace(reSyn,m=>{ hit=1; return `<b class="kw rwsyn" data-syn="${esc(m)}">${m}</b>` });
     if(reSk) out=out.replace(/(<[^>]*>)|([^<]+)/g,(m,tag,txt)=>tag?tag:txt.replace(reSk,m2=>{ hit=1;
-      const sk=sks.find(x=>x.n===m2), id="rwsk-"+(h?h.name:"")+"-"+m2;
-      TIP_HTML[id]=skTipHtml(h,sk);
+      const T=terms[m2];
+      if(T.card) return `<u class="kw rwsk" data-card="${esc(T.card)}" data-open="1">${m2}</u>`;   /* 카드 풍선 — 도감과 같은 카드 */
+      const id="rwsk-"+(h?h.name:"")+"-"+m2;
+      TIP_HTML[id]=T.pas?pasTipHtml(T.pas):skTipHtml(h,T.sk);
       return `<u class="kw rwsk" data-tid="${esc(id)}">${m2}</u>` }));
     if(rePt) out=out.replace(/(<[^>]*>)|([^<]+)/g,(m,tag,txt)=>tag?tag:txt.replace(rePt,(mm,k1,mid,pn)=>{ hit=1;
       const kind=(k1==="재료")?"mat":"soul", id="rwpt-"+kind+"-"+pn;
@@ -17280,6 +17288,21 @@ function rwDescHtml(d,h){
   return box.innerHTML;
 }
 /* 기술 하나의 풍선 — 그림 · 이름 · 값 · 설명 (대원 상세와 같은 글) */
+/* 보상 글에서 짚을 카드 이름 — [ ] 없이 적힌 것까지. [보이는 이름, 띄울 카드].
+   · 카드 · 소환물은 세 글자 이상만 (「빵」 「감시」 같은 두 글자는 여느 낱말과 겹친다)
+   · 오볼의 물자는 글에 단계 없이 적힌다 (「황금 닻」) — 1단계 카드를 띄운다 · 물자 카드 이름 자체(Ⅰ~Ⅴ)는 뺀다 */
+function rwTermCards(h){
+  const out=[];
+  if(typeof CARD_LIB!=="undefined") Object.keys(CARD_LIB).forEach(nm=>{ if(nm.length>=3&&!/ [ⅠⅡⅢⅣⅤ]$/.test(nm)) out.push([nm,nm]) });
+  if(typeof SUMMONS!=="undefined") Object.keys(SUMMONS).forEach(nm=>{ if(nm.length>=3&&!out.some(x=>x[0]===nm)) out.push([nm,nm]) });
+  if(typeof SUPPLY!=="undefined"&&typeof supCardName==="function") Object.keys(SUPPLY).forEach(n=>out.push([n,supCardName(n,1)]));
+  return out;
+}
+/* 지속 능력 하나의 풍선 — 기술 풍선과 같은 꼴 (비용 자리에 「지속」) */
+function pasTipHtml(p){
+  let d=p.d||""; try{ d=rich(d) }catch(e){}
+  return `<div class="sktip"><div class="skth">${skiHtml(p.n)}<b>${esc(p.n)}</b><span>지속</span></div><div class="sktd">${d}</div></div>`;
+}
 
 /* ═══════════ 보상 뽑기 ═══════════ (2026-10-27)
    「이 대원 · 이 등급에서 **무엇을 고를 수 있는가**」 — 무작위를 쓰고 결과를 정하니 규칙이다.
@@ -26094,6 +26117,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 317, "v": "0.7", "d": "2026-10-31", "t": "보상 글 — 지속 능력 · 카드 이름에도 밑줄과 풍선", "big": 0},
  {"b": 316, "v": "0.7", "d": "2026-10-31", "t": "분해 광선 빔 네 번 · 밀수꾼 훔치기/도망 연출", "big": 0},
  {"b": 315, "v": "0.7", "d": "2026-10-31", "t": "오볼 — 난파 빈 칸 · 유령선 죽음 효과 · 카드 날아듦 · 선박 칸 · 보상 탁자 · 유령 금화 위치", "big": 0},
  {"b": 314, "v": "0.7", "d": "2026-10-31", "t": "오볼 효과음 · 선박 상점 강화 연출 · 상인 한마디", "big": 0},
@@ -27601,7 +27625,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=316;
+const BUILD_NO=317;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -43449,7 +43473,7 @@ function pickCount(n){
       const nm=el2.dataset.card;
       /* 도감과 같은 카드를 그대로 띄운다 — 화면마다 다르게 보이지 않게 */
       if(nm){
-        b.innerHTML=cardKnown(nm)?cardCard(nm,null,1)
+        b.innerHTML=(cardKnown(nm)||el2.dataset.open)?cardCard(nm,null,1)   /* data-open — 보상 글에서 짚은 대원 카드 · 소환물 (도감 잠금 없이) */
           :'<b style="color:#7fd39a">'+esc(nm)+'</b>';
         b.classList.add("wide");
       }else{
