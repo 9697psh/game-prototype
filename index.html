@@ -3856,7 +3856,7 @@ body.vtitle header #hBtns button:hover{border-color:#f4d67c;color:#f4d67c}
 .cpbg{background:#000}
 .cpbg::after{display:none}
 .cpskip{position:fixed;left:50%;top:calc(52% + 216px);transform:translateX(-50%);z-index:3}
-.cpscr.intro .cpskip{animation:cpSkipIn .55s ease-out 2.05s both}
+.cpscr.intro .cpskip{animation:cpSkipIn .3s ease-out both}   /* 처음부터 누를 수 있게 (사용자 2026-11-02 — 전에는 2.05초 뒤에야 나타났다) */
 @keyframes cpSkipIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}
   to{opacity:1;transform:translateX(-50%)}}
 .cpc::before{content:"";position:absolute;left:50%;top:44%;width:360px;height:360px;
@@ -5332,6 +5332,17 @@ kbd{display:inline-block;min-width:20px;text-align:center;padding:1px 7px;font-s
 body.vnew{--pk-ink:#f0e2c4;--pk-dim:#c7b696;--pk-faint:#a8977a;background:#0a0908}
 body.vchest{background:#0a0908 var(--btbg,url("bg/battle.webp")) center/cover no-repeat}
 body.vchest::before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.52);z-index:0;pointer-events:none}
+body.vchest.rwtable::before{display:none}   /* 보상 탁자 위에서는 전투 배경을 어둡게 깔던 막이 없다 (2026-11-02) */
+/* 전투 보상 상자 — 받은 것마다 보상 카드와 같은 틀(menu-card-companion), 가죽 매트 위에 나란히 (사용자 2026-11-02 : 「ui 도 아트 사용해서」) */
+body.rwtable #app .rewards.chestgot{gap:22px;align-items:stretch}
+body.rwtable #app .rewards.chestgot .rw.ro{background:url("ui/menu-card-companion-384x512.png") center/100% 100% no-repeat;border:0;border-radius:0;box-shadow:none;
+  image-rendering:pixelated;width:168px;min-height:0;height:224px;padding:30px 20px 26px;box-sizing:border-box;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;filter:drop-shadow(0 10px 12px rgba(0,0,0,.55))}
+body.rwtable #app .rewards.chestgot .rw.ro>*{image-rendering:auto}
+body.rwtable #app .rewards.chestgot .rw.ro .rwi img,body.rwtable #app .rewards.chestgot .rw.ro .rwi svg{width:58px;height:58px;image-rendering:pixelated}
+body.rwtable #app .rewards.chestgot .rw.ro b{color:#f0d892;font-family:var(--serif);font-size:15px;line-height:1.4;word-break:keep-all}
+body.rwtable #app .rewards.chestgot .rw.ro p{font-size:12px;margin:0}
+.chestgo{margin-top:24px}
 body.vnew::before{display:none}
 /* 위 띠 — 전투와 같은 띠. 가운데에 오염 · 활동량 · 시계 · 금화 · 제련석, 오른쪽에 버튼, 왼쪽 위에 가방 */
 body.vnew header{background:rgba(12,10,12,.92);border-bottom:1px solid rgba(240,212,136,.14);justify-content:center;position:sticky;
@@ -26131,6 +26142,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 321, "v": "0.7", "d": "2026-11-02", "t": "전투 보상 상자 탁자 · 연타 막기 · 세계핵 넘어가기", "big": 0},
  {"b": 320, "v": "0.7", "d": "2026-11-02", "t": "특성 선택 — 어두운 목재 + 검붉은 천 (trait-table-v1)", "big": 0},
  {"b": 319, "v": "0.7", "d": "2026-11-01", "t": "특성 선택도 보상 탁자", "big": 0},
  {"b": 318, "v": "0.7", "d": "2026-10-31", "t": "기술 풍선 틀 · 미지의 구역 상점 문 · 세 개의 상자 그림/가운데", "big": 0},
@@ -27642,7 +27654,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=320;
+const BUILD_NO=321;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -29741,7 +29753,8 @@ function mapGridEl(peek){
     d.onmouseleave=()=>{ if(peek) mapTipHide(); else mapHover(null); nbMark(g,null) };
     if(peek){ g.appendChild(d); continue }   /* 미리보기 — 보기만 */
     if(kind==="wall"){ /* 감옥 장벽 — 누를 수 없다 */ }
-    else d.onclick=()=>{ const now=Date.now(), L=MAP_CLK;   /* 한 번 = 고르기(오른쪽 판), 두 번(450ms 안) = 이동/들어가기 (사용자 2026-09-18). 첫 누름이 다시 그리므로 dblclick 대신 손으로 센다 */
+    else d.onclick=()=>{ if(typeof mapIntroHold==="function"&&mapIntroHold()) return;   /* 처음 펼침 · 우두머리 연출 중 */
+      const now=Date.now(), L=MAP_CLK;   /* 한 번 = 고르기(오른쪽 판), 두 번(450ms 안) = 이동/들어가기 (사용자 2026-09-18). 첫 누름이 다시 그리므로 dblclick 대신 손으로 센다 */
       if(L.r===r&&L.c===c&&now-L.t<450){ MAP_CLK={t:0,r:-1,c:-1}; mapGo(r,c) } else { MAP_CLK={t:now,r:r,c:c}; mapSelect(r,c) } };
     g.appendChild(d);
   }
@@ -30101,7 +30114,7 @@ function mapInspector(at){
       { const _h=enterHours(cell);
         if(_h>0) foot.appendChild(el(`<div class="mif mitime">${uiPng("clock")}<b>${hrsTxt(_h)}</b></div>`)) }
       if(_cost>0) foot.appendChild(el(`<div class="mif${_can?"":" on"}">${resIcon("act")}<b>${_cost}</b></div>`));
-      const go=el(`<button class="go mgo">입장</button>`); go.onclick=()=>mapEnter();
+      const go=el(`<button class="go mgo">입장</button>`); go.onclick=()=>{ if(typeof mapIntroHold==="function"&&mapIntroHold()) return; mapEnter() };
       if(!_can) go.disabled=true;
       foot.appendChild(go);
     } else if(kind==="camp"){ /* 시설이 위에 */ }
@@ -30115,7 +30128,7 @@ function mapInspector(at){
       { const _h=enterHours(cell);
         if(_h>0) foot.appendChild(el(`<div class="mif mitime">${uiPng("clock")}<b>${hrsTxt(_h)}</b></div>`)) }
       if(_ec>0) foot.appendChild(el(`<div class="mif">${resIcon("act")}<b>${_ec}</b></div>`));
-      const go=el(`<button class="go mgo mmove">이동</button>`); go.onclick=()=>mapGo(r,c); foot.appendChild(go);
+      const go=el(`<button class="go mgo mmove">이동</button>`); go.onclick=()=>{ if(typeof mapIntroHold==="function"&&mapIntroHold()) return; mapGo(r,c) }; foot.appendChild(go);
     } else foot.appendChild(el(`<div class="mif">가는 길이 없습니다</div>`));
   }
   b.appendChild(foot);
@@ -31408,7 +31421,11 @@ function bossCellArt(){ const id=BOSS_CELL_ICON[bossNameNow()]; if(!id) return "
   return typeof iconImg==="function"?iconImg(id)||"":"" }
 function bossLine(n){ const L=BOSS_MAP_LINE[n]||((typeof INTRO_SAY!=="undefined"&&INTRO_SAY[n])?[INTRO_SAY[n]]:null)||((typeof BARK!=="undefined"&&BARK[n]&&BARK[n].in)||null);
   return L&&L.length?L[Date.now()%L.length]:"" }   /* 게임 주사위는 건드리지 않는다 */
-function bossMapArm(){ if(typeof run!=="undefined"&&run) BOSS_MAP_PEND={run:run,field:run.field} }
+function bossMapArm(){ if(typeof run!=="undefined"&&run) BOSS_MAP_PEND={run:run,field:run.field,t:Date.now()} }
+/* 지도 처음 펼침 — 우두머리 칸이 떠오르고 대사가 뜰 때까지 지도 칸 · 입장 · 이동을 받지 않는다 (사용자 2026-11-02 : 연타하면 넘어갔다) */
+let MAP_INTRO_UNTIL=0;
+const MAP_INTRO_CAP=8000;   /* 안전장치 — 연출이 무슨 까닭으로 안 돌아도 건 뒤 8초면 풀린다 (지도가 영영 잠기지 않게) */
+const mapIntroHold=()=>(bossMapWait()&&Date.now()-(BOSS_MAP_PEND.t||0)<MAP_INTRO_CAP)||Date.now()<MAP_INTRO_UNTIL;
 const bossMapWait=()=>!!(BOSS_MAP_PEND&&typeof run!=="undefined"&&BOSS_MAP_PEND.run===run&&BOSS_MAP_PEND.field===run.field);
 function bossMapGo(){
   if(!bossMapWait()){ BOSS_MAP_PEND=null; return }
@@ -31416,6 +31433,7 @@ function bossMapGo(){
   const P=BOSS_MAP_PEND;
   /* 지도가 펴지는 것(MAP_BO_UNTIL 뒤)을 기다렸다가 */
   const wait=Math.max(0,(typeof MAP_BO_UNTIL!=="undefined"?MAP_BO_UNTIL:0)-Date.now())+700;
+  MAP_INTRO_UNTIL=Date.now()+wait+650+900;   /* 칸이 떠오르고(650) 대사가 자리 잡을 때까지 */
   setTimeout(()=>{
     if(BOSS_MAP_PEND!==P) return;
     BOSS_MAP_PEND=null;
@@ -33360,6 +33378,7 @@ function chestIcon(t){
 function drawChest(app){
   document.documentElement.style.setProperty("--btbg",`url(${battleBg()})`);
   const ch=run.chest;
+  rwChestTable(ch);   /* 전투 보상 상자도 보상 탁자 위에서 (사용자 2026-11-02) — 처음 한 번 어둠에서 */
   const nm=chestTitle(ch.kind);   /* 말은 규칙이 쥔다 (src/rules/chest-text.js) */
   app.appendChild(el(`<div class="center"><div class="title" style="font-size:22px">${esc(nm)}</div>
     <div class="sub">${chestSub(ch.opened)}</div></div>`));
@@ -33373,7 +33392,7 @@ function drawChest(app){
     return;
   }
   wrap.appendChild(el(bigChest(cg,1,zoneChestKey()).replace('class="bigchest','class="bigchest small')));
-  const row=el(`<div class="rewards chestgot${ch.justOpened?" rise r"+({"중급":2,"상급":3}[cg]||1):""}"></div>`);
+  const row=el(`<div class="rewards chestgot rwmat${ch.justOpened?" rise r"+({"중급":2,"상급":3}[cg]||1):""}"></div>`);   /* 가죽 매트 위 (rwMatFit) */
   ch.justOpened=0;
   ch.list.forEach(x=>{
     const gm=run.goldMul||1;
@@ -33383,8 +33402,9 @@ function drawChest(app){
         ?`<p style="color:var(--brass)">죄악의 목걸이 +${Math.round((gm-1)*100)}% (원래 ${x.v})</p>`:""}${x.info?`<p style="color:var(--faint)">${esc(expByTxt())}</p>`:""}</div>`));
   });
   wrap.appendChild(row);
-  const b=el(`<div style="margin-top:24px"><button class="go">전부 챙기기</button></div>`);
-  b.querySelector("button").onclick=takeChest;
+  rwMatFit(row);
+  const b=el(`<div class="chestgo"><button class="go">전부 챙기기</button></div>`);
+  b.querySelector("button").onclick=()=>{ if(chestHold()) return; takeChest() };   /* 막 열었으면 연타가 넘기지 않게 */
   wrap.appendChild(b);
 }
 /* 이번 전투에서 대원마다 받은 경험치 — '굴라 5, 나이코스 2 획득' */
@@ -33434,10 +33454,15 @@ function chestBurst(box,icons){
   },i*gap));
   return L.length*gap+1700;
 }
+/* 상자 연타 막기 (사용자 2026-11-02) — 여는 동안(CHEST_OPENING)은 다시 그려져 새로 생긴 상자도 열지 않고,
+   다 연 뒤 CHEST_HOLD_MS 동안은 막 나타난 보상 카드 · 전부 챙기기 · 건너뛰기 · 스페이스바를 받지 않는다 (chestHold) */
+let CHEST_OPENING=0, CHEST_HOLD_UNTIL=0;
+const CHEST_HOLD_MS=800;   /* 카드가 떠오르는 동안(약 0.6초) + 조금 */
+const chestHold=()=>!!CHEST_OPENING||Date.now()<CHEST_HOLD_UNTIL;
 function chestOpenFX(box,grade,done,o){
-  if(!box||box.dataset.opening){ return }
+  if(!box||!box.isConnected||box.dataset.opening||CHEST_OPENING){ return }   /* 화면에서 떨어진 상자(다시 그려진 옛 판)는 열지 않는다 — 막기만 켜고 카드를 묶었다 */
   o=o||{};
-  box.dataset.opening=1;
+  box.dataset.opening=1; CHEST_OPENING=1;
   const c=CHEST_C[grade]||"bronze", col=CHEST_COL[c], lv={bronze:1,silver:2,gold:3}[c];
   box.classList.add("shake"+lv);
   /* ⚠️ 여는 도중에 화면이 다시 그려지면(스페이스바 연타 등) 이 상자는 떨어져 나가고 새 상자가 따로 열린다.
@@ -33481,7 +33506,7 @@ function chestOpenFX(box,grade,done,o){
   let extra=0;
   if(o.burst&&o.burst.length){ const tot=o.burst.reduce((a,x)=>a+Math.max(1,Math.min(40,x.n||1)),0);
     extra=tot*Math.max(12,Math.min(30,500/tot))+800; setTimeout(()=>chestBurst(box,o.burst),t0+300) }
-  setTimeout(()=>{ if(done) done() },t0+300+Math.max(extra,lv===3?1700:lv===2?1150:550));
+  setTimeout(()=>{ CHEST_OPENING=0; CHEST_HOLD_UNTIL=Date.now()+CHEST_HOLD_MS; if(done) done() },t0+300+Math.max(extra,lv===3?1700:lv===2?1150:550));
 }
 function takeChest(){
   const ch=run.chest, later=[];
@@ -43715,6 +43740,7 @@ document.addEventListener("keydown",e=>{   /* 새 장신구 — 스페이스바 
 });
 document.addEventListener("keydown",e=>{   /* 보상 상자 — 스페이스바로 열기 · 전부 챙기기 (사용자 2026-10-05) */
   if(!(view==="chest"||(view==="reward"&&document.querySelector("#app .unlock,#app .lvup")))||e.key!==" "||e.repeat) return;
+  if(typeof chestHold==="function"&&chestHold()){ e.preventDefault(); return }   /* 여는 중 · 막 열었다 (2026-11-02) */
   const b=document.querySelector("#app .bigchest:not(.small):not(.open)")||document.querySelector("#app button.go"); if(b){ e.preventDefault(); b.click() }
 });
 const skKeyN=h=>Math.min(6,((h&&h.sk)||[]).length);   /* 키패드로 고를 수 있는 기술 번호 (사용자 2026-10-07) */
@@ -50690,7 +50716,7 @@ function drawReward(app){
       <div class="sub">상자를 엽니다</div></div>`));
     const c=app.querySelector(".center"), bc=el(bigChest(pending.grade)); c.appendChild(bc);
     const P=pending;
-    rwChestTable(P);   /* 상자도 보상 탁자 위에서 연다 (사용자 2026-10-31) */ setTimeout(()=>chestOpenFX(bc,P.grade,()=>{ if(pending===P){ P.chestDone=1; P.rise={"중급":2,"상급":3}[P.grade]||1; render() } }),250);
+    rwChestTable(P);   /* 상자도 보상 탁자 위에서 연다 (사용자 2026-10-31) */ setTimeout(()=>{ if(bc.isConnected&&pending===P) chestOpenFX(bc,P.grade,()=>{ if(pending===P){ P.chestDone=1; P.rise={"중급":2,"상급":3}[P.grade]||1; render() } }) },250);   /* 그 사이 다시 그려졌으면 새 판의 예약이 연다 */
     bc.onclick=()=>chestOpenFX(bc,P.grade,()=>{ if(pending===P){ P.chestDone=1; P.rise={"중급":2,"상급":3}[P.grade]||1; render() } });
     { const q=afterListPanel(); if(q) app.appendChild(q) }   /* 상자를 여는 동안에도 받는 목록 (사용자 2026-10-05) */
     return;
@@ -50762,7 +50788,7 @@ function drawReward(app){
       const c=app.querySelector(".center"), bc=el(bigChest(lg)); c.appendChild(bc);
       rwChestTable(cur);   /* 상자도 보상 탁자 위에서 연다 (사용자 2026-10-31) */
       const open=()=>chestOpenFX(bc,lg,()=>{ if(pending&&pending.queue&&pending.queue[pending.idx]===cur){ cur.chestDone=1; pending.rise={"중급":2,"상급":3}[lg]||1; render() } });
-      setTimeout(open,250); bc.onclick=open;
+      setTimeout(()=>{ if(bc.isConnected) open() },250); bc.onclick=open;   /* 떨어진 옛 상자는 열지 않는다 */
       return } }
   /* 이 보상에 한 번만 — 다시 그려도(「지도 보기」로 오가도) 또 울리지 않는다 (사용자 2026-10-09) */
   if(cur&&!cur.sndDone){ cur.sndDone=1; try{ BGM.once("reward") }catch(e){} }
@@ -51520,7 +51546,7 @@ function offerCards(app,hero,grade,done,lvUp){
     c.tabIndex=0; c.setAttribute("role","button");   /* 키보드 — Tab 으로 들고 Enter · 스페이스로 고른다 */
     c.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); c.click() } };
     c.onclick=()=>{
-      if(잠겼나()) return;
+      if(잠겼나()||chestHold()) return;   /* 상자를 막 열었다 — 연타가 카드를 고르지 않게 (2026-11-02) */
       잠근다();
       c.classList.add("chosen"); row.classList.add("picked");
       pickBurst(c,r.g);
@@ -51547,7 +51573,7 @@ function offerCards(app,hero,grade,done,lvUp){
   app.querySelector(".center").appendChild(row);
   rwMatFit(row);
   const skip=el(`<div class="rwskip"><button>건너뛰기</button></div>`);   /* 새로고침과 한 줄 — 높이를 맞춘다 (사용자 2026-10-06) */
-  skip.querySelector("button").onclick=()=>{ if(잠겼나()) return; 잠근다();   /* 고른 뒤 바로 건너뛰기를 눌러 done 이 두 번 돌지 않게 */
+  skip.querySelector("button").onclick=()=>{ if(잠겼나()||chestHold()) return; 잠근다();   /* 고른 뒤 바로 건너뛰기를 눌러 done 이 두 번 돌지 않게 */
     if(lvUp&&pending&&pending.queue){ const q=pending.queue[pending.idx]; if(q) (hero.tag.lvGot=hero.tag.lvGot||{})[q.lv]={skip:1} } done() };
   if(rrBtn) skip.insertBefore(rrBtn,skip.firstChild);
   app.appendChild(skip);
