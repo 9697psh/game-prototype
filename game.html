@@ -24966,7 +24966,7 @@ const HERO_TRAITS={
         "중급|난파선의 보물들",
         "중급|배를 버려라",
         "상급|선장 출두",
-        "상급|유령 금화 주조",
+        "상급|밀수 제국", "상급|금화 더미", "상급|유령 금화 주조",
         "상급|엄청난 보물 발견!"
       ],
       "common": [
@@ -25021,7 +25021,7 @@ const HERO_TRAITS={
         "중급|혼이 깃든 함포",
         "중급|약탈꾼",
         "중급|망자의 보물",
-        "상급|유령 함대"
+        "상급|수장", "상급|바다의 분노", "상급|유령 함대"
       ],
       "common": [
         "상급|한계 해방",
@@ -25039,7 +25039,7 @@ const HERO_TRAITS={
         "하급|커틀러스 강화",
         "하급|안개화",
         "중급|유령의 몸 강화",
-        "상급|녹슨 부싯돌 칼날",
+        "상급|유령 선장의 검", "상급|망령의 칼춤", "상급|안개 장막", "상급|녹슨 부싯돌 칼날",
         "상급|유체화"
       ],
       "common": [
@@ -26142,6 +26142,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 322, "v": "0.7", "d": "2026-11-02", "t": "오볼 상급 일곱 · 전투 보상 상자 탁자 · 연타 막기", "big": 0},
  {"b": 321, "v": "0.7", "d": "2026-11-02", "t": "전투 보상 상자 탁자 · 연타 막기 · 세계핵 넘어가기", "big": 0},
  {"b": 320, "v": "0.7", "d": "2026-11-02", "t": "특성 선택 — 어두운 목재 + 검붉은 천 (trait-table-v1)", "big": 0},
  {"b": 319, "v": "0.7", "d": "2026-11-01", "t": "특성 선택도 보상 탁자", "big": 0},
@@ -27654,7 +27655,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=321;
+const BUILD_NO=322;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -34294,6 +34295,7 @@ function shipOpen(){
   run.shopKind="ship"; run.sellPick=null; run.sellOpen=0;
   if(!run.ship.goods||run.ship.day!==run.day) makeShipShop();
   run.ship.goods.forEach(oneCoin);   /* 예전 저장 — 값이 둘 붙어 있던 진열 */
+  obolEmpireCut(run.ship.goods);   /* 밀수 제국 */
   run.ship.visitDay=run.day;   /* 새 항로 — 오늘 들렀나 */
   /* 해적의 흥정법 — 다음 1회 : 무작위 품목 2개 반값 (상점 강화는 빼고) */
   if(run.obolHaggle>0){ run.obolHaggle--;
@@ -34342,9 +34344,10 @@ function obolWreck(h,f,slot){
   if(live){
     const spots=[sl-1,sl+1].filter(s=>s>=1&&s<=SLOTS&&!foeBlock(s));
     /* 밀 수 없으면 짓누르는 피해만 — 유령선은 남지 않는다 (사용자 2026-10-31 : 「이동할 수 없어서 피해를 주는 상황에서는 유령선이 소환되지 않음」) */
-    if(foeStuck(f)||!spots.length){ const v=15+5*(h.def||0)+((h.tag&&h.tag.wreckDmg)||0);   /* 난파 강화 — 영구히 +15 */
+    if(foeStuck(f)||!spots.length){ const v=(15+5*(h.def||0)+((h.tag&&h.tag.wreckDmg)||0))*((h.tag&&h.tag.seaWrath)?2:1);   /* 난파 강화 — 영구히 +15 · 바다의 분노 ×2 */
       fx({side:"foe",slot:sl,s:sfxOr("오볼 난파 짓누름",null),sheet:"fx_obol_wreck_hit",sheetOpt:{frames:8,cell:128,z:1.3,frameMs:[60,60,85,90,90,100,110,110]},quake:1,gap:240});
-      asSrc(h,()=>hurt(f,v,"난파","slash")); say(`난파 — ${f.name}${jo(f.name,"ig")} 비키지 못해 피해 ${v}`,"t1"); return }
+      asSrc(h,()=>hurt(f,v,"난파","slash")); say(`난파 — ${f.name}${jo(f.name,"ig")} 비키지 못해 피해 ${v}`,"t1");
+      obolDrown(h,f); return }
     LAND();
     foeShift(f,rnd(spots),"arc"); say(`난파 — ${f.name}${jo(f.name,"ig")} 밀려납니다.`,"t1");
     if(foeBlock(sl)){ say("난파 — 자리가 막혀 유령선이 서지 못했습니다.","t2"); return }
@@ -34395,6 +34398,7 @@ if(typeof CARD_LIB!=="undefined"){
 /* 유령 금화를 얻는 한 곳 — 밀수 항로(보유 퀘스트)가 여기서 센다 */
 function obolGhost(n,why){
   if(!n) return; run.ghost=(run.ghost||0)+n;
+  try{ obolHoardSync(obolHero()) }catch(e){}   /* 금화 더미 — 유령 금화가 늘면 바로 */
   try{ if(sfxHas("유령 금화 얻기")) SFX.play("유령 금화 얻기") }catch(e){}
   if(why) toast(`${why} — 유령 금화 +${n}`);
   obolGhostQuest();
@@ -34406,7 +34410,7 @@ function obolGhostQuest(){
 /* 금화를 얻은 만큼 — 뼛속까지 해적(하급) 퀘스트 · 물욕. 화면이 금화를 볼 때(goldWatch)와 전투가 끝날 때 */
 function obolGoldTick(){
   if(!run) return;
-  obolGreedSync(obolHero());
+  obolGreedSync(obolHero()); obolHoardSync(obolHero());
   if(run.obolGold0==null) return;
   const g=run.gold|0, d=g-run.obolGold0; run.obolGold0=g;
   if(d>0&&questHas("뼛속까지 해적")) questProgress("goldEarn",null,d);
@@ -34427,7 +34431,7 @@ function obolShipUp(n,why){
   if(run.ship.goods){
     for(let k=0;k<up;k++){ const pool=shipStock().filter(x=>!run.ship.goods.some(y=>y.n===x.n));
       if(pool.length){ const x=rnd(pool), q0=rr(x.q); run.ship.goods.push(oneCoin(Object.assign({},x,{left:q0,qty:q0}))) } }
-    shipFixed(run.ship.goods);
+    shipFixed(run.ship.goods); obolEmpireCut(run.ship.goods);
     if(run.shop&&run.shop.ship) run.shop.goods=run.ship.goods }
   /* 상점 안에서 올랐으면 화면이 넘기기 연출을 한다 (shipUpPlay) — 옛 단계 · 새로 생긴 품목 */
   if(run.shop&&run.shop.ship) run.ship.upFx={from:lv0,nw:(run.ship.goods||[]).filter(g=>!had.has(g.n)&&g.k!=="shipup").map(g=>g.n)};
@@ -34456,6 +34460,41 @@ function obolGhostBody(h){
   fx({side:"mine",slot:h.slot,ring:"#5fd8cf",txt:"정지",cls:"shd",gap:60});
   say(`유체화 — ${h.name}${jo(h.name,"ig")} 2턴 동안 정지합니다.`,"t1");
 }
+/* ── 상급 일곱 (사용자 2026-11-02) ── */
+/* 유령 선장의 검 — 커틀러스 타수 +1 (실제 runEffect0 와 예고 predictDmg 가 같은 수를 쓴다) */
+function obolCutExtra(h,s){ return (h&&h.name===OBOL&&s&&s.twice&&h.tag&&h.tag.cutExtra)||0 }
+/* 안개 장막 — 유령의 몸을 쓴 뒤 다른 모든 아군 회피 +1 */
+function obolMistVeil(h){
+  const v=(h.tag&&h.tag.mistVeil)||0; if(!v||!B) return;
+  onField().filter(a=>a!==h&&!a.down&&a.hp>0).forEach(a=>{ a.evade=(a.evade||0)+v; fx({side:"mine",slot:a.slot,txt:"회피 +"+v,cls:"shd",gap:0}) });
+  say(`안개 장막 — 다른 아군 회피 +${v}`,"t2");
+}
+/* 망령의 칼춤 — 회피로 피할 때마다 공격한 적에게 커틀러스 (비용 없이) */
+function obolEvadeCut(o,f){
+  const n=(o.tag&&o.tag.evadeCut)||0; if(!n||!f||!f.alive||!f.isFoe||!(o.slot>0)||o.hp<=0) return;
+  const i=(o.sk||[]).findIndex(s=>s&&s.n==="커틀러스"); if(i<0) return;
+  say(`망령의 칼춤 — ${o.name}${jo(o.name,"ig")} ${f.name}에게 커틀러스!`,"t1");
+  for(let k=0;k<n&&f.alive;k++) try{ runEffect(o,i,o.sk[i],f.slot) }catch(e){ console.error(e) }
+}
+/* 수장 — 난파(짓누름)로 적을 처치하면 유령 금화 3 · 난파 사용한도 1 회복 */
+function obolDrown(h,f){
+  const n=(h.tag&&h.tag.drownLoot)||0; if(!n||!f||f.alive) return;
+  obolGhost(3*n,"수장");
+  const i=(h.sk||[]).findIndex(s=>s&&s.obolWreck); if(i>=0&&h.limitUsed) h.limitUsed[i]=Math.max(0,(h.limitUsed[i]||0)-n);
+  say(`수장 — 유령 금화 +${3*n} · 난파 사용한도 회복`,"t1");
+}
+/* 밀수 제국 — 이번 원정동안 선박 상점의 모든 비용 40% 감소 (진열이 새로 서거나 늘 때마다 그 품목에) */
+function obolEmpireCut(goods){
+  if(!run||!run.obolEmpire||!goods) return;
+  goods.forEach(g=>{ if(g.empire) return; g.empire=1;
+    if(g.cost!=null) g.cost=Math.max(1,Math.ceil(g.cost*0.6)); if(g.gcost!=null) g.gcost=Math.max(1,Math.ceil(g.gcost*0.6)) });
+}
+/* 금화 더미 — 유령 금화 10개당 추가 공격력 · 보호력 +1. 금화가 바뀌면 따라간다 (물욕과 같은 결 — 붙인 몫은 h.hoardOn, clearTmp 가 걷는다) */
+function obolHoardSync(o){
+  if(!o||!o.tag||!o.tag.hoard||typeof B==="undefined"||!B||!run) return;
+  const v=Math.floor((run.ghost||0)/10)*o.tag.hoard, d=v-(o.hoardOn||0);
+  if(d){ bumpTmp(o,"atk",d); bumpTmp(o,"def",d); o.hoardOn=v; say(`금화 더미 — ${o.name} 추가 공격력 · 보호력 ${d>0?"+":""}${d} (유령 금화 ${run.ghost||0})`,"t2") }
+}
 /* 전투 시작 후 (첫 라운드 한 번) — 짐칸 개방 · 물욕 */
 function obolBattleStart(){
   const o=obolHero(); if(!o||!o.tag||!B) return;
@@ -34464,7 +34503,7 @@ function obolBattleStart(){
     const x=C.splice(Math.floor(Math.random()*C.length),1)[0];
     handAddCard(supCardName(x.n,x.lv),{gone:1,arrive:1}); if(o.slot>0) fx({side:"mine",slot:o.slot,cardGive:1,gap:420});
     say(`짐칸 개방 — ${supCardName(x.n,x.lv)}${jo(x.n,"eul")} 꺼냅니다.`,"t2") }
-  obolGreedSync(o);
+  obolGreedSync(o); obolHoardSync(o);
 }
 /* 물욕 — 금화 25개당 추가 공격력. 전투 중 금화가 바뀌면 따라간다 (사용자 2026-10-31 밤).
    붙인 몫은 h.greedOn — 차이만 bumpTmp, 전투가 끝나면 clearTmp 가 걷는다 (taintSync 와 같은 결) */
@@ -34592,6 +34631,17 @@ HERO_REWARDS["오볼"]=[
   R("유령 함대","상급","난파의 사용한도가 2 증가합니다.\n*[난파] 기술이 없을 때 등장하지 않음",
     h=>{ (h.sk||[]).forEach(k=>{ if(k&&k.obolWreck) k.limit=(k.limit||0)+2 }) }),
   R("엄청난 보물 발견!","상급","유령 금화를 40개 얻습니다.",h=>obolGhost(40,"엄청난 보물 발견!")),
+  /* ── 상급 일곱 더 (사용자 2026-11-02) ── */
+  R("유령 선장의 검","상급","커틀러스가 1번 더 공격합니다.",h=>h.tag.cutExtra=(h.tag.cutExtra||0)+1),
+  R("망령의 칼춤","상급","회피로 공격을 피할 때마다, 공격한 적에게 커틀러스를 1번 사용합니다.",h=>h.tag.evadeCut=(h.tag.evadeCut||0)+1),
+  R("안개 장막","상급","유령의 몸을 사용한 후, 다른 모든 아군이 회피를 1 얻습니다.",h=>h.tag.mistVeil=(h.tag.mistVeil||0)+1),
+  R("밀수 제국","상급","이번 원정동안 선박 상점의 모든 비용이 40% 감소합니다.\n*획득시 보상에서 다시 등장하지 않음",
+    h=>{ run.obolEmpire=1; if(run.ship&&run.ship.goods) obolEmpireCut(run.ship.goods) }),
+  R("수장","상급","난파로 적을 처치하면 유령 금화를 3개 얻고 난파의 사용한도가 1 회복됩니다.\n*[난파] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.drownLoot=(h.tag.drownLoot||0)+1),
+  R("바다의 분노","상급","난파로 적을 밀어낼 수 없을 때 주는 피해가 2배가 됩니다.\n*획득시 보상에서 다시 등장하지 않음\n*[난파] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.seaWrath=1),
+  R("금화 더미","상급","보유한 유령 금화 10개당 오볼이 추가 공격력과 보호력을 1 얻습니다.",h=>h.tag.hoard=(h.tag.hoard||0)+1),
   R("유체화","상급","전투 시작 후, 처음 사용하는 유령의 몸은 오볼을 2턴 동안 정지 상태로 만듭니다. 정지 상태일 때 턴이 끝날 때마다 무작위 물자 카드를 얻습니다. ",
     h=>h.tag.fluid=(h.tag.fluid||0)+1)   /* 쌓으면 첫 2회 · 3회 … (노트 주석) */
 ];
@@ -34605,12 +34655,14 @@ Object.assign(REW_KIND,{
  "하급|미끼 물자":"기술 강화","하급|널판 수리":"기술 강화",
  "중급|밀수 항로":"대원 강화","중급|짐칸 개방":"대원 강화","중급|물자 수출":"대원 강화","중급|배를 버려라":"대원 강화",
  "중급|영원한 임무":"대원 강화","중급|뺏고 보자고":"기술 강화","중급|약탈꾼":"기술 강화","중급|망자의 보물":"기술 강화",
- "상급|선장 출두":"대원 강화","상급|유체화":"대원 강화","상급|엄청난 보물 발견!":"기술 강화"});
+ "상급|선장 출두":"대원 강화","상급|유체화":"대원 강화","상급|엄청난 보물 발견!":"기술 강화",
+ "상급|유령 선장의 검":"기술 강화","상급|망령의 칼춤":"기술 강화","상급|안개 장막":"기술 강화","상급|밀수 제국":"대원 강화",
+ "상급|수장":"기술 강화","상급|바다의 분노":"기술 강화","상급|금화 더미":"대원 강화"});
 /* 「*획득시 보상에서 다시 등장하지 않음」 · 퀘스트 (같은 퀘스트를 둘 걸지 않는다) · 「새 항로」 는 오늘 이미 선박 상점을 들른 날에만 (노트 주석) */
 Object.assign(REW_COND,{
  "중급|황금 닻 발견":{once:1},"중급|해초에 묶인 칼날 발견":{once:1},"중급|유령 등불 발견":{once:1},
  "중급|무쇠 닻 발견":{once:1},"중급|좌초된 상자 발견":{once:1},"중급|목록 확인":{once:1},
- "상급|선장 출두":{once:1},"중급|영원한 임무":{once:1}});
+ "상급|선장 출두":{once:1},"중급|영원한 임무":{once:1},"상급|밀수 제국":{once:1},"상급|바다의 분노":{once:1}});
 HERO_REWARDS["오볼"].forEach(r=>{
   /* 전용 보상의 주인 — rewards.js 가 불러올 때 한 번 붙이는데(r.own=nm), 이 표는 그 뒤에 불러와 빠졌다.
      빠지면 보상 카드에 「공용」 으로 뜨고 주인별 아이콘 · 전용 보상만(맞춤 갑옷) 셈에서 어긋난다 (사용자 2026-10-31) */
@@ -38016,7 +38068,7 @@ const ROUND_RESET={
   reiOrbFree:0, reiVowFree:0, reiZone:0, reiBackSlot:0, reiBackK:0, reiGuardOn:0, reiWordT:0,
   portal:null, bomb:0, minions:[]};
 const BATTLE_RESET={
-  summoned:0, purified:0, hpMagOn:0, taintOn:0, greedOn:0, rageOn:0, rageDefOn:0, chainOn:0, soundOn:0, barsArmorOn:0,   /* 이라 — 늘 따라가는 몫 (2026-10-12 · 10-13) */
+  summoned:0, purified:0, hpMagOn:0, taintOn:0, greedOn:0, hoardOn:0, rageOn:0, rageDefOn:0, chainOn:0, soundOn:0, barsArmorOn:0,   /* 이라 — 늘 따라가는 몫 (2026-10-12 · 10-13) */
   rendWar:0,                       /* 반격의 기억 — 「그 전투에서만」 */
   killGun:0,                       /* 무법의 쾌감 — 「이번 전투에서만」 (사용자 2026-10-16 : 원정 내내 쌓이고 있었다) */   /* purified — 정화의 빛 이번 전투에 줄인 오염도 (전투 당 최대 5) */
   verdictUsed:0, lastStandUsed:0,
@@ -44360,7 +44412,7 @@ function alwaysSync(u){
   if(!u||u.isFoe||u.isMin||typeof B==="undefined"||!B) return;
   hpMagSync(u); iraRageSync(u); iraLeechSync(u); taintSync(u);
   reiCrossSync(u);   /* 레이 최후의 전사 (2026-10-21) */
-  if(typeof obolGreedSync==="function") obolGreedSync(u);   /* 오볼 물욕 — 금화를 따라간다 (2026-10-31) */
+  if(typeof obolGreedSync==="function"){ obolGreedSync(u); obolHoardSync(u) }   /* 오볼 물욕 · 금화 더미 — 금화를 따라간다 (2026-10-31 · 11-02) */
   invStudySync(u);   /* 인비디아 역병 연구 (2026-10-22) */
 }
 function iraRageVals(h){
@@ -44480,7 +44532,7 @@ function clearTmp(h){
   for(const k in h.tmp) h[k]=(h[k]||0)-h.tmp[k];
   if(h.tmp.maxHp) h.hp=Math.min(h.hp,h.maxHp);
   if(h.hp<1&&h.maxHp>0) h.hp=Math.max(0,Math.min(h.hp,h.maxHp));
-  h.tmp=null; h.taintOn=0; h.hpMagOn=0; h.rageOn=0; h.rageDefOn=0; h.soundOn=0; h.greedOn=0;   /* 늘 따라가는 몫(taintSync · hpMagSync · iraRageSync)도 tmp 에 있었다 */
+  h.tmp=null; h.taintOn=0; h.hpMagOn=0; h.rageOn=0; h.rageDefOn=0; h.soundOn=0; h.greedOn=0; h.hoardOn=0;   /* 늘 따라가는 몫(taintSync · hpMagSync · iraRageSync)도 tmp 에 있었다 */
 }
 /* 메아리로 다시 설 때 몸에서 걷는 것 — 적 · 아군 소환물 · 대원 셋이 이 하나를 쓴다
    (사용자 2026-10-12 : 「부활되어서 모두 지워지는 게 맞는 거야」).
@@ -45051,7 +45103,7 @@ function predictDmg(h,s,tgt){
   /* 연발 — 한 번 눌러 N 번 나가는 기술은 예고도 N 번이어야 한다 (사용자 2026-10-15 :
      기관총 예고 9 / 실제 81, 이라 할퀴기 예고 4 / 실제 16). 실제 쪽(38178)과 같은 셈 —
      ⚠️ 가지에서 이미 센 것(times>1)은 건드리지 않는다 */
-  if(times===1&&s.twice&&h.name!=="나이코스") times=2;   /* 오볼 커틀러스 — 실제(runEffect0)와 같게 (2026-10-31) */
+  if(times===1&&s.twice&&h.name!=="나이코스") times=2+obolCutExtra(h,s);   /* 오볼 커틀러스 — 실제(runEffect0)와 같게 (2026-10-31) · 유령 선장의 검 */
   if(times===1&&(s.hits||1)>1){
     times=s.hits+((h.name==="데린저"&&s.ammo&&h.tag&&h.tag.mgPlus)?h.tag.mgPlus:0);   /* 부착: 탄통 */
   }
@@ -48581,7 +48633,7 @@ function runEffect0(h,i,s,target){
     h.evade+=ev;
     if(h.tag.flowShield){ h.eshield=(h.eshield||0)+h.tag.flowShield;
       say(`기류 흘리기 — ${h.name} 에너지 보호막 +${h.tag.flowShield}`) }
-    if(h.name==="오볼") obolGhostBody(h);   /* 유체화 (오볼 보상) */
+    if(h.name==="오볼"){ obolGhostBody(h); obolMistVeil(h) }   /* 유체화 · 안개 장막 (오볼 보상) */
     if(h.name==="오볼") fx({side:"mine",slot:h.slot,sheet:"fx_obol_ghost_body",sheetOpt:{frames:8,z:4.2,feet:1,dy:4,frameMs:[90,90,100,120,110,100,90,90]},gap:0});   /* 유령의 몸 — 안개가 몸을 다 가린다 · 밑바닥(그림 59/64)을 발끝에 (dy 는 그림 픽셀 × z, 사용자 2026-10-31) */
     /* 오볼 — 제 녹음(「오볼 유령의 몸」, 기술을 쓸 때 저절로)이 있으면 바람 소리를 겹치지 않는다. 가끔(시계로 넷에 하나) 오볼의 웃음이 같이 (사용자 2026-10-31) */
     const obolOwn=h.name==="오볼"&&sfxHas("오볼 유령의 몸");
@@ -48867,7 +48919,7 @@ function runEffect0(h,i,s,target){
       if(blood) dmg*=2;
       h.cutSum=(h.cutSum||0)+dmg;
     }
-    const times=((h.name==="나이코스"&&i===0&&h.sk[0].twice)||(h.name!=="나이코스"&&s.twice))?2:1;   /* 오볼 커틀러스 — 1씩 2번 (2026-10-31) */
+    const times=((h.name==="나이코스"&&i===0&&h.sk[0].twice)||(h.name!=="나이코스"&&s.twice))?2+obolCutExtra(h,s):1;   /* 오볼 커틀러스 — 1씩 2번 (2026-10-31) · 유령 선장의 검 +1 */
     for(let t=0;t<times;t++){
       /* 트리스탄은 제 화살 그림이 있으니 옛 빛줄기는 건너뛴다 */
       /* 관통 기술의 빛줄기 — 활잡이와 소환물(악마 장군의 상급 찌르기)에는 안 띄운다.
@@ -49341,6 +49393,7 @@ function hurtAlly(f,t,raw,label,el,evMsg,pierce,ownFx){   /* evMsg — 회피했
     fx({side:"mine",slot:t.slot,s:sfxOr("회피","miss"),trig:"회피",txt:"회피!",cls:"miss evbig",gap:60,evade:1});
     say(evMsg||`${label} — ${t.name} 회피!`,"t2");
     afterEvade(t,f);   /* 역풍 */
+    if(t.name==="오볼") obolEvadeCut(t,f);   /* 망령의 칼춤 (오볼 보상) */
     return }
   { const pg=portalGuardOf(t); if(pg&&raw>0) raw=Math.max(0,raw-pg) }
   /* 쇠약 (중급) — 감염된 적에게서 받는 피해가 준다 (2026-10-22) */
@@ -51282,7 +51335,8 @@ Object.assign(REW_FIX,{
  "저녁 약탈":{"ic":"obol_ghost_gold"},"영원한 임무":{"ic":"obol_ghost_gold"},"밀반입":{"ic":"obol_ghost_gold"},
  "짐칸 확장":{"ic":"obol_cargo_expansion"},"밀수 항로":{"ic":"obol_cargo_expansion"},"물자 모으기":{"ic":"obol_cargo_expansion"},"뺏고 보자고":{"ic":"obol_cargo_expansion"},
  "퇴로":{"ic":"obol_pirates_call"},"선장 출두":{"ic":"obol_ship_upgrade"},"배를 버려라":{"ic":"obol_ship_upgrade"},"새 항로":{"sk":"유령 선박"},
- "해적의 흥정법":{"sk":"유령 선박"},"물자 수출":{"ic":"obol_pirate_sword_lv3"},"난파선의 보물들":{"ic":"obol_stranded_chest_lv3"},"망자의 보물":{"sk":"난파"},"뼛속까지 해적":{"ic":"currency_gold"},"물욕":{"ic":"currency_gold"},
+ "해적의 흥정법":{"sk":"유령 선박"},"물자 수출":{"ic":"obol_pirate_sword_lv3"},"난파선의 보물들":{"ic":"obol_stranded_chest_lv3"},"망자의 보물":{"sk":"난파"},"유령 선장의 검":{"sk":"커틀러스"},"망령의 칼춤":{"sk":"커틀러스"},"안개 장막":{"sk":"유령의 몸"},
+ "밀수 제국":{"sk":"유령 선박"},"수장":{"sk":"난파"},"바다의 분노":{"sk":"난파"},"금화 더미":{"ic":"obol_ghost_gold"},"뼛속까지 해적":{"ic":"currency_gold"},"물욕":{"ic":"currency_gold"},
  "황금 닻 발견":{"ic":"obol_golden_anchor_lv1"},"해초에 묶인 칼날 발견":{"ic":"obol_seaweed_blade_lv1"},"유령 등불 발견":{"ic":"obol_ghost_lantern_lv1"},
  "무쇠 닻 발견":{"ic":"obol_iron_anchor_lv1"},"좌초된 상자 발견":{"ic":"obol_stranded_chest_lv1"}
 });
