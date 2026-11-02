@@ -533,6 +533,7 @@ img.pxs.face{image-rendering:pixelated;width:auto;filter:drop-shadow(0 2px 0 rgb
   background-image:url(fx/pavel-golem-edge-8f-12224x816.png);image-rendering:pixelated;opacity:.9;
   animation:aurain .8s ease-out both}
 .golemaura.out{animation:auraout .42s ease-in both}
+.golemaura.vein{background-image:url(fx/pebble-ore-aura-8f-12224x816.png)}   /* 페블 광맥 고르기 (130ms 칸이지만 파벨 틀의 110ms 로 함께 돈다) */
 @keyframes aurain{from{opacity:0;filter:brightness(1.6) blur(4px)}to{opacity:.9;filter:none}}
 @keyframes auraout{from{opacity:.9}to{opacity:0}}
 /* 합쳐지는 순간 — 가운데에서 부속 여섯이 맞물린다 (512x64 여덟 칸을 3배로) */
@@ -13837,8 +13838,10 @@ const PAVEL_MAKE_HOLD=7;   /* 멈춰 서는 칸 — 여기서 빛난다 */
 const GOLEM_MAKE_MS=[150,140,140,140,150,170,220,420];
 let GOLEM_AURA_T=0, GOLEM_AURA_F=0, PAVEL_MAKE_T=0;
 function golemAuraSync(){
-  const on=!!(typeof B!=="undefined"&&B&&B.golem&&!B.over&&view==="battle");
+  const vein=!!(typeof B!=="undefined"&&B&&B.veinPick);   /* 페블 광맥 고르기도 같은 틀 — 그림만 다르다 (사용자 2026-11-02) */
+  const on=!!(typeof B!=="undefined"&&B&&(B.golem||B.veinPick)&&!B.over&&view==="battle");
   const cur=document.getElementById("golemaura");
+  if(cur) cur.classList.toggle("vein",vein);
   if(!on){
     if(cur&&!cur.classList.contains("out")){   /* 걷힐 때도 스르르 (사용자 2026-10-13) */
       cur.classList.add("out");
@@ -13848,7 +13851,7 @@ function golemAuraSync(){
     } else if(!cur&&GOLEM_AURA_T){ clearInterval(GOLEM_AURA_T); GOLEM_AURA_T=0 }
     return }
   if(cur&&cur.classList.contains("out")) cur.classList.remove("out");   /* 걷히던 중에 다시 켜지면 */
-  const box=cur||(()=>{ const d=el('<div id="golemaura" class="golemaura"></div>'); document.body.appendChild(d); return d })();
+  const box=cur||(()=>{ const d=el(`<div id="golemaura" class="golemaura${vein?" vein":""}"></div>`); document.body.appendChild(d); return d })();
   const 칠=()=>{ const w=box.clientWidth||window.innerWidth;
     box.style.backgroundSize=(w*8)+"px 100%";
     box.style.backgroundPositionX=(-GOLEM_AURA_F*w)+"px" };
@@ -26295,6 +26298,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 334, "v": "0.7", "d": "2026-11-02", "t": "페블 광맥 고르기 오오라", "big": 0},
  {"b": 333, "v": "0.7", "d": "2026-11-02", "t": "그슨대 출전 · 페블 적 이펙트 줄임", "big": 0},
  {"b": 333, "v": "0.7", "d": "2026-11-02", "t": "그슨대 출전 · 페블 적 이펙트 줄임", "big": 0},
  {"b": 332, "v": "0.7", "d": "2026-11-02", "t": "페블 기술 아이콘 · 효과음 자리", "big": 0},
@@ -27820,7 +27824,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=333;
+const BUILD_NO=334;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
