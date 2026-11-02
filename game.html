@@ -12598,6 +12598,7 @@ const LOOK={
  "데린저":  {skin:"#d9b48c",cloth:"#8a5a2f",dark:"#4d3016",build:"slim",arm:"gun"},
  "리페":    {skin:"#dcc6e8",cloth:"#7a5aa8",dark:"#432f63",build:"slim",arm:"harp"},
  "그슨대":  {skin:"#6b6b7a",cloth:"#26262f",dark:"#141419",build:"slim",arm:"claw"},
+ "페블":    {skin:"#e0c85a",cloth:"#5a4a3a",dark:"#2e2620",build:"small",arm:"fist"},   /* 라이티늄 금빛 머리 — 그림이 올 때까지 (2026-11-02) */
  "오토":    {skin:"#a8c8a0",cloth:"#5a7a4a",dark:"#2f4426",build:"wide",arm:"fist"},
  "새싹":    {skin:"#9ed36a",cloth:"#4f8a3a",dark:"#2a4a1e",build:"slim",arm:"none"},
  "수목":    {skin:"#8a6a44",cloth:"#4f8a3a",dark:"#2a3a1a",build:"wide",arm:"none"},
@@ -13050,6 +13051,7 @@ const PX_KIT={
  "데린저":  {b:"cloak",  h:"hair",  a:"gun"},
  "리페":    {b:"robe",   h:"hair",  a:"none"},
  "그슨대":  {b:"cloak",  h:"hood",  a:"claw"},
+ "페블":    {b:"runt",   h:"none",  a:"fist"},
  "오토":    {b:"machine",h:"none",  a:"fist"},
  "새싹":    {b:"runt",   h:"antler",a:"none"},
  "수목":    {b:"robe",   h:"antler",a:"none"},
@@ -14285,6 +14287,13 @@ const SKILL_FULL={
  "전사의 다짐":"보호막을 2(추가 \u2020 ) 얻습니다.",
  "천둥의 기운":"사용한도(1). 이번 턴에 레이가 적에게 피해를 줄 때마다 체력을 1 회복합니다.",
  "전략 변경":"사용한도(1). 레이를 다시 내 손패로 가져옵니다.",
+ /* 페블 — 노트 21-0 ~ 21-4 그대로 (2026-11-02) */
+  "라이티늄 심장":"페블이 장착한 라이티늄 관련 장신구 1개 당 보호력을 1 얻습니다.",
+  "내려찍기 준비":"내려찍기를 준비하고 보호막을 4(추가 ¤ ) 얻습니다. 2번 준비하면 내려찍기를 사용할 수 있습니다.",
+  "내려찍기":"적에게 피해를 10(추가 † )주고 공중에 뜸 상태로 만듭니다.",
+  "광맥 살피기":"잠금(1). 광맥을 선택해 다음 내려찍기를 강화합니다.",
+  "휘두르기":"잠금(1). 망치를 휘둘러 모든 적에게 피해를 4(추가 † ) 주고 1칸 뒤로 밀쳐냅니다. 준 피해만큼 다음 턴에 적들의 피해량이 감소합니다.",
+  "영웅 등장":"5턴 후에, 영웅으로 변신합니다. 영웅 상태에서는 해당 전투 동안 모든 기술의 잠금이 해제되고 모든 추가 능력치를 5 얻습니다.",
  /* 오볼 — 노트 19-0 ~ 19-3 (2026-10-31) */
  "유령 선박":"날이 밝을 때, 지도 위 무작위 위치에 선박 상점이 배치됩니다. 오볼이 해적의 부름을 1장 얻은 채로 원정을 시작합니다.",
  "커틀러스":"피해를 1(추가 † )씩 2번 줍니다.",
@@ -14661,14 +14670,26 @@ HEROES["오볼"]={title:"미련 많은 유령 해적",role:"공격, 물자",hp:2
    {n:"물자 뒤지기",cost:2,el:"집중",tg:"self",obolRummage:1,d:"오볼의 짐칸에서 무작위 물자 카드 한 장"},
    {n:"난파",cost:1,el:"공격",tg:"foe",limit:1,obolWreck:1,d:"사용한도(1), 적 전장에 체력 15의 유령선"}
   ]};
+/* 페블 — 노트 21 (사용자 2026-11-02). 규칙은 src/rules/pebble.js. 1번 칸은 「전환」 — 준비 2번이면 내려찍기 (altBy : 저절로 안 넘긴다) */
+HEROES["페블"]={title:"영웅심 넘치는 조약돌",role:"보호, 내려찍기",hp:10,mana:2,hpLv:2,
+  focus:"",
+  passive:{n:"라이티늄 심장",d:"장착한 라이티늄 관련 장신구 1개당 보호력 +1"},
+  skills:[
+   {n:"내려찍기 준비",cost:1,el:"보호",tg:"self",shield:4,pbPrep:1,altBy:1,
+    alt:{n:"내려찍기",cost:1,el:"공격",tg:"foe",dmg:10,pbSmash:1,altBy:1,d:"피해 10, 공중에 뜸 (광맥이 있으면 강화)"},
+    d:"보호막 4, 내려찍기 준비 (2번 준비하면 내려찍기)"},
+   {n:"광맥 살피기",cost:1,el:"집중",tg:"self",lock:1,pbVein:1,d:"잠금(1), 광맥 둘 중 하나로 다음 내려찍기 강화"},
+   {n:"휘두르기",cost:2,el:"공격",tg:"self",lock:1,dmg:4,pbSwing:1,d:"잠금(1), 모든 적에게 피해 4, 1칸 밀침, 준 피해만큼 이번 적 차례 피해 감소"},
+   {n:"영웅 등장",cost:2,el:"집중",tg:"self",pbHero:1,d:"5턴 뒤 영웅으로 — 그 전투 동안 잠금 해제, 모든 추가 능력치 +5"}
+  ]};
 const HERO_POOL=["나이코스","카제","굴라","헥토","트리스탄","인비디아","도미니코",
  "쿠렘타이","이테리오","그슨대","오토","플레어와 플로우","이라","파벨","오리온","데린저",
- "레이","오볼"];   /* 노트 20 — 전용 보상이 아직 없어 PLAYABLE 에는 아직 (사용자 2026-10-21) */
+ "레이","오볼","페블"];   /* 노트 20 — 전용 보상이 아직 없어 PLAYABLE 에는 아직 (사용자 2026-10-21) */
 /* 지금 판에 올릴 수 있는 대원.
    나머지는 전용 보상이 아직 임시라 빼 두었다 — 여기에 이름을 도로 넣으면 된다.
    영웅 도감은 이 목록을 보지 않는다. 거기서는 열넷을 다 구경할 수 있다. */
 const PLAYABLE=["나이코스","카제","트리스탄","굴라","쿠렘타이","플레어와 플로우","이테리오","오토","헥토","도미니코","이라","파벨","오리온","데린저",
- "레이","인비디아","오볼"];   /* 오볼 2026-10-31 — 전용 보상은 아직 (해금 보상은 사용자가 노트에 먼저 적는다) */   /* 전용 보상이 다 들어왔다 — 레이 36 (노트 20) · 인비디아 33 (노트 7) */   /* 카제 2026-09-16 · 이테리오 2026-09-30 · 오토 2026-10-04 · 헥토 · 도미니코 2026-10-06 (사용자) */
+ "레이","인비디아","오볼","페블"];   /* 페블 2026-11-02 — 전용 보상은 아직 */   /* 오볼 2026-10-31 — 전용 보상은 아직 (해금 보상은 사용자가 노트에 먼저 적는다) */   /* 전용 보상이 다 들어왔다 — 레이 36 (노트 20) · 인비디아 33 (노트 7) */   /* 카제 2026-09-16 · 이테리오 2026-09-30 · 오토 2026-10-04 · 헥토 · 도미니코 2026-10-06 (사용자) */
 /* 대원 고르기 화면의 난이도 — 사용자가 정한다. 여기 없는 대원은 표시하지 않는다 */
 const HERO_DIFF={"이라":"보통",   /* 사용자가 정했다 (2026-10-13) */
  "레이":"어려움","인비디아":"보통",   /* 사용자가 정했다 (2026-10-22) */
@@ -14736,7 +14757,8 @@ const HERO_TAGS={
  "오토":    {fac:"정령숲",    job:["지원가"],    race:"기계"},   /* 수호자 뺌 (사용자 2026-10-04, 노트와 같게) */
  "보아":    {fac:"균열",      job:["학살자"],             race:"야수"},
  "플레어와 플로우":{fac:"정령숲",job:["마법사","수호자"],   race:"정령"},
- "레이":            {fac:"정령숲",job:["투사","마법사"],     race:"정령"}   /* 새 대원 — 노트 20 (사용자 2026-10-21) */
+ "레이":            {fac:"정령숲",job:["투사","마법사"],     race:"정령"},
+ "페블":            {fac:"지하",  job:["영광 숭배자"],       race:"정령"}   /* 새 대원 — 노트 21 (사용자 2026-11-02) */   /* 새 대원 — 노트 20 (사용자 2026-10-21) */
 };
 const tagsOf=n=>HERO_TAGS[n]||{fac:"",job:[],race:""};
 /* 그 대원의 진영 · 직업 · 종족 — 악마화한 도미니코는 악마 · 학살자 (노트 2026-10-06) */
@@ -14757,6 +14779,7 @@ const SYNERGY=[
  {n:"왕실",k:"진영",t:[{c:2,d:"내 턴이 끝날 때, 왕실 대원들이 보호막을 5 얻습니다."},{c:3,d:"내 턴이 끝날 때, 왕실 대원들이 보호막을 12 얻습니다."}]},
  {n:"초월체",k:"진영",t:[]},
  {n:"모래 바다",k:"진영",t:[]},
+ {n:"지하",k:"진영",t:[{c:1,d:"날이 밝을 때, 지도 위 무작위 쉼터 주변과 주둔지 주변에 땅굴을 만듭니다."}]},   /* 노트 2026-11-02 — 땅굴은 핏빛 감옥 땅굴과 같게 (src/rules/map-gim.js ugPlace) */
  {n:"궁수",k:"직업",t:[{c:2,d:"1번, 2번 칸에 배치된 궁수 대원들이 모든 능력치를 2 얻습니다."}]},
  {n:"모험가",k:"직업",t:[{c:1,d:"미지의 구역에 도착한 후, 금화를 2 얻습니다. 날이 밝을 때 얻는 활동량이 1 증가합니다."},{c:2,d:"미지의 구역에 도착한 후, 금화를 5 얻습니다. 날이 밝을 때 얻는 활동량이 3 증가합니다."}]},
  {n:"투사",k:"직업",t:[{c:2,d:"투사 대원의 공격력 +2"}]},
@@ -15206,7 +15229,7 @@ function twoWaveSpots(){ const L=[];
 function remapAll(){
   if(!run) return;
   const S=run.size, mid=Math.floor(S/2);
-  run.grid=buildGrid(run.field); obolEnsure();
+  run.grid=buildGrid(run.field); obolEnsure(); ugEnsure();
   run.pos={r:S-1,c:mid}; run.here=null; run.route=null; run.walkTo=null; run.mapSel=null; run.mapPeek=null;
   run.fog=null; run.gim=null; run.wolf=null; run.mapUnfold=1;
   if(typeof rollPatrol==="function") rollPatrol();
@@ -22742,7 +22765,7 @@ const fogAt=(r,c)=>!!(run&&run.fog&&run.fog.cells.indexOf(r+"-"+c)>=0)||!!(run&&
 const SEE_R=1;   /* 마름모 반경 — 가로세로 합 1 (선 칸 + 상하좌우, 5칸). 사용자 2026-10-30 : 3 → 1 */
 function seeAlways(r,c){
   const cl=run.grid&&run.grid[r]&&run.grid[r][c]; if(!cl) return false;
-  if(cl.t==="camp"||cl.ceil||cl.t==="boss"||cl.t==="ship") return true;   /* 유령 선박도 늘 보인다 (오볼, 2026-10-31) */   /* 우두머리 칸도 처음부터 (사용자 2026-10-30 — 전에는 숨겼다) */
+  if(cl.t==="camp"||cl.ceil||cl.t==="boss"||cl.t==="ship"||(cl.t==="tunnel"&&cl.ug)) return true;   /* 지하 땅굴도 늘 보인다 — 쉼터와 주둔지를 잇는 길이라 (2026-11-02) */   /* 유령 선박도 늘 보인다 (오볼, 2026-10-31) */   /* 우두머리 칸도 처음부터 (사용자 2026-10-30 — 전에는 숨겼다) */
   const F=FIELDS[run.field]; return !!(F&&F.ceil&&F.ceil.indexOf(r)>=0);
 }
 const unseenAt=(r,c)=>!!(run&&run.seen&&!run.seen[r+"-"+c]&&!seeAlways(r,c));
@@ -22811,7 +22834,7 @@ function caveReturn(){
   const ch=run.cave; if(!ch) return null; run.cave=null;
   const h=ch.h, done=run.day>=ch.until; h.slot=0;
   if(done){ if(ch.shelf) h.mag+=3; else { h.atk+=2; h.def+=2; h.mag+=2 } }   /* 고대 서적 선반(ch.shelf)은 추가 마법력 3 */
-  run.heroes.push(h); obolEnsure();
+  run.heroes.push(h); obolEnsure(); ugEnsure();
   return {h:h,done:done,shelf:!!ch.shelf};
 }
 /* 고목 덩굴 — 울창한 수목을 덩굴 수풀이 상하좌우로 두른다. 판 끝에 걸린 수풀은 빠진다.
@@ -22857,6 +22880,28 @@ function placeTunnels(g){
   }
   return false;
 }
+/* 지하 조합 (노트 synergies 「지하」 1명, 2026-11-02) — 날이 밝을 때 무작위 쉼터 곁 · 주둔지 곁에 땅굴 한 쌍.
+   핏빛 감옥 땅굴과 같은 칸(t:"tunnel")에 ug:1 을 달아 짝 · 셈(run.gim.ugTunnel)을 가른다.
+   쓰는 법도 같다 — 1시간 · 활동량 1, 세 번이면 무너지고 다음 날 새로 (사용자 2026-11-02 「기존 땅굴과 같게」) */
+function ugOn(){ return !!(run&&run.heroes&&typeof synOn==="function"&&synOn("지하",1)) }
+function ugSpot(g,r0,c0){ const S=g.length, L=[];
+  for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){ const r=r0+dr, c=c0+dc;
+    if((dr||dc)&&r>=0&&c>=0&&r<S&&c<S&&g[r][c].t==="empty"&&!g[r][c].stair&&!(r===0&&c===Math.floor(S/2))
+       &&!(run.pos&&run.pos.r===r&&run.pos.c===c)) L.push([r,c]) }
+  return L.length?L[Math.floor(Math.random()*L.length)]:null }
+function ugPlace(){
+  const g=run.grid; if(!g) return false; const S=g.length;
+  gimCells(g,"tunnel").forEach(x=>{ if(x.cell.ug) g[x.r][x.c]={t:"empty"} });   /* 어제 것은 걷는다 */
+  let a=null;
+  for(const x of shuffled(gimCells(g,"rest"))){ a=ugSpot(g,x.r,x.c); if(a) break }
+  const b=ugSpot(g,S-1,Math.floor(S/2));   /* 주둔지 — 맨 아랫줄 가운데 */
+  if(!a||!b||(a[0]===b[0]&&a[1]===b[1])) return false;
+  [a,b].forEach(([r,c])=>{ g[r][c]={t:"tunnel",ug:1,born:"underground"};
+    if(typeof MAP_BORN!=="undefined"&&!run.sandbox) MAP_BORN.push(r+"-"+c) });
+  run.gim=run.gim||{}; run.gim.ugTunnel=0;
+  return true }
+function ugEnsure(){ if(ugOn()&&run.grid&&!gimCells(run.grid,"tunnel").some(x=>x.cell.ug)) ugPlace() }
+function ugNewDay(){ if(ugOn()&&run.grid) ugPlace() }
 /* 호송 마차 — 우두머리(맨 윗줄 가운데)에서 5칸 안 */
 function placeWagon(g){
   const S=g.length, bm=Math.floor(S/2);
@@ -23144,7 +23189,7 @@ function respawn(){
       if(placeTG(run.grid)) toast("고문실과 사형장이 다른 자리에 다시 세워졌습니다.") }
     if(run.field===0){
       if(O1.post&&!gimCells(run.grid,"post").length&&Math.random()<0.4) placeOne(run.grid,"post");
-      if(O1.tunnel&&!gimCells(run.grid,"tunnel").length&&Math.random()<0.4){ run.gim=run.gim||{}; run.gim.tunnel=0; placeTunnels(run.grid) } } }
+      if(O1.tunnel&&!gimCells(run.grid,"tunnel").some(x=>!x.cell.ug)&&Math.random()<0.4){ run.gim=run.gim||{}; run.gim.tunnel=0; placeTunnels(run.grid) } } }
   /* 반딧불 둥지 — 낮은 확률로 새로고침 (없으면 새 날에 20%) */
   if(run.field===1){
     colonyStep();
@@ -23272,6 +23317,7 @@ function newRun(name,pack){
        pack:pack?pack.n:null, packDesc:pack?pack.d:null, packIcon:pack?pack.i:null};
   run.grid=buildGrid(0,null,true);   /* 1막을 적어 둔 **뒤에** 짓는다 (2026-10-21) */
   obolEnsure();   /* 오볼 — 해적의 부름 · 선박 상점 (src/rules/obol.js) */
+  ugEnsure();   /* 지하 조합 — 쉼터 곁 · 주둔지 곁 땅굴 (src/rules/map-gim.js) */
   run.prisonBoss=BOSS_POOLS[0][mapBossSeed(run.grid)%2];
   try{ run.unlock0=unlockSnap() }catch(e){}   /* 이번 판에 새로 열린 것을 끝에서 견주려고 (사용자 2026-10-12) */
   rollPatrol();                       /* 간수 순찰로 — 튜토리얼이 아닌 새 판에서도 (사용자 2026-09-15 — 안 나오던 버그) */
@@ -23396,6 +23442,7 @@ function nextDay(){
   run.act=Math.max(0,run.act||0)+dayAct(); run.night=0; run.campDone=0; run.campExtra2=0; run.route=null;   /* 초기화가 아니라 쌓인다 (사용자 2026-10-08) */
   if(sfxHas("아침 종")) SFX.play("아침 종");   /* 날이 밝으면 종 (사용자 2026-10-06) */
   shipNewDay();   /* 오볼 — 선박 상점이 자리를 옮기고 진열이 바뀐다 */
+  ugNewDay();   /* 지하 조합 — 땅굴 한 쌍이 새 자리에 */
   { const u=coreFx("dayUnknown");   /* 폭풍 세계핵 — 날이 밝을 때 빈 구역에 미지의 구역 */
     if(u){ const put=sprinkleCell("event",u);
       if(put) toast(`폭풍 세계핵 — 지도에 미지의 구역 ${put}곳이 나타납니다.`) } }
@@ -23609,7 +23656,7 @@ function nextField(){
     try{ WIN_NEW=unlockNew() }catch(e){ WIN_NEW=null }
     view="clear"; render(); return }
   const f=FIELDS[run.field], S=f.size, mid=Math.floor(S/2);
-  run.size=S; run.grid=buildGrid(run.field); run.mapUnfold=1; obolEnsure();
+  run.size=S; run.grid=buildGrid(run.field); run.mapUnfold=1; obolEnsure(); ugEnsure();
   run.pos={r:S-1,c:mid}; seeStart();   /* 지도 밝히기 — 선 자리 둘레만 (2026-10-30) */
   run.day=1; run.time=6; run.actMax=f.act; run.act=f.act;
   rollPatrol();
@@ -26145,6 +26192,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 327, "v": "0.7", "d": "2026-11-02", "t": "페블 · 지하 조합 · 그슨대 효과음", "big": 0},
  {"b": 326, "v": "0.7", "d": "2026-11-02", "t": "그슨대 그림자 보이게 · 보호막 풀이", "big": 0},
  {"b": 325, "v": "0.7", "d": "2026-11-02", "t": "그슨대 새로 — 노트 10 규칙 · 설화형 그림 · 이펙트 다섯", "big": 0},
  {"b": 324, "v": "0.7", "d": "2026-11-02", "t": "사건 기록판 — 설명 가운데 정렬 · 선택지와 사이 구분선", "big": 0},
@@ -27662,7 +27710,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=326;
+const BUILD_NO=327;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -31615,6 +31663,7 @@ function gimEnter(cell,r,c){
    {n 이름 · d 풀이 · ic 그림(없으면 그 칸 그림)} */
 const GIM_BORN={
   crane:{n:"기중기가 연 길",d:"기중기 조종실이 헤집어 낸 전투입니다. 이기면 제련석을 2 얻습니다.",ic:"ink_sc_crane_tl"},
+  underground:{n:"지하 땅굴",d:"지하 조합이 날이 밝을 때 판 땅굴입니다. 쉼터 곁과 주둔지 곁을 잇습니다. 1시간, 활동량 1. 세 번 쓰면 무너집니다.",ic:"ink11_map_tunnel"},
   depot:{n:"창고 경보",d:"자재 창고의 경보를 듣고 순찰기가 들이닥친 자리입니다.",ic:"ink_sc_warehouse"}
 };
 const gimBorn=cell=>(cell&&cell.born&&GIM_BORN[cell.born])||null;
@@ -32082,19 +32131,22 @@ const GIM_EV={
        {t:"초소 부수기",d:"경비병들과 싸우고 초소를 부숩니다.",
         f:()=>{ run.gimBattle={r:r,c:c,post:1}; return "" }},
        {t:"나가기",d:"지도로 돌아갑니다.",leave:1,f:()=>""}]}),
-  tunnel:(cell,r,c)=>({n:"땅굴",art:"ink11_map_tunnel",face:"작은 죄수",gim:1,
-    t:`죄수들이 파 둔 땅굴입니다. 반대편 어딘가로 이어집니다.\n땅굴 무너짐까지 ${Math.max(0,3-((run.gim&&run.gim.tunnel)||0))}번 남음`,
+  /* 땅굴 — 핏빛 감옥 것과 지하 조합 것(ug)은 짝도 셈도 따로 (2026-11-02) */
+  tunnel:(cell,r,c)=>{ const ug=!!cell.ug, K=ug?"ugTunnel":"tunnel",
+      mate=()=>gimCells(run.grid,"tunnel").filter(x=>!!x.cell.ug===ug&&!(x.r===r&&x.c===c)), used=()=>(run.gim&&run.gim[K])||0;
+    return {n:ug?"지하 땅굴":"땅굴",art:"ink11_map_tunnel",face:ug?null:"작은 죄수",gim:1,
+    t:(ug?"지하 대원이 판 땅굴입니다. 쉼터 곁과 주둔지 곁을 잇습니다.":"죄수들이 파 둔 땅굴입니다. 반대편 어딘가로 이어집니다.")+`\n땅굴 무너짐까지 ${Math.max(0,3-used())}번 남음`,
     o:[{t:"땅굴로 이동",d:"다른 땅굴로 이동합니다. 1시간, 활동량 1개가 소요됩니다.",end:1,
         /* 활동량이 모자라면 못 고른다 (총괄 2026-10-10) — 올라서는 데는 안 내지만 기어가는 데는 1 을 낸다 */
         dd:()=>`다른 땅굴로 이동합니다. 1시간, 활동량 1개가 소요됩니다.${Math.max(0,(run&&run.act)||0)<1?" 활동량이 모자랍니다.":""}`,
-        when:()=>((run.gim&&run.gim.tunnel)||0)<3&&Math.max(0,(run&&run.act)||0)>=1&&gimCells(run.grid,"tunnel").some(x=>!(x.r===r&&x.c===c)),
-        f:()=>{ const to=gimCells(run.grid,"tunnel").find(x=>!(x.r===r&&x.c===c)); if(!to) return "반대편이 막혀 있습니다.";
-          run.gim=run.gim||{}; run.gim.tunnel=(run.gim.tunnel||0)+1; run.nodeCost=0;
+        when:()=>used()<3&&Math.max(0,(run&&run.act)||0)>=1&&mate().length>0,
+        f:()=>{ const to=mate()[0]; if(!to) return "반대편이 막혀 있습니다.";
+          run.gim=run.gim||{}; run.gim[K]=used()+1; run.nodeCost=0;
           run.pos={r:to.r,c:to.c}; spend(1,1); if(sfxHas("지도 바닥")) SFX.play("지도 바닥");
-          let msg=`땅굴을 기어 반대편으로 나왔습니다. (남은 ${3-run.gim.tunnel}번)`;
-          if(run.gim.tunnel>=3){ gimCells(run.grid,"tunnel").forEach(x=>{ run.grid[x.r][x.c]={t:"empty"} }); msg+=" 등 뒤에서 땅굴이 무너집니다." }
+          let msg=`땅굴을 기어 반대편으로 나왔습니다. (남은 ${3-run.gim[K]}번)`;
+          if(run.gim[K]>=3){ gimCells(run.grid,"tunnel").filter(x=>!!x.cell.ug===ug).forEach(x=>{ run.grid[x.r][x.c]={t:"empty"} }); msg+=" 등 뒤에서 땅굴이 무너집니다." }
           return msg }},
-       {t:"나가기",d:"지도로 돌아갑니다.",leave:1,f:()=>""}]}),
+       {t:"나가기",d:"지도로 돌아갑니다.",leave:1,f:()=>""}]} },
   well:(cell,r,c)=>({n:"감옥의 우물",art:"ink11_well_"+(cell.tile||"22"),face:"작은 죄수",gim:1,
     t:"돌로 쌓은 오래된 우물입니다. 바닥이 보이지 않을 만큼 깊고, 물은 뜻밖에 맑습니다.",
     o:[{t:"물 마시기",d:"물을 마십니다. 무작위 대원이 체력을 2~4 회복합니다.",end:1,
@@ -34716,10 +34768,13 @@ const GSD_FX={
   bloom:{k:"fx_gsd_bloom",fm:[65,70,75,100,85,85,95,100]}};
 const GSD_Z=2.45;   /* 띠 속 인물(논리 51~53px)이 몸 그림(화면 128px, 창 크기와 상관없음)과 같은 키 — 1280 · 1920 에서 잰 값 (2026-11-02) */
 const gsdMs=k=>GSD_FX[k].fm.reduce((a,b)=>a+b,0);
+/* 녹음 (사용자 2026-11-02, tools/gsd-snd-in.py) — 「그슨대 <기술>」 로 두지 않았다 : 그러면 그림자 갈래까지 같은 소리가 난다 */
+const GSD_SND={vanish:"그슨대 사라짐",emerge:"그슨대 나타남",strike:"그슨대 그림자 기습 타격",bloom:"그슨대 어둠 증식 모으기"};
+const gsdSnd=k=>sfxOr(k,null);
 /* 띠 하나 — fx 큐에 실을 꼴. 발밑 기준점(32,60)은 feet + dy 4, 맞는 적(32,32)은 가운데, 증식(64,64)은 가운데 */
 function gsdSheet(k,side,slot,gap){
   const F=GSD_FX[k], feet=(k==="vanish"||k==="emerge"||k==="fear");
-  return {side:side,slot:slot,sheet:F.k,gap:gap==null?gsdMs(k):gap,
+  return {side:side,slot:slot,sheet:F.k,gap:gap==null?gsdMs(k):gap,s:GSD_SND[k]?gsdSnd(GSD_SND[k]):null,
     /* 칸 길이도 연출 빠르기(SPD)를 따른다 — 큐의 gap 은 SPD 를 곱하니 띠와 다음 연출 · 본체 숨김이 같이 줄어든다 */
     sheetOpt:Object.assign({frames:8,frameMs:F.fm.map(n=>Math.round(n*SPD)),z:GSD_Z},k==="bloom"?{cell:128}:{},feet?{feet:1,dy:k==="fear"?5:4}:{})};
 }
@@ -34738,7 +34793,9 @@ function gsdBloomVal(h){ return Math.max(0,(h&&h.dark)||0)*Math.max(0,(h&&h.atk)
 function gsdHurt(t,raw){
   if(!gsdIs(t)||!(raw>0)||!B||B.over) return;
   t.dark=(t.dark||0)+1; t.darkGot=(t.darkGot||0)+1;
+  if(t.darkGot%3!==0&&gsdSnd("그슨대 어둠 조각")) fx({side:"mine",slot:t.slot,s:"그슨대 어둠 조각",gap:0});
   if(t.darkGot%3===0){
+    if(gsdSnd("그슨대 어둠 조각 셋")) fx({side:"mine",slot:t.slot,s:"그슨대 어둠 조각 셋",gap:0});
     const L=[t].concat(onField().filter(a=>a!==t&&!a.isMin&&!a.down&&(hasTag(a,"사후")||hasTag(a,"학살자"))));
     L.forEach(a=>{ bumpTmp(a,"atk",1); fx({side:"mine",slot:a.slot,ring:"#a8323e",txt:"공격력 +1",cls:"shd",gap:40}) });
     say(`커져가는 악몽 — ${L.map(a=>a.name).join(", ")} 공격력 +1 (어둠 조각 ${t.darkGot})`,"t1");
@@ -34758,12 +34815,12 @@ function gsdToShadow(h){
 function gsdCanGo(h,to){ const o=unitAt(to); return !deb(h,"bind")&&!aimBound(h)&&!blockAt(to)&&!(o&&o!==h&&o.noMove) }
 function gsdHide(h){
   h.hide=1; hideReaim(h);
-  fx({side:"mine",slot:h.slot,ring:"#6a3a5e",txt:"은신",cls:"shd",gap:160});
+  fx({side:"mine",slot:h.slot,s:gsdSnd("그슨대 그림자로 은신"),ring:"#6a3a5e",txt:"은신",cls:"shd",gap:160});
   say(`${h.name}${jo(h.name,"ig")} 그림자 속으로 사라집니다 — 은신.`,"t1");
 }
-function gsdTaunt(h){
+function gsdTaunt(h,viaShadow){
   h.taunt=1;
-  fx({side:"mine",slot:h.slot,ring:"#a8323e",txt:"도발",cls:"shd",gap:80});
+  fx({side:"mine",slot:h.slot,s:viaShadow?gsdSnd("그슨대 그림자로 도발"):null,ring:"#a8323e",txt:"도발",cls:"shd",gap:80});
   say(`${h.name} 도발.`,"t2");
 }
 /* 기술 — runEffect 머리에서 부른다. 다 처리했으면 true. 그림자 없는 그림자 기습은 false — 보통 공격 길로 (급습도 거기서) */
@@ -34773,9 +34830,10 @@ function gsdCast(h,s,target){
     if(!h.shadowAt) return false;
     gsdToShadow(h); gsdHide(h); return true }
   if(s.gsStep){
-    if(h.shadowAt){ gsdToShadow(h); gsdTaunt(h); return true }
+    if(h.shadowAt){ gsdToShadow(h); gsdTaunt(h,1); return true }
     const go=h.shadowGo||0, from=h.slot; h.shadowGo=0;
     h.shadowAt=from; gsdTgSync(h);
+    if(gsdSnd("그슨대 그림자 생성")) fx({side:"mine",slot:from,s:"그슨대 그림자 생성",gap:0});
     say(`${h.name}${jo(h.name,"ig")} ${from}번 칸에 그림자를 남깁니다.`);
     if(go&&go!==from&&Math.abs(go-from)<=2){
       if(gsdCanGo(h,go)&&typeof gsdMoveFX==="function") gsdMoveFX(from,go);
@@ -34787,7 +34845,7 @@ function gsdCast(h,s,target){
       gsdToShadow(h);
       const L=B.foes.filter(f=>f.alive), f=L.length?rnd(L):null;
       if(f){ const b0=deb(f,"fear"); addDeb(f,"fear",1,h);
-        if(deb(f,"fear")>b0){ fx({side:"foe",slot:f.slot,ring:"#6a3a5e",txt:"공포",cls:"mag",gap:120});
+        if(deb(f,"fear")>b0){ fx({side:"foe",slot:f.slot,s:gsdSnd("그슨대 그림자로 공포"),ring:"#6a3a5e",txt:"공포",cls:"mag",gap:120});
           say(`두려움 잠식 — ${f.name} 공포`,"t2") } }
       return true }
     /* 모든 대상 — 아군 적군 모두 (그슨대 자신도. 노트 주석) · 1씩 3번. 추가 능력치 표시가 없어 1 그대로.
@@ -34796,22 +34854,26 @@ function gsdCast(h,s,target){
       B.foes.filter(f=>f.alive).forEach(f=>fx(gsdSheet("fear","foe",f.slot,0)));
       allUnits().filter(u=>u.hp>0).forEach(u=>fx(gsdSheet("fear","mine",u.slot,0)));
       fx({gap:310}) }
-    for(let q=0;q<3;q++){
+    const own0=B._ownSnd, ownE=!!gsdSnd("그슨대 두려움 잠식 타격");
+    try{ for(let q=0;q<3;q++){
       if(B.over) break;
+      if(ownE){ B._ownSnd=1; fx({side:"mine",slot:h.slot,s:"그슨대 두려움 잠식 타격",gap:0}) }   /* 녹음이 있으니 합성 타격음은 빼고 */
       B.foes.filter(f=>f.alive).forEach(f=>asSrc(h,()=>hurt(f,1,`두려움 잠식 ${q+1}/3`,"mag")));
       allUnits().filter(u=>u.hp>0).forEach(u=>asSrc(h,()=>hurtAlly(h,u,1,`두려움 잠식 ${q+1}/3`,"공격")));
-    }
+    } } finally { B._ownSnd=own0 }
     return true }
   if(s.gsBloom){
     const n=h.dark||0, v=gsdBloomVal(h); h.dark=0;
     fx(gsdSheet("bloom","mine",h.slot,310));   /* 4칸째에 터진다 — 그때 피해 · 보호막 */
     if(h.shadowAt){
-      if(v>0){ const got=addShield(h,v); fx({side:"mine",slot:h.slot,s:"shield",txt:"+"+got,cls:"shd",gap:80}) }
+      if(v>0){ const got=addShield(h,v); fx({side:"mine",slot:h.slot,s:gsdSnd("그슨대 그림자로 보호막")||"shield",txt:"+"+got,cls:"shd",gap:80}) }
       say(`어둠 증식 — 어둠 조각 ${n}개, ${h.name} 보호막 +${v}`,"t1");
       return true }
     const f=foeAt(target);
     say(`어둠 증식 — 어둠 조각 ${n}개 × 추가 공격력 ${Math.max(0,h.atk||0)}`,"t1");
-    if(f&&f.alive&&v>0) asSrc(h,()=>hurt(f,v,"어둠 증식","mag"));
+    if(f&&f.alive&&v>0){ const own0=B._ownSnd, k=gsdSnd("그슨대 어둠 증식 발사");
+      if(k){ fx({side:"foe",slot:f.slot,s:k,gap:0}); B._ownSnd=1 }   /* 녹음이 있으니 합성 타격음은 빼고 */
+      try{ asSrc(h,()=>hurt(f,v,"어둠 증식","mag")) } finally { B._ownSnd=own0 } }
     return true }
   return false;
 }
@@ -34837,6 +34899,134 @@ function gsdHideBody(ms){
 function gsdMoveFX(from,to){
   fx(Object.assign(gsdSheet("vanish","mine",from),{fn:()=>gsdHideBody(gsdMs("vanish")+gsdMs("emerge"))}));
   fx(gsdSheet("emerge","mine",to));
+}
+/* ═══ 페블 — 기획 노트 21 (사용자 2026-11-02) · 영웅심 넘치는 조약돌 · 지하 / 영광 숭배자 / 정령 ═══
+   · 내려찍기 준비 ↔ 내려찍기 — 「전환」. 준비를 2번 하면 1번 칸이 내려찍기가 되고, 내려찍으면 준비로 돌아간다 (h.pbPrep, 라운드).
+     전환은 기술 칸의 alt 를 쓰되 altBy 로 저절로 넘기지 않는다 — pebbleAfter 가 정한다.
+   · 광맥 살피기 — 광맥 둘 가운데 하나를 골라(파벨 부속 고르기와 같은 화면) 다음 내려찍기를 강화 (h.pbVeins, 라운드).
+     보상으로 여는 넷(격동 · 파괴 · 황금 · 시간)은 h.tag.vein[이름] 이 있어야 후보에 든다.
+   · 휘두르기 — 모든 적에게 피해, 1칸 밀침, 준 피해만큼 그 적이 이번 적 차례에 내놓는 피해 감소 (f.weakAtk — 내 턴 머리에 걷힌다).
+   · 영웅 등장 — 5턴 뒤 영웅. 그 전투 동안 잠금이 풀리고 모든 추가 능력치 +5 (h.pbHeroLeft · h.pbHero, 전투).
+   · 라이티늄 심장 — 장착한 라이티늄 관련 장신구(이름에 라이티늄 · 라이티늄 수정으로 만든 것) 1개당 보호력 +1 (늘 따라감). */
+const PEBBLE_VEINS=[   /* 글은 사용자 그대로 (2026-11-02) */
+ {k:"철",n:"철 광맥",d:"다음 내려찍기가 치명타로 적중합니다."},
+ {k:"사파이어",n:"사파이어 광맥",d:"다음 내려찍기의 비용이 0이 됩니다."},
+ {k:"라이티늄",n:"라이티늄 광맥",d:"다음 내려찍기를 사용한 후, 보호막을 6 얻습니다."},
+ {k:"격동",n:"격동의 광맥",d:"다음 내려찍기가 거리 1 내의 다른 적에게도 피해를 줍니다.",lock:1},
+ {k:"진동",n:"진동의 광맥",d:"다음 내려찍기가 공격약화와 마법약화를 2 부여합니다."},
+ {k:"파괴",n:"파괴의 광맥",d:"다음 내려찍기가 모든 적에게 적중합니다.",lock:1},
+ {k:"황금",n:"황금 광맥",d:"다음 내려찍기로 적을 처치하면 금화를 4개 얻습니다.",lock:1},
+ {k:"시간",n:"시간의 광맥",d:"다음 내려찍기로 적을 처치하면 턴이 끝나면 발동하는 페블의 효과를 발동시킵니다.",lock:1}];
+const PEBBLE_HERO_TURNS=5, PEBBLE_HERO_UP=5;
+const pebbleSmashCost=h=>pebbleHas(h,"사파이어")?0:1;   /* 내려찍기 비용 1 (노트 21-1-1) — 사파이어 광맥이면 0 */
+function pebbleIs(h){ return !!(h&&h.name==="페블"&&!h.isMin) }
+function pebbleHas(h,k){ return !!(h&&(h.pbVeins||[]).indexOf(k)>=0) }
+function pebbleVeinOpen(h,v){ return !v.lock||!!(h&&h.tag&&h.tag.vein&&h.tag.vein[v.k]) }
+/* 라이티늄 관련 장신구 — 세상의 시작(lythiumCount)과 같은 잣대를 페블 한 사람에게 */
+function pebbleLyth(h){ return (h&&h.items||[]).filter(it=>it&&(it.n.indexOf("라이티늄")>=0||(it.rc||[]).indexOf("라이티늄 수정")>=0)).length }
+/* 늘 맞춰 둔다 (alwaysSync) — 라이티늄 심장 · 내려찍기 비용(사파이어) · 라운드가 바뀌어 준비가 걷혔으면 준비 칸으로 */
+function pebbleSync(h){
+  if(!pebbleIs(h)||typeof B==="undefined"||!B) return;
+  const v=pebbleLyth(h), d=v-(h.pbHeartOn||0);
+  if(d){ bumpTmp(h,"def",d); h.pbHeartOn=v; say(`라이티늄 심장 — ${h.name} 보호력 ${d>0?"+":""}${d} (라이티늄 장신구 ${v})`,"t2") }
+  const s=h.sk&&h.sk[0];
+  if(s&&s.pbSmash&&(h.pbPrep||0)<2) pebbleSwap(h);      /* 라운드가 바뀌었다 — 준비부터 다시 */
+  const s2=h.sk&&h.sk[0];
+  if(s2&&s2.pbSmash) s2.cost=pebbleSmashCost(h);
+}
+/* 1번 칸 전환 — unit-state 의 alt 넘기기와 같은 꼴 (mods 를 따라 옮긴다) */
+function pebbleSwap(h){
+  const s=h.sk[0]; if(!s||!s.alt) return;
+  const back=Object.assign({},s), nx=Object.assign({},s.alt);
+  back.mods=s.mods; nx.mods=s.alt.mods; delete back.alt; nx.alt=back; h.sk[0]=nx;
+  if(nx.pbSmash) nx.cost=pebbleSmashCost(h);
+}
+/* 기술을 쓴 뒤 — doSkill 의 전환 자리에서 부른다 (값을 치르고 효과가 난 뒤) */
+function pebbleAfter(h,i,s,target){
+  if(!pebbleIs(h)||!s) return;
+  if(s.pbPrep){
+    h.pbPrep=(h.pbPrep||0)+1;
+    if(h.pbPrep>=2){ pebbleSwap(h); say(`${h.name} — 내려찍기를 쓸 수 있습니다.`,"t1");
+      fx({side:"mine",slot:h.slot,ring:"#e0c85a",glow:1,txt:"내려찍기",cls:"shd",gap:80}) }
+    else say(`내려찍기 준비 ${h.pbPrep}/2`,"t2");
+    return }
+  if(s.pbSmash){ pebbleSmashAfter(h,h._pbTgt||foeAt(target)); h._pbTgt=null; h.pbPrep=0; h.pbVeins=[]; pebbleSwap(h); return }
+}
+/* 내려찍기가 맞은 뒤 — 공중에 뜸 · 광맥들 */
+function pebbleSmashAfter(h,tgt){
+  const V=h.pbVeins||[];
+  const base=(h.sk[0].dmg||10)+mod(h.sk[0],"dmg")+(h.atk||0), crit=pebbleHas(h,"철");
+  const more=[];   /* 격동 · 파괴 — 고른 적 말고도 맞는 적 */
+  if(tgt&&V.indexOf("격동")>=0) B.foes.filter(f=>f.alive&&f!==tgt&&dist(f.slot,tgt.slot)<=1).forEach(f=>{ if(more.indexOf(f)<0) more.push(f) });
+  if(V.indexOf("파괴")>=0) B.foes.filter(f=>f.alive&&f!==tgt).forEach(f=>{ if(more.indexOf(f)<0) more.push(f) });
+  const hit=(tgt?[tgt]:[]).concat(more);
+  let kills=0;
+  if(tgt&&!tgt.alive) kills++;
+  more.forEach(f=>{ asSrc(h,()=>hurt(f,crit?base*2:base,"내려찍기","slash",0,crit?1:0)); if(!f.alive) kills++ });
+  hit.forEach(f=>{ if(f.alive) airborne(h,f) });
+  if(V.indexOf("진동")>=0) hit.forEach(f=>{ if(f.alive){ addDeb(f,"atkDn",2,h); addDeb(f,"magDn",2,h) } });
+  if(V.indexOf("라이티늄")>=0){ const g=addShield(h,6); fx({side:"mine",slot:h.slot,s:"shield",txt:"+"+g,cls:"shd",gap:80}); say(`라이티늄 광맥 — ${h.name} 보호막 +${g}`,"t2") }
+  if(kills&&V.indexOf("황금")>=0){ const g=4*kills; run.gold+=g; if(sfxHas("금화 얻기")) SFX.play("금화 얻기"); say(`황금 광맥 — 금화 +${g}`,"t1") }
+  if(kills&&V.indexOf("시간")>=0){ say("시간의 광맥 — 페블의 턴 종료 효과가 발동합니다.","t1");
+    const rounds=1+(((h.tag&&h.tag.endTwice)||itemBt(h,"endTwice"))?1:0);
+    for(let q=0;q<rounds;q++) heroEndOnce(h,()=>{}) }
+  if(V.length) say(`광맥 — ${V.map(k=>(PEBBLE_VEINS.find(v=>v.k===k)||{}).n||k).join(", ")}을(를) 다 썼습니다.`,"t2");
+}
+/* 기술 — runEffect 에서 부른다. 다 처리했으면 true (준비 · 내려찍기는 보통 길로 — 보호막 · 피해는 거기서) */
+function pebbleCast(h,s,target){
+  if(!pebbleIs(h)||!s) return false;
+  if(s.pbSmash){ h._pbTgt=foeAt(target)||null; return false }   /* 맞을 적을 먼저 쥐어 둔다 — 쓰러지면 foeAt 이 못 찾는다 (황금 · 시간) */
+  if(s.pbVein){ pebbleVeinStart(h); return true }
+  if(s.pbSwing){
+    const v=(s.dmg||0)+mod(s,"dmg")+(h.atk||0);
+    const L=B.foes.filter(f=>f.alive);
+    L.forEach(f=>{ const b0=(f.hp||0)+(f.shield||0);
+      asSrc(h,()=>hurt(f,v,"휘두르기","slash"));
+      const got=Math.max(0,b0-Math.max(0,f.hp||0)-(f.shield||0));
+      if(f.alive&&got>0){ f.weakAtk=(f.weakAtk||0)+got;
+        fx({side:"foe",slot:f.slot,txt:"피해 −"+got,cls:"miss",gap:40}) } });
+    /* 1칸 뒤로 — 뒤에 선 적부터 민다 (앞에서부터 밀면 서로 자리만 바꾼다) */
+    B.foes.filter(f=>f.alive).sort((a,b)=>b.slot-a.slot).forEach(f=>{ if(foeShift(f,f.slot+1)) fx({side:"foe",slot:f.slot,s:"step",txt:"밀림",cls:"miss",gap:60}) });
+    say(`휘두르기 — 맞은 적은 이번 적 차례에 준 피해만큼 덜 아프게 칩니다.`,"t2");
+    return true }
+  if(s.pbHero){
+    if(h.pbHero||(h.pbHeroLeft||0)>0){ say("이미 영웅 등장을 기다리고 있습니다.","t2"); return true }
+    h.pbHeroLeft=PEBBLE_HERO_TURNS;
+    fx({side:"mine",slot:h.slot,ring:"#e0c85a",glow:1,txt:"영웅 등장까지 "+PEBBLE_HERO_TURNS,cls:"shd",gap:120});
+    say(`${h.name} — ${PEBBLE_HERO_TURNS}턴 뒤에 영웅으로 변신합니다!`,"t1");
+    return true }
+  return false;
+}
+function pebbleHeroUsable(h,s){ return !(s&&s.pbHero&&h&&(h.pbHero||(h.pbHeroLeft||0)>0)) }
+/* 내 턴 머리 — 영웅 등장 초읽기 */
+function pebbleTurnStart(h){
+  if(!pebbleIs(h)||!(h.pbHeroLeft>0)||h.hp<=0) return;
+  h.pbHeroLeft--;
+  if(h.pbHeroLeft>0){ say(`영웅 등장까지 ${h.pbHeroLeft}턴`,"t2"); return }
+  h.pbHero=1; h.lock={}; h.lockNew={};
+  ["atk","mag","def"].forEach(k=>bumpTmp(h,k,PEBBLE_HERO_UP));
+  fx({side:"mine",slot:h.slot,pose:"bless",poseMs:900,ring:"#e0c85a",glow:1,txt:"영웅 등장!",cls:"crit",gap:200});
+  say(`영웅 등장 — ${h.name}${jo(h.name,"ig")} 영웅으로 변신합니다! 이번 전투 동안 잠금이 풀리고 모든 추가 능력치 +${PEBBLE_HERO_UP}`,"t1");
+}
+/* 광맥 살피기 — 둘 가운데 하나 */
+function pebbleVeinStart(h){
+  const pool=PEBBLE_VEINS.filter(v=>pebbleVeinOpen(h,v)&&!pebbleHas(h,v.k));
+  if(!pool.length){ say("더 살필 광맥이 없습니다.","t2"); return }
+  const opts=shuffled(pool.slice()).slice(0,2).map(v=>v.k);
+  B.veinPick={by:h.name,opts:opts,t0:Date.now()};
+  say(`${h.name}${jo(h.name,"ig")} 광맥을 살핍니다 — 하나를 고르세요.`,"t1");
+}
+function pebbleVeinTake(j){
+  const G=B&&B.veinPick; if(!G) return;
+  const k=G.opts[j]; B.veinPick=null;
+  const h=(run.heroes||[]).find(x=>x.name===G.by);
+  if(h&&k){ h.pbVeins=(h.pbVeins||[]).concat([k]);
+    const v=PEBBLE_VEINS.find(x=>x.k===k);
+    say(`${v.n} — ${v.d}`,"t1");
+    fx({side:"mine",slot:h.slot,ring:"#e0c85a",glow:1,txt:v.n,cls:"shd",gap:100});
+    pebbleSync(h) }
+  if(typeof flushFX==="function") flushFX();
+  render();
 }
 function shopIcon(k){
   /* 새로 받은 그림이 있으면 그것부터 */
@@ -37232,7 +37422,7 @@ function drawRecruit(app){
       ${tagRow(n,1)||`<div class="role">${esc(d.role)}</div>`/* 아이콘으로 (사용자 2026-10-06) — 주석은 ${} 안에. 글자 틀 안에 두면 화면에 찍힌다 (2026-10-07) */}
       <p>${richFocus(d.focus)}</p>
       ${(()=>{ const L=(skinTable(BARK,n)||{}).in; return (L&&L.length)?`<div class="evsay rcsay">${talk(rnd(L))}</div>`:"" })()}</div>`);
-    c.onclick=()=>{ run.heroes.push(makeHero(n)); obolEnsure();
+    c.onclick=()=>{ run.heroes.push(makeHero(n)); obolEnsure(); ugEnsure();
       toast(`${n}${jo(n,"ig")} 대원에 합류했습니다.`); afterChest() };
     row.appendChild(c);
   });
@@ -38217,7 +38407,7 @@ function startBattle(kind,pinned){
    · 방어구 카드의 능력치(강철 군화 · 마법 부여 보호구)는 그 라운드만 — '전투 동안' 이 없다 */
 const ROUND_RESET={
   shield:0, keepShield:0, slot:0, armor:0, deb:{},
-  hide:0, shadowAt:0, gsMend:0, stance:0,   /* 그슨대 — 그림자 · 그림자 이동 회복은 라운드 (노트 10) */
+  hide:0, shadowAt:0, gsMend:0, stance:0, pbPrep:0, pbVeins:[],   /* 페블 — 준비 · 광맥은 라운드 */   /* 그슨대 — 그림자 · 그림자 이동 회복은 라운드 (노트 10) */
   leech:0, pierceNext:0, aimAt:null, headshotUsed:0, mobile:0, patFreeTurn:0, lastBas:null,   /* 최후의 보루 — 라운드를 넘지 않는다 */
   eshield:0,                       /* 에너지 보호막 — 그 라운드에서만 (사용자 2026-10-01) */
   freeBlock:0, freePush:0, cutUses:0, shotUses:0, guardStack:0,
@@ -38255,7 +38445,8 @@ const BATTLE_RESET={
   wanderBonus:0, archerBonus:0, gloryGuard:0, arenaHeal:0, echo:0,
   reiChargeUp:0, reiKSeen:{}, crossAtkOn:0, crossMagOn:0,
   studyOn:0, invUndyingUsed:0,
-  dark:0, darkGot:0};   /* 그슨대 어둠 조각 — 「그 전투 동안」 (노트 10-0-1, 2026-11-02) */   /* 인비디아 — 전투 단위 (역병 연구 몫 · 불사, 2026-10-22) */   /* 레이 — 전투 단위 (충 전 누적 · 거친 태세 · 벼락 과충전, 2026-10-21) */   /* 조합 몫 — applySynergy 가 다시 채운다 */
+  dark:0, darkGot:0,
+  pbHeroLeft:0, pbHero:0, pbHeartOn:0};   /* 페블 — 영웅 등장 · 라이티늄 심장 몫은 그 전투 (노트 21) */   /* 그슨대 어둠 조각 — 「그 전투 동안」 (노트 10-0-1, 2026-11-02) */   /* 인비디아 — 전투 단위 (역병 연구 몫 · 불사, 2026-10-22) */   /* 레이 — 전투 단위 (충 전 누적 · 거친 태세 · 벼락 과충전, 2026-10-21) */   /* 조합 몫 — applySynergy 가 다시 채운다 */
 function resetVals(h,T){ for(const k in T){ const v=T[k]; h[k]=(v&&typeof v==="object")?(Array.isArray(v)?[]:{}):v } }
 function resetBattle(){
   if(run&&run.sandbox){sandRestartBattle();return}
@@ -42435,6 +42626,23 @@ function drawBattle(app){
     app.appendChild(el(`<div class="pickveil"></div>`));   /* 뒤를 어둡게 — 상자보다 먼저 깐다 */
     app.appendChild(box);
   }
+  /* 페블 광맥 살피기 — 광맥 둘 가운데 하나 (노트 21-2, 사용자 2026-11-02 「파벨처럼」) */
+  if(B.veinPick&&B.veinPick.opts&&B.veinPick.opts.length){
+    const G=B.veinPick;
+    const box=el(`<div class="golempick srcpick"><div class="gpcards"></div>
+      <div class="gpcap">다음 내려찍기를 강화할 광맥을 선택하세요</div></div>`);
+    { const age=Date.now()-(G.t0||0);
+      if(age<700) box.style.animationDelay=(-age)+"ms"; else box.classList.add("shown") }
+    const row=box.querySelector(".gpcards");
+    G.opts.forEach((k,j)=>{ const v=PEBBLE_VEINS.find(x=>x.k===k)||{n:k,d:""};
+      const c=el(`<div class="gpcard"><div class="card ccard cf">
+        <div class="cc-art">${cardArt(v.n)}</div><div class="cc-n">${esc(v.n)}</div><div class="cc-type">광맥</div>
+        <div class="cc-d"><div class="cc-di">${rich(v.d)}</div></div></div></div>`);
+      c.onclick=()=>{ SFX.play("click"); pebbleVeinTake(j) };
+      row.appendChild(c) });
+    app.appendChild(el(`<div class="pickveil"></div>`));
+    app.appendChild(box);
+  }
   /* 오볼 목록 확인 — 짐칸의 물자 두 장 가운데 하나 (노트 19 보상, 2026-10-31). 원천 분석과 같은 화면 */
   if(B.obolPick&&B.obolPick.opts&&B.obolPick.opts.length){
     const G=B.obolPick;
@@ -42818,6 +43026,8 @@ const PASSIVE_INFO={
  "리페":[
   {n:"화음과 리듬",p:"음율란",
    d:h=>`기술로 음율을 담고, 3칸이 모두 차면 담은 순서대로 노래합니다.`}],
+ "페블":[
+  {n:"라이티늄 심장",d:h=>`장착한 라이티늄 관련 장신구 1개당 보호력 +1. 지금 ${pebbleLyth(h)}개`}],
  "그슨대":[
   {n:"커져가는 악몽",p:"어둠 조각",
    d:h=>`피해를 받을 때마다 그 전투 동안 어둠 조각. 3개 모을 때마다 그 전투 공격력 +1 (사후 · 학살자 아군도). 지금 ${h.dark||0}개`},
@@ -42942,7 +43152,12 @@ function heroRes(h){
   const L=[];
   if(h.name==="데린저") L.push(`<span class="rr am">탄알 ${h.ammo||0}/${ammoMaxOf(h)}</span>`);
   if(h.name==="보아") L.push(`<span class="rr sc">비늘 ${h.scale||0}</span>`);
-  if(h.hide) L.push(`<span class="rr dk">은신</span>`);   /* 누구든 (사용자 2026-10-15) */
+  if(h.hide) L.push(`<span class="rr dk">은신</span>`);
+  if(h.name==="페블"){   /* 페블 — 준비 · 광맥 · 영웅 등장 (노트 21) */
+    if((h.pbPrep||0)>0&&!(h.sk[0]&&h.sk[0].pbSmash)) L.push(`<span class="rr">준비 ${h.pbPrep}/2</span>`);
+    if((h.pbVeins||[]).length) L.push(`<span class="rr">${h.pbVeins.map(k=>(PEBBLE_VEINS.find(v=>v.k===k)||{}).n||k).join(", ")}</span>`);
+    if(h.pbHeroLeft>0) L.push(`<span class="rr">영웅까지 ${h.pbHeroLeft}</span>`);
+    if(h.pbHero) L.push(`<span class="rr">영웅</span>`) }   /* 누구든 (사용자 2026-10-15) */
   if(h.name==="리페") L.push(`<span class="rr tn">음율 ${(h.tunes||[]).length}/3</span>`);
   if(h.name==="쿠렘타이") L.push(`<span class="rr so">영혼 ${run.souls||0}</span>`);
   if(isFF(h)) L.push(`<span class="rr ${h.stance==="flare"?"am":"so"}">${h.stance==="flare"?"플레어":"플로우"}</span>`);
@@ -43065,6 +43280,7 @@ let HAND_MINI=null, HAND_SKH=180;   /* 손패가 기술 창 위에 작게 떠 �
    새 조건을 더할 때는 여기 한 곳에만 적는다 */
 function skUsable(h,s){
   if(!h||!s) return true;
+  if(s.pbHero&&typeof pebbleHeroUsable==="function"&&!pebbleHeroUsable(h,s)) return false;   /* 페블 영웅 등장 — 기다리는 중이거나 이미 영웅 (2026-11-02) */
   if(s.houndCard){   /* 사냥개 부리기 — 손에만 있고 전장에 없으면 회복할 몸이 없다 */
     const mins=(typeof B!=="undefined"&&B&&B.mins)||[], hand=(typeof B!=="undefined"&&B&&B.hand)||[];
     const 섬=mins.some(m=>m&&m.alive&&m.name==="사냥개");
@@ -43074,6 +43290,7 @@ function skUsable(h,s){
   return true;
 }
 function skUsableWhy(h,s){
+  if(s&&s.pbHero) return (h&&h.pbHero)?"이미 영웅입니다.":"영웅 등장을 기다리고 있습니다.";
   if(s&&s.houndCard) return "손에 든 사냥개부터 내려놓으세요 — 카드는 회복시킬 수 없습니다.";
   return "지금은 쓸 수 없습니다.";
 }
@@ -43516,6 +43733,7 @@ const AUTO_SK={"성장":1,"축복":1,"중무장":1,"대가 치르기":1,"준비 
   "미끼 던지기":1,"사냥개 부리기":1,   /* 오리온 — 겨눌 칸이 없다. 한 번 눌러 바로 (사용자 2026-10-15) */
   "전사의 다짐":1,"주술사의 다짐":1,"천둥의 기운":1,"전략 변경":1,   /* 레이 — 제 몸에 거는 것이라 겨눌 칸이 없다 (사용자 2026-10-22) */
   "죄악의 기침":1,   /* 인비디아 — 가장 가까운 적만 친다. 한 번 눌러 바로 (사용자 2026-10-22) */
+  "내려찍기 준비":1,"광맥 살피기":1,"휘두르기":1,"영웅 등장":1,   /* 페블 — 겨눌 것이 없다 (2026-11-02) */
   "그림자 이동":1,"두려움 잠식":1,"그림자 기습":h=>!!(h&&h.shadowAt),"어둠 증식":h=>!!(h&&h.shadowAt),   /* 그슨대 — 그림자가 있으면 기습 · 증식도 겨눌 것이 없다 (2026-11-02) */
   "유령의 몸":1,"물자 뒤지기":1,   /* 오볼 — 제 몸에 거는 것이라 겨눌 칸이 없다. 한 번 눌러 바로 (사용자 2026-10-31) */
   /* 숙주 폭발 — 모든 적에게 가니 겨눌 것이 없다. 다만 「통제」를 고르면 하나를 지정하는 기술이 되어
@@ -43583,6 +43801,7 @@ function previewTargets0(h,s){
   if(s.stomp){ foes.filter(f=>dist(h.slot,f.slot)<=(s.rng||2)).forEach(F); return out }   /* 발구르기 (간수장 전리품, 2026-10-23) */
   if((s.gsStrike||s.gsFear||s.gsBloom||s.gsStep)&&h.shadowAt&&!s.gsBloom){ me(); return out }   /* 그슨대 — 그림자로 옮겨 간다 */
   if(s.gsBloom&&h.shadowAt){ me(); return out }
+  if(s.pbSwing){ foes.forEach(F); return out }   /* 페블 휘두르기 — 모든 적 */
   if(s.gsFear){ foes.forEach(F); onField().concat(liveMins()).forEach(a=>out.push({side:"mine",slot:a.slot})); return out }   /* 두려움 잠식 — 아군 적군 모두 */
   if(s.burst||s.phantomPain||s.scaleBoom||s.lifeConv||s.warp||s.allHit||s.tune==="edge"){ foes.forEach(F); return out }
   if(s.shackle||s.nearest){ const f=nearestFoe(h); if(f) F(f); return out }
@@ -44592,6 +44811,7 @@ function alwaysSync(u){
   if(typeof obolGreedSync==="function"){ obolGreedSync(u); obolHoardSync(u) }   /* 오볼 물욕 · 금화 더미 — 금화를 따라간다 (2026-10-31 · 11-02) */
   invStudySync(u);   /* 인비디아 역병 연구 (2026-10-22) */
   gsdTgSync(u);   /* 그슨대 — 그림자에 따라 겨눌 것 (2026-11-02) */
+  pebbleSync(u);   /* 페블 — 라이티늄 심장 · 내려찍기 비용 · 준비 칸 (2026-11-02) */
 }
 function iraRageVals(h){
   const t=(h&&h.tag)||{};
@@ -45029,7 +45249,7 @@ function truSk(s){ return !!(s&&s.flat&&s.pierce) }
    따라가지 못하는 기술(무작위·합계 따위)은 null 을 돌려주고 아무것도 안 띄운다. */
 /* 값을 따라갈 수 없는 기술 — 아무것도 띄우지 않는다 */
 const PRED_OFF=["aim","armorUp","darkShadow","encore","frontal","fuse","grow","headshot",
-  "jumpback","gsStep","leech","minion","penance","phantom","quakeUp","soothe","spread","stance",
+  "jumpback","gsStep","pbVein","pbHero","leech","minion","penance","phantom","quakeUp","soothe","spread","stance",
   "tune","venom","wall","warp","weaken","wrap"];
 /* ── 이 기술이 이 대상에게 치명타인가 ─────────────────────────────────────────
    ★ 치명타를 거는 조건은 **여기 한 곳**에서 묻는다. 실제(runEffect)와 예고(predictDmg)가 같이 쓴다.
@@ -45072,6 +45292,7 @@ function critWhy(h,s,tgt){
   if(s.rayOrb&&(((h.rayOrbs||0)+1)%3===0)) return "세 번째 구체";
   if(h&&h.name==="데린저"&&tgt&&h.aimAt2!=null&&tgt.id===h.aimAt2) return "정확 조준";   /* 부착: 이중 조준경 (2026-10-15) */
   if(s.harmony&&(ffFlare(h)||T.disharmony)) return T.disharmony&&!ffFlare(h)?"부조화":"플레어";
+  if(s.pbSmash&&pebbleHas(h,"철")) return "철 광맥";   /* 페블 — 다음 내려찍기 치명타. 닳는 것은 pebbleAfter 가 (2026-11-02) */
   return null;
 }
 /* ── 오리온의 보상이 쓰는 길 (노트 2026-10-15) ──────────────────────────────
@@ -45223,7 +45444,8 @@ function predictDmg(h,s,tgt){
   }
   /* 그슨대 — 그림자가 있으면 기습 · 잠식 · 증식은 적을 치지 않는다 (src/rules/gsd.js) */
   else if((s.gsStrike||s.gsFear||s.gsBloom)&&h.shadowAt) return null;
-  else if(s.gsFear){ dmg=1; times=3 }   /* 두려움 잠식 — 1씩 3번 (추가 능력치 없음) */
+  else if(s.gsFear){ dmg=1; times=3 }
+  else if(s.pbSwing) dmg=bs("dmg")+ATK;   /* 페블 휘두르기 — 모든 적 (pebbleCast 와 같은 셈) */   /* 두려움 잠식 — 1씩 3번 (추가 능력치 없음) */
   else if(s.gsBloom){ dmg=gsdBloomVal(h); if(!dmg) return null }   /* 어둠 증식 — 조각 × 추가 공격력 */
   else if(s.dmg==null) return null;
   else if(h.name==="카제"&&(s.n==="진선풍도"||s.n==="회오리")){
@@ -46603,8 +46825,8 @@ function envyKinds(f){
 }
 function doSkill(target){
   if(B.busy) return;
-  if(B.golem||B.srcPick){   /* 고르는 화면이 먼저다 — 둘이 겹쳐 뜨면 포개진다 */
-    say(B.srcPick?"먼저 장신구를 고르세요.":"먼저 부속을 고르세요.","t2"); return }
+  if(B.golem||B.srcPick||B.veinPick){   /* 고르는 화면이 먼저다 — 둘이 겹쳐 뜨면 포개진다 */
+    say(B.srcPick?"먼저 장신구를 고르세요.":B.veinPick?"먼저 광맥을 고르세요.":"먼저 부속을 고르세요.","t2"); return }
   const h=sel.hero,i=sel.skill,n=sel.count,s0=h.sk[i];
   alwaysSync(h);
   if(i===0&&(n||1)>=3&&target>0) B.tutTriple=1;   /* 튜토리얼 — 1번 기술을 적에게 3번 (btKeys) */
@@ -46768,7 +46990,7 @@ function doSkill(target){
     if(h.isMin&&h.golem) golemSkillUsed(h,s);   /* 분업 · 합맞추기 — 하수인 골렘이 기술을 쓴 뒤 (노트 2026-10-13) */
     /* 수호 활동 — 후미 준비는 더 이상 잠기지 않는다 */
     /* 잠금 3이면 3부터 세어 내려간다. 예전에는 4부터 시작해 한 턴 더 잠겼다 */
-    if(s.lock&&!(h.tag.noRearLock&&s.rearguard)){
+    if(s.lock&&!(h.tag.noRearLock&&s.rearguard)&&!h.pbHero){   /* 페블 영웅 — 그 전투 동안 잠금이 없다 */
       h.lock[i]=s.lock;
       /* ★ 건 그 턴은 세지 않는다. 안 그러면 잠금1 이 아무 턴도 못 쉬고 풀린다 —
          숫자만 1 이고 실제로는 0턴이라 헷갈렸다. 아래 턴 끝 셈이 이걸 본다 */
@@ -46871,6 +47093,7 @@ function doSkill(target){
             L.forEach(a=>{ const g=addShield(a,v); fx({side:"mine",slot:a.slot,s:"shield",txt:"+"+g,cls:"shd",gap:80}) });
           say(`집결하라! — 왕실 ${L.map(a=>a.name).join(", ")} 보호막 +${v*h.tag.rally}`,"t2") } }
     }
+    if(h.name==="페블") pebbleAfter(h,i,s,target);   /* 내려찍기 준비 ↔ 내려찍기 · 광맥 (src/rules/pebble.js) */
     if(s.alt&&!s.altBy&&!(h.name==="헥토"&&i===0&&h.tag&&h.tag.slotFix)
        &&!(h.name==="레이"&&i<2)){   /* 공방전 · 레이 적응성 — 칸이 정한다 (hectoSlotFix · rayStance) */
       const back=Object.assign({},s); const nx=Object.assign({},s.alt);
@@ -48181,6 +48404,7 @@ function runEffect0(h,i,s,target){
   }
   /* ── 그슨대 (src/rules/gsd.js — 노트 10, 2026-11-02) ── */
   if(gsdCast(h,s,target)) return;
+  if(pebbleCast(h,s,target)) return;   /* 페블 — 광맥 살피기 · 휘두르기 · 영웅 등장 (src/rules/pebble.js) */
   /* ── 오토 ── */
   /* 물 주기 — 쓰담쓰담으로 아군 소환물을 고르면 피해 대신 회복 */
   if(target<0&&waterOk(h,s,-target)){ const m=minAt(-target), g=healUp(m,h.tag.waterPat);
@@ -49057,7 +49281,7 @@ function runEffect0(h,i,s,target){
       if((s.markKill||s.pierce)&&!isArcher(h)&&!h.isMin)
         fx({side:"foe",slot:tgt.slot,streak:{side:"mine",slot:h.slot},s:"arrow",gap:130});
       if(h.name==="나이코스"&&i===0) fx({side:"foe",slot:tgt.slot,slash:1,gap:0});
-      if(s.gsStrike) fx(gsdSheet("strike","foe",tgt.slot,250));   /* 그슨대 그림자 기습 — 어둠 틈의 단검 (2026-11-02) */
+      if(s.gsStrike){ fx(gsdSheet("strike","foe",tgt.slot,250)); if(sfxHas(GSD_SND.strike)) B._ownSnd=1 }   /* 단검 띠에 녹음이 실렸다 — 합성 타격음은 빼고 (doSkill 이 runEffect 뒤에 걷는다) */   /* 그슨대 그림자 기습 — 어둠 틈의 단검 (2026-11-02) */
       if(h.name==="오볼"&&s.twice) fx({side:"foe",slot:tgt.slot,sheet:"fx_obol_cutlass",sheetOpt:{frames:8,z:2,frameMs:[60,60,75,60,75,85,95,100]},gap:230});   /* 커틀러스 — 검기마다 피해 (사용자 2026-10-31) */
       /* 승리의 일격 — 나이코스의 궁극기 (기술 차례 3) */
       if(h.name==="나이코스"&&i===3) fx({side:"foe",slot:tgt.slot,ult:1,gap:0});
@@ -49604,7 +49828,7 @@ function hurtAlly(f,t,raw,label,el,evMsg,pierce,ownFx){   /* evMsg — 회피했
   fx({side:"mine",slot:t.slot,hit:1,block:blocked?1:0,
       art:(blocked||mag||tru||ownFx)?null:"claw",
       mhit:(blocked||!mag||ownFx)?0:1,
-      s:blocked?"block":(mag?"마법피해":"hit"),
+      s:blocked?"block":((B._ownSnd&&f&&B.foes.indexOf(f)<0)?null:(mag?"마법피해":"hit")),   /* 아군이 아군을 칠 때(두려움 잠식) 그 기술 녹음이 울렸으면 일반 타격음은 빼고 (2026-11-02) */
       txt:(blocked?"막음 ":"-")+raw, cls:blocked?"shd":(tru?"tru":(mag?"mag":"dmg")), gap:170,
       recoil:1, pose:(d>0?"hurt":(sh>0?"guard":null)),
       poseBreak:d>0&&f&&f.name==="샘의 잔영"&&label==="잔영"});
@@ -49912,7 +50136,39 @@ function endPhase(){
   onField().forEach(h=>{
    /* 첨탑관리자의 회중시계 — 이 대원의 턴 종료 효과만 한 번 더 돈다 */
    const rounds=1+(((h.tag&&h.tag.endTwice)||itemBt(h,"endTwice"))?1:0);
-   for(let _e=0;_e<rounds;_e++){
+   for(let _e=0;_e<rounds;_e++) heroEndOnce(h,bump);
+  });
+  (B.portals||[]).forEach(p=>{
+    const by=run.heroes.find(x=>x.name===p.by);
+    if(p.side==="mine"){
+      /* 노트 : 대상이 아군이면 내 턴이 끝날 때 보호막 (+차원문 강화: 보호) */
+      const a=unitAt(p.slot);
+      if(a){ const v=p.shield+((by&&by.tag&&by.tag.portalShieldPlus)||0);
+        addShield(a,v); bump();
+        { const pk=by&&((skinOn(by.name)||{}).portalFx||{}).ally, sl=p.slot;   /* 폭식의 군주 — 차원문 위 아군 보호막 */
+          fx({side:"mine",slot:p.slot,s:"shield",glow:1,txt:"+"+v,cls:"shd",gap:pk&&ICON_PNG[pk]?260:60,
+              fn:pk&&ICON_PNG[pk]?(()=>sheetFX(pk,"mine",sl,{cell:96,feet:1,z:onStage()?2.0:1.1,ms:600})):null}) }
+        say(`균열 차원문 — ${a.name} 보호막 +${v}`,"t2") }
+      return;
+    }
+    const f=foeAt(p.slot);
+    if(f&&f.alive){ bump();
+      { const pk=by&&((skinOn(by.name)||{}).portalFx||{}).foe, sl=p.slot;   /* 폭식의 군주 — 차원문 위 적 피해 */
+        if(pk&&ICON_PNG[pk]) fx({side:"foe",slot:sl,fn:()=>sheetFX(pk,"foe",sl,{cell:96,feet:1,z:onStage()?2.0:1.1,ms:600}),gap:200}) }
+      asSrc(by,()=>hurt(f,p.dmg,"균열 차원문","mag"));
+      /* 저주의 혓바닥 — 적 전장의 차원문이 보호약화도 */
+      if(f.alive&&by&&by.tag&&by.tag.portalCurse){ addDeb(f,"defDn",by.tag.portalCurse,by);
+        say(`저주의 혓바닥 — ${f.name} 보호약화 ${by.tag.portalCurse}`,"t2") } }
+  });
+  /* 화상은 맨 마지막 — 위에서 얻은 보호막(라이티늄 파편 · 차원문 · 왕실 …)부터 깎는다 (사용자 2026-10-06) */
+  allUnits().forEach(u=>{ if(deb(u,"burn")>0&&u.hp>0){ burnTickEnd(u); n++ } });
+  run.heroes.forEach(h=>{ if(h.lastBas&&h.lastBas.v==null&&h.lastBas.turn===(B.turn||1)) h.lastBas.v=Math.max(0,(h.shGain||0)-h.lastBas.start) });   /* 최후의 보루 — 쓴 뒤부터 턴 끝까지 */
+  if(n) B.log.splice(mark,0,{t:icoify("— 턴 종료 효과 —"),c:"t2"});
+  return n;
+}
+/* 대원 한 사람의 「내 턴이 끝날 때」 — endPhase 가 대원마다 (회중시계면 두 번) 부르고,
+   페블 시간의 광맥이 처치했을 때 한 번 더 부른다 (2026-11-02). bump — 턴 종료 머리말을 달지 셈 */
+function heroEndOnce(h,bump){
     { const en=itemBt(h,"endNeg"); if(en){ negGain(h,en); bump(); if(itemBt(h,"negMana")) h.negManaNext=1;
         fx({side:"mine",slot:h.slot,s:"guard",ring:"#7fd39a",txt:"부정 보호막 "+h.negShield,cls:"shd",gap:150}) }
       const mn=itemBt(h,"momNeg");
@@ -49992,35 +50248,6 @@ function endPhase(){
         first=0 });
       say(`든든한 아군 — 다른 아군 ${esh?"에너지 보호막":"보호막"} +${v}`,"t2");
     }
-   }
-  });
-  (B.portals||[]).forEach(p=>{
-    const by=run.heroes.find(x=>x.name===p.by);
-    if(p.side==="mine"){
-      /* 노트 : 대상이 아군이면 내 턴이 끝날 때 보호막 (+차원문 강화: 보호) */
-      const a=unitAt(p.slot);
-      if(a){ const v=p.shield+((by&&by.tag&&by.tag.portalShieldPlus)||0);
-        addShield(a,v); bump();
-        { const pk=by&&((skinOn(by.name)||{}).portalFx||{}).ally, sl=p.slot;   /* 폭식의 군주 — 차원문 위 아군 보호막 */
-          fx({side:"mine",slot:p.slot,s:"shield",glow:1,txt:"+"+v,cls:"shd",gap:pk&&ICON_PNG[pk]?260:60,
-              fn:pk&&ICON_PNG[pk]?(()=>sheetFX(pk,"mine",sl,{cell:96,feet:1,z:onStage()?2.0:1.1,ms:600})):null}) }
-        say(`균열 차원문 — ${a.name} 보호막 +${v}`,"t2") }
-      return;
-    }
-    const f=foeAt(p.slot);
-    if(f&&f.alive){ bump();
-      { const pk=by&&((skinOn(by.name)||{}).portalFx||{}).foe, sl=p.slot;   /* 폭식의 군주 — 차원문 위 적 피해 */
-        if(pk&&ICON_PNG[pk]) fx({side:"foe",slot:sl,fn:()=>sheetFX(pk,"foe",sl,{cell:96,feet:1,z:onStage()?2.0:1.1,ms:600}),gap:200}) }
-      asSrc(by,()=>hurt(f,p.dmg,"균열 차원문","mag"));
-      /* 저주의 혓바닥 — 적 전장의 차원문이 보호약화도 */
-      if(f.alive&&by&&by.tag&&by.tag.portalCurse){ addDeb(f,"defDn",by.tag.portalCurse,by);
-        say(`저주의 혓바닥 — ${f.name} 보호약화 ${by.tag.portalCurse}`,"t2") } }
-  });
-  /* 화상은 맨 마지막 — 위에서 얻은 보호막(라이티늄 파편 · 차원문 · 왕실 …)부터 깎는다 (사용자 2026-10-06) */
-  allUnits().forEach(u=>{ if(deb(u,"burn")>0&&u.hp>0){ burnTickEnd(u); n++ } });
-  run.heroes.forEach(h=>{ if(h.lastBas&&h.lastBas.v==null&&h.lastBas.turn===(B.turn||1)) h.lastBas.v=Math.max(0,(h.shGain||0)-h.lastBas.start) });   /* 최후의 보루 — 쓴 뒤부터 턴 끝까지 */
-  if(n) B.log.splice(mark,0,{t:icoify("— 턴 종료 효과 —"),c:"t2"});
-  return n;
 }
 /* 마당 ② — 적의 차례 */
 function foePhase(){
@@ -50392,6 +50619,7 @@ function startMyTurn(){
     h.spentTurn=0; h.magnetTurn=0;   /* 이테리오 — 아크 방전 셈 · 마이스너 변환 한 턴 한 번 */
     if(h.spareNext&&h.tag&&h.tag.spareBat){ const v=3*h.tag.spareBat; h.eshield=(h.eshield||0)+v; h.spareNext=0;
       say(`여분 전지 — ${h.name} 에너지 보호막 +${v}`,"t2") }
+    pebbleTurnStart(h);   /* 페블 영웅 등장 — 5턴 뒤 (src/rules/pebble.js) */
     h.gsMend=0;   /* 그림자 이동 — 「이번 턴에」 피해를 받은 후 회복. 다음 내 턴에 걷는다 */
     if(h.stop>0&&--h.stop<=0){ h.stop=0;
       fx({side:"mine",slot:h.slot,ring:"#8fa8c0",txt:"정지 풀림",cls:"buf",gap:90});
