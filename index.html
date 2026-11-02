@@ -6149,6 +6149,8 @@ body.vnew #app .rewards:has(.trait-guarantee){margin-top:48px}
 /* 지도틀 안쪽 구멍은 이 판(덧판 자리)보다 위로 1.85% · 아래로 2.41%(무대 기준) 더 길다 — 그대로 두면 배경이 틀 막대 앞에서 곧게 끊겨 보였다
    (사용자 2026-10-30 「잘려 있어서 아트와 안 어울린다」). 가운데(그림의 110~610줄 — 이름 띠 · 카드 홈 · 설명 · 선택지)는 판과 1:1 그대로 두고,
    **위 110줄(천 · 밧줄)과 아래 110줄(냄비 · 숯)만** 그 몫만큼 늘여 틀 밑까지 채운다 (border-image-outset). 판 768 기준 px × --pk */
+/* 사건 기록판(2배 그림) — 위아래 얇은 나무 띠(12px)만 틀 밑까지 늘인다. 바깥 늘림(outset)은 아래 공통 규칙 그대로 */
+.placebox.pbg.p-relic .pmat{border-image-slice:24 0 24 0 fill!important;border-image-width:calc(12px * var(--pk,1)) 0 calc(12px * var(--pk,1)) 0!important}
 .placebox.pbg .pmat{background:none;border:0 solid transparent;
   border-image-slice:110 0 110 0 fill;border-image-repeat:stretch;
   border-image-width:calc(124.6px * var(--pk,1)) 0 calc(129px * var(--pk,1)) 0;
@@ -26142,6 +26144,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 323, "v": "0.7", "d": "2026-11-02", "t": "사건 기록판 — 미지의 구역 · 전용 구역 장소 화면 새 받침과 선택지 강조", "big": 0},
  {"b": 322, "v": "0.7", "d": "2026-11-02", "t": "오볼 상급 일곱 · 전투 보상 상자 탁자 · 연타 막기", "big": 0},
  {"b": 321, "v": "0.7", "d": "2026-11-02", "t": "전투 보상 상자 탁자 · 연타 막기 · 세계핵 넘어가기", "big": 0},
  {"b": 320, "v": "0.7", "d": "2026-11-02", "t": "특성 선택 — 어두운 목재 + 검붉은 천 (trait-table-v1)", "big": 0},
@@ -27655,7 +27658,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=322;
+const BUILD_NO=323;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -30903,7 +30906,7 @@ const SH_SND={
 const SHUT_FILES={top:"덧판-위.png",bottom:"덧판-아래.png",under:"덧판-가림.png",gtop:"덧판-홈-위.png",gbot:"덧판-홈-아래.png",mat:"기록-받침.png"};
 /* 장소마다 바닥 (사용자 2026-10-30, art/_받은묶음/place-screens-2026-10-30) — 768×720 한 장, 자리가 그려져 있다.
    없는 장소(전용 구역 결과 · 쉼터 회복 결과)는 기록 받침 */
-const PLACE_BG={relic:"미지의-구역-배경.png",rest:"쉼터-배경.png",gimres:"미지의-구역-배경.png"};
+const PLACE_BG={relic:"사건-기록판.png",rest:"쉼터-배경.png",gimres:"사건-기록판.png"};   /* 미지의 구역 · 전용 구역 — 사건 기록판 (event-board-clean-v1, 2026-11-02). 2배 그림 */
 /* 장소 화면 안쪽은 **768×720 판 하나**로 그리고, 지도틀 안쪽 크기에 맞춰 통째로 키우고 줄인다 (--pk).
    배경에 그려진 자리(그림 틀 · 설명 판 · 선택지 · 카드 홈)와 내용이 창 크기와 상관없이 맞는다 */
 const PLACE_W=768, PLACE_H=720;
@@ -31078,29 +31081,44 @@ body.vmap #app .placebox .pin .evbox>.evopts{margin-top:14px;gap:9px}
 body.vmap #app .placebox .pin .evbox>.party{margin-top:10px}
 body.vmap #app .placebox .pin>.center+.center,body.vmap #app .placebox .pin>.center+div{margin-top:12px}
 body.vmap #app .placebox .pin .rewards.chestgot{gap:22px;margin-top:16px}
-/* ── 미지의 구역 (배경 자리 : 그림 틀 40,30 688×292 · 설명 40,334 688×110 · 선택지 40,470 688×230) ── */
-body.vmap #app .placebox.p-relic .pin{padding:46px 40px 8px}
-body.vmap #app .placebox.p-relic .pin .evbox{width:688px}
+/* ── 미지의 구역 · 전용 구역 — 사건 기록판 (event-board-clean-v1, 사용자 2026-11-02) ──
+   가죽 받침 한 장(map/사건-기록판.png, 2배 그림) 위에 그림 640×256 (64,32) · 제목 · 본문 · 얇은 구분선 · 선택지 (48,444~ 폭 672).
+   본문 판 · 금속 단추 틀은 없다 (그림 테두리는 예전 장식 틀 — 사용자 2026-11-02). 선택지는 이름 → 그 아래 설명 (왼쪽 정렬, 좌우 칸 나눔 없음).
+   기본엔 강조 면이 없고 표식만 62% · 올림 · 키보드 포커스엔 올림 면(9-slice 64/24/96/24) · 제목만 약한 금빛 · 누르는 순간 누름 면.
+   작은 놀이(.evgame) · 적 고르기(.evfoe) · 결과 칸 · 보상 카드는 이 꼴을 안 입는다 */
+body.vmap #app .placebox.p-relic .pin{padding:32px 48px 14px}
+body.vmap #app .placebox.p-relic .pin .evbox{width:672px}
 body.vmap #app .placebox.p-relic .pin .evart.wide{width:640px;height:256px;margin:0 auto;position:relative;overflow:visible;border:0;border-image:none;background:none;box-shadow:none;padding:0}
-body.vmap #app .placebox.p-relic .pin .evart.wide>img{width:640px;height:256px;display:block;image-rendering:pixelated}
+body.vmap #app .placebox.p-relic .pin .evart.wide>img{width:640px;height:100%;display:block;object-fit:cover;object-position:50% 50%;image-rendering:pixelated}   /* 길면 placeFit 이 높이를 줄인다 — 가운데를 남긴다 */
 body.vmap #app .placebox.p-relic .pin .evart.wide::after{content:"";position:absolute;inset:-16px;pointer-events:none;
-  background:url("map/이벤트-그림틀.png") 0 0/100% 100% no-repeat;image-rendering:pixelated}
-body.vmap #app .placebox.p-relic .pin .evbox>.evpanel{margin-top:18px;box-sizing:border-box;padding:10px 18px 8px;
-  background:none!important;border:0!important;border-image:none!important;box-shadow:none!important;text-shadow:0 1px 0 #000,0 0 6px rgba(0,0,0,.9)}   /* 설명은 판 없이 배경 위에 (사용자 2026-10-30) */
-body.vmap #app .placebox.p-relic .pin .evbox>.evpanel .evtitle{margin-top:0;line-height:1.3}
-body.vmap #app .placebox.p-relic .pin .evbox>.evpanel .evdesc .evp{font-size:13px;line-height:1.55;margin-bottom:2px}
-body.vmap #app .placebox.p-relic .pin .evbox>.evpanel .evdesc .evsay{font-size:15px;line-height:1.5;margin:6px 0;padding-top:4px;padding-bottom:4px}
-body.vmap #app .placebox.p-relic .pin .evbox>.evopts{margin-top:8px;gap:5px}
-body.vmap #app .placebox.p-relic .pin .evopts .choice span{line-height:1.35}
-/* 선택지 — 이름 칸 150 + 홈 2 + 늘어나는 면 + 오른끝 24. 위아래 14 는 두께 (글이 길어 높아지면 가운데만 늘어난다) */
-body.vmap #app .placebox.p-relic .pin .evopts .choice:not(.evfoe):not(.go2){min-height:72px;background:none;border:0;box-shadow:none;filter:none;
-  border-image:url("map/선택지-기본.png") 28 48 28 304 fill/14px 24px 14px 152px stretch round;grid-template-columns:150px minmax(0,1fr);image-rendering:auto}   /* v4 은색 (1376×144 를 절반으로 — 고르게 줄인다, 2026-10-30) */
-body.vmap #app .placebox.p-relic .pin .evopts .choice:not(.evfoe):not(.go2):not(.no):hover{border-image-source:url("map/선택지-올림.png");filter:none}
-body.vmap #app .placebox.p-relic .pin .evopts .choice.no:not(.evfoe):not(.go2){border-image-source:url("map/선택지-막힘.png");opacity:1}
-body.vmap #app .placebox.p-relic .pin .evopts .choice:not(.evfoe):not(.go2)>b{background:none;border-right:0;padding:10px 10px 10px 18px;font-size:15px}   /* 선택지 이름 — 조금 크게 (사용자 2026-10-30) */
-body.vmap #app .placebox.p-relic .pin .evopts .choice:not(.evfoe):not(.go2)>span{padding:6px 30px 6px 18px;font-size:12px}
-body.vmap #app .placebox.p-relic .pin .evopts .choice:not(.evfoe):not(.go2)>span+span{padding-top:0}   /* 세 줄(설명 둘 + 조건 하나)까지 72 안에 — 버튼 그림을 세로로 늘이지 않게 (사용자 2026-10-30 「늘어난 느낌」) */
-body.vmap #app .placebox.p-relic .pin .evopts .choice.no:not(.evfoe):not(.go2)>*{opacity:.55}
+  background:url("map/이벤트-그림틀.png") 0 0/100% 100% no-repeat;image-rendering:pixelated}   /* 그림 테두리는 예전 장식 틀 그대로 (사용자 2026-11-02) */
+body.vmap #app .placebox.p-relic .pin .evbox>.evpanel{margin-top:18px;box-sizing:border-box;padding:0 0 12px;text-align:left;
+  background:none!important;border:0!important;border-image:none!important;box-shadow:0 1px 0 rgba(8,5,3,.9),0 2px 0 rgba(255,226,170,.05)!important;text-shadow:0 1px 0 #100A06}   /* 아래 얇고 어두운 구분선 */
+body.vmap #app .placebox.p-relic .pin .evbox>.evpanel .evtitle{margin:0 0 6px;text-align:left;font-size:21px;line-height:1.3;color:#f0d892;text-shadow:0 2px 0 #100A06}
+body.vmap #app .placebox.p-relic .pin .evbox>.evpanel .evdesc{margin-top:0;text-align:left}
+body.vmap #app .placebox.p-relic .pin .evbox>.evpanel .evdesc .evp{font-size:15px;line-height:21px;color:#d8c8a6;margin:0 0 2px;text-align:left}
+body.vmap #app .placebox.p-relic .pin .evbox>.evpanel .evdesc .evsay{font-size:16px;line-height:1.5;margin:6px 0 2px;text-align:left;max-width:none;padding:4px 0}
+body.vmap #app .placebox.p-relic .pin .evbox>.party{margin-top:12px}
+body.vmap #app .placebox.p-relic .pin .evbox:not(.evgame)>.evopts{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+body.vmap #app .placebox.p-relic .pin .evbox:not(.evgame)>.evopts>.choice:not(.evfoe){display:block;position:relative;min-height:72px;box-sizing:border-box;padding:11px 24px 11px 36px;margin:0;text-align:left;cursor:pointer;outline:0;transform:none;
+  background:none!important;box-shadow:none!important;filter:none!important;border:0 solid transparent!important;
+  border-image-source:none!important;border-image-slice:48 192 48 128 fill!important;border-image-width:24px 96px 24px 64px!important;border-image-outset:0!important;border-image-repeat:stretch!important;image-rendering:pixelated}
+body.vmap #app .placebox.p-relic .pin .evbox:not(.evgame)>.evopts>.choice:not(.evfoe)::before{content:"";position:absolute;left:8px;top:18px;width:16px;height:16px;pointer-events:none;
+  background:url("map/사건-선택지-표식.png") 0 0/16px 16px no-repeat;image-rendering:pixelated;opacity:.62}
+body.vmap #app .placebox.p-relic .pin .evbox:not(.evgame)>.evopts>.choice:not(.evfoe)>b{display:block;margin:0 0 6px;padding:0;background:none;border:0;font-weight:normal;letter-spacing:0;text-align:left;
+  font-size:23px;line-height:28px;color:#F4E3B7;text-shadow:0 2px 0 #100A06}
+body.vmap #app .placebox.p-relic .pin .evbox:not(.evgame)>.evopts>.choice:not(.evfoe)>span{display:block;padding:0;margin:0;text-align:left;font-size:16px;line-height:20px;color:#BFAF94;text-shadow:0 1px 0 #100A06}
+body.vmap #app .placebox.p-relic .pin .evbox:not(.evgame)>.evopts>.choice:not(.evfoe)>span+span{margin-top:4px}
+body.vmap #app .placebox.p-relic .pin .evbox:not(.evgame)>.evopts>.choice:not(.evfoe)>*{image-rendering:auto}
+body.vmap #app .placebox.p-relic .pin .evbox:not(.evgame)>.evopts>.choice:not(.evfoe).go2{font-size:23px;line-height:28px;color:#F4E3B7;text-shadow:0 2px 0 #100A06;min-height:56px;padding-top:14px}   /* 결과 뒤 「길을 계속 간다」 — 이름만 있는 행 */
+body.vmap #app .placebox.p-relic .pin .evbox:not(.evgame)>.evopts>.choice:not(.evfoe):not(.no):is(:hover,:focus){border-image-source:url("map/사건-선택지-올림.png")!important}
+body.vmap #app .placebox.p-relic .pin .evbox:not(.evgame)>.evopts>.choice:not(.evfoe):not(.no):is(:hover,:focus)::before{opacity:1}
+body.vmap #app .placebox.p-relic .pin .evbox:not(.evgame)>.evopts>.choice:not(.evfoe):not(.no):is(:hover,:focus)>b,body.vmap #app .placebox.p-relic .pin .evbox:not(.evgame)>.evopts>.choice:not(.evfoe).go2:is(:hover,:focus){color:#FFEDB7;text-shadow:0 2px 0 #100A06,0 0 5px rgba(239,185,79,.38)}
+body.vmap #app .placebox.p-relic .pin .evbox:not(.evgame)>.evopts>.choice:not(.evfoe):not(.no):active{border-image-source:url("map/사건-선택지-누름.png")!important}
+body.vmap #app .placebox.p-relic .pin .evbox:not(.evgame)>.evopts>.choice:not(.evfoe).no{cursor:default}
+body.vmap #app .placebox.p-relic .pin .evbox:not(.evgame)>.evopts>.choice:not(.evfoe).no>*,body.vmap #app .placebox.p-relic .pin .evbox:not(.evgame)>.evopts>.choice:not(.evfoe).no::before{opacity:.5}
+body.vmap #app .placebox.p-relic .pin .evbox:not(.evgame)>.evopts>.evres{text-align:left;justify-content:flex-start;padding:2px 0 6px;border:0;border-image:none;background:none;box-shadow:none}
+body.vmap #app .placebox.p-relic .pin .evbox:not(.evgame)>.evopts>.evres p{font-size:16px;line-height:22px;color:#e6d6b2;text-align:left;text-shadow:0 1px 0 #100A06}
 /* ── 쉼터 (배경 자리 : 이름 띠 32,96 704×156 · 카드 홈 212×330 셋 — x 44 · 278 · 512, y 286) ── */
 body.vmap #app .placebox.p-rest .pin{padding:0}
 body.vmap #app .placebox.p-rest .pin>.center{position:relative;width:768px;height:720px}
@@ -31160,13 +31178,16 @@ function drawPlace(app){
 }
 /* 판 안에 다 들어가게 — 넘치면 안의 것을 통째로 줄인다 (사용자 2026-10-30 「스크롤로 넘기지 않고 딱 그 화면에만」).
    놀이가 그리기 없이 판을 바꿔도(카드 뒤집기 · 패 받기) 따라가게 안을 지켜본다. 아주 길면(PLACE_FIT_MIN 밑) 그만큼만 줄이고 나머지는 휠로 */
-const PLACE_FIT_MIN=0.62;
+const PLACE_FIT_MIN=0.62, PLACE_ART_MIN=150;
 function placeFit(pin){
   if(!pin||typeof requestAnimationFrame==="undefined") return;
   let q=0;
   const fit=()=>{ q=0; if(!pin.isConnected){ mo&&mo.disconnect(); return }
     const kids=[...pin.children]; kids.forEach(k=>{ k.style.transform=""; k.style.marginBottom="" });
-    const need=pin.scrollHeight, have=pin.clientHeight; if(!have||need<=have+1) return;
+    /* 사건 기록판 — 길면 글씨를 줄이기 전에 그림 높이부터 (256 → PLACE_ART_MIN, 사용자 2026-11-02 「긴 내용을 작은 글씨로 줄이지 말 것」) */
+    const art=pin.querySelector(".evbox:not(.evgame)>.evart.wide"); if(art) art.style.height="";
+    let need=pin.scrollHeight, have=pin.clientHeight; if(!have||need<=have+1) return;
+    if(art&&art.offsetHeight>PLACE_ART_MIN){ art.style.height=Math.max(PLACE_ART_MIN,art.offsetHeight-(need-have))+"px"; need=pin.scrollHeight; if(need<=have+1) return }
     /* 줄이면 위아래 사이(gap · margin)도 같이 준다 — 한 번 더 재지 않고 비율 하나로 */
     const z=Math.max(PLACE_FIT_MIN,have/need);
     kids.forEach(k=>{ const h=k.offsetHeight; k.style.transformOrigin="top center"; k.style.transform=`scale(${z.toFixed(4)})`;
@@ -37013,7 +37034,7 @@ function drawRelic0(app){
       <div><p style="white-space:pre-line">${evRich(evSent(run.evMsg))}</p></div></div>`));
     if(e.wheel) row.appendChild(el(rouletteHTML(e,run.evRoll)));
     const b=el(`<div class="choice go2">길을 계속 간다</div>`);
-    b.onclick=()=>{ evGo(); render() };   /* 나가는 셈은 규칙이 쥔다 (src/rules/ev-go.js) */
+    evRow(b,()=>{ evGo(); render() });   /* 나가는 셈은 규칙이 쥔다 (src/rules/ev-go.js) */
     row.appendChild(b);
     return;
   }
@@ -37022,10 +37043,23 @@ function drawRelic0(app){
     const usable=!o.when||o.when();
     const c=el(`<div class="choice ${usable?"":"no"}"><b>${esc(o.t)}</b><span>${evOptHtml(o.dd?o.dd():o.d)}</span>${
       usable?"":`<span style="color:var(--faint)">지금은 고를 수 없습니다.</span>`}</div>`);
-    if(!usable){ row.appendChild(c); return }
-    c.onclick=()=>evChoose(e,o,oi);   /* 길은 규칙 한 곳 (src/rules/ev-choose.js) */
+    if(!usable){ c.setAttribute("aria-disabled","true"); row.appendChild(c); return }
+    evRow(c,()=>evChoose(e,o,oi));   /* 길은 규칙 한 곳 (src/rules/ev-choose.js) · 행 전체가 단추 */
     row.appendChild(c);
   });
+}
+/* 사건 선택지 한 행 — 행 전체가 단추 (사건 기록판, 사용자 2026-11-02).
+   Tab 으로 오고 Enter · 스페이스로 고른다 · 위아래 화살표로 옮긴다. 커서를 올리면 그 행으로 초점을 옮겨
+   마우스 올림과 키보드 초점이 서로 다른 행을 함께 밝히지 않게 한다 (강조는 :hover · :focus 하나로) */
+function evRow(c,act){
+  c.tabIndex=0; c.setAttribute("role","button");
+  c.onclick=act;
+  c.onkeydown=ev=>{
+    if(ev.key==="Enter"||ev.key===" "){ ev.preventDefault(); act(); return }
+    if(ev.key==="ArrowDown"||ev.key==="ArrowUp"){ ev.preventDefault();
+      const L=[...c.parentNode.querySelectorAll('.choice[role="button"]')], i=L.indexOf(c);
+      const n=L[(i+(ev.key==="ArrowDown"?1:L.length-1))%L.length]; if(n) n.focus() } };
+  c.onmouseenter=()=>{ if(document.activeElement!==c) try{ c.focus({preventScroll:true}) }catch(e){} };
 }
 function leaveNode(){ run.here=null; run.sellPick=null; run.sellOpen=0;
   /* 장신구 선택 띠를 열어 두고 나가면 — 돈은 이미 냈으니 무작위로 하나 받는다 (2026-10-14) */
