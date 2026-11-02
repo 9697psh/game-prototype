@@ -26295,6 +26295,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 332, "v": "0.7", "d": "2026-11-02", "t": "페블 기술 아이콘 · 효과음 자리", "big": 0},
  {"b": 331, "v": "0.7", "d": "2026-11-02", "t": "페블 보상 · 특성 · 광맥 카드 · 적 이펙트", "big": 0},
  {"b": 330, "v": "0.7", "d": "2026-11-02", "t": "페블 그림 · 이펙트", "big": 0},
  {"b": 329, "v": "0.7", "d": "2026-11-02", "t": "페블 손 조금 작게", "big": 0},
@@ -27817,7 +27818,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=331;
+const BUILD_NO=332;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -35030,6 +35031,8 @@ const PEBBLE_HERO_TURNS=5, PEBBLE_HERO_UP=5, PEBBLE_FATE_TURNS=5;
 /* 연출 (src/fx/pebble-fx.js) — 망치 수정 자리 : 미리보기 몸 2배 판의 일반형 (-11,-87) · 영웅형 (-3,-87) */
 const pbCrystal=h=>[h&&h.pbHero?-6:-22,-174];
 const pbFxOn=()=>typeof pebbleFX==="function";
+/* 효과음 열쇠 (문서/페블 — 효과음 프롬프트 (2026-11-02).md). 「페블 <기술 이름>」 으로 두지 않는다 — 갈래마다 순간이 달라 여기서 부른다 */
+const pbSnd=k=>sfxOr("페블 "+k,null);
 const pbT=h=>(h&&h.tag)||{};
 function pebbleIs(h){ return !!(h&&h.name==="페블"&&!h.isMin) }
 function pebbleHas(h,k){ return !!(h&&(h.pbVeins||[]).indexOf(k)>=0) }
@@ -35093,7 +35096,7 @@ function pebbleAfter(h,i,s,target){
   if(s.pbPrep){
     h.pbPrep=(h.pbPrep||0)+1;
     if(pbFxOn()){ const sl=h.slot, c=pbCrystal(h), one=h.pbPrep===1;
-      fx({side:"mine",slot:sl,fn:()=>one?pebbleFX("charge","mine",sl,c[0]-14,c[1]+8):pebbleFX("ready","mine",sl,c[0],c[1]),gap:0}) }
+      fx({side:"mine",slot:sl,s:pbSnd(one?"준비 1":"준비 완료"),fn:()=>one?pebbleFX("charge","mine",sl,c[0]-14,c[1]+8):pebbleFX("ready","mine",sl,c[0],c[1]),gap:0}) }
     if(h.pbPrep>=2){ pebbleSwap(h); say(`${h.name} — 내려찍기를 쓸 수 있습니다.`,"t1");
       fx({side:"mine",slot:h.slot,ring:"#e0c85a",glow:1,txt:"내려찍기",cls:"shd",gap:80}) }
     else say(`내려찍기 준비 ${h.pbPrep}/2`,"t2");
@@ -35116,7 +35119,7 @@ function pebbleSmashAfter(h,tgt){
   let kills=0;
   if(tgt&&!tgt.alive) kills++;
   more.forEach(f=>{ asSrc(h,()=>hurt(f,crit?base*2:base,"내려찍기","slash",T.smashPierce?100:0,crit?1:0)); if(!f.alive) kills++ });
-  if(pbFxOn()) more.forEach(f=>{ const fs=f.slot; fx({side:"foe",slot:fs,fn:()=>pebbleFX("lift","foe",fs,0,0),gap:0}) });   /* 격동 · 파괴로 맞은 적도 솟는다 */
+  if(pbFxOn()) more.forEach(f=>{ const fs=f.slot; fx({side:"foe",slot:fs,s:pbSnd("암석 솟음"),fn:()=>pebbleFX("lift","foe",fs,0,0),gap:0}) });   /* 격동 · 파괴로 맞은 적도 솟는다 */
   hit.forEach(f=>{ if(f.alive) airborne(h,f) });
   if(V.indexOf("진동")>=0) hit.forEach(f=>{ if(f.alive){ addDeb(f,"atkDn",2,h); addDeb(f,"magDn",2,h) } });
   if(crit&&T.ironForge){ h.ironUp=(h.ironUp||0)+T.ironForge; say(`철광 벼림 — 이번 전투 내려찍기 피해 +${T.ironForge} (모두 +${h.ironUp})`,"t2") }
@@ -35136,9 +35139,10 @@ function pebbleSwingOnce(h,s){
   const L=B.foes.filter(f=>f.alive);
   /* 옆 휘두르기 띠 8칸 — 3칸째 끝(290ms)에 닿는다. 궤적은 220ms 에, 적마다 타격 섬광 */
   if(pbFxOn()&&h.slot>0){ const sl=h.slot;
-    fx({side:"mine",slot:sl,strip:{k:"swingA",ms:[120,100,70,50,60,80,120,200]},gap:220});
+    fx({side:"mine",slot:sl,s:pbSnd("휘두르기"),strip:{k:"swingA",ms:[120,100,70,50,60,80,120,200]},gap:220});
     fx({side:"mine",slot:sl,fn:()=>pebbleFX("trail","mine",sl,60,-75),gap:70});
-    L.forEach((f,k)=>{ const fs=f.slot; fx({side:"foe",slot:fs,fn:()=>pebbleFX("swinghit","foe",fs,0,-65),gap:k===L.length-1?40:28}) }) }
+    L.forEach((f,k)=>{ const fs=f.slot; fx({side:"foe",slot:fs,s:k===0?pbSnd("휘두르기 타격"):null,fn:()=>pebbleFX("swinghit","foe",fs,0,-65),gap:k===L.length-1?40:28}) }) }
+  const own0=B._ownSnd; if(pbSnd("휘두르기 타격")) B._ownSnd=1;   /* 녹음이 있으면 합성 타격음은 빼고 */
   const crit=new Set(L.filter(f=>pebbleSwingCrit(h,s,f)));   /* 밀기 전에 묻는다 — 민 뒤면 자리가 바뀐다 */
   let kills=0;
   L.forEach(f=>{ const b0=(f.hp||0)+(f.shield||0), c=crit.has(f);
@@ -35153,6 +35157,7 @@ function pebbleSwingOnce(h,s){
   for(let q=0;q<(T.giantArm||0);q++) B.foes.filter(f=>f.alive).forEach(f=>airborne(h,f));
   /* 세계핵의 망치 — 광맥이 휘두르기도 : 진동 */
   if(T.worldHammer&&pebbleHas(h,"진동")) B.foes.filter(f=>f.alive).forEach(f=>{ addDeb(f,"atkDn",2,h); addDeb(f,"magDn",2,h) });
+  B._ownSnd=own0;
   if(kills) questProgress("swingKill",h.name,kills);   /* 파괴 채굴 */
   return kills;
 }
@@ -35162,9 +35167,10 @@ function pebbleCast(h,s,target){
   if(s.pbSmash){ h._pbTgt=foeAt(target)||null;
     /* 내려찍기 띠 8칸 — 5칸째(310ms)에 땅에 닿는다. 피해는 그 뒤 runEffect 의 보통 길에서 (미리보기 : 닿기 120ms 앞에 망치가 떨어지기 시작) */
     if(pbFxOn()&&h.slot>0){ const sl=h.slot, t=h._pbTgt, ts=t&&t.slot, big=h.pbHero?1.175:1;
-      fx({side:"mine",slot:sl,strip:{k:"atkA",ms:[120,80,60,50,60,100,140,190]},gap:190});
+      fx({side:"mine",slot:sl,s:pbSnd("내려찍기 들어올림"),strip:{k:"atkA",ms:[120,80,60,50,60,100,140,190]},gap:190});
       if(t) fx({side:"foe",slot:ts,fn:()=>pebbleFX("ehammer","foe",ts,0,-60),gap:120});
-      fx({side:"mine",slot:sl,fn:()=>{ pebbleFX("contact","mine",sl,84,0,2*big); pebbleFX("crack","mine",sl,84,3,2*big+(h.pbHero?0.05:0));
+      if(pbSnd("내려찍기 충격")) B._ownSnd=1;   /* 녹음이 있으면 합성 타격음은 빼고 (doSkill 이 runEffect 뒤에 걷는다) */
+      fx({side:"mine",slot:sl,s:pbSnd("내려찍기 충격"),fn:()=>{ pebbleFX("contact","mine",sl,84,0,2*big); pebbleFX("crack","mine",sl,84,3,2*big+(h.pbHero?0.05:0));
         if(t) pebbleFX("lift","foe",ts,0,0,h.pbHero?2.2:1.7) },gap:0}) }
     return false }   /* 맞을 적을 먼저 쥐어 둔다 — 쓰러지면 foeAt 이 못 찾는다 (황금 · 시간) */
   if(s.pbVein){ pebbleVeinStart(h); return true }
@@ -35193,8 +35199,8 @@ function pebbleHeroNow(h){
   const T=pbT(h), up=PEBBLE_HERO_UP+(T.heroUp||0);
   h.pbHero=1; h.pbHeroLeft=0; h.lock={}; h.lockNew={};
   if(pbFxOn()&&h.slot>0){ const sl=h.slot;
-    fx({side:"mine",slot:sl,fn:()=>{ pebbleFX("heroback","mine",sl,0,6); pebbleFX("herofront","mine",sl,0,6) },gap:500});
-    fx({side:"mine",slot:sl,fn:()=>pebbleFX("glint","mine",sl,-36,-151),gap:500});
+    fx({side:"mine",slot:sl,s:pbSnd("영웅 등장"),fn:()=>{ pebbleFX("heroback","mine",sl,0,6); pebbleFX("herofront","mine",sl,0,6) },gap:500});
+    fx({side:"mine",slot:sl,s:pbSnd("영웅 반짝"),fn:()=>pebbleFX("glint","mine",sl,-36,-151),gap:500});
     fx({side:"mine",slot:sl,fn:()=>pebbleFX("glint","mine",sl,-36,-151),gap:0}) }
   ["atk","mag","def"].forEach(k=>bumpTmp(h,k,up));
   if(T.heroHeal) bumpTmp(h,"maxHp",T.heroHeal);   /* 영웅 회복 — 그 전투 최대 체력 (bumpTmp 가 체력도 같이) */
@@ -35234,6 +35240,7 @@ function pebbleVeinStart(h){
   if(!pool.length){ say("더 살필 광맥이 없습니다.","t2"); return }
   const opts=shuffled(pool.slice()).slice(0,2+(pbT(h).veinOpts||0)).map(v=>v.k);
   B.veinPick={by:h.name,opts:opts,t0:Date.now()};
+  if(pbSnd("광맥 살피기")) fx({side:"mine",slot:h.slot,s:pbSnd("광맥 살피기"),gap:0});
   say(`${h.name}${jo(h.name,"ig")} 광맥을 살핍니다 — 하나를 고르세요.`,"t1");
 }
 function pebbleVeinTake(j){
@@ -35243,7 +35250,7 @@ function pebbleVeinTake(j){
   if(h&&k){ h.pbVeins=(h.pbVeins||[]).concat([k]);
     const v=PEBBLE_VEINS.find(x=>x.k===k);
     say(`${v.n} — ${v.d}`,"t1");
-    if(pbFxOn()){ const sl=h.slot; fx({side:"mine",slot:sl,fn:()=>pebbleFX("absorb","mine",sl,0,0),gap:0}) }
+    if(pbFxOn()){ const sl=h.slot; fx({side:"mine",slot:sl,s:pbSnd("광맥 흡수"),fn:()=>pebbleFX("absorb","mine",sl,0,0),gap:0}) }
     fx({side:"mine",slot:h.slot,ring:"#e0c85a",glow:1,txt:v.n,cls:"shd",gap:100});
     pebbleSync(h) }
   if(typeof flushFX==="function") flushFX();
@@ -51930,7 +51937,9 @@ const REW_FIX={
  "두꺼운 라이티늄":{"ic":"status_pebble_vein_lithinium"}, "철광 벼림":{"ic":"status_pebble_vein_iron"},
  "채굴의 달인":{"ic":"status_pebble_vein_golden"}, "맑은 사파이어":{"ic":"status_pebble_vein_sapphire"},
  "조약돌 채굴":{"ic":"item_special_lithinium_pebble"}, "일당 환전":{"ic":"item_special_lithinium_pebble"}, "파괴 채굴":{"ic":"item_special_lithinium_pebble"},
- "페블|충격 흡수":{"ic":"fx_pb_lift"},
+ "페블|충격 흡수":{"sk":"내려찍기"},   /* 띄우는 기술의 그림 (띠는 아이콘으로 쓰지 않는다) */
+ /* 페블 — 기술을 키우는 보상은 그 기술 그림 (받은 기술 아이콘, 2026-11-02) */
+ "페블|내려찍기 강화":{"sk":"내려찍기"}, "페블|광산 수레 뒤지기":{"sk":"내려찍기"}, "페블|산을 쪼개는 망치":{"sk":"내려찍기"}, "페블|천장 붕괴":{"sk":"내려찍기"}, "페블|보호의 망치":{"sk":"내려찍기"}, "페블|조약돌의 집념":{"sk":"내려찍기"}, "페블|내려찍기 준비 강화":{"sk":"내려찍기 준비"}, "페블|휘두르기 강화":{"sk":"휘두르기"}, "페블|거인의 팔":{"sk":"휘두르기"}, "페블|관자놀이 타격":{"sk":"휘두르기"}, "페블|세계핵의 망치":{"sk":"휘두르기"}, "페블|작은 영웅":{"sk":"영웅 등장"}, "페블|영웅심":{"sk":"영웅 등장"}, "페블|영웅 회복":{"sk":"영웅 등장"}, "페블|영웅의 꿈":{"sk":"영웅 등장"}, "페블|영웅의 함성":{"sk":"영웅 등장"}, "페블|영웅의 숨결":{"sk":"영웅 등장"}, "페블|영웅의 운명":{"sk":"영웅 등장"}, "페블|부서지지 않는 의지":{"sk":"영웅 등장"}, "페블|조약돌의 긍지":{"sk":"라이티늄 심장"}, "페블|라이티늄 애호가":{"sk":"라이티늄 심장"}, "페블|벼림":{"sk":"라이티늄 심장"}, "페블|거대 돌멩이":{"sk":"라이티늄 심장"}, "페블|눈 밝은 광부":{"sk":"광맥 살피기"},
  /* ═══ 레이 (노트 20, 사용자 2026-10-22) — 받은 기술 아이콘과 이펙트를 빌린다 ═══ */
  "구체 강화":{"sk":"번개 구체"}, "빛의 속도":{"sk":"번개 구체"}, "구체 폭발":{"ic":"fx_rei_orb_hit"},
  "공명":{"sk":"주술사의 다짐"}, "순환의 구체":{"ic":"fx_rei_orb_fly_big"}, "삼뢰 해방":{"sk":"번개 구체"},
