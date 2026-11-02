@@ -5065,6 +5065,8 @@ kbd{display:inline-block;min-width:20px;text-align:center;padding:1px 7px;font-s
 .slot .art.holo img{animation:holoFlick 2.2s steps(1) infinite}
 @keyframes holoFlick{0%,86%,100%{opacity:1}88%{opacity:.35}92%{opacity:.8}95%{opacity:.4}}
 /* 무대의 빈 칸은 거의 투명하다 — 분신이 선 빈 칸만 칸 테두리는 숨긴 채 그림을 보인다 */
+.bfstage .slot.empty:has(>.art.gsshadow){opacity:1;background:none;border-color:transparent;box-shadow:none}   /* 그슨대의 그림자 — 빈 칸은 거의 투명이라 그림자까지 숨었다 (사용자 2026-11-02) */
+.bfstage .slot.empty:has(>.art.gsshadow)>.no{visibility:hidden}
 .bfstage .slot.empty.holoslot{opacity:1;background:none;border-color:transparent;box-shadow:none}
 .bfstage .slot.empty.holoslot>.no{visibility:hidden}
 /* 기동 오오라 (사용자 2026-09-30) — 띠 한 칸 128px 안에서 몸이 y 18~106 에 든다.
@@ -6450,7 +6452,7 @@ const KW_TAB=[
  {n:"잠금",c:"skill",d:"해당 기술을 일정 턴 동안 사용할 수 없음. 쓴 턴은 세지 않고 다음 턴부터 줄어듭니다 — 잠금(1)이면 다음 턴 하나를 통째로 쉽니다"},
  {n:"오볼의 짐칸",c:"skill",d:"오볼이 선박 상점에서 산 물자 카드가 담기는 곳"},   /* 커서를 올리면 짐칸 판 (obolCargoTip, 2026-10-31) */
  {n:"사용한도",c:"skill",d:"사용 한도의 횟수만큼 사용 후 그 라운드에서 기술이 사용 불가 상태가 됨"},
- {n:"보호막",c:"buff",d:"한 턴간 누적된 보호막만큼 피해를 막음. 턴이 끝나면 사라짐"},
+ {n:"보호막",c:"buff",d:"한 턴간 누적된 보호막만큼 피해를 막음. 다음 자기 턴이 시작될 때 사라짐"},
  {n:"에너지 보호막",c:"buff",d:"한 턴간 누적된 보호막만큼 피해를 막음. 턴이 끝나도 사라지지 않음. 라운드가 바뀌면 사라짐"},
  {n:"투기장의 감옥",c:"deb",d:"이라가 전장에 서 있는 동안, 내 턴이 끝날 때 아군과 적 모두가 최대 체력의 일부만큼 피해를 받습니다. 옆의 수는 이번에 받을 피해입니다."},
  {n:"부정 보호막",c:"buff",d:"부정적인 효과를 1회 제거. 이미 적용된 효과 먼저 제거. 화상, 냉각, 감전은 중첩을 모두 제거"},
@@ -26143,6 +26145,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 326, "v": "0.7", "d": "2026-11-02", "t": "그슨대 그림자 보이게 · 보호막 풀이", "big": 0},
  {"b": 325, "v": "0.7", "d": "2026-11-02", "t": "그슨대 새로 — 노트 10 규칙 · 설화형 그림 · 이펙트 다섯", "big": 0},
  {"b": 324, "v": "0.7", "d": "2026-11-02", "t": "사건 기록판 — 설명 가운데 정렬 · 선택지와 사이 구분선", "big": 0},
  {"b": 323, "v": "0.7", "d": "2026-11-02", "t": "사건 기록판 — 미지의 구역 · 전용 구역 장소 화면 새 받침과 선택지 강조", "big": 0},
@@ -27659,7 +27662,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=325;
+const BUILD_NO=326;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
