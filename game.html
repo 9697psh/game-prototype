@@ -533,7 +533,7 @@ img.pxs.face{image-rendering:pixelated;width:auto;filter:drop-shadow(0 2px 0 rgb
   background-image:url(fx/pavel-golem-edge-8f-12224x816.png);image-rendering:pixelated;opacity:.9;
   animation:aurain .8s ease-out both}
 .golemaura.out{animation:auraout .42s ease-in both}
-.golemaura.vein{background-image:url(fx/pebble-ore-aura-8f-12224x816.png)}   /* 페블 광맥 고르기 (130ms 칸이지만 파벨 틀의 110ms 로 함께 돈다) */
+.golemaura.vein{background-image:url(fx/pebble-ore-aura-8f-12224x816.png);z-index:61;opacity:1}   /* 페블 광맥 고르기 (130ms 칸이지만 파벨 틀의 110ms 로 함께 돈다) */
 @keyframes aurain{from{opacity:0;filter:brightness(1.6) blur(4px)}to{opacity:.9;filter:none}}
 @keyframes auraout{from{opacity:.9}to{opacity:0}}
 /* 합쳐지는 순간 — 가운데에서 부속 여섯이 맞물린다 (512x64 여덟 칸을 3배로) */
@@ -5063,7 +5063,9 @@ kbd{display:inline-block;min-width:20px;text-align:center;padding:1px 7px;font-s
 .dexsrc{display:none}
 /* 홀로그램 분신 (이테리오 보상 2026-09-30) — 비치는 푸른 그림, 가끔 일렁인다 */
 .slot .art[style*="--pbgiant"] img.pxs{scale:var(--pbgiant);transform-origin:50% 100%}   /* 페블 거대 돌멩이 — 고를 때마다 12%씩, 넷까지 (노트 주석) */
-.slot .art.gsshadow{position:absolute;left:0;right:0;bottom:0;pointer-events:auto;z-index:0;opacity:.92}   /* 그슨대의 그림자 — 칸 발밑, 몸 뒤 (2026-11-02) */
+.slot .art.gsshadow{position:absolute;left:0;right:0;bottom:26px;pointer-events:auto;z-index:0;opacity:.55;animation:gsfloat 2.8s ease-in-out infinite}   /* 그슨대의 그림자 — 공중에 둥둥 · 조금 투명 (사용자 2026-11-02) */
+.slot:not(.empty)>.art.gsshadow{pointer-events:none;z-index:3;opacity:.45}   /* 대원이 선 칸 — 대원은 제자리, 그림자는 위에 비친다. 오브젝트가 아니니 커서는 대원에게 */
+@keyframes gsfloat{0%,100%{translate:0 0}50%{translate:0 -10px}}
 .slot .art.holo{opacity:.5;filter:grayscale(1) sepia(1) hue-rotate(150deg) saturate(3) brightness(1.3) drop-shadow(0 0 6px #6ad8ff);pointer-events:none}
 .slot .art.holo img{animation:holoFlick 2.2s steps(1) infinite}
 @keyframes holoFlick{0%,86%,100%{opacity:1}88%{opacity:.35}92%{opacity:.8}95%{opacity:.4}}
@@ -9856,8 +9858,8 @@ function thrustFX(from,side,slot){
    가로로 맞추고(세로는 한 배율), 한 번에 번쩍 나타났다 사라진다 — 판이 흔들리고 붉게 번쩍인다
    (사용자 2026-09-30 : 쓸고 지나가는 것보다 한 방에 임팩트 있게).
    slots 를 주면(압축 공격) 그 칸들만 가로지른다 */
-function cleaveFX(side,slots){
-  const u=skinIcon("fx_it_cleave"); if(!u) return;
+function cleaveFX(side,slots,o){   /* o — {k:그림, ms:길이, veil:번쩍이는 빛, fade:사라지는 몫} 페블 휘두르기가 같은 틀을 쓴다 (사용자 2026-11-02) */
+  o=o||{}; const u=skinIcon(o.k||"fx_it_cleave"); if(!u) return;
   const box=document.getElementById(side==="foe"?"foeSide":"mySide"); if(!box) return;
   let es=[...box.querySelectorAll(".slot[data-slot]")];
   if(slots&&slots.length) es=es.filter(e=>slots.includes(+e.getAttribute("data-slot")));
@@ -9872,16 +9874,16 @@ function cleaveFX(side,slots){
   nd.style.backgroundImage="url("+u+")";
   nd.style.width=(256*sx)+"px"; nd.style.height=(96*sy)+"px";
   nd.style.left=(L-4*sx)+"px"; nd.style.top=(y-48*sy)+"px";
-  const ms=Math.round(520*SPD);
+  const ms=Math.round((o.ms||520)*SPD), f0=o.fade?1-o.fade:.5;
   if(nd.animate) nd.animate([
     {transform:"scale(1.06,1.7)",filter:"brightness(2.6)",opacity:1},
     {transform:"scale(1,1)",filter:"brightness(1.3)",opacity:1,offset:.14},
-    {transform:"scale(1,.92)",filter:"brightness(1)",opacity:1,offset:.5},
+    {transform:"scale(1,.92)",filter:"brightness(1)",opacity:1,offset:f0},
     {transform:"scale(1,.7)",filter:"brightness(1)",opacity:0}],{duration:ms,easing:"ease-out",fill:"forwards"});
   setTimeout(()=>nd.remove(),ms+40);
   { const fld=document.querySelector(".field");
     if(fld){ fld.classList.remove("quake"); void fld.offsetWidth; fld.classList.add("quake") } }
-  veil("radial-gradient(ellipse at 70% 45%,rgba(220,40,40,.28),transparent 65%)");
+  veil(o.veil||"radial-gradient(ellipse at 70% 45%,rgba(220,40,40,.28),transparent 65%)");
 }
 /* 붙잡아 둔 적을 놓는다 — 새 자리에 그리고, 옛 자리에서 옮겨 오는 모습을 보인다.
    how : "slide"(자기장 — 옆으로 끌려온다) · "blink"(시공간 — 새 자리에서 번쩍 나타난다) */
@@ -13455,6 +13457,8 @@ const IDLE_LOOP={"간수의 손":1,"페블 (준비 1)":1,"페블 (준비 2)":1,"
 const IDLE_FAST={"실험 책임자":160,"균열 군체":160,"누군가의 영혼":125,"명부에 묶인 잔영":125,
   "악마 하수인 (폭식의 군주)":220,"악마 장군 (폭식의 군주)":220,
   "새싹":260,"수목":260,"고대수목":260,"새싹 (봄의 정원사)":420,"수목 (봄의 정원사)":420,"고대수목 (봄의 정원사)":420,"새싹 (봄의 정원사 프로토타입-02)":420,"수목 (봄의 정원사 프로토타입-02)":420,"고대수목 (봄의 정원사 프로토타입-02)":420};   /* 오토의 정원 — 잎이 흔들리고 코어가 맥동 (usage 120~220ms) */   /* 폭식의 군주 하수인 — 1초 한 칸 숨쉬기는 느려 보였다, 칸당 220ms 로 늘 돈다 (사용자 2026-10-04) */   /* 환영 — 둥실 떠 있는 띠, 칸당 125ms 로 늘 (2026-10-03) */
+/* 페블 준비 — 망치를 버티는 부들거림이 1초 한 칸이면 느리다 (사용자 2026-11-02 「좀 더 빨리」) */
+["페블 (준비 1)","페블 (준비 2)","페블 (영웅 준비 1)","페블 (영웅 준비 2)"].forEach(n=>{ IDLE_FAST[n]=240 });
 setInterval(()=>{ const now=Date.now();
   document.querySelectorAll('img.pxs[data-anim]').forEach(im=>{ const ms=IDLE_FAST[im.dataset.nm]; if(!ms||im._pt) return;
     const set=PNG_SPRITE[im.dataset.nm]; if(!set||!set.idleA) return;
@@ -26299,6 +26303,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 336, "v": "0.7", "d": "2026-11-02", "t": "그슨대 두려움 잠식 · 그림자 · 페블 휘두르기 · 오오라 · 준비 자세", "big": 0},
  {"b": 335, "v": "0.7", "d": "2026-11-02", "t": "페블 효과음 31개 (영웅 기합 수정 울림+메아리) · 광맥 살피기 곡", "big": 0},
  {"b": 334, "v": "0.7", "d": "2026-11-02", "t": "페블 광맥 고르기 오오라", "big": 0},
  {"b": 333, "v": "0.7", "d": "2026-11-02", "t": "그슨대 출전 · 페블 적 이펙트 줄임", "big": 0},
@@ -27826,7 +27831,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=335;
+const BUILD_NO=336;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -34881,7 +34886,7 @@ const GSD_FX={
   vanish:{k:"fx_gsd_vanish",fm:[65,70,75,80,90,90,90,90]},
   emerge:{k:"fx_gsd_emerge",fm:[65,70,75,80,90,90,90,90]},
   strike:{k:"fx_gsd_strike",fm:[60,70,85,80,85,85,90,95]},
-  fear:{k:"fx_gsd_fear",fm:[60,75,80,75,80,75,90,100]},
+  fear:{k:"fx_gsd_fear",fm:[60,75,80,75,80,75,90,100],z:1.6},   /* 발밑 물결 — 1.6배 (사용자 2026-11-02 「크게」). 물결이 2 · 4 · 6 칸째에 솟는다 = 피해 세 번 */
   bloom:{k:"fx_gsd_bloom",fm:[65,70,75,100,85,85,95,100]}};
 const GSD_Z=2.45;   /* 띠 속 인물(논리 51~53px)이 몸 그림(화면 128px, 창 크기와 상관없음)과 같은 키 — 1280 · 1920 에서 잰 값 (2026-11-02) */
 const gsdMs=k=>GSD_FX[k].fm.reduce((a,b)=>a+b,0);
@@ -34893,7 +34898,7 @@ function gsdSheet(k,side,slot,gap){
   const F=GSD_FX[k], feet=(k==="vanish"||k==="emerge"||k==="fear");
   return {side:side,slot:slot,sheet:F.k,gap:gap==null?gsdMs(k):gap,s:GSD_SND[k]?gsdSnd(GSD_SND[k]):null,
     /* 칸 길이도 연출 빠르기(SPD)를 따른다 — 큐의 gap 은 SPD 를 곱하니 띠와 다음 연출 · 본체 숨김이 같이 줄어든다 */
-    sheetOpt:Object.assign({frames:8,frameMs:F.fm.map(n=>Math.round(n*SPD)),z:GSD_Z},k==="bloom"?{cell:128}:{},feet?{feet:1,dy:k==="fear"?5:4}:{})};
+    sheetOpt:Object.assign({frames:8,frameMs:F.fm.map(n=>Math.round(n*SPD)),z:GSD_Z*(F.z||1)},k==="bloom"?{cell:128}:{},feet?{feet:1,dy:k==="fear"?5:4}:{})};
 }
 function gsdIs(h){ return !!(h&&h.name==="그슨대"&&!h.isMin) }
 /* 그림자가 있으면 기습 · 증식은 겨눌 것이 없는 기술이 된다 — 고르는 화면이 s.tg 를 읽으니 여기서 맞춘다
@@ -34970,13 +34975,20 @@ function gsdCast(h,s,target){
     {
       B.foes.filter(f=>f.alive).forEach(f=>fx(gsdSheet("fear","foe",f.slot,0)));
       allUnits().filter(u=>u.hp>0).forEach(u=>fx(gsdSheet("fear","mine",u.slot,0)));
-      fx({gap:310}) }
+      fx({gap:GSD_FX.fear.fm[0]}) }   /* 첫 물결(2칸째)이 솟을 때까지 */
     const own0=B._ownSnd, ownE=!!gsdSnd("그슨대 두려움 잠식 타격");
     try{ for(let q=0;q<3;q++){
       if(B.over) break;
       if(ownE){ B._ownSnd=1; fx({side:"mine",slot:h.slot,s:"그슨대 두려움 잠식 타격",gap:0}) }   /* 녹음이 있으니 합성 타격음은 빼고 */
+      const i0=FXQ.length, F=GSD_FX.fear.fm;
       B.foes.filter(f=>f.alive).forEach(f=>asSrc(h,()=>hurt(f,1,`두려움 잠식 ${q+1}/3`,"mag")));
       allUnits().filter(u=>u.hp>0).forEach(u=>asSrc(h,()=>hurtAlly(h,u,1,`두려움 잠식 ${q+1}/3`,"공격")));
+      /* 한 번의 피해는 모두에게 한꺼번에 — 다음 물결까지 기다린다 (2 · 4 · 6 칸째, 사용자 2026-11-02 「피해 타이밍과 출력」) */
+      for(let k=i0;k<FXQ.length;k++){ const o=FXQ[k];
+        if(o.side==="mine"&&o.slot===h.slot&&o.pose==="hurt") o.pose="guard";   /* 그슨대 자신은 막기 자세 (사용자 2026-11-02) */
+        if(k<FXQ.length-1) o.gap=0 }
+      if(FXQ.length>i0){ const last=FXQ[FXQ.length-1], w=q<2?F[2*q+1]+F[2*q+2]:F.slice(5).reduce((a,b)=>a+b,0);
+        last.gap=q<2?w:Math.max(last.gap||0,w) }
     } } finally { B._ownSnd=own0 }
     return true }
   if(s.gsBloom){
@@ -35143,6 +35155,7 @@ function pebbleSwingCrit(h,s,f){
   return !!(pbT(h).temple&&foeShiftWhy(f,f.slot+1));
 }
 /* 휘두르기 한 번 — 모든 적에게 피해 · 준 만큼 이번 적 차례 피해 감소 · 1칸 밀침 · 거인의 팔 */
+const PB_FX_SLOW=1.6;   /* 페블 이펙트 띠를 받은 빠르기보다 느리게 (사용자 2026-11-02 「전체적으로 너무 빨리 지나감」) — 큐의 때도 이것으로 맞춘다 */
 function pebbleSwingOnce(h,s){
   const T=pbT(h), v=(s.dmg||0)+mod(s,"dmg")+(h.atk||0);
   const L=B.foes.filter(f=>f.alive);
@@ -35150,7 +35163,10 @@ function pebbleSwingOnce(h,s){
   if(pbFxOn()&&h.slot>0){ const sl=h.slot;
     fx({side:"mine",slot:sl,s:pbSnd("휘두르기"),strip:{k:"swingA",ms:[120,100,70,50,60,80,120,200]},gap:220});
     fx({side:"mine",slot:sl,fn:()=>pebbleFX("trail","mine",sl,60,-75),gap:70});
-    L.forEach((f,k)=>{ const fs=f.slot; fx({side:"foe",slot:fs,s:k===0?pbSnd("휘두르기 타격"):null,fn:()=>pebbleFX("swinghit","foe",fs,0,-65),gap:k===L.length-1?40:28}) }) }
+    fx({side:"foe",slot:L[0]?L[0].slot:1,s:pbSnd("휘두르기 타격"),fn:()=>cleaveFX("foe",null,{k:"fx_pb_swingall",ms:820,fade:.45,
+      veil:"radial-gradient(ellipse at 70% 45%,rgba(230,190,80,.22),transparent 65%)"}),gap:0});   /* 이테리오 팽창 공격처럼 적 진영을 가로지른다 · 스르르 사라진다 */
+    L.forEach(f=>{ const fs=f.slot; fx({side:"foe",slot:fs,fn:()=>pebbleFX("swinghit","foe",fs,0,-65),gap:0}) }) }
+  const i0=FXQ.length;   /* 여기서부터(피해 · 피해 감소 · 밀림)는 닿는 순간에 한꺼번에 */
   const own0=B._ownSnd; if(pbSnd("휘두르기 타격")) B._ownSnd=1;   /* 녹음이 있으면 합성 타격음은 빼고 */
   const crit=new Set(L.filter(f=>pebbleSwingCrit(h,s,f)));   /* 밀기 전에 묻는다 — 민 뒤면 자리가 바뀐다 */
   let kills=0;
@@ -35162,6 +35178,7 @@ function pebbleSwingOnce(h,s){
     if(got>0){ f.weakAtk=(f.weakAtk||0)+got; fx({side:"foe",slot:f.slot,txt:"피해 −"+got,cls:"miss",gap:40}) } });
   /* 1칸 뒤로 — 뒤에 선 적부터 민다 (앞에서부터 밀면 서로 자리만 바꾼다) */
   B.foes.filter(f=>f.alive).sort((a,b)=>b.slot-a.slot).forEach(f=>{ if(foeShift(f,f.slot+1)) fx({side:"foe",slot:f.slot,s:"step",txt:"밀림",cls:"miss",gap:60}) });
+  if(pbFxOn()&&FXQ.length>i0){ for(let k=i0;k<FXQ.length-1;k++) FXQ[k].gap=0; FXQ[FXQ.length-1].gap=Math.max(FXQ[FXQ.length-1].gap||0,520) }
   /* 거인의 팔 — 모든 적을 띄운다 (고른 수만큼) */
   for(let q=0;q<(T.giantArm||0);q++) B.foes.filter(f=>f.alive).forEach(f=>airborne(h,f));
   /* 세계핵의 망치 — 광맥이 휘두르기도 : 진동 */
@@ -35176,8 +35193,8 @@ function pebbleCast(h,s,target){
   if(s.pbSmash){ h._pbTgt=foeAt(target)||null;
     /* 내려찍기 띠 8칸 — 5칸째(310ms)에 땅에 닿는다. 피해는 그 뒤 runEffect 의 보통 길에서 (미리보기 : 닿기 120ms 앞에 망치가 떨어지기 시작) */
     if(pbFxOn()&&h.slot>0){ const sl=h.slot, t=h._pbTgt, ts=t&&t.slot, big=h.pbHero?1.175:1;
-      fx({side:"mine",slot:sl,s:pbSnd("내려찍기 들어올림"),strip:{k:"atkA",ms:[120,80,60,50,60,100,140,190]},gap:190});
-      if(t) fx({side:"foe",slot:ts,fn:()=>pebbleFX("ehammer","foe",ts,0,-60),gap:120});
+      fx({side:"mine",slot:sl,s:pbSnd("내려찍기 들어올림"),strip:{k:"atkA",ms:[120,80,60,50,60,100,140,190]},gap:t?Math.max(0,310-Math.round(120*PB_FX_SLOW)):310});
+      if(t) fx({side:"foe",slot:ts,fn:()=>pebbleFX("ehammer","foe",ts,0,-60),gap:Math.round(120*PB_FX_SLOW)});
       if(pbSnd("내려찍기 충격")) B._ownSnd=1;   /* 녹음이 있으면 합성 타격음은 빼고 (doSkill 이 runEffect 뒤에 걷는다) */
       fx({side:"mine",slot:sl,s:pbSnd("내려찍기 충격"),fn:()=>{ pebbleFX("contact","mine",sl,84,0,2*big); pebbleFX("crack","mine",sl,84,3,2*big+(h.pbHero?0.05:0));
         if(t) pebbleFX("lift","foe",ts,0,0,h.pbHero?2.2:1.7) },gap:0}) }
@@ -35295,7 +35312,7 @@ function pebbleFX(name,side,slot,dx,dy,sc){
   const F=PB_FX[name], p=(typeof feetOf==="function")&&feetOf(side,slot); if(!F||!p) return;
   const K=side==="foe"?pbFoeK(slot):PB_K/2, z=K*(sc||F.s)*(side==="foe"?(F.foe||1):1);   /* foe — 적 쪽에서 더 줄이는 배율 (내려찍기 망치 · 암석, 사용자 2026-11-02 「커 보인다」) */
   const x=p.x+(dx||0)*K+(F.c[0]/2-F.a[0])*z, y=p.y+(dy||0)*K+(F.c[1]/2-F.a[1])*z;
-  sheetFX(F.k,side,slot,{at:{x:x,y:y},cellW:F.c[0],cellH:F.c[1],frames:F.fm.length,frameMs:F.fm.map(n=>Math.round(n*SPD)),z:z});
+  sheetFX(F.k,side,slot,{at:{x:x,y:y},cellW:F.c[0],cellH:F.c[1],frames:F.fm.length,frameMs:F.fm.map(n=>Math.round(n*PB_FX_SLOW*SPD)),z:z});
 }
 /* ═══════════ 페블 전용 보상 (노트 21, 사용자 2026-11-02) ═══════════
  * 글은 노트 그대로. 셈은 src/rules/pebble.js 의 갈고리(pebbleSmashAfter · pebbleCast · pebbleTurnStart · pebbleEndShield …)가 h.tag 를 읽는다.
@@ -42854,7 +42871,7 @@ function drawBattle(app){
 
   if(run.sandbox)drawSandStudio();
   /* 칸 뒤처리 — 그림 뒤에 오는 것(이름·체력·능력치·표식)을 .ublw 로 묶어 발밑에 단다. 그림은 칸 바닥(판 자리)에 선다 */
-  field.querySelectorAll(".slot").forEach(d=>{ const a=d.querySelector(".art"); if(!a) return;
+  field.querySelectorAll(".slot").forEach(d=>{ const a=d.querySelector(".art:not(.gsshadow)")||d.querySelector(".art"); if(!a) return;   /* 그슨대의 그림자는 몸이 아니다 — 대원 몸을 먼저 */
     const w=el(`<div class="ublw"></div>`); let n=a.nextSibling; while(n){ const nx=n.nextSibling; w.appendChild(n); n=nx } d.appendChild(w);
     /* 버프·디버프 줄은 그림 위로 — 발밑에 두면 옆 칸 그림에 가려 커서가 안 닿는다 (2026-09-29) */
     w.querySelectorAll(".st.g,.st.o").forEach(x=>d.insertBefore(x,a));
