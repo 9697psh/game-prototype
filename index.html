@@ -14698,7 +14698,7 @@ const HERO_POOL=["나이코스","카제","굴라","헥토","트리스탄","인�
    나머지는 전용 보상이 아직 임시라 빼 두었다 — 여기에 이름을 도로 넣으면 된다.
    영웅 도감은 이 목록을 보지 않는다. 거기서는 열넷을 다 구경할 수 있다. */
 const PLAYABLE=["나이코스","카제","트리스탄","굴라","쿠렘타이","플레어와 플로우","이테리오","오토","헥토","도미니코","이라","파벨","오리온","데린저",
- "레이","인비디아","오볼","페블"];   /* 페블 2026-11-02 — 전용 보상은 아직 */   /* 오볼 2026-10-31 — 전용 보상은 아직 (해금 보상은 사용자가 노트에 먼저 적는다) */   /* 전용 보상이 다 들어왔다 — 레이 36 (노트 20) · 인비디아 33 (노트 7) */   /* 카제 2026-09-16 · 이테리오 2026-09-30 · 오토 2026-10-04 · 헥토 · 도미니코 2026-10-06 (사용자) */
+ "레이","인비디아","오볼","페블","그슨대"];   /* 그슨대 2026-11-02 — 사용자 「게임에 추가」 (전용 보상은 아직) */   /* 페블 2026-11-02 — 전용 보상은 아직 */   /* 오볼 2026-10-31 — 전용 보상은 아직 (해금 보상은 사용자가 노트에 먼저 적는다) */   /* 전용 보상이 다 들어왔다 — 레이 36 (노트 20) · 인비디아 33 (노트 7) */   /* 카제 2026-09-16 · 이테리오 2026-09-30 · 오토 2026-10-04 · 헥토 · 도미니코 2026-10-06 (사용자) */
 /* 대원 고르기 화면의 난이도 — 사용자가 정한다. 여기 없는 대원은 표시하지 않는다 */
 const HERO_DIFF={"이라":"보통",   /* 사용자가 정했다 (2026-10-13) */
  "레이":"어려움","인비디아":"보통",   /* 사용자가 정했다 (2026-10-22) */
@@ -26295,6 +26295,8 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 333, "v": "0.7", "d": "2026-11-02", "t": "그슨대 출전 · 페블 적 이펙트 줄임", "big": 0},
+ {"b": 333, "v": "0.7", "d": "2026-11-02", "t": "그슨대 출전 · 페블 적 이펙트 줄임", "big": 0},
  {"b": 332, "v": "0.7", "d": "2026-11-02", "t": "페블 기술 아이콘 · 효과음 자리", "big": 0},
  {"b": 331, "v": "0.7", "d": "2026-11-02", "t": "페블 보상 · 특성 · 광맥 카드 · 적 이펙트", "big": 0},
  {"b": 330, "v": "0.7", "d": "2026-11-02", "t": "페블 그림 · 이펙트", "big": 0},
@@ -27818,7 +27820,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=332;
+const BUILD_NO=333;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -35239,13 +35241,13 @@ function pebbleVeinStart(h){
   const pool=PEBBLE_VEINS.filter(v=>pebbleVeinOpen(h,v)&&!pebbleHas(h,v.k));
   if(!pool.length){ say("더 살필 광맥이 없습니다.","t2"); return }
   const opts=shuffled(pool.slice()).slice(0,2+(pbT(h).veinOpts||0)).map(v=>v.k);
-  B.veinPick={by:h.name,opts:opts,t0:Date.now()};
+  B.veinPick={by:h.name,opts:opts,t0:Date.now()}; try{ BGM.once("pick") }catch(e){}   /* 고르는 동안 파벨 골렘 창조와 같은 짧은 곡 (사용자 2026-11-02) */
   if(pbSnd("광맥 살피기")) fx({side:"mine",slot:h.slot,s:pbSnd("광맥 살피기"),gap:0});
   say(`${h.name}${jo(h.name,"ig")} 광맥을 살핍니다 — 하나를 고르세요.`,"t1");
 }
 function pebbleVeinTake(j){
   const G=B&&B.veinPick; if(!G) return;
-  const k=G.opts[j]; B.veinPick=null;
+  const k=G.opts[j]; B.veinPick=null; try{ BGM.onceOff() }catch(e){}
   const h=(run.heroes||[]).find(x=>x.name===G.by);
   if(h&&k){ h.pbVeins=(h.pbVeins||[]).concat([k]);
     const v=PEBBLE_VEINS.find(x=>x.k===k);
@@ -35264,8 +35266,8 @@ const PB_K=1.262;   /* 띠 1px(128 칸 판) = 화면 px — 몸 그림과 같은
 const PB_FX={
   contact:{k:"fx_pb_contact",c:[128,128],a:[64,120],fm:[35,45,45,45],s:2},            /* 망치가 땅에 닿는 금빛 섬광 */
   crack:{k:"fx_pb_crack",c:[192,128],a:[96,120],fm:[60,70,80,90,95,95],s:2},          /* 땅 균열 */
-  lift:{k:"fx_pb_lift",c:[128,128],a:[64,120],fm:[40,45,50,50,50,45],s:1.7},          /* 맞은 적 발밑에서 솟는 암석 — 공중에 뜸 */
-  ehammer:{k:"fx_pb_ehammer",c:[64,64],a:[32,58],fm:[35,40,45,55,55,60,65,70],s:1.8}, /* 맞는 적 위로 떨어지는 흑철 망치 */
+  lift:{k:"fx_pb_lift",c:[128,128],a:[64,120],fm:[40,45,50,50,50,45],s:1.7,foe:0.6},          /* 맞은 적 발밑에서 솟는 암석 — 공중에 뜸 */
+  ehammer:{k:"fx_pb_ehammer",c:[64,64],a:[32,58],fm:[35,40,45,55,55,60,65,70],s:1.8,foe:0.6}, /* 맞는 적 위로 떨어지는 흑철 망치 */
   charge:{k:"fx_pb_charge",c:[64,64],a:[32,32],fm:[45,50,55,60,65,65],s:1.5},         /* 준비 1 — 망치 수정으로 모이는 금빛 */
   ready:{k:"fx_pb_ready",c:[64,64],a:[32,32],fm:[35,55,60,50],s:1.5},                 /* 준비 2 — 수정에 맺히는 섬광 */
   trail:{k:"fx_pb_trail",c:[192,128],a:[96,64],fm:[45,50,60,60,55,50],s:1.7},         /* 휘두르기 궤적 */
@@ -35284,7 +35286,7 @@ function pbFoeK(slot){ const p=ctrOf("foe",slot), im=p&&p.e&&p.e.querySelector("
 /* 칸의 발밑에서 (dx,dy) 자리에 띠의 기준점이 오게 — dx,dy 는 미리보기 판의 px. sc 는 그 판의 배율(없으면 표의 것) */
 function pebbleFX(name,side,slot,dx,dy,sc){
   const F=PB_FX[name], p=(typeof feetOf==="function")&&feetOf(side,slot); if(!F||!p) return;
-  const K=side==="foe"?pbFoeK(slot):PB_K/2, z=K*(sc||F.s);
+  const K=side==="foe"?pbFoeK(slot):PB_K/2, z=K*(sc||F.s)*(side==="foe"?(F.foe||1):1);   /* foe — 적 쪽에서 더 줄이는 배율 (내려찍기 망치 · 암석, 사용자 2026-11-02 「커 보인다」) */
   const x=p.x+(dx||0)*K+(F.c[0]/2-F.a[0])*z, y=p.y+(dy||0)*K+(F.c[1]/2-F.a[1])*z;
   sheetFX(F.k,side,slot,{at:{x:x,y:y},cellW:F.c[0],cellH:F.c[1],frames:F.fm.length,frameMs:F.fm.map(n=>Math.round(n*SPD)),z:z});
 }
