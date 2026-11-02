@@ -7585,6 +7585,7 @@ const BGM_SRC={
   ev_folk:"bgm/ev_folk.mp3",  /* 미지의 구역 — 노점 · 도박 · 사람 */
   reward :"bgm/reward.mp3",   /* 보상 · 레벨업 (한 번만 울리는 짧은 곡) */
   corepick:"bgm/corepick.mp3", /* 세계핵 고르는 화면 (사용자 2026-10-09) */
+  pebble_pick:"bgm/pebble_pick.mp3",   /* 페블 광맥 살피기 — 고르는 동안 도는 짧은 곡 (사용자 녹음 2026-11-02) */
   pick   :"bgm/pick.mp3",      /* 골렘 창조 · 원천 분석 고르는 화면 (사용자 2026-10-13). once() 로 틀어 배경음을 낮춘다 */
   /* ── 구역 전투 (사용자 2026-10-09) ── */
   forest1:"bgm/forest1.mp3",  /* 정령숲 — 오염된 숲 */
@@ -26298,6 +26299,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 335, "v": "0.7", "d": "2026-11-02", "t": "페블 효과음 31개 (영웅 기합 수정 울림+메아리) · 광맥 살피기 곡", "big": 0},
  {"b": 334, "v": "0.7", "d": "2026-11-02", "t": "페블 광맥 고르기 오오라", "big": 0},
  {"b": 333, "v": "0.7", "d": "2026-11-02", "t": "그슨대 출전 · 페블 적 이펙트 줄임", "big": 0},
  {"b": 333, "v": "0.7", "d": "2026-11-02", "t": "그슨대 출전 · 페블 적 이펙트 줄임", "big": 0},
@@ -27824,7 +27826,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=334;
+const BUILD_NO=335;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -35102,6 +35104,7 @@ function pebbleAfter(h,i,s,target){
   if(s.pbPrep){
     h.pbPrep=(h.pbPrep||0)+1;
     if(pbFxOn()){ const sl=h.slot, c=pbCrystal(h), one=h.pbPrep===1;
+      if(Date.now()%3===0) fx({side:"mine",slot:sl,s:pbSnd(h.pbHero?"영웅 기합":"기합"),gap:0});   /* 준비할 때 가끔 기합 — 셋에 하나 (사용자 2026-11-02) */
       fx({side:"mine",slot:sl,s:pbSnd(one?"준비 1":"준비 완료"),fn:()=>one?pebbleFX("charge","mine",sl,c[0]-14,c[1]+8):pebbleFX("ready","mine",sl,c[0],c[1]),gap:0}) }
     if(h.pbPrep>=2){ pebbleSwap(h); say(`${h.name} — 내려찍기를 쓸 수 있습니다.`,"t1");
       fx({side:"mine",slot:h.slot,ring:"#e0c85a",glow:1,txt:"내려찍기",cls:"shd",gap:80}) }
@@ -35245,7 +35248,7 @@ function pebbleVeinStart(h){
   const pool=PEBBLE_VEINS.filter(v=>pebbleVeinOpen(h,v)&&!pebbleHas(h,v.k));
   if(!pool.length){ say("더 살필 광맥이 없습니다.","t2"); return }
   const opts=shuffled(pool.slice()).slice(0,2+(pbT(h).veinOpts||0)).map(v=>v.k);
-  B.veinPick={by:h.name,opts:opts,t0:Date.now()}; try{ BGM.once("pick") }catch(e){}   /* 고르는 동안 파벨 골렘 창조와 같은 짧은 곡 (사용자 2026-11-02) */
+  B.veinPick={by:h.name,opts:opts,t0:Date.now()}; try{ BGM.once("pebble_pick") }catch(e){}   /* 고르는 동안 파벨 골렘 창조와 같은 짧은 곡 (사용자 2026-11-02) */
   if(pbSnd("광맥 살피기")) fx({side:"mine",slot:h.slot,s:pbSnd("광맥 살피기"),gap:0});
   say(`${h.name}${jo(h.name,"ig")} 광맥을 살핍니다 — 하나를 고르세요.`,"t1");
 }
