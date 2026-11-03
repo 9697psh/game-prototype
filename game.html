@@ -6411,6 +6411,48 @@ body.rwtable #app .rw.rwpick.taken{animation:rwtTake .45s cubic-bezier(.3,1.4,.5
 .res.cheer{color:#ffd76a}
 .bfstage .slot.empty:has(>.artrap){opacity:1}   /* 빈 칸은 거의 안 보인다 — 덫이 든 칸만 되살린다 */
 body.vbattle header #hRun>.res.cheer,body.vnew header #hRun>.res.cheer{display:inline-flex!important;order:1}
+/* 광기의 관중단 — 공중에 둥둥 떠 있다 (사용자 2026-11-03) */
+.bfstage .slot.arfloat .art{animation:arFloat 2.6s ease-in-out infinite}
+@keyframes arFloat{0%,100%{translate:0 -10px}50%{translate:0 -18px}}
+/* ═══ 상태 부여 연출 다섯 (status-five-debuff-apply-v1, 2026-11-03) ═══ */
+.debsh.k-welcome.flip{scale:-1 1}
+.arpart{position:absolute;height:2px;pointer-events:none;z-index:4;image-rendering:pixelated}
+.ardimall{position:fixed;inset:0;background:rgb(5,3,4);opacity:0;pointer-events:none;z-index:2}
+@property --ax{syntax:"<length>";inherits:false;initial-value:0px}
+@property --z{syntax:"<length>";inherits:false;initial-value:18px}
+.arcone{position:absolute;pointer-events:none;z-index:2;--ax:0px;background:rgba(255,226,160,.15);
+  clip-path:polygon(calc(50% + var(--ax) - 7px) 0,calc(50% + var(--ax) + 7px) 0,100% 100%,0 100%)}
+.arring{position:absolute;height:20px;transform:translate(-50%,-50%);border:2px solid rgba(219,179,95,.3);border-radius:50%;pointer-events:none;z-index:2}
+.arcorner{position:absolute;width:0;height:0;pointer-events:none;z-index:4;--z:18px}
+.arcorner i{position:absolute;width:6px;height:6px;border:2px solid #d55453;border-right:0;border-bottom:0}
+.arcorner i:nth-child(1){left:calc(-1 * var(--z));top:calc(-1 * var(--z))}
+.arcorner i:nth-child(2){rotate:90deg;left:calc(var(--z) - 6px);top:calc(-1 * var(--z))}
+.arcorner i:nth-child(3){rotate:180deg;left:calc(var(--z) - 6px);top:calc(var(--z) - 6px)}
+.arcorner i:nth-child(4){rotate:270deg;left:calc(-1 * var(--z));top:calc(var(--z) - 6px)}
+.arwave{position:absolute;border:2px solid var(--c);border-radius:50%;pointer-events:none;z-index:4;clip-path:inset(0 66% 0 0)}
+.arwave.r{clip-path:inset(0 0 0 66%)}
+@media (prefers-reduced-motion: reduce){ .arcone,.arring,.arcorner,.arwave,.ardimall{display:none} }
+
+/* 정지 · 되감기 적용 연출 (v4-sheet-only, 2026-11-03) */
+.bfstage .slot.arstopped:not(.arstopin) .art img.pxs{filter:grayscale(.9) brightness(1.13)}
+@property --pad{syntax:"<length>";inherits:true;initial-value:0px}
+.arstopbox{position:absolute;width:0;height:0;pointer-events:none;z-index:4;--pad:0px;--w:80px;--h:100px}
+.arstopbox i{position:absolute;width:12px;height:12px;border:1px solid #9bdde4;border-right:0;border-bottom:0}
+.arstopbox i:nth-child(1){left:calc(var(--w) * -.5 - var(--pad));top:calc(var(--h) * -.5 - var(--pad))}
+.arstopbox i:nth-child(2){rotate:90deg;left:calc(var(--w) * .5 + var(--pad) - 12px);top:calc(var(--h) * -.5 - var(--pad))}
+.arstopbox i:nth-child(3){rotate:180deg;left:calc(var(--w) * .5 + var(--pad) - 12px);top:calc(var(--h) * .5 + var(--pad) - 12px)}
+.arstopbox i:nth-child(4){rotate:270deg;left:calc(var(--w) * -.5 - var(--pad));top:calc(var(--h) * .5 + var(--pad) - 12px)}
+.arsand{position:absolute;width:0;height:0;pointer-events:none;z-index:4}
+.arsand i{position:absolute;width:2px;height:2px;background:#b69b62;opacity:.5}
+.arsand i.c{width:3px;background:#a2e1ea;opacity:.7}
+.arstopflash{position:absolute;border:1px solid #9bdde4;pointer-events:none;z-index:4}
+.arghost{position:absolute;pointer-events:none;z-index:3;image-rendering:pixelated;filter:sepia(.5) hue-rotate(220deg)}
+.arrewarc{position:absolute;width:0;height:0;pointer-events:none;z-index:4}
+.arrewarc i{position:absolute;border:2px solid #b07ee0;border-radius:50%;clip-path:inset(0 0 60% 55%);opacity:.36}
+.arrewarc i:nth-child(1){width:128px;height:102px;left:-64px;top:-51px}
+.arrewarc i:nth-child(2){width:110px;height:88px;left:-55px;top:-44px;rotate:120deg;opacity:.3}
+.arrewarc i:nth-child(3){width:92px;height:74px;left:-46px;top:-37px;rotate:240deg;opacity:.24}
+@media (prefers-reduced-motion: reduce){ .arstopbox,.arsand,.arstopflash,.arghost,.arrewarc{display:none} }
 </style>
 </head>
 <body>
@@ -6475,7 +6517,7 @@ const KW_TAB=[
  {n:"보호막",c:"buff",d:"한 턴간 누적된 보호막만큼 피해를 막음. 다음 자기 턴이 시작될 때 사라짐"},
  {n:"에너지 보호막",c:"buff",d:"한 턴간 누적된 보호막만큼 피해를 막음. 턴이 끝나도 사라지지 않음. 라운드가 바뀌면 사라짐"},
  {n:"투기장의 감옥",c:"deb",d:"이라가 전장에 서 있는 동안, 내 턴이 끝날 때 아군과 적 모두가 최대 체력의 일부만큼 피해를 받습니다. 옆의 수는 이번에 받을 피해입니다."},
- {n:"부정 보호막",c:"buff",d:"부정적인 효과를 1회 제거. 이미 적용된 효과 먼저 제거. 화상, 냉각, 감전은 중첩을 모두 제거"},
+ {n:"부정 보호막",c:"buff",d:"부정적인 효과를 1회 제거. 이미 적용된 효과 먼저 제거"},   /* 화상 · 냉각 · 감전도 중첩 1 (사용자 2026-11-03) */
  {n:"도발",c:"buff",d:"이 캐릭터의 뒤에 있는 대상들은 상대가 대상으로 지정할 수 없음"},
  {n:"회피",c:"buff",d:"다음 피해를 막음"},
  {n:"가시",c:"buff",d:"피해를 받으면 중첩된 가시만큼 그 대상에게 피해를 줌"},
@@ -6514,6 +6556,8 @@ const KW_TAB=[
  {n:"덫",c:"debuff",d:"아군이 덫과 같은 칸에 위치하면, 속박 1과 상처 1을 얻습니다.",re:"덫(?!\\s*관리인)"},
  {n:"오늘의 주인공",c:"debuff",d:"(부정적 효과) 이번 라운드 동안 받는 피해가 증가합니다."},
  {n:"도전장",c:"debuff",d:"(부정적 효과) 지목된 대원이 유망주에게 피해를 100 줄 때까지 다른 모든 대상이 정지 상태가 됩니다."},
+ {n:"처형",c:"debuff",d:"(부정적 효과) 턴이 끝날 때, 누적된 처형보다 체력이 낮다면 쓰러집니다. 부정 보호막 1개가 처형 10을 지웁니다."},
+ {n:"피해량 감소",c:"debuff",d:"(부정적 효과) 이번 턴 동안 주는 피해가 그만큼 감소합니다."},
  {n:"환호",c:"plain",d:"관중의 환호. 0에서 100까지 오르내립니다. 높을수록 전투에서 얻는 보상이 늘고, 적도 강해집니다."},
 ];
 const KW={}, KW_DESC={};
@@ -8603,6 +8647,8 @@ function debInFX(side,slot,k){
     if(b&&b.animate) b.animate([{transform:"scale(2.2)",filter:"brightness(2)"},{transform:"scale(1)",filter:"none"}],{duration:300,easing:"cubic-bezier(.2,1.6,.4,1)"}) };
   /* 공포 · 속박은 받은 여덟 칸 띠 (사용자 2026-10-06) */
   const SH=DEB_SHEET[k], sh=SH&&typeof ICON_PNG!=="undefined"&&ICON_PNG[SH.key];
+  /* 광기의 투기장 넷(상처 · 오늘의 주인공 · 도전장 · 처형)은 멈춤 · 반응 · 조명 · 날인까지 — arDebSheet (src/fx/arena-fx.js, 2026-11-03) */
+  if(sh&&SH.ar&&typeof arDebSheet==="function"){ setTimeout(done,arTiming(SH).total+500); arDebSheet(side,slot,k,SH,sh,r,el=>{ d=el },done); return }
   if(sh){ setTimeout(done,SH.ms.reduce((p,q)=>p+q,0)+SH.hold+500); debSheetFX(side,slot,k,SH,sh,r,el=>{ d=el },done); return }
   d=spawn(`<div class="debin" style="--c:${D.c}"><img src="${src}" alt=""></div>`);
   setTimeout(done,DEB_IN_MS+300);   /* 애니메이션이 끊겨도 디버프 칸은 반드시 드러난다 */
@@ -8776,10 +8822,10 @@ const BUFF_SHEET={
   "은신":{key:"fx_buf_stealth",y:0.45,px:110,c:"#a06ae0"},
   "갑피":{key:"fx_buf_carapace",y:0.55,px:130,c:"#b08a5a"},
   /* 얻는 순간의 띠 — 받은 그림이 들어오기 전에는 조용히 건너뛴다 (buffSheetFX 가 src 를 본다) */
-  "되감기":{key:"fx_buf_rewind",ms:[90,80,75,70,85,75,90,140],at:5,hold:440,y:0.5,px:110,c:"#c9a227"},
+  "되감기":{key:"fx_buf_rewind",ms:[90,80,75,70,85,75,90,140],at:4,hold:600,y:0.5,px:130,c:"#c9a227"},
   "충전":{key:"fx_buf_charge",ms:[85,80,75,75,80,85,95,145],at:5,hold:420,y:0.5,px:110,c:"#c9a227"},
   /* 정지 — 디버프 줄이라 buffDiffFX 가 못 본다. 걸리는 자리에서 직접 부른다 */
-  "정지":{key:"fx_buf_stop",ms:[90,80,70,70,70,90,90,140],at:6,hold:520,y:0.42,px:120,c:"#7fd8e8"}};
+  "정지":{key:"fx_buf_stop",ms:[90,80,70,70,70,90,90,140],at:5,hold:820,y:0.42,px:138,c:"#7fd8e8"}};
 /* 충전 획득 연출 v2 — 처음 걸릴 때 buffDiffFX 가 자동 재생 (사용자 2026-10-08). 유지 반복은 status-charge-v3 그대로 */
 const BUFF_MS=[90,75,70,70,75,85,105,140];
 let BUFF_SEEN=null;
@@ -8820,15 +8866,8 @@ function buffDiffFX(){
 function buffSheetHold(d,kw,T,side,slot){
   if(!d.isConnected||!d.animate) return;
   const c=ctrOf(side,slot), art=c&&c.e&&c.e.querySelector(".art");
-  if(kw==="되감기"){   /* 시곗바늘이 거꾸로 — 띠가 왼쪽으로 돌며 금빛으로 타오르고, 몸이 한 박자 뒤로 미끄러졌다 돌아온다 */
-    d.animate([{rotate:"0deg",scale:"1",filter:"brightness(1.1) drop-shadow(0 0 5px var(--c))"},
-               {rotate:"-28deg",scale:"1.18",filter:"brightness(2.1) drop-shadow(0 0 15px var(--c))",offset:.45},
-               {rotate:"9deg",scale:"1.04",offset:.74},
-               {rotate:"0deg",scale:"1",filter:"brightness(1.1) drop-shadow(0 0 6px var(--c))"}],
-              {duration:T.hold,easing:"cubic-bezier(.3,.8,.3,1)"});
-    if(art&&art.animate) art.animate([{translate:"0 0",filter:"none"},
-        {translate:(side==="foe"?7:-7)+"px 0",filter:"brightness(1.5) drop-shadow(0 0 9px #e8c860)",offset:.42},
-        {translate:"0 0",filter:"none"}],{duration:T.hold,easing:"ease-out"});
+  if(kw==="되감기"||kw==="정지"){   /* 멈춘 동안 빛만 — 잔상 · 모래 · 역행 · 멎음은 arTimeFX (src/fx/arena-fx.js, 사용자 2026-11-03 v4) */
+    if(!(typeof arRM==="function"&&arRM())) d.animate([{filter:"brightness(1.4) drop-shadow(0 0 11px var(--c))"},{filter:"brightness(1.1) drop-shadow(0 0 5px var(--c))"}],{duration:T.hold,easing:"ease-out"});
     return }
   if(kw==="충전"){   /* 기운이 차오른다 — 두어 번 깜빡이다 끝에 크게 터지고 불티가 튄다 */
     d.animate([{scale:"1",filter:"brightness(1.1) drop-shadow(0 0 4px var(--c))"},
@@ -8843,16 +8882,6 @@ function buffSheetHold(d,kw,T,side,slot){
     if(typeof sparks==="function")
       setTimeout(()=>sparks({x:parseFloat(d.style.left),y:parseFloat(d.style.top)},"#ffe9a8",8),Math.round(T.hold*0.74));
     return }
-  if(kw==="정지"){   /* 시간이 멎는다 — 쾅 멈춰 선 뒤 그대로. 몸에서 빛깔이 가신다 */
-    d.animate([{scale:"1.32",filter:"brightness(2.3) drop-shadow(0 0 17px var(--c))"},
-               {scale:"1",filter:"brightness(1.15) drop-shadow(0 0 7px var(--c))",offset:.13},
-               {scale:"1",filter:"brightness(1.15) drop-shadow(0 0 7px var(--c))"}],
-              {duration:T.hold,easing:"cubic-bezier(.2,1.5,.3,1)"});
-    if(art&&art.animate) art.animate([{filter:"none"},
-        {filter:"grayscale(.85) brightness(1.3) drop-shadow(0 0 11px #7fd8e8)",offset:.15},
-        {filter:"grayscale(.85) brightness(1.08)",offset:.86},{filter:"none"}],
-        {duration:T.hold,easing:"linear"});
-    return }
 }
 function buffSheetFX(side,slot,kw,wait){
   const T=BUFF_SHEET[kw], src=T&&typeof ICON_PNG!=="undefined"&&ICON_PNG[T.key], c=ctrOf(side,slot), l=document.getElementById("fx"); if(!src||!c||!l) return;
@@ -8865,9 +8894,12 @@ function buffSheetFX(side,slot,kw,wait){
   if(wait) d.style.opacity="0";   /* 차례가 올 때까지 — 상태 줄의 아이콘은 이미 숨겨 둔다 */
   l.appendChild(d);
   let t=wait||0; if(wait) setTimeout(()=>{ d.style.opacity="" },t);
+  /* 정지 · 되감기는 게임 속도를 따르고 멎음 · 잔상을 더한다 (arTimeFX, 사용자 2026-11-03 v4). 다른 버프는 예전 그대로 */
+  const TK=(kw==="정지"||kw==="되감기")&&typeof arK==="function"?arK():1, T2=TK===1?T:Object.assign({},T,{hold:Math.round(T.hold*TK)});
+  if((kw==="정지"||kw==="되감기")&&typeof arTimeFX==="function") try{ arTimeFX(kw,side,slot,d,Object.assign({},T,{holdRaw:T.hold}),wait||0,TK) }catch(e){ console.error(e) }
   (T.ms||BUFF_MS).forEach((m,i)=>{ setTimeout(()=>{ d.style.backgroundPosition=(i*100/7)+"% 0" },t);
-    if(i===T.at) setTimeout(()=>buffSheetHold(d,kw,T,side,slot),t);   /* 그 칸에서 머물며 몸짓 */
-    t+=m+(i===T.at?T.hold:0) });
+    if(i===T.at) setTimeout(()=>buffSheetHold(d,kw,T2,side,slot),t);   /* 그 칸에서 머물며 몸짓 */
+    t+=Math.round(m*TK)+(i===T.at?T2.hold:0) });
   setTimeout(()=>{ d.remove(); hide.remove(); const b=document.querySelector(sel);
     /* 걸리는 순간 틀이 빛난다 — debInFX 와 같게. 새 버프 · 디버프는 모두 이 길을 탄다 (㉒) */
     const c2=ctrOf(side,slot), art=c2&&c2.e&&c2.e.querySelector(".art");
@@ -8885,8 +8917,9 @@ const DEB_SHEET={
   magDn:{key:"fx_deb_magdn",ms:[85,75,70,70,75,90,105,140],at:4,hold:300,y:0.4,px:110,glow:"#6aa8e0",hk:"weak"},
   defDn:{key:"fx_deb_defdn",ms:[85,75,70,70,75,90,105,140],at:4,hold:300,y:0.4,px:110,glow:"#e0c85a",hk:"weak"},
   burn:{key:"fx_deb_burn",ms:[90,75,70,70,75,85,105,140],at:6,hold:140,y:0.4,px:110,glow:"#e0705a"},
-  chill:{key:"fx_deb_chill",ms:[90,75,70,70,75,85,105,140],at:6,hold:140,y:0.4,px:110,glow:"#7fc8e8"},
-  shock:{key:"fx_deb_shock",ms:[90,75,70,70,75,85,105,140],at:6,hold:140,y:0.4,px:110,glow:"#e0c85a"}};
+  chill:{key:"fx_deb_chill",ms:[90,75,70,70,75,85,105,140],at:6,hold:0,y:0.4,px:110,glow:"#7fc8e8"},
+  /* 냉각 · 감전 — 받은 여덟 칸만 710ms, 멈춤 0 (사용자 2026-11-03 : 코드로 더한 서리 · 전류 · 경련은 넣지 않는다) */
+  shock:{key:"fx_deb_shock",ms:[90,75,70,70,75,85,105,140],at:6,hold:0,y:0.4,px:110,glow:"#e0c85a"}};
 function debSheetFX(side,slot,k,SH,src,r,keep,done){
   const l=document.getElementById("fx"); if(!l){ done(); return }
   const x=r.left+r.width/2, y=r.top+r.height*SH.y;
@@ -13491,11 +13524,13 @@ const IDLE_FAST={"실험 책임자":160,"균열 군체":160,"누군가의 영혼
 setInterval(()=>{ const now=Date.now();
   document.querySelectorAll('img.pxs[data-anim]').forEach(im=>{ const ms=IDLE_FAST[im.dataset.nm]; if(!ms||im._pt) return;
     const set=PNG_SPRITE[im.dataset.nm]; if(!set||!set.idleA) return;
+    if(im.closest&&im.closest(".slot.arstopped:not(.arstopin)")) return;   /* 정지 — 대기가 멎는다 */
     if(now-(+im.dataset.t||0)<ms) return; im.dataset.t=now;
     const k=((+im.dataset.k||0)+1)%set.idleA.length; im.dataset.k=k;
     const u=set.idleA[k]; if(im.getAttribute("src")!==u) im.src=u }) },40);
 setInterval(()=>{ IDLE_K++;
   document.querySelectorAll('img.pxs[data-anim]').forEach(im=>{ if(IDLE_FAST[im.dataset.nm]||im._pt) return;   /* 다른 자세 중엔 손대지 않는다 */
+    if(im.closest&&im.closest(".slot.arstopped:not(.arstopin)")) return;   /* 정지 — 대기가 멎는다 (사용자 2026-11-03) */
     const set=PNG_SPRITE[im.dataset.nm]; if(!set||!set.idleA) return;
     const n=set.idleA.length; let k=+im.dataset.k; if(!(k>=0)) k=Math.floor(Math.random()*3);
     let full=im.dataset.full==="1";
@@ -20722,8 +20757,103 @@ const FOE={
     {n:"오늘의 주인공",w:3,tg:"any",heroOnly:1,star:5,d:"무작위 대원 하나를 지목합니다. 이번 라운드 동안 그 대원이 받는 피해가 5 증가합니다."},
     {n:"선수 입장",w:3,tg:"none",foeBuff:{weak:1,self:1,shield:4},d:"체력이 가장 낮은 적에게 보호막을 4 부여합니다."}],
    hit:"박수 유도"},
+ /* ── 광기의 투기장 둘째 (사용자 2026-11-03 둘째 목록) — 역병에 옮은 셋 ── */
+ "기침하는 관중":{hp:14,atk:2,def:1,rng:7,exp:2,
+   el:"마법",
+   pas:[{k:"death",kind:"killerDeb",deb:{defDn:2},n:"죽음",kw:"죽음",d:"죽음: 이 적을 처치한 대상에게 보호약화를 2 부여합니다."}],
+   sk:[
+    {n:"웅크리기",w:2,tg:"self",backMost:1,shield:3,d:"가장 뒤로 이동하고 보호막을 3 얻습니다."},
+    {n:"재채기",w:4,tg:"near",dmg:2,deb:{dmgDn:2},throwFx:"fx_ar_contam",arc:1,flipFx:1,d:"가장 가까운 대상에게 마법 피해를 2 주고 다음 턴 동안 피해량을 2 감소시킵니다."},
+    {n:"기침",w:4,tg:"any",deb:{dmgDn:3},throwFx:"fx_ar_contam",arc:1,flipFx:1,d:"다음 턴 동안 무작위 대상의 피해량을 3 감소시킵니다."}],
+   hit:"재채기"},
+ "부풀어오른 검투사":{hp:20,atk:3,def:2,rng:4,exp:2,
+   el:"공격",
+   pas:[{k:"death",kind:"execAll",v:20,n:"죽음",kw:"죽음",d:"죽음: 모든 대상에게 처형을 20 부여합니다."}],
+   sk:[
+    {n:"달려들기",w:4,tg:"near",dmg:5,d:"가장 가까운 대상에게 공격 피해를 5 줍니다."},
+    {n:"부풀기",w:3,tg:"self",shield:5,execUp:5,d:"보호막을 5 얻습니다. 죽음 효과의 처형 부여량이 5 증가합니다."},
+    {n:"고름 짜기",w:3,tg:"near",deb:{dmgDn:3},throwFx:"fx_ar_contam",arc:1,flipFx:1,d:"다음 턴 동안 가장 가까운 대상의 피해량을 3 감소시킵니다."},
+    {n:"죽음 임박",w:4,tg:"none",cond:"low30",selfBurst:1,d:"스스로 터집니다."}],
+   hit:"달려들기"},
+ "시샘하는 검투사":{hp:22,atk:3,def:2,rng:3,exp:2,
+   el:"공격",
+   sk:[
+    {n:"빼앗기",w:5,tg:"none",cond:"heroEsh",stealEsh:1,d:"에너지 보호막이 가장 많은 대원의 에너지 보호막을 모두 뺏어옵니다."},
+    {n:"질투의 칼날",w:4,tg:"none",cond:"heroAtk",stealAtk:1,d:"추가 공격력이 가장 높은 대원의 추가 공격력을 이번 라운드동안 뺏어옵니다."},
+    {n:"찌르기",w:4,tg:"near",dmg:3,hits:2,d:"가장 가까운 대상에게 공격 피해를 3씩 2번 줍니다."},
+    {n:"보호",w:3,tg:"self",shield:6,negUp:3,d:"보호막을 6 얻습니다. 부정 보호막을 3 얻습니다."}],
+   hit:"찌르기"},
+ /* ── 광기의 투기장 정예 (둘째 목록) ── */
+ "흥행 감독관":{hp:65,atk:4,def:4,rng:8,exp:12,elite:1,
+   el:"마법",
+   pas:[{k:"nextBout",every:3,hp:20,n:"다음 경기로",d:"3턴마다 최대 체력이 20인 검투사 하나를 입장시킵니다."},
+        {k:"cycle",every:2,gain:"negShield",v:2,n:"정화",d:"2턴마다 부정 보호막을 2 얻습니다."}],
+   sk:[
+    {n:"보랏빛 불꽃",w:4,tg:"any",dmg:5,pierce:true,d:"무작위 대상에게 관통 마법 피해를 5 줍니다."},
+    {n:"검투사 계약서",w:3,tg:"topAtk",anyRng:1,heroOnly:1,deb:{atkDn:2},d:"추가 공격력이 가장 높은 대상에게 공격약화를 2 부여합니다."},
+    {n:"마법사 계약서",w:3,tg:"topMag",anyRng:1,heroOnly:1,deb:{magDn:2},d:"추가 마법력이 가장 높은 대상에게 마법약화를 2 부여합니다."},
+    {n:"배당 올리기",w:3,tg:"none",pose:"roar",boutUp:10,d:"[다음 경기로]로 입장하는 검투사의 최대 체력이 10 증가합니다."},
+    {n:"검투비",w:2,tg:"none",foeBuff:{all:1,self:1,atk:1},rewUp:10,d:"이번 전투에서 모든 적의 공격력이 1 증가합니다. 이 전투의 보상이 10% 증가합니다."},
+    {n:"투기장 청소",w:6,tg:"none",cond:"gladWreck",clearWreck:1,shield:12,d:"쓰러진 검투사를 제거하고 보호막을 12 얻습니다."}],
+   hit:"보랏빛 불꽃"},
+ "인조된 집행인":{hp:80,atk:5,def:5,rng:4,exp:12,elite:1,
+   el:"공격",
+   pas:[{k:"death",kind:"transcend",who:"생체실험 대상자",n:"죽음",kw:"죽음",d:"죽음: [생체실험 대상자]로 부활합니다."}],
+   sk:[
+    {n:"찍기",w:4,tg:"near",dmg:6,d:"가장 가까운 대상에게 공격 피해를 6 줍니다."},
+    {n:"선고",w:3,tg:"weak",anyRng:1,deb:{exec:10},d:"체력이 가장 낮은 대상에게 [처형]을 10 부여합니다."},
+    {n:"날 갈기",w:2,tg:"self",buff:3,d:"추가 공격력을 3 얻습니다."},
+    {n:"목줄",w:3,tg:"back",anyRng:1,heroOnly:1,dmg:4,deb:{bind:1},d:"가장 뒤의 대원에게 공격 피해를 4 주고 속박시킵니다."},
+    {n:"교수형",w:3,tg:"any",dmg:3,deb:{wound:1},d:"무작위 대상에게 공격 피해를 3 주고 상처를 남깁니다."}],
+   hit:"찍기"},
+ "생체실험 대상자":{hp:80,atk:5,def:5,rng:6,exp:12,elite:1,dexHide:0,
+   el:"공격",
+   sk:[
+    {n:"찍기",w:4,tg:"near",dmg:7,critHalf:1,d:"가장 가까운 대상에게 공격 피해를 7 줍니다. 체력이 절반 이하인 대상에게는 치명타로 적중합니다."},
+    {n:"선고",w:3,tg:"weak",anyRng:1,deb:{exec:20},d:"체력이 가장 낮은 대상에게 [처형]을 20 부여합니다."},
+    {n:"날 갈기",w:2,tg:"self",buff:3,d:"추가 공격력을 3 얻습니다."},
+    {n:"목줄",w:3,tg:"back",anyRng:1,heroOnly:1,dmg:4,deb:{stun:1},d:"가장 뒤의 대원에게 공격 피해를 4 주고 기절시킵니다."},
+    {n:"교수형",w:3,tg:"any",dmg:8,deb:{wound:2},d:"무작위 대상에게 공격 피해를 8 주고 상처 2를 남깁니다."}],
+   hit:"찍기"},
+ "광기의 관중단":{hp:60,atk:4,def:4,rng:9,exp:12,elite:1,big:1,noMove:1,arFloat:1,
+   el:"마법",
+   pas:[{k:"info",n:"거대한 몸집",d:"몸집이 커 2칸을 차지합니다."},
+        {k:"cheerMag",per:10,n:"열광",d:"관중의 환호 10당 추가 마법력을 1 얻습니다."}],
+   sk:[
+    {n:"광란의 합창",w:4,tg:"all",anyRng:1,dmg:5,cheerUp:10,d:"모든 상대에게 마법 피해를 5 줍니다. 환호가 10 증가합니다."},
+    {n:"물건 던지기",w:4,tg:"any2",heroOnly:1,dmg:3,cheerUp:10,throwFx:"fx_ar_stone",arc:1,d:"무작위 대원 둘에게 마법 피해를 3 줍니다. 환호가 10 증가합니다."},
+    {n:"야유",w:3,tg:"all",anyRng:1,deb:{fear:1},cheerUp:-20,d:"모든 상대에게 공포를 1 부여합니다. 환호가 20 감소합니다."},
+    {n:"떼창",w:1,tg:"weak",anyRng:1,heroOnly:1,deb:{stun:8},d:"체력이 가장 낮은 대원에게 기절을 8 부여합니다."},
+    {n:"앙코르",w:3,tg:"self",shield:15,encore:5,d:"보호막을 15 얻습니다. 1턴 동안 피해를 받을 때마다 환호가 5씩 증가합니다."}],
+   hit:"광란의 합창"},
+ "풀려난 야수":{hp:45,atk:4,def:3,rng:4,exp:6,elite:1,
+   el:"공격",
+   pas:[{k:"bloodScent",n:"피 냄새",d:"체력이 절반 이하인 대상을 먼저 공격합니다."},
+        {k:"packHunt",n:"무리 사냥",d:"다른 풀려난 야수가 쓰러지면, 모든 상대에게 공포를 1 부여합니다."}],
+   sk:[
+    {n:"물어뜯기",w:4,tg:"near",dmg:3,backAfter:2,d:"가장 가까운 대상에게 공격 피해를 3 줍니다. 뒤로 2칸 이동합니다."},
+    {n:"할퀴기",w:4,tg:"near2",dmg:3,fwdAfter:2,d:"가장 가까운 대상 둘에게 공격 피해를 3 줍니다. 앞으로 2칸 이동합니다."},
+    {n:"덮치기",w:3,tg:"far",anyRng:1,dmg:5,fwdAfter:1,d:"가장 멀리 있는 대상에게 공격 피해를 5 줍니다. 앞으로 1칸 이동합니다."},
+    {n:"집어삼키기",w:3,tg:"dist",deb:{wound:2},d:"사거리 내의 무작위 대상에게 상처를 2 부여합니다."},
+    {n:"상처 핥기",w:3,tg:"none",cond:"beastHurt",healMate:{v:15,name:"풀려난 야수"},d:"다른 풀려난 야수의 체력을 15 회복시킵니다."},
+    {n:"포효",w:9,tg:"none",cond:"every3",must:1,pose:"roar",foeBuff:{self:1,name:"풀려난 야수",atk:1},d:"모든 풀려난 야수에게 공격력을 1 부여합니다."}],
+   hit:"물어뜯기"},
+ "질투의 대사제":{hp:75,atk:4,def:4,rng:5,exp:12,elite:1,
+   el:"마법",
+   chgMax:1,
+   pas:[{k:"stunImm",n:"역병의 사제",d:"감염과 기절을 무시합니다."},{k:"infectImm",hide:1},
+        {k:"cycle",every:2,gain:"negShield",v:2,n:"정화",d:"2턴마다 부정 보호막을 2 얻습니다."}],
+   sk:[
+    {n:"역병 설교",w:3,tg:"strong",anyRng:1,heroOnly:1,pose:"bless",deb:{exec:15},d:"체력이 가장 높은 상대에게 처형을 15 부여합니다."},
+    {n:"낙인",w:4,tg:"none",cond:"anyExec",brandExec:1,d:"처형이 부여되어 있는 적에게 상처를 1 부여합니다."},
+    {n:"거두기",w:3,tg:"none",chg:1,cond:"chgIdle",intentPose:"charge",d:"1턴 동안 충전합니다."},
+    {n:"수확",w:9,tg:"none",cond:"charged",must:1,spend:1,pose:"bless",harvest:1,d:"상대의 처형 수치를 모두 제거하고 그만큼 피해를 줍니다."},
+    {n:"네 팔 휘두르기",w:3,tg:"near",dmg:3,hits:4,d:"가장 가까운 대상에게 마법 피해를 3씩 4번 줍니다."},
+    {n:"교리",w:3,tg:"all",anyRng:1,heroOnly:1,deb:{exec:10},d:"모든 상대에게 처형을 10 부여합니다."},
+    {n:"침묵",w:3,tg:"none",cond:"heroWard",silence:1,d:"무작위 대상의 부정 보호막과 에너지 보호막을 모두 제거합니다."}],
+   hit:"네 팔 휘두르기"},
  /* ═══ 광기의 투기장 — 정예 ═══ */
- "유망주":{hp:48,atk:5,def:5,rng:4,exp:12,elite:1,
+ "유망주":{hp:80,atk:5,def:5,rng:4,exp:12,elite:1,
    el:"공격",
    pas:[{k:"cheerHurt",v:1,n:"관중의 촉망",d:"유망주가 피해를 받을 때마다 관중의 환호가 1 증가합니다."},
         {k:"slaveStart",n:"볼거리 제공",d:"전투 시작 후, 무작위 아군 칸에 투기장의 노예가 소환됩니다."}],
@@ -21144,12 +21274,14 @@ const DEBUFF={
  /* 광기의 투기장 (사용자 2026-11-03) */
  wound:{n:"상처",d:"이 대상이 회복할 수 없고, 받는 모든 피해가 치명타로 적중합니다. 턴마다 1 감소",c:"#b83a3a"},
  star :{n:"오늘의 주인공",d:"이번 라운드 동안 받는 피해가 그만큼 증가합니다.",c:"#e0c85a"},
- duel :{n:"도전장",d:"유망주에게 피해를 100 줄 때까지 다른 모든 대상이 정지 상태가 됩니다.",c:"#c04040"}
+ duel :{n:"도전장",d:"유망주에게 피해를 100 줄 때까지 다른 모든 대상이 정지 상태가 됩니다.",c:"#c04040"},
+ exec :{n:"처형",d:"턴이 끝날 때, 누적된 처형보다 체력이 낮다면 쓰러집니다. 부정 보호막 1개가 처형 10을 지웁니다.",c:"#8a1c1c"},
+ dmgDn:{n:"피해량 감소",d:"이번 턴 동안 주는 피해가 그만큼 감소합니다.",c:"#8a9a5a"}
 };
 const INFECT_TIP="턴이 끝날 때 피해를 1(추가 ∴) 주고 감염 중첩을 1 감소";
 const DEB_KEYS=Object.keys(DEBUFF);
 /* 무작위로 거는 상태 이상 — 광기의 투기장 셋(상처 · 오늘의 주인공 · 도전장)은 적이 대원에게만 거는 것이라 뺀다 (2026-11-03) */
-const DEB_RAND=DEB_KEYS.filter(k=>["wound","star","duel"].indexOf(k)<0);
+const DEB_RAND=DEB_KEYS.filter(k=>["wound","star","duel","exec","dmgDn"].indexOf(k)<0);
 function deb(u,k){ return (u&&u.deb&&u.deb[k])||0 }
 const uid=x=>!x?"":(x.isFoe||x.id!=null&&x.maxHp!=null&&!x.sk?"F"+x.id:"H"+x.name);
 /* 걸리는 순간의 녹음 — art/소리/<이름>.wav (사용자 2026-10-06) */
@@ -21158,7 +21290,11 @@ const DEB_SND={fear:"공포",bind:"속박",stun:"기절",
 /* 부정 보호막을 얻었을 때 — 이미 걸린 부정적인 효과부터 그만큼 걷어낸다 (키워드 '이미 적용된 효과 먼저 제거' (사용자 2026-10-07)) */
 /* 부정 보호막 하나가 **중첩을 모두** 걷는 효과 (사용자 2026-10-14) — 쌓이는 지속 피해 셋.
    그 밖(약화 · 속박 · 기절 · 공포)은 그대로 중첩 하나에 보호막 하나다. */
-const NEG_ALLK={burn:1,chill:1,shock:1};
+/* 2026-11-03 사용자 : 「화상 예전처럼 부정 보호막 1개당 수치 1 낮추는 것으로. 다른 디버프들도」 — 하나로 전부 걷던 셋을 비웠다.
+   하나에 여럿을 걷는 것은 아래 NEG_PER(처형 10) 하나뿐이다 */
+const NEG_ALLK={};
+/* 부정 보호막 하나가 걷는 양 — 처형은 10 (사용자 2026-11-03). 없으면 1 */
+const NEG_PER={exec:10};
 function negGain(u,n){
   if(!u||!(n>0)) return; u.negShield=(u.negShield||0)+n;
   const isF=!!(B&&B.foes&&B.foes.indexOf(u)>=0), got=[];
@@ -21167,8 +21303,8 @@ function negGain(u,n){
   if(isF&&u.stun>0) L.push(["stun",()=>u.stun,v=>{ u.stun=v }]);
   for(const [k,get,set] of L){ if(!(u.negShield>0)) break;
     const all=!!NEG_ALLK[k];                       /* 화상 · 냉각 · 감전 — 하나로 전부 (2026-10-14) */
-    const cut=all?get():Math.min(get(),u.negShield);
-    set(get()-cut); u.negShield-=all?1:cut;
+    const per=NEG_PER[k]||1, cut=all?get():Math.min(get(),u.negShield*per);
+    set(get()-cut); u.negShield-=all?1:Math.ceil(cut/per);
     got.push(DEBUFF[k].n+" "+cut+(all&&cut>1?" (모두)":"")) }
   if(got.length){ fx({side:isF?"foe":"mine",slot:u.slot,trig:"부정 보호막",ring:"#7fd39a",txt:"정화",cls:"shd",gap:70,s:"부정보호막 얻음"});
     say(`부정 보호막 — ${u.name}에게 걸려 있던 ${got.join(", ")}을 걷어냅니다.`,"t2") }
@@ -21181,8 +21317,8 @@ function negCut(u,k,n){
   /* ⚠️ DEBUFF 표 밖의 부정 효과도 받는다 — 감염이 그렇다 (사용자 2026-10-22).
      표에 없으면 열쇠말을 그대로 이름으로 쓴다 */
   const nm=(DEBUFF[k]&&DEBUFF[k].n)||k;
-  const cut=all?n:Math.min(u.negShield,n);
-  u.negShield-=all?1:cut; n-=cut;
+  const per=NEG_PER[k]||1, cut=all?n:Math.min(u.negShield*per,n);
+  u.negShield-=all?1:Math.ceil(cut/per); n-=cut;
   fx({side:u.isFoe?"foe":"mine",slot:u.slot,trig:"부정 보호막",ring:"#7fd39a",txt:"−"+cut,cls:"shd",gap:70,s:"부정보호막 사용"});
   say(`부정 보호막이 ${nm} ${cut}${jo(String(cut),"eul")} ${all&&cut>1?"모두 ":""}걷어냅니다.${n>0?` (${nm} ${n} 남음)`:""}`,"t2");
   /* 실험_표본_균열석 (실험 책임자 전리품, 2026-10-23) — 부정 보호막을 잃은 뒤 그 전투 동안 마법력 +1 */
@@ -21325,6 +21461,7 @@ const KW_ICON={
   "기억":"status_someone_memory_stack",   /* 「누군가의 기억」의 기억 중첩 — 수는 따로 얹는다 (㊿) */
   "고통 감내":"sword",
   /* 광기의 투기장 (사용자 2026-11-03) — 상처 · 환호는 그림이 아직 없다 */
+  "상처":"status_wound","처형":"status_execution",   /* 받은 상태 그림 (status-wound-v1 · status-execution-v1) */
   "오늘의 주인공":"status_ar_star","도전장":"status_ar_challenge","손님 맞이":"status_ar_welcome"};   /* 다음 공격이 세진다 — 공격 아이콘 (사용자 2026-09-29) */   /* 대원 밑 소환물 표식 — 허수아비 · 공중에 뜸은 바람 (사용자 2026-09-16) */   /* 2026-09-15 추가 · 아이콘은 status-effects-v2 (64px) */
 function bdIcon(kind,key,label,icon){
   const id=icon||KW_ICON[key]||KW_ICON[label];
@@ -21637,6 +21774,7 @@ function tickDebEnd(u){
   if(!u.deb) return;
   ["atkDn","magDn","defDn","bind"].forEach(k=>{ if(u.deb[k]>0) u.deb[k]-- });
   u.deb.shock=0; u.deb.chill=0; u.deb.fear=0;
+  if(u.deb.dmgDn) u.deb.dmgDn=0;   /* 피해량 감소 — 「다음 턴 동안」, 내 턴이 끝나면 걷힌다 (광기의 투기장) */
   if(B&&B.foes&&B.foes.indexOf(u)>=0) u.deb.stun=0;   /* 대원 · 소환물의 기절은 다음 행동까지 남는다 (사용자 2026-10-06) */
 }
 function tickDebStart(u){ /* 남겨둠 : 턴 시작에는 아무것도 지우지 않는다 */ }
@@ -21807,7 +21945,8 @@ const ACT2={
    bg:"bg/battle-arena.webp", lay:"arena",
    gim:{},                                          /* 전용 구역은 아직 없다 — 정령숲 기믹을 깔지 않는다 */
    foes:["난입한 관중","난입한 관중","광인 검투사","나팔꾼","덫 관리인","갈고리 검투사","패배한 검투사",
-         "꼭두각시 검투사","채점관","먹보","종지기","거울 검투사","시체 도둑","호객꾼","피 웅덩이"],
+         "꼭두각시 검투사","채점관","먹보","종지기","거울 검투사","시체 도둑","호객꾼","피 웅덩이",
+         "기침하는 관중","부풀어오른 검투사","시샘하는 검투사"],
    enc:[
     /* 배치 묶음 — w 는 뽑히는 무게 (정함). 칸 번호는 1 이 가장 앞 */
     {n:"관중 난입", w:10, foes:["난입한 관중","난입한 관중"], vary:{"난입한 관중":[2,3]}, min:1},
@@ -21825,7 +21964,12 @@ const ACT2={
     {n:"덫 사냥", w:5, foes:["덫 관리인","꼭두각시 검투사"], slots:[4,2], min:1},
     {n:"투기장 개막", w:4, foes:["호객꾼","나팔꾼","광인 검투사"], slots:[3,5,1], min:1},
     {n:"먹이 사슬", w:4, foes:["먹보","시체 도둑"], slots:[1,3], min:1},
-    {n:"심사", w:4, foes:["채점관","거울 검투사"], slots:[4,2], min:1}],
+    {n:"심사", w:4, foes:["채점관","거울 검투사"], slots:[4,2], min:1},
+    /* ── 역병에 옮은 셋 (둘째 목록) ── */
+    {n:"기침", w:6, foes:["기침하는 관중","광인 검투사"], slots:[4,1], min:1},
+    {n:"부풀어오름", w:6, foes:["부풀어오른 검투사","난입한 관중"], slots:[1,3], min:1},
+    {n:"시샘", w:5, foes:["시샘하는 검투사","나팔꾼"], slots:[2,4], min:1},
+    {n:"역병", w:4, foes:["기침하는 관중","부풀어오른 검투사","시샘하는 검투사"], slots:[4,1,2], min:1}],
    seq:[
     /* ── 2라운드 ── */
     {n:"개막전",rounds:["관중 난입","광인과 나팔"]},
@@ -21838,16 +21982,24 @@ const ACT2={
     {n:"손님 맞이",rounds:["호객","투기장 개막"]},
     {n:"시체 수거",rounds:["시체 도둑","피 웅덩이"]},
     {n:"난동",rounds:["관중 난입","시체 도둑"]},
+    {n:"역병이 돈다",rounds:["기침","부풀어오름"]},
+    {n:"시샘과 역병",rounds:["시샘","역병"]},
     /* ── 3라운드 ── */
     {n:"투기장 한 바퀴",rounds:["관중 난입","갈고리와 덫","거울"]},
     {n:"광기의 축제",rounds:["호객","광인과 나팔","종소리"]},
     {n:"부활의 밤",rounds:["패배한 자들","가면","시체 도둑"]},
     {n:"심판의 날",rounds:["채점","덫 사냥","심사"]},
     {n:"포식",rounds:["먹보","피 웅덩이","먹이 사슬"]},
-    {n:"본 경기",rounds:["투기장 개막","갈고리와 덫","거울"]}],
+    {n:"본 경기",rounds:["투기장 개막","갈고리와 덫","거울"]},
+    {n:"역병의 투기장",rounds:["기침","시샘","역병"]}],
    elite:[
     {n:"유망주", w:8, foes:["유망주"], slots:[2], min:1},
-    {n:"유망주와 나팔꾼", w:5, foes:["유망주","나팔꾼"], slots:[1,4], min:2}],
+    {n:"유망주와 나팔꾼", w:5, foes:["유망주","나팔꾼"], slots:[1,4], min:2},
+    {n:"흥행 감독관", w:6, foes:["흥행 감독관","광인 검투사"], slots:[3,1], min:1},
+    {n:"인조된 집행인", w:6, foes:["인조된 집행인"], slots:[2], min:1},
+    {n:"광기의 관중단", w:5, foes:["광기의 관중단"], slots:[3], min:1},
+    {n:"풀려난 야수", w:5, foes:["풀려난 야수","풀려난 야수","풀려난 야수"], slots:[1,2,3], min:2},
+    {n:"질투의 대사제", w:6, foes:["질투의 대사제","기침하는 관중"], slots:[2,4], min:1}],
    rules:{t:"광 기 의  투 기 장",sub:"이 구역에서는 규칙이 달라집니다",rows:[
      ["status_ar_star","환호","관중의 환호가 높을수록 전투에서 얻는 보상이 늘고, 적도 강해집니다. 적의 행동으로 오르내립니다."]]}
  }
@@ -26589,6 +26741,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 343, "v": "0.7", "d": "2026-11-03", "t": "투기장 둘째 · 상태 부여 연출 · 냉각 감전 정지 되감기 · 부정 보호막 하나에 1", "big": 0},
  {"b": 342, "v": "0.7", "d": "2026-11-03", "t": "광기의 투기장 — 대체 2막, 적 15 + 투기장의 노예, 환호 · 상처 · 덫 · 채점 · 도전장", "big": 0},
  {"b": 341, "v": "0.7", "d": "2026-11-03", "t": "그슨대 전용 보상 34 · 소리 크기 되살림", "big": 0},
  {"b": 340, "v": "0.7", "d": "2026-11-03", "t": "지하 조합 아이콘", "big": 0},
@@ -28123,7 +28276,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=342;
+const BUILD_NO=343;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -35472,7 +35625,7 @@ function arThrowFX(fromSlot,toSlot,key,o){
   o=o||{}; const u=ICON_PNG[key]; if(!u) return;
   const a=bodyPoint("foe",fromSlot)||ctrOf("foe",fromSlot), b=bodyPoint("mine",toSlot)||ctrOf("mine",toSlot); if(!a||!b) return;
   const ms=Math.round((o.arc?480:340)*SPD), S=Math.round(30*(o.z||1));
-  const nd=spawn(`<img class="arthrow" src="${u}" alt="">`,ms+80); if(!nd) return;
+  const nd=spawn(`<img class="arthrow" src="${u}" alt=""${o.flip?' style="scale:-1 1"':''}>`,ms+80); if(!nd) return;   /* flip — 오른쪽을 보고 그려진 그림 (오염물) */
   Object.assign(nd.style,{left:(a.x-S/2)+"px",top:(a.y-S/2)+"px",width:S+"px",height:S+"px"});
   const H=o.arc?Math.max(60,Math.abs(a.x-b.x)*0.28):14, K=[];
   for(let i=0;i<=8;i++){ const t=i/8, x=(b.x-a.x)*t, y=(b.y-a.y)*t-Math.sin(t*Math.PI)*H;
@@ -35513,6 +35666,186 @@ function arBloodRiseFX(slot){
 }
 /* 채점관의 말 — 점수와 함께 */
 function arJudgeSay(f,line){ try{ barkShow(f,line,Date.now(),1,2400) }catch(e){} }
+/* 흥행 감독관의 다음 경기 — 검투사가 오른쪽에서 뛰어 들어온다 (사용자 2026-11-03). 칸의 그림을 움직일 뿐이다 */
+function arRunInFX(slot){
+  const c=ctrOf("foe",slot); if(!c) return;
+  const im=c.e.querySelector(".art img.pxs, .art svg"); if(!im||!im.animate) return;
+  const K=SPD<1?0.8:SPD;
+  im.animate([
+    {translate:"340px 0",opacity:0},
+    {translate:"240px -10px",opacity:1,offset:.15},
+    {translate:"160px 0",offset:.32},
+    {translate:"90px -10px",offset:.5},
+    {translate:"30px 0",offset:.7},
+    {translate:"0 -6px",offset:.86},
+    {translate:"0 0"}],{duration:Math.round(700*K),easing:"linear"});
+}
+
+/* ═══ 상태 부여 연출 다섯 — status-five-debuff-apply-v1 (사용자 2026-11-03, 승인된 미리보기 prototype/renderer.js 를 옮겼다) ═══
+   띠 여덟 칸 [75,75,85,90,100,95,95,140]ms, at 번째 칸에서 hold 만큼 멈춘다. 멈춤 · 대상 반응 · 파편 · 조명 · 날인은 아래 arDebSheet.
+   ⚠️ 게임 키 — 상처 wound · 오늘의 주인공 star · 도전장 duel · 처형 exec. 손님 맞이는 디버프가 아니다 (arWelcomeFX, 퇴장할 때 한 번).
+   ⚠️ 미리보기의 앞 준비 350ms · 뒤 확인 1100ms 는 넣지 않는다. 게임 속도(SPD)와 동작 줄이기(prefers-reduced-motion)를 따른다 */
+const AR_DEB_MS=[75,75,85,90,100,95,95,140];
+Object.assign(DEB_SHEET,{
+  wound:{key:"fx_deb_wound",ms:AR_DEB_MS,at:3,hold:190,y:0.44,px:138,glow:"#ef696b",ar:1},
+  star :{key:"fx_deb_star", ms:AR_DEB_MS,at:4,hold:480,y:0.29,px:142,glow:"#e4bd72",ar:1},
+  duel :{key:"fx_deb_duel", ms:AR_DEB_MS,at:4,hold:260,y:0.44,px:132,glow:"#c95456",ar:1},
+  exec :{key:"fx_deb_exec", ms:AR_DEB_MS,at:3,hold:340,y:0.44,px:152,glow:"#bb8a71",ar:1}});
+const AR_WELCOME={key:"fx_ar_welcome_apply",ms:AR_DEB_MS,at:4,hold:330,y:0.44,px:130,glow:"#d8ad56"};
+const arRM=()=>{ try{ return !!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches) }catch(e){ return false } };
+const arK=()=>(typeof SPD==="number"&&SPD>0)?SPD:1;
+/* 띠의 시간표 — 멈춤을 더하고 게임 속도를 곱한다 */
+function arTiming(SH){ const K=arK(), ms=SH.ms.map((m,i)=>Math.round((m+(i===SH.at?SH.hold:0))*K));
+  return {K, ms, hit:ms.slice(0,SH.at).reduce((a,b)=>a+b,0), hold:Math.round(SH.hold*K), total:ms.reduce((a,b)=>a+b,0)} }
+/* 작은 네모 파편 — 미리보기 particle 과 같은 퍼짐(황금각) · 440ms · 아래로 처짐 */
+function arParts(x,y,color,n,spread,K){
+  for(let i=0;i<n;i++){ const nd=spawn(`<i class="arpart" style="background:${color};width:${2+i%2}px"></i>`,Math.round(480*K)); if(!nd) break;
+    at(nd,{x,y}); const a=i*2.399, dist=spread*(.4+(i%3)*.2);
+    if(nd.animate) nd.animate([{translate:"0 0",opacity:1},{translate:`${(Math.cos(a)*dist).toFixed(1)}px ${(Math.sin(a)*dist*.55+22).toFixed(1)}px`,opacity:0}],
+      {duration:Math.round(440*K),easing:"cubic-bezier(.2,.6,.4,1)",fill:"forwards"}) } }
+function arBody(side,slot){ const c=ctrOf(side,slot); return c&&c.e.querySelector(".art img.pxs, .art svg") }
+/* 오늘의 주인공의 조명 대비 — 여럿이 한꺼번에 걸려도 한 겹만 (몇이 쓰는지 센다) */
+let AR_DIM=null, AR_DIM_N=0;
+function arDimOn(K){ AR_DIM_N++;
+  if(!AR_DIM||!AR_DIM.isConnected){ const l=document.getElementById("fx"); if(!l) return; AR_DIM=el('<div class="ardimall"></div>'); l.appendChild(AR_DIM) }
+  AR_DIM.style.transition=`opacity ${Math.round(200*K)}ms ease-out`; requestAnimationFrame(()=>{ if(AR_DIM) AR_DIM.style.opacity=".32" }) }
+function arDimOff(K){ AR_DIM_N=Math.max(0,AR_DIM_N-1); if(AR_DIM_N||!AR_DIM) return; const d=AR_DIM;
+  d.style.transition=`opacity ${Math.round(300*K)}ms ease-in`; d.style.opacity="0";
+  setTimeout(()=>{ if(AR_DIM===d&&!AR_DIM_N){ d.remove(); AR_DIM=null } },Math.round(320*K)) }
+/* 띠 하나 — debInFX 가 부른다 (SH.ar). keep 에 띠 마디를 넘기고, 끝나면 done (숨긴 상태 아이콘이 드러나며 한 번 튄다) */
+function arDebSheet(side,slot,k,SH,src,r,keep,done){
+  const l=document.getElementById("fx"); if(!l){ done(); return }
+  const T=arTiming(SH), K=T.K, rm=arRM(), x=r.left+r.width/2, y=r.top+r.height*SH.y, px=SH.px;
+  const d=el(`<div class="debsh k-${k}" style="--c:${SH.glow};width:${px}px;height:${px}px;left:${x}px;top:${y}px;background-image:url(${src})"></div>`);
+  l.appendChild(d); keep(d);
+  let t=0; T.ms.forEach((m,i)=>{ setTimeout(()=>{ if(d.isConnected) d.style.backgroundPosition=(i*100/7)+"% 0" },t); t+=m });
+  const life=T.total, dir=side==="mine"?-1:1;   /* 밀리는 쪽 — 대원은 왼쪽, 적은 오른쪽이 뒤다 */
+  if(d.animate) d.animate([{opacity:1,offset:0},{opacity:1,offset:Math.max(0,1-70*K/life)},{opacity:.35}],{duration:life,fill:"forwards"});
+  setTimeout(()=>{ if(!d.isConnected||!d.animate||rm) return;   /* 멈춘 동안의 빛 — 5 + 6·e^(−dt/140) */
+    d.animate([{filter:`drop-shadow(0 0 11px ${SH.glow})`},{filter:`drop-shadow(0 0 5px ${SH.glow})`}],{duration:T.hold,easing:"ease-out"}) },T.hit);
+  const body=arBody(side,slot);
+  if(!rm){
+    if(k==="wound"){   /* 베임 — 작게 맺혔다 커지고, 절개 순간 부풀며 흔들리고 몸이 밀린다 */
+      if(d.animate) d.animate([{scale:".7"},{scale:"1",offset:Math.min(1,150*K/life)},{scale:"1"}],{duration:life});
+      setTimeout(()=>{ if(!d.isConnected||!d.animate) return;
+        const S=[]; for(let i=0;i<=10;i++){ const dt=i*15; S.push({scale:String(1+.17*Math.exp(-dt/90)),translate:`${(Math.sin(dt*.09)*2*Math.exp(-dt/150)).toFixed(1)}px 0`}) }
+        d.animate(S,{duration:Math.round(150*K)});
+        arParts(x,y,SH.glow,8,48,K);
+        try{ setPose(side,slot,"hurt",Math.round(160*K)) }catch(e){} },T.hit) }
+    else if(k==="exec"){   /* 도끼 — 위에서 내려와 박히고, 묵직하게 튀며 나뭇조각이 흩어진다 */
+      if(d.animate) d.animate([{translate:"0 -15px"},{translate:"0 0",offset:Math.min(1,150*K/life)},{translate:"0 0"}],{duration:life});
+      setTimeout(()=>{ if(!d.isConnected||!d.animate) return;
+        d.animate([{scale:"1.12"},{scale:"1"}],{duration:Math.round(300*K),easing:"cubic-bezier(.2,.8,.4,1)"});
+        arParts(x,y+px*.26,SH.glow,14,48,K);
+        try{ setPose(side,slot,"hurt",Math.round(160*K)) }catch(e){} },T.hit) }
+    else if(k==="duel"){   /* 도전장 — 왼쪽 위에서 사선으로 날아와 멈추고, 날인되며 작게 튄다 */
+      if(d.animate) d.animate([{translate:"-170px -65px",rotate:"-0.5rad"},{translate:"-34px -13px",rotate:"-0.1rad",offset:Math.min(1,115*K/life)},{translate:"0 0",rotate:"0rad",offset:Math.min(1,230*K/life)},{translate:"0 0",rotate:"0rad"}],{duration:life,easing:"linear"});
+      setTimeout(()=>{ if(!d.isConnected||!d.animate) return;
+        d.animate([{scale:"1.17",translate:"0 4px"},{scale:"1",translate:"0 0"}],{duration:Math.round(300*K),easing:"cubic-bezier(.2,.8,.4,1)"});
+        arParts(x,y,SH.glow,8,48,K) },T.hit) }
+    else if(k==="star"){   /* 오늘의 주인공 — 좁은 조명이 옆에서 훑고 멈춘다 · 붉은 포착 표시 · 발밑 조명 */
+      if(d.animate) d.animate([{translate:"-35px 0"},{translate:"0 0",offset:Math.min(1,350*K/life)},{translate:"0 0"}],{duration:life,easing:"cubic-bezier(.2,.7,.3,1)"});
+      setTimeout(()=>{ if(d.isConnected&&d.animate) d.animate([{scale:"1.06"},{scale:"1"}],{duration:Math.round(300*K)}) },T.hit);
+      arDimOn(K); setTimeout(()=>arDimOff(K),life);
+      const c=ctrOf(side,slot), ar=c&&(c.e.querySelector(".art")||c.e).getBoundingClientRect();
+      if(ar){ const foot=ar.bottom, top=Math.max(0,ar.top-ar.height*1.2), H=foot-top, W=ar.width*1.1, L2=life+Math.round(250*K);
+        const cone=spawn(`<div class="arcone" style="left:${x-W/2}px;top:${top}px;width:${W}px;height:${H}px"></div>`,L2+60);
+        if(cone&&cone.animate) cone.animate([{"--ax":"-95px",opacity:0},{opacity:1,offset:.05},{"--ax":"0px",offset:Math.min(1,400*K/L2)},{opacity:1,offset:Math.min(1,life/L2)},{"--ax":"0px",opacity:0}],{duration:L2,fill:"forwards"});
+        const ring=spawn(`<div class="arring" style="left:${x}px;top:${foot+2}px;width:${Math.round(ar.width*.8)}px"></div>`,L2+60);
+        if(ring&&ring.animate) ring.animate([{opacity:0},{opacity:1,offset:.1},{opacity:1,offset:.8},{opacity:0}],{duration:L2,fill:"forwards"}) }
+      setTimeout(()=>{   /* 붉은 포착 표시 — 네 모서리가 대상에 모인다 (330ms) */
+        const m=spawn(`<div class="arcorner"><i></i><i></i><i></i><i></i></div>`,Math.round(360*K)); if(!m) return;
+        at(m,{x,y:y+20}); if(m.animate) m.animate([{"--z":"40px",opacity:1},{"--z":"18px",opacity:0}],{duration:Math.round(330*K),fill:"forwards"}) },T.hit) } }
+  setTimeout(()=>done(),life);
+  /* 대상의 반응 — 밀림 · 묵직함 · 날인 (미리보기 dx · dy · rot, e^(−dt/110)) */
+  if(!rm&&body&&body.animate&&(k==="wound"||k==="exec"||k==="duel")) setTimeout(()=>{ if(!body.isConnected) return;
+    const S=[]; for(let i=0;i<=8;i++){ const dt=i*40, a=Math.exp(-dt/110);
+      const dx=k==="wound"?7*a*dir:0, dy=k==="exec"?5*a:k==="duel"?2*a:0, rot=k==="wound"?.06*a*dir:k==="exec"?-.05*a:0;
+      S.push({translate:`${dx.toFixed(1)}px ${dy.toFixed(1)}px`,rotate:rot.toFixed(3)+"rad"}) }
+    body.animate(S,{duration:Math.round(320*K),easing:"linear"}) },T.hit);
+}
+/* 손님 맞이 — 호객꾼이 퇴장하기 직전 한 번 (arenaAfterAct). 나팔이 기울었다 자리 잡고, 입구 쪽으로 파장 셋 */
+function arWelcomeFX(slot,side){
+  side=side||"foe"; const SH=AR_WELCOME, src=(typeof ICON_PNG!=="undefined")&&ICON_PNG[SH.key]; if(!src) return;
+  const c=ctrOf(side,slot), l=document.getElementById("fx"); if(!c||!l) return;
+  const r=(c.e.querySelector(".art")||c.e).getBoundingClientRect(), T=arTiming(SH), K=T.K, rm=arRM();
+  const x=r.left+r.width/2, y=r.top+r.height*SH.y, px=SH.px, dir=side==="foe"?-1:1;   /* 적은 왼쪽(대원 쪽)을 본다 — 나팔 입구도 왼쪽 */
+  const d=el(`<div class="debsh k-welcome${dir>0?" flip":""}" style="--c:${SH.glow};width:${px}px;height:${px}px;left:${x}px;top:${y}px;background-image:url(${src})"></div>`);
+  l.appendChild(d);
+  let t=0; T.ms.forEach((m,i)=>{ setTimeout(()=>{ if(d.isConnected) d.style.backgroundPosition=(i*100/7)+"% 0" },t); t+=m });
+  setTimeout(()=>{ if(d.isConnected) d.remove() },T.total+Math.round(40*K));
+  if(!d.animate) return;
+  d.animate([{opacity:1,offset:0},{opacity:1,offset:Math.max(0,1-70*K/T.total)},{opacity:.35}],{duration:T.total,fill:"forwards"});
+  if(rm) return;
+  d.animate([{rotate:(.2*dir)+"rad"},{rotate:"0rad",offset:Math.min(1,200*K/T.total)},{rotate:"0rad"}],{duration:T.total,easing:"cubic-bezier(.2,.7,.3,1)"});
+  setTimeout(()=>{ if(!d.isConnected) return;
+    const S=[]; for(let i=0;i<=12;i++){ const dt=i*40; S.push({scale:String(1+.08*Math.sin(dt*.04)*Math.exp(-dt/380))}) }
+    d.animate(S,{duration:Math.round(480*K)});
+    d.animate([{filter:`drop-shadow(0 0 11px ${SH.glow})`},{filter:`drop-shadow(0 0 5px ${SH.glow})`}],{duration:T.hold,easing:"ease-out"});
+    for(let j=0;j<3;j++) setTimeout(()=>{   /* 파장 — 90ms 간격, 380ms 동안 입구 쪽으로 퍼지며 엷어진다 */
+      const w=spawn(`<div class="arwave${dir>0?" r":""}" style="--c:${SH.glow}"></div>`,Math.round(420*K)); if(!w||!w.animate) return;
+      const K8=[]; for(let i=0;i<=8;i++){ const p=i/8, rr=16+p*30; K8.push({left:(x+dir*(25+p*52)-rr)+"px",top:(y-rr)+"px",width:2*rr+"px",height:2*rr+"px",opacity:(1-p)*.65}) }
+      w.animate(K8,{duration:Math.round(380*K),easing:"linear",fill:"forwards"}) },Math.round(j*90*K));
+    const body=arBody(side,slot);   /* 몸이 살짝 흔들린다 — sin(dt·.025)·2·e^(−dt/300), 입구 반대쪽으로 */
+    if(body&&body.animate){ const S2=[]; for(let i=0;i<=10;i++){ const dt=i*60; S2.push({translate:`${(-Math.sin(dt*.025)*2*Math.exp(-dt/300)*dir).toFixed(1)}px 0`}) } body.animate(S2,{duration:Math.round(600*K)}) } },T.hit);
+}
+
+/* ═══ 정지 · 되감기 적용 연출 — status-battle-preview-v4-sheet-only (사용자 2026-11-03, prototype/renderer.js 의 stop · rewind) ═══
+   buffSheetFX 가 띠를 띄우면서 부른다. 띠의 멈춤 · 크기는 BUFF_SHEET (정지 5번 칸 +820ms · 되감기 4번 칸 +600ms).
+   ⚠️ 보이는 것만이다 — 정지의 실제 지속(stop · stopped)과 되감기의 추가 행동은 규칙 쪽 그대로. 대상이 멈춰 보이는 것은
+      battle.js 가 stopped(u) 인 칸에 붙이는 .arstopped (빛깔이 가시고 대기 띠가 멎는다) — 정지가 풀리면 저절로 돌아온다 */
+function arTimeFX(kw,side,slot,d,T,wait,K){
+  const c=ctrOf(side,slot); if(!c||!d) return;
+  const rm=arRM(), r=(c.e.querySelector(".art")||c.e).getBoundingClientRect();
+  const x=r.left+r.width/2, cy=r.top+r.height*0.55, hit=wait+T.ms.slice(0,T.at).reduce((a,b)=>a+Math.round(b*K),0);
+  const total=wait+T.ms.reduce((a,b,i)=>a+Math.round((b+(i===T.at?T.holdRaw:0))*K),0);
+  if(kw==="정지"){
+    /* 시계는 작게 맺혀 커지고(0.82 → 1), 멎는 순간 한 번 튄다 */
+    if(d.animate&&!rm){ d.animate([{scale:".82"},{scale:"1",offset:Math.min(1,(hit-wait)/(total-wait))},{scale:"1.12",offset:Math.min(1,(hit-wait+1)/(total-wait))},{scale:"1",offset:Math.min(1,(hit-wait+40*K)/(total-wait))},{scale:"1"}],{duration:total-wait,delay:wait}) }
+    /* 멎기 전까지는 몸이 그대로 숨 쉰다 — 칸의 빛깔 · 대기는 멎는 순간부터 */
+    c.e.classList.add("arstopin"); setTimeout(()=>{ const c2=ctrOf(side,slot); if(c2) c2.e.classList.remove("arstopin") },hit);
+    if(rm) return;
+    /* 네 모서리가 다가와 붙고, 시간의 모래 열여덟 알이 궤도를 돌다 멎는다 */
+    const W=r.width*.78, H=r.height*.9;
+    const box=spawn(`<div class="arstopbox"><i></i><i></i><i></i><i></i></div>`,total+400); if(box){ at(box,{x,y:cy});
+      box.style.setProperty("--w",W+"px"); box.style.setProperty("--h",H+"px");
+      if(box.animate) box.animate([{"--pad":"12px",opacity:0},{"--pad":"12px",opacity:.16,offset:Math.min(1,wait/(total+300)+.01)},{"--pad":"0px",opacity:.16,offset:Math.min(1,hit/(total+300))},{"--pad":"0px",opacity:.4,offset:Math.min(1,(hit+1)/(total+300))},{"--pad":"0px",opacity:.4,offset:Math.min(1,total/(total+300))},{"--pad":"0px",opacity:.12}],{duration:total+300,fill:"forwards"}) }
+    const ring=spawn(`<div class="arsand"></div>`,total+400); if(ring){ at(ring,{x,y:cy});
+      for(let i=0;i<18;i++){ const a=i*Math.PI/9, rr=59+8*Math.sin(i*1.4); const p=el(`<i class="${i%3?"g":"c"}" style="left:${(Math.cos(a)*rr).toFixed(1)}px;top:${(Math.sin(a)*rr*.8).toFixed(1)}px"></i>`); ring.appendChild(p) }
+      if(ring.animate){ ring.animate([{opacity:0},{opacity:1,offset:Math.min(1,hit/(total+300))},{opacity:1,offset:Math.min(1,total/(total+300))},{opacity:.3}],{duration:total+300,fill:"forwards"});
+        ring.animate([{rotate:"0deg"},{rotate:((hit-wait)*.003*57.3).toFixed(1)+"deg"}],{duration:Math.max(1,hit-wait),delay:wait,fill:"forwards"}) } }   /* 멎는 순간 그 자리에 선다 */
+    setTimeout(()=>{ const f=spawn(`<div class="arstopflash"></div>`,Math.round(200*K)); if(!f) return;   /* 멎는 순간 윤곽이 번쩍 */
+      Object.assign(f.style,{left:(x-W*.5)+"px",top:(cy-H*.5)+"px",width:W+"px",height:H+"px"});
+      if(f.animate) f.animate([{opacity:.4},{opacity:0}],{duration:Math.round(160*K),fill:"forwards"}) },hit);
+    return }
+  if(kw==="되감기"){
+    if(d.animate&&!rm){ const H2=T.holdRaw*K;
+      d.animate([{scale:".9"},{scale:"1",offset:Math.min(1,180*K/(total-wait))},{scale:"1"}],{duration:total-wait,delay:wait});
+      setTimeout(()=>{ if(d.isConnected&&d.animate) d.animate([{scale:"1"},{scale:"1.08"},{scale:"1"}],{duration:Math.round(H2),easing:"ease-in-out"}) },hit) }
+    if(rm) return;
+    const body=arBody(side,slot); if(!body) return;
+    const br=body.getBoundingClientRect(), hold=Math.round(T.holdRaw*K);
+    /* 보랏빛 잔상 셋 — 몸에서 갈라졌다가(핵심 구간 앞 140ms) 몸으로 모인다 */
+    setTimeout(()=>{ for(let i=3;i>0;i--){ const g=spawn(`<img class="arghost" src="${body.getAttribute("src")}" alt="">`,hold+520); if(!g) continue;
+        Object.assign(g.style,{left:br.left+"px",top:(br.top-i*2)+"px",width:br.width+"px",height:br.height+"px"});
+        const off=(side==="foe"?1:-1)*i*13, op=.1+i*.035;
+        if(g.animate) g.animate([{translate:"0 0",opacity:0},{translate:off+"px 0",opacity:op,offset:.2},{translate:(off*.35).toFixed(1)+"px 0",opacity:op,offset:.7},{translate:"0 0",opacity:0}],{duration:hold+460,fill:"forwards"}) } },Math.max(wait,hit-Math.round(140*K)));
+    /* 시간 궤적 — 세 고리가 거꾸로 돌며 오므라든다 · 입자가 몸으로 모인다 */
+    const arc=spawn(`<div class="arrewarc"><i></i><i></i><i></i></div>`,total+260); if(arc){ at(arc,{x,y:cy});
+      if(arc.animate){ arc.animate([{rotate:"0deg"},{rotate:"-200deg"}],{duration:total-wait+150,delay:wait,fill:"forwards"});
+        arc.animate([{opacity:0,scale:"1"},{opacity:1,scale:"1",offset:Math.min(1,(130*K+wait)/(total+150))},{opacity:1,scale:"1",offset:Math.min(1,(hit+hold*.6)/(total+150))},{opacity:.6,scale:".35"},],{duration:total+150,fill:"forwards"}) } }
+    setTimeout(()=>{ for(let i=0;i<12;i++){ const a=i*2.399, rr=78+(i%3)*10, p=spawn(`<i class="arpart" style="background:#c794eb"></i>`,hold+300); if(!p) continue;
+        at(p,{x:x+Math.cos(a)*rr,y:cy+Math.sin(a)*rr*.65});
+        if(p.animate) p.animate([{translate:"0 0",opacity:.6},{translate:`${(-Math.cos(a)*rr).toFixed(1)}px ${(-Math.sin(a)*rr*.65).toFixed(1)}px`,opacity:0}],{duration:hold+230,easing:"cubic-bezier(.3,.6,.4,1)",fill:"forwards"}) } },Math.max(wait,hit-Math.round(100*K)));
+    /* 대기 동작을 거꾸로 — 600ms 동안 대기 띠 네 칸(약 640ms)을 뒤로. 띠가 없는 몸은 잔상만 */
+    const set=(typeof PNG_SPRITE!=="undefined")&&PNG_SPRITE[body.dataset&&body.dataset.nm];
+    if(set&&set.idleA&&set.idleA.length>1) setTimeout(()=>{ const im=arBody(side,slot); if(!im) return;
+      const n=set.idleA.length; let k=(+im.dataset.k||0); const step=Math.round(hold/4);
+      im._pt=1;   /* 다른 자세 중 — 대기 티커가 손대지 않는다 */
+      for(let q=1;q<=4;q++) setTimeout(()=>{ if(!im.isConnected) return; k=(k-1+n)%n; im.dataset.k=k; im.src=set.idleA[k] },q*step-step+1);
+      setTimeout(()=>{ im._pt=0 },hold) },hit);
+  }
+}
 /* ═══ 페블 — 기획 노트 21 (사용자 2026-11-02) · 영웅심 넘치는 조약돌 · 지하 / 영광 숭배자 / 정령 ═══
    · 내려찍기 준비 ↔ 내려찍기 — 「전환」. 준비를 2번 하면 1번 칸이 내려찍기가 되고, 내려찍으면 준비로 돌아간다 (h.pbPrep, 라운드).
      전환은 기술 칸의 alt 를 쓰되 altBy 로 저절로 넘기지 않는다 — pebbleAfter 가 정한다.
@@ -40036,6 +40369,7 @@ function foePurge(f){
 const FOE_RACE={
  /* 광기의 투기장 (사용자 2026-11-03) */
  "나팔꾼":"인간","덫 관리인":"인간","광인 검투사":"인간","갈고리 검투사":"악마","패배한 검투사":"악마","난입한 관중":"인간",
+ "기침하는 관중":"인간","부풀어오른 검투사":"악마","시샘하는 검투사":"인간","흥행 감독관":"악마","인조된 집행인":"인간","생체실험 대상자":"악마","광기의 관중단":"악마","풀려난 야수":"야수","질투의 대사제":"악마",
  "피 웅덩이":"악마","채점관":"악마","먹보":"악마","꼭두각시 검투사":"인간","종지기":"인간","거울 검투사":"악마","시체 도둑":"악마","호객꾼":"악마","유망주":"인간",
  "실험 책임자":"인간","연료 장치":"기계",
  /* 핏빛 감옥 */
@@ -40297,6 +40631,7 @@ function cheerAdd(v,why,f,quiet){
   if(!run||!arenaOn()||!v) return 0;
   const was=cheerNow(); run.cheer=Math.max(0,Math.min(CHEER.max,was+v));
   const d=run.cheer-was; if(!d) return 0;
+  if(typeof B!=="undefined"&&B) cheerMagSync();   /* 열광 — 환호 10 당 마법력 */
   if(typeof B!=="undefined"&&B&&f&&f.slot>0&&!quiet)
     fx({side:"foe",slot:f.slot,ring:d>0?"#e0c85a":"#9c8d77",txt:"환호 "+(d>0?"+":"")+d,cls:"buf",gap:110});
   if(typeof say==="function"&&!quiet) say(`${why||"관중"} — 관중의 환호 ${d>0?"+":""}${d} (${run.cheer}/${CHEER.max})`,"t2");
@@ -40307,7 +40642,7 @@ function cheerScale(kind){ const c=arenaOn()?cheerNow()/100:0, k=(kind==="boss")
 /* 전투 보상 — 상자의 금화 · 경험치 (openChest 가 부른다) */
 function cheerRew(){ return arenaOn()?1+cheerNow()/100:1 }
 function arenaChest(list){
-  const m=cheerRew(); if(m<=1) return;
+  const m=cheerRew()+(((run&&run.dun&&run.dun.arRew)||0)/100);   /* 검투비 — 합연산 */ if(m<=1) return;
   (list||[]).forEach(x=>{ if((x.t==="금화"||x.t==="경험치")&&!x.info&&x.v>0) x.v=Math.round(x.v*m) }) }
 /* 2막에 들어설 때 — 환호를 처음 값으로 */
 function arenaFieldIn(){ if(!run) return; if(arenaOn()) run.cheer=CHEER.start; else delete run.cheer }
@@ -40444,6 +40779,7 @@ function arenaSkPre(f,s,I){
   if(s.atkPose===undefined&&s.pose&&!s.dmg) fx({side:"foe",slot:f.slot,pose:s.pose,gap:0});
   if(f.name==="호객꾼"&&typeof foeBark==="function") foeBark(f,"atk");   /* 말이 많다 — 행동할 때마다 (사용자) */
   if(s.cheerUp) cheerAdd(s.cheerUp,s.n,f);
+  if(arenaSkPre2(f,s)) return true;   /* 둘째 목록 */
   if(s.cheerTake){ const v=Math.min(s.cheerTake,cheerNow());
     if(v>0){ cheerAdd(-v,s.n,f); const g=healUp(f,v); fx({side:"foe",slot:f.slot,s:"heal",txt:"+"+g,cls:"heal",gap:120});
       say(`${s.n} — 관중의 환호 ${v}${jo(String(v),"eul")} 빼앗아 체력 +${g}`,"t3") } }
@@ -40543,7 +40879,7 @@ function arenaSkHit(f,s,t){
 /* 맞기 전에 — 날아가는 것 (돌 · 단검) · 거울 광선 */
 function arenaPreHit(f,s,t,k){
   if(s.throwFx&&t){ const big=1+0.12*(((f.skGrow||{})[s.n]||0)/(s.grow||5));
-    fx({side:"mine",slot:t.slot,fn:()=>{ if(typeof arThrowFX==="function") arThrowFX(f.slot,t.slot,s.throwFx,{arc:!!s.arc,spin:!!s.spin,z:big}) },gap:s.arc?520:380}) }
+    fx({side:"mine",slot:t.slot,fn:()=>{ if(typeof arThrowFX==="function") arThrowFX(f.slot,t.slot,s.throwFx,{arc:!!s.arc,spin:!!s.spin,flip:!!s.flipFx,z:big}) },gap:s.arc?520:380}) }
   if(s.mirrorFire&&k===0) fx({side:"foe",slot:f.slot,pose:"charge",fn:()=>{ if(typeof arBeamFX==="function") arBeamFX(f.slot) },gap:300}) }
 /* 관통 — 기술 · 소화 작용 · 광기(기절 · 속박 대상) */
 function skPierce(f,t,s){
@@ -40559,6 +40895,8 @@ function arenaSkPost(f,I){
   if(s.grow){ f.skGrow=f.skGrow||{}; f.skGrow[s.n]=(f.skGrow[s.n]||0)+s.grow;
     say(`${s.n}의 피해량이 ${s.grow} 늘어납니다 (지금 ${skDmg(f,s)}).`,"t2") }
   if(s.mirrorFire){ f.mirrorOn=0; f.mirrorDmg=0 }
+  if(f.alive&&s.backAfter) foeStep(f,+1,s.backAfter);   /* 때린 뒤에 물러난다 (풀려난 야수) */
+  if(f.alive&&s.fwdAfter) foeStep(f,-1,s.fwdAfter);
   if(s.judgeAct&&f.judge) f.judge.st="idle" }
 /* 가장 많은 피해를 준 대원 — 이번 라운드 (B 는 라운드마다 새로 선다) */
 function topDmgHero(){
@@ -40569,7 +40907,7 @@ function topDmgHero(){
 
 /* ── 적이 맞을 때 (hurt) ── */
 function arenaFoeIn(f,amt){
-  if(amt>0&&f&&f.halfTurn&&B&&f.halfTurn===(B.turn||1)) return Math.ceil(amt/2);
+  if(amt>0&&f&&f.halfTurn&&B&&!B._arKill&&f.halfTurn===(B.turn||1)) return Math.ceil(amt/2);
   return amt }
 function arenaFoeHurt(f,amt){
   if(!B||!(amt>0)||!f) return;
@@ -40578,6 +40916,7 @@ function arenaFoeHurt(f,amt){
     B.arDmg=B.arDmg||{}; B.arDmg[uid(by)]=(B.arDmg[uid(by)]||0)+amt;
     B.foes.forEach(j=>{ if(j.alive&&j.judge&&j.judge.st==="scoring") j.judge.got+=amt }) }
   if(foePas(f,"cheerHurt")) cheerAdd(foePas(f,"cheerHurt").v||1,"관중의 촉망",f,1);
+  if(f.encoreTurn&&f.encoreTurn===(B.turn||1)) cheerAdd(f.encoreV||5,"앙코르",f,1);   /* 앙코르 — 그 턴에 맞을 때마다 */
   if(f.mirrorOn){ f.mirrorDmg=(f.mirrorDmg||0)+amt;
     const s=((FOE[f.name]||{}).sk||[])[f.intent&&f.intent.i];
     if(f.intent&&f.intent.t==="sk"&&s&&s.mirrorFire) f.intent.v=skDmg(f,s) }
@@ -40586,6 +40925,12 @@ function arenaFoeHurt(f,amt){
 /* ── 죽음 (foeDeath 의 갈래) ── */
 function arenaDeathKind(f,d){
   if(d.kind==="cheer"){ cheerAdd(d.v,d.n||"죽음",f); return true }
+  if(d.kind==="killerDeb"){ const by=B.lastAttacker;   /* 처치한 대상에게 (기침하는 관중) */
+    if(by&&by.hp>0&&B.foes.indexOf(by)<0) Object.keys(d.deb||{}).forEach(k=>addDeb(by,k,d.deb[k],f)); return true }
+  if(d.kind==="execAll"){ const v=(d.v||20)+(f.execUp||0);   /* 모든 대상 — 적과 대원 모두 (부풀어오른 검투사) */
+    fx({side:"foe",slot:f.slot,s:"boom",quake:1,ring:"#8a1c1c",txt:"처형 "+v,cls:"crit",gap:260});
+    allUnits().filter(u=>u.hp>0).forEach(u=>addDeb(u,"exec",v,f)); B.foes.filter(x=>x.alive&&x!==f).forEach(x=>addDeb(x,"exec",v,f));
+    say(`${d.n||"죽음"} — 모든 대상에게 처형 ${v}`,"t1"); return true }
   if(d.kind==="woundAll"){ allUnits().filter(u=>u.hp>0).forEach(u=>addDeb(u,"wound",d.v||1,f));
     say(`${d.n||"죽음"} — 모든 상대에게 상처를 남깁니다.`,"t3"); return true }
   if(d.kind==="arise"){
@@ -40595,6 +40940,11 @@ function arenaDeathKind(f,d){
     return true }
   return false }
 function arenaFoeDown(f){
+  /* 무리 사냥 — 다른 풀려난 야수가 쓰러지면 모든 상대에게 공포 1, 남은 야수가 포효한다 */
+  { const P=B&&B.foes.filter(x=>x.alive&&x!==f&&x.name===f.name&&foePas(x,"packHunt"));
+    if(P&&P.length){ P.forEach(x=>fx({side:"foe",slot:x.slot,pose:"roar",ring:"#c04040",glow:1,quake:1,txt:"무리 사냥",cls:"crit",gap:200}));
+      allUnits().filter(u=>u.hp>0).forEach(u=>addDeb(u,"fear",1,P[0]));
+      say(`무리 사냥 — ${f.name}${jo(f.name,"ig")} 쓰러지자 남은 무리가 포효합니다. 모든 상대에게 공포 1`,"t1") } }
   if(f.name==="호객꾼"&&typeof foeBark==="function") foeBark(f,"down");
   if(B&&B.duel&&f.id===B.duel.foe) duelEnd(`${f.name}${jo(f.name,"ig")} 쓰러졌습니다`) }
 /* 투기장의 노예가 쓰러졌다 — 유망주에게 모든 추가 능력치 +3 */
@@ -40609,18 +40959,21 @@ function arenaMinDeath(t){
 function arenaBattleStart(fresh){
   if(!B) return;
   B.traps=[];
+  cheerMagSync();
   if(!fresh) return;
   B.foes.forEach(f=>{
     if(f.alive&&foePas(f,"slaveStart")) slaveSpawn(f);
     if(f.alive&&f.name==="호객꾼"&&typeof foeBark==="function") foeBark(f,"in") }) }
 /* 적 차례 머리 (skTurnStart 다음) */
-function arenaFoeStart(){ arenaRiseTick() }
+function arenaFoeStart(){ arenaRiseTick(); boutTick() }
 /* 적 하나가 움직인 뒤 */
 function arenaAfterAct(f){
   if(!B) return;
   const w=f.alive&&f._acted&&foePas(f,"welcome");
   if(w){ f.welcomeN=(f.welcomeN||0)+1;
     if(f.welcomeN>=(w.v||3)){ const sl=f.slot;
+      /* 손님 맞이가 실제로 발동하는 자리 — 나팔이 먼저 울리고(사라지기 전에), 말하고, 달아난다 (사용자 2026-11-03) */
+      fx({side:"foe",slot:sl,fn:()=>{ if(typeof arWelcomeFX==="function") arWelcomeFX(sl,"foe") },gap:Math.round(1085*(typeof SPD==="number"?SPD:1))});
       if(typeof foeBark==="function") foeBark(f,"event:퇴장");
       fx({side:"foe",slot:sl,fn:()=>{ if(typeof fleeOutFX==="function") fleeOutFX(sl) },gap:700});
       say(`${f.name}${jo(f.name,"ig")} 전투에서 퇴장합니다.`,"t1");
@@ -40637,7 +40990,7 @@ function arenaFoeEnd(){
   arenaWoundTick();
   B.foes.forEach(f=>{ if(f.judge&&f.judge.st==="act") f.judge.st="idle" }) }
 /* 내 턴이 끝날 때 (endPhase 머리) */
-function arenaTurnEnd(){ judgeTurnEnd() }
+function arenaTurnEnd(){ execCheck(); judgeTurnEnd() }
 /* 대원이 기술을 쓴 뒤 (disciplineTick) */
 function arenaSkillUsed(h){
   if(!B||!h||h.isMin) return;
@@ -40646,6 +40999,7 @@ function arenaSkillUsed(h){
 /* 의도를 다 고른 뒤 — 채점관의 차례 · 노예 겨냥 · 거울의 쌓인 피해 */
 function arenaIntents(){
   if(!B||!B.foes) return;
+  cheerMagSync();   /* 열광 — 새로 선 적도 (입장 · 소환) */
   B.foes.forEach(f=>{
     if(!f.alive) return;
     if(f.duelStop){ f.intent={t:"wait"}; return }
@@ -40656,6 +41010,7 @@ function arenaIntents(){
     if(f.aimSlave&&f.intent&&f.intent.t==="sk"&&f.intent.toId){
       const s=((FOE[f.name]||{}).sk||[])[f.intent.i], sv=arSlaves()[0];
       if(s&&s.dmg&&sv&&!["all","none","self"].includes(s.tg)){ f.intent.to=sv.slot; f.intent.toId=uid(sv) } }
+    scentAim(f);   /* 피 냄새 */
     if(f.mirrorOn&&f.intent&&f.intent.t==="sk"){ const s=((FOE[f.name]||{}).sk||[])[f.intent.i];
       if(s&&s.mirrorFire) f.intent.v=skDmg(f,s) } }) }
 /* 머리 위 칩 (foeStatusRows) — 손님 맞이 · 도전장 · 반사판 · 관통 · 채점 */
@@ -40669,6 +41024,101 @@ function arenaChips(f){
   if(f.mirrorOn) g.push(bd("g","비추기",f.mirrorDmg||0,`받은 피해를 저장합니다. 지금 ${f.mirrorDmg||0}.`,"비추기"));
   /* 채점 — 쌓인 피해는 의도 위에 따로 (intentHtml 의 .arjudge, 사용자 2026-11-03) */
   return g }
+
+/* ═══ 둘째 목록 (사용자 2026-11-03) — 처형 · 피해량 감소 · 역병 셋 · 정예 다섯 ═══ */
+/* 처형 — 내 턴이 끝날 때 체력이 처형보다 낮으면 쓰러진다. 대원 · 적 모두 (부풀어오른 검투사는 양쪽에 건다).
+   부정 보호막 하나가 처형 10 을 지운다 (status.js 의 NEG_PER) */
+function arKillFoe(f,why){
+  if(!f||!f.alive) return;
+  f.evade=0; f.shield=0; f.eshield=0; const ar=f.armor; f.armor=0;
+  B._arKill=1; try{ hurt(f,Math.max(1,f.hp),why,"tru",true) } finally { B._arKill=0; if(f.alive) f.armor=ar } }
+function execCheck(){
+  if(!B||B.over) return;
+  (run.heroes||[]).concat(B.mins||[]).forEach(u=>{ const v=deb(u,"exec");
+    if(!(v>0)||!(u.hp>0)||!(u.slot>0)||u.hp>=v) return;
+    fx({side:"mine",slot:u.slot,ring:"#7a1a1a",txt:"처형",cls:"crit",quake:1,gap:260});
+    say(`처형 — ${u.name}의 체력(${u.hp})이 처형 ${v}보다 낮아 쓰러집니다.`,"t1");
+    u.hp=0; if(!u.isMin&&run){ u.downBy="처형"; run.lastKiller="처형"; run.lastKillerBy="처형" } unitDown(u) });
+  B.foes.filter(f=>f.alive&&deb(f,"exec")>0&&f.hp<deb(f,"exec")).forEach(f=>{
+    fx({side:"foe",slot:f.slot,ring:"#7a1a1a",txt:"처형",cls:"crit",quake:1,gap:200});
+    say(`처형 — ${f.name}의 체력(${f.hp})이 처형 ${deb(f,"exec")}보다 낮아 쓰러집니다.`,"t1");
+    arKillFoe(f,"처형") });
+  if(B.duel) duelCheck() }
+/* 피해량 감소 — 그 대원이 주는 피해가 N 준다 (내 턴이 끝나면 걷힌다 — tickDebEnd) */
+function arenaAtkDn(amt){
+  if(!(amt>0)||!B||B._arKill) return amt;
+  const by=B.lastAttacker; if(!by||by.isFoe||B.foes.indexOf(by)>=0) return amt;
+  const v=deb(by,"dmgDn"); return v>0?Math.max(0,amt-v):amt }
+/* 광기의 관중단 — 환호 10 당 추가 마법력 1 */
+function cheerMagSync(){
+  if(!B||!B.foes) return;
+  B.foes.forEach(f=>{ const p=f.alive&&foePas(f,"cheerMag"); if(!p) return;
+    const want=Math.floor(cheerNow()/(p.per||10)), d=want-(f.cheerMag||0); if(!d) return;
+    f.mag=(f.mag||0)+d; f.magUp=(f.magUp||0)+d; f.cheerMag=want }) }
+/* 흥행 감독관 — 3턴마다 검투사 입장 */
+function boutTick(){
+  B.foes.forEach(f=>{ const p=f.alive&&foePas(f,"nextBout"); if(!p) return;
+    f.boutN=(f.boutN||0)+1; if(f.boutN%(p.every||3)) return;
+    let sl=0; for(let s=SLOTS;s>=1;s--) if(!foeBlock(s)){ sl=s; break }
+    if(!sl){ say(`${p.n} — 입장할 자리가 없습니다.`,"t2"); return }
+    const pool=((typeof actOf==="function"&&actOf("foes",1))||[]).filter(n=>FOE[n]&&n.indexOf("검투사")>=0);
+    const nm=pool.length?rnd(pool):null, m=nm?spawnFoeNamed(nm,sl,{summoned:1}):null; if(!m) return;
+    m.maxHp=(p.hp||20)+(f.boutUp||0); m.hp=m.maxHp;
+    fx({side:"foe",slot:f.slot,pose:"roar",gap:0});
+    if(typeof foeBark==="function") foeBark(f,"event:입장");
+    fx({side:"foe",slot:sl,fn:()=>{ if(typeof arRunInFX==="function") arRunInFX(sl) },gap:700});
+    say(`${p.n} — ${nm}${jo(nm,"ig")} 입장합니다! (체력 ${m.maxHp})`,"t1");
+    try{ rollIntents(true) }catch(e){} }) }
+/* 피 냄새 — 체력이 절반 이하인 대상을 먼저 */
+function scentAim(f){
+  if(!foePas(f,"bloodScent")||!f.intent||f.intent.t!=="sk"||!f.intent.toId) return;
+  const s=((FOE[f.name]||{}).sk||[])[f.intent.i]; if(!s||!s.dmg||["all","none","self","near2","any2"].includes(s.tg)) return;
+  const L=allUnits().filter(u=>u.hp>0&&!stopped(u)&&!u.hide&&canAim(u)&&u.hp<=u.maxHp/2&&(foeWide(s)||dist(u.slot,f.slot)<=foeRng(f)));
+  if(!L.length) return; const t=L.reduce((a,b)=>a.hp<=b.hp?a:b);
+  f.intent.to=t.slot; f.intent.toId=uid(t) }
+/* 둘째 목록의 기술 — arenaSkPre 가 부른다. 참이면 끝 */
+function arenaSkPre2(f,s){
+  if(s.execUp){ f.execUp=(f.execUp||0)+s.execUp; say(`${f.name} — 죽음의 처형이 ${s.execUp} 늘어납니다 (지금 ${20+f.execUp}).`,"t2") }
+  if(s.boutUp){ f.boutUp=(f.boutUp||0)+s.boutUp; say(`${s.n} — 입장하는 검투사의 최대 체력 +${s.boutUp} (지금 ${20+f.boutUp})`,"t3") }
+  if(s.rewUp&&run&&run.dun){ run.dun.arRew=(run.dun.arRew||0)+s.rewUp; say(`${s.n} — 이 전투의 보상 +${s.rewUp}%`,"t3") }
+  if(s.encore){ f.encoreTurn=(B.turn||1)+1; f.encoreV=s.encore }
+  if(s.selfBurst){ fx({side:"foe",slot:f.slot,pose:"dead",quake:1,gap:300}); say(`${f.name}${jo(f.name,"ig")} 스스로 터집니다!`,"t1"); arKillFoe(f,s.n); return true }
+  if(s.stealEsh){ const L=onField().filter(h=>h.hp>0&&(h.eshield||0)>0), t=L.length?L.reduce((a,b)=>a.eshield>=b.eshield?a:b):null;
+    if(t){ const v=t.eshield; t.eshield=0; f.eshield=(f.eshield||0)+v;
+      fx({side:"mine",slot:t.slot,ring:"#5fd8cf",txt:"에너지 보호막 −"+v,cls:"miss",gap:90});
+      fx({side:"foe",slot:f.slot,s:"shield",ring:"#5fd8cf",txt:"에너지 보호막 +"+v,cls:"shd",gap:140});
+      say(`${s.n} — ${t.name}의 에너지 보호막 ${v}${jo(String(v),"eul")} 뺏어 옵니다.`,"t3") }
+    return true }
+  if(s.stealAtk){ const L=onField().filter(h=>h.hp>0&&!h.isMin&&(h.atk||0)>0), top=L.length?Math.max(...L.map(h=>h.atk)):0, t=L.length?rnd(L.filter(h=>h.atk===top)):null;
+    if(t){ const v=t.atk; bumpRnd(t,"atk",-v); f.atk+=v; f.atkUp=(f.atkUp||0)+v;
+      fx({side:"mine",slot:t.slot,ring:"#e0705a",txt:"공격력 −"+v,cls:"miss",gap:90});
+      fx({side:"foe",slot:f.slot,s:"buffup",ring:"#e0705a",txt:"공격력 +"+v,cls:"buf",gap:140});
+      say(`${s.n} — ${t.name}의 추가 공격력 ${v}${jo(String(v),"eul")} 이번 라운드 동안 빼앗습니다.`,"t3") }
+    return true }
+  if(s.clearWreck){ const W=B.foes.filter(x=>!x.alive&&x.wreck&&x.name.indexOf("검투사")>=0);
+    W.forEach(x=>{ x.wreck=0; x.riseAt=0; fx({side:"foe",slot:x.slot,ring:"#9c8d77",txt:"치움",cls:"miss",gap:90}) });
+    say(`${s.n} — 쓰러진 검투사 ${W.length}${jo(String(W.length),"eul")} 치웁니다.`,"t3") }
+  if(s.brandExec){ const L=allUnits().filter(u=>u.hp>0&&deb(u,"exec")>0);
+    L.forEach(u=>addDeb(u,"wound",1,f)); say(`${s.n} — 처형이 걸린 ${L.length}에게 상처 1`,"t3"); return true }
+  if(s.harvest){ const L=allUnits().filter(u=>u.hp>0&&deb(u,"exec")>0);
+    if(!L.length){ say(`${s.n} — 거둘 처형이 없습니다.`,"t2"); return true }
+    L.forEach(u=>{ const v=deb(u,"exec"); u.deb.exec=0; asSrc(f,()=>hurtAlly(f,u,v,s.n,"마법")) });
+    return true }
+  if(s.silence){ const L=onField().filter(h=>h.hp>0&&((h.negShield||0)>0||(h.eshield||0)>0)), t=L.length?rnd(L):null;
+    if(t){ t.negShield=0; t.eshield=0; fx({side:"mine",slot:t.slot,ring:"#8f5fd0",txt:"침묵",cls:"miss",gap:120});
+      say(`${s.n} — ${t.name}의 부정 보호막과 에너지 보호막이 모두 사라집니다.`,"t3") }
+    return true }
+  return false }
+Object.assign(SK_COND,{
+  low30:     SK_COND.low30||(f=>f.hp<=f.maxHp*0.3),
+  heroEsh:   f=>onField().some(h=>h.hp>0&&(h.eshield||0)>0),
+  heroAtk:   f=>onField().some(h=>h.hp>0&&!h.isMin&&(h.atk||0)>0),
+  gladWreck: f=>B.foes.some(x=>!x.alive&&x.wreck&&x.name.indexOf("검투사")>=0),
+  beastHurt: f=>B.foes.some(x=>x.alive&&x!==f&&x.name===f.name&&x.hp<x.maxHp),
+  every3:    f=>(B.turn||1)%3===0,
+  anyExec:   f=>allUnits().some(u=>u.hp>0&&deb(u,"exec")>0),
+  heroWard:  f=>onField().some(h=>h.hp>0&&((h.negShield||0)>0||(h.eshield||0)>0))
+});
 function passChips(f){
   const P=foePasOn(f);
   return P.filter(p=>!p.hide).map(p=>`<span class="chip pass kw" data-kw="${esc(p.n)}" data-tip="${esc(foePasD(f,p))}">${esc(p.n)}</span>`).join("");
@@ -40714,6 +41164,9 @@ function skTargets(f,s,allies,V){
   if(tg==="near2"){ const L=inR.slice().sort((a,b)=>dist(HS(a),FS(f))-dist(HS(b),FS(f)));
     if(s.adj&&L.length>1&&HS(L[1])!==HS(L[0])-1) return L.slice(0,1);   /* adj — 바로 뒤 칸일 때만 (사슬 채찍) */
     return L.slice(0,2) }
+  if(tg==="any2"){ const L=shuffled(inR); return L.slice(0,2) }   /* 무작위 둘 (물건 던지기) */
+  if(tg==="topAtk"||tg==="topMag"){ const k=tg==="topAtk"?"atk":"mag", L=inR.filter(a=>!a.isMin); if(!L.length) return inR.slice(0,1);   /* 추가 공격력 · 마법력이 가장 높은 대상 (계약서) */
+    const top=Math.max(...L.map(a=>a[k]||0)); return [L.find(a=>(a[k]||0)===top)] }
   if(tg==="topDmg"){ const M=(B&&B.arDmg)||{}, L=inR.filter(a=>!a.isMin); if(!L.length) return inR.slice(0,1);   /* 이번 라운드에 가장 많은 피해를 준 대원 (채점관 경고) */
     const top=Math.max(...L.map(a=>M[uid(a)]||0)); return [L.find(a=>(M[uid(a)]||0)===top)] }
   if(tg==="back2"){ const L=inR.slice().sort((a,b)=>HS(a)-HS(b)); return L.slice(0,2) }   /* 가장 뒤 둘 (모형 궁수 화살비, 2026-10-07) */
@@ -41507,7 +41960,8 @@ function skExec0(f,I){
   if(s.foeBuff){                       /* 다른 적을 북돋운다 — 보급 레일 · 수거 드론 · 용광로 · 녹아내린 기체 (2026-10-20).
                                           race 로 종족을 가리고, one 이면 하나에게만, self 면 저도 함께 */
     const Q=s.foeBuff;
-    let L=B.foes.filter(x=>x.alive&&(Q.self?true:x!==f)&&(!Q.race||foeRace(x)===Q.race));
+    let L=B.foes.filter(x=>x.alive&&(Q.self?true:x!==f)&&(!Q.race||foeRace(x)===Q.race)&&(!Q.name||x.name===Q.name));
+    if(Q.weak&&L.length) L=[L.reduce((a,b)=>a.hp<=b.hp?a:b)];   /* 체력이 가장 낮은 적 하나 (선수 입장) */
     if(Q.hurt) L=L.filter(x=>x.hp<x.maxHp);
     if(Q.one&&L.length) L=[L.filter(x=>x!==f)[0]||L[0]];
     L.forEach(x=>{ const w=[];
@@ -41965,7 +42419,7 @@ function skExec0(f,I){
   const tg=I.tg||s.tg||"near";
   let T=[];
   if(tg==="all") T=allUnits().filter(u=>u.hp>0&&(!s.heroOnly||!u.isMin)&&((s.anyRng&&!s.debOut)||(s.heatAll&&overheated(f))||dist(u.slot,f.slot)<=foeRng(f)));   /* debOut(오염폭발) — anyRng 는 뽑히게만 하고, 효과는 범위 안 · 밖을 가른다 */   /* anyRng — 설명이 '모든 상대' (공격 범위 말 없음) (점검 2026-10-07) */
-  else if(tg==="near2"||tg==="back2"||tg==="distAll"||tg==="within") T=skTargets(f,s,allUnits().filter(u=>u.hp>0));
+  else if(tg==="near2"||tg==="back2"||tg==="distAll"||tg==="within"||tg==="any2") T=skTargets(f,s,allUnits().filter(u=>u.hp>0));
   else if(tg==="ringAll"){ T=ringTargets(f); if(!T.length) say(`${s.n} — 마력의 고리 안에 상대가 없습니다.`,"t2") }
   else if(tg==="ringOne"){ const L=ringTargets(f), t0=I.toId&&L.find(u=>uid(u)===I.toId); T=t0?[t0]:(L.length?[rnd(L)]:[]);   /* 정해 둔 상대가 고리를 벗어났으면 남은 안에서 */
     if(!T.length) say(`${s.n} — 마력의 고리 안에 상대가 없습니다.`,"t2") }
@@ -42025,7 +42479,7 @@ function skExec0(f,I){
       if(foePas(f,"dist4Double")&&dist(t.slot,f.slot)===4){ hits*=2; say(`죽음과 저주 — 거리 4, ${s.n}이 두 번!`,"t1") }
       let one=foeDmg(f,skDmg(f,s),I.el);
       if(f.painBonus){ one+=f.painBonus; say(`고통 감내 — 피해 +${f.painBonus}`,"t2"); f.painBonus=0 }
-      let crit=!!(s.burnCrit&&deb(t,"burn")>0)||!!(s.debCrit&&DEB_KEYS.some(k=>deb(t,k)>0))||outRangeCritFor(f,t)||deb(t,"wound")>0;   /* 상처 — 받는 모든 피해가 치명타 */
+      let crit=!!(s.burnCrit&&deb(t,"burn")>0)||!!(s.debCrit&&DEB_KEYS.some(k=>deb(t,k)>0))||outRangeCritFor(f,t)||deb(t,"wound")>0||!!(s.critHalf&&t.hp<=t.maxHp/2);   /* 상처 — 받는 모든 피해가 치명타 */
       if(eyeCritFor(f,t)){ crit=true; say(`뺨다귀 — ${t.name}${jo(t.name,"eun")} 간수의 손 공격 범위 안이라 ${s.n}이 치명타!`,"t1") }
       if(crit){ one*=2; if(s.burnCrit) say(`${s.n} — 화상 입은 ${t.name}에게 치명타!`,"t1"); if(s.debCrit) say(`${s.n} — 부정적인 효과가 걸린 ${t.name}에게 치명타!`,"t1") }
       if(crit) critAlly(t);   /* 보이고 들리게 — 대원 쪽엔 있는데 적 쪽엔 없었다 (⑳) */
@@ -43346,6 +43800,7 @@ BARK["호객꾼"]={in:["자, 자! 오늘의 경기가 시작됩니다!","신사 
   down:["오늘 경기는… 여기까지…","표는… 환불이 안 됩니다…"],
   "event:퇴장":["다음 선수를 모셔 오겠습니다!","잠시만요, 진짜가 옵니다!"]};
 BARK["종지기"]=Object.assign(BARK["종지기"]||{},{"event:종 울리기":["종이 울린다!","모두 들어라!"]});
+BARK["흥행 감독관"]=Object.assign(BARK["흥행 감독관"]||{},{"event:입장":["입장합니다!","함성 갈채!","다음 도전자는!"]});   /* 사용자 글 그대로 */
 BARK["유망주"]=Object.assign(BARK["유망주"]||{},{"event:도전장":["너에게 도전하지.","도전장을 받아라!"]});
 const BARK_LATE={"균열 차원문":1};
 function barkSkill(h,s){ if(!s||BARK_LATE[s.n]) return;
@@ -43626,7 +44081,7 @@ function drawBattle(app){
     const mleft=!!(h&&!h.isMin&&h.hp>0&&!h.down&&(h.mana||0)>0);
     const d=el(`<div class="slot ${h?(h.isMin?"":"heroslot"):(body?"body":hz?"body hzslot":"empty")}${mleft?" manaleft":""}"><span class="no">${s}</span></div>`);
     d.dataset.slot=s;if(h)d.dataset.unitKey=hpKey(h._viewReal||h); if(B._wb&&B._wb["mine"+s]>Date.now()) d.classList.add("wbuild");
-    if(h&&stopped(h)) d.classList.add("body");
+    if(h&&stopped(h)) d.classList.add("body","arstopped");
     if(B.duel&&!(h&&uid(h)===B.duel.hero)) d.classList.add("ardim");   /* 도전장 — 둘만 비춘다 */
     { const tr=(B.traps||[]).find(x=>x.slot===s); if(tr) d.appendChild(el(arTrapHtml(tr))) }   /* 덫 */   /* 정지 — 쓰러진 대원과 같은 겉모습 (2026-10-07) */
     if(h&&h.name==="도미니코"&&h.blessed&&typeof ICON_PNG!=="undefined"&&ICON_PNG[domFx(h,"aura")]) d.appendChild(el(`<i class="domaura${domDemon(h)?" dm":""}" style="background-image:url(${ICON_PNG[domFx(h,"aura")]})"></i>`));   /* 축복 고리 (사용자 2026-10-06) */
@@ -43763,6 +44218,8 @@ function drawBattle(app){
     if(B._wb&&B._wb["foe"+s]>Date.now()) d.classList.add("wbuild");   /* 적 전장의 저주받은 성벽 — 좌우 반전 (사용자 2026-10-06) */
     d.dataset.slot=s;if(f){d.dataset.foeId=f.id;d.dataset.unitKey=hpKey(f._viewReal||f)};
     if(B.duel&&!(f&&f.id===B.duel.foe)) d.classList.add("ardim");
+    if(f&&(FOE[f.name]||{}).arFloat) d.classList.add("arfloat");
+    if(f&&stopped(f)) d.classList.add("arstopped");   /* 정지 — 대상의 시간만 멎는다 (사용자 2026-11-03) */   /* 광기의 관중단 — 떠 있다 */
     if(f&&f.name==="연료 장치"&&f.fuelHeat>0)d.classList.add("fuel-heat-"+f.fuelHeat);
     /* 사냥의 기류 — 그 칸에 보랏빛이 수직으로 흐른다 (노트 18-0).
        ⚠️ 전에는 아래 `if(f){…}` 안에서 그려 **빈 칸에서는 안 보였다** (사용자 2026-10-15).
@@ -46934,6 +47391,7 @@ function predictDmg(h,s,tgt){
     if(add.length){ tail=(tail?tail+" ":"")+"+ "+add.join(" ");
       add.forEach(x=>{ const m=/(\d+)\s*$/.exec(x); if(m) extra+=+m[1] }) } }
   /* 보호막을 얼마나 뚫고 체력까지 닿는지 */
+  if(deb(h,"dmgDn")>0) dmg=Math.max(0,dmg-deb(h,"dmgDn"));   /* 피해량 감소 — hurt() 의 arenaAtkDn 과 같은 셈 */
   dmg=arenaFoeIn(tgt,dmg);   /* 반사판 — hurt() 와 같은 자리 */
   if(tgt.armor>0&&dmg>tgt.armor) dmg=tgt.armor;   /* 갑피 — hurt() 와 같은 셈 */
   let PR=0;
@@ -47175,6 +47633,9 @@ function incoming(){
          return 하지 않는다 — 같은 기술의 다른 몫은 아래에서 그대로 */
       if(s&&s.heat&&((f.heat||0)+s.heat)>HEAT_MAX){ const D=foeDmg(f,HEAT_BOOM.dmg,HEAT_BOOM.el||"마법");
         list.filter(u=>u.hp>0&&!u.isMin&&u.slot>0).forEach(u=>hitOn(u,D,f,false,f.name+": 과열 폭발")) }
+      if(s&&s.harvest){   /* 수확 — 처형만큼 (질투의 대사제, arenaSkPre2 와 같은 셈) */
+        list.filter(u=>u.hp>0&&deb(u,"exec")>0).forEach(u=>hitOn(u,deb(u,"exec"),f));
+        return }
       if(s&&s.lifeDrain){   /* 양분 흡수 — 대원에게 마법 피해 (소환물은 빼고, skExec 와 같게) */
         list.filter(u=>u.hp>0&&!u.isMin).forEach(u=>hitOn(u,foeDmg(f,s.lifeDrain,"마법"),f));
         return }
@@ -47203,10 +47664,10 @@ function incoming(){
       let T=[];
       const tg=I.tg||(s&&s.tg)||"near";                       /* 실행(skExec)과 같은 갈래 */
       if(tg==="all") T=list.filter(u=>u.hp>0&&(!(s&&s.heroOnly)||!u.isMin)&&((s&&s.anyRng&&!s.debOut)||(s&&s.heatAll&&overheated(f))||dist(hsl(u),fsl(f))<=foeRng(f)));
-      else if(s&&(tg==="near2"||tg==="back2"||tg==="distAll"||tg==="within"))
+      else if(s&&(tg==="near2"||tg==="back2"||tg==="distAll"||tg==="within"||tg==="any2"))
         T=skTargets(f,s,list.filter(u=>u.hp>0),VV);   /* 밀려난 뒤의 자리로 — 아랫줄 foeTarget 과 같게 (2026-10-10) */
       else if(s&&tg!=="self"&&tg!=="none"){ const R=foeTarget(f,I,s,VV); if(!R.why&&R.t) T=[R.t] }
-      T.forEach(t=>{ let one=foeDmg(f,I.v+up(f),I.el)+(f.painBonus||0); const cr=!!(s&&((s.burnCrit&&burnV(t)>0)||(s.debCrit&&DEB_KEYS.some(k=>deb(t,k)>0))||eyeCritFor(f,t,hsl,fsl)||outRangeCritFor(f,t,hsl,fsl)))||deb(t,"wound")>0; if(cr) one*=2;   /* 고통 감내 몫도 예고에 (2026-09-20) */
+      T.forEach(t=>{ let one=foeDmg(f,I.v+up(f),I.el)+(f.painBonus||0); const cr=!!(s&&((s.burnCrit&&burnV(t)>0)||(s.debCrit&&DEB_KEYS.some(k=>deb(t,k)>0))||eyeCritFor(f,t,hsl,fsl)||outRangeCritFor(f,t,hsl,fsl)))||deb(t,"wound")>0||!!(s&&s.critHalf&&t.hp<=t.maxHp/2); if(cr) one*=2;   /* 고통 감내 몫도 예고에 (2026-09-20) */
         for(let q=0;q<(s&&s.kindHits?Math.max(1,debKindsOnField()):Math.max(1,I.hits||1));q++) hitOn(t,one,f,s?skPierce(f,t,s):undefined,undefined,cr);
         /* 맞은 대원이 밀리거나 끌려온다 — 다음 적은 바뀐 자리를 잰다 (pushBack · pullFront · pullN 과 같은 셈) */
         const sh0=hsl(t), bound=deb(t,"bind")>0;
@@ -47520,6 +47981,7 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
   if(!crit&&amt>0&&B&&B._ef&&B._efEl==="마법"&&B._efHero&&B.lastAttacker===B._efHero
      &&f&&B.foes&&B.foes.indexOf(f)>=0&&grimoireCount(f,B._efHero)>0){
     amt*=2; crit=1; say(`그리모어 — ${f.name}에게 치명타!`,"t1") }
+  amt=arenaAtkDn(amt);   /* 피해량 감소 — 때린 대원 쪽 (광기의 투기장) */
   amt=arenaFoeIn(f,amt);   /* 반사판 — 받는 피해 절반 (거울 검투사) */
   if(f.armor>0&&amt>f.armor) amt=f.armor;   /* 갑피 — 한 번에 받는 피해를 이 수치까지로 (적도 같게, 사용자 2026-10-07 시평선의 문지기) */
   let d=amt,s=0;
@@ -48677,6 +49139,7 @@ function infectUnit(u,n){
 }
 function infectFoe(f,n){
   if(!f.alive) return;
+  if(foePas(f,"infectImm")) return;   /* 질투의 대사제 — 감염을 무시한다 (2026-11-03) */
   /* 감염도 부정적인 효과다 (사용자 2026-10-22) —
      ① 부정 보호막이 걷는다 (addDeb 와 같은 꼴)  ② 「부정 효과를 부여할 때마다」가 울린다.
      세는 쪽(foeAil · envyKinds)과 지우는 쪽(foePurge)과 두 배(오염된 조화)는 전부터 세고 있었다 */
