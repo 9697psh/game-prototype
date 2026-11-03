@@ -26312,6 +26312,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 339, "v": "0.7", "d": "2026-11-03", "t": "우두머리 30턴 · 낮 습격은 일반 전투 턴 한도", "big": 0},
  {"b": 338, "v": "0.7", "d": "2026-11-03", "t": "페블 게이지 · 광맥 강화 표시 · 내려찍기 소리 · 흔들림 · 이벤트 재화 아이콘", "big": 0},
  {"b": 337, "v": "0.7", "d": "2026-11-03", "t": "가시끼리 주고받지 않음 · 페블 누름 손 끝", "big": 0},
  {"b": 336, "v": "0.7", "d": "2026-11-02", "t": "그슨대 두려움 잠식 · 그림자 · 페블 휘두르기 · 오오라 · 준비 자세", "big": 0},
@@ -27842,7 +27843,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=338;
+const BUILD_NO=339;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -33358,6 +33359,7 @@ function startDungeon(cell,r,c){
   run.heroes.forEach(h=>{ h.greed=0 });   /* 폭식의 악마는 전투 단위 */
   run.dun={cell:cell,r:r,c:c,wave:0,waves:cell.waves||1,
            kind:cell.t==="boss"?"boss":cell.t==="elite"?"elite":cell.t==="ambush"?"ambush":"battle"};
+  if(cell.t==="ambush"&&!run.night) run.dun.dayAmbush=1;   /* 낮 습격 — 턴 한도는 일반 전투 (turnLimit) */
   if(cell.t==="ambush"&&!run.night){ const n=Math.min(3,Math.max(2,run.heroes.length)); run.dun.forceFoes=[]; for(let i=0;i<n;i++) run.dun.forceFoes.push(["감옥 경비병",i+1]) }   /* 낮 습격 = 간수 초소·순찰로의 경비병 */
   /* 여러 라운드 전투 — 절반은 짜여진 구성(ENC_SEQ), 절반은 라운드마다 무작위 (ppt 1장) */
   if(cell.seq){ run.dun.seq=cell.seq.slice(); run.dun.seqName=cell.seqName }   /* 칸을 놓을 때 정해 둔 구성 (encRoll) */
@@ -38257,10 +38259,12 @@ function morphGun(h,g){
    표에 없는 전투(밤의 습격 · 기믹 · 이벤트 싸움 · 시련의 문)는 예전 그대로 20.
    ⚠️ 규칙은 25 인데 **머리글만 「/ 20」으로 박혀 있어** 우두머리 판에서 「25턴 / 20」이 떴다
       (사용자 2026-10-13). 머리글과 물러나는 셈이 **이 함수 하나**를 보게 묶었다 — 규칙 하나는 함수 하나 */
-const TURN_LIMIT={battle:[10,15,20], elite:[15,20,25], boss:[25,25,30]};
+const TURN_LIMIT={battle:[10,15,20], elite:[15,20,25], boss:[30,30,30]};   /* 우두머리 30 (사용자 2026-11-03) */
 const TURN_LIMIT0=20;
 function turnLimit(k){
-  const kind=(k==null)?((typeof B!=="undefined"&&B)?B.kind:null):k;
+  let kind=(k==null)?((typeof B!=="undefined"&&B)?B.kind:null):k;
+  /* 낮 습격(간수 초소 · 순찰로의 경비병)은 일반 전투다 — 습격 갈래라 20 이 걸렸다 (사용자 2026-11-03 「핏빛 감옥 일반 전투가 가끔 20턴」). 밤의 습격은 그대로 20 */
+  if(kind==="ambush"&&k==null&&typeof run!=="undefined"&&run&&run.dun&&run.dun.dayAmbush) kind="battle";
   const L=TURN_LIMIT[kind];
   if(!L) return TURN_LIMIT0;
   const fi=Math.min(Math.max((typeof run!=="undefined"&&run&&run.field)||0,0),L.length-1);
