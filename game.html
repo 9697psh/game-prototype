@@ -6403,6 +6403,7 @@ body.rwtable #app .rw.rwpick.taken{animation:rwtTake .45s cubic-bezier(.3,1.4,.5
 .bfstage .slot > .artrap.fresh{animation:arTrapIn .42s cubic-bezier(.5,0,.8,.6) both}
 @keyframes arTrapIn{from{opacity:0;translate:0 -40px}to{opacity:1;translate:0 0}}
 .artrapfx,.arthrow{position:absolute;z-index:44;pointer-events:none;image-rendering:pixelated}
+.arsweep{position:absolute;z-index:44;pointer-events:none;image-rendering:pixelated;background:center/100% 100% no-repeat}   /* 사탄 사슬 · 대군주 돌진 (arSweepFX) */
 .arbeam{position:absolute;z-index:42;pointer-events:none;background-repeat:no-repeat;background-size:100% 100%;image-rendering:pixelated;transform-origin:50% 50%}
 .bfstage .slot.ardim{filter:brightness(.28) saturate(.5);transition:filter .5s}
 .bfstage .portal.kw{pointer-events:auto}
@@ -26852,6 +26853,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 350, "v": "0.7", "d": "2026-11-04", "t": "사탄 사슬 · 손톱 돌진 이펙트", "big": 0},
  {"b": 349, "v": "0.7", "d": "2026-11-04", "t": "사탄 동작 띠 · 투기장 곡 · 환호 소리", "big": 0},
  {"b": 348, "v": "0.7", "d": "2026-11-04", "t": "광기의 투기장 배치 묶음 · 전용 깃발", "big": 0},
  {"b": 347, "v": "0.7", "d": "2026-11-04", "t": "사탄 · 분노의 대군주 · 대기실 · 환호 아이콘 강조", "big": 0},
@@ -28393,7 +28395,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=349;
+const BUILD_NO=350;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -35754,6 +35756,20 @@ function arThrowFX(fromSlot,toSlot,key,o){
     K.push({transform:`translate(${x}px,${y}px) rotate(${o.spin?-720*t:-30*t}deg)`}) }
   if(nd.animate) nd.animate(K,{duration:ms,easing:"linear",fill:"forwards"});
 }
+/* 한 장짜리 휘두름 (사탄 사슬 · 대군주 손톱 돌진, satan-combat-v1 사용자 2026-11-04) — 받은 그림 한 장을 칸의 발밑에 붙인다.
+   그림의 기준점은 아래 가운데. 크기는 **칸 사이 거리**로 잰다 (cover = 그림 너비가 칸 몇 개만큼인가) — 창 크기와 상관없이 칸에 맞는다.
+   휘두르는 쪽(왼쪽)으로 짧게 밀리며 맺혔다 스러진다. dx — 칸 몇 개만큼 옆으로 (− 왼쪽) */
+function arSweepFX(key,side,slot,o){
+  o=o||{}; const u=ICON_PNG[key]; if(!u) return;
+  const p=feetOf(side,slot), a=ctrOf(side,1), b=ctrOf(side,2); if(!p) return;
+  const gap=(a&&b)?Math.abs(b.x-a.x):110, W=Math.round(gap*(o.cover||3)), H=Math.round(W*(o.h||64)/(o.w||512));
+  const ms=Math.round((o.ms||560)*(typeof SPD==="number"?SPD:1));
+  const nd=spawn(`<div class="arsweep"></div>`,ms+80); if(!nd) return;
+  const x0=p.x-W/2+(o.dx||0)*gap;
+  Object.assign(nd.style,{left:x0+"px",top:(p.y-H)+"px",width:W+"px",height:H+"px",backgroundImage:`url(${u})`});
+  const s=Math.round(gap*(o.slide==null?.5:o.slide));
+  if(nd.animate) nd.animate([{transform:`translateX(${s}px)`,opacity:0},{offset:.15,opacity:1},{offset:.55,transform:"translateX(0)",opacity:1},{transform:"translateX(0)",opacity:0}],
+    {duration:ms,easing:"cubic-bezier(.2,.7,.2,1)",fill:"forwards"}) }
 /* 거울 광선 — 충전 자세에서 대원 전장을 가로질러 (분해 빔과 같은 판형) */
 function arBeamFX(slot){
   const u=ICON_PNG.fx_ar_mirror_beam; if(!u) return;
@@ -41579,6 +41595,7 @@ function satanSkPre(f,s,I){
   if(satanIs(f)){
     const lord=f.name===OVERLORD;
     if(s.arStrike&&!s.arRush){ const k=lord?"lordAtk":"satanAtk"; fx({side:"foe",slot:f.slot,strip:{k:"atkA",ms:SATAN_STRIP[k]},gap:stripTo(k,4)}) }   /* 타격 칸(04)에 피해가 닿게 */
+    if(s.sides){ const sl=(I&&I.to)||((arIntentTarget(f,I)||{}).slot); if(sl) fx({side:"mine",slot:sl,fn:()=>arSweepFX("fx_satan_chain","mine",sl,{w:512,h:64,cover:3.6,slide:.7,ms:560}),gap:0}) }   /* 사슬 — 대상과 양옆 */
     if(s.arBack&&lord) fx({side:"foe",slot:f.slot,strip:{k:"guardA",ms:SATAN_STRIP.guard},gap:stripTo("guard",4)}) }
   if(s.arRoarSk) f.roarNext=0;
   if(s.chg&&f.name===OVERLORD) f.arRoarPick=Math.random()<0.5?1:0;   /* 충전이 차면 군중심리 · 포효 중 하나 */
@@ -41600,6 +41617,7 @@ function satanSkPre(f,s,I){
   if(s.arBack) arBossMove(f,+1,s.arBack);
   if(s.arRush){ arBossMove(f,-1,SLOTS);   /* 맨 앞으로 간 뒤에 손톱 띠 — 타격 칸에 피해 */
     fx({side:"foe",slot:f.slot,strip:{k:"atkA",ms:SATAN_STRIP.lordAtk},gap:stripTo("lordAtk",4)});
+    { const sl=f.slot; fx({side:"foe",slot:sl,fn:()=>arSweepFX("fx_overlord_rush","foe",sl,{w:256,h:64,cover:3.2,dx:-1.6,slide:.8,ms:520}),gap:0}) }
     const v=skDmg(f,{dmg:s.arRush.dmg,n:s.n}), L=allUnits().filter(u=>u.hp>0&&!stopped(u)&&dist(u.slot,f.slot)<=foeRng(f));
     if(!L.length){ say(`${s.n} — 사거리 안에 대상이 없습니다.`,"t2"); return true }
     L.forEach(u=>{ asSrc(f,()=>hurtAlly(f,u,v,s.n,"공격")); if(u.hp>0) addDeb(u,"wound",s.arRush.wound||1,f) });
