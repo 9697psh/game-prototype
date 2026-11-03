@@ -21008,6 +21008,7 @@ function hideReaim(u){
 }
 function addDeb(u,k,n,src){
   if(!u||stopped(u)) return;   /* 정지 — 상태 이상도 걸리지 않는다 (사용자 2026-10-07) */
+  if(n>0&&gsdImmune(u,k)){ say(`${u.name}${jo(u.name,"eun")} ${({fear:"공포",atkDn:"공격약화",stun:"기절"})[k]||k}${jo(({fear:"공포",atkDn:"공격약화",stun:"기절"})[k]||k,"eul")} 무시합니다.`,"t3"); return }   /* 그슨대 전설 (중급) */
   u.deb=u.deb||{};
   if(u.name==="카제"&&u.tag&&u.tag.debLift&&n>0&&B&&!B.over){ const L=B.foes.filter(f=>f.alive); if(L.length){ say("용오름 — 바람이 솟구쳐 모든 적을 띄웁니다.","t1");
     for(let q=0;q<u.tag.debLift;q++) L.slice().sort((a,b)=>a.slot-b.slot).forEach(f=>airborne(u,f)) } }   /* 용오름 (노트 2026-09-17) · 겹친 수만큼 (2026-10-11) */
@@ -26312,6 +26313,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 341, "v": "0.7", "d": "2026-11-03", "t": "그슨대 전용 보상 34 · 소리 크기 되살림", "big": 0},
  {"b": 340, "v": "0.7", "d": "2026-11-03", "t": "지하 조합 아이콘", "big": 0},
  {"b": 339, "v": "0.7", "d": "2026-11-03", "t": "우두머리 30턴 · 낮 습격은 일반 전투 턴 한도", "big": 0},
  {"b": 338, "v": "0.7", "d": "2026-11-03", "t": "페블 게이지 · 광맥 강화 표시 · 내려찍기 소리 · 흔들림 · 이벤트 재화 아이콘", "big": 0},
@@ -27844,7 +27846,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=340;
+const BUILD_NO=341;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -29784,6 +29786,7 @@ const MOVE_TAINT=4;                 /* 한 칸 옮길 때 오르는 오염도 �
                                        ⚠️ 균열의 세계핵이 얹는 +5 는 따로다 (coreFx("moveTaint")) — 그것은 안 건드렸다 */
 /* 가벼운 발걸음 — 대원이 가진 만큼 줄어든다 (최소 1) */
 function moveTaint(){
+  if(run&&run.night&&tagSum("gsNoTaint")) return 0;   /* 그슨대 잠 못 이루는 밤 — 밤의 이동은 오염도가 오르지 않는다 */
   let cut=0;
   (run&&run.heroes||[]).forEach(h=>{ cut=Math.max(cut,(h.tag&&h.tag.stepCut)||0) });
   return Math.max(1,MOVE_TAINT-cut)+tagSum("rush")+coreFx("moveTaint");   /* 급한 걸음 (정령숲 +1 은 2026-10-01 뺐다) · 균열 세계핵 +5 */
@@ -33443,7 +33446,8 @@ function dungeonCleared(){
     run.grid[d.r][d.c]={t:"empty"};
   if(d.r!=null&&wellNear(d.r,d.c)) run.wellGold=1;   /* 감옥의 우물 둘레 — 상자 금화 +50% */
   if(!spiritOn()) addTaint(-winTaintAmount(d));   /* 정령숲에서는 전투가 끝나도 오염도가 줄지 않는다 (사용자 2026-10-01) · 값은 WIN_TAINT 표 한 곳 */
-  if(d.kind==="ambush"&&run.night) questProgress("nightWin",null);   /* 작업 지시판 — 야간 순찰 (2026-10-21) */
+  if(d.kind==="ambush"&&run.night) questProgress("nightWin",null);
+  if(run.night) questProgress("gsNightWin",null);   /* 그슨대 한밤의 악몽 — 밤에 이긴 전투 (갈래 상관없이) */   /* 작업 지시판 — 야간 순찰 (2026-10-21) */
   if(d.kind==="ambush"){ const b=tagSum("bounty"); if(b){ run.gold+=b; toast(`현상금 사냥 — 금화 +${b}`) }
     for(let q=0;q<tagSum("guardStance");q++){ const t=randomReward();   /* 경계 태세 — 습격을 물리치면 (2026-10-14) */
       if(t) toast(`경계 태세 — ${t}`) } }
@@ -34926,26 +34930,118 @@ function gsdAmbush(h,s){ return !!(gsdIs(h)&&h.hide&&s&&s.el==="공격") }
 /* 어둠 증식 — 조각 하나당 그슨대의 추가 공격력만큼 */
 function gsdBloomVal(h){ return Math.max(0,(h&&h.dark)||0)*Math.max(0,(h&&h.atk)||0) }
 /* 커져가는 악몽 — 피해를 받을 때마다 (hurtAlly · dotAlly 가 부른다). 그림자 이동의 「피해를 받은 후 회복」도 여기 */
-function gsdHurt(t,raw){
-  if(!gsdIs(t)||!(raw>0)||!B||B.over) return;
-  t.dark=(t.dark||0)+1; t.darkGot=(t.darkGot||0)+1;
-  if(t.darkGot%3!==0&&gsdSnd("그슨대 어둠 조각")) fx({side:"mine",slot:t.slot,s:"그슨대 어둠 조각",gap:0});
-  if(t.darkGot%3===0){
+/* 어둠 조각을 얻는다 — 모은 수(darkGot)가 per 의 배수가 될 때마다 공격력 (끝없는 밤이면 2, 아니면 3) */
+const gsdPer=h=>(h&&h.tag&&h.tag.endlessNight)?2:3;
+function gsdGain(t,n){
+  if(!gsdIs(t)||!(n>0)||!B||B.over) return;
+  for(let q=0;q<n;q++){
+    t.dark=(t.dark||0)+1; t.darkGot=(t.darkGot||0)+1;
+    if(t.darkGot%gsdPer(t)!==0){ if(gsdSnd("그슨대 어둠 조각")) fx({side:"mine",slot:t.slot,s:"그슨대 어둠 조각",gap:0}); continue }
     if(gsdSnd("그슨대 어둠 조각 셋")) fx({side:"mine",slot:t.slot,s:"그슨대 어둠 조각 셋",gap:0});
     const L=[t].concat(onField().filter(a=>a!==t&&!a.isMin&&!a.down&&(hasTag(a,"사후")||hasTag(a,"학살자"))));
-    L.forEach(a=>{ bumpTmp(a,"atk",1); fx({side:"mine",slot:a.slot,ring:"#a8323e",txt:"공격력 +1",cls:"shd",gap:40}) });
-    say(`커져가는 악몽 — ${L.map(a=>a.name).join(", ")} 공격력 +1 (어둠 조각 ${t.darkGot})`,"t1");
+    const grow=(t.tag&&t.tag.growBody)||0;   /* 커져가는 몸 — 그 전투 최대 체력도 (사후 · 학살자 아군도) */
+    L.forEach(a=>{ bumpTmp(a,"atk",1); if(grow) bumpTmp(a,"maxHp",grow);
+      fx({side:"mine",slot:a.slot,ring:"#a8323e",txt:"공격력 +1"+(grow?` · 최대 체력 +${grow}`:""),cls:"shd",gap:40}) });
+    say(`커져가는 악몽 — ${L.map(a=>a.name).join(", ")} 공격력 +1${grow?`, 최대 체력 +${grow}`:""} (어둠 조각 ${t.darkGot})`,"t1");
   }
+}
+function gsdHurt(t,raw){
+  if(!(raw>0)||!B||B.over) return;
+  if(!gsdIs(t)){   /* 악몽 (상급) — 사후 · 학살자 아군이 맞아도 그슨대가 조각을 */
+    if(t&&!t.isMin&&(hasTag(t,"사후")||hasTag(t,"학살자")))
+      onField().filter(g=>gsdIs(g)&&g.hp>0&&g.tag&&g.tag.nightmare).forEach(g=>gsdGain(g,1));
+    return }
+  gsdGain(t,1);
   if(t.gsMend&&t.hp>0){ t.gsMend=0;
-    const g=healUp(t,2);
+    const sk=(t.sk||[]).find(x=>x&&x.gsStep), g=healUp(t,2+(sk?mod(sk,"heal"):0));   /* 그림자 이동 강화 — addMod 「heal」 */
     if(g){ fx({side:"mine",slot:t.slot,s:"heal",txt:"+"+g,cls:"heal",gap:60}); say(`그림자 이동 — ${t.name} 체력 +${g}`,"t2") } }
+  gsdDarkFear(t);
+}
+/* 어두운 공포 (상급) — 그슨대 체력이 30% 이하가 되면, 우두머리가 아닌 체력 30% 이하의 적이 달아난다 (전투당 한 번).
+   밀수꾼처럼 빠진다 — 처치가 아니라 처치 효과 · 보상이 없다. 그슨대만 남기고 화면이 어두워지며 그슨대가 한마디 (처치 조명 spotFX) */
+function gsdDarkFear(t){
+  const D=run&&run.dun; if(!t.tag||!t.tag.darkFear||!D||D.gsFled||!(t.hp>0)||t.hp>t.maxHp*0.3) return;
+  const L=B.foes.filter(f=>f.alive&&!f.boss&&f.hp<=f.maxHp*0.3); if(!L.length) return;
+  D.gsFled=1;
+  fx({side:"mine",slot:t.slot,spot:L[0].slot,foeName:L[0].name,barkU:t,barkLine:barkLine(t,["kill"]),big:900,gap:500});
+  L.forEach(f=>{ const sl=f.slot; foeShout(f,"도망쳐!");
+    fx({side:"foe",slot:sl,fn:()=>{ if(typeof fleeOutFX==="function") fleeOutFX(sl) },gap:120});
+    f.alive=0; f.expTaken=1; f.fled=1; f.loot=null; f.bounty=0 });
+  say(`어두운 공포 — ${L.map(f=>f.name).join(", ")}${jo(L[L.length-1].name,"ig")} 전투에서 달아납니다!`,"t1");
+}
+/* 급습 치명타 배율 — 암살 계약 (퀘스트) 이면 2 → 2.5 (정밀 공학과 같은 읽기) */
+const gsdAmbX=h=>2+0.5*((h&&h.tag&&h.tag.ambX)||0);
+/* 공격 피해 덤 — runEffect · predictDmg 가 같은 자리에서 (치명타 앞) */
+function gsdDmgAdd(h,s,tgt){
+  if(!gsdIs(h)||!s||!tgt) return 0; const T=h.tag||{}; let v=0;
+  if(s.gsStrike&&T.foolSmell&&tgt.hp<=tgt.maxHp/2) v+=T.foolSmell;   /* 어리석은 영혼의 냄새 */
+  if(T.prey&&deb(tgt,"fear")>0) v+=T.prey;                              /* 먹잇감 */
+  return v;
+}
+/* 기술을 쓴 뒤 (unit-state 의 전환 자리) — 급습이 걸린 한 방의 뒤처리 */
+function gsdAfter(h,s){
+  if(!gsdIs(h)) return; const t=h._gsAmb; h._gsAmb=null; if(!t) return; const T=h.tag||{};
+  if(T.ambShard) gsdGain(h,T.ambShard);   /* 어둠에 잠긴 칼 */
+  if(!t.alive&&!t.fled){ questProgress("gsAmbKill",h.name);   /* 암살 계약 */
+    if(T.shadeBlade&&!h.hide){ gsdHide(h); h.hideTurn=B.turn||1 } }   /* 그늘 속 칼날 — 1턴 은신 (연막탄과 같은 걷힘) */
+}
+/* 대원 배치 후 — 고통먹이 · 어둠 적응 · 움직일 시간 */
+function gsdDeploy(h){
+  if(!gsdIs(h)||!B) return; const T=h.tag||{};
+  if(T.painFeed) gsdGain(h,T.painFeed);
+  if(T.darkAdapt&&!h.hide){ gsdHide(h); h.hideTurn=B.turn||1 }
+  if(T.moveTime&&B.kind==="ambush"){ bumpTmp(h,"maxMana",T.moveTime); bumpTmp(h,"atk",2*T.moveTime);
+    fx({side:"mine",slot:h.slot,ring:"#a8323e",txt:"움직일 시간",cls:"buf",gap:80});
+    say(`움직일 시간 — ${h.name} 최대 마나 +${T.moveTime}, 추가 공격력 +${2*T.moveTime}`,"t1") }
+}
+/* 상태 무시 — 공포스러운 전설(공포 · 공격약화) · 막을 수 없는 전설(기절). addDeb 머리에서 묻는다 */
+function gsdImmune(u,k){
+  if(!gsdIs(u)||!u.tag) return false;
+  return !!((u.tag.legendFear&&(k==="fear"||k==="atkDn"))||(u.tag.legendStun&&k==="stun"));
+}
+/* 그림자 방패 — 그림자가 겹친 아군 대신 그슨대가 맞는다 (hurtAlly 머리) */
+function gsdShieldFor(t){
+  if(!t||gsdIs(t)||!(t.slot>0)||!B) return null;
+  return onField().find(g=>gsdIs(g)&&g.hp>0&&g.tag&&g.tag.shadowShield&&g.shadowAt===t.slot&&g!==t)||null;
+}
+/* 망자 흡수 — 아군 망자가 쓰러진 뒤 (effect.js 쓰러짐 자리) */
+function gsdDeadAbsorb(t){
+  if(!t||!hasTag(t,"망자")) return;
+  run.heroes.filter(g=>g!==t&&gsdIs(g)&&!g.down&&g.hp>0&&g.tag&&g.tag.deadAbsorb).forEach(g=>{
+    addMaxHp(g,g.tag.deadAbsorb,"망자 흡수");
+    if(g.slot>0) fx({side:"mine",slot:g.slot,ring:"#a8323e",txt:"최대 체력 +"+g.tag.deadAbsorb,cls:"heal",gap:80});
+    say(`망자 흡수 — ${g.name} 최대 체력 영구히 +${g.tag.deadAbsorb}`,"t1") });
+}
+/* 죽음의 그림자 — 쓰러질 때 그림자가 빈 칸에 있으면 그 자리에서 절반의 체력으로 (전투당 한 번) */
+function gsdRevive(t){
+  const D=run&&run.dun;
+  if(!gsdIs(t)||!t.tag||!t.tag.deathShadow||!D||D.gsRevived) return false;
+  const to=t.shadowAt; if(!to||to===t.slot||unitAt(to)||blockAt(to)) return false;
+  D.gsRevived=1; const from=t.slot;
+  t.shadowAt=0; gsdTgSync(t);
+  if(typeof gsdMoveFX==="function") gsdMoveFX(from,to);
+  t.slot=to; t.hp=Math.max(1,Math.ceil(t.maxHp/2));
+  fx({side:"mine",slot:to,ring:"#6a3a5e",glow:1,txt:"부활",cls:"heal",gap:140});
+  say(`죽음의 그림자 — ${t.name}${jo(t.name,"ig")} 그림자 속에서 절반의 체력으로 일어섭니다.`,"t1");
+  return true;
+}
+/* 밤에 휴식 — 악몽과의 동침 (restHeal 이 부른다 : 주둔지 · 쉼터) */
+function gsdRestNight(){
+  if(!run||!run.night) return;
+  run.heroes.filter(h=>gsdIs(h)&&!h.down&&h.tag&&h.tag.sleepNm).forEach(h=>{
+    addMaxHp(h,h.tag.sleepNm,"악몽과의 동침"); toast(`악몽과의 동침 — ${h.name} 최대 체력 +${h.tag.sleepNm}`) });
 }
 /* 그림자로 옮겨 간다 — 그림자는 걷힌다. 묶였거나 막혀 못 가도 「대신」 효과는 난다 (moveTo 가 까닭을 적는다) */
 function gsdToShadow(h){
   const to=h.shadowAt, from=h.slot; h.shadowAt=0; gsdTgSync(h);
   if(to&&from>0&&to!==from){
     if(gsdCanGo(h,to)&&typeof gsdMoveFX==="function") gsdMoveFX(from,to);   /* 사라짐 → 나타남 (src/fx/gsd-fx.js) */
-    moveTo(h,to) }
+    moveTo(h,to);
+    if(h.slot===to){ const T=h.tag||{};
+      if(T.shStep){ const g=addShield(h,T.shStep); fx({side:"mine",slot:h.slot,s:"shield",txt:"+"+g,cls:"shd",gap:60}); say(`그림자 밟기 — ${h.name} 보호막 +${g}`,"t2") }
+      if(T.trail){ const lo=Math.min(from,to), hi=Math.max(from,to);   /* 흔적 남기기 — 지나간 칸(사이)의 아군 */
+        allUnits().filter(u=>u!==h&&u.hp>0&&u.slot>lo&&u.slot<hi).forEach(u=>{ const g=addShield(u,T.trail);
+          fx({side:"mine",slot:u.slot,s:"shield",txt:"+"+g,cls:"shd",gap:60}); say(`흔적 남기기 — ${u.name} 보호막 +${g}`,"t2") }) } } }
 }
 /* 실제로 옮겨 갈 수 있나 — 연출을 moveTo 앞에 실으려고 미리 묻는다 (moveTo 와 같은 물음) */
 function gsdCanGo(h,to){ const o=unitAt(to); return !deb(h,"bind")&&!aimBound(h)&&!blockAt(to)&&!(o&&o!==h&&o.noMove) }
@@ -34964,7 +35060,9 @@ function gsdCast(h,s,target){
   if(!gsdIs(h)||!s) return false;
   if(s.gsStrike){
     if(!h.shadowAt) return false;
-    gsdToShadow(h); gsdHide(h); return true }
+    gsdToShadow(h); gsdHide(h);
+    if(h.tag&&h.tag.lurk){ h.evade=(h.evade||0)+h.tag.lurk; fx({side:"mine",slot:h.slot,ring:"#9cc6ee",txt:"회피 +"+h.tag.lurk,cls:"shd",gap:60}) }   /* 잠복 */
+    return true }
   if(s.gsStep){
     if(h.shadowAt){ gsdToShadow(h); gsdTaunt(h,1); return true }
     const go=h.shadowGo||0, from=h.slot; h.shadowGo=0;
@@ -34979,10 +35077,10 @@ function gsdCast(h,s,target){
   if(s.gsFear){
     if(h.shadowAt){
       gsdToShadow(h);
-      const L=B.foes.filter(f=>f.alive), f=L.length?rnd(L):null;
-      if(f){ const b0=deb(f,"fear"); addDeb(f,"fear",1,h);
-        if(deb(f,"fear")>b0){ fx({side:"foe",slot:f.slot,s:gsdSnd("그슨대 그림자로 공포"),ring:"#6a3a5e",txt:"공포",cls:"mag",gap:120});
-          say(`두려움 잠식 — ${f.name} 공포`,"t2") } }
+      const L=shuffled(B.foes.filter(f=>f.alive)).slice(0,1+((h.tag&&h.tag.fearSpread)||0));   /* 번지는 공포 — 무작위 적 하나 더 */
+      L.forEach((f,k)=>{ const b0=deb(f,"fear"); addDeb(f,"fear",1,h);
+        if(deb(f,"fear")>b0){ fx({side:"foe",slot:f.slot,s:k===0?gsdSnd("그슨대 그림자로 공포"):null,ring:"#6a3a5e",txt:"공포",cls:"mag",gap:120});
+          say(`${k?"번지는 공포":"두려움 잠식"} — ${f.name} 공포`,"t2") } });
       return true }
     /* 모든 대상 — 아군 적군 모두 (그슨대 자신도. 노트 주석) · 1씩 3번. 추가 능력치 표시가 없어 1 그대로.
        연출 — 어둠 물결 띠를 선 몸마다 한 번에 (작은 띠를 전장 비율로 늘이지 않는다) */
@@ -34995,8 +35093,9 @@ function gsdCast(h,s,target){
       if(B.over) break;
       if(ownE){ B._ownSnd=1; fx({side:"mine",slot:h.slot,s:"그슨대 두려움 잠식 타격",gap:0}) }   /* 녹음이 있으니 합성 타격음은 빼고 */
       const i0=FXQ.length, F=GSD_FX.fear.fm;
-      B.foes.filter(f=>f.alive).forEach(f=>asSrc(h,()=>hurt(f,1,`두려움 잠식 ${q+1}/3`,"mag")));
-      allUnits().filter(u=>u.hp>0).forEach(u=>asSrc(h,()=>hurtAlly(h,u,1,`두려움 잠식 ${q+1}/3`,"공격")));
+      B.foes.filter(f=>f.alive).forEach(f=>{ const v=1+mod(s,"dmg")+(((h.tag&&h.tag.prey)&&deb(f,"fear")>0)?h.tag.prey:0);   /* 적에게만 — 강화 · 메아리치는 비명 · 두려움 세뇌 (addMod) · 먹잇감 */
+        asSrc(h,()=>hurt(f,v,`두려움 잠식 ${q+1}/3`,"mag")); if(!f.alive&&!f.fled) questProgress("gsFearKill",h.name) });   /* 두려움 세뇌 */
+      allUnits().filter(u=>u.hp>0&&(u===h||!(h.tag&&h.tag.hideIntent))).forEach(u=>asSrc(h,()=>hurtAlly(h,u,1,`두려움 잠식 ${q+1}/3`,"공격")));   /* 감춘 의도 — 다른 아군은 빼고 */
       /* 한 번의 피해는 모두에게 한꺼번에 — 다음 물결까지 기다린다 (2 · 4 · 6 칸째, 사용자 2026-11-02 「피해 타이밍과 출력」) */
       for(let k=i0;k<FXQ.length;k++){ const o=FXQ[k];
         if(o.side==="mine"&&o.slot===h.slot&&o.pose==="hurt") o.pose="guard";   /* 그슨대 자신은 막기 자세 (사용자 2026-11-02) */
@@ -35012,11 +35111,17 @@ function gsdCast(h,s,target){
       if(v>0){ const got=addShield(h,v); fx({side:"mine",slot:h.slot,s:gsdSnd("그슨대 그림자로 보호막")||"shield",txt:"+"+got,cls:"shd",gap:80}) }
       say(`어둠 증식 — 어둠 조각 ${n}개, ${h.name} 보호막 +${v}`,"t1");
       return true }
-    const f=foeAt(target);
+    const f=foeAt(target), T=h.tag||{};
     say(`어둠 증식 — 어둠 조각 ${n}개 × 추가 공격력 ${Math.max(0,h.atk||0)}`,"t1");
-    if(f&&f.alive&&v>0){ const own0=B._ownSnd, k=gsdSnd("그슨대 어둠 증식 발사");
-      if(k){ fx({side:"foe",slot:f.slot,s:k,gap:0}); B._ownSnd=1 }   /* 녹음이 있으니 합성 타격음은 빼고 */
-      try{ asSrc(h,()=>hurt(f,v,"어둠 증식","mag")) } finally { B._ownSnd=own0 } }
+    const L=T.nightFlood?B.foes.filter(x=>x.alive):(f&&f.alive?[f]:[]);   /* 밤의 범람 — 모든 적 */
+    if(L.length&&v>0){ const own0=B._ownSnd, k=gsdSnd("그슨대 어둠 증식 발사");
+      if(k){ fx({side:"foe",slot:L[0].slot,s:k,gap:0}); B._ownSnd=1 }   /* 녹음이 있으니 합성 타격음은 빼고 */
+      try{ L.forEach(x=>{ const add=(T.prey&&deb(x,"fear")>0)?T.prey:0;
+        asSrc(h,()=>hurt(x,v+add,"어둠 증식","mag"));
+        if(!x.alive&&!x.fled&&T.hungryDark&&(x.atk||0)>0){ bumpTmp(h,"atk",x.atk);   /* 굶주린 어둠 — 그 적의 추가 공격력을 그 전투 동안 */
+          fx({side:"mine",slot:h.slot,ring:"#a8323e",txt:"공격력 +"+x.atk,cls:"buf",gap:60}); say(`굶주린 어둠 — ${h.name} 공격력 +${x.atk}`,"t1") } }) }
+      finally { B._ownSnd=own0 } }
+    if(T.bloomBack&&n>0){ const back=Math.floor(n*T.bloomBack/100); if(back>0){ say(`어둠 역류 — 어둠 조각 ${back}개를 다시 얻습니다.`,"t2"); gsdGain(h,back) } }   /* 소모한 조각의 25% (겹치면 50%) */
     return true }
   return false;
 }
@@ -35421,6 +35526,80 @@ HERO_REWARDS["페블"].forEach(r=>{
   r.own="페블";   /* 전용 보상의 주인 — rewards.js 가 붙이는 것보다 뒤에 불러온다 (오볼과 같은 까닭) */
   if(r.n==="파괴 채굴"||r.n==="광산 수레 뒤지기"||r.n==="일당 환전") r.okf=()=>!questHas(r.n);
   if(r.n==="채굴의 달인") r.okf=h=>!!(h&&h.tag&&h.tag.vein&&h.tag.vein["황금"]);
+});
+/* ═══════════ 그슨대 전용 보상 (노트 10, 사용자 2026-11-03) ═══════════
+ * 글은 노트 그대로. 셈은 src/rules/gsd.js 의 갈고리(gsdGain · gsdHurt · gsdToShadow · gsdCast · gsdAfter · gsdDeploy …)가 h.tag 를 읽는다.
+ * 노트의 「rare」 는 0.5, 「rarer」 는 0.25. 「*[○○] 기술이 없을 때 등장하지 않음」 은 rewardOk 가 글에서 읽는다.
+ * 퀘스트 셋(한밤의 악몽 · 암살 계약 · 두려움 세뇌)은 src/rules/quests.js 의 QUESTS 에 */
+HERO_REWARDS["그슨대"]=[
+  /* ── 하급 열둘 ── */
+  R("그림자 기습 강화","하급","그림자 기습의 피해량이 영구히 1 증가합니다.",(h,rn)=>addMod(h,"그림자 기습","dmg",1,rn)),
+  R("두려움 잠식 강화","하급","두려움 잠식이 적들에게 주는 피해량이 영구히 1 증가합니다.\n*[두려움 잠식] 기술이 없을 때 등장하지 않음",
+    (h,rn)=>addMod(h,"두려움 잠식","dmg",1,rn),0.5),
+  R("그림자 이동 강화","하급","그림자 이동의 회복량이 영구히 1 증가합니다.",(h,rn)=>addMod(h,"그림자 이동","heal",1,rn)),
+  R("그림자 밟기","하급","그림자가 있는 위치로 이동한 후, 보호막을 2 얻습니다.",h=>h.tag.shStep=(h.tag.shStep||0)+2),
+  R("어둠에 잠긴 칼","하급","급습으로 치명타를 적중한 후, 어둠 조각을 1개 얻습니다.",h=>h.tag.ambShard=(h.tag.ambShard||0)+1),
+  R("고통먹이","하급","대원 배치 후, 어둠 조각을 2개 얻습니다.",h=>h.tag.painFeed=(h.tag.painFeed||0)+2),
+  R("어리석은 영혼의 냄새","하급","그림자 기습이 체력이 절반 이하인 적에게 주는 피해가 2 증가합니다.",h=>h.tag.foolSmell=(h.tag.foolSmell||0)+2),
+  R("메아리치는 비명","하급","두려움 잠식이 적에게 주는 피해량이 영구히 1 증가합니다.\n*[두려움 잠식] 기술이 없을 때 등장하지 않음",
+    (h,rn)=>addMod(h,"두려움 잠식","dmg",1,rn)),
+  R("커져가는 몸","하급","커져가는 악몽이 해당 전투 동안 최대 체력도 3 부여합니다.",h=>h.tag.growBody=(h.tag.growBody||0)+3),   /* 사후 · 학살자 아군도 (노트 주석) */
+  R("움직일 시간","하급","습격 전투에서 최대 마나가 1 증가하고 추가 공격력을 2 얻습니다.",h=>h.tag.moveTime=(h.tag.moveTime||0)+1),
+  R("한밤의 악몽","하급","퀘스트: 밤 동안 전투 4회 승리\n보상: 추가 공격력 1",
+    h=>{ if(!questHas("한밤의 악몽")) questAccept("한밤의 악몽",h.name) }),   /* 습격 · 일반 · 정예 · 우두머리 모두 (노트 주석) */
+  R("악몽과의 동침","하급","이번 원정동안 밤에 휴식하면, 그슨대가 최대 체력을 5 얻습니다.",h=>h.tag.sleepNm=(h.tag.sleepNm||0)+5),   /* 주둔지 · 쉼터에서 회복할 때 (노트 주석) */
+  /* ── 중급 열셋 ── */
+  R("어둠 적응","중급","대원 배치 후, 1턴 동안 은신 상태가 됩니다.\n*획득시 보상에서 다시 등장하지 않음",h=>h.tag.darkAdapt=1,0.5),
+  R("그늘 속 칼날","중급","급습으로 적을 처치하면, 1턴 동안 은신 상태가 됩니다.\n*획득시 보상에서 다시 등장하지 않음",h=>h.tag.shadeBlade=1),
+  R("잠복","중급","그림자 기습으로 그림자에게 이동하면, 회피를 1 얻습니다.",h=>h.tag.lurk=(h.tag.lurk||0)+1),
+  R("먹잇감","중급","공포 상태의 적에게 주는 피해가 5 증가합니다.",h=>h.tag.prey=(h.tag.prey||0)+5),
+  R("감춘 의도","중급","두려움 잠식이 다른 아군에게는 피해를 주지 않습니다.\n*획득시 보상에서 다시 등장하지 않음\n*[두려움 잠식] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.hideIntent=1,0.5),
+  R("번지는 공포","중급","두려움 잠식으로 그림자에게 이동할 때, 무작위 적 1명에게 추가로 공포를 부여합니다.\n*[두려움 잠식] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.fearSpread=(h.tag.fearSpread||0)+1,0.25),
+  R("잠 못 이루는 밤","중급","이번 원정동안 밤에 지도에서 이동할 때 오염도가 증가하지 않습니다.\n*획득시 보상에서 다시 등장하지 않음",
+    h=>h.tag.gsNoTaint=1,0.5),
+  R("흔적 남기기","중급","그림자가 있는 위치로 이동한 후, 지나간 칸의 아군에게 보호막을 5 부여합니다.",h=>h.tag.trail=(h.tag.trail||0)+5),
+  R("어둠 역류","중급","어둠 증식을 사용한 후, 소모한 어둠 조각의 25%를 다시 얻습니다.\n*[어둠 증식] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.bloomBack=(h.tag.bloomBack||0)+25),   /* 겹치면 50% (노트 주석) */
+  R("암살 계약","중급","퀘스트: 급습 치명타로 적 처치 10회\n보상: 급습의 치명타 피해가 50% 증가",
+    h=>{ if(!questHas("암살 계약")) questAccept("암살 계약",h.name) }),
+  R("망자 흡수","중급","전투 동안 아군 망자가 쓰러진 후, 그슨대가 최대 체력을 영구히 5 얻습니다.",h=>h.tag.deadAbsorb=(h.tag.deadAbsorb||0)+5,0.5),
+  R("공포스러운 전설","중급","이번 원정 동안 그슨대가 공포와 공격약화를 무시합니다. \n*획득시 보상에서 다시 등장하지 않음",h=>h.tag.legendFear=1),
+  R("막을 수 없는 전설","중급","이번 원정 동안 그슨대가 기절을 무시합니다. \n*획득시 보상에서 다시 등장하지 않음",h=>h.tag.legendStun=1),
+  /* ── 상급 아홉 ── */
+  R("끝없는 밤","상급","이번 원정 동안 커져가는 악몽으로 어둠 조각을 2개 모을 때마다 공격력을 얻습니다.\n*획득시 보상에서 다시 등장하지 않음",
+    h=>h.tag.endlessNight=1),
+  R("악몽","상급","아군 사후, 학살자 대원이 피해를 받을 때도 그슨대가 어둠 조각을 얻습니다.",h=>h.tag.nightmare=1),
+  R("밤의 범람","상급","어둠 증식이 모든 적에게 피해를 줍니다.\n*[어둠 증식] 기술이 없을 때 등장하지 않음",h=>h.tag.nightFlood=1),
+  R("무기상인의 영혼","상급","무기 전문가 조합 효과를 얻습니다.",
+    h=>{ h.tag.addJob=(h.tag.addJob||[]).concat("무기 전문가") }),   /* 「조합 효과」 = 조합이 보는 직업을 더한다 (총기 수집가 · 삼뢰 해방과 같은 길) */
+  R("어두운 공포","상급","그슨대의 체력이 30% 이하가 되면, 우두머리를 제외한 체력이 30% 이하인 적들이 전투에서 도망칩니다. (전투당 1회)\n*획득시 보상에서 다시 등장하지 않음",
+    h=>h.tag.darkFear=1,0.5),
+  R("그림자 방패","상급","그림자가 아군과 겹쳐있다면, 해당 아군이 받는 피해를 그슨대가 대신 받습니다. \n*획득시 보상에서 다시 등장하지 않음",
+    h=>h.tag.shadowShield=1,0.5),   /* 어둠 조각도 그대로 쌓인다 (노트 주석) */
+  R("굶주린 어둠","상급","어둠 증식으로 적을 처치한 후, 그 적의 추가 공격력을 그 전투 동안 얻습니다.\n*획득시 보상에서 다시 등장하지 않음\n*[어둠 증식] 기술이 없을 때 등장하지 않음",
+    h=>h.tag.hungryDark=1,0.5),
+  R("두려움 세뇌","상급","반복 퀘스트: 두려움 잠식으로 적 2회 처치\n보상: 두려움 잠식이 적에게 주는 피해량 영구히 4 증가\n*획득시 보상에서 다시 등장하지 않음\n*[두려움 잠식] 기술이 없을 때 등장하지 않음",
+    h=>{ if(!questHas("두려움 세뇌")) questAccept("두려움 세뇌",h.name) }),
+  R("죽음의 그림자","상급","그슨대가 쓰러진 후, 그림자가 빈 칸에 남아있다면 그림자가 있는 위치에서 절반의 체력으로 부활합니다. (전투당 1회)",
+    h=>h.tag.deathShadow=1)
+];
+/* 갈래 — 노트의 「대원 강화 보상」 · 「기술 강화 보상」 */
+Object.assign(REW_KIND,{
+ "하급|고통먹이":"대원 강화","하급|움직일 시간":"대원 강화","하급|한밤의 악몽":"대원 강화","하급|악몽과의 동침":"대원 강화",
+ "중급|잠 못 이루는 밤":"대원 강화","중급|망자 흡수":"대원 강화","중급|공포스러운 전설":"대원 강화",
+ "상급|악몽":"대원 강화","상급|무기상인의 영혼":"대원 강화","상급|그림자 방패":"대원 강화","상급|죽음의 그림자":"대원 강화"});
+HERO_REWARDS["그슨대"].forEach(r=>{ const k=r.g+"|"+r.n; if(!REW_KIND[k]) REW_KIND[k]="기술 강화" });
+/* 「*획득시 보상에서 다시 등장하지 않음」 */
+Object.assign(REW_COND,{
+ "중급|어둠 적응":{once:1},"중급|그늘 속 칼날":{once:1},"중급|감춘 의도":{once:1},"중급|잠 못 이루는 밤":{once:1},
+ "중급|공포스러운 전설":{once:1},"중급|막을 수 없는 전설":{once:1},
+ "상급|끝없는 밤":{once:1},"상급|어두운 공포":{once:1},"상급|그림자 방패":{once:1},"상급|굶주린 어둠":{once:1},"상급|두려움 세뇌":{once:1}});
+HERO_REWARDS["그슨대"].forEach(r=>{
+  r.own="그슨대";   /* 전용 보상의 주인 — rewards.js 가 붙이는 것보다 뒤에 불러온다 (오볼 · 페블과 같은 까닭) */
+  if(r.n==="한밤의 악몽"||r.n==="암살 계약"||r.n==="두려움 세뇌") r.okf=()=>!questHas(r.n);
+  if(r.n==="무기상인의 영혼") r.okf=h=>!hasTag(h,"무기 전문가");
 });
 function shopIcon(k){
   /* 새로 받은 그림이 있으면 그것부터 */
@@ -35890,6 +36069,7 @@ function restHeal(amt,from){
       let v=amt(h);
       if(steal&&h!==steal){ got+=v; v=0 }
       if(v>0) healUp(h,v) });
+    if(typeof gsdRestNight==="function") gsdRestNight();   /* 그슨대 악몽과의 동침 — 밤에 쉬면 */
     if(steal&&got){ healUp(steal,got);
       toast(`이간질 — ${steal.name}${jo(steal.name,"ig")} 다른 대원의 회복 ${got}${jo(String(got),"eul")} 빼앗았습니다.`) }
   },from);
@@ -37092,6 +37272,13 @@ const BL_SKILL={
    d:"사용한도(1). 거리 2 내의 모든 적에게 피해를 2(추가 공격력)씩 5번 줍니다."}
 };
 const QUESTS={
+  /* 그슨대 (노트 10 보상, 2026-11-03) */
+  "한밤의 악몽":{kind:"gsNightWin",need:4,who:"hero",
+    d:"밤 동안 전투 {n}회 승리",rd:"추가 공격력을 1 얻습니다.",reward:{atkUp:1}},
+  "암살 계약":{kind:"gsAmbKill",need:10,who:"hero",
+    d:"급습 치명타로 적 처치 {n}회",rd:"급습의 치명타 피해가 50% 증가합니다.",reward:{gsAmbX:1}},
+  "두려움 세뇌":{kind:"gsFearKill",need:2,who:"hero",repeat:1,
+    d:"두려움 잠식으로 적 {n}회 처치",rd:"두려움 잠식이 적에게 주는 피해량이 영구히 4 증가합니다.",reward:{gsFearUp:4}},
   /* 페블 (노트 21 보상, 2026-11-02) */
   "파괴 채굴":{kind:"swingKill",need:6,who:"hero",
     d:"휘두르기로 적 처치 {n}회",rd:"라이티늄 조약돌을 4개, 금화를 8개 얻습니다.",reward:{pebble:4,gold:8}},
@@ -37580,6 +37767,10 @@ function questClaim(id){
   if(R.slamUp){ const h=run.heroes.find(x=>x.name===q.hero)||run.heroes.find(x=>x.name==="파벨");
     if(h){ addMod(h,"지면 내려치기","dmg",R.slamUp,"지면 파훼");
       toast(`지면 파훼 — 지면 내려치기 피해 +${R.slamUp}`) } }
+  /* 그슨대 (2026-11-03) — 급습 배율 · 두려움 잠식은 영구히 */
+  if(R.gsAmbX||R.gsFearUp){ const h=run.heroes.find(x=>x.name===q.hero)||run.heroes.find(x=>x.name==="그슨대");
+    if(h&&R.gsAmbX){ h.tag.ambX=(h.tag.ambX||0)+R.gsAmbX; toast(`암살 계약 — 급습의 치명타 피해 +50%`) }
+    if(h&&R.gsFearUp){ addMod(h,"두려움 잠식","dmg",R.gsFearUp,"두려움 세뇌"); toast(`두려움 세뇌 — 두려움 잠식 피해 +${R.gsFearUp}`) } }
   /* 페블 (2026-11-02) — 조약돌 · 희귀 라이티늄 장신구는 받는 화면으로, 내려찍기는 영구히 */
   if(R.smashUp){ const h=run.heroes.find(x=>x.name===q.hero)||run.heroes.find(x=>x.name==="페블");
     if(h){ addMod(h,"내려찍기","dmg",R.smashUp,"광산 수레 뒤지기"); toast(`광산 수레 뒤지기 — 내려찍기 피해 +${R.smashUp}`) } }
@@ -44867,6 +45058,7 @@ function onSummon(h){
   invDeploy(h);     /* 인비디아의 「대원 배치 후」 보상 (2026-10-22) */
   obolDeploy(h);    /* 오볼 — 물자 모으기 (2026-10-31) */
   pebbleDeploy(h);  /* 페블 — 영웅의 운명 (2026-11-02) */
+  gsdDeploy(h);     /* 그슨대 — 고통먹이 · 어둠 적응 · 움직일 시간 (2026-11-03) */
   try{ colTrophyDeploy(h) }catch(e){ console.error(e) }   /* 콜로서스 전리품 — 팔 · 보호막 충전기 (2026-10-23) */
   const t=h.tag;
   if(h.name==="데린저"&&t.placeAmmoEsh){ const v=ammoMaxOf(h)*t.placeAmmoEsh;
@@ -45887,6 +46079,7 @@ function predictDmg(h,s,tgt){
     if(OVER&&!overReach(h,s,tgt.slot)) return null;
     dmg=bs("dmg")+(skillFlat(s)?0:(s.defDmg?(h.def||0):(s.el==="마법"?MAG:ATK*(s.n==="방패 밀치기"?(h.tag.pushAtkX||1):1))))+(s.exec?(h.mom||0):0);   /* 승리의 일격 — 추진력 */   /* defDmg — 보호력으로 오른다 (포식) */
     dmg+=pebbleDmgAdd(h,s);   /* 페블 — 철광 벼림 · 보호의 망치 (실제와 같은 자리) */
+    dmg+=gsdDmgAdd(h,s,tgt);   /* 그슨대 — 어리석은 영혼의 냄새 · 먹잇감 */
     dmg+=derrGunAdd(h,s,tgt);   /* 데린저의 무기 덤 — runEffect 와 같은 자리 (2026-10-15 : 예고가 이것을 안 읽고 있었다) */
     if(OVER) dmg=Math.max(1,Math.round(dmg*OVER_X));
     if(s.el==="마법"&&deb(h,"magDn")) dmg=Math.ceil(dmg*0.5);
@@ -45898,7 +46091,7 @@ function predictDmg(h,s,tgt){
     { if(critOnce(h,s)){ dmg*=2; crit=1 } MAINC=1 }   /* 치명적인 공격 · 마법 — 그 전투의 첫 한 방. 예고는 닳게 하지 않는다 (critOnce 한 곳에서 묻는다) */
     if(!crit&&critWhy(h,s,tgt)){ dmg*=2; crit=1 }   /* 보상으로 걸리는 치명타 — 실제와 같은 자리에서 묻는다 (2026-10-09) */
     if(!crit&&iraMaskCrit(h,s)){ dmg*=2; crit=1 }   /* 이라 악마의 가면 — 할퀴기 · 찢어발기기 (2026-10-29) */
-    if(!crit&&gsdAmbush(h,s)){ dmg*=2; crit=1 }   /* 그슨대 급습 — runEffect 와 같은 물음 */
+    if(!crit&&gsdAmbush(h,s)){ dmg=Math.round(dmg*gsdAmbX(h)); crit=1 }   /* 그슨대 급습 — runEffect 와 같은 물음 · 같은 배율 */
     if(h.name==="데린저"){
       /* 저격소총 — 「2(추가 † + 대상과의 거리)」. runEffect 와 **같은 차례**여야 예고가 맞는다
          (2026-10-14 에 한 번 어긋나 probe 가 아니라 그물이 잡았다) */
@@ -47517,6 +47710,7 @@ function doSkill(target){
           say(`집결하라! — 왕실 ${L.map(a=>a.name).join(", ")} 보호막 +${v*h.tag.rally}`,"t2") } }
     }
     if(h.name==="페블") pebbleAfter(h,i,s,target);   /* 내려찍기 준비 ↔ 내려찍기 · 광맥 (src/rules/pebble.js) */
+    if(h.name==="그슨대") gsdAfter(h,s);   /* 급습 뒤처리 — 어둠에 잠긴 칼 · 그늘 속 칼날 · 암살 계약 (src/rules/gsd.js) */
     if(s.alt&&!s.altBy&&!(h.name==="헥토"&&i===0&&h.tag&&h.tag.slotFix)
        &&!(h.name==="레이"&&i<2)){   /* 공방전 · 레이 적응성 — 칸이 정한다 (hectoSlotFix · rayStance) */
       const back=Object.assign({},s); const nx=Object.assign({},s.alt);
@@ -49606,6 +49800,7 @@ function runEffect0(h,i,s,target){
     if(OVER&&!overReach(h,s,tgt.slot)) return;
     let dmg=s.dmg+mod(s,"dmg")+(skillFlat(s)?0:(s.defDmg?(h.def||0):(s.el==="마법"?h.mag:h.atk*(s.n==="방패 밀치기"?(h.tag.pushAtkX||1):1))))+(s.exec?(h.mom||0):0);
     dmg+=pebbleDmgAdd(h,s);   /* 페블 — 철광 벼림 · 보호의 망치 (예고와 같은 자리) */
+    dmg+=gsdDmgAdd(h,s,tgt);   /* 그슨대 — 어리석은 영혼의 냄새 · 먹잇감 (예고와 같은 자리) */
     dmg+=derrGunAdd(h,s,tgt);   /* 데린저의 무기 피해량 — 부착물 (노트 2026-10-15) */
     if(s.headbutt) dmg+=(h.atk||0)*2;   /* 박치기 — 추가 공격력의 **세 배** (위에서 한 번 더했다, 노트 2026-10-15) */
     /* 포식 — 이 한 방만 흡수한다. 아래 applyLeech 가 터뜨리고 스스로 비운다 (겹쳐 남지 않는다) */
@@ -49621,7 +49816,7 @@ function runEffect0(h,i,s,target){
     /* 치명적인 공격 · 치명적인 마법 — 그 전투의 첫 한 방 (critOnce 한 곳에서 묻고 닳는다) */
     if(critOnce(h,s,1)){ dmg*=2; CRIT=1 }
     /* 그슨대 급습 — 묻는 것은 gsdAmbush 한 곳(예고와 같이). 은신은 이 한 방에 걷힌다 */
-    if(!CRIT&&gsdAmbush(h,s)){ dmg*=2; CRIT=1; say("급습 — 치명타!","t1") }
+    if(!CRIT&&gsdAmbush(h,s)){ dmg=Math.round(dmg*gsdAmbX(h)); CRIT=1; h._gsAmb=tgt; say("급습 — 치명타!","t1") }   /* _gsAmb — 뒤처리(gsdAfter : 어둠에 잠긴 칼 · 그늘 속 칼날 · 암살 계약) */
     if(gsdAmbush(h,s)){ h.hide=0 }
     /* 데린저 조준 · 헤드샷 */
     if(h.name==="데린저"){
@@ -50164,6 +50359,7 @@ function soakAlly(t,d){
   if(hadS>0&&t.shield<=0)  breakFX(t,"s");
   return {d:d,eh:eh,sh:sh} }
 function hurtAlly(f,t,raw,label,el,evMsg,pierce,ownFx){   /* evMsg — 회피했을 때의 기록 문구 (없으면 "<label> — <대원> 회피!") */
+  { const g=gsdShieldFor(t); if(g){ say(`그림자 방패 — ${g.name}${jo(g.name,"ig")} ${t.name} 대신 맞습니다.`,"t2"); t=g } }   /* 그슨대 그림자 방패 (상급) */
   if(stopped(t)) return;   /* 정지 — 피해를 받지 않는다 (사용자 2026-10-07) */
   if(t&&t.name==="도미니코") domHateSync(t);   /* 악마 혐오 — 맞기 직전 지금 수로 */
   /* 회피가 먼저 — 한 방을 통째로 흘린다. 회피를 셈하는 곳은 여기 하나다 (전투 정리 2026-10-05: 대포 · 적 기술 · 적 공격이 저마다 셈했다) */
@@ -50328,6 +50524,7 @@ function unitDown(t){
       fx({side:"mine",slot:t.slot,ring:"#e08a3a",glow:1,txt:"부활",cls:"heal",gap:140});
       say(`뿌리모체의 심장 — ${t.name}${jo(t.name,"ig")} 절반의 체력으로 일어섭니다. 심장이 부서집니다.`,"t1");
       return } }
+  if(gsdRevive(t)) return;   /* 그슨대 죽음의 그림자 (상급) — 그림자 자리에서 일어선다 */
   /* 쓰러진 대원은 전장에서 사라지지 않는다.
      전투가 끝날 때까지 그 자리에 남아 칸만 차지한다.
      회복도 버프도 저주도 닿지 않고, 적도 겨누지 않는다.
@@ -50336,6 +50533,7 @@ function unitDown(t){
   say(`${t.name} 쓰러짐 — 그 자리에 그대로 남습니다.`,"t3");
   if(run) run.anyDown=1;   /* 이 원정에서 누군가 쓰러졌다 — 무패의 장군 해금 셈 */
   t.hp=0; t.down=1; t.downSlot=t.slot; t.slot=0; onDeath("ally"); lifeAuraSync();
+  gsdDeadAbsorb(t);   /* 그슨대 망자 흡수 (중급) */
   if(synOn("사후",2)){ const L=run.heroes.filter(a=>a!==t&&!a.down&&a.hp>0&&hasTag(a,"사후"));   /* 사후 2 — 아군이 쓰러질 때마다 모든 능력치 +1 (노트 2026-10-04) */
     L.forEach(a=>{ bumpTmp(a,"atk",1); bumpTmp(a,"mag",1); bumpTmp(a,"def",1); if(a.slot>0) fx({side:"mine",slot:a.slot,ring:"#a06ae0",txt:"+1/+1/+1",cls:"buf",gap:60}) });
     if(L.length){ say(`사후 — ${L.map(a=>a.name).join(", ")} 모든 능력치 +1`,"t1"); synFlash("사후",L) } }
