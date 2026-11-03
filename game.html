@@ -6557,8 +6557,8 @@ const KW_TAB=[
  {n:"오늘의 주인공",c:"debuff",d:"(부정적 효과) 이번 라운드 동안 받는 피해가 증가합니다."},
  {n:"도전장",c:"debuff",d:"(부정적 효과) 지목된 대원이 유망주에게 피해를 100 줄 때까지 다른 모든 대상이 정지 상태가 됩니다."},
  {n:"처형",c:"debuff",d:"(부정적 효과) 턴이 끝날 때, 누적된 처형보다 체력이 낮다면 쓰러집니다. 부정 보호막 1개가 처형 10을 지웁니다."},
- {n:"피해량 감소",c:"debuff",d:"(부정적 효과) 이번 턴 동안 주는 피해가 그만큼 감소합니다."},
- {n:"환호",c:"plain",d:"관중의 환호. 0에서 100까지 오르내립니다. 높을수록 전투에서 얻는 보상이 늘고, 적도 강해집니다."},
+ {n:"감소",c:"debuff",re:"\\[감소\\]",d:"감소 수치만큼 줄 수 있는 피해량이 감소합니다."},   /* 글 속 낱말로는 안 잡는다 — 「감소합니다」가 흔하다. 칩 풀이로만 */
+ {n:"환호",c:"plain",re:"환호(?!\\s*게이지)",d:"관중의 환호. 0에서 100까지 오르내립니다. 높을수록 전투에서 얻는 보상이 늘고, 적도 강해집니다."},
 ];
 const KW={}, KW_DESC={};
 KW_TAB.forEach(k=>{ KW[k.n]=k.c; KW_DESC[k.n]=k.d });
@@ -21276,7 +21276,7 @@ const DEBUFF={
  star :{n:"오늘의 주인공",d:"이번 라운드 동안 받는 피해가 그만큼 증가합니다.",c:"#e0c85a"},
  duel :{n:"도전장",d:"유망주에게 피해를 100 줄 때까지 다른 모든 대상이 정지 상태가 됩니다.",c:"#c04040"},
  exec :{n:"처형",d:"턴이 끝날 때, 누적된 처형보다 체력이 낮다면 쓰러집니다. 부정 보호막 1개가 처형 10을 지웁니다.",c:"#8a1c1c"},
- dmgDn:{n:"피해량 감소",d:"이번 턴 동안 주는 피해가 그만큼 감소합니다.",c:"#8a9a5a"}
+ dmgDn:{n:"감소",d:"감소 수치만큼 줄 수 있는 피해량이 감소합니다.",c:"#d95a50"}   /* 이름 · 글 — 사용자 2026-11-03 */
 };
 const INFECT_TIP="턴이 끝날 때 피해를 1(추가 ∴) 주고 감염 중첩을 1 감소";
 const DEB_KEYS=Object.keys(DEBUFF);
@@ -21461,7 +21461,7 @@ const KW_ICON={
   "기억":"status_someone_memory_stack",   /* 「누군가의 기억」의 기억 중첩 — 수는 따로 얹는다 (㊿) */
   "고통 감내":"sword",
   /* 광기의 투기장 (사용자 2026-11-03) — 상처 · 환호는 그림이 아직 없다 */
-  "상처":"status_wound","처형":"status_execution",   /* 받은 상태 그림 (status-wound-v1 · status-execution-v1) */
+  "상처":"status_wound","처형":"status_execution","감소":"status_damage_reduction","환호":"resource_arena_cheer",   /* 받은 상태 그림 (status-wound-v1 · status-execution-v1) */
   "오늘의 주인공":"status_ar_star","도전장":"status_ar_challenge","손님 맞이":"status_ar_welcome"};   /* 다음 공격이 세진다 — 공격 아이콘 (사용자 2026-09-29) */   /* 대원 밑 소환물 표식 — 허수아비 · 공중에 뜸은 바람 (사용자 2026-09-16) */   /* 2026-09-15 추가 · 아이콘은 status-effects-v2 (64px) */
 function bdIcon(kind,key,label,icon){
   const id=icon||KW_ICON[key]||KW_ICON[label];
@@ -22001,7 +22001,7 @@ const ACT2={
     {n:"풀려난 야수", w:5, foes:["풀려난 야수","풀려난 야수","풀려난 야수"], slots:[1,2,3], min:2},
     {n:"질투의 대사제", w:6, foes:["질투의 대사제","기침하는 관중"], slots:[2,4], min:1}],
    rules:{t:"광 기 의  투 기 장",sub:"이 구역에서는 규칙이 달라집니다",rows:[
-     ["status_ar_star","환호","관중의 환호가 높을수록 전투에서 얻는 보상이 늘고, 적도 강해집니다. 적의 행동으로 오르내립니다."]]}
+     ["resource_arena_cheer","환호","관중의 환호가 높을수록 전투에서 얻는 보상이 늘고, 적도 강해집니다. 적의 행동으로 오르내립니다."]]}
  }
 };
 const ACT2_LIST=Object.keys(ACT2);
@@ -23876,7 +23876,7 @@ function taintChip(extra){
       tc+=`<span class="res spil ${extra||""} ${full?"on":""}" ${pickTip("hspil","<b>마나석 기둥</b><br>이 층의 기둥을 모두 켜면 전투에서 모든 대원이 마나를 1 더 얻습니다.<br>켜 둔 기둥은 얼마 뒤 다시 꺼집니다.")}><i class="rkey">기둥</i><b>${ps.on}/${ps.total}</b></span>`; } }
   /* 광기의 투기장 — 관중의 환호 (사용자 2026-11-03). 그림이 아직 없어 글자로 */
   if(typeof arenaOn==="function"&&arenaOn()){ const c=cheerNow();
-    tc+=`<span class="res cheer kw ${extra||""}" data-kw="환호" data-tip="관중의 환호가 높을수록 전투에서 얻는 금화와 경험치가 늘고(지금 +${c}%), 적의 체력과 공격력도 오릅니다.">환호 <b>${c}</b><i>/${CHEER.max}</i></span>` }
+    tc+=`<span class="res cheer kw ${extra||""}" data-kw="환호" data-tip="관중의 환호가 높을수록 전투에서 얻는 금화와 경험치가 늘고(지금 +${c}%), 적의 체력과 공격력도 오릅니다.">${resIcon("cheer")}<b>${c}</b><i>/${CHEER.max}</i></span>` }
   if(!spiritOn()) return tc;
   const cr=run.crystal==null?CRYSTAL_MAX:run.crystal;
   return tc+`<span class="res crystal use kw ${extra||""} ${cr<=0?"empty":""}" role="button" data-kw="푸른 수정" data-tip="누르면 수정 1칸으로 오염도를 ${CRYSTAL_CURE} 걷어 냅니다. 기력의 샘, 마른숲 상점의 파편으로 채웁니다.">${iconImg("item_spirit_blue_crystal")?`<span class="ri">${iconImg("item_spirit_blue_crystal")}</span>`:""}<b>${cr}</b><i>/${CRYSTAL_MAX}</i><em class="cruse">사용</em><u style="width:${cr/CRYSTAL_MAX*100}%"></u></span>`;
@@ -26741,6 +26741,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 344, "v": "0.7", "d": "2026-11-03", "t": "감소 디버프 · 감소 부여 연출 · 환호 아이콘", "big": 0},
  {"b": 343, "v": "0.7", "d": "2026-11-03", "t": "투기장 둘째 · 상태 부여 연출 · 냉각 감전 정지 되감기 · 부정 보호막 하나에 1", "big": 0},
  {"b": 342, "v": "0.7", "d": "2026-11-03", "t": "광기의 투기장 — 대체 2막, 적 15 + 투기장의 노예, 환호 · 상처 · 덫 · 채점 · 도전장", "big": 0},
  {"b": 341, "v": "0.7", "d": "2026-11-03", "t": "그슨대 전용 보상 34 · 소리 크기 되살림", "big": 0},
@@ -28276,7 +28277,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=343;
+const BUILD_NO=344;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -35690,7 +35691,9 @@ Object.assign(DEB_SHEET,{
   wound:{key:"fx_deb_wound",ms:AR_DEB_MS,at:3,hold:190,y:0.44,px:138,glow:"#ef696b",ar:1},
   star :{key:"fx_deb_star", ms:AR_DEB_MS,at:4,hold:480,y:0.29,px:142,glow:"#e4bd72",ar:1},
   duel :{key:"fx_deb_duel", ms:AR_DEB_MS,at:4,hold:260,y:0.44,px:132,glow:"#c95456",ar:1},
-  exec :{key:"fx_deb_exec", ms:AR_DEB_MS,at:3,hold:340,y:0.44,px:152,glow:"#bb8a71",ar:1}});
+  exec :{key:"fx_deb_exec", ms:AR_DEB_MS,at:3,hold:340,y:0.44,px:152,glow:"#bb8a71",ar:1},
+  /* 감소 — status-damage-reduction-apply-v1 (사용자 2026-11-03). 공격 · 마법 · 보호약화와 다른 dmgDn */
+  dmgDn:{key:"fx_deb_dmgdn",ms:[70,75,75,85,90,95,105,150],at:4,hold:280,y:0.44,px:120,glow:"#d95a50",ar:1}});
 const AR_WELCOME={key:"fx_ar_welcome_apply",ms:AR_DEB_MS,at:4,hold:330,y:0.44,px:130,glow:"#d8ad56"};
 const arRM=()=>{ try{ return !!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches) }catch(e){ return false } };
 const arK=()=>(typeof SPD==="number"&&SPD>0)?SPD:1;
@@ -35743,6 +35746,13 @@ function arDebSheet(side,slot,k,SH,src,r,keep,done){
       setTimeout(()=>{ if(!d.isConnected||!d.animate) return;
         d.animate([{scale:"1.17",translate:"0 4px"},{scale:"1",translate:"0 0"}],{duration:Math.round(300*K),easing:"cubic-bezier(.2,.8,.4,1)"});
         arParts(x,y,SH.glow,8,48,K) },T.hit) }
+    else if(k==="dmgDn"){   /* 감소 — 맺히며 커졌다(0.88 → 1.06), 멎는 280ms 동안 0.88 로 줄며 7px 가라앉고, 표식만 1.4px 떨린다 (renderer.js 그대로) */
+      if(d.animate){ const pre=T.hit, ease=v=>1-Math.pow(1-Math.max(0,Math.min(1,v)),3), F=[], N=Math.max(8,Math.ceil(life/20));
+        for(let q=0;q<=N;q++){ const tt=life*q/N, rel=tt/K, dt=(tt-pre)/K; let sc, sx=0, sy=0;
+          if(dt<0){ sc=.88+.18*ease(rel/180); sy=-4*(1-ease(rel/180)) }
+          else { const st=ease(dt/280); sc=1.06+(.88-1.06)*st; sy=7*st; sx=Math.sin(dt*.09)*1.4*Math.exp(-dt/80) }
+          F.push({scale:sc.toFixed(3),translate:`${sx.toFixed(2)}px ${sy.toFixed(2)}px`,offset:q/N}) }
+        d.animate(F,{duration:life,easing:"linear",fill:"forwards"}) } }
     else if(k==="star"){   /* 오늘의 주인공 — 좁은 조명이 옆에서 훑고 멈춘다 · 붉은 포착 표시 · 발밑 조명 */
       if(d.animate) d.animate([{translate:"-35px 0"},{translate:"0 0",offset:Math.min(1,350*K/life)},{translate:"0 0"}],{duration:life,easing:"cubic-bezier(.2,.7,.3,1)"});
       setTimeout(()=>{ if(d.isConnected&&d.animate) d.animate([{scale:"1.06"},{scale:"1"}],{duration:Math.round(300*K)}) },T.hit);
