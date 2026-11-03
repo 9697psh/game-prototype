@@ -6480,6 +6480,11 @@ body.vbattle header #hRun>.res.cheer,body.vnew header #hRun>.res.cheer{display:i
 @keyframes abEnterR{from{opacity:0;translate:65px 0}to{opacity:1;translate:0 0}}
 @keyframes abSwords{from{opacity:0;scale:1.8;rotate:-18deg}to{opacity:1;scale:1;rotate:0deg}}
 @media (prefers-reduced-motion: reduce){ .arbet .abstage.arrival .abf,.arbet .abstage.arrival .swords{animation:none} }
+/* 환호가 오를 때 — 아이콘이 밝아지며 흔들린다 (cheerPulse, 사용자 2026-11-04) */
+.res.cheer.cheerup img.ri{animation:cheerUpPulse .7s ease-out var(--cud,0ms) both}
+@keyframes cheerUpPulse{0%{filter:brightness(1);transform:none}15%{filter:brightness(2.1) drop-shadow(0 0 4px #ffd76a);transform:rotate(-14deg) scale(1.25)}30%{transform:rotate(12deg) scale(1.22)}45%{transform:rotate(-9deg) scale(1.15)}60%{filter:brightness(1.6) drop-shadow(0 0 3px #ffd76a);transform:rotate(6deg) scale(1.08)}80%{transform:rotate(-3deg)}100%{filter:brightness(1);transform:none}}
+@media (prefers-reduced-motion: reduce){ .res.cheer.cheerup img.ri{animation:none} }
+.bfstage .slot.foe .art.boss img.pxs[data-nm="분노의 대군주"]{height:calc(250px * var(--ph,1))}   /* 2칸 몸 — 사탄보다 크게 (사탄 그림 192 → 대군주 288 의 비) */
 </style>
 </head>
 <body>
@@ -18189,7 +18194,7 @@ const GDX_T={
  "기력의 샘":["spring"], "천장과 잠금문, 계단":["lockdoor","stair"], "열쇠방":["keyroom"],
  "부서진 구멍":["hole"], "도서관":["bookcase","tome_shelf"], "마나석 기둥":["mana_pillar"],
  "종탑":["clocktower"], "모형 열병식":["parade"],
- "배당판":["arbet"], "귀빈석":["arvip"], "역병 격리소":["arplague"], "투기장 종탑":["arbell"], "계약 탁자":["arpact"]
+ "배당판":["arbet"], "귀빈석":["arvip"], "역병 격리소":["arplague"], "투기장 종탑":["arbell"], "계약 탁자":["arpact"], "대기실":["arwait"]
 };
 /* 이름으로 적힌 옛 기록도 그대로 본다 — 둘 가운데 하나라도 있으면 열린 것이다 */
 function gdxSeen(e){
@@ -18346,6 +18351,9 @@ const GIM_DEX=[
   t:"거대한 종이 매달려 있습니다.",
   o:[{t:"종 울리기",d:"지도 위 종탑과 가까운 전투 구역 6개를 종탑 주위로 옮깁니다. 퀘스트: 옮겨진 전투 모두 승리. 보상: 희귀 장신구 칼리번과 무작위 보상 3개"},
      {t:"종 파괴",d:"주둔지와 우두머리 전투를 제외한 지도 위 종탑과 가까운 무작위 구역 6개를 파괴합니다. 보상: 무작위 보상 3개"}]},
+ {n:"대기실",from:"arwait",icon:"resource_arena_cheer",field:"광기의 투기장",odds:"60% (셋까지)",cells:"1, 한 번에 최대 3개",refresh:"고르면 부서집니다. 날이 밝으면 70% 로 다시 섭니다 (셋보다 적을 때)",camp:0,
+  t:"휴식하고 관중의 흥분을 잠재우세요.",
+  o:[{t:"대기",d:"관중의 환호가 20 감소합니다. 체력을 10% 회복합니다."},{t:"나가기",d:"1칸 이내의 무작위 위치로 이동"}]},
  {n:"계약 탁자",from:"arpact",icon:"region_madness_arena_crossed_swords",field:"광기의 투기장",odds:"25% (막마다 한 번)",cells:"1",refresh:"고르면 부서집니다",camp:0,
   t:"\"계약을 진행하지...\" 다섯 계약 가운데 셋이 놓이고, 하나에 서명합니다. 사탄 쪽 몫은 우두머리 전투에 걸립니다.",o:[]},
 ];
@@ -20692,7 +20700,7 @@ const FOE={
  "광인 검투사":{hp:12,atk:3,def:2,rng:2,exp:2,
    el:"공격",
    pas:[{k:"madPierce",n:"광기",d:"공격 대상이 기절하거나 속박되었다면, 피해가 관통됩니다."},
-        {k:"death",kind:"cheer",v:5,n:"죽음",kw:"죽음",d:"죽음: 관중의 환호가 5 증가합니다."}],
+        {k:"death",kind:"cheer",v:5,n:"죽음",kw:"죽음",d:"죽음: 관중의 환호가 5 상승합니다."}],
    sk:[
     {n:"달려나오기",w:5,tg:"dist",fromFront:1,toFront:1,dmg:2,hits:3,d:"가장 앞으로 이동하고 사거리 내의 무작위 적에게 공격 피해를 2씩 3번 줍니다."},
     {n:"방패 들기",w:3,tg:"self",backMost:1,shield:3,d:"가장 뒤로 이동하고 보호막을 3 얻습니다."},
@@ -20711,12 +20719,12 @@ const FOE={
  "패배한 검투사":{hp:25,atk:3,def:3,rng:5,exp:3,
    el:"공격",
    wreckPose:"dead",
-   pas:[{k:"death",kind:"arise",turns:3,cheer:20,n:"죽음",kw:"죽음",d:"죽음: 잔해가 남습니다. 3턴 후에 남아있는 적이 있다면 절반의 체력으로 부활하고 환호가 20 증가합니다."}],
+   pas:[{k:"death",kind:"arise",turns:3,cheer:20,n:"죽음",kw:"죽음",d:"죽음: 잔해가 남습니다. 3턴 후에 남아있는 적이 있다면 절반의 체력으로 부활하고 환호가 20 상승합니다."}],
    sk:[
     {n:"휘두르기",w:4,tg:"near",dmg:2,d:"가장 가까운 대상에게 공격 피해를 2 줍니다."},
     {n:"버티기",w:3,tg:"self",shield:2,d:"보호막을 2 얻습니다."},
     {n:"막기",w:2,tg:"self",taunt:2,d:"2턴 동안 도발을 얻습니다."},
-    {n:"동정심 유발",w:3,tg:"self",heal:5,cheerUp:4,d:"체력을 5 회복합니다. 관중의 환호가 4 증가합니다."}],
+    {n:"동정심 유발",w:3,tg:"self",heal:5,cheerUp:4,d:"체력을 5 회복합니다. 관중의 환호가 4 상승합니다."}],
    hit:"휘두르기"},
  "난입한 관중":{hp:8,atk:3,def:1,rng:4,exp:1,
    el:"공격",
@@ -20757,7 +20765,7 @@ const FOE={
  "꼭두각시 검투사":{hp:15,atk:3,def:2,rng:4,exp:2,
    el:"공격",
    wreckPose:"dead",
-   pas:[{k:"death",kind:"arise",turns:3,cheer:20,n:"죽음",kw:"죽음",d:"죽음: 잔해가 남습니다. 3턴 후에 남아있는 적이 있다면 절반의 체력으로 부활하고 환호가 20 증가합니다."}],
+   pas:[{k:"death",kind:"arise",turns:3,cheer:20,n:"죽음",kw:"죽음",d:"죽음: 잔해가 남습니다. 3턴 후에 남아있는 적이 있다면 절반의 체력으로 부활하고 환호가 20 상승합니다."}],
    sk:[
     {n:"가면 숨기",w:2,tg:"self",open:1,cond:"notAlone",hideUp:3,d:"3턴 동안 은신합니다."},
     {n:"단검 던지기",w:4,tg:"far",anyRng:1,dmg:5,grow:5,throwFx:"fx_ar_dagger",spin:1,d:"가장 먼 대상에게 공격 피해를 5 줍니다. 단검 던지기의 피해량이 5 증가합니다."},
@@ -20770,7 +20778,7 @@ const FOE={
    sk:[
     {n:"종 지키기",w:3,tg:"none",open:1,chg:1,cond:"chgIdle",negUp:3,d:"2턴 동안 충전 상태가 됩니다. 부정 보호막을 3 얻습니다."},
     {n:"종 지키기",w:9,tg:"none",chg:1,cond:"charging",must:1,d:"충전을 이어 갑니다."},
-    {n:"종 울리기",w:9,tg:"none",cond:"charged",must:1,spend:1,bell:1,taint:30,cheerUp:30,d:"오염도와 관중의 환호가 30 증가합니다."},
+    {n:"종 울리기",w:9,tg:"none",cond:"charged",must:1,spend:1,bell:1,taint:30,cheerUp:30,d:"오염도와 관중의 환호가 30 상승합니다."},
     {n:"종 닦기",w:3,tg:"self",shield:4,d:"보호막을 4 얻습니다."},
     {n:"휘두르기",w:4,tg:"near",el:"공격",heroOnly:1,dmg:8,deb:{stun:1},d:"가장 가까운 대원에게 공격 피해를 8 주고 기절시킵니다."},
     {n:"정화",w:6,tg:"near",heroOnly:1,cond:"nearBuffed",stripBuffs:1,d:"가장 가까운 대원의 도발과 가시, 회피, 갑피를 모두 제거합니다."}],
@@ -20779,7 +20787,7 @@ const FOE={
    el:"마법",
    chgMax:1,
    wreckPose:"dead",
-   pas:[{k:"death",kind:"arise",turns:5,cheer:20,n:"죽음",kw:"죽음",d:"죽음: 잔해가 남습니다. 5턴 후에 남아있는 적이 있다면 절반의 체력으로 부활하고 환호가 20 증가합니다."}],
+   pas:[{k:"death",kind:"arise",turns:5,cheer:20,n:"죽음",kw:"죽음",d:"죽음: 잔해가 남습니다. 5턴 후에 남아있는 적이 있다면 절반의 체력으로 부활하고 환호가 20 상승합니다."}],
    sk:[
     {n:"도발",w:3,tg:"self",taunt:2,shield:8,d:"2턴 동안 도발 상태가 됩니다. 보호막을 8 얻습니다."},
     {n:"비추기",w:4,tg:"none",chg:1,cond:"chgIdle",mirrorStore:1,intentPose:"charge",d:"1턴 동안 충전합니다. 충전하는 동안 받은 피해를 저장합니다."},
@@ -20799,7 +20807,7 @@ const FOE={
    el:"보호",
    pas:[{k:"welcome",v:3,n:"손님 맞이",d:"호객꾼이 3번 행동하면, 전투에서 퇴장하고 무작위 검투사를 전장에 호출합니다."}],
    sk:[
-    {n:"박수 유도",w:3,tg:"none",pose:"roar",cheerUp:20,healAll:5,d:"관중의 환호가 20 증가합니다. 모든 대상이 체력을 5 회복합니다."},
+    {n:"박수 유도",w:3,tg:"none",pose:"roar",cheerUp:20,healAll:5,d:"관중의 환호가 20 상승합니다. 모든 대상이 체력을 5 회복합니다."},
     {n:"무대 정리",w:3,tg:"none",cond:"twoFoes",swapFoeEnds:1,d:"가장 앞과 뒤의 적의 위치를 바꿉니다."},
     {n:"오늘의 주인공",w:3,tg:"any",heroOnly:1,star:5,d:"무작위 대원 하나를 지목합니다. 이번 라운드 동안 그 대원이 받는 피해가 5 증가합니다."},
     {n:"선수 입장",w:3,tg:"none",foeBuff:{weak:1,self:1,shield:4},d:"체력이 가장 낮은 적에게 보호막을 4 부여합니다."}],
@@ -20867,11 +20875,11 @@ const FOE={
    pas:[{k:"info",n:"거대한 몸집",d:"몸집이 커 2칸을 차지합니다."},
         {k:"cheerMag",per:10,n:"열광",d:"관중의 환호 10당 추가 마법력을 1 얻습니다."}],
    sk:[
-    {n:"광란의 합창",w:4,tg:"all",anyRng:1,dmg:5,cheerUp:10,d:"모든 상대에게 마법 피해를 5 줍니다. 환호가 10 증가합니다."},
-    {n:"물건 던지기",w:4,tg:"any2",heroOnly:1,dmg:3,cheerUp:10,throwFx:"fx_ar_stone",arc:1,d:"무작위 대원 둘에게 마법 피해를 3 줍니다. 환호가 10 증가합니다."},
+    {n:"광란의 합창",w:4,tg:"all",anyRng:1,dmg:5,cheerUp:10,d:"모든 상대에게 마법 피해를 5 줍니다. 환호가 10 상승합니다."},
+    {n:"물건 던지기",w:4,tg:"any2",heroOnly:1,dmg:3,cheerUp:10,throwFx:"fx_ar_stone",arc:1,d:"무작위 대원 둘에게 마법 피해를 3 줍니다. 환호가 10 상승합니다."},
     {n:"야유",w:3,tg:"all",anyRng:1,deb:{fear:1},cheerUp:-20,d:"모든 상대에게 공포를 1 부여합니다. 환호가 20 감소합니다."},
     {n:"떼창",w:1,tg:"weak",anyRng:1,heroOnly:1,deb:{stun:8},d:"체력이 가장 낮은 대원에게 기절을 8 부여합니다."},
-    {n:"앙코르",w:3,tg:"self",shield:15,encore:5,d:"보호막을 15 얻습니다. 1턴 동안 피해를 받을 때마다 환호가 5씩 증가합니다."}],
+    {n:"앙코르",w:3,tg:"self",shield:15,encore:5,d:"보호막을 15 얻습니다. 1턴 동안 피해를 받을 때마다 환호가 5씩 상승합니다."}],
    hit:"광란의 합창"},
  "풀려난 야수":{hp:45,atk:4,def:3,rng:4,exp:6,elite:1,
    el:"공격",
@@ -20902,7 +20910,7 @@ const FOE={
  /* ═══ 광기의 투기장 — 정예 ═══ */
  "유망주":{hp:80,atk:5,def:5,rng:4,exp:12,elite:1,
    el:"공격",
-   pas:[{k:"cheerHurt",v:1,n:"관중의 촉망",d:"유망주가 피해를 받을 때마다 관중의 환호가 1 증가합니다."},
+   pas:[{k:"cheerHurt",v:1,n:"관중의 촉망",d:"유망주가 피해를 받을 때마다 관중의 환호가 1 상승합니다."},
         {k:"slaveStart",n:"볼거리 제공",d:"전투 시작 후, 무작위 아군 칸에 투기장의 노예가 소환됩니다."}],
    sk:[
     {n:"일격",w:3,tg:"any",dmg:20,d:"무작위 대상에게 공격 피해를 20 줍니다."},
@@ -20912,6 +20920,35 @@ const FOE={
     {n:"관중에게 인사",w:2,tg:"self",cond:"cheerAny",cheerTake:30,d:"관중의 환호를 최대 30만큼 빼앗아 그만큼 회복합니다."},
     {n:"다음 희생자",w:3,tg:"none",cond:"slaveRoom",slaveSummon:1,shield:12,d:"무작위 아군 칸에 투기장의 노예를 소환합니다. 보호막을 12 얻습니다."}],
    hit:"일격"},
+ /* ═══ 광기의 투기장 — 우두머리 (사용자 2026-11-04, 셈은 src/rules/arena-satan.js) ═══
+    두 몸이 체력 · 추가 능력치를 나눠 쓴다 — 환호 100 으로 내 턴이 끝나면 오간다 (강림 · 해제) */
+ "사탄":{hp:500,fixHp:1,atk:5,def:5,rng:8,exp:12,boss:1,solo:1,noMove:1,bossSlot:2,
+   el:"마법",
+   pas:[{k:"arRise",n:"강림",d:"환호가 100인 상태로 내 턴이 끝나면, 환호를 모두 소모하고 분노의 대군주로 변신합니다."},
+        {k:"cycle",every:2,gain:"negShield",v:2,n:"정화",d:"2턴이 끝날 때마다 부정 보호막을 2 얻습니다."}],
+   sk:[
+    {n:"사슬 휘두르기",w:3,tg:"any",dmg:6,sides:1,cheerUp:10,d:"무작위 대상과 양옆 대상에게 마법 피해를 6 줍니다. 환호가 10 상승합니다."},
+    {n:"등롱 낙인",w:3,tg:"any",heroOnly:1,anyRng:1,lantern:{exec:10,cheer:20},d:"무작위 대원에게 처형을 10 부여합니다. 이미 처형이 부여되어 있으면 환호가 20 상승합니다."},
+    {n:"결투 지명",w:2,tg:"none",cond:"heroPair",duelPick:1,cheerUp:20,d:"무작위 대원 둘의 위치를 바꾸고 상처를 남깁니다. 환호가 20 상승합니다."},
+    {n:"오늘의 제물",w:2,tg:"any",heroOnly:1,anyRng:1,arStar:2,d:"무작위 대원 하나를 지목합니다. 이번 라운드 동안 그 대원이 받는 피해가 2 증가합니다."},
+    {n:"박수를 쳐라",w:2,tg:"self",arWander:2,shield:10,cheerUp:10,d:"최대 2칸 이동합니다. 보호막을 10 얻습니다. 환호가 10 상승합니다."},
+    {n:"개막",w:3,tg:"all",anyRng:1,dmg:5,cheerPerHit:5,d:"모든 상대에게 마법 피해를 5 줍니다. 피해를 준 대상의 수만큼 환호가 5 상승합니다."},
+    {n:"계략",w:3,tg:"any",dmg:2,hits:3,cheerUp:20,d:"무작위 대상에게 마법 피해를 2씩 3번 줍니다. 환호가 20 상승합니다."},
+    {n:"지배 계획",w:2,tg:"self",arAtk:3,cheerUp:40,d:"공격력을 3 얻습니다. 환호가 40 상승합니다."}],
+   hit:"사슬 휘두르기"},
+ "분노의 대군주":{hp:500,fixHp:1,atk:5,def:5,rng:3,exp:12,boss:1,solo:1,noMove:1,big:1,bossSlot:2,chgMax:1,
+   el:"공격",
+   pas:[{k:"arUnrise",n:"해제",d:"환호가 100인 상태로 내 턴이 끝나면, 환호를 모두 소모하고 사탄으로 돌아갑니다."},
+        {k:"info",n:"거대한 몸집",d:"몸집이 커 2칸을 차지합니다."}],
+   sk:[
+    {n:"할퀴기",w:4,tg:"near",dmg:3,hits:2,cheerUp:20,d:"가장 가까운 상대에게 공격 피해를 3씩 2번 줍니다. 환호가 20 상승합니다."},
+    {n:"손톱 돌진",w:3,tg:"none",arRush:{dmg:8,wound:1},cheerUp:20,d:"가장 앞으로 이동하고 사거리 내의 모든 대상에게 공격 피해를 8 주고 상처를 남깁니다. 환호가 20 상승합니다."},
+    {n:"날개 감싸기",w:2,tg:"none",cond:"chgIdle",chg:1,halfNext:1,arBack:4,pose:"guard",cheerUp:20,d:"뒤로 최대 4칸 이동합니다. 1턴 동안 충전하고 받는 피해가 50% 감소합니다. 환호가 20 상승합니다."},
+    {n:"군중심리",w:9,tg:"all",anyRng:1,heroOnly:1,dmg:1,hits:4,cond:"arCrowd",must:1,spend:1,d:"모든 대원에게 공격 피해를 1씩 4번 줍니다."},
+    {n:"포효",w:9,tg:"all",anyRng:1,heroOnly:1,deb:{fear:1,dmgDn:3},cond:"arRoar",must:1,spend:1,pose:"roar",arRoarSk:1,d:"모든 대원에게 공포 1과 다음 턴 동안 피해량을 3 감소시킵니다."},
+    {n:"지배 계획",w:2,tg:"self",arMag:3,cheerUp:40,d:"마법력을 3 얻습니다. 환호가 40 상승합니다."},
+    {n:"박수를 쳐라",w:2,tg:"self",arWander:3,shield:15,cheerUp:10,d:"최대 3칸 이동합니다. 보호막을 15 얻습니다. 환호가 10 상승합니다."}],
+   hit:"할퀴기"},
 };
 /* 변종은 밑동 적을 베껴 만든다 — 아래 VARIANT 를 읽어 FOE 에 풀어 넣는다.
    (VARIANT 는 FOE 보다 뒤에 있으므로 실제로 푸는 것은 그 뒤에서 한다) */
@@ -20932,7 +20969,8 @@ const FOE_DEX_FIELD={
  "콜로서스의 여분팔":1, "콜로서스의 여분발":1,   /* 콜로서스(2구역 우두머리)가 부른다 */
  "꼭두각시":2,                            /* 미치광이 인형사(정예)가 부른다 */
  "모형 기사단장":2,                        /* 모형 창병의 진급 · 모형 열병식 */
- "마력의 초월체":2                         /* 탑의 주인이 죽으면 그 자리에 선다 — 뽑는 풀에 넣으면 안 된다 */
+ "마력의 초월체":2,                        /* 탑의 주인이 죽으면 그 자리에 선다 — 뽑는 풀에 넣으면 안 된다 */
+ "분노의 대군주":1                         /* 사탄이 강림하면 (광기의 투기장 우두머리) */
 };
 const BOSSES=["간수장","콜로서스","탑의 주인"];
 const BOSS_POOLS=[["간수장","실험 책임자"],["콜로서스"],["탑의 주인"]];
@@ -21990,7 +22028,8 @@ const ACT2={
    floor:"바닥-광기의 투기장.png",
    bgm:["battle","battle2","battle3","battle4"],   /* 투기장 곡이 아직 없다 — 핏빛 감옥 전투 곡을 빌린다 (정함) */
    bg:"bg/battle-arena.webp", lay:"arena",
-   gim:{arbet:.6,arvip:.45,arplague:.5,arbell:.4,arpact:.25,crowd:.75},   /* 전용 구역 (사용자 2026-11-03, src/rules/arena-gim.js). 확률은 정함 — 계약 탁자는 낮게 · 관중석은 뭉치마다 */
+   boss:"사탄",   /* 우두머리 (사용자 2026-11-04) — expeditionBoss 가 actOf("boss",1) 로 읽는다 */
+   gim:{arbet:.6,arvip:.45,arplague:.5,arbell:.4,arpact:.25,crowd:.75,arwait:.6},   /* 전용 구역 (사용자 2026-11-03, src/rules/arena-gim.js). 확률은 정함 — 계약 탁자는 낮게 · 관중석은 뭉치마다 */
    foes:["난입한 관중","난입한 관중","광인 검투사","나팔꾼","덫 관리인","갈고리 검투사","패배한 검투사",
          "꼭두각시 검투사","채점관","먹보","종지기","거울 검투사","시체 도둑","호객꾼","피 웅덩이",
          "기침하는 관중","부풀어오른 검투사","시샘하는 검투사"],
@@ -22181,6 +22220,7 @@ const MAP_TIP={
  arplague:"<b>{종류}</b>\n하루에 한 번 고를 수 있습니다. 부서지지 않습니다.",
  arbell:"<b>{종류}</b>\n종을 울리거나 부술 수 있습니다. 한 번 고르면 부서집니다.",
  arpact:"<b>{종류}</b>\n\"계약을 진행하지...\"",
+ arwait:"<b>{종류}</b>\n휴식하고 관중의 흥분을 잠재우세요. 한 번 고르면 부서집니다.",
  order:"<b>{종류}</b>\n활동량을 쓰지 않습니다. 날마다 지시서가 새로 붙고, 하루에 하나만 받을 수 있습니다. 부서지지 않습니다.",
  fog:"<b>{종류}</b>\n무엇이 있는지 보이지 않습니다. 지나갈 수 있습니다.",
  unseen:"<b>가 보지 않은 곳</b>\n가까이 가면 무엇이 있는지 보입니다.",   /* 지도 밝히기 (2026-10-30) */
@@ -23930,7 +23970,7 @@ function taintChip(extra){
       tc+=`<span class="res spil ${extra||""} ${full?"on":""}" ${pickTip("hspil","<b>마나석 기둥</b><br>이 층의 기둥을 모두 켜면 전투에서 모든 대원이 마나를 1 더 얻습니다.<br>켜 둔 기둥은 얼마 뒤 다시 꺼집니다.")}><i class="rkey">기둥</i><b>${ps.on}/${ps.total}</b></span>`; } }
   /* 광기의 투기장 — 관중의 환호 (사용자 2026-11-03). 그림이 아직 없어 글자로 */
   if(typeof arenaOn==="function"&&arenaOn()){ const c=cheerNow();
-    tc+=`<span class="res cheer kw ${extra||""}" data-kw="환호" data-tip="관중의 환호가 높을수록 전투에서 얻는 금화와 경험치가 늘고(지금 +${c}%), 적의 체력과 공격력도 오릅니다.">${resIcon("cheer")}<b>${c}</b><i>/${CHEER.max}</i></span>` }
+    tc+=`<span class="res cheer kw ${extra||""}${cheerPulseCls()}" data-kw="환호"${cheerPulseCss()} data-tip="관중의 환호가 높을수록 전투에서 얻는 금화와 경험치가 늘고(지금 +${c}%), 적의 체력과 공격력도 오릅니다.">${resIcon("cheer")}<b>${c}</b><i>/${CHEER.max}</i></span>` }
   if(!spiritOn()) return tc;
   const cr=run.crystal==null?CRYSTAL_MAX:run.crystal;
   return tc+`<span class="res crystal use kw ${extra||""} ${cr<=0?"empty":""}" role="button" data-kw="푸른 수정" data-tip="누르면 수정 1칸으로 오염도를 ${CRYSTAL_CURE} 걷어 냅니다. 기력의 샘, 마른숲 상점의 파편으로 채웁니다.">${iconImg("item_spirit_blue_crystal")?`<span class="ri">${iconImg("item_spirit_blue_crystal")}</span>`:""}<b>${cr}</b><i>/${CRYSTAL_MAX}</i><em class="cruse">사용</em><u style="width:${cr/CRYSTAL_MAX*100}%"></u></span>`;
@@ -23950,7 +23990,7 @@ function nextDay(){
   run.act=Math.max(0,run.act||0)+dayAct(); run.night=0; run.campDone=0; run.campExtra2=0; run.route=null;   /* 초기화가 아니라 쌓인다 (사용자 2026-10-08) */
   if(sfxHas("아침 종")) SFX.play("아침 종");   /* 날이 밝으면 종 (사용자 2026-10-06) */
   shipNewDay();   /* 오볼 — 선박 상점이 자리를 옮기고 진열이 바뀐다 */
-  betNewDay();   /* 배당판 — 승률이 움직이고 이틀이 지나면 승부 (src/rules/arena-gim.js) */
+  arenaNewDay();   /* 광기의 투기장 — 배당판 승률 · 대기실 다시 서기 (src/rules/arena-gim.js) */
   ugNewDay();   /* 지하 조합 — 땅굴 한 쌍이 새 자리에 */
   { const u=coreFx("dayUnknown");   /* 폭풍 세계핵 — 날이 밝을 때 빈 구역에 미지의 구역 */
     if(u){ const put=sprinkleCell("event",u);
@@ -26797,6 +26837,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 347, "v": "0.7", "d": "2026-11-04", "t": "사탄 · 분노의 대군주 · 대기실 · 환호 아이콘 강조", "big": 0},
  {"b": 346, "v": "0.7", "d": "2026-11-03", "t": "배당판을 사건 기록판 꼴로 (선택지 행 · 그림 틀 · 이름 띠)", "big": 0},
  {"b": 345, "v": "0.7", "d": "2026-11-03", "t": "광기의 투기장 전용 구역 여섯 (배당판 · 귀빈석 · 관중석 · 역병 격리소 · 종탑 · 계약 탁자)", "big": 0},
  {"b": 344, "v": "0.7", "d": "2026-11-03", "t": "감소 디버프 · 감소 부여 연출 · 환호 아이콘", "big": 0},
@@ -28335,7 +28376,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=346;
+const BUILD_NO=347;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -35918,6 +35959,18 @@ function arTimeFX(kw,side,slot,d,T,wait,K){
       setTimeout(()=>{ im._pt=0 },hold) },hit);
   }
 }
+/* ── 환호가 오를 때 — 머리줄 환호 아이콘이 밝아지며 흔들린다 (사용자 2026-11-04) ──
+   받은 아이콘(resource_arena_cheer)을 그대로 밝히고 흔들 뿐 — 새 그림을 그리지 않는다.
+   머리줄은 render 마다 새로 서므로, 오른 때(CHEER_UP_AT)를 적어 두고 새 칩이 남은 몫부터 이어 돈다 (cheerPulseCss) */
+let CHEER_UP_AT=0;
+const CHEER_UP_MS=700;
+function cheerPulse(){
+  CHEER_UP_AT=Date.now();
+  if(typeof document==="undefined") return;
+  document.querySelectorAll("header .res.cheer").forEach(c=>{ c.classList.remove("cheerup"); c.style.removeProperty("--cud"); void c.offsetWidth; c.classList.add("cheerup") }) }
+const cheerPulseOn=()=>Date.now()-CHEER_UP_AT<CHEER_UP_MS;
+function cheerPulseCls(){ return cheerPulseOn()?" cheerup":"" }
+function cheerPulseCss(){ return cheerPulseOn()?` style="--cud:-${Date.now()-CHEER_UP_AT}ms"`:"" }
 /* ═══ 페블 — 기획 노트 21 (사용자 2026-11-02) · 영웅심 넘치는 조약돌 · 지하 / 영광 숭배자 / 정령 ═══
    · 내려찍기 준비 ↔ 내려찍기 — 「전환」. 준비를 2번 하면 1번 칸이 내려찍기가 되고, 내려찍으면 준비로 돌아간다 (h.pbPrep, 라운드).
      전환은 기술 칸의 alt 를 쓰되 altBy 로 저절로 넘기지 않는다 — pebbleAfter 가 정한다.
@@ -40444,7 +40497,7 @@ function foePurge(f){
 const FOE_RACE={
  /* 광기의 투기장 (사용자 2026-11-03) */
  "나팔꾼":"인간","덫 관리인":"인간","광인 검투사":"인간","갈고리 검투사":"악마","패배한 검투사":"악마","난입한 관중":"인간",
- "기침하는 관중":"인간","부풀어오른 검투사":"악마","시샘하는 검투사":"인간","흥행 감독관":"악마","인조된 집행인":"인간","생체실험 대상자":"악마","광기의 관중단":"악마","풀려난 야수":"야수","질투의 대사제":"악마",
+ "기침하는 관중":"인간","부풀어오른 검투사":"악마","시샘하는 검투사":"인간","흥행 감독관":"악마","사탄":"악마","분노의 대군주":"악마","인조된 집행인":"인간","생체실험 대상자":"악마","광기의 관중단":"악마","풀려난 야수":"야수","질투의 대사제":"악마",
  "피 웅덩이":"악마","채점관":"악마","먹보":"악마","꼭두각시 검투사":"인간","종지기":"인간","거울 검투사":"악마","시체 도둑":"악마","호객꾼":"악마","유망주":"인간",
  "실험 책임자":"인간","연료 장치":"기계",
  /* 핏빛 감옥 */
@@ -40706,6 +40759,7 @@ function cheerAdd(v,why,f,quiet){
   if(!run||!arenaOn()||!v) return 0;
   const was=cheerNow(); run.cheer=Math.max(0,Math.min(CHEER.max,was+v));
   const d=run.cheer-was; if(!d) return 0;
+  if(d>0&&typeof cheerPulse==="function") cheerPulse();   /* 머리줄 환호 아이콘 강조 (사용자 2026-11-04) */
   if(typeof B!=="undefined"&&B) cheerMagSync();   /* 열광 — 환호 10 당 마법력 */
   if(typeof B!=="undefined"&&B&&f&&f.slot>0&&!quiet)
     fx({side:"foe",slot:f.slot,ring:d>0?"#e0c85a":"#9c8d77",txt:"환호 "+(d>0?"+":"")+d,cls:"buf",gap:110});
@@ -40854,7 +40908,7 @@ function arenaSkPre(f,s,I){
   if(s.atkPose===undefined&&s.pose&&!s.dmg) fx({side:"foe",slot:f.slot,pose:s.pose,gap:0});
   if(f.name==="호객꾼"&&typeof foeBark==="function") foeBark(f,"atk");   /* 말이 많다 — 행동할 때마다 (사용자) */
   if(s.cheerUp) cheerAdd(s.cheerUp,s.n,f);
-  if(arenaSkPre2(f,s)) return true;   /* 둘째 목록 */
+  if(arenaSkPre2(f,s,I)) return true;   /* 둘째 목록 · 우두머리 */
   if(s.cheerTake){ const v=Math.min(s.cheerTake,cheerNow());
     if(v>0){ cheerAdd(-v,s.n,f); const g=healUp(f,v); fx({side:"foe",slot:f.slot,s:"heal",txt:"+"+g,cls:"heal",gap:120});
       say(`${s.n} — 관중의 환호 ${v}${jo(String(v),"eul")} 빼앗아 체력 +${g}`,"t3") } }
@@ -40950,7 +41004,8 @@ function arenaSkHit(f,s,t){
     if(t.armor>0){ t.armor=0; w.push("갑피") }
     fx({side:"mine",slot:t.slot,ring:"#e0c85a",txt:w.length?"정화":"정화할 것 없음",cls:"miss",gap:110});
     say(w.length?`${s.n} — ${t.name}의 ${w.join(", ")}${jo(w[w.length-1],"ig")} 걷힙니다.`:`${s.n} — ${t.name}에게 걷어 낼 것이 없습니다.`,"t3") }
-  if(s.star&&t&&t.hp>0) addDeb(t,"star",s.star,f) }
+  if(s.star&&t&&t.hp>0) addDeb(t,"star",s.star,f);
+  satanSkHit(f,s,t) }
 /* 맞기 전에 — 날아가는 것 (돌 · 단검) · 거울 광선 */
 function arenaPreHit(f,s,t,k){
   if(s.throwFx&&t){ const big=1+0.12*(((f.skGrow||{})[s.n]||0)/(s.grow||5));
@@ -41036,6 +41091,7 @@ function arenaBattleStart(fresh){
   B.traps=[];
   cheerMagSync();
   if(!fresh) return;
+  satanStart();   /* 계약 탁자의 사탄 쪽 몫 */
   B.foes.forEach(f=>{
     if(f.alive&&foePas(f,"slaveStart")) slaveSpawn(f);
     if(f.alive&&f.name==="호객꾼"&&typeof foeBark==="function") foeBark(f,"in") }) }
@@ -41065,7 +41121,7 @@ function arenaFoeEnd(){
   arenaWoundTick();
   B.foes.forEach(f=>{ if(f.judge&&f.judge.st==="act") f.judge.st="idle" }) }
 /* 내 턴이 끝날 때 (endPhase 머리) */
-function arenaTurnEnd(){ execCheck(); judgeTurnEnd() }
+function arenaTurnEnd(){ execCheck(); judgeTurnEnd(); satanTurnEnd() }   /* 강림 · 해제 — 환호 100 */
 /* 대원이 기술을 쓴 뒤 (disciplineTick) */
 function arenaSkillUsed(h){
   if(!B||!h||h.isMin) return;
@@ -41152,7 +41208,8 @@ function scentAim(f){
   if(!L.length) return; const t=L.reduce((a,b)=>a.hp<=b.hp?a:b);
   f.intent.to=t.slot; f.intent.toId=uid(t) }
 /* 둘째 목록의 기술 — arenaSkPre 가 부른다. 참이면 끝 */
-function arenaSkPre2(f,s){
+function arenaSkPre2(f,s,I){
+  if(satanSkPre(f,s,I)) return true;   /* 사탄 · 분노의 대군주 (src/rules/arena-satan.js) */
   if(s.execUp){ f.execUp=(f.execUp||0)+s.execUp; say(`${f.name} — 죽음의 처형이 ${s.execUp} 늘어납니다 (지금 ${20+f.execUp}).`,"t2") }
   if(s.boutUp){ f.boutUp=(f.boutUp||0)+s.boutUp; say(`${s.n} — 입장하는 검투사의 최대 체력 +${s.boutUp} (지금 ${20+f.boutUp})`,"t3") }
   if(s.rewUp&&run&&run.dun){ run.dun.arRew=(run.dun.arRew||0)+s.rewUp; say(`${s.n} — 이 전투의 보상 +${s.rewUp}%`,"t3") }
@@ -41200,10 +41257,10 @@ Object.assign(SK_COND,{
    ⚠️ 마력의 탑에도 「종탑」(clocktower)이 있다 — 투기장 것은 열쇠가 arbell 이다. 섞지 말 것 */
 Object.assign(NODE,{
   arbet:{label:"배당판",c:"#c9a227"}, arvip:{label:"귀빈석",c:"#a04050"}, arplague:{label:"역병 격리소",c:"#6a8a3a"},
-  arbell:{label:"종탑",c:"#8a7a5a"}, arpact:{label:"계약 탁자",c:"#7a1a2a"}});
-Object.assign(GIM_T,{arbet:1,arvip:1,arplague:1,arbell:1,arpact:1});
+  arbell:{label:"종탑",c:"#8a7a5a"}, arpact:{label:"계약 탁자",c:"#7a1a2a"}, arwait:{label:"대기실",c:"#5a6a7a"}});
+Object.assign(GIM_T,{arbet:1,arvip:1,arplague:1,arbell:1,arpact:1,arwait:1});
 Object.assign(ENTER_FREE,{arbet:1});   /* 배당판 — 활동량을 쓰지 않는다 (사용자) */
-Object.assign(GIM_SUB,{arbet:"검투가 겨뤄지고 있습니다",arvip:"투기장의 귀빈을 위한 자리입니다",arplague:"기침 소리가 새어 나옵니다",arbell:"거대한 종이 매달려 있습니다",arpact:"계약을 진행하지..."});
+Object.assign(GIM_SUB,{arbet:"검투가 겨뤄지고 있습니다",arvip:"투기장의 귀빈을 위한 자리입니다",arplague:"기침 소리가 새어 나옵니다",arbell:"거대한 종이 매달려 있습니다",arpact:"계약을 진행하지...",arwait:"휴식하고 관중의 흥분을 잠재우세요"});
 
 /* ── 놓기 — placeGimmicks 가 부른다. 확률이 적힌 것만 주사위를 굴린다 (그 밖의 구역에서 무작위가 밀리지 않게) ── */
 function arenaPlace(g,O){
@@ -41215,7 +41272,17 @@ function arenaPlace(g,O){
   /* 계약 탁자 — 막마다 한 번 (사용자). 한 번 서명하면 그 막에는 다시 안 선다 */
   if(O.arpact&&!(run&&run.arPactF===run.field)&&Math.random()<O.arpact) placeFar(g,"arpact");
   if(O.crowd){ for(let k=0;k<2;k++) if(Math.random()<O.crowd) crowdPlace(g) }   /* 관중석 — 한 번에 최대 두 뭉치 */
+  if(O.arwait){ for(let k=0;k<AR_WAIT_MAX;k++) if(Math.random()<O.arwait) placeFar(g,"arwait") }   /* 대기실 — 한 번에 최대 셋 */
 }
+/* 대기실 — 한 번에 최대 셋, 날이 밝으면 잘 다시 선다 (사용자 2026-11-04 「재생성 가능성 높음」 — 셋보다 적으면 70%) */
+const AR_WAIT_MAX=3, AR_WAIT_NEW=0.7;
+function arWaitNewDay(){
+  if(typeof onArena!=="function"||!onArena()||!run.grid) return;
+  const n=run.grid.reduce((a,row)=>a+row.filter(x=>x.t==="arwait").length,0);
+  if(n>=AR_WAIT_MAX||Math.random()>=AR_WAIT_NEW) return;
+  const p=placeFar(run.grid,"arwait"); if(p&&typeof MAP_BORN!=="undefined") MAP_BORN.push(p.r+"-"+p.c) }
+/* 날이 밝을 때 — nextDay 가 부른다 */
+function arenaNewDay(){ betNewDay(); arWaitNewDay() }
 /* 관중석 — 빈 칸 4~6 이 이어진 뭉치 (일자든 사각이든). 칸이 아니라 빈 칸의 표시(cell.crowd)다 — 간수 순찰로처럼 */
 function crowdPlace(g){
   const S=g.length, free=(r,c)=>r>=0&&c>=0&&r<S&&c<S&&g[r][c].t==="empty"&&!g[r][c].stair&&!g[r][c].crowd&&r<S-1&&r>0;
@@ -41243,7 +41310,7 @@ const BET_DESC={"유망주":"관중의 환호를 이용해서 배당률을 높�
 const BET_ROWS={
   "유망주":[
     {id:"cheat",n:"부정 행위",q:"배당: 부정 행위"},
-    {id:"attention",n:"관심 끌기",d:"관중의 환호가 5 증가합니다. 승률이 5% 상승합니다.",cheer:5,up:5,cap:3},
+    {id:"attention",n:"관심 끌기",d:"관중의 환호가 5 상승합니다. 승률이 5% 상승합니다.",cheer:5,up:5,cap:3},
     {id:"roar",n:"폭발적인 환호",d:"관중의 환호가 70 이상일때만 선택 가능합니다. 승률이 15% 상승합니다.",minCheer:70,up:15},
     {id:"practice",n:"검투 연습",q:"배당: 검투 연습"},
     {id:"check",n:"상대 견제",q:"배당: 상대 견제"}],
@@ -41378,6 +41445,11 @@ const AR_PACTS=[
   {id:"wrath",t:"분노의 계약",d:"모든 대원의 최대 체력이 30% 감소합니다. 사탄의 최대 체력이 30% 감소합니다.",
     f:()=>{ run.heroes.forEach(h=>addMaxHp(h,-Math.round(h.maxHp*0.3),"분노의 계약")) }}];
 Object.assign(GIM_EV,{
+  arwait:(cell,r,c)=>({n:"대기실",art:"",face:"패배한 검투사",gim:1,t:"휴식하고 관중의 흥분을 잠재우세요.",
+    o:[{t:"대기",d:"관중의 환호가 20 감소합니다. 체력을 10% 회복합니다.",end:1,
+        f:()=>{ cheerAdd(-20,"대기"); run.heroes.forEach(h=>{ if(!h.down) healUp(h,Math.round(h.maxHp*0.1)) }); gimBreak(cell,r,c);
+          return "관중의 환호가 20 감소했습니다. 체력을 10% 회복했습니다." }},
+       {t:"나가기",d:"1칸 이내의 무작위 위치로 이동",leave:1,f:()=>{ gimPush(r,c,["wall","boss"]); return "" }}]}),
   arvip:(cell,r,c)=>cell.vipIn
     ?{n:"귀빈석",art:"",face:"유망주",gim:1,t:"투기장의 귀빈을 위한 자리입니다.",
       o:[{t:"극적인 검투",d:"모든 추가 능력치를 3 얻은 상태로 2라운드 정예 전투를 진행합니다. 전투에서 승리하면 상급 보상이 주어집니다.",
@@ -41410,8 +41482,99 @@ Object.assign(GIM_EV,{
         return {t:P.t,d:P.d,end:1,f:()=>{ P.f(); (run.arPact=run.arPact||[]).push(id); run.arPactF=run.field; gimBreak(cell,r,c);
           return `${P.t}에 서명했습니다.` }} })} }
 });
+/* ═══════════ 광기의 투기장 우두머리 — 사탄 · 분노의 대군주 (사용자 2026-11-04) ═══════════
+   적 표는 src/rules/foes.js 의 「사탄」 · 「분노의 대군주」. 여기는 두 몸이 쓰는 셈만.
+   · 강림 / 해제 — 환호가 100 인 채로 **내 턴이 끝나면**(arenaTurnEnd) 환호를 모두 쓰고 다른 몸이 된다.
+     체력 · 추가 능력치는 그대로 옮긴다 (사용자 주석). 대군주는 2칸을 차지한다.
+   · 계약 탁자(src/rules/arena-gim.js)의 사탄 쪽 몫 — run.arPact 를 전투 머리에 읽는다.
+   ⚠️ 자세 : 대군주의 날개 막기 → 막기(guard), 포효 → 포효(roar). 사탄은 기본 · 공격 · 피격 셋뿐 */
+const SATAN="사탄", OVERLORD="분노의 대군주";
+const satanIs=f=>!!(f&&f.alive&&(f.name===SATAN||f.name===OVERLORD));
+/* 의도에 잡힌 대상 — 없으면 무작위 대원 */
+function arIntentTarget(f,I,heroOnly){
+  const L=allUnits().filter(u=>u.hp>0&&!stopped(u)&&(!heroOnly||!u.isMin));
+  return (I&&I.toId&&L.find(u=>uid(u)===I.toId))||(L.length?rnd(L):null) }
+/* 우두머리가 제 발로 옮긴다 — foeStep 은 우두머리 · 두 칸 몸을 못 옮겨서 따로 (dir −1 앞 · +1 뒤) */
+function arBossMove(f,dir,n){
+  const w=f.big?2:1; let moved=0;
+  for(let q=0;q<(n||1);q++){ const to=f.slot+dir;
+    if(to<1||to+w-1>SLOTS) break;
+    const c=dir<0?to:to+w-1, x=foeAt(c); if((x&&x!==f)||wreckAt(c)) break;
+    f.slot=to; moved++ }
+  if(moved){ fx({side:"foe",slot:f.slot,s:"step",ring:"#9c8d77",gap:160}); say(`${f.name} ${dir<0?"전진":"후퇴"} → ${foeNo(f.slot)}번`); foeMoved(f) }
+  return moved }
+/* 몸을 바꾼다 — 체력 · 추가 능력치 · 상태는 그대로, 사거리 · 몸집 · 충전만 새 몸의 것 */
+function arMorph(f,to,why){
+  const D=FOE[to]; if(!f||!D) return;
+  const was=f.name; f.name=to; f.rng=D.rng; f.big=D.big?1:0; f.chg=0; f.arRoarPick=0; f.intent=null;
+  if(f.big&&f.slot+1>SLOTS) f.slot=SLOTS-1;
+  f.roarNext=to===OVERLORD?1:0;   /* 변신 직후 — 포효 */
+  fx({side:"foe",slot:f.slot,s:"boom",quake:1,ring:to===OVERLORD?"#c0302a":"#8f5fd0",glow:1,txt:why,cls:"crit",gap:520});
+  if(to===OVERLORD) fx({side:"foe",slot:f.slot,pose:"roar",gap:300});
+  say(`${why} — ${was}${jo(was,"ig")} ${to}${to===OVERLORD?"로 변신합니다!":"으로 돌아갑니다."}`,"t1") }
+/* 내 턴이 끝날 때 — 환호 100 이면 몸을 바꾼다 (arenaTurnEnd) */
+function satanTurnEnd(){
+  if(!B||B.over||cheerNow()<CHEER.max) return;
+  const f=B.foes.find(x=>satanIs(x)); if(!f) return;
+  const p=foePas(f,"arRise")||foePas(f,"arUnrise"); if(!p) return;
+  cheerAdd(-cheerNow(),p.n,f);
+  arMorph(f,f.name===SATAN?OVERLORD:SATAN,p.n);
+  try{ rollIntents(true) }catch(e){} }
+/* 전투 머리 — 계약 탁자의 사탄 쪽 몫 (사용자 2026-11-03 계약 다섯) */
+function satanStart(){
+  const f=B&&B.foes.find(x=>satanIs(x)); if(!f) return;
+  const P=(run&&run.arPact)||[]; if(!P.length) return;
+  const base=f.maxHp, L=[];
+  let mx=base;
+  if(P.indexOf("blood")>=0){ mx+=100; L.push("최대 체력 +100") }
+  if(P.indexOf("wrath")>=0){ mx-=Math.round(base*0.3); L.push("최대 체력 −30%") }   /* 합연산 — 밑값의 30% */
+  if(mx!==base){ f.maxHp=Math.max(1,mx); f.hp=f.maxHp }
+  if(P.indexOf("power")>=0){ f.atk+=2; f.atkUp=(f.atkUp||0)+2; L.push("추가 공격력 +2") }
+  if(P.indexOf("greed")>=0){ cheerAdd(50,"탐욕의 계약",f); L.push("환호 +50") }
+  if(L.length) say(`계약 — ${f.name} ${L.join(", ")}`,"t1");
+  if(P.indexOf("wealth")>=0&&f.name===SATAN){ arMorph(f,OVERLORD,"재물의 계약"); try{ rollIntents(true) }catch(e){} } }
+/* 기술 — arenaSkPre2 머리에서. 참이면 그 기술은 여기서 끝 */
+function satanSkPre(f,s,I){
+  if(s.arRoarSk) f.roarNext=0;
+  if(s.chg&&f.name===OVERLORD) f.arRoarPick=Math.random()<0.5?1:0;   /* 충전이 차면 군중심리 · 포효 중 하나 */
+  if(s.lantern){ const t=arIntentTarget(f,I,1); if(!t){ say(`${s.n} — 대상이 없습니다.`,"t2"); return true }
+    const had=deb(t,"exec")>0; addDeb(t,"exec",s.lantern.exec,f);
+    if(had) cheerAdd(s.lantern.cheer,s.n,f);
+    say(`${s.n} — ${t.name}에게 처형 ${s.lantern.exec}${had?" (이미 처형이 있어 환호 +"+s.lantern.cheer+")":""}`,"t3");
+    return true }
+  if(s.arStar){ const t=arIntentTarget(f,I,1); if(t){ addDeb(t,"star",s.arStar,f); say(`${s.n} — ${t.name}${jo(t.name,"ig")} 지목되었습니다. 이번 라운드 동안 받는 피해 +${s.arStar}`,"t3") }
+    return true }
+  if(s.duelPick){ const L=shuffled(onField().filter(h=>h.hp>0&&!h.isMin&&!stopped(h))).slice(0,2);
+    if(L.length<2){ say(`${s.n} — 지명할 대원이 모자랍니다.`,"t2"); return true }
+    const [a,b]=L, t=a.slot; a.slot=b.slot; b.slot=t;
+    L.forEach(u=>{ fx({side:"mine",slot:u.slot,s:"step",ring:"#9c8d77",txt:"자리 바꿈",cls:"moved",gap:90}); addDeb(u,"wound",1,f) });
+    say(`${s.n} — ${a.name}${jo(a.name,"gwa")} ${b.name}의 자리가 바뀝니다.`,"t3");
+    return true }
+  if(s.arWander){ const n=1+Math.floor(Math.random()*s.arWander), d=Math.random()<0.5?-1:1;
+    if(!arBossMove(f,d,n)) arBossMove(f,-d,n) }
+  if(s.arBack) arBossMove(f,+1,s.arBack);
+  if(s.arRush){ fx({side:"foe",slot:f.slot,pose:"atk",gap:0}); arBossMove(f,-1,SLOTS);
+    const v=skDmg(f,{dmg:s.arRush.dmg,n:s.n}), L=allUnits().filter(u=>u.hp>0&&!stopped(u)&&dist(u.slot,f.slot)<=foeRng(f));
+    if(!L.length){ say(`${s.n} — 사거리 안에 대상이 없습니다.`,"t2"); return true }
+    L.forEach(u=>{ asSrc(f,()=>hurtAlly(f,u,v,s.n,"공격")); if(u.hp>0) addDeb(u,"wound",s.arRush.wound||1,f) });
+    return true }
+  if(s.arAtk){ f.atk+=s.arAtk; f.atkUp=(f.atkUp||0)+s.arAtk;
+    fx({side:"foe",slot:f.slot,s:"buffup",ring:"#e0705a",glow:1,txt:"공격력 +"+s.arAtk,cls:"buf",gap:160}); say(`${s.n} — ${f.name} 공격력 +${s.arAtk}`,"t2"); return true }
+  if(s.arMag){ f.mag=(f.mag||0)+s.arMag; f.magUp=(f.magUp||0)+s.arMag;
+    fx({side:"foe",slot:f.slot,s:"buffup",ring:"#8f5fd0",glow:1,txt:"마법력 +"+s.arMag,cls:"buf",gap:160}); say(`${s.n} — ${f.name} 마법력 +${s.arMag}`,"t2"); return true }
+  return false }
+/* 맞은 대상마다 (arenaSkHit) — 양옆 · 맞힌 수만큼 환호 */
+function satanSkHit(f,s,t){
+  if(s.sides&&t){ const v=skDmg(f,s);
+    allUnits().filter(u=>u!==t&&u.hp>0&&!stopped(u)&&Math.abs(u.slot-t.slot)===1).forEach(u=>asSrc(f,()=>hurtAlly(f,u,v,s.n,"마법"))) }
+  if(s.cheerPerHit&&t) cheerAdd(s.cheerPerHit,s.n,f,1) }
+Object.assign(SK_COND,{
+  heroPair: f=>onField().filter(h=>h.hp>0&&!h.isMin&&!stopped(h)).length>=2,
+  arRoar:   f=>!!f.roarNext||((f.chg||0)>=chgMax(f)&&!!f.arRoarPick),
+  arCrowd:  f=>!f.roarNext&&(f.chg||0)>=chgMax(f)&&!f.arRoarPick
+});
 /* ═══════════ 배당판 화면 (광기의 투기장 전용 구역, 사용자 2026-11-03) ═══════════
-   규칙(승률 · 배팅 · 개입 · 결과)은 src/rules/arena-gim.js 가 쥔다 — 여기는 그리기와 연출만.
+   규칙(승률 · 배당금 · 개입 · 결과)은 src/rules/arena-gim.js 가 쥔다 — 여기는 그리기와 연출만.
    **사건 기록판 꼴 그대로** (사용자 2026-11-03 「지피티스러운 연출 · 버튼 상자 말고 내 게임 식으로」) —
    그림 틀(.evart.wide) 안에 투기장 · 두 검투사 · 교차 검, 그 아래 제목 · 설명 · 구분선, 선택지는 .choice 행.
    장소 판의 꾸밈(p-relic)을 그대로 입는다 — map-shutter 의 drawPlace 가 arbet 를 relic 꼴로 깐다.
@@ -41478,7 +41641,7 @@ function betBody(box){
   if(b.ph==="bet"){
     BET_STAKE=Math.max(1,Math.min(run.gold,BET_STAKE));
     const R=betRewardPreview(BET_STAKE);
-    D.innerHTML=P([`${esc(b.hero)}에게 금화를 겁니다. 이기면 배팅 금화의 2배를 받습니다.`])
+    D.innerHTML=P([`${esc(b.hero)}에게 금화를 겁니다. 이기면 배당금의 2배를 받습니다.`])
       +(run.gold<1?P(["걸 금화가 없습니다."]):`<p class="evp abstake"><a class="mn">◀</a> 금화 <b>${BET_STAKE}</b> <a class="pl">▶</a></p>`);
     if(run.gold>=1){
       const set=n=>{ BET_STAKE=Math.min(run.gold,Math.max(1,n)); SFX.play("tock"); betBody(box) };
@@ -41488,7 +41651,7 @@ function betBody(box){
     betOpt(row,"나가기",null,betLeave) }
   if(b.ph==="manage"){
     const left=Math.max(0,b.start+2-run.day);
-    D.innerHTML=P([`${b.start+2}일차에 결과가 정해집니다. (${left}일 남음)`, `배팅 금화 ${b.stake}개`]);
+    D.innerHTML=P([`${b.start+2}일차에 결과가 정해집니다. (${left}일 남음)`, `배당금 금화 ${b.stake}개`]);
     b.rows.map(id=>betRow(id)).filter(Boolean).forEach(x=>{
       const why=betWhy(x), cnt=!x.q&&x.cap>1?` (오늘 ${b.used[x.id]||0}/${x.cap})`:"";
       betOpt(row,x.n+cnt,x.q?betQRow(x,b):x.d,()=>betActUI(box,x.id),why) });
@@ -41504,7 +41667,7 @@ function betBody(box){
     const R=b.rew||{};
     D.innerHTML=P(b.win?[`${esc(b.hero)}의 승리. 당신이 건 믿음이 돌아왔습니다.`,
         `금화 ${R.gold}, 중급 보상 ${R.mid}개${R.high?", 상급 보상 1개":""}, 무작위 보상 ${R.rand}개`]
-      :[`${esc(b.hero)}의 패배. 배팅한 금화 ${b.stake}개를 잃었습니다.`]);
+      :[`${esc(b.hero)}의 패배. 배당금 금화 ${b.stake}개를 잃었습니다.`]);
     betOpt(row,b.win?"보상 받기":"나가기",null,b.win?()=>betTakeUI(box):betLeave) }
 }
 async function betChooseUI(box,n){
@@ -41786,7 +41949,7 @@ function skRoll(f,allies,inR,far){
 const FUEL_NAME="연료 장치", DIRECTOR_NAME="실험 책임자";
 function mapBossSeed(grid){let seed=2166136261;const text=JSON.stringify(grid);for(let i=0;i<text.length;i++)seed=Math.imul(seed^text.charCodeAt(i),16777619)>>>0;return seed}
 /* 1막은 변형마다 우두머리가 다르다 (ACT1.boss) — 없으면 예전 길(run.prisonBoss)과 BOSSES (2026-10-21) */
-function expeditionBoss(fi){ return (fi===0&&(act1Of("boss")||(run&&run.prisonBoss)))||BOSSES[fi] }
+function expeditionBoss(fi){ return (fi===0&&(act1Of("boss")||(run&&run.prisonBoss)))||(fi===1&&typeof actOf==="function"&&actOf("boss",1))||BOSSES[fi] }   /* 2막 변형의 우두머리 (광기의 투기장 — 사탄) */
 function fuelDevices(){ return B.foes.filter(x=>x.name===FUEL_NAME) }
 /* 지금 살아 있는 장치의 몫만 교체한다. 파괴할 때 얻는 영구 분노와 따로 센다. */
 function fuelPowerSync(){
