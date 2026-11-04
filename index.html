@@ -26864,6 +26864,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 365, "v": "0.7", "d": "2026-11-04", "t": "투기장 효과음 넷째 묶음", "big": 0},
  {"b": 364, "v": "0.7", "d": "2026-11-04", "t": "검투사 부활 · 입장 · 사탄 피해 · 죽음 소리", "big": 0},
  {"b": 363, "v": "0.7", "d": "2026-11-04", "t": "강림 · 해제 소리", "big": 0},
  {"b": 362, "v": "0.7", "d": "2026-11-04", "t": "대군주 공격 · 날개 감싸기 소리", "big": 0},
@@ -28420,7 +28421,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=364;
+const BUILD_NO=365;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -41010,7 +41011,7 @@ function judgeTurnEnd(){
     let I=null; for(const o of shuffled(pool)){ I=arIntent(f,o.i); if(I) break }
     f.intent=I||{t:"wait"};
     const line=rnd(JUDGE_LINES[st]);
-    fx({side:"foe",slot:f.slot,fn:()=>{ if(typeof arJudgeSay==="function") arJudgeSay(f,`${sc}/10 ${line}`) },gap:0});
+    fx({side:"foe",slot:f.slot,s:sfxOr(sc>=6?"채점 결과 높음":"채점 결과 낮음",null),fn:()=>{ if(typeof arJudgeSay==="function") arJudgeSay(f,`${sc}/10 ${line}`) },gap:0});   /* 6점부터 높음 */
     say(`${f.name} — ${j.got}/${j.goal}, ${sc}/10점. 「${line}」`,"t1") }) }
 
 /* ── 유망주 — 도전장 · 투기장의 노예 ── */
@@ -41062,7 +41063,8 @@ Object.assign(SK_COND,{
 });
 
 /* 기술에 붙은 녹음 — 「적 이름 기술 이름」 → 열쇠말 (풀려난 야수에게도 포효가 있어 이름까지 본다, 사용자 2026-11-04) */
-const AR_SK_SND={"나팔꾼 팡파르":"나팔꾼 팡파르","광기의 관중단 광란의 합창":"광기의 관중단 합창","피 웅덩이 피 빨기":"피 빨기","분노의 대군주 포효":"분노의 대군주 포효","분노의 대군주 날개 감싸기":"분노의 대군주 날개 감싸기"};
+const AR_SK_SND={"나팔꾼 팡파르":"나팔꾼 팡파르","광기의 관중단 광란의 합창":"광기의 관중단 합창","피 웅덩이 피 빨기":"피 빨기","분노의 대군주 포효":"분노의 대군주 포효","분노의 대군주 날개 감싸기":"분노의 대군주 날개 감싸기",
+  "거울 검투사 되비추기":"거울 되비추기","기침하는 관중 재채기":"역병 재채기","종지기 종 울리기":"종지기 종 울리기"};
 /* ── 적 기술 — skExec0 가 대상을 잡기 **전에** 부른다. 참을 돌려주면 그 기술은 여기서 끝난다 ── */
 function arenaSkPre(f,s,I){
   if(s.atkPose===undefined&&s.pose&&!s.dmg) fx({side:"foe",slot:f.slot,pose:s.pose,gap:0});
@@ -41098,7 +41100,7 @@ function arenaSkPre(f,s,I){
     const L=F.concat(H), t=L.length?rnd(L):null;
     if(!t){ say(`${s.n} — 잡아먹을 것이 없습니다.`,"t2"); return true }
     const foeT=B.foes.indexOf(t)>=0, left=Math.max(0,t.hp);
-    fx({side:"foe",slot:f.slot,pose:"fed",s:"chomp",quake:1,gap:0});
+    fx({side:"foe",slot:f.slot,pose:"fed",s:sfxOr("삼키기","chomp"),quake:1,gap:0});
     fx({side:foeT?"foe":"mine",slot:t.slot,ring:"#a04040",txt:"잡아먹힘",cls:"crit",gap:360});
     if(foeT){ t.hp=0; t.alive=0; t.wreck=0; t.riseAt=0; t.expTaken=1; t.eaten=1; t.dieHold=Date.now();
       fx({side:"foe",slot:t.slot,dieDone:t,gap:0}) }
@@ -41144,7 +41146,7 @@ function arenaSkPre(f,s,I){
     B.duel={hero:uid(t),foe:f.id,need:s.challenge.need||100,got:0}; f.duelOn=1;
     allUnits().forEach(u=>{ if(u!==t&&u.hp>0&&!(u.stop>0)){ u.stop=99; u.duelStop=1 } });
     B.foes.forEach(x=>{ if(x!==f&&x.alive&&!(x.stop>0)){ x.stop=99; x.duelStop=1; x.intent={t:"wait"} } });
-    fx({gap:600});
+    fx({side:"foe",slot:f.slot,s:sfxOr("도전장",null),gap:600});
     say(`${s.n} — ${t.name}${jo(t.name,"ig")} 지목되었습니다! ${f.name}에게 피해를 ${B.duel.need} 줄 때까지 다른 모두가 정지합니다.`,"t1");
     return true }
   if(s.bell){ fx({side:"foe",slot:f.slot,pose:"roar",fn:()=>{ try{ if(typeof fieldQuake==="function") fieldQuake("quakeB") }catch(e){} },gap:0});
