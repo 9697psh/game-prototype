@@ -26864,6 +26864,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 363, "v": "0.7", "d": "2026-11-04", "t": "강림 · 해제 소리", "big": 0},
  {"b": 362, "v": "0.7", "d": "2026-11-04", "t": "대군주 공격 · 날개 감싸기 소리", "big": 0},
  {"b": 361, "v": "0.7", "d": "2026-11-04", "t": "광기의 투기장 효과음", "big": 0},
  {"b": 360, "v": "0.7", "d": "2026-11-04", "t": "광기의 관중단 128px 재작화", "big": 0},
@@ -28418,7 +28419,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=362;
+const BUILD_NO=363;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -36046,8 +36047,8 @@ function arShake(big){ if(shutReduce()) return; const b=document.body; clearTime
   b.classList.add("shakeall"); if(big) b.classList.add("shakebig");
   AR_SHAKE_T=setTimeout(()=>b.classList.remove("shakeall","shakebig"),big?1000:640) }
 /* 땅이 쿵 — 큰 흔들림 · 충격파 · 먼지 · 불티 · 가장자리 빛. p 는 발밑 근처 */
-function arImpact(p,color,big){ arShake(big); try{ if(p) quakeFX(p) }catch(e){} try{ fieldQuake("quakeB") }catch(e){} try{ edgeGlow(color) }catch(e){}
-  try{ if(p){ sparks(p,"#c9a227",big?10:6); if(big) sparks(p,"#c7452f",8) } }catch(e){} try{ SFX.play("boom") }catch(e){} }
+function arImpact(p,color,big,quiet){ arShake(big); try{ if(p) quakeFX(p) }catch(e){} try{ fieldQuake("quakeB") }catch(e){} try{ edgeGlow(color) }catch(e){}
+  try{ if(p){ sparks(p,"#c9a227",big?10:6); if(big) sparks(p,"#c7452f",8) } }catch(e){} if(!quiet) try{ SFX.play("boom") }catch(e){} }   /* quiet — 전용 녹음이 그 자리를 맡을 때 */
 /* 전투 중 변신 — 판을 어둡게 해 몸에 모으고(PHFOCUS, 우두머리 단계 전환과 같은 길) 띠의 칸에 맞춰 흔든다.
    강림은 날개가 터지는 칸(1315ms)이, 해제는 사슬을 되찾는 칸(1210ms)이 절정. 판은 멈추지 않는다 */
 function arMorphFX(f,up,ms){
@@ -36056,12 +36057,15 @@ function arMorphFX(f,up,ms){
   const at=(t,fn)=>setTimeout(()=>{ if(B===B0&&B&&!B.over) try{ fn() }catch(e){} },Math.round(t*K));
   const P=()=>{ const c=ctrOf("foe",f.slot); return c?{x:c.x,y:c.y+40,e:c.e}:null };
   setTimeout(()=>{ if(PHFOCUS&&PHFOCUS.id===f.id){ PHFOCUS=null; phFocusApply() } },total);
-  try{ const k=up?"사탄 강림":"분노의 대군주 해제"; if(sfxHas(k)) SFX.play(k) }catch(e){}
+  const k0=up?"사탄 강림":"분노의 대군주 해제", own=sfxHas(k0);
+  /* 녹음의 가장 큰 자리를 화면 절정에 맞춘다 — 강림 녹음은 0.1~0.4초가 정점이라 1초 늦게 튼다 (날개가 터지는 칸 1315ms) · 해제는 2.1초가 정점이라 흔들림을 그리로 */
+  if(own&&!up) try{ SFX.play(k0) }catch(e){}
   if(up){ [480,840,1125].forEach(t=>at(t,()=>fieldQuake("quake")));
-    at(1315,()=>{ arImpact(P(),"rgba(199,69,47,.7)",1) });
+    if(own) at(1000,()=>SFX.play(k0));
+    at(1315,()=>{ arImpact(P(),"rgba(199,69,47,.7)",1,own) });
     at(1705,()=>pulseFX("foe",f.slot,"#c0302a",3,1)) }
   else { [270,640].forEach(t=>at(t,()=>fieldQuake("quake")));
-    at(1210,()=>{ arImpact(P(),"rgba(142,91,208,.6)",0); pulseFX("foe",f.slot,"#8f5fd0",3,1) }) } }
+    at(own?2050:1210,()=>{ arImpact(P(),"rgba(142,91,208,.6)",0,own); pulseFX("foe",f.slot,"#8f5fd0",3,1) }) } }
 function satanEntranceFX(){
   if(typeof document==="undefined"||(typeof hasScreen==="function"&&!hasScreen())) return;
   if(!B||view!=="battle"||!run||run.sandbox||run.satanIn) return;
