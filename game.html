@@ -20963,7 +20963,7 @@ const FOE={
     {n:"손톱 돌진",w:3,tg:"none",arStrike:1,arRush:{dmg:8,wound:1},cheerUp:20,d:"가장 앞으로 이동하고 사거리 내의 모든 대상에게 공격 피해를 8 주고 상처를 남깁니다. 환호가 20 상승합니다."},
     {n:"날개 감싸기",w:2,tg:"none",cond:"chgIdle",chg:1,halfNext:1,arBack:4,pose:"guard",cheerUp:20,d:"뒤로 최대 4칸 이동합니다. 1턴 동안 충전하고 받는 피해가 50% 감소합니다. 환호가 20 상승합니다."},
     {n:"군중심리",w:9,tg:"all",anyRng:1,heroOnly:1,dmg:1,hits:4,cond:"arCrowd",must:1,spend:1,d:"모든 대원에게 공격 피해를 1씩 4번 줍니다."},
-    {n:"포효",w:9,tg:"all",anyRng:1,heroOnly:1,deb:{fear:1,dmgDn:3},cond:"arRoar",must:1,spend:1,pose:"roar",arRoarSk:1,d:"모든 대원에게 공포 1과 다음 턴 동안 피해량을 3 감소시킵니다."},
+    {n:"포효",w:9,tg:"all",anyRng:1,heroOnly:1,deb:{fear:1,dmgDn:3},cond:"arRoar",must:1,spend:1,pose:"roar",arRoarSk:1,noAct:1,d:"모든 대원에게 공포 1과 다음 턴 동안 피해량을 3 감소시킵니다."},
     {n:"지배 계획",w:2,tg:"self",arMag:3,cheerUp:40,d:"마법력을 3 얻습니다. 환호가 40 상승합니다."},
     {n:"박수를 쳐라",w:2,tg:"self",arWander:3,shield:15,cheerUp:10,d:"최대 3칸 이동합니다. 보호막을 15 얻습니다. 환호가 10 상승합니다."}],
    hit:"할퀴기"},
@@ -26864,6 +26864,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 361, "v": "0.7", "d": "2026-11-04", "t": "광기의 투기장 효과음", "big": 0},
  {"b": 360, "v": "0.7", "d": "2026-11-04", "t": "광기의 관중단 128px 재작화", "big": 0},
  {"b": 359, "v": "0.7", "d": "2026-11-04", "t": "페블 감소 — 밀려난 뒤 적용", "big": 0},
  {"b": 358, "v": "0.7", "d": "2026-11-04", "t": "페블 휘두르기 감소 디버프", "big": 0},
@@ -28416,7 +28417,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=360;
+const BUILD_NO=361;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -40952,7 +40953,7 @@ function trapCheck(){
   B.traps.slice().forEach(tr=>{
     const u=allUnits().find(x=>x.hp>0&&x.slot===tr.slot&&!stopped(x)); if(!u) return;
     B.traps=B.traps.filter(x=>x!==tr);
-    fx({side:"mine",slot:tr.slot,fn:()=>{ if(typeof arTrapShutFX==="function") arTrapShutFX(tr.slot) },s:sfxOr("속박","deb"),gap:520});
+    fx({side:"mine",slot:tr.slot,fn:()=>{ if(typeof arTrapShutFX==="function") arTrapShutFX(tr.slot) },s:sfxOr("덫 발동",sfxOr("속박","deb")),gap:520});
     say(`덫이 닫힙니다! ${u.name}${jo(u.name,"ig")} 덫에 걸렸습니다.`,"t1");
     addDeb(u,"bind",1,null); addDeb(u,"wound",1,null) }) }
 function trapMoveAll(){
@@ -41054,10 +41055,13 @@ Object.assign(SK_COND,{
   hurtSelf:  f=>f.hp<f.maxHp
 });
 
+/* 기술에 붙은 녹음 — 「적 이름 기술 이름」 → 열쇠말 (풀려난 야수에게도 포효가 있어 이름까지 본다, 사용자 2026-11-04) */
+const AR_SK_SND={"나팔꾼 팡파르":"나팔꾼 팡파르","광기의 관중단 광란의 합창":"광기의 관중단 합창","피 웅덩이 피 빨기":"피 빨기","분노의 대군주 포효":"분노의 대군주 포효"};
 /* ── 적 기술 — skExec0 가 대상을 잡기 **전에** 부른다. 참을 돌려주면 그 기술은 여기서 끝난다 ── */
 function arenaSkPre(f,s,I){
   if(s.atkPose===undefined&&s.pose&&!s.dmg) fx({side:"foe",slot:f.slot,pose:s.pose,gap:0});
   if(f.name==="호객꾼"&&typeof foeBark==="function") foeBark(f,"atk");   /* 말이 많다 — 행동할 때마다 (사용자) */
+  { const k=AR_SK_SND[f.name+" "+s.n]; if(k&&sfxHas(k)) fx({side:"foe",slot:f.slot,s:k,gap:0}) }
   if(s.cheerUp) cheerAdd(s.cheerUp,s.n,f);
   if(arenaSkPre2(f,s,I)) return true;   /* 둘째 목록 · 우두머리 */
   if(s.cheerTake){ const v=Math.min(s.cheerTake,cheerNow());
@@ -41074,7 +41078,7 @@ function arenaSkPre(f,s,I){
   if(s.trapSet){ const L=trapFree();
     if(L.length){ const sl=rnd(L); (B.traps=B.traps||[]).push({slot:sl,at:Date.now()});
       fx({side:"foe",slot:f.slot,pose:"atk",gap:0});
-      fx({side:"mine",slot:sl,fn:()=>{ if(typeof arTrapSetFX==="function") arTrapSetFX(sl) },gap:420});
+      fx({side:"mine",slot:sl,s:sfxOr("덫 설치",null),fn:()=>{ if(typeof arTrapSetFX==="function") arTrapSetFX(sl) },gap:420});
       say(`${s.n} — 대원 전장 ${sl}번 칸에 덫이 놓입니다.`,"t3") }
     else say(`${s.n} — 덫을 놓을 빈 칸이 없습니다.`,"t2");
     return true }
@@ -41209,7 +41213,7 @@ function arenaDeathKind(f,d){
   if(d.kind==="killerDeb"){ const by=B.lastAttacker;   /* 처치한 대상에게 (기침하는 관중) */
     if(by&&by.hp>0&&B.foes.indexOf(by)<0) Object.keys(d.deb||{}).forEach(k=>addDeb(by,k,d.deb[k],f)); return true }
   if(d.kind==="execAll"){ const v=(d.v||20)+(f.execUp||0);   /* 모든 대상 — 적과 대원 모두 (부풀어오른 검투사) */
-    fx({side:"foe",slot:f.slot,s:"boom",quake:1,ring:"#8a1c1c",txt:"처형 "+v,cls:"crit",gap:260});
+    fx({side:"foe",slot:f.slot,s:sfxHas("부풀어오른 검투사_죽음")?null:"boom",quake:1,ring:"#8a1c1c",txt:"처형 "+v,cls:"crit",gap:260});   /* 터지는 소리는 죽음 소리(deathSnd)가 낸다 */
     allUnits().filter(u=>u.hp>0).forEach(u=>addDeb(u,"exec",v,f)); B.foes.filter(x=>x.alive&&x!==f).forEach(x=>addDeb(x,"exec",v,f));
     say(`${d.n||"죽음"} — 모든 대상에게 처형 ${v}`,"t1"); return true }
   if(d.kind==="woundAll"){ allUnits().filter(u=>u.hp>0).forEach(u=>addDeb(u,"wound",d.v||1,f));
@@ -42666,7 +42670,7 @@ function skExec0(f,I){
   if(s.rngUp){ f.rng=(f.rng||0)+s.rngUp;   /* 공격 범위가 늘어난다 — 1세대 돌보미 준비 */
     fx({side:"foe",slot:f.slot,s:"buffup",ring:"#5fd8cf",txt:"공격 범위 +"+s.rngUp,cls:"buf",gap:90});
     say(`${s.n} — ${f.name} 공격 범위 +${s.rngUp} (${f.rng})`,"t3") }
-  { const k=foeSnd(f,"행동"); if(k) SFX.play(k) }   /* 「<이름> 행동」 녹음이 있으면 수를 쓸 때마다 (2026-10-21) */
+  { const k=!s.noAct&&foeSnd(f,"행동"); if(k) SFX.play(k) }   /* 「<이름> 행동」 녹음이 있으면 수를 쓸 때마다 (2026-10-21) */
   if(s.scBeam&&!s.dmg) try{ scrapBeamFX(f.slot) }catch(e){ console.error(e) }   /* 분해 빔 (2026-10-21) — 때리는 빔(분해 광선)은 아래에서 타마다 */
   if(s.eshDump){                       /* 에너지 보호막을 모두 쏟아 그만큼 — 1세대 돌보미 에너지 전환 */
     const v=f.eshield||0; f.eshield=0;
