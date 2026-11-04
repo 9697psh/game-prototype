@@ -6263,6 +6263,11 @@ body.vmap #app>.toast{position:absolute;top:8px;left:50%;transform:translateX(-5
 /* 폭 — 칸 간격(칸 폭의 74%)보다 좁게, 칸 폭의 68% (= .ublw 의 57%). 붙어 선 둘의 막대가 겹치지 않는다 (사용자 2026-10-30).
    자리 번호(.no)는 막대 바로 왼쪽 바깥에 — 막대 위에 얹히지 않게 */
 .bfstage .ublw .bar{width:57%}
+/* 대원 상태창 체력 — 전투 체력 막대와 같은 틀 · 눈금 · 하트 (사용자 2026-11-04) */
+.ledger .mcards .mcard .mcb.hp,.mcard .mcb.hp{height:16px;min-height:16px;border-width:4px 6px;border-image:url("map/체력-틀.png") 4 8 4 8 fill / 4px 8px 4px 8px round;overflow:visible}
+.mcard .mcb.hp::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(90deg,transparent 0 10px,rgba(31,20,13,.75) 10px 11px,rgba(228,205,157,.31) 11px 12px)}
+.mcard .mcb.hp span{inset:auto;left:50%;top:50%;transform:translate(-50%,-50%);z-index:1;font-size:12px;line-height:14px;display:flex;align-items:center;gap:3px;color:#f0e2c4;text-shadow:0 1px 0 #000,0 0 4px #000;background:rgba(0,0,0,.6);padding:0 7px;border-radius:3px;white-space:nowrap}
+.mcard .mcb.hp span img.ri,.mcard .mcb.hp span svg{width:11px;height:11px}
 .bfstage .slot .no{right:calc(50% + 38px);top:calc(100% + 22px);bottom:auto}   /* 수치판(67px) 바로 왼쪽 */
 .bfstage .slot.t-boss .no{right:calc(50% + 60px);top:calc(100% + 28px)}
 /* 우두머리 — 틀 176×20, 홈 148×10 (14,5). 채움은 세로로 10 에 맞춰 늘인다 */
@@ -26877,6 +26882,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 371, "v": "0.7", "d": "2026-11-04", "t": "대원 상태창 체력 · 풀려남 표시", "big": 0},
  {"b": 370, "v": "0.7", "d": "2026-11-04", "t": "번개 구체 · 투사체 복구 · 장소 화면 지도 · 전리품 카드 · 벨트 · 창고 전투 등", "big": 0},
  {"b": 369, "v": "0.7", "d": "2026-11-04", "t": "골렘 창조 원천 분석 곡 음량", "big": 0},
  {"b": 368, "v": "0.7", "d": "2026-11-04", "t": "페블 광맥 살피기 곡 음량", "big": 0},
@@ -28439,7 +28445,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=370;
+const BUILD_NO=371;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -30806,7 +30812,7 @@ function heroCardM(h,i){
     <div class="mca">${faceArt(h.name)}</div>
     <div class="mcn">${esc(h.name)}<i>Lv.${h.lv}</i></div>
     ${h.down?`<div class="mcs">쓰러짐</div>`:""}
-    <div class="mcb hp kw" data-kw="체력" data-tip="${h.hp}/${h.maxHp}. 0 이 되면 쓰러집니다."><u style="width:${hp}%"></u><span>${h.hp}/${h.maxHp}</span></div>
+    <div class="mcb hp kw" data-kw="체력" data-tip="${h.hp}/${h.maxHp}. 0 이 되면 쓰러집니다."><u style="width:${hp}%"></u><span>${ic("hp")}${h.hp}/${h.maxHp}</span></div>
     <div class="mcb ex kw" data-kw="경험치" data-tip="${h.exp}/${needExp(h.lv)}. 다 채우면 레벨이 오릅니다."><u style="width:${ex}%"></u><span>${h.exp}/${needExp(h.lv)}</span></div>
     ${gearRow(h)}
   </div>`);
@@ -40944,7 +40950,7 @@ const ECHO_GIFT={k:"echo",n:"메아리",kw:"메아리",d:"죽으면 절반의 �
    재는 자리 sim/probe-gears-cycle.js */
 const SOUL_SQUEEZE={k:"cycle",every:2,gain:"atk",v:2,max:24,from:0,n:"조여 오는 힘",
   d:"2턴마다 공격력을 2 얻습니다. (이 전투에서 24까지)"};
-function foePasOn(f){ const D=FOE[f.name]; const L=((D&&D.pas)||[]).filter(p=>(!p.ph||(f.ph||1)>=p.ph)&&(!p.phTo||(f.ph||1)<=p.phTo));
+function foePasOn(f){ const D=FOE[f.name]; const L=((D&&D.pas)||[]).filter(p=>(!p.ph||(f.ph||1)>=p.ph)&&(!p.phTo||(f.ph||1)<=p.phTo)&&(p.k!=="everyTwo"||f.awake));   /* 「풀려남!」은 풀려난 뒤부터 (사슬에 묶인 마귀, 사용자 2026-11-04) */
   if(f.echoGift&&!L.some(p=>p.k==="echo")) L.push(ECHO_GIFT);   /* 「갇힌 메아리」로 받은 메아리 */
   if(f.soulSq&&!L.some(p=>p.k==="cycle"&&p.gain==="atk")) L.push(SOUL_SQUEEZE);   /* 종탑의 우두머리 영혼 */
   if(f.obolShip&&typeof obolShipPas==="function") L.push(obolShipPas());   /* 오볼의 유령선 — 죽음 효과 (2026-10-31) */
