@@ -6533,6 +6533,26 @@ body.shakeall.shakebig{animation:allShakeBig .95s cubic-bezier(.3,.05,.2,1)}
 #kwtip:not(.dmgtip):not(.itemtip):not(.cargotip):not(.pkcard):not(:has(>.sktip)),#maptip,.frp{background:none;border-style:solid;border-width:14px;border-color:transparent;border-radius:0;border-image:url("ui/menu-iron-tip.png") 26 fill / 14px stretch;box-shadow:0 8px 20px rgba(0,0,0,.6)}
 #kwtip:not(.dmgtip):not(.itemtip):not(.cargotip):not(.pkcard):not(:has(>.sktip)){padding:2px 4px}
 .frp{padding:8px 10px 4px}
+
+/* 부정적 효과의 수치는 붉게 · 처형 아이콘은 크게 (사용자 2026-11-04) */
+.bfstage .bd.bd-o em{color:#ff4a3a}
+.bfstage .bd[data-kw="처형"] img.ci{width:26px;height:26px}
+/* 처형 경고 — 체력바의 붉은 구간이 처형선. 체력이 그 안이면 막대와 아이콘이 깜빡인다 (턴이 끝나면 쓰러진다) */
+.bfstage .ublw .bar>b.exzone{position:absolute;left:0;top:0;bottom:0;z-index:4;background:rgba(190,24,24,.45);box-shadow:inset -2px 0 0 #ff5a4a;pointer-events:none}
+.bfstage .ublw .bar>b.exzone.on{animation:exPulse .75s ease-in-out infinite alternate}
+.bfstage .slot:has(.exzone.on) .ublw .bar{filter:drop-shadow(0 0 5px #ff3a2a)}
+.bfstage .slot:has(.exzone.on) .bd[data-kw="처형"] img.ci{animation:exIcon .75s ease-in-out infinite alternate;filter:drop-shadow(0 0 6px #ff3a2a)}
+@keyframes exPulse{from{background:rgba(190,24,24,.35)}to{background:rgba(255,50,40,.85)}}
+@keyframes exIcon{from{transform:scale(1)}to{transform:scale(1.35)}}
+@media (prefers-reduced-motion: reduce){ .bfstage .ublw .bar>b.exzone.on,.bfstage .slot:has(.exzone.on) .bd[data-kw="처형"] img.ci{animation:none} }
+/* 보상 카드 — 안쪽 상자 없이 그림 · 이름 · 가는 선 · 설명 (사용자 2026-11-04) */
+.rw.rwpick .rwi{background:none!important;border:0!important;box-shadow:none!important;margin:18px auto 10px}
+.rw.rwpick>b{margin-top:2px;font-size:16px;color:#f0e2c4!important;text-shadow:0 2px 0 #100A06}
+.rw.rwpick .rwd{position:relative;margin-top:14px;padding:18px 4px 0;background:none!important;border:0!important;box-shadow:none!important}
+.rw.rwpick .rwd::before{content:"";position:absolute;left:18%;right:18%;top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(214,176,106,.6),transparent)}
+.rw.rwpick .rwd p{font-size:13px;line-height:1.75;color:#e6d6b2;opacity:1}
+.rw.rwpick .rwft{justify-content:center;border:0!important;background:none!important}
+.rw.rwpick .rwft .ow.mine{background:none!important;border:0!important;color:#d6b06a;font-size:12px;letter-spacing:.06em;font-weight:400}
 </style>
 </head>
 <body>
@@ -6636,7 +6656,7 @@ const KW_TAB=[
  {n:"덫",c:"debuff",d:"아군이 덫과 같은 칸에 위치하면, 속박 1과 상처 1을 얻습니다.",re:"덫(?!\\s*관리인)"},
  {n:"오늘의 주인공",c:"debuff",d:"이번 라운드 동안 받는 피해가 증가합니다."},
  {n:"도전장",c:"debuff",d:"(부정적 효과) 지목된 대원이 유망주에게 피해를 100 줄 때까지 다른 모든 대상이 정지 상태가 됩니다."},
- {n:"처형",c:"debuff",d:"(부정적 효과) 턴이 끝날 때, 누적된 처형보다 체력이 낮다면 쓰러집니다. 부정 보호막 1개가 처형 10을 지웁니다."},
+ {n:"처형",c:"debuff",d:"턴이 끝날 때, 누적된 처형보다 체력이 낮다면 쓰러집니다. 부정 보호막 1개가 처형 10을 지웁니다."},
  {n:"감소",c:"debuff",re:"\\[감소\\]",d:"감소 수치만큼 줄 수 있는 피해량이 감소합니다."},   /* 글 속 낱말로는 안 잡는다 — 「감소합니다」가 흔하다. 칩 풀이로만 */
  {n:"사탄",c:"debuff",d:"이 구역의 우두머리입니다."},
  {n:"환호",c:"plain",re:"환호(?!\\s*게이지)",d:"관중의 환호. 0에서 100까지 오르내립니다. 높을수록 전투에서 얻는 보상이 늘고, 적도 강해집니다."},
@@ -13893,7 +13913,7 @@ HEROES["인비디아"]={title:"질투의 악마",role:"마법, 감염",hp:30,man
   focus:"감염, 회복, 지속적인 피해, 보호약화",
   passive:{n:"질투의 악마",d:"감염된 적은 턴이 끝날 때 피해 1(+마법력)를 받고 중첩이 1 줄어든다"},
   skills:[
-   {n:"죄악의 기침",cost:2,el:"마법",tg:"foe",nearest:1,dmg:3,   /* 기본 피해 2 → 3 (사용자 2026-10-22) */infect:1,d:"가장 가까운 적에게 피해 3, 감염 1 (3중첩이면 체력 4 회복)"},
+   {n:"죄악의 기침",cost:2,el:"마법",tg:"foe",nearest:1,dmg:3,liveBase:{heal:4},   /* 기본 피해 2 → 3 (사용자 2026-10-22) */infect:1,d:"가장 가까운 적에게 피해 3, 감염 1 (3중첩이면 체력 4 회복)"},
    {n:"확산",cost:2,el:"마법",tg:"foe",spread:1,spreadMin:2,d:"적을 감염시킵니다. 감염이 2 이상이면 보호약화 1, 거리 1 내도 감염"},
    {n:"숙주 폭발",cost:1,el:"마법",tg:"self",lock:2,burst:1,dmg:3,d:"잠금(2), 모든 적에게 피해 3 + 감염×2, 감염 제거"},
    /* 궁극기 — 전두엽 감염을 걷고 들어왔다 (노트, 사용자 2026-10-21).
@@ -14473,7 +14493,7 @@ const SKILL_FULL={
  /* 오볼 — 노트 19-0 ~ 19-3 (2026-10-31) */
  "유령 선박":"날이 밝을 때, 지도 위 무작위 위치에 선박 상점이 배치됩니다. 오볼이 해적의 부름을 1장 얻은 채로 원정을 시작합니다.",
  "커틀러스":"피해를 1(추가 † )씩 2번 줍니다.",
- "유령의 몸":"잠금(1). 회피를 2 얻습니다.",
+ "유령의 몸":"잠금(1). 회피를 2(추가 ) 얻습니다.",
  "물자 뒤지기":"오볼의 짐칸에서 무작위 물자 카드를 가져옵니다.\n\n현재 오볼의 물자 최대 보유량은 4입니다.",   /* 노트 2026-10-31 — 수는 설명창이 지금 짐칸으로 바꿔 보인다 (richLive) */
  "난파":"사용한도(1). 파괴되면 1단계 물자를 주는 체력 15의 유령선을 적 전장에 좌초시킵니다. 해당 위치에 있던 적은 거리 1 내의 무작위 위치로 밀려납니다. 이동할 수 없는 상태라면, 피해를 15(추가 ¤의 5배)줍니다.",
  /* 오리온 — 노트 18-0 ~ 18-5 (2026-10-14) */
@@ -14513,8 +14533,8 @@ const SKILL_FULL={
  "최후의 보루":"사용한도(1). 이번 턴에 헥토가 얻은 보호막량만큼, 다음 내 턴이 시작될 때 헥토가 보호막을 얻습니다.",
  "균열 차원문":"대상 위치에 차원문을 생성합니다. 차원문 위의 대상에 따라 효과가 부여됩니다.\n- 대상이 적이면 내 턴이 끝날 때, 피해를 3(추가 ∴ ) 줍니다.\n- 대상이 아군이면 내 턴이 끝날 때, 보호막을 3(추가 ¤ ) 부여합니다.\n이미 차원문이 있는 자리에 재사용 후 차원문을 닫고 [악마 하수인] 카드를 가져옵니다.",
  "그림자 기습":"적에게 피해를 3(추가 † ) 줍니다.\n\n그림자가 있는 상태라면, 대신 그림자가 있는 위치로 이동하고 은신 상태가 됩니다.",   /* 노트 10-1 그대로 (2026-11-02) */
- "그림자 이동":"자리에 그림자를 남기고, 최대 2칸 이동하고 도발을 얻습니다.\n이번 턴에 그슨대가 피해를 받은 후에, 체력을 2 회복합니다.\n\n그림자가 있는 상태라면, 대신 그림자가 있는 위치로 이동하고 도발 상태가 됩니다.",   /* 노트 10-2 */
- "두려움 잠식":"잠금(1). 모든 대상에게 피해를 1씩 3번 줍니다.\n\n그림자가 있는 상태라면, 대신 그림자가 있는 위치로 이동하고 무작위 적에게 공포를 부여합니다.",   /* 노트 10-3 (주석 줄 「아군 적군 모두 포함」은 노트에만) */
+ "그림자 이동":"자리에 그림자를 남기고, 최대 2칸 이동하고 도발을 얻습니다.\n이번 턴에 그슨대가 피해를 받은 후에, 체력을 2(추가 ) 회복합니다.\n\n그림자가 있는 상태라면, 대신 그림자가 있는 위치로 이동하고 도발 상태가 됩니다.",   /* 노트 10-2 */
+ "두려움 잠식":"잠금(1). 모든 대상에게 피해를 1(추가 )씩 3번 줍니다.\n\n그림자가 있는 상태라면, 대신 그림자가 있는 위치로 이동하고 무작위 적에게 공포를 부여합니다.",   /* 노트 10-3 (주석 줄 「아군 적군 모두 포함」은 노트에만) */
  "급습":"은신 상태에서 다음 공격 피해는 치명타로 적중합니다.",
  "기류 흘리기":"회피를 1 얻습니다. 이번 턴에 기류 흘리기의 비용이 1 증가합니다.",
  "꾸준한 독서":"일터에서 성서를 얻을 수 있습니다.\n성서는 재화로 환전하거나, 추가 보호력을 주는 장신구으로 바꿀 수 있습니다.",
@@ -14768,8 +14788,8 @@ HEROES["그슨대"]={title:"어둠의 그림자",role:"은신, 기습",hp:20,man
   passive:{n:"커져가는 악몽",d:"피해를 받을 때마다 어둠 조각. 3개마다 그 전투 공격력 +1 (사후 · 학살자 아군도)"},
   skills:[
    {n:"그림자 기습",cost:1,el:"공격",tg:"foe",dmg:3,gsStrike:1,d:"피해 3 (그림자가 있으면 대신 그리로 옮겨 은신)"},
-   {n:"그림자 이동",cost:1,el:"보호",tg:"self",gsStep:1,d:"그림자를 남기고 최대 2칸 이동, 도발, 이번 턴 피해 뒤 체력 2 회복 (그림자가 있으면 대신 그리로 옮겨 도발)"},
-   {n:"두려움 잠식",cost:1,el:"보호",tg:"self",lock:1,gsFear:1,d:"잠금(1), 모든 대상에게 피해 1씩 3번 (그림자가 있으면 대신 그리로 옮겨 무작위 적에게 공포)"},
+   {n:"그림자 이동",cost:1,el:"보호",tg:"self",gsStep:1,liveBase:{heal:2},d:"그림자를 남기고 최대 2칸 이동, 도발, 이번 턴 피해 뒤 체력 2 회복 (그림자가 있으면 대신 그리로 옮겨 도발)"},
+   {n:"두려움 잠식",cost:1,el:"보호",tg:"self",lock:1,gsFear:1,liveBase:{dmg:1},d:"잠금(1), 모든 대상에게 피해 1씩 3번 (그림자가 있으면 대신 그리로 옮겨 무작위 적에게 공포)"},
    {n:"어둠 증식",cost:1,el:"집중",tg:"foe",lock:4,gsBloom:1,d:"잠금(4), 어둠 조각마다 추가 공격력만큼 피해 (그림자가 있으면 대신 그만큼 보호막)"}
   ]};
 HEROES["오토"]={title:"숲을 돌보는 기계",role:"보호, 지원",hp:20,mana:3,hpLv:2,
@@ -20989,14 +21009,14 @@ const FOE={
    pas:[{k:"arRise",n:"강림",d:"환호가 100인 상태로 내 턴이 끝나면, 환호를 모두 소모하고 분노의 대군주로 변신합니다."},
         {k:"cycle",every:2,gain:"negShield",v:2,n:"정화",d:"2턴이 끝날 때마다 부정 보호막을 2 얻습니다."}],
    sk:[
-    {n:"사슬 휘두르기",w:3,tg:"any",dmg:6,sides:1,arStrike:1,cheerUp:10,d:"무작위 대상과 양옆 대상에게 마법 피해를 6 줍니다. 환호가 10 상승합니다."},
-    {n:"등롱 낙인",w:3,tg:"any",heroOnly:1,anyRng:1,lantern:{exec:10,cheer:20},d:"무작위 대원에게 처형을 10 부여합니다. 이미 처형이 부여되어 있으면 환호가 20 상승합니다."},
-    {n:"결투 지명",w:2,tg:"none",cond:"heroPair",duelPick:1,cheerUp:20,d:"무작위 대원 둘의 위치를 바꾸고 상처를 남깁니다. 환호가 20 상승합니다."},
+    {n:"사슬 휘두르기",w:3,tg:"any",dmg:6,sides:1,arStrike:1,cheerUp:20,d:"무작위 대상과 양옆 대상에게 마법 피해를 6 줍니다. 환호가 20 상승합니다."},
+    {n:"등롱 낙인",w:3,tg:"any",heroOnly:1,anyRng:1,lantern:{exec:10,cheer:30},d:"무작위 대원에게 처형을 10 부여합니다. 이미 처형이 부여되어 있으면 환호가 30 상승합니다."},
+    {n:"결투 지명",w:2,tg:"none",cond:"heroPair",duelPick:1,cheerUp:30,d:"무작위 대원 둘의 위치를 바꾸고 상처를 남깁니다. 환호가 30 상승합니다."},
     {n:"오늘의 제물",w:2,tg:"any",heroOnly:1,anyRng:1,arStar:2,d:"무작위 대원 하나를 지목합니다. 이번 라운드 동안 그 대원이 받는 피해가 2 증가합니다."},
-    {n:"박수를 쳐라",w:2,tg:"self",arWander:2,shield:10,cheerUp:10,d:"최대 2칸 이동합니다. 보호막을 10 얻습니다. 환호가 10 상승합니다."},
-    {n:"개막",w:3,tg:"all",anyRng:1,dmg:5,arStrike:1,cheerPerHit:5,d:"모든 상대에게 마법 피해를 5 줍니다. 피해를 준 대상의 수만큼 환호가 5 상승합니다."},
-    {n:"계략",w:3,tg:"any",dmg:2,hits:3,arStrike:1,cheerUp:20,d:"무작위 대상에게 마법 피해를 2씩 3번 줍니다. 환호가 20 상승합니다."},
-    {n:"지배 계획",w:2,tg:"self",arAtk:3,cheerUp:40,d:"공격력을 3 얻습니다. 환호가 40 상승합니다."}],
+    {n:"박수를 쳐라",w:2,tg:"self",arWander:2,shield:10,cheerUp:20,d:"최대 2칸 이동합니다. 보호막을 10 얻습니다. 환호가 20 상승합니다."},
+    {n:"개막",w:3,tg:"all",anyRng:1,dmg:5,arStrike:1,cheerPerHit:15,d:"모든 상대에게 마법 피해를 5 줍니다. 피해를 준 대상의 수만큼 환호가 15 상승합니다."},
+    {n:"계략",w:3,tg:"any",dmg:2,hits:3,arStrike:1,cheerUp:30,d:"무작위 대상에게 마법 피해를 2씩 3번 줍니다. 환호가 30 상승합니다."},
+    {n:"지배 계획",w:2,tg:"self",arAtk:3,cheerUp:50,d:"공격력을 3 얻습니다. 환호가 50 상승합니다."}],
    hit:"사슬 휘두르기"},
  "분노의 대군주":{hp:500,fixHp:1,atk:5,def:5,rng:3,exp:12,boss:1,solo:1,noMove:1,big:1,bossSlot:2,chgMax:1,
    el:"공격",
@@ -26908,6 +26928,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 376, "v": "0.7", "d": "2026-11-04", "t": "처형 경고 · 보상 카드 정리 · 사탄 환호 · 유령 금화 진열 · 산 숫자", "big": 0},
  {"b": 375, "v": "0.7", "d": "2026-11-04", "t": "종 파괴 연출 · 배당판 결과 싸움 · 채점관 숫자 · 퀘스트란 · 덫 크기 등", "big": 0},
  {"b": 374, "v": "0.7", "d": "2026-11-04", "t": "철 카드 · 환호 칩 자리 · 배당판 하루 한 갈래 · 마른숲 상점 정령숲만", "big": 0},
  {"b": 373, "v": "0.7", "d": "2026-11-04", "t": "전리품 화면 배치 되돌림 · 설명 카드만 유지", "big": 0},
@@ -28475,7 +28496,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=375;
+const BUILD_NO=376;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -35160,6 +35181,8 @@ function shipStock(){
 function oneCoin(g){ if(g.cost!=null&&g.gcost!=null){ if(Math.random()<0.5) g.gcost=null; else g.cost=null } return g }
 function makeShipShop(){
   const lv=(run.ship&&run.ship.lv)||1, pool=shipStock(), goods=[];
+  /* 유령 금화는 80% 로 먼저 진열한다 — 품목 사이에 섞이면 잘 안 나왔다 (사용자 2026-11-04) */
+  { const gi=pool.findIndex(x=>x.k==="ghost"); if(gi>=0&&Math.random()<0.8){ const g=pool.splice(gi,1)[0], q0=rr(g.q); goods.push(oneCoin(Object.assign({},g,{left:q0,qty:q0}))) } }
   while(goods.length<lv+2&&pool.length){ const g=pool.splice(Math.floor(Math.random()*pool.length),1)[0];
     const q0=rr(g.q); goods.push(oneCoin(Object.assign({},g,{left:q0,qty:q0}))) }
   shipFixed(goods);
@@ -45095,6 +45118,7 @@ function drawBattle(app){
         <div class="bar" data-hpk="${hpKey(h)}" data-hpv="${Math.max(0,h.hp/h.maxHp*100)}" data-hpn="${h.hp}"
           data-shv="${(h.shield||0)+(h.eshield||0)}" data-esw="${esW}" data-shw="${shW}">
           <em class="gh" style="width:${Math.max(0,h.hp/h.maxHp*100)}%"></em><i style="width:${Math.max(0,h.hp/h.maxHp*100)}%"></i>
+          ${deb(h,"exec")>0?`<b class="exzone${h.hp<deb(h,"exec")?" on":""}" style="width:${Math.min(100,deb(h,"exec")/h.maxHp*100)}%"></b>`:""}
           <u class="shgh" style="width:${esW+shW}%;right:0%"></u>
           <u class="es" data-w="${esW}" style="width:${esW}%;right:0%"${h.eshield?` data-kw="에너지 보호막"`:""}></u>
           <u class="sh" data-w="${shW}" data-r="${esW}" style="width:${shW}%;right:${esW}%"${h.shield?` data-kw="보호막"`:""}></u></div>
@@ -45598,7 +45622,7 @@ const NUM_SYM={"\u2020":["atk","추가 공격력"],"\u00a4":["def","추가 보�
 const NUM_A="\u0001", NUM_B="\u0002", NUM_C="\u0003";
 function liveVal(h,sk,key,base,syms){
   const parts=[]; let total=base;
-  const own=!!(sk&&sk[key]===base);   /* 이 숫자가 그 기술의 본값인가 */
+  const own=!!(sk&&(sk[key]===base||(sk.liveBase&&sk.liveBase[key]===base)));   /* 이 숫자가 그 기술의 본값인가. liveBase — 키를 두면 엔진이 저절로 굴리는 값(회복 · 피해)을 설명에만 잇는다 */
   if(own) modParts(sk,key).forEach(m=>{ total+=m.v; parts.push({n:m.n,v:m.v}) });
   const seen={};
   String(syms||"").split("").forEach(ch=>{
@@ -45623,7 +45647,7 @@ function keyBefore(pre,sk){
   if(/보호막[을이]?\s*$/.test(pre)) return (sk&&sk.ammoShield!=null&&sk.shield==null)?"ammoShield":"shield";   /* 탄알 장전은 보호막 키가 ammoShield (탄알 장전 강화가 올린다) */
   if(/보호(량|력)[을이]?\s*$/.test(pre)) return "shield";
   if(sk&&sk.penance&&/량이\s*$/.test(pre)) return "inc";   /* 참회의 기류 — 지날 때마다 늘어나는 몫 (참회의 기류 강화) */
-  if(/체력[을이]?\s*$/.test(pre)) return (sk&&sk.houndCard&&sk.houndHeal!=null)?"houndHeal"   /* 사냥개 부리기는 회복 키가 houndHeal (heal 로 두면 엔진이 조건 없이 회복시킨다) */
+  if(/체력[을이]?\s*$/.test(pre)) return (sk&&sk.envy!=null)?"envy":(sk&&sk.houndCard&&sk.houndHeal!=null)?"houndHeal"   /* 사냥개 부리기는 회복 키가 houndHeal (heal 로 두면 엔진이 조건 없이 회복시킨다) */
       :(sk&&sk.wheal!=null&&sk.heal==null)?"wheal":"heal";   /* 라이티늄 지팡이는 회복 키가 wheal (치유의 지팡이가 영구히 올린다) */
   return "dmg";
 }
@@ -54783,11 +54807,10 @@ function offerCards(app,hero,grade,done,lvUp){
     const mine=!!r.own,guaranteed=traitPlan.enabled&&index===0&&!!(pending&&pending.traitSlotMode||traitPlan.mode);
     const traitMark=guaranteed?(pending&&pending.traitSlotMode||traitPlan.mode)==="trait":false;
     const c=el(`<div class="rw rwpick${gcls(r.g)}${mine?" own":""}${rrIn?" rrin":""}${guaranteed?" trait-guarantee":""}" data-reward-key="${esc(rwKey(r))}" data-trait-reward="${traitMark?"1":"0"}">${
-      guaranteed?`<div class="trait-overlabel">특성</div>`:mine?`<span class="ownmark">전용</span>`:""}<div class="rwi">${rewardIcon(r)}</div>
+      guaranteed?`<div class="trait-overlabel">특성</div>`:""}<div class="rwi">${rewardIcon(r)}</div>
       <b>${esc(r.n)}</b>
       <div class="rwd"><p>${rwDescHtml(r.d,hero)}</p></div>${rewCondHtml(r,hero)}
-      <div class="rwft"><span class="gd">${esc(r.g)}</span>
-        <span class="ow${mine?" mine":""}">${mine?"전용":"공용"}</span></div>
+      <div class="rwft">${mine?`<span class="ow mine">${esc((hero&&hero.name)||"")} 전용</span>`:""}</div>
     </div>`);
     c.tabIndex=0; c.setAttribute("role","button");   /* 키보드 — Tab 으로 들고 Enter · 스페이스로 고른다 */
     c.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); c.click() } };
