@@ -2828,7 +2828,7 @@ html.noscr, html.noscr body{overflow:hidden!important}   /* 가로만 숨기면 
 /* 커서를 댄 칸의 상하좌우 — 덜 밝게 */
 .pmap .cell.nb{background-color:rgba(255,236,190,.16);box-shadow:0 0 0 1px rgba(255,255,255,.55) inset}
 .pmap .cell.here{box-shadow:0 0 0 2px var(--brass) inset;opacity:1}
-.pmap .cell.crowd{background-color:rgba(142,91,208,.26);box-shadow:0 0 0 1px rgba(142,91,208,.6) inset}   /* 관중석 (광기의 투기장) — 붉은빛은 습격 · 노랑은 우물 · 파랑은 선물이라 보랏빛. 습격 칸이면 아래 붉은빛이 이긴다 */
+.pmap .cell.crowd{background-color:rgba(142,91,208,.26)}   /* 관중석 (광기의 투기장) — 붉은빛은 습격 · 노랑은 우물 · 파랑은 선물이라 보랏빛. 습격 칸이면 아래 붉은빛이 이긴다 */
 .pmap .cell.crowd:not(.adj):not(.here):not(.onroute){opacity:1}
 .pmap .cell.risk{background-color:rgba(120,30,30,.22);border-color:var(--pline)}
 .pmap .cell.risk:hover{background-color:rgba(160,60,60,.4)}
@@ -6235,7 +6235,7 @@ body.vmap #app>.toast{position:absolute;top:8px;left:50%;transform:translateX(-5
    ② 둘레 표시(우물 · 초소 · 반딧불 둘레)는 칸마다 안쪽 테 → 색만 깔아 한 덩이로
    ③ 이어지는 그림(벨트 · 기중기 · 기계 잔해)은 칸 끝까지 — 2% 여백이 이음매로 보였다 */
 .pmap .cell{border-right-width:0;border-bottom-width:0}
-.gridmap.pmap .cell.cell.glow,.gridmap.pmap .cell.cell.watch,.gridmap.pmap .cell.cell.ffly{box-shadow:none!important}
+.gridmap.pmap .cell.cell.glow,.gridmap.pmap .cell.cell.watch,.gridmap.pmap .cell.cell.ffly,.gridmap.pmap .cell.cell.crowd,.gridmap.pmap .cell.cell.gift{box-shadow:none!important}
 .pmap .cell:is(.k-beltH,.k-beltV,.k-beltT,.k-crane,.k-mwreck){padding:0}
 .pmap .cell:is(.k-beltH,.k-beltV,.k-beltT,.k-crane,.k-mwreck) .cico{inset:0}
 .pmap .cell:is(.k-beltH,.k-beltV,.k-beltT,.k-crane,.k-mwreck) .cico img{width:100%;height:100%;max-width:none;max-height:none}
@@ -6486,6 +6486,10 @@ body.vbattle header #hRun>.res.cheer,body.vnew header #hRun>.res.cheer{display:i
 @keyframes cheerUpPulse{0%{filter:brightness(1);transform:none}15%{filter:brightness(2.1) drop-shadow(0 0 4px #ffd76a);transform:rotate(-14deg) scale(1.25)}30%{transform:rotate(12deg) scale(1.22)}45%{transform:rotate(-9deg) scale(1.15)}60%{filter:brightness(1.6) drop-shadow(0 0 3px #ffd76a);transform:rotate(6deg) scale(1.08)}80%{transform:rotate(-3deg)}100%{filter:brightness(1);transform:none}}
 @media (prefers-reduced-motion: reduce){ .res.cheer.cheerup img.ri{animation:none} }
 .bfstage .slot.foe .art.boss img.pxs[data-nm="분노의 대군주"]{height:calc(250px * var(--ph,1))}   /* 2칸 몸 — 사탄보다 크게 (사탄 그림 192 → 대군주 288 의 비) */
+/* 사탄 등장 (satanEntranceFX) — 몸은 숨기고 그 자리에 받은 그림을. 발밑이 기준점 */
+body.satanin .bfstage .slot.foe{opacity:0;pointer-events:none}
+img.satanin{position:absolute;z-index:44;transform:translate(-50%,-100%);width:auto;max-width:none;image-rendering:pixelated;pointer-events:none}
+.satanblock{position:fixed;inset:0;z-index:63;background:transparent}
 </style>
 </head>
 <body>
@@ -26855,6 +26859,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 354, "v": "0.7", "d": "2026-11-04", "t": "사탄 등장 연출 · 칠한 칸 테두리 걷음", "big": 0},
  {"b": 353, "v": "0.7", "d": "2026-11-04", "t": "관중석 보랏빛 · 손톱 돌진 이펙트 자리", "big": 0},
  {"b": 352, "v": "0.7", "d": "2026-11-04", "t": "투기장 전용 구역 아이콘 · 사탄 지도 얼굴", "big": 0},
  {"b": 351, "v": "0.7", "d": "2026-11-04", "t": "실험 책임자 · 폐기물 더미 연출 보완", "big": 0},
@@ -28400,7 +28405,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=353;
+const BUILD_NO=354;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -36014,6 +36019,55 @@ function cheerPulse(){
 const cheerPulseOn=()=>Date.now()-CHEER_UP_AT<CHEER_UP_MS;
 function cheerPulseCls(){ return cheerPulseOn()?" cheerup":"" }
 function cheerPulseCss(){ return cheerPulseOn()?` style="--cud:-${Date.now()-CHEER_UP_AT}ms"`:"" }
+/* ═══ 사탄 등장 (entrance-prototype, 사용자 2026-11-04) ═══
+   호객꾼의 소개 세 마디 → 대군주가 하늘에서 떨어져 호객꾼을 덮친다 → 정적 → 해제 띠로 사탄이 된다 → 「어서 와라…」. 13.7초.
+   실제 몸은 숨기고(body.satanin) 그 자리에 받은 그림을 얹는다. 끝나면 진짜 몸으로 넘긴다.
+   판당 한 번(run.satanIn) · 누르면 건너뛴다. 대군주로 시작하면(재물의 계약) 변신 없이 착지에서 끝난다.
+   ⚠️ 자동 그물은 SATAN_IN_FORCE 를 켜야 돈다 — 안 그러면 전투 그물마다 13초가 묶인다 (CV_INTRO_FORCE 와 같은 결) */
+let SATAN_IN_FORCE=0;
+const SATAN_IN={hold:2600,fall:6200,land:6740,morph:7800,satan:10380,line:10800,end:13700,morphMs:[270,220,150,130,180,260,340,1030]};
+function satanEntranceFX(){
+  if(typeof document==="undefined"||(typeof hasScreen==="function"&&!hasScreen())) return;
+  if(!B||view!=="battle"||!run||run.sandbox||run.satanIn) return;
+  const boss=(B.foes||[]).find(f=>f.alive&&(f.name==="사탄"||f.name==="분노의 대군주")); if(!boss) return;
+  if(typeof navigator!=="undefined"&&navigator.webdriver&&!SATAN_IN_FORCE) return;
+  const c0=ctrOf("foe",boss.slot), im0=c0&&c0.e&&c0.e.querySelector(".art img.pxs"), layer=document.getElementById("fx");
+  const barkerA=PNG_SPRITE["호객꾼"], lordA=PNG_SPRITE["분노의 대군주"];
+  if(!im0||!layer||!barkerA||!lordA||!lordA.unmorphA) return;
+  run.satanIn=1;
+  const K=typeof SPD==="number"?SPD:1, B0=B, lord=boss.name==="분노의 대군주", T=[], N=[], t0=SATAN_IN.hold*(SATAN_IN_FORCE>1?0:1);
+  const r=im0.getBoundingClientRect(), L=layer.getBoundingClientRect(), x=r.left+r.width/2-L.left, y=r.bottom-L.top;
+  const H=r.height, lordH=lord?H:Math.round(H*1.3), barkH=Math.round(H*.68);   /* 해제 띠 끝의 사탄 키가 진짜 몸과 맞게 (화면에서 재서 맞춤) */
+  const at=(ms,fn)=>T.push(setTimeout(fn,Math.round((t0+ms)*K)));
+  const img=(u,h)=>{ const n=spawn(`<img class="satanin" src="${u}" alt="" draggable="false">`,20000); if(!n) return null;
+    Object.assign(n.style,{left:x+"px",top:y+"px",height:h+"px"}); N.push(n); return n };
+  let bub=null;
+  const talk=(s,rate,top,life)=>{ if(bub) bub.remove(); bub=spawn('<div class="bark f big"></div>',Math.round(life*K)); if(!bub) return; N.push(bub);
+    const me=bub; Object.assign(me.style,{left:x+"px",top:(y-top)+"px",animationDuration:Math.round(life*K)+"ms"});
+    [...s].forEach((_,i)=>T.push(setTimeout(()=>{ if(me.isConnected) me.textContent=s.slice(0,i+1) },Math.round(i*rate*K)))) };
+  let done=0;
+  const finish=()=>{ if(done) return; done=1; T.forEach(clearTimeout); N.forEach(n=>{ try{ n.remove() }catch(e){} }); block.remove();
+    document.body.classList.remove("satanin"); if(B===B0&&B) B.busy=0 };
+  document.body.classList.add("satanin"); B.busy=1;
+  const block=el('<div class="satanblock"></div>'); document.body.appendChild(block); block.onclick=finish;
+  let man=null, body=null;
+  at(0,()=>{ man=img(barkerA.idle.u,barkH) });
+  at(300,()=>talk("수고하셨습니다, 도전자!",65,barkH+14,1900));
+  at(2400,()=>talk("이제 최종장입니다!",65,barkH+14,1900));
+  at(4500,()=>talk("투기장의 마지막 주인공은……",65,barkH+14,2240));
+  at(SATAN_IN.fall,()=>{ body=img(lordA.idleA?lordA.idleA[0]:lordA.idle.u,lordH); if(!body) return;
+    if(body.animate) body.animate([{translate:`0 ${-Math.round(y+lordH+60)}px`},{translate:"0 0"}],{duration:Math.round((SATAN_IN.land-SATAN_IN.fall)*K),easing:"cubic-bezier(.55,0,1,.45)"}) });
+  at(SATAN_IN.land,()=>{ if(bub){ bub.remove(); bub=null }
+    if(man){ man.src=barkerA.hurt?barkerA.hurt.u:man.src; if(man.animate) man.animate([{opacity:1},{opacity:0}],{duration:Math.round(150*K),fill:"forwards"}) }
+    try{ if(!shutReduce()) quakeFX(ctrOf("foe",boss.slot)) }catch(e){}
+    try{ SFX.play(sfxHas("사탄 전장에 나설 때")?"사탄 전장에 나설 때":"boom") }catch(e){} });
+  if(lord){ at(SATAN_IN.morph,finish); return }
+  at(SATAN_IN.morph,()=>{ if(man) man.remove(); if(!body) return; let a=0; try{ if(sfxHas("분노의 대군주 해제")) SFX.play("분노의 대군주 해제") }catch(e){}
+    SATAN_IN.morphMs.forEach((ms,k)=>{ T.push(setTimeout(()=>{ if(body.isConnected) body.src=lordA.unmorphA[k] },Math.round(a*K))); a+=ms }) });
+  at(SATAN_IN.satan,()=>{ if(body) body.remove(); document.body.classList.remove("satanin") });
+  at(SATAN_IN.line,()=>talk("어서 와라…",150,H+14,2900));
+  at(SATAN_IN.end,finish);
+}
 /* ═══ 페블 — 기획 노트 21 (사용자 2026-11-02) · 영웅심 넘치는 조약돌 · 지하 / 영광 숭배자 / 정령 ═══
    · 내려찍기 준비 ↔ 내려찍기 — 「전환」. 준비를 2번 하면 1번 칸이 내려찍기가 되고, 내려찍으면 준비로 돌아간다 (h.pbPrep, 라운드).
      전환은 기술 칸의 alt 를 쓰되 altBy 로 저절로 넘기지 않는다 — pebbleAfter 가 정한다.
@@ -39836,6 +39890,7 @@ function startBattle(kind,pinned){
   if(!pinned&&BSNAP){ try{ BSNAP.foes=JSON.stringify(B.foes) }catch(e){ BSNAP=null } }
   HPMEM={}; SHMEM={}; render();
   try{ bossIntroFX() }catch(e){}   /* 어둠 속에서 나타나는 우두머리 (2026-10-13) */
+  try{ satanEntranceFX() }catch(e){ console.error(e) }   /* 사탄 등장 (src/fx/arena-fx.js) */
 }
 /* 이 전투를 시작 시점으로 되감는다 — 적도 배치도 패턴도 그대로 */
 /* ═══ 라운드 · 전투가 열릴 때 대원에게서 비우는 값 (전투 정리 2026-10-05) ═══
@@ -41565,13 +41620,14 @@ function arBossMove(f,dir,n){
   if(moved){ fx({side:"foe",slot:f.slot,s:"step",ring:"#9c8d77",gap:160}); say(`${f.name} ${dir<0?"전진":"후퇴"} → ${foeNo(f.slot)}번`); foeMoved(f) }
   return moved }
 /* 몸을 바꾼다 — 체력 · 추가 능력치 · 상태는 그대로, 사거리 · 몸집 · 충전만 새 몸의 것 */
-function arMorph(f,to,why){
+function arMorph(f,to,why,quiet){   /* quiet — 연출 없이 몸만 (재물의 계약 : 등장 연출이 대군주로 세운다) */
   const D=FOE[to]; if(!f||!D) return;
   const was=f.name; f.name=to; f.rng=D.rng; f.big=D.big?1:0; f.chg=0; f.arRoarPick=0; f.intent=null;
   if(f.big&&f.slot+1>SLOTS) f.slot=SLOTS-1;
   f.roarNext=to===OVERLORD?1:0;   /* 변신 직후 — 포효 */
   const sl=f.slot;
-  if(to===OVERLORD){
+  if(quiet){}
+  else if(to===OVERLORD){
     fx({side:"foe",slot:sl,strip:{k:"morphA",ms:SATAN_STRIP.morph},quake:1,ring:"#c0302a",txt:why,cls:"crit",gap:stripMs("morph")});
     fx({side:"foe",slot:sl,pose:"roar",gap:300}) }
   else { f.arSprite=OVERLORD;   /* 띠가 끝날 때까지 대군주 몸 */
@@ -41598,7 +41654,7 @@ function satanStart(){
   if(P.indexOf("power")>=0){ f.atk+=2; f.atkUp=(f.atkUp||0)+2; L.push("추가 공격력 +2") }
   if(P.indexOf("greed")>=0){ cheerAdd(50,"탐욕의 계약",f); L.push("환호 +50") }
   if(L.length) say(`계약 — ${f.name} ${L.join(", ")}`,"t1");
-  if(P.indexOf("wealth")>=0&&f.name===SATAN){ arMorph(f,OVERLORD,"재물의 계약"); try{ rollIntents(true) }catch(e){} } }
+  if(P.indexOf("wealth")>=0&&f.name===SATAN){ arMorph(f,OVERLORD,"재물의 계약",1); try{ rollIntents(true) }catch(e){} } }
 /* 기술 — arenaSkPre2 머리에서. 참이면 그 기술은 여기서 끝 */
 function satanSkPre(f,s,I){
   if(satanIs(f)){
