@@ -26864,6 +26864,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 358, "v": "0.7", "d": "2026-11-04", "t": "페블 휘두르기 감소 디버프", "big": 0},
  {"b": 357, "v": "0.7", "d": "2026-11-04", "t": "광기의 관중단 크기", "big": 0},
  {"b": 356, "v": "0.7", "d": "2026-11-04", "t": "강림 이름 띠 뺌 · 투기장 대원 · 적 자리 내림", "big": 0},
  {"b": 355, "v": "0.7", "d": "2026-11-04", "t": "사탄 등장 · 변신 강조", "big": 0},
@@ -28413,7 +28414,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=357;
+const BUILD_NO=358;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -36112,7 +36113,7 @@ function satanEntranceFX(){
      전환은 기술 칸의 alt 를 쓰되 altBy 로 저절로 넘기지 않는다 — pebbleAfter 가 정한다.
    · 광맥 살피기 — 광맥 둘(눈 밝은 광부 +1) 가운데 하나를 골라(파벨 원천 분석과 같은 화면) 다음 내려찍기를 강화 (h.pbVeins, 라운드).
      보상으로 여는 넷(격동 · 파괴 · 황금 · 시간)은 h.tag.vein[이름] 이 있어야 후보에 든다.
-   · 휘두르기 — 모든 적에게 피해, 1칸 밀침, 준 피해만큼 그 적이 이번 적 차례에 내놓는 피해 감소 (f.weakAtk — 내 턴 머리에 걷힌다).
+   · 휘두르기 — 모든 적에게 피해, 1칸 밀침, 준 피해만큼 그 적이 이번 적 차례에 내놓는 피해 감소 (「감소」 디버프 — 내 턴 머리에 걷힌다).
    · 영웅 등장 — 5턴 뒤 영웅. 그 전투 동안 잠금이 풀리고 모든 추가 능력치 +5 (h.pbHeroLeft · h.pbHero, 전투).
    · 라이티늄 심장 — 장착한 라이티늄 관련 장신구(이름에 라이티늄 · 라이티늄 수정으로 만든 것) 1개당 보호력 +1 (늘 따라감).
    · 전용 보상(src/rules/pebble-rewards.js)은 h.tag 로 여기를 바꾼다 — 갈고리마다 그 보상 이름을 적어 둔다. */
@@ -36253,7 +36254,7 @@ function pebbleSwingOnce(h,s){
     asSrc(h,()=>hurt(f,c?v*2:v,"휘두르기","slash",0,c?1:0,!!pbFxOn()));   /* 받은 타격 섬광이 있으니 옛 베기 그림은 빼고 */
     if(!f.alive){ kills++; return }
     const got=Math.max(0,b0-Math.max(0,f.hp||0)-(f.shield||0));
-    if(got>0){ f.weakAtk=(f.weakAtk||0)+got; fx({side:"foe",slot:f.slot,txt:"피해 −"+got,cls:"miss",gap:40}) } });
+    if(got>0) addDeb(f,"dmgDn",got,h) });   /* 준 피해만큼 「감소」 — 디버프라 부정 보호막이 막고 정화에 벗겨진다 (사용자 2026-11-04, 전에는 f.weakAtk) */
   /* 1칸 뒤로 — 뒤에 선 적부터 민다 (앞에서부터 밀면 서로 자리만 바꾼다) */
   B.foes.filter(f=>f.alive).sort((a,b)=>b.slot-a.slot).forEach(f=>{ if(foeShift(f,f.slot+1)) fx({side:"foe",slot:f.slot,s:"step",txt:"밀림",cls:"miss",gap:60}) });
   if(pbFxOn()&&FXQ.length>i0){ for(let k=i0;k<FXQ.length-1;k++) FXQ[k].gap=0; FXQ[FXQ.length-1].gap=Math.max(FXQ[FXQ.length-1].gap||0,520) }
@@ -40418,7 +40419,7 @@ function foeWeaken(m,p){ m.pow=p; m.maxHp=Math.max(1,Math.round(m.maxHp*p)); m.h
    ★ 여기에 ahead 를 되살리지 말 것. 대원 쪽 눈을 적에게 쓴 것이 틀림이었다. */
 function foeDmg(f,v,el){
   { const P=foePas(f,"lowAtk"); if(P&&f.hp<f.maxHp*P.pct) v+=P.v }   /* 피의 갈증 — 체력이 절반 아래면 +3 */
-  let d=Math.max(0,v-(f.weakAtk||0));
+  let d=Math.max(0,v-(f.weakAtk||0)-deb(f,"dmgDn"));   /* 감소 (페블 휘두르기) — 대원 쪽은 hurt 의 arenaAtkDn */
   if(el==="마법"){ if(deb(f,"magDn")) d=Math.ceil(d*0.5) }
   else { if(deb(f,"atkDn")) d=Math.ceil(d*0.5) }
   if(f.pow&&d>0) d=Math.max(1,Math.round(d*f.pow));   /* 약하게 불린 적 (간수장 호출, 2026-10-06) */
@@ -40615,7 +40616,7 @@ function purgeName(f,k){ return (BOSS_PURGE[f.name]&&BOSS_PURGE[f.name][k])||PUR
 function foeAil(f){
   if(!f) return 0;
   let n=0;
-  if(f.deb) DEB_KEYS.forEach(k=>{ n+=f.deb[k]||0 });
+  if(f.deb) DEB_KEYS.forEach(k=>{ n+=k==="dmgDn"?(f.deb[k]>0?1:0):(f.deb[k]||0) });   /* 감소는 수치가 커도 하나 — 옛 weakAtk 와 같게 */
   n+=(f.infect||0)+(f.burn||0)+(f.mark||0)+grimoireCount(f)+(f.scent||0)+(f.lead||0)+(f.weak||0)+(f.stun||0)+(f.weakAtk?1:0)+(f.air?1:0);
   return n;
 }
@@ -53350,7 +53351,7 @@ function startMyTurn(){
     }
   });
   run.heroes.forEach(soloCheck);
-  B.foes.forEach(f=>{ f.air=0; f.weakAtk=0; if(f.willWeak) f.wkGrowAt=Date.now(); f.willWeak=0; f.willAtk=0;
+  B.foes.forEach(f=>{ f.air=0; f.weakAtk=0; if(f.deb&&f.deb.dmgDn) f.deb.dmgDn=0; if(f.willWeak) f.wkGrowAt=Date.now(); f.willWeak=0; f.willAtk=0;
     if(f.willDef){ f.weak=Math.max(0,(f.weak||0)-f.willDef); f.willDef=0 }   /* 의지 약화의 보호력 몫도 걷는다 — 전투 내내 남던 것 (점검 2026-10-07) */
     if(f.thornTurn>0&&--f.thornTurn<=0){ f.thorn=0;
       say(`${f.name}의 사슬이 늘어집니다 — 가시가 풀렸습니다.`,"t2") }
