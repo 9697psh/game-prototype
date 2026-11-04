@@ -2828,6 +2828,8 @@ html.noscr, html.noscr body{overflow:hidden!important}   /* 가로만 숨기면 
 /* 커서를 댄 칸의 상하좌우 — 덜 밝게 */
 .pmap .cell.nb{background-color:rgba(255,236,190,.16);box-shadow:0 0 0 1px rgba(255,255,255,.55) inset}
 .pmap .cell.here{box-shadow:0 0 0 2px var(--brass) inset;opacity:1}
+.pmap .cell.crowd{background-color:rgba(142,91,208,.26);box-shadow:0 0 0 1px rgba(142,91,208,.6) inset}   /* 관중석 (광기의 투기장) — 붉은빛은 습격 · 노랑은 우물 · 파랑은 선물이라 보랏빛. 습격 칸이면 아래 붉은빛이 이긴다 */
+.pmap .cell.crowd:not(.adj):not(.here):not(.onroute){opacity:1}
 .pmap .cell.risk{background-color:rgba(120,30,30,.22);border-color:var(--pline)}
 .pmap .cell.risk:hover{background-color:rgba(160,60,60,.4)}
 .pmap .cell.watch{background-color:rgba(170,40,30,.28);box-shadow:0 0 0 1px rgba(170,50,40,.55) inset}          /* 간수 초소 둘레 · 순찰로 — 낮에도 습격 */
@@ -26853,6 +26855,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 353, "v": "0.7", "d": "2026-11-04", "t": "관중석 보랏빛 · 손톱 돌진 이펙트 자리", "big": 0},
  {"b": 352, "v": "0.7", "d": "2026-11-04", "t": "투기장 전용 구역 아이콘 · 사탄 지도 얼굴", "big": 0},
  {"b": 351, "v": "0.7", "d": "2026-11-04", "t": "실험 책임자 · 폐기물 더미 연출 보완", "big": 0},
  {"b": 350, "v": "0.7", "d": "2026-11-04", "t": "사탄 사슬 · 손톱 돌진 이펙트", "big": 0},
@@ -28397,7 +28400,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=352;
+const BUILD_NO=353;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -35770,7 +35773,8 @@ function arSweepFX(key,side,slot,o){
   const gap=(a&&b)?Math.abs(b.x-a.x):110, W=Math.round(gap*(o.cover||3)), H=Math.round(W*(o.h||64)/(o.w||512));
   const ms=Math.round((o.ms||560)*(typeof SPD==="number"?SPD:1));
   const nd=spawn(`<div class="arsweep"></div>`,ms+80); if(!nd) return;
-  const x0=p.x-W/2+(o.dx||0)*gap;
+  const q=o.to!=null?feetOf(side,o.to):null, cx=q?(p.x+q.x)/2:p.x;   /* to — 그 칸과의 가운데 */
+  const x0=cx-W/2+(o.dx||0)*gap;
   Object.assign(nd.style,{left:x0+"px",top:(p.y-H)+"px",width:W+"px",height:H+"px",backgroundImage:`url(${u})`});
   const s=Math.round(gap*(o.slide==null?.5:o.slide));
   if(nd.animate) nd.animate([{transform:`translateX(${s}px)`,opacity:0},{offset:.15,opacity:1},{offset:.55,transform:"translateX(0)",opacity:1},{transform:"translateX(0)",opacity:0}],
@@ -41622,9 +41626,10 @@ function satanSkPre(f,s,I){
   if(s.arBack) arBossMove(f,+1,s.arBack);
   if(s.arRush){ arBossMove(f,-1,SLOTS);   /* 맨 앞으로 간 뒤에 손톱 띠 — 타격 칸에 피해 */
     fx({side:"foe",slot:f.slot,strip:{k:"atkA",ms:SATAN_STRIP.lordAtk},gap:stripTo("lordAtk",4)});
-    { const sl=f.slot; fx({side:"foe",slot:sl,fn:()=>arSweepFX("fx_overlord_rush","foe",sl,{w:256,h:64,cover:3.2,dx:-1.6,slide:.8,ms:520}),gap:0}) }
     const v=skDmg(f,{dmg:s.arRush.dmg,n:s.n}), L=allUnits().filter(u=>u.hp>0&&!stopped(u)&&dist(u.slot,f.slot)<=foeRng(f));
     if(!L.length){ say(`${s.n} — 사거리 안에 대상이 없습니다.`,"t2"); return true }
+    { const Q=L.map(u=>u.slot), lo=Math.min(...Q), hi=Math.max(...Q);   /* 맞는 대상들 위에 — 대군주 손이 아니라 (사용자 2026-11-04) */
+      fx({side:"mine",slot:lo,fn:()=>arSweepFX("fx_overlord_rush","mine",lo,{to:hi,w:256,h:64,cover:Math.max(2.2,hi-lo+1.4),slide:.8,ms:520}),gap:0}) }
     L.forEach(u=>{ asSrc(f,()=>hurtAlly(f,u,v,s.n,"공격")); if(u.hp>0) addDeb(u,"wound",s.arRush.wound||1,f) });
     return true }
   if(s.arAtk){ f.atk+=s.arAtk; f.atkUp=(f.atkUp||0)+s.arAtk;
