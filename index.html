@@ -6416,7 +6416,7 @@ body.rwtable #app .rw.rwpick.taken{animation:rwtTake .45s cubic-bezier(.3,1.4,.5
 body.vbattle header #hRun>.res.cheer,body.vnew header #hRun>.res.cheer{display:inline-flex!important;order:1}
 /* 광기의 관중단 — 공중에 둥둥 떠 있다 (사용자 2026-11-03) */
 .bfstage .slot.arfloat .art{animation:arFloat 2.6s ease-in-out infinite}
-.bfstage .slot.foe .art img.pxs[data-nm="광기의 관중단"]{height:calc(220px * var(--ph,1))}   /* 두 칸을 다 덮는 크기 (사용자 2026-11-04) */
+.bfstage .slot.foe .art img.pxs[data-nm="광기의 관중단"]{height:calc(250px * var(--ph,1))}   /* 두 칸을 다 덮는 크기 (사용자 2026-11-04) */
 @keyframes arFloat{0%,100%{translate:0 -10px}50%{translate:0 -18px}}
 /* ═══ 상태 부여 연출 다섯 (status-five-debuff-apply-v1, 2026-11-03) ═══ */
 .debsh.k-welcome.flip{scale:-1 1}
@@ -26864,6 +26864,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 359, "v": "0.7", "d": "2026-11-04", "t": "페블 감소 — 밀려난 뒤 적용", "big": 0},
  {"b": 358, "v": "0.7", "d": "2026-11-04", "t": "페블 휘두르기 감소 디버프", "big": 0},
  {"b": 357, "v": "0.7", "d": "2026-11-04", "t": "광기의 관중단 크기", "big": 0},
  {"b": 356, "v": "0.7", "d": "2026-11-04", "t": "강림 이름 띠 뺌 · 투기장 대원 · 적 자리 내림", "big": 0},
@@ -28414,7 +28415,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=358;
+const BUILD_NO=359;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -36248,16 +36249,19 @@ function pebbleSwingOnce(h,s){
   const i0=FXQ.length;   /* 여기서부터(피해 · 피해 감소 · 밀림)는 닿는 순간에 한꺼번에 */
   const own0=B._ownSnd; if(pbSnd("휘두르기 타격")) B._ownSnd=1;   /* 녹음이 있으면 합성 타격음은 빼고 */
   const crit=new Set(L.filter(f=>pebbleSwingCrit(h,s,f)));   /* 밀기 전에 묻는다 — 민 뒤면 자리가 바뀐다 */
-  let kills=0;
+  let kills=0; const dn=[];
   L.forEach(f=>{ const b0=(f.hp||0)+(f.shield||0), c=crit.has(f);
     if(c) say(`${T.worldHammer&&pebbleHas(h,"철")?"철 광맥":"관자놀이 타격"} — ${f.name}에게 치명타!`,"t1");
     asSrc(h,()=>hurt(f,c?v*2:v,"휘두르기","slash",0,c?1:0,!!pbFxOn()));   /* 받은 타격 섬광이 있으니 옛 베기 그림은 빼고 */
     if(!f.alive){ kills++; return }
     const got=Math.max(0,b0-Math.max(0,f.hp||0)-(f.shield||0));
-    if(got>0) addDeb(f,"dmgDn",got,h) });   /* 준 피해만큼 「감소」 — 디버프라 부정 보호막이 막고 정화에 벗겨진다 (사용자 2026-11-04, 전에는 f.weakAtk) */
+    if(got>0) dn.push([f,got]) });
   /* 1칸 뒤로 — 뒤에 선 적부터 민다 (앞에서부터 밀면 서로 자리만 바꾼다) */
   B.foes.filter(f=>f.alive).sort((a,b)=>b.slot-a.slot).forEach(f=>{ if(foeShift(f,f.slot+1)) fx({side:"foe",slot:f.slot,s:"step",txt:"밀림",cls:"miss",gap:60}) });
   if(pbFxOn()&&FXQ.length>i0){ for(let k=i0;k<FXQ.length-1;k++) FXQ[k].gap=0; FXQ[FXQ.length-1].gap=Math.max(FXQ[FXQ.length-1].gap||0,520) }
+  /* 준 피해만큼 「감소」 — 밀려난 **뒤에** 건다 (사용자 2026-11-04 「공중에서 이펙트가」). 위 묶음이 끝난 다음 줄이라 새 자리에서 뜬다.
+     디버프라 부정 보호막이 막고 정화에 벗겨진다 (전에는 f.weakAtk) */
+  dn.forEach(([f,got])=>{ if(f.alive) addDeb(f,"dmgDn",got,h) });
   /* 거인의 팔 — 모든 적을 띄운다 (고른 수만큼) */
   for(let q=0;q<(T.giantArm||0);q++) B.foes.filter(f=>f.alive).forEach(f=>airborne(h,f));
   /* 세계핵의 망치 — 광맥이 휘두르기도 : 진동 */
