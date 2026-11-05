@@ -6599,6 +6599,18 @@ body.vpage .rw.g1,body.rwtable #app .rewards.chestgot .rw.ro.g1{background-image
 #archeerin .ci-r b{font-size:calc(15 * var(--u));color:#ff7668;font-weight:400} #archeerin .ci-r span{font-size:calc(17 * var(--u));color:#ff9990}
 #archeericon{position:fixed;left:0;top:0;z-index:881;pointer-events:none;image-rendering:pixelated}
 body.cheerin .hand{visibility:hidden}   /* 입장 글과 겹치지 않게 — 끝나면 돌아온다 */
+/* 지속 능력 칩 — 세는 수는 아이콘 옆에 (foePasCount, 사용자 2026-11-05) */
+.bfstage .ublw .st.t .bd.cnt{display:inline-flex;align-items:center;gap:4px}
+.bfstage .ublw .st.t .bd.cnt em{display:inline;font-size:14px;color:#f4e6c8;text-shadow:0 1px 0 #000,0 0 4px #000}
+/* 전투 화면 환호 칸 — 누르면 수치 */
+.res.cheertap{cursor:pointer}
+#cheerinfo{position:fixed;z-index:950;min-width:150px;box-sizing:border-box;padding:14px 18px;display:flex;flex-direction:column;gap:3px;border:14px solid transparent;border-image:url("ui/menu-iron-tip.png") 14 fill/14px stretch;image-rendering:pixelated;color:#e6d6b2;font-size:13px;pointer-events:none}
+#cheerinfo>*{image-rendering:auto} #cheerinfo b{color:#ff9990;font-weight:400} #cheerinfo b.rw2{color:#ffe3a9;margin-top:8px}
+/* 대원 영입 — 지금 대원과 같은 조합이 빛난다 */
+.htag.hico.synmine{border-color:#f4d67c;background:rgba(244,214,124,.22);box-shadow:0 0 0 1px #f4d67c,0 0 12px rgba(244,214,124,.75);animation:synMine 1.6s ease-in-out infinite}
+.htag.hico.synmine img{filter:brightness(1.55) drop-shadow(0 0 4px rgba(255,226,140,.9))}
+@keyframes synMine{50%{box-shadow:0 0 0 1px #ffe9a8,0 0 18px rgba(255,226,140,.95)}}
+@media (prefers-reduced-motion: reduce){ .htag.hico.synmine{animation:none} }
 </style>
 </head>
 <body>
@@ -6702,6 +6714,7 @@ const KW_TAB=[
  {n:"덫",c:"debuff",d:"아군이 덫과 같은 칸에 위치하면, 속박 1과 상처 1을 얻습니다.",re:"덫(?!\\s*관리인)"},
  {n:"오늘의 주인공",c:"debuff",d:"이번 라운드 동안 받는 피해가 증가합니다."},
  {n:"도전장",c:"debuff",d:"(부정적 효과) 지목된 대원이 유망주에게 피해를 100 줄 때까지 다른 모든 대상이 정지 상태가 됩니다."},
+ {n:"반사",c:"buff",d:"받는 피해가 절반이 됩니다. 얻은 다음 턴에 효과를 받습니다."},
  {n:"처형",c:"debuff",d:"턴이 끝날 때, 누적된 처형보다 체력이 낮다면 쓰러집니다. 부정 보호막 1개가 처형 10을 지웁니다."},
  {n:"감소",c:"debuff",re:"\\[감소\\]",d:"감소 수치만큼 줄 수 있는 피해량이 감소합니다."},   /* 글 속 낱말로는 안 잡는다 — 「감소합니다」가 흔하다. 칩 풀이로만 */
  {n:"사탄",c:"debuff",d:"이 구역의 우두머리입니다."},
@@ -9065,6 +9078,7 @@ function buffSheetFX(side,slot,kw,wait){
   const d=el(`<div class="debsh" style="--c:${T.c};width:${T.px}px;height:${T.px}px;left:${r.left+r.width/2}px;top:${r.top+r.height*T.y}px;background-image:url(${src})"></div>`);
   if(kw==="정지"&&sfxHas("정지 효과 발동"))setTimeout(()=>SFX.play("정지 효과 발동"),wait||0);
   if(kw==="되감기"&&sfxHas("되감기 얻음")) setTimeout(()=>SFX.play("되감기 얻음"),wait||0);
+  if(kw==="충전"&&side==="mine"&&sfxHas("충전")) setTimeout(()=>SFX.play(sfxOr("충전 완료","충전")),wait||0);   /* 공용 충전 소리 (사용자 2026-11-05) */
   if(wait) d.style.opacity="0";   /* 차례가 올 때까지 — 상태 줄의 아이콘은 이미 숨겨 둔다 */
   l.appendChild(d);
   let t=wait||0; if(wait) setTimeout(()=>{ d.style.opacity="" },t);
@@ -11310,7 +11324,7 @@ function flushFX(){
   let t=0, any=0;
   while(FXQ.length){
     const o=FXQ.shift();
-    if(o.hpU) any=1;
+    if(o.hpU){ any=1; o.hpU.hpShowT=Math.max(o.hpU.hpShowT||0,Date.now()+t) }   /* 이 타격이 뜰 때까지 보이는 체력을 붙든다 — 긴 연출에서 끝값과 단계값이 오갔다 (사용자 2026-11-05 영상) */
     const battle=B;
     setTimeout(()=>{ if((o.foeFocus||o.foeFocusEnd||o.foeFocused)&&B!==battle) return; playFX(o) },t);
     t+=gapOf(o);
@@ -13850,7 +13864,7 @@ function figure(name,pose,u){
     return pxFigure(name,"charge").replace(/src="[^"]*"/,'src="'+ICON_PNG["guard_chg_"+((u.chg||0)>=2?7:3)]+'"');
   { const s0=u&&!pose&&u.intent&&u.intent.t==="sk"&&((FOE[name]||{}).sk||[])[u.intent.i];   /* 의도가 떠 있는 동안의 자세 — 덫 설치 · 비추기 (사용자 2026-11-03) */
     if(s0&&s0.intentPose&&poseOf(name,s0.intentPose)) pose=s0.intentPose }
-  if(u&&!pose){ if((u.chg||0)>0&&poseOf(name,"charge")) pose="charge";
+  if(u&&!pose){ const chgP=(FOE[name]||{}).chgPose||"charge"; if((u.chg||0)>0&&poseOf(name,chgP)) pose=chgP;   /* chgPose — 충전 동안 붙들 자세 (분노의 대군주 : 날개를 감싼 채 반사판, 사용자 2026-11-05) */
                 else if(u.swallow&&poseOf(name,"fed")) pose="fed"
                 else if(u.aimAt!=null&&poseOf(name,"aim")) pose="aim" }   /* 데린저 조준 상태 (사용자 2026-10-14) */
   if(PX_ON) return pxFigure(name,pose);
@@ -17561,7 +17575,8 @@ function rwDescHtml(d,h){
   ((h&&HEROES[h.name]&&HEROES[h.name].sk)||[]).forEach(add);
   const syn=SYNERGY.map(x=>x.n).sort((a,b)=>b.length-a.length);
   const esc2=x=>x.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
-  const reSyn=syn.length?new RegExp("("+syn.map(esc2).join("|")+")(?=\\s*(?:진영|직업|종족|대원))","g"):null;
+  const synAlt=syn.map(esc2).join("|");   /* 「사후, 학살자 대원」 처럼 늘어놓아도 앞 이름까지 (사용자 2026-11-05) */
+  const reSyn=syn.length?new RegExp("(?:"+synAlt+")(?=(?:\\s*(?:,|와|과|및)\\s*(?:"+synAlt+"))*\\s*(?:진영|직업|종족|대원|조합|적에게|적을|적의))|(?<=아군\\s)(?:"+synAlt+")(?=가|이|의|들)|(?:"+synAlt+")(?=가\\s(?:아닌|이미))","g"):null;
   /* 밑줄을 칠 이름 — 기술 · 지속 능력 · 카드 · 소환물 (사용자 2026-10-31 : 「역병군주」 · 「시기의 역병」 이 그냥 글이었다).
      한 번에 훑는다 — 따로 훑으면 앞에서 친 밑줄 안을 다시 건드린다. 긴 이름이 먼저 (「골렘 창조」 가 「골렘」 보다) */
   const terms={};
@@ -20946,7 +20961,7 @@ const FOE={
     {n:"비추기",w:4,tg:"none",chg:1,cond:"chgIdle",mirrorStore:1,intentPose:"charge",d:"1턴 동안 충전합니다. 충전하는 동안 받은 피해를 저장합니다."},
     {n:"되비추기",w:9,tg:"all",anyRng:1,cond:"charged",must:1,spend:1,dmg:1,mirrorFire:1,pierce:true,atkPose:"charge",d:"저장한 피해만큼 모든 상대에게 관통 피해를 줍니다."},
     {n:"찌르기",w:4,tg:"near",el:"공격",dmg:4,d:"가장 가까운 대상에게 공격 피해를 4 줍니다."},
-    {n:"반사판",w:3,tg:"self",halfNext:1,d:"다음 턴에 받는 피해를 절반으로 감소시킵니다."}],
+    {n:"반사",w:3,tg:"self",halfNext:1,d:"다음 턴에 받는 피해를 절반으로 감소시킵니다."}],
    hit:"찌르기"},
  "시체 도둑":{hp:40,atk:3,def:3,rng:6,exp:4,strong:1,
    el:"공격",
@@ -21075,7 +21090,7 @@ const FOE={
    hit:"일격"},
  /* ═══ 광기의 투기장 — 우두머리 (사용자 2026-11-04, 셈은 src/rules/arena-satan.js) ═══
     두 몸이 체력 · 추가 능력치를 나눠 쓴다 — 환호 100 으로 내 턴이 끝나면 오간다 (강림 · 해제) */
- "사탄":{hp:500,fixHp:1,atk:5,def:5,rng:8,exp:12,boss:1,solo:1,noMove:1,bossSlot:2,
+ "사탄":{hp:500,fixHp:1,atkScale:0.12,atk:5,def:5,rng:8,exp:12,boss:1,solo:1,noMove:1,bossSlot:2,
    el:"마법",
    pas:[{k:"arRise",n:"강림",d:"환호가 100인 상태로 내 턴이 끝나면, 환호를 모두 소모하고 분노의 대군주로 변신합니다."},
         {k:"cycle",every:2,gain:"negShield",v:2,n:"정화",d:"2턴이 끝날 때마다 부정 보호막을 2 얻습니다."}],
@@ -21089,7 +21104,7 @@ const FOE={
     {n:"계략",w:3,tg:"any",dmg:2,hits:3,arStrike:1,cheerUp:30,d:"무작위 대상에게 마법 피해를 2씩 3번 줍니다. 환호가 30 상승합니다."},
     {n:"지배 계획",w:2,tg:"self",arAtk:3,cheerUp:50,d:"공격력을 3 얻습니다. 환호가 50 상승합니다."}],
    hit:"사슬 휘두르기"},
- "분노의 대군주":{hp:500,fixHp:1,atk:5,def:5,rng:3,exp:12,boss:1,solo:1,noMove:1,big:1,bossSlot:2,chgMax:1,
+ "분노의 대군주":{hp:500,fixHp:1,atkScale:0.12,atk:5,def:5,rng:3,exp:12,boss:1,solo:1,noMove:1,big:1,bossSlot:2,chgMax:1,chgPose:"guard",
    el:"공격",
    pas:[{k:"arUnrise",n:"해제",d:"환호가 100인 상태로 내 턴이 끝나면, 환호를 모두 소모하고 사탄으로 돌아갑니다."},
         {k:"info",n:"거대한 몸집",d:"몸집이 커 2칸을 차지합니다."}],
@@ -21523,7 +21538,7 @@ const DEB_RAND=DEB_KEYS.filter(k=>["wound","star","duel","exec","dmgDn"].indexOf
 function deb(u,k){ return (u&&u.deb&&u.deb[k])||0 }
 const uid=x=>!x?"":(x.isFoe||x.id!=null&&x.maxHp!=null&&!x.sk?"F"+x.id:"H"+x.name);
 /* 걸리는 순간의 녹음 — art/소리/<이름>.wav (사용자 2026-10-06) */
-const DEB_SND={exec:"처형 부여",fear:"공포",bind:"속박",stun:"기절",
+const DEB_SND={exec:"처형 부여",wound:"상처 부여",dmgDn:"감소 부여",fear:"공포",bind:"속박",stun:"기절",
   atkDn:"공격 약화 얻을 때",magDn:"마법 약화 얻을 때",defDn:"보호 약화 얻을 때"};   /* 약화는 셋을 갈라 쓴다 (53) */
 /* 부정 보호막을 얻었을 때 — 이미 걸린 부정적인 효과부터 그만큼 걷어낸다 (키워드 '이미 적용된 효과 먼저 제거' (사용자 2026-10-07)) */
 /* 부정 보호막 하나가 **중첩을 모두** 걷는 효과 (사용자 2026-10-14) — 쌓이는 지속 피해 셋.
@@ -21699,7 +21714,7 @@ const KW_ICON={
   "기억":"status_someone_memory_stack",   /* 「누군가의 기억」의 기억 중첩 — 수는 따로 얹는다 (㊿) */
   "고통 감내":"sword",
   /* 광기의 투기장 (사용자 2026-11-03) — 상처 · 환호는 그림이 아직 없다 */
-  "관통":"keyword_piercing","상처":"status_wound","처형":"status_execution","감소":"status_damage_reduction","환호":"resource_arena_cheer",   /* 받은 상태 그림 (status-wound-v1 · status-execution-v1) */
+  "관통":"keyword_piercing","상처":"status_wound","처형":"status_execution","반사":"status_mirror_gladiator_reflector","감소":"status_damage_reduction","환호":"resource_arena_cheer",   /* 받은 상태 그림 (status-wound-v1 · status-execution-v1) */
   "오늘의 주인공":"status_ar_star","도전장":"status_ar_challenge","손님 맞이":"status_ar_welcome"};   /* 다음 공격이 세진다 — 공격 아이콘 (사용자 2026-09-29) */   /* 대원 밑 소환물 표식 — 허수아비 · 공중에 뜸은 바람 (사용자 2026-09-16) */   /* 2026-09-15 추가 · 아이콘은 status-effects-v2 (64px) */
 function bdIcon(kind,key,label,icon){
   const id=icon||KW_ICON[key]||KW_ICON[label];
@@ -21754,26 +21769,30 @@ function foePasD(f,x){
   if(x.k==="fuelHeat")return `${Math.max(1,(f.fuelDue||((B&&B.turn)||1)+1)-((B&&B.turn)||1))}턴마다 과열됩니다. ${d} 지금 과열 ${f.fuelHeat||0}단계.`;
   if(x.k==="fuelRage")d+=` (지금 장치 ${fuelDevices().filter(x=>x.alive).length}개: 공격력 +${f.fuelPower||0})`;
   if(x.k==="outRangeDmg") d=d.replace("{피해}",foeDmg(f,x.v,"마법"));   /* 실제로 들어가는 값 — hurtAlly 로 가는 foeEndPassives 와 같은 foeDmg */
-  else if(x.k==="nextBout"&&B){ const ev=x.every||3; d=d.replace(/최대 체력이 \d+/,"최대 체력이 "+((x.hp||20)+(f.boutUp||0)))+` (다음 입장까지 ${ev-((f.boutN||0)%ev)}턴)` }   /* 남은 턴 · 올라간 체력 (사용자 2026-11-05) */
-  else if(x.k==="promote"){ const rem=Math.max(1,(x.turns||3)-(f.age||0)); d=d.replace(/^\d+턴 후에/,rem+"턴 후에") }
-  /* 달아나는 것 — 남은 턴을 세어 보여 준다 (사용자 2026-10-23 : 「턴이 지날수록 수치 감소」).
-     세는 길은 바로 아래 「도망 0/3」 칩과 **같다** — 둘이 어긋나지 않게 한 셈을 쓴다.
-     판 밖(도감)은 B 가 없으니 적어 둔 글 그대로 */
-  else if(x.k==="runaway"&&B){
-    const need=x.turns||3, at0=(f.standAt==null)?(B.turn||1):f.standAt;
-    const rem=Math.max(0,need-Math.max(0,Math.min(need,(B.turn||1)-at0)));
-    d=rem?d.replace(/^\d+턴 뒤에/,rem+"턴 뒤에")
-         :d.replace(/^\d+턴 뒤에 /,"곧 "); }
+  else if(x.k==="nextBout"&&B) d=d.replace(/최대 체력이 \d+/,"최대 체력이 "+((x.hp||20)+(f.boutUp||0)));   /* 올라간 체력 — 남은 턴은 아이콘 옆 (foePasCount) */
   else if(x.k==="death"&&x.kind==="grpMag"){ const v=(x.v||0)+(f.deathUp||0); d=d.replace(/마법력을 \d+ 부여/,`마법력을 ${v} 부여`) }
   else if(x.k==="death"&&x.kind==="passAtk"&&(f.atkUp||0)>0) d+=` (지금 추가 공격력 +${f.atkUp})`;
   else if(x.k==="gazeGrow"&&(f.magUp||0)>0) d+=` (지금까지 +${f.magUp})`;
-  else if(x.k==="heat") d+=` 지금 과열 중첩 ${f.heat||0}/${x.v}${overheated(f)?" — 과열 상태입니다.":""}`;
-  /* 균열 용광로 — 단계가 쌓이는 과열 (2026-10-21). 연료 장치의 결과 같다 */
-  else if(x.k==="heatStep") d+=` 지금 ${Math.min(x.v,f.heat||0)}/${x.v}단계입니다.`;
+  else if(x.k==="heat"&&overheated(f)) d+=" 과열 상태입니다.";
   else if(x.n==="불량 처리"&&f.gradeK&&GRADE_DO[f.gradeK])
     d+=` 지금 고른 규격은 「${GRADE_NM[f.gradeK]}」 — ${GRADE_DO[f.gradeK]}.`;
   else if((x.k==="halfBurst"&&f.halfDone)||(x.k==="lastWill"&&f.willDone)) d+=" (이미 발동했습니다)";
   return d }
+/* ★ 지속 능력이 세는 수 — 설명이 아니라 아이콘 옆에 「0/3」 으로 (사용자 2026-11-05). 머리 위에 따로 띄우지 않는다.
+   세는 것이 있는 지속 능력을 새로 넣으면 **여기에 한 줄** — 그러면 칩이 저절로 수를 단다 (규칙-화면.md) */
+function foePasCount(f,x){
+  const n=x.every||0;
+  switch(x.k){
+    case "welcome": return `${f.welcomeN||0}/${x.v||3}`;
+    case "nextBout": return `${(f.boutN||0)%(n||3)}/${n||3}`;
+    case "cycle": return `${((f.cycleN&&f.cycleN[x.n])||0)%(n||2)}/${n||2}`;
+    case "everyTwo": return f.awake?`${(f.awakeTurns||0)%2}/2`:null;
+    case "promote": return `${Math.min(x.turns||3,f.age||0)}/${x.turns||3}`;
+    case "heat": return `${f.heat||0}/${x.v}`;
+    case "heatStep": return `${Math.min(x.v,f.heat||0)}/${x.v}`;
+    case "runaway": { const need=x.turns||3, at0=(f.standAt==null)?(B.turn||1):f.standAt; return `${Math.max(0,Math.min(need,(B.turn||1)-at0))}/${need}` }
+  }
+  return null }
 function foeStatusRows(f){
   const D=FOE[f.name]||{};
   const g=[], o=[], t=[];
@@ -21781,22 +21800,16 @@ function foeStatusRows(f){
     const cutting=x.k==="echo"&&f.echoCutAt&&Date.now()-f.echoCutAt<ECHO_CUT_MS;   /* 벌목도가 끊는 중 — 연출이 끝날 때까지 표식을 둔다 */
     if(x.k==="echo"&&f.echoUsed&&!cutting) return;   /* 메아리는 한 번 울리고 나면 표식도 걷는다 (사용자 2026-09-29) */
     if(x.hide) return;   /* 글만 감추는 지속 능력 (간수장 세 단계, 2026-10-12) */
-    if(x.k==="runaway"&&typeof B!=="undefined"&&B) return;   /* 전투 중에는 아래 「도망 1/3」 하나만 — 「도망」이 둘 보였다 (사용자 2026-10-29) */
     if(x.k==="drain"){ g.push(bd("g","흡수",Math.round((x.v||1)*100)+"%",x.d)); return }
     if(x.k==="bounty"){ t.push(bd("t",x.n,`${x.n} ${Math.max(0,f.bounty||0)}`,`이 대상을 처치하면 금화를 ${Math.max(0,f.bounty||0)}개 얻습니다. 적 턴이 끝날 때마다 2씩 감소합니다.`,x.n)); return }   /* 흡수는 대원처럼 버프 칸에 '흡수 100%' (사용자 2026-10-05) */
+    const cnt=(typeof B!=="undefined"&&B)?foePasCount(f,x):null;
     const h=bd("t",x.kw||x.n,
-      x.k==="fuelHeat"?`과열(${f.fuelHeat||0}단계)`
+      cnt?cnt:x.k==="fuelHeat"?`과열(${f.fuelHeat||0}단계)`
       :x.k==="heatStep"?`과열(${Math.min(x.v,f.heat||0)}단계)`   /* 균열 용광로 (2026-10-21) */
       :x.n,
-      foePasD(f,x),x.n,(x.k==="death"||x.kw==="죽음")?"status_death":"enemy_passive_alert");   /* 지속 능력은 붉은 느낌표 하나 (사용자 2026-11-04). 「죽음」만 제 아이콘 (2026-11-05) */
-    t.push(cutting?h.replace('class="bd ','class="bd echocut '):h) });
+      foePasD(f,x),x.n,(x.k==="death"||x.kw==="죽음")?"status_death":(x.k==="echo"||x.kw==="메아리")?"status_echo":"enemy_passive_alert");   /* 지속 능력은 붉은 느낌표 하나 (사용자 2026-11-04). 「죽음」만 제 아이콘 (2026-11-05) */
+    t.push(cutting?h.replace('class="bd ','class="bd echocut '):cnt?h.replace('class="bd ','class="bd cnt '):h) });
   if(f.name==="연료 장치")g.push(bd("g","과열",`${f.fuelHeat||0}단계`,foePasD(f,FOE[f.name].pas[0]),"과열"));
-  /* 달아나기까지 — 몇 턴 남았나 (사용자 2026-10-21 : 「도망 1/3 이렇게」) */
-  { const rw=foePas(f,"runaway");
-    if(rw&&B){ const need=rw.turns||3, at0=(f.standAt==null)?(B.turn||1):f.standAt;
-      const gone=Math.max(0,Math.min(need,(B.turn||1)-at0));
-      t.push(bd("t","도망",`도망 ${gone}/${need}`,
-        `${need}턴이 지나면 전투에서 달아납니다. 훔친 것을 가지고 갑니다. 지금 ${gone}/${need}턴.`,"도망")) } }
   /* 훔친 것 — 금화 · 장신구 · 카드 (사용자 2026-10-21) */
   { const lt=f.loot||{}, ic=(lt.items||[]).length, cc=(lt.cards||[]).length, gc=Math.max(0,f.bounty||0);
     if(gc||ic||cc){ const L=[];
@@ -21975,7 +21988,7 @@ function heroStatusRows(h){
   /* 무료(잠재력 활성의 산들바람 0비용)도 표식 없음 (사용자 2026-09-16) */
   if(h.isMin) g.push(bd("g","소환물","","소환물"));
   if(h.negShield) g.push(bd("g","부정 보호막",h.negShield,"부정적인 효과를 그만큼 걷어냅니다 (얻을 때는 이미 걸린 것부터)"));
-  { const th=((h.tag&&h.tag.thorn)||0)+(h.thornTmp||0)+((h.taunt>0&&h.tag&&h.tag.tauntThorn)||0); if(th) g.push(bd("g","가시",th,"맞을 때마다 되받아칩니다")) }
+  { const th=heroThorn(h); if(th) g.push(bd("g","가시",th,"맞을 때마다 되받아칩니다")) }
   if(h.eshield) g.push(bd("g","에너지 보호막",h.eshield,"보호막보다 먼저 깎이고, 턴이 지나도 남습니다"));
   if(h.curse) o.push(bd("o","저주",h.curse,"다음 턴 마나가 그만큼 줄어듭니다"));
   if(h.manaCap!=null) o.push(bd("o","마나 상한",h.manaCap,"다음 턴 마나가 이 수를 넘지 않습니다"));
@@ -24136,7 +24149,8 @@ function taintChip(extra){
       tc+=`<span class="res spil ${extra||""} ${full?"on":""}" ${pickTip("hspil","<b>마나석 기둥</b><br>이 층의 기둥을 모두 켜면 전투에서 모든 대원이 마나를 1 더 얻습니다.<br>켜 둔 기둥은 얼마 뒤 다시 꺼집니다.")}><i class="rkey">기둥</i><b>${ps.on}/${ps.total}</b></span>`; } }
   /* 광기의 투기장 — 관중의 환호 (사용자 2026-11-03). 그림이 아직 없어 글자로 */
   if(typeof arenaOn==="function"&&arenaOn()){ const c=cheerNow();
-    tc+=`<span class="res cheer kw ${extra||""}${cheerPulseCls()}" data-kw="환호"${cheerPulseCss()} data-tip="관중의 환호가 높을수록 전투에서 얻는 금화와 경험치가 늘고(지금 +${c}%), 적의 체력과 공격력도 오릅니다.">${resIcon("cheer")}<b>${c}</b><i>/${CHEER.max}</i></span>` }
+    if(typeof view!=="undefined"&&view==="battle") tc+=`<span class="res cheer cheertap ${extra||""}${cheerPulseCls()}" role="button"${cheerPulseCss()}>${resIcon("cheer")}<b>${c}</b><i>/${CHEER.max}</i></span>`;   /* 전투에서는 풀이 없이, 누르면 지금 수치 (cheerInfo) */
+    else tc+=`<span class="res cheer kw ${extra||""}${cheerPulseCls()}" data-kw="환호"${cheerPulseCss()} data-tip="관중의 환호가 높을수록 전투에서 얻는 금화와 경험치가 늘고(지금 +${c}%), 적의 체력과 공격력도 오릅니다.">${resIcon("cheer")}<b>${c}</b><i>/${CHEER.max}</i></span>` }
   if(!spiritOn()) return tc;
   const cr=run.crystal==null?CRYSTAL_MAX:run.crystal;
   return tc+`<span class="res crystal use kw ${extra||""} ${cr<=0?"empty":""}" role="button" data-kw="푸른 수정" data-tip="누르면 수정 1칸으로 오염도를 ${CRYSTAL_CURE} 걷어 냅니다. 기력의 샘, 마른숲 상점의 파편으로 채웁니다.">${iconImg("item_spirit_blue_crystal")?`<span class="ri">${iconImg("item_spirit_blue_crystal")}</span>`:""}<b>${cr}</b><i>/${CRYSTAL_MAX}</i><em class="cruse">사용</em><u style="width:${cr/CRYSTAL_MAX*100}%"></u></span>`;
@@ -25906,6 +25920,94 @@ const HERO_TRAITS={
         "중급|중급: 보호력 강화"
       ]
     }
+  ],
+  "그슨대": [
+    {
+      "id": "ambush",
+      "n": "급습",
+      "d": "숨어 있다가 치명타 한 방으로 적을 끝내고 다시 어둠으로 돌아갑니다.",
+      "own": [
+        "하급|그림자 기습 강화",
+        "하급|어둠에 잠긴 칼",
+        "하급|어리석은 영혼의 냄새",
+        "하급|움직일 시간",
+        "하급|한밤의 악몽",
+        "중급|어둠 적응",
+        "중급|그늘 속 칼날",
+        "중급|잠복",
+        "중급|암살 계약",
+        "상급|무기상인의 영혼"
+      ],
+      "common": [
+        "하급|전장의 칼날",
+        "하급|늑대의 시간",
+        "하급|야행성",
+        "중급|치명적인 공격",
+        "중급|처음은 날카롭게"
+      ]
+    },
+    {
+      "id": "nightmare",
+      "n": "커져가는 악몽",
+      "d": "맞을수록 어둠 조각을 모아 공격력을 키우고, 어둠 증식으로 한꺼번에 쏟아 냅니다.",
+      "own": [
+        "하급|고통먹이",
+        "하급|커져가는 몸",
+        "하급|악몽과의 동침",
+        "중급|어둠 역류",
+        "중급|망자 흡수",
+        "중급|잠 못 이루는 밤",
+        "상급|끝없는 밤",
+        "상급|악몽",
+        "상급|밤의 범람",
+        "상급|굶주린 어둠"
+      ],
+      "common": [
+        "하급|전장의 방패",
+        "하급|끈기",
+        "중급|굳은살",
+        "중급|늘어가는 실력"
+      ]
+    },
+    {
+      "id": "fear",
+      "n": "두려움 잠식",
+      "d": "전장 전체를 공포로 물들여 적을 묶고, 겁에 질린 적을 사냥합니다.",
+      "own": [
+        "하급|두려움 잠식 강화",
+        "하급|메아리치는 비명",
+        "중급|먹잇감",
+        "중급|감춘 의도",
+        "중급|번지는 공포",
+        "중급|공포스러운 전설",
+        "상급|어두운 공포",
+        "상급|두려움 세뇌"
+      ],
+      "common": [
+        "하급|전장의 바람",
+        "하급|전장의 칼날",
+        "중급|경계 태세"
+      ]
+    },
+    {
+      "id": "shadow",
+      "n": "그림자",
+      "d": "그림자를 남기고 오가며 아군을 지키고, 쓰러져도 그림자에서 돌아옵니다.",
+      "own": [
+        "하급|그림자 이동 강화",
+        "하급|그림자 밟기",
+        "중급|흔적 남기기",
+        "중급|막을 수 없는 전설",
+        "상급|그림자 방패",
+        "상급|죽음의 그림자"
+      ],
+      "common": [
+        "하급|잔걸음",
+        "하급|급한 걸음",
+        "중급|가벼운 발걸음",
+        "중급|경계 태세"
+      ]
+    }
   ]
 };
 /* 그 대원의 **성향 묶음** — 레벨업 보상을 뽑을 때 쓴다.
@@ -26998,6 +27100,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 394, "v": "0.8", "d": "2026-11-05", "t": "그슨대 특성 넷, 반사 공식 버프, 지속 능력 수 칩, 환호 칸 수치, 정화 가시, 고대의 펜던트, 사탄 강화, 영입 조합 빛남, 효과음 넷", "big": 1},
  {"b": 393, "v": "0.8", "d": "2026-11-05", "t": "처형 도끼 새 그림, 덫 관리인 · 갈고리 검투사 자세 크기", "big": 0},
  {"b": 392, "v": "0.8", "d": "2026-11-05", "t": "투기장 입장 환호 소리를 미리 받아 둠", "big": 0},
  {"b": 391, "v": "0.8", "d": "2026-11-05", "t": "v0.8 — 대체 막 고철의 무덤과 광기의 투기장, 새 대원 레이, 오볼, 그슨대, 페블, 구역 습격 곡", "big": 1},
@@ -28583,7 +28686,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=393;
+const BUILD_NO=394;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -28703,7 +28806,7 @@ function txtEntries(){
 const EV_VALUES={
   feast:[6,10,14],bounty:[3,8,15],begGive:[2,7,12],begHeal:[5,10,15],begTake:[1,6,11],begTaint:[2,7,12],
   ownerGold:[12,16,20],holeGold:[3,7,11],appraiseTaint:[5,10,15],altarHeal:[5,10,15],wagonExp:[16,24,32],
-  voiceTaint:[40,40,40],voiceHp:[5,10,15],rustStone:[6,6,6],creationItems:[5,5,5]
+  slotCoin:[2,5,10],   /* 도박용 기계 — 막마다 (사용자 2026-11-05) */ voiceTaint:[40,40,40],voiceHp:[5,10,15],rustStone:[6,6,6],creationItems:[5,5,5]
 };
 function evScale(key){ return EV_VALUES[key][Math.max(0,Math.min((run&&run.field)||0,2))] }
 function evScaleText(key,span){ return "{"+EV_VALUES[key].map(v=>span?v+"~"+(v+span):v).join("/")+"}" }
@@ -33167,11 +33270,12 @@ function gimFenceBattle(){
 function foeFix(f,keepHp){
   const D=FOE[f.name]; if(!D||!D.fixHp) return f;
   if(D.summoned){f.summoned=1;f.exp=0}
-  if(!keepHp){ f.maxHp=D.hp; f.hp=D.hp }
+  const ch=(typeof cheerScale==="function")?cheerScale((B&&B.kind)||"boss"):{hp:1,atk:1};   /* 환호는 숫자를 못 박은 적에게도 — 입장 연출이 말한 대로 (사용자 2026-11-05) */
+  if(!keepHp){ f.maxHp=Math.round(D.hp*ch.hp); f.hp=f.maxHp }
   if(!D.scaleStats){   /* 체력만 고정한 적은 생성 때 계산한 일반 강화 능력치를 유지한다. */
-    f.atk=D.atkScale?Math.round(D.atk*(1+(foeScale((B&&B.kind)||"boss").m-1)*D.atkScale)):D.atk;
+    f.atk=Math.round((D.atkScale?D.atk*(1+(foeScale((B&&B.kind)||"boss").m-1)*D.atkScale):D.atk)*ch.atk);
     const mb=(D.mag!=null?D.mag:D.atk);
-    f.mag=D.atkScale?Math.round(mb*(1+(foeScale((B&&B.kind)||"boss").m-1)*D.atkScale)):mb;
+    f.mag=Math.round((D.atkScale?mb*(1+(foeScale((B&&B.kind)||"boss").m-1)*D.atkScale):mb)*ch.atk);
   }
   f.def0=f.def; f.ph=1;
   return f;
@@ -34235,7 +34339,7 @@ function dungeonCleared(){
   /* 고대의 펜던트 — 정예에서 이기면 낀 대원에게 상급 보상 (장신구 하나에 두 번) */
   if(d.kind==="elite"&&(!d.trial||d.trial===3)) run.heroes.forEach(h=>(h.items||[]).forEach(it=>{
     if(!it||!it.bt||!it.bt.pendant) return; const left=it.left==null?2:it.left; if(left<=0) return;
-    it.left=left-1; it.d=PENDANT_D(it.left); (run.after=run.after||[]).push({grade:"상급",hero:h.name});
+    it.left=left-1; it.d=it.x=PENDANT_D(it.left); (run.after=run.after||[]).push({grade:"상급",hero:h.name,ancient:it.left});   /* 글은 x 에서 다시 만들어진다 — 둘 다 고친다 (사용자 2026-11-05 : 다 받아도 2/2) */
     toast(`고대의 펜던트 — ${h.name}${jo(h.name,"ig")} 상급 보상을 얻습니다. (${it.left}/2)`) }));
   if(d.winItem){ const it=evItem(d.winItem); if(it) (run.after=run.after||[]).push({item:it}) }   /* 미믹의 이빨 */
   if(d.trial){ trialWon(d.trial); return }                          /* 시련의 문 — 상자 대신 그 화면으로 */
@@ -34587,7 +34691,7 @@ function afterChest(){
     if(!run.heroOffer.length){ afterChest(); return }
     view="recruit"; render(); return;
   }
-  pending={hero:(nx.hero&&run.heroes.find(h=>h.name===nx.hero))||null,grade:nx.grade,free:1,back:"chain",noRun:nx.noRun||0,bountyCopy:nx.bountyCopy||0}; view="reward"; render();
+  pending={hero:(nx.hero&&run.heroes.find(h=>h.name===nx.hero))||null,grade:nx.grade,free:1,back:"chain",noRun:nx.noRun||0,bountyCopy:nx.bountyCopy||0,ancient:nx.ancient}; view="reward"; render();
 }
 /* 칸에서 쓴 시간을 지도로 나설 때 낸다.
    spend() 는 시간만 더하는 게 아니라 밤 전환과 날 넘김까지 태운다 —
@@ -36474,6 +36578,20 @@ function arCheerInPlay(B0){
     raf=requestAnimationFrame(tick) };
   raf=requestAnimationFrame(tick);
 }
+/* 전투 화면 환호 칸 — 누르면 지금의 적 강화 · 보상 강화 (사용자 2026-11-05). 값은 입장 연출과 같은 셈 */
+function cheerInfoOff(){ const e=document.getElementById("cheerinfo"); if(e) e.remove() }
+function cheerInfo(chip){
+  if(document.getElementById("cheerinfo")){ cheerInfoOff(); return }
+  if(!B||!arenaOn()) return;
+  const sc=cheerScale(B.kind), rew=(cheerRew()-1+(((run&&run.dun&&run.dun.arRew)||0)/100))*100, pct=n=>"+"+Number(n.toFixed(1))+"%", r=chip.getBoundingClientRect();
+  const nd=el(`<div id="cheerinfo"><b>${B.kind==="boss"?"우두머리 강화":"적 강화"}</b><span>체력 ${pct((sc.hp-1)*100)}</span><span>공격 ${pct((sc.atk-1)*100)}</span>
+    <b class="rw2">보상 강화</b><span>금화, 경험치 ${pct(rew)}</span></div>`); if(!nd) return;
+  document.body.appendChild(nd); nd.style.left=Math.max(6,r.left+r.width/2-nd.offsetWidth/2)+"px"; nd.style.top=(r.bottom+6)+"px";
+}
+if(typeof document!=="undefined"&&document.addEventListener) document.addEventListener("click",e=>{
+  const c=e.target&&e.target.closest&&e.target.closest(".res.cheertap");
+  if(c){ e.stopPropagation(); try{ SFX.play("click") }catch(x){} cheerInfo(c); return }
+  cheerInfoOff() },true);
 /* ═══ 페블 — 기획 노트 21 (사용자 2026-11-02) · 영웅심 넘치는 조약돌 · 지하 / 영광 숭배자 / 정령 ═══
    · 내려찍기 준비 ↔ 내려찍기 — 「전환」. 준비를 2번 하면 1번 칸이 내려찍기가 되고, 내려찍으면 준비로 돌아간다 (h.pbPrep, 라운드).
      전환은 기술 칸의 alt 를 쓰되 altBy 로 저절로 넘기지 않는다 — pebbleAfter 가 정한다.
@@ -37976,12 +38094,12 @@ const EVENTS=[
 
  {n:"도박용 기계",dex:{rate:"낮음 — 35%만 후보에 든다"},art:"gold", face:"고장난 수호기", when:()=>Math.random()<0.35, stay:1,
   t:"바닥에 오래된 도박용 기계가 쓰러져 있습니다. 아직 작동할까요?",
-  o:[{t:"기계 작동시키기",d:"금화 2개를 넣습니다. 절반의 확률로 넣은 금화의 2배만큼을 얻습니다. (남은 횟수 3/3)",
-      dd:()=>`금화 2개를 넣습니다. 절반의 확률로 넣은 금화의 2배만큼을 얻습니다. (남은 횟수 ${3-(run.evCnt||0)}/3)`,
-      again:1, snd:1, when:()=>run.gold>=2&&(run.evCnt||0)<3,
-      f:()=>{ run.gold-=2; run.evCnt=(run.evCnt||0)+1; const k=3-run.evCnt;   /* 남은 횟수 */
+  o:[{t:"기계 작동시키기",d:"금화 "+evScaleText("slotCoin")+"개를 넣습니다. 절반의 확률로 넣은 금화의 2배만큼을 얻습니다. (남은 횟수 3/3)",
+      dd:()=>`금화 ${evScale("slotCoin")}개를 넣습니다. 절반의 확률로 넣은 금화의 2배만큼을 얻습니다. (남은 횟수 ${3-(run.evCnt||0)}/3)`,
+      again:1, snd:1, when:()=>run.gold>=evScale("slotCoin")&&(run.evCnt||0)<3,
+      f:()=>{ const coin=evScale("slotCoin"); run.gold-=coin; run.evCnt=(run.evCnt||0)+1; const k=3-run.evCnt;   /* 남은 횟수 */
         SFX.play(sfxHas("금화 쓰기")?"금화 쓰기":"click");   /* 짤랑 — 금화를 넣는다 (사용자 2026-10-05) */
-        if(Math.random()<0.5){ run.gold+=4; setTimeout(()=>SFX.play(sfxHas("금화 얻기")?"금화 얻기":"unlock"),450); return `덜컹, 덜컹... 동전 4개가 쏟아집니다! (남은 횟수 ${k}/3)` }
+        if(Math.random()<0.5){ run.gold+=coin*2; setTimeout(()=>SFX.play(sfxHas("금화 얻기")?"금화 얻기":"unlock"),450); return `덜컹, 덜컹... 동전 ${coin*2}개가 쏟아집니다! (남은 횟수 ${k}/3)` }
         return `기계가 동전을 삼키고 잠잠해집니다. (남은 횟수 ${k}/3)` }},
      {t:"파편 줍기",d:"기계의 파편을 줍습니다. [도박용 기계 파편] 장신구를 얻습니다.",
       f:()=>{ const it=evItem("도박용 기계 파편"); if(it) (run.after=run.after||[]).push({item:it});
@@ -39359,6 +39477,8 @@ function drawRecruit(app){
       ${tagRow(n,1)||`<div class="role">${esc(d.role)}</div>`/* 아이콘으로 (사용자 2026-10-06) — 주석은 ${} 안에. 글자 틀 안에 두면 화면에 찍힌다 (2026-10-07) */}
       <p>${richFocus(d.focus)}</p>
       ${(()=>{ const L=(skinTable(BARK,n)||{}).in; return (L&&L.length)?`<div class="evsay rcsay">${talk(rnd(L))}</div>`:"" })()}</div>`);
+    /* 데리고 있는 대원과 같은 조합은 밝게 (사용자 2026-11-05) */
+    c.querySelectorAll(".htag[data-syn]").forEach(t=>{ if(run.heroes.some(h=>hasTag(h,t.dataset.syn))) t.classList.add("synmine") });
     c.onclick=()=>{ run.heroes.push(makeHero(n)); obolEnsure(); ugEnsure();
       toast(`${n}${jo(n,"ig")} 대원에 합류했습니다.`); afterChest() };
     row.appendChild(c);
@@ -40350,7 +40470,7 @@ function startBattle(kind,pinned){
    · 방어구 카드의 능력치(강철 군화 · 마법 부여 보호구)는 그 라운드만 — '전투 동안' 이 없다 */
 const ROUND_RESET={
   shield:0, keepShield:0, slot:0, armor:0, deb:{},
-  hide:0, shadowAt:0, gsMend:0, shPend:0, stance:0, pbPrep:0, pbVeins:[],   /* 페블 — 준비 · 광맥은 라운드 */   /* 그슨대 — 그림자 · 그림자 이동 회복은 라운드 (노트 10) */
+  hide:0, shadowAt:0, gsMend:0, shPend:0, thornOff:0, stance:0, pbPrep:0, pbVeins:[],   /* 페블 — 준비 · 광맥은 라운드 */   /* 그슨대 — 그림자 · 그림자 이동 회복은 라운드 (노트 10) */
   leech:0, pierceNext:0, aimAt:null, headshotUsed:0, mobile:0, patFreeTurn:0, lastBas:null,   /* 최후의 보루 — 라운드를 넘지 않는다 */
   eshield:0,                       /* 에너지 보호막 — 그 라운드에서만 (사용자 2026-10-01) */
   freeBlock:0, freePush:0, cutUses:0, shotUses:0, guardStack:0,
@@ -40442,6 +40562,7 @@ const dyingAt=s=>B.foes.find(f=>!f.alive&&f.dieHold&&Date.now()-f.dieHold<DIE_HO
 /* 보이는 체력 — 타격 연출이 하나씩 흐르며 깎는다 (hpV). 셈은 이미 끝나 있다 */
 const shownHp=f=>(f.hpShow!=null&&Date.now()-(f.hpShowT||0)<DIE_HOLD_MS)?f.hpShow:f.hp;
 function hpShowSync(f){
+  if(typeof foeViewActive==="function"&&foeViewActive()) return;   /* 적 턴 화면은 기록이 그린다 — 진짜 값을 끼얹으면 둘이 번갈아 뜬다 */
   const bar=document.querySelector(`.bar[data-hpk="${hpKey(f)}"]`); if(!bar) return;
   const v=Math.max(0,shownHp(f));
   bar.dataset.hpv=Math.max(0,v/f.maxHp*100); bar.dataset.hpn=v;
@@ -41418,7 +41539,7 @@ Object.assign(SK_COND,{
   mateNoTag: f=>B.foes.some(x=>x.alive&&x!==f&&!x.dthTag),
   twoFoes:   f=>B.foes.filter(x=>x.alive&&!(FOE[x.name]||{}).noMove).length>=2,
   nearBuffed:f=>{ const t=skTargets(f,{tg:"near"},allUnits().filter(u=>u.hp>0))[0];
-                  return !!(t&&(t.taunt>0||t.thornTmp>0||(t.tag&&t.tag.thorn)||t.evade>0||t.armor>0)) },
+                  return !!(t&&(t.taunt>0||heroThorn(t)>0||t.evade>0||t.armor>0)) },
   cheerAny:  f=>arenaOn()&&cheerNow()>0&&f.hp<f.maxHp,
   slaveRoom: f=>{ for(let s=1;s<=SLOTS;s++) if(!occAt(s)) return true; return false },
   noDuel:    f=>!(B&&B.duel)&&onField().filter(h=>h.hp>0&&!h.isMin).length>=1,
@@ -41477,7 +41598,7 @@ function arenaSkPre(f,s,I){
   if(s.slaveSummon){ slaveSpawn(f); try{ rollIntents(true) }catch(e){} }
   if(s.aimSlave){ f.aimSlave=1; say(`${f.name}${jo(f.name,"ig")} 다음 공격을 투기장의 노예에게 돌립니다.`,"t2") }
   if(s.pierceNext){ f.pierceNext=1; fx({side:"foe",slot:f.slot,ring:"#e0c85a",txt:"관통",cls:"buf",gap:120}); say(`${f.name} — 다음 피해가 관통됩니다.`,"t2") }
-  if(s.halfNext){ f.halfTurn=(B.turn||1)+1; fx({side:"foe",slot:f.slot,s:"shield",ring:"#9cc6ee",txt:"반사판",cls:"shd",gap:140});
+  if(s.halfNext){ f.halfTurn=(B.turn||1)+1; fx({side:"foe",slot:f.slot,s:"shield",ring:"#9cc6ee",txt:"반사",cls:"shd",gap:140});
     say(`${f.name} — 다음 턴에 받는 피해가 절반이 됩니다.`,"t2") }
   if(s.mirrorStore){ f.mirrorOn=1; f.mirrorDmg=0 }
   if(s.mirrorFire&&!(f.mirrorDmg>0)){ f.mirrorOn=0; f.mirrorDmg=0; say(`${s.n} — 비춘 피해가 없습니다.`,"t2"); return true }
@@ -41525,7 +41646,7 @@ function arenaSkHit(f,s,t){
     say(`${s.n} — ${t.name}의 최대 체력이 영구히 ${Q.v} 줄어듭니다. ${f.name} 최대 체력 +${Q.gain}`,"t1") }
   if(s.stripBuffs&&t&&t.hp>0){ const w=[];
     if(t.taunt>0){ t.taunt=0; w.push("도발") }
-    if(t.thornTmp>0){ t.thornTmp=0; w.push("가시") }
+    if(heroThorn(t)>0){ t.thornTmp=0; t.thornOff=1; w.push("가시") }   /* 보상으로 얻은 가시까지 — 그 라운드 동안 (thornOff, 사용자 2026-11-05) */
     if(t.evade>0){ t.evade=0; w.push("회피") }
     if(t.armor>0){ t.armor=0; w.push("갑피") }
     fx({side:"mine",slot:t.slot,ring:"#e0c85a",txt:w.length?"정화":"정화할 것 없음",cls:"miss",gap:110});
@@ -41670,14 +41791,13 @@ function arenaIntents(){
     scentAim(f);   /* 피 냄새 */
     if(f.mirrorOn&&f.intent&&f.intent.t==="sk"){ const s=((FOE[f.name]||{}).sk||[])[f.intent.i];
       if(s&&s.mirrorFire) f.intent.v=skDmg(f,s) } }) }
-/* 머리 위 칩 (foeStatusRows) — 손님 맞이 · 도전장 · 반사판 · 관통 · 채점 */
+/* 머리 위 칩 (foeStatusRows) — 도전장 · 반사 · 관통 · 채점 */
 const arTxtChip=(n,v,tip)=>`<span class="bd bd-g kw" data-kw="${esc(n)}" data-tip="${esc(tip)}"><em>${esc(n)}${v!=null?" "+esc(String(v)):""}</em></span>`;   /* 첫 글자 칩 대신 이름 그대로 (사용자 2026-11-04) */
 function arenaChips(f){
   const g=[];
-  { const w=foePas(f,"welcome"); if(w) g.push(bd("t","손님 맞이",`${f.welcomeN||0}/${w.v||3}`,w.d,"손님 맞이","enemy_passive_alert")) }
   if(B&&B.duel&&f.id===B.duel.foe) g.push(bd("g","도전장",`${Math.min(B.duel.got,B.duel.need)}/${B.duel.need}`,
     `지목된 대원이 이 적에게 피해를 ${B.duel.need} 줄 때까지 다른 모든 대상이 정지 상태가 됩니다. 지금 ${Math.min(B.duel.got,B.duel.need)}/${B.duel.need}.`,"도전장"));
-  if(f.halfTurn&&B&&f.halfTurn>=(B.turn||1)) g.push(arTxtChip("반사판",null,f.halfTurn===(B.turn||1)?"이번 턴에 받는 피해가 절반이 됩니다.":"다음 턴에 받는 피해가 절반이 됩니다."));
+  if(f.halfTurn&&B&&f.halfTurn>=(B.turn||1)) g.push(bd("g","반사","","","반사"));   /* 공식 버프 — 아이콘 · 풀이는 낱말표 (사용자 2026-11-05) */
   if(f.pierceNext) g.push(bd("g","관통","","다음 피해가 관통됩니다.","관통"));
   if(f.mirrorOn) g.push(arTxtChip("비추기",f.mirrorDmg||0,`받은 피해를 저장합니다. 지금 ${f.mirrorDmg||0}.`));
   /* 채점 — 쌓인 피해는 의도 위에 따로 (intentHtml 의 .arjudge, 사용자 2026-11-03) */
@@ -43318,7 +43438,7 @@ function skExec0(f,I){
       if(!v||v.saidTurn!==B.turn) foeBark(f,"event:충전 "+f.chg);
     }
     if(f.name==="고장난 수호기") fx({side:"foe",slot:f.slot,guardChg:f.chg,gap:0});   /* 충전 8칸 (사용자 2026-10-07) */
-    fx({side:"foe",slot:f.slot,pose:f.name==="고장난 수호기"?null:"bless",ring:"#c9a227",glow:1,txt:"충전 "+f.chg+"/"+chgMax(f),cls:"shd",gap:f.name==="고장난 수호기"?520:160});
+    fx({side:"foe",slot:f.slot,pose:f.name==="고장난 수호기"?null:"bless",ring:"#c9a227",glow:1,txt:"충전 "+f.chg+"/"+chgMax(f),cls:"shd",s:sfxOr(f.chg>=chgMax(f)?"충전 완료":"충전",sfxOr("충전",null)),gap:f.name==="고장난 수호기"?520:160});
     say(`${f.name} — ${f.name==="고장난 수호기"?"포신이 달아오릅니다":"기운이 차오릅니다"} (충전 ${f.chg}/${chgMax(f)})`,"t3") }
   if(s.spend) f.chg=0;
   if(s.nextMust!=null) f.nextMust=s.nextMust;
@@ -47800,7 +47920,7 @@ function iraChargeGain(h){
     say(`순간 충전 — ${h.name} 곧바로 충전${mx>1?` ${mx}회`:""}`,"t1"); return }
   if(h.chgOn){ say(`${h.name}${jo(h.name,"eun")} 이미 충전 중입니다.`,"t3"); return }
   h.chgOn=1; h.chg=0;
-  fx({side:"mine",slot:h.slot,ring:"#c9a227",txt:`충전 0/${IRA_CHG_TURNS}`,cls:"buf",gap:80});
+  fx({side:"mine",slot:h.slot,s:sfxOr("충전",null),ring:"#c9a227",txt:`충전 0/${IRA_CHG_TURNS}`,cls:"buf",gap:80});
   say(`준비 자세 — ${h.name} 충전 0/${IRA_CHG_TURNS}`,"t1");
 }
 /* 내 턴이 시작될 때 한 칸 채운다 — 다 채우면 **충전 완료** */
@@ -48079,6 +48199,8 @@ const healAfter=shieldAfter;   /* 회복도 같은 셈 (healUp 이 쓴다) */
 /* 막(보호막 + 에너지 보호막)의 합 — 「준 피해」와 예고가 같이 쓴다. 깎이는 차례는 에너지 보호막 → 보호막 → 체력이라
    보호막만 보면 에너지 보호막이 먼저 깎인 몫이 통째로 사라진다 (사용자 2026-10-08) */
 const shieldSum=u=>((u&&u.shield)||0)+((u&&u.eshield)||0);
+/* 대원의 가시 — 합이 한 곳 (맞을 때 · 칩 · 정화). 보상 가시는 정화되면 그 라운드 동안 꺼진다 */
+function heroThorn(h){ if(!h) return 0; return (h.thornOff?0:((h.tag&&h.tag.thorn)||0))+(h.thornTmp||0)+((h.taunt>0&&h.tag&&h.tag.tauntThorn)||0) }
 function addShield(u,v){
   if(!u||!v) return 0;
   const got=shieldAfter(u,v);
@@ -52931,7 +53053,7 @@ function hurtAlly(f,t,raw,label,el,evMsg,pierce,ownFx){   /* evMsg — 회피했
       poseBreak:d>0&&f&&f.name==="샘의 잔영"&&label==="잔영"});
   say(`${f.name} → ${t.name} ${label} 피해 ${raw}${sh?` (보호막 ${sh})`:""} ${Math.max(0,t.hp)}/${t.maxHp}`,undefined,t);
   if(f&&raw>0) f.lastHit=raw;
-  { const th=((t.tag&&t.tag.thorn)||0)+(t.thornTmp||0)+((t.taunt>0&&t.tag&&t.tag.tauntThorn)||0);
+  { const th=heroThorn(t);
     if(th&&f.alive&&!t.thornBusy&&!B._thornHit&&B.foes.indexOf(f)>=0){   /* 적의 가시에 맞은 것은 내 가시를 깨우지 않는다 (사용자 2026-11-03) */   /* 가시는 적에게만 — 아군이 아군을 칠 때(두려움 잠식 · 연료 장치 폭발) 대원에게 hurt 를 부르지 않게 */
       fx({side:"mine",slot:t.slot,trig:"가시",gap:0});
       t.thornBusy=1; B._thornHit=1; try{ asSrc(t,()=>hurt(f,th,`${t.name}의 가시`,"slash")) } finally { B._thornHit=0 } t.thornBusy=0; } }
@@ -55054,6 +55176,10 @@ function offerCards(app,hero,grade,done,lvUp){
     const left=run.ownOnly||0, mx=Math.max(left,run.ownOnlyMax||2), label=run.ownOnlyName||"맞춤 갑옷", ai=PACK_ICON["맞춤 갑옷"]&&typeof ICON_PNG!=="undefined"&&ICON_PNG[PACK_ICON["맞춤 갑옷"]];
     app.querySelector(".center").appendChild(el(`<div class="sub pendantx">${ai?`<img src="${ai}" alt="">`:""} ${esc(label)}: 전용 보상만 나옵니다 (${left}/${mx})</div>`));   /* '남은 N번' 대신 N/최대 (사용자 2026-10-07) */
     if(pending.armorAt!==(pending.idx==null?-1:pending.idx)){ pending.armorAt=(pending.idx==null?-1:pending.idx);   /* 레벨업이 여럿이면 그때마다 */ setTimeout(()=>pendantFX(()=>{},"맞춤 갑옷","이번 레벨업 보상은 전용 보상만 나옵니다",label),250) } }   /* 금속 펜던트처럼 (사용자 2026-10-06) */
+  /* 고대의 펜던트 — 맞춤 갑옷처럼 받는 순간 연출 · 줄 (사용자 2026-11-05) */
+  if(pending&&pending.ancient!=null){ const ai=PACK_ICON["고대의 펜던트"]&&typeof ICON_PNG!=="undefined"&&ICON_PNG[PACK_ICON["고대의 펜던트"]];
+    app.querySelector(".center").appendChild(el(`<div class="sub pendantx">${ai?`<img src="${ai}" alt="">`:""} 고대의 펜던트: 상급 보상을 얻습니다 (남은 횟수 ${pending.ancient}/2)</div>`));
+    if(!pending.ancientFx){ pending.ancientFx=1; setTimeout(()=>pendantFX(()=>{},"고대의 펜던트","상급 보상을 얻습니다"),250) } }
   if(pending&&pending.pendantShow) app.querySelector(".center").appendChild(el(`<div class="sub pendantx">${(PACK_ICON["금속 펜던트"]&&typeof ICON_PNG!=="undefined"&&ICON_PNG[PACK_ICON["금속 펜던트"]])?`<img src="${ICON_PNG[PACK_ICON["금속 펜던트"]]}" alt="">`:""}금속 펜던트: 중급 보상을 하나 더 고릅니다</div>`));
   const fromChest=!!(pending&&pending.rise);   /* 같은 탁자에서 상자를 막 열고 넘어왔다 — 어둡게 하지 않는다 */
   const row=el(`<div class="rewards rwmat${pending&&pending.rise?" rise r"+pending.rise:""}"></div>`);   /* 가죽 매트 위 (rwMatFit) */
