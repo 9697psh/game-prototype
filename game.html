@@ -6611,6 +6611,9 @@ body.cheerin .hand{visibility:hidden}   /* 입장 글과 겹치지 않게 — �
 .htag.hico.synmine img{filter:brightness(1.55) drop-shadow(0 0 4px rgba(255,226,140,.9))}
 @keyframes synMine{50%{box-shadow:0 0 0 1px #ffe9a8,0 0 18px rgba(255,226,140,.95)}}
 @media (prefers-reduced-motion: reduce){ .htag.hico.synmine{animation:none} }
+/* 진급 이름판 — 시안의 「진 급 / 이름」 */
+.promoplate{position:absolute;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:2px;white-space:nowrap;font-family:var(--serif);text-shadow:0 1px 0 #130f0c,0 0 6px #130f0c}
+.promoplate i{font-style:normal;font-size:18px;color:#e4bf74} .promoplate b{font-weight:400;font-size:28px;color:#ffedc7}
 </style>
 </head>
 <body>
@@ -12814,8 +12817,22 @@ function veil(color){
   const v=el('<div class="veil" style="background:'+color+'"></div>');
   document.body.appendChild(v); setTimeout(()=>v.remove(),620);
 }
-
-
+/* 진급 강조 (시안 model-soldier-promotions-v1, 사용자 2026-11-05) — 띠는 poseStripFX 가, 여기는 둘레만.
+   몸의 틀이 잡히는 일곱째 칸(reveal)에 소리 · 작은 흔들림 · 이름판. 지도처럼 배경만 어둡게 눌러 그 적에게 시선을 모은다 */
+function promoFX(slot,name,reveal){
+  const B0=B, c=ctrOf("foe",slot); if(!c) return;
+  const r=(c.e.querySelector(".art img.pxs")||c.e).getBoundingClientRect(), K=typeof SPD==="number"?SPD:1, nd=spawn(`<div class="promoplate"><i>진 급</i><b>${esc(name)}</b></div>`,reveal+1700*K);
+  const field=()=>document.querySelector(".bfstage .field"), dim=v=>{ const f=field(); if(!f) return; f.classList.add("gsd-dim"); f.style.setProperty("--gsdDim",v) };
+  const hold=setInterval(()=>dim(.5),60); dim(.5);   /* 판을 다시 그려도 어둠이 남게 */
+  const off=()=>{ clearInterval(hold); document.querySelectorAll(".field.gsd-dim").forEach(e=>{ e.classList.remove("gsd-dim"); e.style.removeProperty("--gsdDim") }) };
+  if(nd){ nd.style.left=(r.left+r.width/2)+"px"; nd.style.top=Math.max(40,r.top-64)+"px"; nd.style.opacity="0" }
+  setTimeout(()=>{ if(B!==B0||view!=="battle"){ off(); if(nd) nd.remove(); return }
+    { const k=sfxOr("모형 병사 진급",null); if(k) SFX.play(k) }
+    if(typeof gsdKick==="function") gsdKick(4,K);
+    if(nd&&nd.animate) nd.animate([{opacity:0,translate:"0 5px"},{opacity:1,translate:"0 0",offset:.1},{opacity:1,translate:"0 0",offset:.77},{opacity:0,translate:"0 0"}],{duration:1500*K,fill:"forwards"});
+  },reveal);
+  setTimeout(off,reveal+900*K);
+}
 /* ═══════════ 캐릭터 그림 ═══════════ */
 const LOOK={
  "나이코스":{skin:"#d9b48c",cloth:"#b8902f",dark:"#5c4718",acc:"#c9a227",build:"wide",arm:"sword"},
@@ -27100,6 +27117,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 395, "v": "0.8", "d": "2026-11-05", "t": "모형 창병 진급 강조 — 이름판, 소리, 대사", "big": 0},
  {"b": 394, "v": "0.8", "d": "2026-11-05", "t": "그슨대 특성 넷, 반사 공식 버프, 지속 능력 수 칩, 환호 칸 수치, 정화 가시, 고대의 펜던트, 사탄 강화, 영입 조합 빛남, 효과음 넷", "big": 1},
  {"b": 393, "v": "0.8", "d": "2026-11-05", "t": "처형 도끼 새 그림, 덫 관리인 · 갈고리 검투사 자세 크기", "big": 0},
  {"b": 392, "v": "0.8", "d": "2026-11-05", "t": "투기장 입장 환호 소리를 미리 받아 둠", "big": 0},
@@ -28686,7 +28704,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=394;
+const BUILD_NO=395;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -33396,6 +33414,8 @@ function phaseFocusFX(f,p,D,S){
 }
 /* 진급 — 선 지 N 턴이 지나면 체력을 먼저 되돌리고 변신한다 (모형 창병 → 모형 기사단장, 사용자 2026-10-07).
    회복을 먼저 하므로 변신 뒤의 최대 체력이 그만큼 올라간다 */
+/* 진급 띠 칸 길이 — 시안 model-soldier-promotions-v1 (사용자 2026-11-05) */
+const PROMO_MS={"모형 창병":[125,160,205,65,80,135,165,240],"모형 기병":[130,200,100,65,90,145,170,240],"모형 궁수":[140,110,180,70,80,140,165,240],"모형 궁정 마법사":[120,180,195,90,75,115,170,240]};
 function foePromoteTick(f){
   const p=foePas(f,"promote"); if(!p||!f.alive||!FOE[p.to]) return;
   f.age=(f.age||0)+1;
@@ -33406,12 +33426,13 @@ function foePromoteTick(f){
      ⚠️ 손으로 숨기지 말 것. morphFoe 는 그 자리에서 그림을 안 갈고 같은 img 가 남는다 —
         숨겼다 되돌리는 타이머가 끊기면 적이 사라진 채 남는다.
      칸 길이 100/100/100/100/110/110/120/160 (합 900ms, 묶음 그대로) */
-  const ms=poseStripFX("foe",f.slot,"promoA",[100,100,100,100,110,110,120,160]);
+  const fm=PROMO_MS[f.name]||PROMO_MS["모형 창병"], ms=poseStripFX("foe",f.slot,"promoA",fm);
+  if(ms>0&&typeof promoFX==="function") promoFX(f.slot,p.to,ms*fm.slice(0,6).reduce((x,y)=>x+y,0)/fm.reduce((x,y)=>x+y,0));   /* 시안 — 어둠 · 소리 · 흔들림 · 이름판 */
   /* ⚠️ 띠가 도는 **동안은 아직 창병**이다 — 바로 갈아 끼우면 첫 칸에서 덮여 띠가 안 보인다
      (사용자 2026-10-15 : 「진급 이펙트를 넣어놨는데 게임에는 적용 안 되고 있음」).
      화면이 없는 시뮬에서는 ms 가 0 이라 그 자리에서 변신한다 — 판은 그대로다 */
   const battle=B;
-  if(ms>0) setTimeout(()=>{ try{ if(B===battle&&f.alive){ const m=morphFoe(f,p.to,{}); if(m) render() } }catch(e){} }, ms);
+  if(ms>0) setTimeout(()=>{ try{ if(B===battle&&f.alive){ const m=morphFoe(f,p.to,{}); if(m){ foeBark(f,"event:진급"); render() } } }catch(e){} }, ms);
   else morphFoe(f,p.to,{});
 }
 /* 체력이 절반 이하로 떨어지는 그 순간 한 번 (전투당 1회) — 마나 결정체 「감금됨」 (사용자 2026-10-07) */
