@@ -6569,6 +6569,19 @@ body.vpage .rw.g1,body.rwtable #app .rewards.chestgot .rw.ro.g1{background-image
 .bfstage .field.gsd-dim .slot:not(.empty){z-index:40!important}   /* 선 몸만 위로 — 바닥 칸은 같이 어두워진다 */
 .bfstage .field.gsd-dim .slot.manaleft .art{filter:none}   /* 마나 빛 · 고른 빛도 잠깐 끈다 — 시안처럼 몸과 조각만 */
 .bfstage .field.gsd-dim .slot.selh .art img.pxs{filter:drop-shadow(0 3px 0 rgba(0,0,0,.6))}
+/* 우두머리 전리품 설명 카드 — 넓게, 종류 글자는 테두리 안으로 (사용자 2026-11-05) */
+.blstage .rw.bldesc{width:264px;padding:28px 28px 40px}
+.blstage .rw.bldesc .rwft{padding-top:6px}
+/* 보상 받을 대원 — 받은 카드 · 판 그림으로 (사용자 2026-11-05) */
+.blstage .whograde{border:0;border-radius:0;background:url("ui/menu-card-wide-512x192.png") center/100% 100% no-repeat;image-rendering:pixelated;box-shadow:0 8px 18px rgba(0,0,0,.55);padding:16px 40px 16px 32px;margin:0 auto 2px}
+.blstage .whograde>*{image-rendering:auto} .blstage .whograde b{color:#f4d67c;text-shadow:0 1px 0 #000}
+.blstage .blheroes{margin-top:12px;gap:18px}
+.blstage .blheroes .pick{width:210px;min-height:280px;box-sizing:border-box;background:url("ui/menu-card-companion-gold-384x512.png") center/100% 100% no-repeat;border:0;border-radius:0;image-rendering:pixelated;box-shadow:0 10px 24px rgba(0,0,0,.6);padding:34px 24px 30px;color:#e6d6b2;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.blstage .blheroes .pick>*{image-rendering:auto}
+.blstage .blheroes .pick .art{height:128px}
+.blstage .blheroes .pick:hover{border:0;filter:brightness(1.14);transform:translateY(-4px);box-shadow:0 14px 26px rgba(0,0,0,.6)}
+.blstage .blheroes .pick h3{color:#f4d67c;text-shadow:0 1px 0 #000;margin:10px 0 2px}
+.blstage .blheroes .pick p{color:#d8c8a6;margin:4px 0 0}
 </style>
 </head>
 <body>
@@ -7869,11 +7882,17 @@ function pickBattleBgm(){
   const pool=pool0.filter(k=>k!==(run&&run.lastBattleBgm));
   return rnd(pool.length?pool:pool0);
 }
+/* 우두머리 뒤 곡 — 전투마다 한 번만 고른다. 화면을 그릴 때 불리므로 판의 주사위(rnd)를 안 쓴다 */
+function bossAfterBgm(){
+  if(B._afterBgm) return B._afterBgm;
+  const a1=(typeof actOf==="function")&&actOf("bgm"), pool=(a1&&a1.length)?a1:(FIELD_BGM[(run&&run.field)||0]||BATTLE_BGM);
+  return (B._afterBgm=pool[Math.floor(Math.random()*pool.length)]);
+}
 /* 지금 화면에 맞는 곡. 없으면 null — 그러면 소리를 끈다 */
 function sceneBgm(){
   if(run&&run.lost) return "defeat";   /* 원정 실패 — 패배 카드부터 끝 화면까지 (사용자 2026-11-05) */
   if(view==="battle"||view==="wavegap"){
-    if(B&&B.kind==="boss"&&B.claim===1) return null;   /* 우두머리를 잡으면 곡을 끈다 — 전리품 · 돌판은 조용히 (사용자 2026-11-04) */
+    if(B&&B.kind==="boss"&&B.claim===1) return bossAfterBgm();   /* 우두머리를 잡으면 그 구역 전투 곡 하나로 (사용자 2026-11-05) */
     { const fb=foeBgm(); if(fb) return fb }   /* 적 전용이 가장 먼저 — 구역 곡을 밀어낸다 */
     if(B&&B.kind==="boss") return bossBgm();
     if(B&&B.kind==="ambush") return fieldPick("ambushBgm",FIELD_AMBUSH);
@@ -26965,6 +26984,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 388, "v": "0.7", "d": "2026-11-05", "t": "전리품 카드 넓힘 · 대원 고르기 카드 그림 · 보스 뒤 구역 곡 · 암살 계약 아이콘", "big": 0},
  {"b": 387, "v": "0.7", "d": "2026-11-05", "t": "경험치 아이콘 노란 화살표, 그림자 기습 타격음 크게, 이펙트 묶음 빌드마다 새로", "big": 0},
  {"b": 386, "v": "0.7", "d": "2026-11-05", "t": "어둠 증식 — 조각과 띠를 전장 비율로 키움, 피해 숫자 또렷하게", "big": 0},
  {"b": 385, "v": "0.7", "d": "2026-11-05", "t": "어둠 증식 개편 — 조각 수만큼 반복, 방사 후 순차 추적 연출, 그림자면 몸으로 돌아오며 보호막", "big": 0},
@@ -28544,7 +28564,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=387;
+const BUILD_NO=388;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -45882,7 +45902,7 @@ function blStage(field){
   T.forEach((t,i)=>{
     const c=el(`<div class="blit${S.risen?"":" rise"}${S.sel===t.n?" on":""}" style="--d:${i*120}ms">
       <span class="bli">${blIcon(t)}</span><b>${esc(t.n)}</b></div>`);
-    c.onclick=()=>{ S.sel=t.n; row.querySelectorAll(".blit").forEach(x=>x.classList.toggle("on",x===c)); showDesc(t) };
+    c.onclick=()=>{ SFX.play(sfxOr("우두머리 전리품 선택","click")); S.sel=t.n; row.querySelectorAll(".blit").forEach(x=>x.classList.toggle("on",x===c)); showDesc(t) };
     c.ondblclick=()=>{ if(S.taking) return; S.taking=1; S.sel=t.n;
       pickBurst(c,"상급","전리품"); row.querySelectorAll(".blit").forEach(x=>{ if(x!==c) x.classList.add("faded") });
       if(blNeedHero(t)){ setTimeout(()=>{ if(B&&B.bl===S){ S.taking=0; S.stage="hero"; render() } },420); return }
@@ -54098,7 +54118,7 @@ function drawBossLoot(app){
       <div class="rwd"><p>${rwDescHtml(blDesc(t),null)}</p></div>
       <div class="rwft"><span class="blk">${esc(BL_KIND[t.k]||"")}</span></div></div>`);
     c.onclick=()=>{ if(run.bloot&&run.bloot.sel) return;
-      SFX.play("click"); pickBurst(c,"상급","전리품");
+      SFX.play(sfxOr("우두머리 전리품 선택","click")); pickBurst(c,"상급","전리품");
       row.querySelectorAll(".rw").forEach(x=>{ if(x!==c) x.classList.add("faded") });
       if(blNeedHero(t)){ run.bloot.sel=t.n; setTimeout(()=>render(),420); return }
       const msg=blTake(t,null); if(msg) toast(msg);
@@ -54677,7 +54697,7 @@ Object.assign(REW_FIX,{
  "낡은 복권":{"ic":"reward_gambler_box"},"동전 던지기":{"ic":"currency_gold"},"더러운 손":{"ic":"corruption"},"더러운 돈":{"ic":"bounty_bag"},
  "기름칠":{"ic":"fuel_wrench"},"끈기":{"ic":"life"},"상점 탐색":{"ic":"map_shop"},"제련소 탐색":{"ic":"facility_forge"},
  "미지의 탐색":{"ic":"map_unknown"},"위험 탐색":{"ic":"map_battle"},"경고장":{"ic":"map_elite"},"오솔길":{"ic":"camp"},
- "장신구 벨트":{"ic":"reward_trinket_choice_common"},"최종성장":{"ic":"exp_arrow"}
+ "장신구 벨트":{"ic":"reward_trinket_choice_common"},"최종성장":{"ic":"exp_arrow"},"암살 계약":{"sk":"급습"}
 });
 /* 오볼 전용 보상 아이콘 (노트 19, 2026-10-31) — 받은 오볼 그림을 빌린다 (기술 · 물자 · 유령 금화 · 짐칸 · 상점 강화). 새 그림이 오면 여기만 고친다 */
 Object.assign(REW_FIX,{
@@ -54869,7 +54889,7 @@ function expBar(h){
 /* 보상 카드를 고를 때 — 등급이 높을수록 요란하게 */
 function pickBurst(card,grade,label){   /* label — 띄울 말을 따로 (전리품, 2026-10-23) */
   const lv={"하급":1,"중급":2,"상급":3}[grade]||1;
-  SFX.play("pick"+lv);
+  SFX.play(label==="전리품"?sfxOr("우두머리 전리품 획득","pick"+lv):"pick"+lv);   /* 전리품은 제 소리 (사용자 2026-11-05) */
   card.classList.add("taken","g"+lv);
   const r=card.getBoundingClientRect();
   const p={x:r.left+r.width/2, y:r.top+r.height/2};
