@@ -26965,6 +26965,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 386, "v": "0.7", "d": "2026-11-05", "t": "어둠 증식 — 조각과 띠를 전장 비율로 키움, 피해 숫자 또렷하게", "big": 0},
  {"b": 385, "v": "0.7", "d": "2026-11-05", "t": "어둠 증식 개편 — 조각 수만큼 반복, 방사 후 순차 추적 연출, 그림자면 몸으로 돌아오며 보호막", "big": 0},
  {"b": 384, "v": "0.7", "d": "2026-11-05", "t": "그림자 이동 회복 · 어둠 조각 하나씩 · 구역 습격 곡 · 감옥 전투 곡 · 실험 책임자 곡 · 패배 곡 · 백그라운드 소리 설정", "big": 0},
  {"b": 383, "v": "0.7", "d": "2026-11-05", "t": "경험치 막대 — 수치 앞 아이콘", "big": 0},
@@ -28542,7 +28543,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=385;
+const BUILD_NO=386;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -35638,7 +35639,7 @@ const GSD_FX={
   emerge:{k:"fx_gsd_emerge",fm:[65,70,75,80,90,90,90,90]},
   strike:{k:"fx_gsd_strike",fm:[60,70,85,80,85,85,90,95]},
   fear:{k:"fx_gsd_fear",fm:[60,75,80,75,80,75,90,100],z:1.6},   /* 발밑 물결 — 1.6배 (사용자 2026-11-02 「크게」). 물결이 2 · 4 · 6 칸째에 솟는다 = 피해 세 번 */
-  bloom:{k:"fx_gsd_bloom",fm:[170,170,360,140,100,100,100,140],z:1.5/2.45,tag:"gsdbloom"}};   /* 몸 위 192px (받은 시안 shuffle-speed-v3). 방출 때 224 · 208 은 gsdBurstFX */
+  bloom:{k:"fx_gsd_bloom",fm:[170,170,360,140,100,100,100,140],z:.9,tag:"gsdbloom"}};   /* 몸 위 — 시안 192px 를 전장 폭 비율로 (282px). 방출 때 커지는 것은 gsdBurstFX */
 const GSD_Z=2.45;   /* 띠 속 인물(논리 51~53px)이 몸 그림(화면 128px, 창 크기와 상관없음)과 같은 키 — 1280 · 1920 에서 잰 값 (2026-11-02) */
 const gsdMs=k=>GSD_FX[k].fm.reduce((a,b)=>a+b,0);
 /* 녹음 (사용자 2026-11-02, tools/gsd-snd-in.py) — 「그슨대 <기술>」 로 두지 않았다 : 그러면 그림자 갈래까지 같은 소리가 난다 */
@@ -35877,7 +35878,7 @@ function gsdCast(h,s,target){
             asSrc(h,()=>hurt(x,one+add,"어둠 증식","mag",0,0,1));
             if(!x.alive&&!x.fled&&T.hungryDark&&(x.atk||0)>0){ bumpTmp(h,"atk",x.atk);   /* 굶주린 어둠 — 그 적의 추가 공격력을 그 전투 동안 */
               fx({side:"mine",slot:h.slot,ring:"#a8323e",txt:"공격력 +"+x.atk,cls:"buf",gap:60}); say(`굶주린 어둠 — ${h.name} 공격력 +${x.atk}`,"t1") } });
-          for(let k=i0;k<FXQ.length;k++) FXQ[k].gap=0;
+          for(let k=i0;k<FXQ.length;k++){ FXQ[k].gap=0; if(FXQ[k].hit&&FXQ[k].cls==="mag") FXQ[k].cls="crit" }   /* 시안처럼 한 발마다 숫자가 또렷하게 */
           if(FXQ.length>i0) FXQ[FXQ.length-1].gap=q<n-1?P.gap:240 }
         } finally { B._ownSnd=own0 }
         if(q&&q<n){ const last=FXQ[FXQ.length-1]; if(last) last.gap=(n-q)*P.gap+240 }   /* 헛되이 날아간 조각이 닿을 때까지 */
@@ -35915,6 +35916,8 @@ function gsdMoveFX(from,to){
    시각 t 는 몸 위 띠가 시작한 뒤 ms. 시계로 재므로 프레임이 밀려도 조각이 빠지지 않고, 빠르기는 시전 때의 SPD 로 묶는다.
    발사 차례는 시전마다 한 번 섞고 그 뒤로 안 바꾼다 — Math.random : 판의 주사위(rnd)를 안 건드린다 */
 const GSD_DIM={base:.34,peak:.6};
+/* 시안의 숫자는 폭 764 전장 기준이다 — 게임 전장은 1120 이라 그대로 쓰면 작고 빈약하다 (사용자 2026-11-05 영상). 몸 그림 크기를 따라 같이 늘인다 */
+const GSD_BURST_Z=1120/764;
 function gsdShardPt(c,a,r){ return {x:c.x+Math.cos(a)*r,y:c.y+Math.sin(a)*r} }
 function gsdKick(px,K){
   if(shutReduce()) return null; const e=document.querySelector(".bfstage"); if(!e||!e.animate) return null;
@@ -35925,11 +35928,11 @@ function gsdBurstFX(o){
   B.busy=1;   /* 조각이 다 닿기 전에 턴이 안 넘어가게 — done 이 푼다. 규칙이 아니라 기다림이라 시뮬레이터에는 없다 */
   const img=cell.e.querySelector(".art img.pxs"), r=img&&img.getBoundingClientRect();
   const c=(r&&r.width)?{x:r.left+r.width/2,y:r.top+r.height*.29}:{x:cell.x,y:cell.y};   /* 상체 — 시안의 몸 그림 비율 */
-  const n=o.n, at0=GSD_BLOOM_AT, order=[...Array(n).keys()];
+  const n=o.n, at0=GSD_BLOOM_AT, order=[...Array(n).keys()], Z=((r&&r.width)?r.width/128:1)*GSD_BURST_Z;
   for(let i=n-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [order[i],order[j]]=[order[j],order[i]] }
   const shapes=["wedge","fork","crook"], end0=at0.go+(n-1)*o.gap+o.fly;
   const dest=o.self?[]:[...new Set(o.to)].reduce((m,s)=>{ m[s]=bodyPoint("foe",s)||ctrOf("foe",s); return m },{});
-  const S=order.map((slot,i)=>{ const a=-Math.PI/2+slot*Math.PI*2/n, R=90+(slot%3)*14, q=o.self?c:dest[o.to[i]];
+  const S=order.map((slot,i)=>{ const a=-Math.PI/2+slot*Math.PI*2/n, R=(90+(slot%3)*14)*Z, q=o.self?c:dest[o.to[i]];
     const nd=spawn('<div class="gsdshard"></div>',end0*K+600), u=ICON_PNG&&ICON_PNG["fx_gsd_shard_"+shapes[i%3]];
     if(nd&&u) nd.style.backgroundImage="url("+u+")"; if(nd) nd.style.opacity="0";
     return {nd,a,R,q,i,launch:at0.go+i*o.gap} });
@@ -35939,7 +35942,7 @@ function gsdBurstFX(o){
   const dimOff=()=>{ if(fieldEl){ fieldEl.classList.remove("gsd-dim"); fieldEl.style.removeProperty("--gsdDim") } document.querySelectorAll(".field.gsd-dim").forEach(e=>e.classList.remove("gsd-dim")) };
   const done=()=>{ if(over) return; over=1; cancelAnimationFrame(raf); clearTimeout(safe); if(B===battle){ B.busy=0; if(view==="battle") render() } S.forEach(s=>{ if(s.nd) s.nd.remove() }); dimOff();
     [k1,k2].forEach(a=>{ try{ if(a) a.cancel() }catch(e){} }) };
-  const place=(s,x,y,a)=>{ s.nd.style.transform="translate("+x.toFixed(1)+"px,"+y.toFixed(1)+"px) rotate("+a.toFixed(3)+"rad)"; s.nd.style.opacity="1" };
+  const place=(s,x,y,a)=>{ s.nd.style.transform="translate("+x.toFixed(1)+"px,"+y.toFixed(1)+"px) rotate("+a.toFixed(3)+"rad) scale("+Z.toFixed(3)+")"; s.nd.style.opacity="1" };
   const tick=now=>{
     if(over) return; if(B!==battle||view!=="battle"){ done(); return }
     const t=(now-t0)/K;
@@ -35949,7 +35952,7 @@ function gsdBurstFX(o){
     fieldEl=document.querySelector(".bfstage .field");
     if(fieldEl){ fieldEl.classList.add("gsd-dim"); fieldEl.style.setProperty("--gsdDim",dim.toFixed(3)) }
     const st=t<at0.out?0:t<840?1:t<940?2:3;
-    if(st!==stage){ stage=st; const e=sheet(); if(e) e.style.transform="scale("+[1.5,1.75,1.625,1.5][st]+")" }
+    if(st!==stage){ stage=st; const e=sheet(); if(e) e.style.transform="scale("+[1.5,1.75,1.625,1.5][st]*Z+")" }
     if(t>=at0.out&&!k1){ k1=gsdKick(3,K)||1 }
     const lastHit=at0.go+(Math.max(1,o.hits)-1)*o.gap+o.fly;
     if(t>=lastHit&&!kicked){ kicked=1; k2=gsdKick(4,K) }
@@ -35961,7 +35964,7 @@ function gsdBurstFX(o){
       if(t<s.launch||!s.q){ place(s,p.x,p.y,s.a); return }
       /* 곡선 — 시안 그대로 2차 베지어, u=t^1.6 으로 다가갈수록 빨라진다. 돌아올 때는 위아래만 */
       const p0=gsdShardPt(c,s.a,s.R), u=Math.pow(Math.min(1,(t-s.launch)/o.fly),1.6), v=1-u, dir=o.self?0:(s.q.x>=p0.x?1:-1);
-      const bend=Math.max(1,Math.hypot(s.q.x-p0.x,s.q.y-p0.y)/370), cx=p0.x+70*bend*dir, cy=p0.y-65*bend*(s.i%2?1:-1);
+      const bend=Math.max(Z,Math.hypot(s.q.x-p0.x,s.q.y-p0.y)/370), cx=p0.x+70*bend*dir, cy=p0.y-65*bend*(s.i%2?1:-1);
       place(s,v*v*p0.x+2*v*u*cx+u*u*s.q.x,v*v*p0.y+2*v*u*cy+u*u*s.q.y,Math.atan2(2*v*(cy-p0.y)+2*u*(s.q.y-cy),2*v*(cx-p0.x)+2*u*(s.q.x-cx))) });
     if(t>=Math.max(end0+300,1650)+60){ done(); return }
     raf=requestAnimationFrame(tick) };
