@@ -6563,6 +6563,12 @@ body.shakeall.shakebig{animation:allShakeBig .95s cubic-bezier(.3,.05,.2,1)}
 /* 하급 보상 카드는 청동 테두리 그대로 — 철 카드는 하급 틀을 빌려 쓰던 다른 화면 몫이다 (사용자 2026-11-04) */
 body.vnew #app .rw.g1{border-image:url("ui/menu-card-trim.png") 26 fill/17px stretch}
 body.vpage .rw.g1,body.rwtable #app .rewards.chestgot .rw.ro.g1{background-image:url("ui/menu-card-companion-384x512.png")}
+/* 어둠 증식 — 조각 (회전 · 자리는 gsdBurstFX) · 배경만 어둡게 (사용자 2026-11-05) */
+.gsdshard{position:absolute;left:0;top:0;width:64px;height:64px;margin:-32px 0 0 -32px;background:center/64px 64px no-repeat;image-rendering:pixelated;will-change:transform}
+.bfstage .field.gsd-dim::before{opacity:1;background:rgba(5,3,3,var(--gsdDim,0));transition:none}
+.bfstage .field.gsd-dim .slot:not(.empty){z-index:40!important}   /* 선 몸만 위로 — 바닥 칸은 같이 어두워진다 */
+.bfstage .field.gsd-dim .slot.manaleft .art{filter:none}   /* 마나 빛 · 고른 빛도 잠깐 끈다 — 시안처럼 몸과 조각만 */
+.bfstage .field.gsd-dim .slot.selh .art img.pxs{filter:drop-shadow(0 3px 0 rgba(0,0,0,.6))}
 </style>
 </head>
 <body>
@@ -9347,6 +9353,7 @@ const ART={
 };
 function playFX(o){
   foeViewApply(o);
+  if(o.shStep){ const u=o.shStep.u; u.shPend=Math.max(0,(u.shPend||0)-o.shStep.v); if(view==="battle") render() }   /* 어둠 증식 — 보호막을 닿는 대로 */
   if(o.foeViewFinish){ foeViewFinish(); return }
   if(o.foeViewDone){ const a=foeViewActive(), v=a&&a.units.get(o.foeViewDone); if(v){ v._viewDone=1; render() } return }
   if(o.foeLog){ const a=foeViewActive(); if(a&&a.battle===o.foeLog.battle){ const x=Object.assign({},o.foeLog.entry), u=o.foeLog.hpUnit, v=u&&a.units.get(u);
@@ -9372,6 +9379,7 @@ function playFX(o){
   if(o.cardGive){ cardGiveFX(o.side,o.slot,o.cardGive&&o.cardGive.to,o.cardGive); return }
   if(o.watchGaze){ watchGazeFX(o.watchGaze.slot,o.watchGaze.ci); return }   /* [감시] 가 대원을 깎을 때 */
   if(o.questUp){ questPopFX(o.questUp); return }
+  if(o.darkBurst){ gsdBurstFX(o.darkBurst); return }
   if(o.darkStep){ const u=o.darkStep; u.darkPend=Math.max(0,(u.darkPend||0)-1); if(view==="battle") render(); return }   /* 어둠 조각 — 칸의 수치를 하나 올린다 (gsdShowStep) */
   if(o.thornIn) thornInFX(o.side,o.slot);
   if(o.mimicGold) mimicGoldFX(o.side,o.slot);
@@ -14616,7 +14624,7 @@ const SKILL_FULL={
  "악마 하수인":"굴라가 이미 차원문이 있는 자리에 균열 차원문을 재사용하면 차원문을 닫고 가져옵니다. 그렇게 얻은 카드는 소멸성 — 그 전투가 끝나면 사라집니다. 보상으로 얻은 것은 여느 카드처럼 남습니다.",
  "악마 장군":"굴라가 [악마 장군 소환]을 얻은 뒤에는 악마 하수인 대신 이 카드를 가져옵니다.",
  "악마 혐오":"전장의 악마 종족 하나당 추가 보호력을 1 얻습니다.",
- "어둠 증식":"잠금(4). 어둠 조각을 모두 소모하여 1개당 그슨대의 추가 공격력만큼 적에게 피해를 줍니다. \n\n그림자가 있는 상태라면, 대신 그슨대가 그만큼 보호막을 얻습니다.",   /* 노트 10-4 */
+ "어둠 증식":"잠금(4). 그슨대의 추가 공격력만큼 적에게 피해를 줍니다. 어둠 조각을 모두 소모하여 그만큼 반복합니다.\n\n그림자가 있는 상태라면, 대신 그슨대가 그만큼 보호막을 얻습니다.",   /* 노트 10-4 */
  "에너지 융합봉":"수축 공격과 팽창 공격 중 선택하여 시전합니다.",
  "영광의 족쇄":"잠금(1). 추가 공격력과 마법력을 보호력으로 변환합니다. \n가장 가까운 적을 속박시키고 피해를 8(추가 ¤ ) 줍니다.\n\n_독서 중첩_을 1 얻습니다.\n\n_축복 상태_라면 대신 기절시킵니다.",
  "영광의 휘장":"아군 대원에게 피해를 4주고 회피를 1 부여합니다.",
@@ -14811,7 +14819,7 @@ HEROES["그슨대"]={title:"어둠의 그림자",role:"은신, 기습",hp:20,man
    {n:"그림자 기습",cost:1,el:"공격",tg:"foe",dmg:3,gsStrike:1,d:"피해 3 (그림자가 있으면 대신 그리로 옮겨 1턴 은신)"},
    {n:"그림자 이동",cost:1,el:"보호",tg:"self",gsStep:1,liveBase:{heal:2},d:"그림자를 남기고 최대 2칸 이동, 다음 턴까지 피해 뒤 체력 2 회복 (그림자가 있으면 대신 그리로 옮겨 1턴 도발)"},
    {n:"두려움 잠식",cost:1,el:"보호",tg:"self",lock:1,gsFear:1,liveBase:{dmg:1},d:"잠금(1), 모든 대상에게 피해 1씩 3번 (그림자가 있으면 대신 그리로 옮겨 무작위 적에게 공포)"},
-   {n:"어둠 증식",cost:1,el:"집중",tg:"foe",lock:4,gsBloom:1,d:"잠금(4), 어둠 조각마다 추가 공격력만큼 피해 (그림자가 있으면 대신 그만큼 보호막)"}
+   {n:"어둠 증식",cost:1,el:"집중",tg:"foe",lock:4,gsBloom:1,d:"잠금(4), 추가 공격력만큼 피해, 어둠 조각을 모두 소모해 그만큼 반복 (그림자가 있으면 대신 그만큼 보호막)"}
   ]};
 HEROES["오토"]={title:"숲을 돌보는 기계",role:"보호, 지원",hp:20,mana:3,hpLv:2,
   focus:"에너지 보호막, 능력치 증가, 이동, 소환물",
@@ -26957,6 +26965,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 385, "v": "0.7", "d": "2026-11-05", "t": "어둠 증식 개편 — 조각 수만큼 반복, 방사 후 순차 추적 연출, 그림자면 몸으로 돌아오며 보호막", "big": 0},
  {"b": 384, "v": "0.7", "d": "2026-11-05", "t": "그림자 이동 회복 · 어둠 조각 하나씩 · 구역 습격 곡 · 감옥 전투 곡 · 실험 책임자 곡 · 패배 곡 · 백그라운드 소리 설정", "big": 0},
  {"b": 383, "v": "0.7", "d": "2026-11-05", "t": "경험치 막대 — 수치 앞 아이콘", "big": 0},
  {"b": 382, "v": "0.7", "d": "2026-11-05", "t": "대원 상태창 경험치 막대 — 체력과 같은 틀, 금색 채움", "big": 0},
@@ -28533,7 +28542,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=384;
+const BUILD_NO=385;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -35629,18 +35638,18 @@ const GSD_FX={
   emerge:{k:"fx_gsd_emerge",fm:[65,70,75,80,90,90,90,90]},
   strike:{k:"fx_gsd_strike",fm:[60,70,85,80,85,85,90,95]},
   fear:{k:"fx_gsd_fear",fm:[60,75,80,75,80,75,90,100],z:1.6},   /* 발밑 물결 — 1.6배 (사용자 2026-11-02 「크게」). 물결이 2 · 4 · 6 칸째에 솟는다 = 피해 세 번 */
-  bloom:{k:"fx_gsd_bloom",fm:[65,70,75,100,85,85,95,100]}};
+  bloom:{k:"fx_gsd_bloom",fm:[170,170,360,140,100,100,100,140],z:1.5/2.45,tag:"gsdbloom"}};   /* 몸 위 192px (받은 시안 shuffle-speed-v3). 방출 때 224 · 208 은 gsdBurstFX */
 const GSD_Z=2.45;   /* 띠 속 인물(논리 51~53px)이 몸 그림(화면 128px, 창 크기와 상관없음)과 같은 키 — 1280 · 1920 에서 잰 값 (2026-11-02) */
 const gsdMs=k=>GSD_FX[k].fm.reduce((a,b)=>a+b,0);
 /* 녹음 (사용자 2026-11-02, tools/gsd-snd-in.py) — 「그슨대 <기술>」 로 두지 않았다 : 그러면 그림자 갈래까지 같은 소리가 난다 */
-const GSD_SND={vanish:"그슨대 사라짐",emerge:"그슨대 나타남",strike:"그슨대 그림자 기습 타격",bloom:"그슨대 어둠 증식 모으기"};
+const GSD_SND={vanish:"그슨대 사라짐",emerge:"그슨대 나타남",strike:"그슨대 그림자 기습 타격",bloom:"그슨대 어둠 증식 모으기"};   /* 어둠 증식은 모으기 → 발사(방출) → 타격(조각마다) */
 const gsdSnd=k=>sfxOr(k,null);
 /* 띠 하나 — fx 큐에 실을 꼴. 발밑 기준점(32,60)은 feet + dy 4, 맞는 적(32,32)은 가운데, 증식(64,64)은 가운데 */
 function gsdSheet(k,side,slot,gap){
   const F=GSD_FX[k], feet=(k==="vanish"||k==="emerge"||k==="fear");
   return {side:side,slot:slot,sheet:F.k,gap:gap==null?gsdMs(k):gap,s:GSD_SND[k]?gsdSnd(GSD_SND[k]):null,
     /* 칸 길이도 연출 빠르기(SPD)를 따른다 — 큐의 gap 은 SPD 를 곱하니 띠와 다음 연출 · 본체 숨김이 같이 줄어든다 */
-    sheetOpt:Object.assign({frames:8,frameMs:F.fm.map(n=>Math.round(n*SPD)),z:GSD_Z*(F.z||1)},k==="bloom"?{cell:128}:{},feet?{feet:1,dy:k==="fear"?5:4}:{})};
+    sheetOpt:Object.assign({tag:F.tag,frames:8,frameMs:F.fm.map(n=>Math.round(n*SPD)),z:GSD_Z*(F.z||1)},k==="bloom"?{cell:128}:{},feet?{feet:1,dy:k==="fear"?5:4}:{})};
 }
 function gsdIs(h){ return !!(h&&h.name==="그슨대"&&!h.isMin) }
 /* 그림자가 있으면 기습 · 증식은 겨눌 것이 없는 기술이 된다 — 고르는 화면이 s.tg 를 읽으니 여기서 맞춘다
@@ -35652,7 +35661,10 @@ function gsdTgSync(h){
 /* 급습 — 묻기만 한다. 닳게 하는 것(은신 걷기)은 runEffect 가 — 예고(predictDmg)와 실제가 같은 물음을 쓴다 */
 function gsdAmbush(h,s){ return !!(gsdIs(h)&&h.hide&&!h.gsAmbUsed&&s&&s.el==="공격") }   /* 급습은 은신 한 번에 한 방 — 1턴 은신은 쳐도 안 풀리므로 따로 닳는다 */
 /* 어둠 증식 — 조각 하나당 그슨대의 추가 공격력만큼 */
-function gsdBloomVal(h){ return Math.max(0,(h&&h.dark)||0)*Math.max(0,(h&&h.atk)||0) }
+function gsdBloomOne(h){ return Math.max(0,(h&&h.atk)||0) }
+/* 조각이 많아도 늘어지지 않게 — 9개부터 첫 출발 ~ 마지막 출발이 1초 (받은 시안 v3) */
+const gsdBloomPace=n=>({gap:n<=8?140:1000/(n-1),fly:n<=8?470:Math.max(310,470-(n-8)*8)});
+const GSD_BLOOM_AT={out:700,go:1030};   /* 몸 위 띠가 시작한 뒤 — 방출(4칸째) · 첫 출발 */
 /* 커져가는 악몽 — 피해를 받을 때마다 (hurtAlly · dotAlly 가 부른다). 그림자 이동의 「피해를 받은 후 회복」도 여기 */
 /* 어둠 조각을 얻는다 — 모은 수(darkGot)가 per 의 배수가 될 때마다 공격력 (끝없는 밤이면 2, 아니면 3) */
 const gsdPer=h=>(h&&h.tag&&h.tag.endlessNight)?2:3;
@@ -35835,22 +35847,42 @@ function gsdCast(h,s,target){
     } } finally { B._ownSnd=own0 }
     return true }
   if(s.gsBloom){
-    const n=h.dark||0, v=gsdBloomVal(h); h.dark=0;
-    fx(gsdSheet("bloom","mine",h.slot,310));   /* 4칸째에 터진다 — 그때 피해 · 보호막 */
-    if(h.shadowAt){
-      if(v>0){ const got=addShield(h,v); fx({side:"mine",slot:h.slot,s:gsdSnd("그슨대 그림자로 보호막")||"shield",txt:"+"+got,cls:"shd",gap:80}) }
-      say(`어둠 증식 — 어둠 조각 ${n}개, ${h.name} 보호막 +${v}`,"t1");
-      return true }
-    const f=foeAt(target), T=h.tag||{};
-    say(`어둠 증식 — 어둠 조각 ${n}개 × 추가 공격력 ${Math.max(0,h.atk||0)}`,"t1");
-    const L=T.nightFlood?B.foes.filter(x=>x.alive):(f&&f.alive?[f]:[]);   /* 밤의 범람 — 모든 적 */
-    if(L.length&&v>0){ const own0=B._ownSnd, k=gsdSnd("그슨대 어둠 증식 발사");
-      if(k){ fx({side:"foe",slot:L[0].slot,s:k,gap:0}); B._ownSnd=1 }   /* 녹음이 있으니 합성 타격음은 빼고 */
-      try{ L.forEach(x=>{ const add=(T.prey&&deb(x,"fear")>0)?T.prey:0;
-        asSrc(h,()=>hurt(x,v+add,"어둠 증식","mag"));
-        if(!x.alive&&!x.fled&&T.hungryDark&&(x.atk||0)>0){ bumpTmp(h,"atk",x.atk);   /* 굶주린 어둠 — 그 적의 추가 공격력을 그 전투 동안 */
-          fx({side:"mine",slot:h.slot,ring:"#a8323e",txt:"공격력 +"+x.atk,cls:"buf",gap:60}); say(`굶주린 어둠 — ${h.name} 공격력 +${x.atk}`,"t1") } }) }
-      finally { B._ownSnd=own0 } }
+    /* 쏘기 전에 값을 묶는다 — 조각 n · 한 번의 값 one. 쏘는 동안 얻은 조각 · 공격력은 이번 시전과 무관하다.
+       셈은 여기서 끝나고 fx 는 그 결과를 차례로 보여 줄 뿐이다 — 그림이 못 떠도 · 칸이 비어도 피해는 같다 */
+    const n=h.dark||0, one=gsdBloomOne(h), T=h.tag||{}, self=!!h.shadowAt; h.dark=0;
+    const f=self?null:foeAt(target), L0=self?[]:(T.nightFlood?B.foes.filter(x=>x.alive):(f&&f.alive?[f]:[]));   /* 대상은 옛 그대로 — 고른 적 하나, 밤의 범람이면 모든 적 */
+    if(!(n>0)||!(one>0)||(!self&&!L0.length)){   /* 쏠 것이 없다 — 띠만, 투사체 · 피해 없음 */
+      fx(gsdSheet("bloom","mine",h.slot,GSD_BLOOM_AT.out));
+      say(`어둠 증식 — 어둠 조각 ${n}개`,"t1");
+    } else {
+      const P=gsdBloomPace(n), burst={slot:h.slot,n:n,self:self,to:[],hits:0,gap:P.gap,fly:P.fly};
+      fx(gsdSheet("bloom","mine",h.slot,0));
+      fx({gap:GSD_BLOOM_AT.out,darkBurst:burst});
+      fx({side:self?"mine":"foe",slot:self?h.slot:L0[0].slot,s:gsdSnd("그슨대 어둠 증식 발사"),gap:GSD_BLOOM_AT.go-GSD_BLOOM_AT.out+P.fly});
+      if(self){
+        let sum=0;
+        for(let q=0;q<n;q++){ const got=addShield(h,one); sum+=got; burst.hits++;
+          if(!PRED_DRY) h.shPend=(h.shPend||0)+got;
+          fx({side:"mine",slot:h.slot,s:gsdSnd("그슨대 그림자로 보호막")||"shield",txt:"+"+got,cls:"shd",gap:q<n-1?P.gap:240,shStep:{u:h,v:got}}) }
+        say(`어둠 증식 — 어둠 조각 ${n}개, ${h.name} 보호막 +${sum}`,"t1");
+      } else {
+        say(`어둠 증식 — 추가 공격력 ${one} × 어둠 조각 ${n}개`,"t1");
+        const own0=B._ownSnd, ownK=gsdSnd("그슨대 어둠 증식 타격"); let q=0;
+        try{ for(;q<n;q++){   /* 맞을 적이 없어지면 남은 조각은 헛되이 날아간다 — 반복 공격의 옛 길(if alive)과 같다. 다른 적으로 안 옮겨 간다 */
+          const L=L0.filter(x=>x.alive); if(B.over||!L.length) break;
+          burst.to[q]=L[q%L.length].slot; burst.hits++;
+          const i0=FXQ.length;
+          if(ownK){ fx({side:"foe",slot:burst.to[q],s:ownK,gap:0}); B._ownSnd=1 }
+          L.forEach(x=>{ const add=(T.prey&&deb(x,"fear")>0)?T.prey:0;
+            asSrc(h,()=>hurt(x,one+add,"어둠 증식","mag",0,0,1));
+            if(!x.alive&&!x.fled&&T.hungryDark&&(x.atk||0)>0){ bumpTmp(h,"atk",x.atk);   /* 굶주린 어둠 — 그 적의 추가 공격력을 그 전투 동안 */
+              fx({side:"mine",slot:h.slot,ring:"#a8323e",txt:"공격력 +"+x.atk,cls:"buf",gap:60}); say(`굶주린 어둠 — ${h.name} 공격력 +${x.atk}`,"t1") } });
+          for(let k=i0;k<FXQ.length;k++) FXQ[k].gap=0;
+          if(FXQ.length>i0) FXQ[FXQ.length-1].gap=q<n-1?P.gap:240 }
+        } finally { B._ownSnd=own0 }
+        if(q&&q<n){ const last=FXQ[FXQ.length-1]; if(last) last.gap=(n-q)*P.gap+240 }   /* 헛되이 날아간 조각이 닿을 때까지 */
+        for(let k=q;k<n;k++) burst.to[k]=burst.to[q-1]; }
+    }
     if(T.bloomBack&&n>0){ const back=Math.floor(n*T.bloomBack/100); if(back>0){ say(`어둠 역류 — 어둠 조각 ${back}개를 다시 얻습니다.`,"t2"); gsdGain(h,back) } }   /* 소모한 조각의 25% (겹치면 50%) */
     return true }
   return false;
@@ -35877,6 +35909,65 @@ function gsdHideBody(ms){
 function gsdMoveFX(from,to){
   fx(Object.assign(gsdSheet("vanish","mine",from),{fn:()=>gsdHideBody(gsdMs("vanish")+gsdMs("emerge"))}));
   fx(gsdSheet("emerge","mine",to));
+}
+/* 어둠 증식 — 조각이 방사형으로 퍼졌다가 무작위 차례로 날아간다 (받은 시안 shuffle-speed-v3, 사용자 2026-11-05).
+   ⚠️ 보이는 것만 — 피해 · 보호막은 규칙이 이미 끝냈고, 맞는 순간은 fx 큐의 차례가 맞춘다 (burst.gap · burst.fly 가 같은 값).
+   시각 t 는 몸 위 띠가 시작한 뒤 ms. 시계로 재므로 프레임이 밀려도 조각이 빠지지 않고, 빠르기는 시전 때의 SPD 로 묶는다.
+   발사 차례는 시전마다 한 번 섞고 그 뒤로 안 바꾼다 — Math.random : 판의 주사위(rnd)를 안 건드린다 */
+const GSD_DIM={base:.34,peak:.6};
+function gsdShardPt(c,a,r){ return {x:c.x+Math.cos(a)*r,y:c.y+Math.sin(a)*r} }
+function gsdKick(px,K){
+  if(shutReduce()) return null; const e=document.querySelector(".bfstage"); if(!e||!e.animate) return null;
+  const kf=[]; for(let i=0;i<=8;i++){ const h=i/8*180, s=Math.round(Math.sin(h*.15)*px*(1-h/180)); kf.push({translate:s+"px "+Math.round(s*.4)+"px"}) }
+  return e.animate(kf,{duration:180*K}) }
+function gsdBurstFX(o){
+  const battle=B, K=SPD, cell=ctrOf("mine",o.slot); if(!cell) return;
+  B.busy=1;   /* 조각이 다 닿기 전에 턴이 안 넘어가게 — done 이 푼다. 규칙이 아니라 기다림이라 시뮬레이터에는 없다 */
+  const img=cell.e.querySelector(".art img.pxs"), r=img&&img.getBoundingClientRect();
+  const c=(r&&r.width)?{x:r.left+r.width/2,y:r.top+r.height*.29}:{x:cell.x,y:cell.y};   /* 상체 — 시안의 몸 그림 비율 */
+  const n=o.n, at0=GSD_BLOOM_AT, order=[...Array(n).keys()];
+  for(let i=n-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [order[i],order[j]]=[order[j],order[i]] }
+  const shapes=["wedge","fork","crook"], end0=at0.go+(n-1)*o.gap+o.fly;
+  const dest=o.self?[]:[...new Set(o.to)].reduce((m,s)=>{ m[s]=bodyPoint("foe",s)||ctrOf("foe",s); return m },{});
+  const S=order.map((slot,i)=>{ const a=-Math.PI/2+slot*Math.PI*2/n, R=90+(slot%3)*14, q=o.self?c:dest[o.to[i]];
+    const nd=spawn('<div class="gsdshard"></div>',end0*K+600), u=ICON_PNG&&ICON_PNG["fx_gsd_shard_"+shapes[i%3]];
+    if(nd&&u) nd.style.backgroundImage="url("+u+")"; if(nd) nd.style.opacity="0";
+    return {nd,a,R,q,i,launch:at0.go+i*o.gap} });
+  let raf=0, over=0, stage=-1, k1=null, k2=null, kicked=0, fieldEl=null; const t0=performance.now();
+  const sheet=()=>document.querySelector('.shfx[data-fxtag="gsdbloom"]');
+  { const e=sheet(); if(e) at(e,c) }   /* 띠도 조각과 같은 중심 — 상체 */
+  const dimOff=()=>{ if(fieldEl){ fieldEl.classList.remove("gsd-dim"); fieldEl.style.removeProperty("--gsdDim") } document.querySelectorAll(".field.gsd-dim").forEach(e=>e.classList.remove("gsd-dim")) };
+  const done=()=>{ if(over) return; over=1; cancelAnimationFrame(raf); clearTimeout(safe); if(B===battle){ B.busy=0; if(view==="battle") render() } S.forEach(s=>{ if(s.nd) s.nd.remove() }); dimOff();
+    [k1,k2].forEach(a=>{ try{ if(a) a.cancel() }catch(e){} }) };
+  const place=(s,x,y,a)=>{ s.nd.style.transform="translate("+x.toFixed(1)+"px,"+y.toFixed(1)+"px) rotate("+a.toFixed(3)+"rad)"; s.nd.style.opacity="1" };
+  const tick=now=>{
+    if(over) return; if(B!==battle||view!=="battle"){ done(); return }
+    const t=(now-t0)/K;
+    const lastT=at0.go+(n-1)*o.gap+o.fly, ramp=(a,b)=>Math.min(1,Math.max(0,(t-a)/(b-a)));
+    /* 시안의 곡선 (모을 때 깊게, 날아가는 동안 얕게) — 다만 게임 바닥이 밝아 값을 올리고, 마지막 조각이 닿은 뒤에 걷는다 */
+    const dim=(GSD_DIM.base*ramp(0,300)+(GSD_DIM.peak-GSD_DIM.base)*ramp(100,600)*(1-ramp(1100,1650)))*(1-ramp(lastT,lastT+300));
+    fieldEl=document.querySelector(".bfstage .field");
+    if(fieldEl){ fieldEl.classList.add("gsd-dim"); fieldEl.style.setProperty("--gsdDim",dim.toFixed(3)) }
+    const st=t<at0.out?0:t<840?1:t<940?2:3;
+    if(st!==stage){ stage=st; const e=sheet(); if(e) e.style.transform="scale("+[1.5,1.75,1.625,1.5][st]+")" }
+    if(t>=at0.out&&!k1){ k1=gsdKick(3,K)||1 }
+    const lastHit=at0.go+(Math.max(1,o.hits)-1)*o.gap+o.fly;
+    if(t>=lastHit&&!kicked){ kicked=1; k2=gsdKick(4,K) }
+    S.forEach(s=>{ if(!s.nd) return;
+      if(t<at0.out) return;
+      const arrive=s.launch+o.fly;
+      if(t>=arrive){ s.nd.remove(); s.nd=null; return }
+      const sp=1-Math.pow(1-Math.min(1,(t-at0.out)/180),3), p=gsdShardPt(c,s.a,s.R*sp);
+      if(t<s.launch||!s.q){ place(s,p.x,p.y,s.a); return }
+      /* 곡선 — 시안 그대로 2차 베지어, u=t^1.6 으로 다가갈수록 빨라진다. 돌아올 때는 위아래만 */
+      const p0=gsdShardPt(c,s.a,s.R), u=Math.pow(Math.min(1,(t-s.launch)/o.fly),1.6), v=1-u, dir=o.self?0:(s.q.x>=p0.x?1:-1);
+      const bend=Math.max(1,Math.hypot(s.q.x-p0.x,s.q.y-p0.y)/370), cx=p0.x+70*bend*dir, cy=p0.y-65*bend*(s.i%2?1:-1);
+      place(s,v*v*p0.x+2*v*u*cx+u*u*s.q.x,v*v*p0.y+2*v*u*cy+u*u*s.q.y,Math.atan2(2*v*(cy-p0.y)+2*u*(s.q.y-cy),2*v*(cx-p0.x)+2*u*(s.q.x-cx))) });
+    if(t>=Math.max(end0+300,1650)+60){ done(); return }
+    raf=requestAnimationFrame(tick) };
+  /* 창이 뒤로 가면 프레임이 안 온다 — 시계로 한 번 더 걷는다 */
+  const safe=setTimeout(done,(Math.max(end0+300,1650)+400)*K);
+  raf=requestAnimationFrame(tick);
 }
 /* ═══════════ 광기의 투기장 연출 (사용자 2026-11-03) ═══════════
    받은 그림만 쓴다 — 덫 두 상태 · 돌 · 단검 · 거울 광선 · 피 웅덩이 솟아남 (art/이펙트/투기장).
@@ -40157,7 +40248,7 @@ function startBattle(kind,pinned){
    · 방어구 카드의 능력치(강철 군화 · 마법 부여 보호구)는 그 라운드만 — '전투 동안' 이 없다 */
 const ROUND_RESET={
   shield:0, keepShield:0, slot:0, armor:0, deb:{},
-  hide:0, shadowAt:0, gsMend:0, stance:0, pbPrep:0, pbVeins:[],   /* 페블 — 준비 · 광맥은 라운드 */   /* 그슨대 — 그림자 · 그림자 이동 회복은 라운드 (노트 10) */
+  hide:0, shadowAt:0, gsMend:0, shPend:0, stance:0, pbPrep:0, pbVeins:[],   /* 페블 — 준비 · 광맥은 라운드 */   /* 그슨대 — 그림자 · 그림자 이동 회복은 라운드 (노트 10) */
   leech:0, pierceNext:0, aimAt:null, headshotUsed:0, mobile:0, patFreeTurn:0, lastBas:null,   /* 최후의 보루 — 라운드를 넘지 않는다 */
   eshield:0,                       /* 에너지 보호막 — 그 라운드에서만 (사용자 2026-10-01) */
   freeBlock:0, freePush:0, cutUses:0, shotUses:0, guardStack:0,
@@ -45146,7 +45237,8 @@ function drawBattle(app){
       const mrf=mrfAuraHtml(s);
       const iraa=iraAuraHtml(h);   /* 복수귀 오라 — 켜져 있는 동안 몸을 감싼다 (2026-10-13) */
       const esW0=h.eshield?Math.max(6,Math.min(45,h.eshield/h.maxHp*100)):0;
-      const shW0=h.shield?Math.max(6,Math.min(45,h.shield/h.maxHp*100)):0;
+      const shNow=Math.max(0,(h.shield||0)-(h.shPend||0));   /* 어둠 증식 — 조각이 몸에 닿을 때마다 (shStep) */
+      const shW0=shNow?Math.max(6,Math.min(45,shNow/h.maxHp*100)):0;
       const [esW,shW]=barWard(esW0,shW0,h.hp/h.maxHp*100);   /* 둘의 합이 체력을 덮지 않게 (2026-10-20) */
       if(h.isMin&&h.mimic&&h.mimic.act) d.innerHTML+=`<div class="intentbar">${mimicHtml(h)}</div>`;
       d.innerHTML+=`<div class="res">${manaPips(h)}${heroRes(h)}${
@@ -45154,16 +45246,16 @@ function drawBattle(app){
         <div class="art${(h.name==="카제"&&h.hp>0&&h.sk[0]&&h.sk[0].n==="회오리")?" charged":""}${h.bigArt?" bigart":""}${(typeof gsdBodyOff==="function"&&gsdBodyOff(h))?" vanish":""}"${(h.name==="페블"&&h.tag&&h.tag.giant)?` style="--pbgiant:${(1+0.12*Math.min(4,h.tag.giant)).toFixed(2)}"`:""}>${pmk}${mrf}${iraa}${auraHtml(h)[0]}${(h.mobile&&h.hp>0&&skinIcon("fx_it_aura"))?`<i class="mobaura kw" style="background-image:url(${skinIcon("fx_it_aura")})" data-kw="기동 상태" data-tip="다른 기술을 쓴 뒤 1칸 물러서고 에너지 보호막을 얻습니다."></i>`:""}${ksoulAuraHtml(h)}${figure((h.artAs&&Date.now()-(h.artAsT||0)<5000)?h.artAs:h.name,poseNow(h),h)}${(h.mobile&&h.hp>0&&skinIcon("fx_it_aura"))?`<i class="mobaura front" style="background-image:url(${skinIcon("fx_it_aura")})"></i>`:""}${ksoulAuraHtml(h,1)}${auraHtml(h)[1]}${(h.name==="카제"&&h.hp>0&&h.sk[0]&&h.sk[0].n==="회오리")?`<i class="swglow kw" data-kw="회오리" data-tip="회오리가 찼습니다."></i>`:""}</div>
         <div class="nm">${esc(h.name)}</div>${(sel&&sel.hero===h)?raceLine(h):""}
         <div class="bar" data-hpk="${hpKey(h)}" data-hpv="${Math.max(0,h.hp/h.maxHp*100)}" data-hpn="${h.hp}"
-          data-shv="${(h.shield||0)+(h.eshield||0)}" data-esw="${esW}" data-shw="${shW}">
+          data-shv="${shNow+(h.eshield||0)}" data-esw="${esW}" data-shw="${shW}">
           <em class="gh" style="width:${Math.max(0,h.hp/h.maxHp*100)}%"></em><i style="width:${Math.max(0,h.hp/h.maxHp*100)}%"></i>
           ${deb(h,"exec")>0?`<b class="exzone${h.hp<deb(h,"exec")?" on":""}" style="width:${Math.min(100,deb(h,"exec")/h.maxHp*100)}%"></b>`:""}
           <u class="shgh" style="width:${esW+shW}%;right:0%"></u>
           <u class="es" data-w="${esW}" style="width:${esW}%;right:0%"${h.eshield?` data-kw="에너지 보호막"`:""}></u>
-          <u class="sh" data-w="${shW}" data-r="${esW}" style="width:${shW}%;right:${esW}%"${h.shield?` data-kw="보호막"`:""}></u></div>
+          <u class="sh" data-w="${shW}" data-r="${esW}" style="width:${shW}%;right:${esW}%"${shNow?` data-kw="보호막"`:""}></u></div>
         ${progHtml(h)||`<div class="prog pgap"><div class="pl"><span>&nbsp;</span></div><div class="pb"></div></div>`}
         <div class="mini">${ic("hp")}${h.hp}/${h.maxHp}${
           h.eshield?` <span class="esh kw" data-kw="에너지 보호막">◆${h.eshield}</span>`:""}${
-          h.shield?` <span class="shd">${ic("def")}${h.shield}</span>`:""}</div>
+          shNow?` <span class="shd">${ic("def")}${shNow}</span>`:""}</div>
         <div class="stats">
           ${(()=>{ const pa=portalImpAtk(h), a=(h.atk||0)+pa; return a?`<span${pa?` class="pup kw" data-kw="물량 공세" data-tip="차원문 위 +${pa}."`:statTipAttr(h,"atk",h.atk||0)}>${ic("atk")}${a}</span>`:"" })()}
           ${h.mag?`<span${statTipAttr(h,"mag",h.mag)}>${ic("mag")}${h.mag}</span>`:""}
@@ -48307,7 +48399,7 @@ function predictDmg(h,s,tgt){
   else if((s.gsStrike||s.gsFear||s.gsBloom)&&h.shadowAt) return null;
   else if(s.gsFear){ dmg=1; times=3 }
   else if(s.pbSwing){ dmg=bs("dmg")+ATK; if(pebbleSwingCrit(h,s,tgt)){ dmg*=2; crit=1 } }   /* 관자놀이 타격 · 세계핵의 망치(철 광맥) — pebbleSwingOnce 와 같은 물음 */   /* 페블 휘두르기 — 모든 적 (pebbleCast 와 같은 셈) */   /* 두려움 잠식 — 1씩 3번 (추가 능력치 없음) */
-  else if(s.gsBloom){ dmg=gsdBloomVal(h); if(!dmg) return null }   /* 어둠 증식 — 조각 × 추가 공격력 */
+  else if(s.gsBloom){ dmg=gsdBloomOne(h)+((h.tag&&h.tag.prey&&deb(tgt,"fear")>0)?h.tag.prey:0); times=(h.dark||0); if(!(h.atk>0)||!times) return null }   /* 어둠 증식 — 추가 공격력씩, 조각 수만큼 */
   else if(s.dmg==null) return null;
   else if(h.name==="카제"&&(s.n==="진선풍도"||s.n==="회오리")){
     const strong=(s.n==="회오리");
@@ -53513,7 +53605,7 @@ function startMyTurn(){
     if(h.spareNext&&h.tag&&h.tag.spareBat){ const v=3*h.tag.spareBat; h.eshield=(h.eshield||0)+v; h.spareNext=0;
       say(`여분 전지 — ${h.name} 에너지 보호막 +${v}`,"t2") }
     pebbleTurnStart(h);   /* 페블 영웅 등장 — 5턴 뒤 (src/rules/pebble.js) */
-    h.gsMend=0; h.darkPend=0;   /* 그림자 이동 — 「다음 턴까지」 피해를 받은 후 회복. 쓴 턴과 이어지는 적 턴 동안, 다음 내 턴에 걷는다 */
+    h.gsMend=0; h.darkPend=0; h.shPend=0;   /* 그림자 이동 — 「다음 턴까지」 피해를 받은 후 회복. 쓴 턴과 이어지는 적 턴 동안, 다음 내 턴에 걷는다 */
     if(h.stop>0&&--h.stop<=0){ h.stop=0;
       fx({side:"mine",slot:h.slot,ring:"#8fa8c0",txt:"정지 풀림",cls:"buf",gap:90});
       say(`${h.name}의 정지가 풀립니다.`,"t2") }
