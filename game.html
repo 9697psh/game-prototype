@@ -7232,7 +7232,7 @@ const SFX=(()=>{
      저절로 갈린다 — s:"shield" 를 부르는 곳을 하나도 안 고쳐도 된다.
      녹음이 없는 열쇠말만 합성음으로 내려간다. */
   return { loop(k){ if(PRED_DRY||!on||!k||vol<=0||(LIVE[k]||[]).length) return; try{ sample(k,1) }catch(e){} },   /* 되풀이 — stop(k) 로 끈다 (콜로서스 빔 충전, 2026-10-07) */
-           play(k,o){ if(PRED_DRY||!on||!k||vol<=0) return;
+           play(k,o){ if(PRED_DRY||!on||!k||vol<=0||(document.hidden&&!BG_SND)) return;
              try{ if(!sample(k,false,o)&&K[k]) K[k]() }catch(e){} },
            /* 미리 받아 둔다 (울리지 않는다) — 번호 붙은 짝이면 다 */
            prep(k){ try{ if(typeof SND==="undefined"||!k) return;
@@ -7761,11 +7761,16 @@ const BGM_SRC={
   title  :"bgm/title.mp3",    /* 시작 화면 · 이어하기 — The Weeping Bell (사용자 2026-09-18) */
   main   :"bgm/main.mp3",     /* 지도(낮) · 주둔지 · 끝 화면 */
   night  :"bgm/night.mp3",    /* 지도(밤) */
-  battle :"bgm/battle.mp3",   /* 전투 — BATTLE THEME */
-  battle2:"bgm/battle2.mp3",  /* 전투 — A Solemn Lurching Gait */
-  battle3:"bgm/battle3.mp3",  /* 전투 — Steps in the Deep */
-  battle4:"bgm/battle4.mp3",  /* 전투 — Through Ancient Thickets */
-  ambush :"bgm/ambush.mp3",   /* 밤의 습격 — Iron Links in the Dark */
+  battle :"bgm/battle.mp3",   /* 핏빛 감옥 전투 셋 (사용자 2026-11-05 교체) */
+  battle2:"bgm/battle2.mp3",
+  battle3:"bgm/battle3.mp3",
+  battle4:"bgm/battle4.mp3",  /* 옛 곡 — 어느 판에도 안 넣는다. 전투 도중 저장한 판이 이 이름을 쥐고 있을 수 있어 남겨 둔다 */
+  ambush :"bgm/ambush.mp3",   /* 밤의 습격 — 구역마다 하나 (사용자 2026-11-05) : 핏빛 감옥 */
+  ambush_forest:"bgm/ambush_forest.mp3",
+  ambush_tower:"bgm/ambush_tower.mp3",
+  ambush_scrap:"bgm/ambush_scrap.mp3",
+  ambush_arena:"bgm/ambush_arena.mp3",
+  defeat :"bgm/defeat.mp3",   /* 원정 실패 (사용자 2026-11-05) */
   boss1  :"bgm/boss1.mp3",    /* 우두머리 */
   shop   :"bgm/shop.mp3",     /* 상점 */
   forge  :"bgm/forge.mp3",    /* 제련소 */
@@ -7791,6 +7796,7 @@ const BGM_SRC={
   arena3 :"bgm/arena3.mp3",
   /* ── 우두머리 · 적 전용 ── */
   boss_warden  :"bgm/boss_warden.mp3",    /* 간수장 */
+  boss_director:"bgm/boss_director.mp3",  /* 실험 책임자 (사용자 2026-11-05) */
   boss_colossus:"bgm/boss_colossus.mp3",  /* 콜로서스 */
   boss_frost   :"bgm/boss_frost.mp3",     /* 서리 군주 — 그 적이 생기면 건다 (아직 안 걸림) */
   boss_frost2  :"bgm/boss_frost2.mp3",    /* 서리 군주 초월체 각성 — 위와 같다 */
@@ -7813,6 +7819,7 @@ const BGM_GAIN={
   tower1:0.65,  tower2:0.64,  tower3:0.63,
   /* 고철의 무덤 셋 — 셋 다 -14.1dB 로 왔다 (사용자 2026-10-23, 같은 길로 재었다) */
   scrap1:0.62, scrap2:0.62, scrap3:0.62,
+  battle:0.62, battle2:0.62, battle3:0.62, ambush:0.62, ambush_forest:0.62, ambush_tower:0.62, ambush_scrap:0.62, ambush_arena:0.62, boss_director:0.62, defeat:0.62,   /* 2026-11-05 받은 열 곡 — 다 -14.3dB (ffmpeg volumedetect) */
   arena1:0.62, arena2:0.62, arena3:0.62, boss_satan:0.62,   /* 광기의 투기장 넷 — 다 -14.3dB (2026-11-04 ffmpeg volumedetect, 고철의 무덤과 같은 자리) */
   boss_warden:0.62, boss_colossus:0.59, boss_frost:0.65, boss_frost2:0.67,
   foe_puppeteer:0.62,
@@ -7821,15 +7828,17 @@ const BGM_GAIN={
 };
 const bgmGain=k=>(k&&BGM_GAIN[k])||1;
 /* 전투마다 이 가운데 하나를 고른다. 곡을 더 받으면 여기에 이름만 더하면 된다 */
-const BATTLE_BGM=["battle","battle2","battle3","battle4"];
+const BATTLE_BGM=["battle","battle2","battle3"];
 /* 구역마다 도는 전투 곡 (사용자 2026-10-09). ⚠️ 구역이 늘면 줄을 하나 더한다 */
 const FIELD_BGM=[
-  ["battle","battle2","battle3","battle4"],   /* 핏빛 감옥 — 원래 넷이 그대로 */
+  ["battle","battle2","battle3"],   /* 핏빛 감옥 */
   ["forest1","forest2","forest3"],            /* 정령숲 — 오염된 숲 · 추격 · 기계와 잔해 */
   ["tower1","tower2","tower3"]                /* 마력의 탑 — 마력과 탑 · 서고 · 시계와 시간 */
 ];
 /* 우두머리 곡. 표에 없는 구역은 boss1 — 서리 군주는 그 적이 생기면 여기에 한 줄 */
-const BOSS_BGM={"간수장":"boss_warden","콜로서스":"boss_colossus","사탄":"boss_satan"};
+const BOSS_BGM={"간수장":"boss_warden","실험 책임자":"boss_director","콜로서스":"boss_colossus","사탄":"boss_satan"};
+/* 밤의 습격 곡 — 막 번호로, 1막 · 2막 변형은 제 곡 (ACT1 · ACT2 의 ambushBgm) */
+const FIELD_AMBUSH=["ambush","ambush_forest","ambush_tower"];
 /* 적 전용 곡 — 그 적이 전장에 서면 구역 곡을 밀어낸다. ⚠️ 늘릴 때는 이 표에 한 줄만 */
 const FOE_BGM={"미치광이 인형사":"foe_puppeteer"};
 /* ⚠️ 전투마다 한 번만 정한다 — 그 적이 죽거나 변신해도(인형사는 「다음 막」에 바뀐다) 곡이 안 끊긴다.
@@ -7856,11 +7865,12 @@ function pickBattleBgm(){
 }
 /* 지금 화면에 맞는 곡. 없으면 null — 그러면 소리를 끈다 */
 function sceneBgm(){
+  if(run&&run.lost) return "defeat";   /* 원정 실패 — 패배 카드부터 끝 화면까지 (사용자 2026-11-05) */
   if(view==="battle"||view==="wavegap"){
     if(B&&B.kind==="boss"&&B.claim===1) return null;   /* 우두머리를 잡으면 곡을 끈다 — 전리품 · 돌판은 조용히 (사용자 2026-11-04) */
     { const fb=foeBgm(); if(fb) return fb }   /* 적 전용이 가장 먼저 — 구역 곡을 밀어낸다 */
     if(B&&B.kind==="boss") return bossBgm();
-    if(B&&B.kind==="ambush") return "ambush";
+    if(B&&B.kind==="ambush") return fieldPick("ambushBgm",FIELD_AMBUSH);
     if(run&&run.dun&&run.dun.trial) return "title";   /* 시련의 문 — 메인 화면 곡 (사용자 2026-10-06) */
     return (run&&run.dun&&run.dun.bgm)||"battle";
   }
@@ -8002,7 +8012,7 @@ volLoad();
 /* 창을 덮거나 다른 탭으로 옮기면 노래를 멈춘다.
    게임 창을 뒤로 보내 놓고 잊어버려도 소리가 따라다니지 않게. */
 document.addEventListener("visibilitychange",()=>{
-  try{ document.hidden?BGM.hide():BGM.show() }catch(e){}
+  try{ if(!document.hidden) BGM.show(); else if(!BG_SND) BGM.hide() }catch(e){}
 });
 /* 창을 닫거나 다른 곳으로 옮겨 갈 때 확실히 끊는다 */
 ["pagehide","beforeunload"].forEach(k=>
@@ -9362,6 +9372,7 @@ function playFX(o){
   if(o.cardGive){ cardGiveFX(o.side,o.slot,o.cardGive&&o.cardGive.to,o.cardGive); return }
   if(o.watchGaze){ watchGazeFX(o.watchGaze.slot,o.watchGaze.ci); return }   /* [감시] 가 대원을 깎을 때 */
   if(o.questUp){ questPopFX(o.questUp); return }
+  if(o.darkStep){ const u=o.darkStep; u.darkPend=Math.max(0,(u.darkPend||0)-1); if(view==="battle") render(); return }   /* 어둠 조각 — 칸의 수치를 하나 올린다 (gsdShowStep) */
   if(o.thornIn) thornInFX(o.side,o.slot);
   if(o.mimicGold) mimicGoldFX(o.side,o.slot);
   if(o.ghostMove){ ghostMoveFX(o.side,o.ghostMove.from,o.ghostMove.to); return }
@@ -14543,7 +14554,7 @@ const SKILL_FULL={
  "최후의 보루":"사용한도(1). 이번 턴에 헥토가 얻은 보호막량만큼, 다음 내 턴이 시작될 때 헥토가 보호막을 얻습니다.",
  "균열 차원문":"대상 위치에 차원문을 생성합니다. 차원문 위의 대상에 따라 효과가 부여됩니다.\n- 대상이 적이면 내 턴이 끝날 때, 피해를 3(추가 ∴ ) 줍니다.\n- 대상이 아군이면 내 턴이 끝날 때, 보호막을 3(추가 ¤ ) 부여합니다.\n이미 차원문이 있는 자리에 재사용 후 차원문을 닫고 [악마 하수인] 카드를 가져옵니다.",
  "그림자 기습":"적에게 피해를 3(추가 † ) 줍니다.\n\n그림자가 있는 상태라면, 대신 그림자가 있는 위치로 이동하고 1턴 동안 은신합니다.",   /* 노트 10-1 그대로 (2026-11-02) */
- "그림자 이동":"자리에 그림자를 남기고, 최대 2칸 이동합니다.\n이번 턴에 그슨대가 피해를 받은 후에, 체력을 2(추가 ) 회복합니다.\n\n그림자가 있는 상태라면, 대신 그림자가 있는 위치로 이동하고 1턴 동안 도발 상태가 됩니다.",   /* 노트 10-2 */
+ "그림자 이동":"자리에 그림자를 남기고, 최대 2칸 이동합니다.\n다음 턴까지 그슨대가 피해를 받은 후에, 체력을 2(추가 ) 회복합니다.\n\n그림자가 있는 상태라면, 대신 그림자가 있는 위치로 이동하고 1턴 동안 도발 상태가 됩니다.",   /* 노트 10-2 */
  "두려움 잠식":"잠금(1). 모든 대상에게 피해를 1(추가 )씩 3번 줍니다.\n\n그림자가 있는 상태라면, 대신 그림자가 있는 위치로 이동하고 무작위 적에게 공포를 부여합니다.",   /* 노트 10-3 (주석 줄 「아군 적군 모두 포함」은 노트에만) */
  "급습":"은신 상태에서 다음 공격 피해는 치명타로 적중합니다.",
  "기류 흘리기":"회피를 1 얻습니다. 이번 턴에 기류 흘리기의 비용이 1 증가합니다.",
@@ -14798,7 +14809,7 @@ HEROES["그슨대"]={title:"어둠의 그림자",role:"은신, 기습",hp:20,man
   passive:{n:"커져가는 악몽",d:"피해를 받을 때마다 어둠 조각. 3개마다 그 전투 공격력 +1 (사후 · 학살자 아군도)"},
   skills:[
    {n:"그림자 기습",cost:1,el:"공격",tg:"foe",dmg:3,gsStrike:1,d:"피해 3 (그림자가 있으면 대신 그리로 옮겨 1턴 은신)"},
-   {n:"그림자 이동",cost:1,el:"보호",tg:"self",gsStep:1,liveBase:{heal:2},d:"그림자를 남기고 최대 2칸 이동, 이번 턴 피해 뒤 체력 2 회복 (그림자가 있으면 대신 그리로 옮겨 1턴 도발)"},
+   {n:"그림자 이동",cost:1,el:"보호",tg:"self",gsStep:1,liveBase:{heal:2},d:"그림자를 남기고 최대 2칸 이동, 다음 턴까지 피해 뒤 체력 2 회복 (그림자가 있으면 대신 그리로 옮겨 1턴 도발)"},
    {n:"두려움 잠식",cost:1,el:"보호",tg:"self",lock:1,gsFear:1,liveBase:{dmg:1},d:"잠금(1), 모든 대상에게 피해 1씩 3번 (그림자가 있으면 대신 그리로 옮겨 무작위 적에게 공포)"},
    {n:"어둠 증식",cost:1,el:"집중",tg:"foe",lock:4,gsBloom:1,d:"잠금(4), 어둠 조각마다 추가 공격력만큼 피해 (그림자가 있으면 대신 그만큼 보호막)"}
   ]};
@@ -18591,6 +18602,11 @@ const BARK_KEY="kyunyeol.bark.v1";
 let BARK_SHOW=1;
 try{ BARK_SHOW=(localStorage.getItem(BARK_KEY)==="off")?0:1 }catch(e){}
 function setBarkShow(on){ BARK_SHOW=on?1:0; try{ localStorage.setItem(BARK_KEY,on?"on":"off") }catch(e){} }
+/* 백그라운드 소리 — 창이 뒤로 가도 소리를 낸다. 기본은 끔 (사용자 2026-11-05) */
+const BG_SND_KEY="kyunyeol.bgsnd.v1";
+let BG_SND=0;
+try{ BG_SND=(localStorage.getItem(BG_SND_KEY)==="on")?1:0 }catch(e){}
+function setBgSnd(on){ BG_SND=on?1:0; try{ localStorage.setItem(BG_SND_KEY,on?"on":"off") }catch(e){} }
 
 /* 설정 한 벌 — 무엇이 있고 지금 어떤가. **이름과 글도 여기서 쥔다**
    (브라우저의 설정 판과 같은 말 : 「빠르게 ▶▶」 · 「보통 ▶」 · 「켬」 · 「끔」) */
@@ -21868,7 +21884,8 @@ function heroStatusRows(h){
   if(h.evade) g.push(bd("g","회피",h.evade,"다음 공격 한 번을 통째로 흘립니다"));
   /* 은신 — 그슨대만 보이던 것을 **누구든** 보이게 (사용자 2026-10-15 : 데린저 연막탄) */
   if(h.hide) g.push(bd("g","은신","","숨어 있어 적이 겨눌 수 없습니다. 전장에 혼자 남으면 풀립니다"));
-  if(h.name==="그슨대"&&!h.isMin&&(h.dark||0)>0) g.push(bd("g","어둠 조각",h.dark,`커져가는 악몽 — 피해를 받을 때마다 하나. 3개 모을 때마다 공격력 +1 (다음까지 ${3-((h.darkGot||0)%3)})`));
+  if(h.name==="그슨대"&&!h.isMin){ const pend=h.darkPend||0, dk=Math.max(0,(h.dark||0)-pend), got=Math.max(0,(h.darkGot||0)-pend);   /* 아직 연출이 안 닿은 몫은 빼고 (gsdShowStep) */
+    if(dk>0) g.push(bd("g","어둠 조각",dk,`커져가는 악몽 — 피해를 받을 때마다 하나. 3개 모을 때마다 공격력 +1 (다음까지 ${3-(got%3)})`)) }
   if(h.rew>0) g.push(bd("g","되감기",h.rew,"다음에 쓰는 기술이 쌓인 만큼 한 번 더 발동합니다"));
   /* 충전 — **차는 중**이면 적 쪽처럼 0/1 로, **완료**면 횟수로 (사용자 2026-10-13).
      낱말표에 「충전」이 들어와 풀이는 KW_DESC 가 댄다 — 적 딱지와 **두 벌로 안 갈라진다** */
@@ -22000,6 +22017,7 @@ const ACT1={
  "핏빛 감옥":{},
  "고철의 무덤":{
    floor:"바닥-고철의 무덤.png",
+   ambushBgm:"ambush_scrap",
    bgm:["scrap1","scrap2","scrap3"],   /* 전투 곡 셋 (사용자 2026-10-23) — 아직 돌아가는 라인 · 불티와 용광로 · 버려진 소리 */
    bg:"bg/battle-scrap.webp", lay:"scrap",
    gim:{belt:0.7,furnace:0.55,depot:0.25,oil:0.5,care:0.45,crane:0.5,order:0.6},   /* 전용 구역 (사용자 2026-10-21). 자재 창고는 낮은 확률 */
@@ -22118,6 +22136,7 @@ const ACT2={
  "정령숲":{},
  "광기의 투기장":{
    floor:"바닥-광기의 투기장.png",
+   ambushBgm:"ambush_arena",
    bgm:["arena1","arena2","arena3"],   /* 전투 곡 셋 (사용자 2026-11-04) */
    bg:"bg/battle-arena.webp", lay:"arena",
    boss:"사탄",   /* 우두머리 (사용자 2026-11-04) — expeditionBoss 가 actOf("boss",1) 로 읽는다 */
@@ -24217,7 +24236,7 @@ function bossFallCard(name){
   setTimeout(()=>card.remove(),3400);
 }
 let BONE_AT=0;   /* 뼈 으스러지는 소리를 마지막으로 낸 때 — 겹쳐 두 번 울리지 않게 */
-function lose(msg){ clearSave(); run.lost=msg; recordRun("lose",msg);
+function lose(msg){ clearSave(); run.lost=msg; recordRun("lose",msg); try{ BGM.sync() }catch(e){}
   if(!hasScreen()||run.sandbox){ view="over"; render(); return }   /* 화면이 없으면(시뮬·판 돌려보기) 바로 끝 화면 */
   defeatCard(msg,()=>{ if(run&&run.lost){ view="over"; render() } }) }
 /* 원 정 실 패 — 화면이 검게 가라앉고 네 글자가 하나씩 떨어져 박힌다(글자마다 쿵, 마지막에 크게). 빛 없이 묵직하게.
@@ -26938,6 +26957,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 384, "v": "0.7", "d": "2026-11-05", "t": "그림자 이동 회복 · 어둠 조각 하나씩 · 구역 습격 곡 · 감옥 전투 곡 · 실험 책임자 곡 · 패배 곡 · 백그라운드 소리 설정", "big": 0},
  {"b": 383, "v": "0.7", "d": "2026-11-05", "t": "경험치 막대 — 수치 앞 아이콘", "big": 0},
  {"b": 382, "v": "0.7", "d": "2026-11-05", "t": "대원 상태창 경험치 막대 — 체력과 같은 틀, 금색 채움", "big": 0},
  {"b": 381, "v": "0.7", "d": "2026-11-04", "t": "상태창 체력 수치 왼쪽으로", "big": 0},
@@ -28513,7 +28533,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=383;
+const BUILD_NO=384;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -35636,12 +35656,18 @@ function gsdBloomVal(h){ return Math.max(0,(h&&h.dark)||0)*Math.max(0,(h&&h.atk)
 /* 커져가는 악몽 — 피해를 받을 때마다 (hurtAlly · dotAlly 가 부른다). 그림자 이동의 「피해를 받은 후 회복」도 여기 */
 /* 어둠 조각을 얻는다 — 모은 수(darkGot)가 per 의 배수가 될 때마다 공격력 (끝없는 밤이면 2, 아니면 3) */
 const gsdPer=h=>(h&&h.tag&&h.tag.endlessNight)?2:3;
+/* 칸의 수치는 맞는 연출을 따라 하나씩 — 셈은 먼저 끝나므로 아직 안 보인 몫을 darkPend 로 빼고 보인다 (사용자 2026-11-05). 적 턴 · 내 턴이 같은 길 */
+function gsdShowStep(t){
+  if(PRED_DRY) return;
+  t.darkPend=(t.darkPend||0)+1;
+  fx({gap:0,foeLife:0,darkStep:t});
+}
 function gsdGain(t,n){
   if(!gsdIs(t)||!(n>0)||!B||B.over) return;
   for(let q=0;q<n;q++){
     t.dark=(t.dark||0)+1; t.darkGot=(t.darkGot||0)+1;
-    if(t.darkGot%gsdPer(t)!==0){ if(gsdSnd("그슨대 어둠 조각")) fx({side:"mine",slot:t.slot,s:"그슨대 어둠 조각",gap:0}); continue }
-    if(gsdSnd("그슨대 어둠 조각 셋")) fx({side:"mine",slot:t.slot,s:"그슨대 어둠 조각 셋",gap:0});
+    if(t.darkGot%gsdPer(t)!==0){ if(gsdSnd("그슨대 어둠 조각")) fx({side:"mine",slot:t.slot,s:"그슨대 어둠 조각",gap:0}); gsdShowStep(t); continue }
+    if(gsdSnd("그슨대 어둠 조각 셋")) fx({side:"mine",slot:t.slot,s:"그슨대 어둠 조각 셋",gap:0}); gsdShowStep(t);
     const L=[t].concat(onField().filter(a=>a!==t&&!a.isMin&&!a.down&&(hasTag(a,"사후")||hasTag(a,"학살자"))));
     const grow=(t.tag&&t.tag.growBody)||0;   /* 커져가는 몸 — 그 전투 최대 체력도 (사후 · 학살자 아군도) */
     L.forEach(a=>{ bumpTmp(a,"atk",1); if(grow) bumpTmp(a,"maxHp",grow);
@@ -35656,7 +35682,7 @@ function gsdHurt(t,raw){
       onField().filter(g=>gsdIs(g)&&g.hp>0&&g.tag&&g.tag.nightmare).forEach(g=>gsdGain(g,1));
     return }
   gsdGain(t,1);
-  if(t.gsMend&&t.hp>0){ t.gsMend=0;
+  if(t.gsMend&&t.hp>0){   /* 다음 내 턴 머리에 걷힐 때까지 맞을 때마다 (사용자 2026-11-05) */
     const sk=(t.sk||[]).find(x=>x&&x.gsStep), g=healUp(t,2+(sk?mod(sk,"heal"):0));   /* 그림자 이동 강화 — addMod 「heal」 */
     if(g){ fx({side:"mine",slot:t.slot,s:"heal",txt:"+"+g,cls:"heal",gap:60}); say(`그림자 이동 — ${t.name} 체력 +${g}`,"t2") } }
   gsdDarkFear(t);
@@ -40169,7 +40195,7 @@ const BATTLE_RESET={
   wanderBonus:0, archerBonus:0, gloryGuard:0, arenaHeal:0, echo:0,
   reiChargeUp:0, reiKSeen:{}, crossAtkOn:0, crossMagOn:0,
   studyOn:0, invUndyingUsed:0,
-  dark:0, darkGot:0,
+  dark:0, darkGot:0, darkPend:0,
   pbHeroLeft:0, pbHero:0, pbHeartOn:0, ironUp:0, pbDoomLeft:0};   /* 철광 벼림 · 영웅의 운명 — 그 전투 */   /* 페블 — 영웅 등장 · 라이티늄 심장 몫은 그 전투 (노트 21) */   /* 그슨대 어둠 조각 — 「그 전투 동안」 (노트 10-0-1, 2026-11-02) */   /* 인비디아 — 전투 단위 (역병 연구 몫 · 불사, 2026-10-22) */   /* 레이 — 전투 단위 (충 전 누적 · 거친 태세 · 벼락 과충전, 2026-10-21) */   /* 조합 몫 — applySynergy 가 다시 채운다 */
 function resetVals(h,T){ for(const k in T){ const v=T[k]; h[k]=(v&&typeof v==="object")?(Array.isArray(v)?[]:{}):v } }
 function resetBattle(){
@@ -46862,6 +46888,7 @@ function setPanel(anchor){
     <div class="vrow"><span>효과음</span><input type="range" min="0" max="100" value="${pct(SFX.vol)}"><b>${pct(SFX.vol)}</b></div>
     <div class="vrow"><span>배경음</span><input type="range" min="0" max="100" value="${pct(BGM.vol)}"><b>${pct(BGM.vol)}</b></div>
     <button class="vmute">${SFX.on?"소리 끄기":"소리 켜기"}</button>
+    <div class="vopt"><span>백그라운드 소리</span><button class="vbgsnd">${BG_SND?"켬":"끔"}</button></div>
     <div class="vhd">전투</div>
     <div class="vopt"><span>연출 속도</span><button class="vspd">${SPD<1?"빠르게 ▶▶":"보통 ▶"}</button></div>
     <div class="vopt"><span>처치 임팩트</span><button class="vkimp">${KIMP?"켬":"끔"}</button></div>
@@ -46877,6 +46904,7 @@ function setPanel(anchor){
   bind(rows[0],v=>{ SFX.vol=v; SFX.play("click") });
   bind(rows[1],v=>{ BGM.vol=v });
   b.querySelector(".vmute").onclick=ev=>{ ev.stopPropagation(); BGM.on=SFX.toggle(); volSave(); ev.currentTarget.textContent=SFX.on?"소리 끄기":"소리 켜기"; render() };
+  b.querySelector(".vbgsnd").onclick=ev=>{ ev.stopPropagation(); setBgSnd(!BG_SND); ev.currentTarget.textContent=BG_SND?"켬":"끔"; SFX.play("click") };
   b.querySelector(".vspd").onclick=ev=>{ ev.stopPropagation(); setSpeed(SPD>=1); ev.currentTarget.textContent=SPD<1?"빠르게 ▶▶":"보통 ▶"; SFX.play("click") };
   b.querySelector(".vkimp").onclick=ev=>{ ev.stopPropagation(); setKimp(!KIMP); ev.currentTarget.textContent=KIMP?"켬":"끔"; SFX.play("click") };
   b.querySelector(".vbark").onclick=ev=>{ ev.stopPropagation(); setBarkShow(!BARK_SHOW); ev.currentTarget.textContent=BARK_SHOW?"켬":"끔"; SFX.play("click") };
@@ -53485,7 +53513,7 @@ function startMyTurn(){
     if(h.spareNext&&h.tag&&h.tag.spareBat){ const v=3*h.tag.spareBat; h.eshield=(h.eshield||0)+v; h.spareNext=0;
       say(`여분 전지 — ${h.name} 에너지 보호막 +${v}`,"t2") }
     pebbleTurnStart(h);   /* 페블 영웅 등장 — 5턴 뒤 (src/rules/pebble.js) */
-    h.gsMend=0;   /* 그림자 이동 — 「이번 턴에」 피해를 받은 후 회복. 다음 내 턴에 걷는다 */
+    h.gsMend=0; h.darkPend=0;   /* 그림자 이동 — 「다음 턴까지」 피해를 받은 후 회복. 쓴 턴과 이어지는 적 턴 동안, 다음 내 턴에 걷는다 */
     if(h.stop>0&&--h.stop<=0){ h.stop=0;
       fx({side:"mine",slot:h.slot,ring:"#8fa8c0",txt:"정지 풀림",cls:"buf",gap:90});
       say(`${h.name}의 정지가 풀립니다.`,"t2") }
