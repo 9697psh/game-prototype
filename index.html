@@ -6586,6 +6586,19 @@ body.vpage .rw.g1,body.rwtable #app .rewards.chestgot .rw.ro.g1{background-image
 .bfstage .slot.foe.peeked{z-index:30!important}
 .artrapfx.fall{background-size:contain;background-repeat:no-repeat;background-position:50% 100%}
 .bfstage .slot > .artrap.hold{visibility:hidden}
+/* 전투 입장 환호 — 시안 764 전장 기준의 자리를 --s 배로 (사용자 2026-11-05) */
+#archeerin{position:fixed;height:calc(408px * var(--s));z-index:880;pointer-events:none;font-family:var(--serif);text-shadow:0 1px 0 #1d0e08,0 0 6px rgba(29,14,8,.9);--u:calc(1px * var(--s))}
+#archeerin>*{position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap;text-align:center;font-weight:400}
+#archeerin .ci-t{top:calc(131 * var(--u));font-size:calc(16 * var(--u));color:#f4dfb9}
+#archeerin .ci-n{top:calc(150 * var(--u));font-size:calc(54 * var(--u));line-height:1;color:#ffe3a1}
+#archeerin .ci-g{top:calc(212 * var(--u));width:calc(186 * var(--u));height:calc(6 * var(--u));background:#4b3929;padding:1px;box-sizing:border-box;display:block}
+#archeerin .ci-g u{display:block;height:100%;width:0;background:#e2b85f;text-decoration:none}
+#archeerin .ci-l,#archeerin .ci-r{top:calc(236 * var(--u));display:flex;flex-direction:column;gap:calc(8 * var(--u));align-items:center}
+#archeerin .ci-l{left:33.8%} #archeerin .ci-r{left:66.2%}
+#archeerin .ci-l b{font-size:calc(15 * var(--u));color:#f2dcb1;font-weight:400} #archeerin .ci-l span{font-size:calc(18 * var(--u));color:#ffe3a9}
+#archeerin .ci-r b{font-size:calc(15 * var(--u));color:#ff7668;font-weight:400} #archeerin .ci-r span{font-size:calc(17 * var(--u));color:#ff9990}
+#archeericon{position:fixed;left:0;top:0;z-index:881;pointer-events:none;image-rendering:pixelated}
+body.cheerin .hand{visibility:hidden}   /* 입장 글과 겹치지 않게 — 끝나면 돌아온다 */
 </style>
 </head>
 <body>
@@ -9378,6 +9391,7 @@ function playFX(o){
   foeViewApply(o);
   if(o.shStep){ const u=o.shStep.u; u.shPend=Math.max(0,(u.shPend||0)-o.shStep.v); if(view==="battle") render() }   /* 어둠 증식 — 보호막을 닿는 대로 */
   if(o.foeViewFinish){ foeViewFinish(); return }
+  if(o.viewEnd){ if(FOE_VIEW===o.viewEnd){ FOE_VIEW=null; render() } return }   /* 처형 — 붙들었던 화면을 놓는다 */
   if(o.foeViewDone){ const a=foeViewActive(), v=a&&a.units.get(o.foeViewDone); if(v){ v._viewDone=1; render() } return }
   if(o.foeLog){ const a=foeViewActive(); if(a&&a.battle===o.foeLog.battle){ const x=Object.assign({},o.foeLog.entry), u=o.foeLog.hpUnit, v=u&&a.units.get(u);
     if(v) x.t=x.t.replace(/\d+\/\d+$/,Math.max(0,v.hp)+"/"+v.maxHp);
@@ -26984,6 +26998,7 @@ const GAME_VER="0.7";   /* 0.7 — 화면 정비(상점 · 제련소 무대, 보
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 390, "v": "0.7", "d": "2026-11-05", "t": "광기의 투기장 입장 환호 · 처형 연출 · 효과음 여섯", "big": 0},
  {"b": 389, "v": "0.7", "d": "2026-11-05", "t": "다음 막 문 · 깃발, 문구 연출 없앰, 덫 이음매, 쓰러진 자세 크기, 죽음 아이콘, 의도 보호막 수치, 현상 수배 완료 상자", "big": 0},
  {"b": 388, "v": "0.7", "d": "2026-11-05", "t": "전리품 카드 넓힘 · 대원 고르기 카드 그림 · 보스 뒤 구역 곡 · 암살 계약 아이콘", "big": 0},
  {"b": 387, "v": "0.7", "d": "2026-11-05", "t": "경험치 아이콘 노란 화살표, 그림자 기습 타격음 크게, 이펙트 묶음 빌드마다 새로", "big": 0},
@@ -28565,7 +28580,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=389;
+const BUILD_NO=390;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -36405,6 +36420,56 @@ function satanEntranceFX(){
   at(SATAN_IN.line,()=>talk("어서 와라…",150,H+14,2900));
   at(SATAN_IN.end,finish);
 }
+/* ═══ 전투 입장 환호 (시안 status-execution-death-v1/prototype, 사용자 2026-11-05) ═══
+   입장 때의 환호로 이번 전투의 보상 · 적 강화를 보여 주고, 아이콘이 머리줄 환호 칸으로 날아가 앉는다. 3.2초.
+   값은 셈(cheerNow · cheerScale · cheerRew)에서 읽는다 — 보여 주기만. 덮개가 다 열린 뒤, 사탄 등장이 끝난 뒤에 돈다.
+   ⚠️ 자동 그물은 CHEER_IN_FORCE 를 켜야 돈다 (SATAN_IN_FORCE 와 같은 결) */
+let CHEER_IN_FORCE=0;
+const CHEER_IN={ms:3200,w:764};
+function arCheerInFX(){
+  if(typeof document==="undefined"||PRED_DRY||!document.querySelector(".bfstage")||!arenaOn()) return;
+  if(typeof navigator!=="undefined"&&navigator.webdriver&&!CHEER_IN_FORCE) return;
+  const B0=B; let tries=0;
+  const wait=()=>{ if(B!==B0||view!=="battle") return;
+    const busy=(typeof CV_BUSY!=="undefined"&&CV_BUSY)||document.body.classList.contains("satanin");
+    if(busy&&tries++<200){ setTimeout(wait,100); return }
+    arCheerInPlay(B0) };
+  setTimeout(wait,240);
+}
+function arCheerInPlay(B0){
+  const stage=document.querySelector(".bfstage"), u=ICON_PNG&&ICON_PNG.resource_arena_cheer; if(!stage||!u) return;
+  const r=stage.getBoundingClientRect(), s=Math.min(r.width/CHEER_IN.w,1.2), L0=r.left+(r.width-CHEER_IN.w*s)/2, T0=r.top+Math.max(0,r.height*.2-39*s), X=v=>L0+v*s, Y=v=>T0+v*s;   /* 머리줄 단추와 손패 사이 — 전장 가운데 */
+  const cheer=Math.round(cheerNow()), boss=B0.kind==="boss", sc=cheerScale(B0.kind), rew=Math.round((cheerRew()-1+(((run&&run.dun&&run.dun.arRew)||0)/100))*100);
+  const pct=n=>"+"+Number(n.toFixed(2))+"%", K=typeof SPD==="number"&&SPD>0?SPD:1, reduce=shutReduce();
+  const nd=el(`<div id="archeerin" style="--s:${s.toFixed(3)}">
+    <b class="ci-t">관중의 환호</b><b class="ci-n">0</b><i class="ci-g"><u></u></i>
+    <div class="ci-l"><b>승리 보상</b><span>금화, 경험치 ${pct(rew)}</span></div>
+    <div class="ci-r"><b>${boss?"우두머리 강화":"적 강화"}</b><span>체력 ${pct((sc.hp-1)*100)}&nbsp;&nbsp;&nbsp;공격 ${pct((sc.atk-1)*100)}</span></div></div>`);
+  const ic0=el(`<img id="archeericon" src="${u}" alt="">`); if(!nd||!ic0) return;
+  document.body.appendChild(nd); document.body.appendChild(ic0);
+  Object.assign(nd.style,{left:L0+"px",top:T0+"px",width:(CHEER_IN.w*s)+"px"});
+  const num=nd.querySelector(".ci-n"), bar=nd.querySelector(".ci-g u"), clamp=n=>Math.max(0,Math.min(1,n));
+  const dest=()=>{ const e=document.querySelector("header .res.cheer img,.res.cheer img,.res.cheer"), q=e&&e.getBoundingClientRect(); return q&&q.width?{x:q.left+q.width/2,y:q.top+q.height/2,z:q.width}:{x:X(126),y:Y(16),z:24*s} };
+  const fieldEl=()=>document.querySelector(".bfstage .field");
+  let over=0, raf=0; const t0=performance.now();
+  B0.busy=1; document.body.classList.add("cheerin"); { const k=sfxOr("투기장 입장 환호",null); if(k) SFX.play(k) }
+  const done=()=>{ if(over) return; over=1; cancelAnimationFrame(raf); clearTimeout(safe); nd.remove(); ic0.remove(); document.body.classList.remove("cheerin");
+    document.querySelectorAll(".field.gsd-dim").forEach(e=>{ e.classList.remove("gsd-dim"); e.style.removeProperty("--gsdDim") });
+    if(B===B0){ B0.busy=0; try{ cheerPulse() }catch(e){} if(view==="battle") render() } };
+  const safe=setTimeout(done,(CHEER_IN.ms+500)*K);
+  const tick=now=>{
+    if(over) return; if(B!==B0||view!=="battle"){ done(); return }
+    const t=(now-t0)/K, D=dest(), fill=1-Math.pow(1-clamp((t-160)/800),3), trav=clamp((t-2510)/690), glide=trav*trav*(3-2*trav);
+    const sway=reduce?0:Math.sin(t/72)*clamp(t/160)*(1-clamp((t-900)/320));
+    nd.style.opacity=(clamp(t/150)*(1-clamp((t-2470)/340))).toFixed(3);
+    num.textContent=Math.round(cheer*fill); bar.style.width=(cheer*fill)+"%";
+    const f=fieldEl(); if(f){ f.classList.add("gsd-dim"); f.style.setProperty("--gsdDim",(.42*clamp(t/200)*(1-clamp((t-2470)/500))).toFixed(3)) }
+    const x0=X(382), y0=Y(85), z=(92*s)+(D.z-92*s)*glide, x=x0+(D.x-x0)*glide, y=y0+(D.y-y0)*glide-22*s*Math.sin(glide*Math.PI);
+    Object.assign(ic0.style,{width:z+"px",height:z+"px",opacity:clamp(t/150).toFixed(3),transform:`translate(${(x-z/2).toFixed(1)}px,${(y-z/2-3*Math.abs(sway)).toFixed(1)}px) rotate(${(.075*sway).toFixed(3)}rad)`});
+    if(t>=CHEER_IN.ms){ done(); return }
+    raf=requestAnimationFrame(tick) };
+  raf=requestAnimationFrame(tick);
+}
 /* ═══ 페블 — 기획 노트 21 (사용자 2026-11-02) · 영웅심 넘치는 조약돌 · 지하 / 영광 숭배자 / 정령 ═══
    · 내려찍기 준비 ↔ 내려찍기 — 「전환」. 준비를 2번 하면 1번 칸이 내려찍기가 되고, 내려찍으면 준비로 돌아간다 (h.pbPrep, 라운드).
      전환은 기술 칸의 alt 를 쓰되 altBy 로 저절로 넘기지 않는다 — pebbleAfter 가 정한다.
@@ -40235,6 +40300,7 @@ function startBattle(kind,pinned){
   HPMEM={}; SHMEM={}; render();
   try{ bossIntroFX() }catch(e){}   /* 어둠 속에서 나타나는 우두머리 (2026-10-13) */
   try{ satanEntranceFX() }catch(e){ console.error(e) }   /* 사탄 등장 (src/fx/arena-fx.js) */
+  try{ if(fresh&&!pinned) arCheerInFX() }catch(e){ console.error(e) }   /* 광기의 투기장 — 전투 입장 환호 (src/fx/arena-fx.js) */
 }
 /* 이 전투를 시작 시점으로 되감는다 — 적도 배치도 패턴도 그대로 */
 /* ═══ 라운드 · 전투가 열릴 때 대원에게서 비우는 값 (전투 정리 2026-10-05) ═══
@@ -41577,7 +41643,7 @@ function arenaFoeEnd(){
   arenaWoundTick();
   B.foes.forEach(f=>{ if(f.judge&&f.judge.st==="act") f.judge.st="idle" }) }
 /* 내 턴이 끝날 때 (endPhase 머리) */
-function arenaTurnEnd(){ execCheck(); judgeTurnEnd(); satanTurnEnd() }   /* 강림 · 해제 — 환호 100 */
+function arenaTurnEnd(){ const n=execCheck(); judgeTurnEnd(); satanTurnEnd(); return n }   /* 강림 · 해제 — 환호 100 */
 /* 대원이 기술을 쓴 뒤 (disciplineTick) */
 function arenaSkillUsed(h){
   if(!B||!h||h.isMin) return;
@@ -41622,24 +41688,35 @@ function arKillFoe(f,why){
   B._arKill=1; try{ hurt(f,Math.max(1,f.hp),why,"tru",true) } finally { B._arKill=0; if(f.alive) f.armor=ar } }
 /* 처형 수치로 쓰러질 때만 — 부여 연출과 구별되는 도끼 들어올리기·내리찍기 띠.
    다음 죽음 소리는 날이 닿는 7번 칸에 맞춘다. */
+const AR_EXEC_MS=[100,100,110,300,60,45,175,340];   /* 받은 시안 그대로 — 넷째 칸에서 잠깐 멈춘다 */
+const AR_EXEC_HIT=AR_EXEC_MS.slice(0,6).reduce((a,b)=>a+b,0);   /* 날이 닿는 때 — 쓰러짐은 여기서부터 */
 function arExecDeathFX(side,slot){
   const K=typeof SPD==="number"?SPD:1;
-  const ms=[90,90,90,140,70,60,150,150].map(n=>Math.round(n*K));
-  fx({side,slot,ring:"#7a1a1a",txt:"처형",cls:"crit",quake:1,
-    sheet:"fx_ar_exec_death",sheetOpt:{cell:64,frames:8,z:2.3,frameMs:ms},gap:540});
+  fx({side,slot,sheet:"fx_ar_exec_death",sheetOpt:{cell:64,frames:8,z:2.3,feet:1,dy:2,fade:220,frameMs:AR_EXEC_MS.map(n=>Math.round(n*K))},gap:AR_EXEC_HIT});
+  fx({side,slot,s:sfxOr("처형 발동",null),ring:"#7a1a1a",txt:"처형",cls:"crit",quake:1,pose:"hurt",gap:200});
 }
+/* ⚠️ 셈은 바로 끝나지만 몸은 날이 닿을 때까지 서 있어야 한다 — 적 턴과 같은 길(FOE_VIEW)로 화면만 붙든다. 시뮬레이터에는 없는 길 (onStage).
+   돌려주는 수 — 처형이 난 수. 그 동안 적이 움직이지 않게 endPhase 가 기다린다 */
 function execCheck(){
-  if(!B||B.over) return;
-  (run.heroes||[]).concat(B.mins||[]).forEach(u=>{ const v=deb(u,"exec");
-    if(!(v>0)||!(u.hp>0)||!(u.slot>0)||u.hp>=v) return;
-    arExecDeathFX("mine",u.slot);
-    say(`처형 — ${u.name}의 체력(${u.hp})이 처형 ${v}보다 낮아 쓰러집니다.`,"t1");
-    u.hp=0; if(!u.isMin&&run){ u.downBy="처형"; run.lastKiller="처형"; run.lastKillerBy="처형" } unitDown(u) });
-  B.foes.filter(f=>f.alive&&deb(f,"exec")>0&&f.hp<deb(f,"exec")).forEach(f=>{
-    arExecDeathFX("foe",f.slot);
-    say(`처형 — ${f.name}의 체력(${f.hp})이 처형 ${deb(f,"exec")}보다 낮아 쓰러집니다.`,"t1");
-    arKillFoe(f,"처형") });
-  if(B.duel) duelCheck() }
+  if(!B||B.over) return 0;
+  const U=(run.heroes||[]).concat(B.mins||[]).filter(u=>{ const v=deb(u,"exec"); return v>0&&u.hp>0&&u.slot>0&&u.hp<v }),
+        F=B.foes.filter(f=>f.alive&&deb(f,"exec")>0&&f.hp<deb(f,"exec"));
+  if(!U.length&&!F.length){ if(B.duel) duelCheck(); return 0 }
+  const hold=!PRED_DRY&&onStage();
+  if(hold){ foeViewBegin(); FOE_CAPTURING++ }
+  try{
+    U.forEach(u=>{ const v=deb(u,"exec");
+      arExecDeathFX("mine",u.slot);
+      say(`처형 — ${u.name}의 체력(${u.hp})이 처형 ${v}보다 낮아 쓰러집니다.`,"t1");
+      u.hp=0; if(!u.isMin&&run){ u.downBy="처형"; run.lastKiller="처형"; run.lastKillerBy="처형" } unitDown(u) });
+    F.forEach(f=>{ arExecDeathFX("foe",f.slot);
+      say(`처형 — ${f.name}의 체력(${f.hp})이 처형 ${deb(f,"exec")}보다 낮아 쓰러집니다.`,"t1");
+      arKillFoe(f,"처형") });
+    if(hold) fx({gap:0});
+  } finally { if(hold) FOE_CAPTURING-- }
+  if(hold&&FOE_VIEW) fx({viewEnd:FOE_VIEW,gap:0});
+  if(B.duel) duelCheck();
+  return U.length+F.length }
 /* 피해량 감소 — 그 대원이 주는 피해가 N 준다 (내 턴이 끝나면 걷힌다 — tickDebEnd) */
 function arenaAtkDn(amt){
   if(!(amt>0)||!B||B._arKill) return amt;
@@ -53102,9 +53179,9 @@ function endTurn(){
 }
 /* 마당 ① — 턴이 끝날 때 발동하는 것들. 적이 움직이기 전에 전부 여기서 끝난다 */
 function endPhase(){
-  arenaTurnEnd();   /* 채점관 — 이번 턴의 점수 */
+  const execN=arenaTurnEnd();   /* 채점관 — 이번 턴의 점수 · 처형 */
   B.endDone=1;   /* 턴 끝 보호막을 여기서 붙인다 — 이 뒤로는 예고(incoming)가 미리 더하지 않는다. startMyTurn 이 끈다 (사용자 2026-10-30) */
-  let n=0; const bump=()=>{ n++ };
+  let n=execN||0; const bump=()=>{ n++ };
   const mark=B.log.length;              /* 머리말은 나중에 이 자리에 끼워 넣는다 */
   /* [감시] — 손패에 들고 있으면 내 턴이 끝날 때 무작위 대원이 피해를 5 받는다 (첨탑 관리자) */
   handEach("감시",c=>{ const hs=onField().filter(h=>h.hp>0); if(!hs.length) return;   /* 쌓인 장수만큼 (2026-10-16) */
