@@ -476,6 +476,8 @@ img.pxs.face{image-rendering:pixelated;width:auto;filter:drop-shadow(0 2px 0 rgb
   background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--fr) 34%,#12100d),#0f0d0b 78%);
   box-shadow:0 0 0 1px rgba(0,0,0,.7),0 0 8px -2px var(--fr)}
 .gs .ipx{width:20px;height:20px}
+.itemfly{position:absolute;width:64px;height:64px;margin:-32px 0 0 -32px;background-repeat:no-repeat;image-rendering:pixelated;pointer-events:none;z-index:9}   /* 장신구 이펙트 (src/fx/item-fx.js) */
+.grimark{position:absolute;left:50%;top:-14px;width:48px;height:48px;margin-left:-24px;image-rendering:pixelated;pointer-events:none;z-index:3}
 .gs.spent{box-shadow:0 0 0 1px rgba(0,0,0,.7)}   /* 다 쓴 장신구 (itemSpent) */
 .gs.spent>*{filter:brightness(.5) saturate(.65)}   /* 아이콘이 img.ricon 일 때도 있고 그려 낸 .ipx 일 때도 있다 */
 .gear.gear-sm{justify-content:flex-start;margin:4px 0 2px}
@@ -9409,6 +9411,7 @@ const ART={
 function playFX(o){
   foeViewApply(o);
   if(o.shStep){ const u=o.shStep.u; u.shPend=Math.max(0,(u.shPend||0)-o.shStep.v); if(view==="battle") render() }   /* 어둠 증식 — 보호막을 닿는 대로 */
+  if(o.itemGlint){ itemGlintFX(o.side,o.slot,o.itemGlint); return }   /* 장신구 칸 반짝임 (src/fx/item-fx.js) */
   if(o.foeViewFinish){ foeViewFinish(); return }
   if(o.viewEnd){ if(FOE_VIEW===o.viewEnd){ FOE_VIEW=null; render() } return }   /* 처형 — 붙들었던 화면을 놓는다 */
   if(o.foeViewDone){ const a=foeViewActive(), v=a&&a.units.get(o.foeViewDone); if(v){ v._viewDone=1; render() } return }
@@ -19321,6 +19324,20 @@ function unequip(h,idx,force){
   return it;
 }
 function itemBt(h,key){ return (h.items||[]).reduce((a,i)=>a+((i.bt&&i.bt[key])||0),0) }
+/* 장신구 이펙트 (사용자 2026-11-07) — 큐(fx)에 실을 꼴만 여기서 만든다. 보이는 일은 src/fx/item-fx.js.
+   칸 시간은 받은 묶음의 usage.json 그대로다. 공용은 상태창 반짝임 하나뿐이다 (머리 위 아이콘 · 획득 이펙트는 없다) */
+const ITEM_FX={
+ rampart:{k:"fx_item_rampart",o:{cell:128,feet:1,frames:8,z:1,frameMs:[65,70,75,90,90,80,75,70]}},   /* 보루 */
+ aegon:{k:"fx_item_aegon",o:{cell:128,feet:1,frames:8,z:1,frameMs:[60,65,75,80,80,75,70,65]}},       /* 애곤의 발톱 */
+ slash:{k:"fx_item_slash",o:{frames:8,z:2,frameMs:[45,45,50,50,50,50,50,50]}},                       /* 검투사의 검 · 질주 */
+ pierce:{k:"fx_item_pierce",o:{frames:8,z:2,frameMs:[50,55,60,70,70,65,60,55]}},                     /* 검과 방패 */
+ burst:{k:"fx_item_grimoire_burst",o:{frames:8,z:2,frameMs:[55,60,65,70,70,65,60,60]}},              /* 그리모어 치명타 */
+ neg:{k:"fx_item_negshatter",o:{frames:8,z:2,frameMs:[60,65,70,75,75,70,65,60]}}                     /* 차원 생성석 · 탈피 */
+};
+function itemFxAt(side,slot,key,gap){ const F=ITEM_FX[key]; if(F&&slot) fx({side:side,slot:slot,gap:gap||0,sheet:F.k,sheetOpt:F.o}) }
+function itemNames(h,key){ return (h.items||[]).filter(i=>i&&i.bt&&i.bt[key]).map(i=>i.n) }
+/* 그 키의 장신구가 터졌다 — 상태창 그 칸이 한 번 깜빡인다. 키를 든 장신구가 없으면 아무 일도 없다 */
+function itemPing(h,key){ if(!h||!h.slot) return; itemNames(h,key).forEach(n=>fx({side:"mine",slot:h.slot,gap:0,foeLife:0,itemGlint:n})) }
 /* 다 쓴 장신구 — 상태창의 장신구 칸이 살짝 어두워진다 (사용자 2026-11-07 : 발동을 다 했거나 수치를 다 소진하면).
    ★ 횟수나 자원이 다하는 장신구를 새로 넣으면 **여기 한 줄**. 열쇠는 그 장신구의 bt 키다.
    ⚠️ 전투 안의 값은 fight 일 때만 본다 — 쓴 표시가 전투가 끝나도 남아 있어 지도에서 어두워진다.
@@ -21614,9 +21631,9 @@ function negCut(u,k,n){
     if(sm&&!u.isFoe){ bumpTmp(u,"mag",sm);
       say(`실험 표본 균열석 — ${u.name} 마법력 +${sm}`,"t2") } }
   { const ne=itemBt(u,"negEsh");
-    if(ne){ u.eshield=(u.eshield||0)+ne*cut }
+    if(ne){ u.eshield=(u.eshield||0)+ne*cut; itemFxAt("mine",u.slot,"neg") }
     const ed=itemBt(u,"emptyDef");
-    if(ed&&u.negShield<=0&&!u.emptyDefOn){ u.emptyDefOn=1; bumpRnd(u,"def",ed) } }   /* 탈피 — 해당 라운드 */
+    if(ed&&u.negShield<=0&&!u.emptyDefOn){ u.emptyDefOn=1; bumpRnd(u,"def",ed); if(!ne) itemFxAt("mine",u.slot,"neg") } }   /* 탈피 — 해당 라운드 */
   if(u.tag&&u.tag.negHeal){ healUp(u,u.tag.negHeal) }
   return n;
 }
@@ -21648,7 +21665,7 @@ function addDeb(u,k,n,src){
     fx({side:"foe",slot:u.slot,debIc:"burn",txt:DEBUFF.burn.n+u.burn,cls:"miss",gap:80,s:"fire"});
     say(`${u.name} ${DEBUFF.burn.n} ${u.burn}`,"t3");
     return }
-  { const nh=itemBt(u,"negHeal"); if(nh&&n>0&&!itemBt(u,"noHeal")) setTimeout(()=>{ if(u.hp>0) healUp(u,nh) },0) }   /* 불굴의 방패 — '받은 후' (막았을 때가 아니라) (점검 2026-10-07) */
+  { const nh=itemBt(u,"negHeal"); if(nh&&n>0&&!itemBt(u,"noHeal")){ itemPing(u,"negHeal"); setTimeout(()=>{ if(u.hp>0) healUp(u,nh) },0) } }   /* 불굴의 방패 — '받은 후' (막았을 때가 아니라) (점검 2026-10-07) */
   const foeU=!!(B&&B.foes&&B.foes.indexOf(u)>=0), noStack=(k==="stun"&&foeU);   /* 기절 — 적에게는 쌓이지 않고 대원에게는 쌓인다 (사용자 2026-10-06) */
   u.deb[k]=noStack?1:(u.deb[k]||0)+n;
   if(k==="wound"&&B) u.woundFresh=B.foeAct?(B.turn||1):0;   /* 적 차례 안에서 걸린 상처는 그 차례에 줄지 않는다 (arenaWoundTick) */
@@ -27134,6 +27151,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 399, "v": "0.8", "d": "2026-11-07", "t": "희귀 장신구 이펙트 — 보루, 애곤의 발톱, 검기, 마력탄, 그리모어 표식 외", "big": 1},
  {"b": 398, "v": "0.8", "d": "2026-11-07", "t": "다 쓴 장신구는 상태창에서 어두워짐", "big": 0},
  {"b": 397, "v": "0.8", "d": "2026-11-07", "t": "구역은 하루 첫 입장만 활동량과 시간, 과부하 금화 구멍 수정", "big": 0},
  {"b": 396, "v": "0.8", "d": "2026-11-06", "t": "2막은 당분간 광기의 투기장만", "big": 0},
@@ -28724,7 +28742,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=398;
+const BUILD_NO=399;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -36169,6 +36187,43 @@ function gsdBurstFX(o){
   const safe=setTimeout(done,(Math.max(end0+300,1650)+400)*K);
   raf=requestAnimationFrame(tick);
 }
+/* ═══════════ 장신구 이펙트 (사용자 2026-11-07, art/이펙트/장신구) ═══════════
+   규칙 쪽은 fx 줄에 싣는 일만 한다 (itemPing · itemFxAt, src/rules/item-equip.js). 여기는 보이는 일이다. */
+const ITEM_GLINT_MS=[60,60,60,60,60,60,60,60];
+/* 상태창의 그 장신구 칸이 금빛으로 한 번 깜빡인다. 칸이 그려져 있지 않으면 조용히 넘어간다 */
+function itemSlotOf(side,slot,name){ const c=ctrOf(side,slot); if(!c) return null;
+  const e=[...c.e.querySelectorAll(".gs.on")].find(x=>x.dataset.item===name);
+  const r=e&&e.getBoundingClientRect(); return (r&&r.width)?r:null }
+function itemGlintFX(side,slot,name){
+  const r=itemSlotOf(side,slot,name); if(!r) return;
+  sheetFX("fx_item_glint",side,slot,{cellW:48,cellH:48,frames:8,z:r.width/26,
+    at:{x:r.left+r.width/2,y:r.top+r.height/2},frameMs:ITEM_GLINT_MS}) }
+/* 날아가는 띠 — 칸을 되풀이하며 q 에서 p 로. headLeft 는 머리가 왼쪽으로 그려진 띠 */
+function itemFlyFX(q,p,key,o){
+  const u=skinIcon(key); if(!u||!q||!p) return;
+  const n=o.frames||4, z=o.z||2, nd=spawn('<div class="itemfly"></div>',o.ms+160); if(!nd) return;
+  at(nd,q); nd.style.backgroundImage="url("+u+")"; nd.style.backgroundSize=(64*n)+"px 64px";
+  const rot=Math.atan2(p.y-q.y,p.x-q.x)*180/Math.PI+(o.headLeft?180:0);
+  const tf=(x,y)=>`translate(${x}px,${y}px) rotate(${rot}deg) scale(${z})`;
+  nd.animate([{transform:tf(0,0)},{transform:tf(p.x-q.x,p.y-q.y)}],{duration:o.ms,easing:"ease-in",fill:"forwards"});
+  let i=0; const T=setInterval(()=>{ i=(i+1)%n; nd.style.backgroundPosition=-(64*i)+"px 0" },80);
+  setTimeout(()=>{ clearInterval(T); nd.remove() },o.ms) }
+/* 기초 마법서: 마나 — 대원에게서 날아가 맞는 적에서 터진다 */
+const ITEM_BOLT_MS=230;
+function itemBoltFX(from,to){
+  itemFlyFX(bodyPoint("mine",from)||ctrOf("mine",from),bodyPoint("foe",to)||ctrOf("foe",to),"fx_item_bolt_fly",{ms:ITEM_BOLT_MS,z:2});
+  setTimeout(()=>sheetFX("fx_item_bolt_hit","foe",to,{frames:6,z:2,frameMs:[55,60,70,75,75,70]}),ITEM_BOLT_MS) }
+/* 처치 빛 조각 — 쓰러진 적에게서 상태창의 그 장신구 칸으로. 닿으면 그 칸이 깜빡인다 */
+const ITEM_SPARK_MS=420;
+function killSparkFX(foeSlot,slot,names){
+  const q=bodyPoint("foe",foeSlot)||ctrOf("foe",foeSlot);
+  names.forEach((n,i)=>setTimeout(()=>{
+    const r=itemSlotOf("mine",slot,n), p=r?{x:r.left+r.width/2,y:r.top+r.height/2}:(bodyPoint("mine",slot)||ctrOf("mine",slot));
+    itemFlyFX(q,p,"fx_item_spark",{ms:ITEM_SPARK_MS,z:2,headLeft:1});
+    setTimeout(()=>itemGlintFX("mine",slot,n),ITEM_SPARK_MS) },i*120)) }
+/* 그리모어 표식 — 표식이 찍힌 적의 머리 위에 전투 내내 떠 있다 */
+function grimoireMarkHtml(f){ const u=(typeof ICON_PNG!=="undefined")&&ICON_PNG.fx_item_grimoire_mark;
+  return (u&&grimoireCount(f)>0)?`<img class="grimark" src="${u}" alt="">`:"" }
 /* ═══════════ 광기의 투기장 연출 (사용자 2026-11-03) ═══════════
    받은 그림만 쓴다 — 덫 두 상태 · 돌 · 단검 · 거울 광선 · 피 웅덩이 솟아남 (art/이펙트/투기장).
    규칙(src/rules/arena.js)이 fx({fn}) 으로 부른다. 칸의 그림을 움직이는 것은 자세(setPose) · 몸 흔들기만 */
@@ -45674,7 +45729,7 @@ function drawBattle(app){
       d.innerHTML+=`${TIER_LABEL[tier]?`<div class="tier">${
           tierMark(tier)}${TIER_LABEL[tier]}</div>`:""}
         <div class="intentbar${f.intent2?" two":""}">${intentHtml(f)}${f.intent2?intentHtml(f,f.intent2):""}</div>
-        <div class="art ${fsz}"${FOE_FLY[f.name]?` style="--fly:${FOE_FLY[f.name]}px"`:""}>${pfk}${figure(f.name,undefined,f)}${arJudgeHtml(f)}${
+        <div class="art ${fsz}"${FOE_FLY[f.name]?` style="--fly:${FOE_FLY[f.name]}px"`:""}>${pfk}${figure(f.name,undefined,f)}${grimoireMarkHtml(f)}${arJudgeHtml(f)}${
           dying?killMark(sel.hero,preSkill,f,sel.count):""}</div>
         <div class="nm">${esc(f.name)}</div>${(peekFoe&&peekFoe===f)?raceLine(f):""}
         <div class="bar" data-hpk="${hpKey(f)}" data-hpv="${Math.max(0,shownHp(f)/f.maxHp*100)}" data-hpn="${Math.max(0,shownHp(f))}"
@@ -47833,7 +47888,7 @@ function onSummon(h){
       say(`벌목도 — ${f.name}의 메아리를 끊어 냅니다.`,"t1") } }
   /* 네코럽티콘 — 대원 배치 후, 모든 적에게 보호약화 (사용자 2026-10-01 — 전에는 전투 시작 시 한 번) */
   { const dd=itemBt(h,"startDefDn");
-    if(dd){ B.foes.filter(f=>f.alive).forEach(f=>addDeb(f,"defDn",dd,h)); say(`네코럽티콘 — 모든 적에게 보호약화 ${dd}`,"t2") } }
+    if(dd){ itemPing(h,"startDefDn"); B.foes.filter(f=>f.alive).forEach(f=>addDeb(f,"defDn",dd,h)); say(`네코럽티콘 — 모든 적에게 보호약화 ${dd}`,"t2") } }
   /* 사형 선고 — "대원 배치 시 N턴 잠금된 상태로 시작" (노트). 배치한 그 턴부터 N턴 (lockNew 없음).
      라운드마다 배치할 때 다시 건다 (사용자 2026-10-03 — 전에는 첫 라운드에만) */
   if(h.name==="쿠렘타이"){ const vi=h.sk.findIndex(k=>k&&k.verdict);
@@ -47848,7 +47903,7 @@ function onSummon(h){
   if(run.fireOn&&!run.sandbox){ h.eshield=(h.eshield||0)+run.fireOn;   /* 모닥불 이야기 — 다음 1회의 전투에서 대원 배치 시 */
     fx({side:"mine",slot:h.slot,s:"shield",ring:"#5fd8cf",txt:"에너지 보호막 +"+run.fireOn,cls:"shd",gap:80});
     say(`모닥불 이야기 — ${h.name} 에너지 보호막 +${run.fireOn}`,"t2") }
-  { const ev=itemBt(h,"startEvade"); if(ev){ h.evade+=ev; say(`${h.name} 회피 +${ev} (장비)`,"t2") } }   /* 영광의 망토 · 그림자 망토 */
+  { const ev=itemBt(h,"startEvade"); if(ev){ h.evade+=ev; itemPing(h,"startEvade"); say(`${h.name} 회피 +${ev} (장비)`,"t2") } }   /* 영광의 망토 · 그림자 망토 */
   if(itemBt(h,"startHide")){ h.hide=1; hideFX(h.slot); say(`${h.name}${jo(h.name,"ig")} 그림자에 숨습니다.`,"t2") }
   if(itemBt(h,"startMark")){
     const f=B.foes.filter(x=>x.alive).sort((a,b)=>a.hp-b.hp)[0];
@@ -47884,7 +47939,8 @@ function onSummon(h){
       say(`고철장의 구원자 — ${a.name} 마법력 +${2*t.savior}`,"t2") });
   }
   run.heroes.forEach(soloCheck);
-  const da=itemBt(h,"defAura"); if(da){ h.eshield+=h.def*da;
+  itemPing(h,"allyBuff");   /* 성서 — 나서는 순간 */
+  const da=itemBt(h,"defAura"); if(da){ h.eshield+=h.def*da; itemPing(h,"defAura");
     say(`수호의 각인 — ${h.name} 에너지 보호막 +${h.def*da}`,"t2") }
   /* ── 아래는 전투 시작 효과 : 그 전투에서 처음 나설 때 한 번만 ── */
   if(h.summoned) return;
@@ -49373,7 +49429,8 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
      여기서는 _wkDone 으로 막아 두 번 더하지 않는다. 따로 셈하는 기술(진선풍도 · 착취 …)만 여기서 받는다 */
   if(amt>0&&B&&B._ef&&B._efHero&&!B._wkDone&&B.lastAttacker===B._efHero&&f&&B.foes&&B.foes.indexOf(f)>=0&&pierce!==true){
     const H=B._efHero;
-    if(B._efEl==="공격"){ const ip=itemBt(H,"pierce")+(f.taunt?itemBt(H,"tauntPierce"):0); if(ip) pierce=(+pierce||0)+ip } }   /* 칼리번 · 검과 방패 — 모든 공격 피해 (점검 2026-10-07) */
+    if(B._efEl==="공격"){ const ip=itemBt(H,"pierce")+(f.taunt?itemBt(H,"tauntPierce"):0); if(ip) pierce=(+pierce||0)+ip;
+      if(f.taunt&&amt>0&&itemBt(H,"tauntPierce")) itemFxAt("foe",f.slot,"pierce") } }   /* 칼리번 · 검과 방패 — 모든 공격 피해 (점검 2026-10-07) */
   /* 그리모어 — 표식 대상에게 **그 대원의** 마법 피해는 치명타.
      ⚠️ **_wkDone 문지기를 쓰면 안 된다.** 관통과 한 덩이로 묶여 있었는데, 관통과 달리
         이것은 보통 길에서 따로 챙기는 데가 없다 — 보통 공격은 늘 _wkDone=1 이라
@@ -49382,7 +49439,7 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
      ⚠️ pierce!==true 도 떼었다 — 관통을 **더하지 않으려던** 조건이지 치명타와는 상관이 없다 */
   if(!crit&&amt>0&&B&&B._ef&&B._efEl==="마법"&&B._efHero&&B.lastAttacker===B._efHero
      &&f&&B.foes&&B.foes.indexOf(f)>=0&&grimoireCount(f,B._efHero)>0){
-    amt*=2; crit=1; say(`그리모어 — ${f.name}에게 치명타!`,"t1") }
+    amt*=2; crit=1; itemFxAt("foe",f.slot,"burst"); say(`그리모어 — ${f.name}에게 치명타!`,"t1") }
   amt=arenaAtkDn(amt);   /* 피해량 감소 — 때린 대원 쪽 (광기의 투기장) */
   amt=arenaFoeIn(f,amt);   /* 반사판 — 받는 피해 절반 (거울 검투사) */
   if(f.armor>0&&amt>f.armor) amt=f.armor;   /* 갑피 — 한 번에 받는 피해를 이 수치까지로 (적도 같게, 사용자 2026-10-07 시평선의 문지기) */
@@ -49781,6 +49838,7 @@ function onKill(by,f,tag){
   if(f&&!f.isPhantom&&!f.summoned){ const h=by;
     const ke=itemBt(h,"killEsh"); if(ke) h.eshield=(h.eshield||0)+ke;
     const ks=itemBt(h,"killStat"); if(ks){ bumpTmp(h,"atk",ks); bumpTmp(h,"mag",ks) }
+    if(ke||ks){ const fs=f.slot, hs=h.slot, ns=itemNames(h,"killEsh").concat(itemNames(h,"killStat")); fx({side:"mine",slot:hs,gap:0,fn:()=>killSparkFX(fs,hs,ns)}) }   /* 처치 빛 조각 */
     if(h.arenaHeal){ healUp(h,h.arenaHeal);
       fx({side:"mine",slot:h.slot,s:"heal",txt:"+"+h.arenaHeal,cls:"heal",gap:60});
       say(`피의 투기장 — ${h.name} 체력 +${h.arenaHeal}`,"t2"); synFlash("피의 투기장",[h]) } }
@@ -50235,14 +50293,15 @@ function doSkill(target){
         say(`정령의 전언 — ${h.name}의 ${s.n} 값이 ${_rw} 줄었습니다.`,"t3") }
       h.mana-=C; h.manaUsed=(h.manaUsed||0)+C; mpAbsorbHook(h,C);   /* 마력 흡수 — 마나를 쓴 만큼 마력 (2026-10-12) */
       if(C){
-        const mm=itemBt(h,"manaMom"); if(mm) h.mom+=mm;   /* '마나를 소모할 때마다 추진력 +1' — 쓴 마나만큼 주던 것 (점검 2026-10-07) */
-        const ms2=itemBt(h,"manaShield"); if(ms2) addShield(h,(h.def||0)*ms2);   /* 전장의 함성 — 쓴 마나가 아니라 **추가 보호력**만큼 (사용자 2026-10-12) */
+        const mm=itemBt(h,"manaMom"); if(mm){ h.mom+=mm; itemPing(h,"manaMom") }   /* '마나를 소모할 때마다 추진력 +1' — 쓴 마나만큼 주던 것 (점검 2026-10-07) */
+        const ms2=itemBt(h,"manaShield"); if(ms2){ addShield(h,(h.def||0)*ms2); itemPing(h,"manaShield") }   /* 전장의 함성 — 쓴 마나가 아니라 **추가 보호력**만큼 (사용자 2026-10-12) */
         (h.items||[]).forEach(it=>{ const k=it.bt&&it.bt.manaBolt; if(!k) return;
           const list=B.foes.filter(f=>f.alive);
           if(!list.length) return;
           const t2=(k==="mag")?list.reduce((a,b)=>a.slot>=b.slot?a:b)
                               :list.reduce((a,b)=>a.slot<=b.slot?a:b);
           /* 쓴 마나는 안 더한다 — **이 대원의 추가 공격력 · 추가 마법력**만큼 (사용자 2026-10-12) */
+          if(k==="mag"){ const sa=h.slot, sb=t2.slot; fx({side:"foe",slot:sb,gap:230,fn:()=>itemBoltFX(sa,sb)}) } else itemFxAt("foe",t2.slot,"slash");
           asSrc(h,()=>hurt(t2,(k==="mag"?(h.mag||0):(h.atk||0)),k==="mag"?"기초 마법서: 마나":"검투사의 검",k==="mag"?"mag":"slash")) });   /* 처치 주인 (점검 2026-10-07) */
       }
       if(h.name==="이테리오"&&C){
@@ -50519,13 +50578,15 @@ function moveTo(h,to){
       else { addShield(h,1); say("재빠른 이동 — 보호막 +1","t2") } } }
   { const direct=!!(B&&!B.foeAct&&from!==to);
     const ms=(direct?itemBt(h,"moveShield"):0)+((h.tag&&h.tag.moveShield)||0); if(ms) addShield(h,ms);
+    if(direct) itemPing(h,"moveShield");
     /* 에메랄드 수정 따위 — 「내 턴에 이동시 추진력」. 산들바람 안에만 있어서 점프백 같은 다른 이동에서는 안 올랐다 (사용자 2026-10-03) */
     const mm=(B&&!B.foeAct&&from!==to)?itemBt(h,"moveMom"):0;
     if(mm){ h.mom=(h.mom||0)+mm; fx({side:"mine",slot:to,ring:"#7fd39a",txt:"추진력 +"+mm,cls:"buf",gap:60}); say(`${h.name} 추진력 +${mm} (장신구)`,"t2") }
     const mb=direct?itemBt(h,"moveBlast"):0;
-    if(mb) asSrc(h,()=>B.foes.filter(f=>f.alive).forEach(f=>hurt(f,mb,"질주","wind")));
+    if(mb){ B.foes.filter(f=>f.alive).forEach(f=>itemFxAt("foe",f.slot,"slash")); asSrc(h,()=>B.foes.filter(f=>f.alive).forEach(f=>hurt(f,mb,"질주","wind"))) }
     (h.items||[]).forEach(it=>{ const k=it.bt&&it.bt.moveStat;
-      if(k){ bumpTurn(h,k,1) } }); }
+      if(k){ bumpTurn(h,k,1) } });
+    itemPing(h,"moveStat"); }
   if(deb(h,"shock")) dotAlly(h,h.deb.shock,"감전",null);
 }
 /* 감염을 건다 — **적이든 아군이든**. 적은 infectFoe 가 받고, 아군은 여기서 받는다
@@ -53055,7 +53116,7 @@ function hurtAlly(f,t,raw,label,el,evMsg,pierce,ownFx){   /* evMsg — 회피했
     say(`불사 — ${t.name}${jo(t.name,"ig")} 전장의 감염 ${burn}${jo(String(burn),"eul")} 태워 체력 ${t.hp}로 일어섭니다.`,"t1");
   }
   else if(!t.deathSaveUsed&&itemBt(t,"deathSave")&&d>=t.hp){
-    t.deathSaveUsed=1; d=0; raw=0;
+    t.deathSaveUsed=1; d=0; raw=0; itemFxAt("mine",t.slot,"rampart",420);
     healUp(t,Math.round(t.maxHp*itemBt(t,"deathSave")/100));
     fx({side:"mine",slot:t.slot,ring:"#7fd39a",txt:"버팀",cls:"crit",gap:80});
     say(`보루 — ${t.name}${jo(t.name,"ig")} 쓰러지지 않습니다.`,"t1");
@@ -53087,7 +53148,7 @@ function hurtAlly(f,t,raw,label,el,evMsg,pierce,ownFx){   /* evMsg — 회피했
   if(t.isMin&&raw>0){ const o=ottoOn(); if(o&&o.tag&&o.tag.rootLink){ o.eshield=(o.eshield||0)+o.tag.rootLink; skinProg("ottoEsh",o.tag.rootLink);
     say(`뿌리 연결 — ${o.name} 에너지 보호막 +${o.tag.rootLink}`,"t2") } }
   if(t.tag&&itemBt(t,"lastStand")&&!t.lastStandUsed&&t.hp<=t.maxHp*0.5){
-    t.lastStandUsed=1; const v=itemBt(t,"lastStand");
+    t.lastStandUsed=1; const v=itemBt(t,"lastStand"); itemFxAt("mine",t.slot,"aegon",300);
     t.eshield=(t.eshield||0)+(t.lv||1); bumpTmp(t,"atk",v);   /* 에너지 보호막(추가 ⇧) — 성장력 = 대원 레벨 (사용자 2026-10-07) */
     say(`애곤의 발톱 — ${t.name}${jo(t.name,"ig")} 이를 악뭅니다.`,"t1");
   }
@@ -53450,11 +53511,11 @@ function heroEndOnce(h,bump){
     { const en=itemBt(h,"endNeg"); if(en){ negGain(h,en); bump(); if(itemBt(h,"negMana")) h.negManaNext=1;
         fx({side:"mine",slot:h.slot,s:"guard",ring:"#7fd39a",txt:"부정 보호막 "+h.negShield,cls:"shd",gap:150}) }
       const mn=itemBt(h,"momNeg");
-      if(mn&&h.mom>0){ const use=momNegUse(h,h.mom); h.mom-=use; negGain(h,use); bump();
+      if(mn&&h.mom>0){ const use=momNegUse(h,h.mom); h.mom-=use; negGain(h,use); bump(); itemPing(h,"momNeg");
         fx({side:"mine",slot:h.slot,s:"guard",ring:"#7fd39a",txt:"부정 보호막 "+h.negShield,cls:"shd",gap:150}) }
       const em=itemBt(h,"endMag");
       if(em){ h.endCount=(h.endCount||0)+1;
-        if(h.endCount%2===0){ bumpRnd(h,"mag",1); bump();   /* 라운드 동안 (사용자 2026-10-06) */
+        if(h.endCount%2===0){ bumpRnd(h,"mag",1); bump(); itemPing(h,"endMag");   /* 라운드 동안 (사용자 2026-10-06) */
           fx({side:"mine",slot:h.slot,s:"pick",ring:"#6aa8e0",txt:"마법력+1",cls:"mag",gap:150});
           say(`기초 마법서: 순회 — ${h.name} 마법력 +1`,"t2") } } }
     /* 과열된 장치 (실험 책임자 전리품, 2026-10-23) — 내 턴이 **3번** 끝날 때마다.
@@ -53472,7 +53533,7 @@ function heroEndOnce(h,bump){
       say(`턴 종료 — ${h.name} 보호막 +${add}`,"t2") }
     if(itemBt(h,"manaShield")) h.manaUsed=0;   /* 전장의 함성은 마나를 쓰는 순간 준다 — 턴 끝에 또 주던 것 (점검 2026-10-07) */
     const qs=itemBt(h,"momShield");
-    if(qs&&h.mom>0){ const use=Math.min(6,h.mom); h.mom-=use; const v=use*qs; endShield(h,v); bump();
+    if(qs&&h.mom>0){ const use=Math.min(6,h.mom); h.mom-=use; const v=use*qs; endShield(h,v); bump(); itemPing(h,"momShield");
       fx({side:"mine",slot:h.slot,s:"shield",gap:170});
       say(`추진력 방벽 — ${h.name} 보호막 +${v}`,"t2") }
     const _e0=h.name==="오토"?eshSum():0;   /* 봄의 정원사 해금 셈 — 돌봄 · 명령: 돌보기 · 턴 끝 보상 */
@@ -53489,7 +53550,7 @@ function heroEndOnce(h,bump){
       if(st){ const conv=Math.min(st,h.shield);
         if(conv){ h.shield-=conv; h.eshield=(h.eshield||0)+conv; bump();
           { const sl=h.slot, n=conv; fx({side:"mine",slot:h.slot,s:"pulse",fn:()=>shieldShiftFX(sl,n),gap:520}) }   /* 바뀌는 모습 (2026-10-03) */
-          say(`오토의 여분손 — ${h.name} 보호막을 ${conv} 에너지 보호막으로 바꿉니다.`,"t2") } } }
+          itemPing(h,"shieldToEsh"); say(`오토의 여분손 — ${h.name} 보호막을 ${conv} 에너지 보호막으로 바꿉니다.`,"t2") } } }
     if(h.name==="보아"){ const sc=h.scaleTurn||0, v=1+h.def+sc;
       endShield(h,v); h.scaleTurn=0; bump();
       fx({side:"mine",slot:h.slot,s:"shield",glow:1,gap:190});
@@ -53508,7 +53569,7 @@ function heroEndOnce(h,bump){
       fx({side:"mine",slot:h.slot,ring:"#ff9a3c",txt:"에너지 보호막 +"+v,cls:"shd esh",gap:120}); say(`기름칠 — ${h.name} 에너지 보호막 +${v}`,"t2") }
     /* 불타는 호각 — 때리는 것이 아니라 불을 붙인다. 값은 화상 중첩이다 */
     const eb=itemBt(h,"endBurn");
-    if(eb){ const list=B.foes.filter(f=>f.alive&&dist(h.slot,f.slot)<=2);
+    if(eb){ const list=B.foes.filter(f=>f.alive&&dist(h.slot,f.slot)<=2); if(list.length) itemPing(h,"endBurn");
       if(list.length) bump();
       list.forEach(f=>{
         f.burn=(f.burn||0)+negCut(f,"burn",eb);
@@ -53895,7 +53956,7 @@ function startMyTurn(){
     if(h.scrapGot){ h.mana+=h.scrapGot;
       if(h.slot>0) fx({side:"mine",slot:h.slot,ring:"#7fd8ff",txt:"추가 마나 +"+h.scrapGot,cls:"mag",gap:120});
       say(`잔해 수집 — ${h.name} 추가 마나 +${h.scrapGot} (마나 ${h.mana})`,"t2"); h.scrapGot=0 }
-    if(h.negManaNext){ h.negManaNext=0; const nm=itemBt(h,"negMana"); if(nm){ h.mana+=nm; say(`봉인된 어둠 — ${h.name} 이번 턴 마나 +${nm}`,"t2") } }   /* 턴 끝에 얻은 부정 보호막 — 다음 내 턴에 (점검 2026-10-07) */
+    if(h.negManaNext){ h.negManaNext=0; const nm=itemBt(h,"negMana"); if(nm){ h.mana+=nm; itemPing(h,"negMana"); say(`봉인된 어둠 — ${h.name} 이번 턴 마나 +${nm}`,"t2") } }   /* 턴 끝에 얻은 부정 보호막 — 다음 내 턴에 (점검 2026-10-07) */
 
     if(h.manaCap!=null) h.mana=Math.min(h.mana,h.manaCap);   /* 수련 — 이 턴 마나의 윗한도 (낮추기만, 그보다 적으면 그대로).
        ⚠️ 여기서 지우면 **정작 마나가 깎인 그 턴에 딱지가 없다** (사용자 2026-10-13). 비우는 곳은 foePhase 한 곳이다 */
@@ -53916,7 +53977,7 @@ function startMyTurn(){
       say(`${h.name} — 의지가 흐려져 이번 턴 추가 능력치가 ${v} 줄어듭니다.`,"t2") }
     h.cutSum=0;
     { const mt=itemBt(h,"manaTick");
-      if(mt&&B.turn%mt===0){ h.mana++; say(`마나석 — ${h.name} 이번 턴 마나 +1`,"t2") } }
+      if(mt&&B.turn%mt===0){ h.mana++; itemPing(h,"manaTick"); say(`마나석 — ${h.name} 이번 턴 마나 +1`,"t2") } }
     if(h.tag.armorTurn&&h.slot>0) giveArmor(h,rnd(h.tag.armors||["강철 갑옷"]));
     /* 검투 대비 — 손에 쥔 방어구 장수만큼 이번 턴 보호력 */
     if(h.tag.handDef&&h.slot>0){
