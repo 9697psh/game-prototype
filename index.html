@@ -476,6 +476,8 @@ img.pxs.face{image-rendering:pixelated;width:auto;filter:drop-shadow(0 2px 0 rgb
   background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--fr) 34%,#12100d),#0f0d0b 78%);
   box-shadow:0 0 0 1px rgba(0,0,0,.7),0 0 8px -2px var(--fr)}
 .gs .ipx{width:20px;height:20px}
+.gs.spent{box-shadow:0 0 0 1px rgba(0,0,0,.7)}   /* 다 쓴 장신구 (itemSpent) */
+.gs.spent>*{filter:brightness(.5) saturate(.65)}   /* 아이콘이 img.ricon 일 때도 있고 그려 낸 .ipx 일 때도 있다 */
 .gear.gear-sm{justify-content:flex-start;margin:4px 0 2px}
 .gear.gear-sm .gs{width:22px;height:22px;flex-basis:22px} .gear.gear-sm .gs .ipx{width:18px;height:18px}
 .intentbar{display:flex;justify-content:center;min-height:20px;margin:-3px 0 3px;position:relative;z-index:6}   /* 긴 의도가 옆 칸에 가리지 않게 */
@@ -19319,6 +19321,22 @@ function unequip(h,idx,force){
   return it;
 }
 function itemBt(h,key){ return (h.items||[]).reduce((a,i)=>a+((i.bt&&i.bt[key])||0),0) }
+/* 다 쓴 장신구 — 상태창의 장신구 칸이 살짝 어두워진다 (사용자 2026-11-07 : 발동을 다 했거나 수치를 다 소진하면).
+   ★ 횟수나 자원이 다하는 장신구를 새로 넣으면 **여기 한 줄**. 열쇠는 그 장신구의 bt 키다.
+   ⚠️ 전투 안의 값은 fight 일 때만 본다 — 쓴 표시가 전투가 끝나도 남아 있어 지도에서 어두워진다.
+      고대의 펜던트 · 보호막 충전기는 판 전체의 값이라 어디서나 본다. */
+const ITEM_SPENT={
+ pendant:(h,it)=>it.left!=null&&it.left<=0,                   /* 고대의 펜던트 — 남은 횟수 0 */
+ eshCharge:(h,it)=>eshChargeNow(it)<=0,                      /* 보호막 충전기 — 영구히 줄어 0 이 되었다. 판 전체의 값 */
+ deathSave:(h,it,fight)=>fight&&!!h.deathSaveUsed,            /* 보루 — 전투당 1회 */
+ lastStand:(h,it,fight)=>fight&&!!h.lastStandUsed,            /* 애곤의 발톱 — 전투당 1회 */
+ emptyDef:(h,it,fight)=>fight&&!!h.emptyDefOn,                /* 탈피 — 이번 라운드에 발동했다 */
+ negEsh:(h,it,fight)=>fight&&(h.negShield||0)<=0,             /* 차원 생성석 — 부정 보호막이 바닥났다 */
+ startMark:(h,it,fight)=>!!(fight&&B&&B.foes&&!B.foes.some(f=>f.alive&&grimoireCount(f,h)>0))   /* 그리모어 — 표식이 찍힌 적이 없다 */
+};
+function itemSpent(h,it,fight){ const bt=it&&it.bt; if(!bt) return false;
+  for(const k in ITEM_SPENT) if(bt[k]&&ITEM_SPENT[k](h,it,fight)) return true;
+  return false }
 /* 회복 — 전투 중 회복이 막힌 대상은 여기서 걸러진다 */
 function healUp(u,v,quiet){
   /* 회복점막 — 회복된 뒤에 보호력을 얻는다 (사용자 2026-09-29) */
@@ -19702,14 +19720,14 @@ function itemIcon(it,px){
   return out+"</svg>";
 }
 /* 마나 칸 위에 놓이는 장비 세 칸 */
-function gearRow(h){
+function gearRow(h,fight){
   let out='<div class="gear">';
   for(let i=0;i<itemMax(h);i++){
     const it=(h.items||[])[i];
     if(it){
       const fr=GRADE_FRAME[it.g]||GRADE_FRAME["일반"];
       const g={"파편":"g-frag","일반":"g-common","희귀":"g-rare","특수":"g-special","전설":"g-legend"}[it.g]||"g-common";   /* 등급마다 빛을 달리 (사용자 2026-09-29) */
-      out+='<span class="gs on kw '+g+'" data-item="'+esc(it.n)+'" data-ih="'+esc(h.name||"")+'" style="--fr:'+fr+'">'
+      out+='<span class="gs on kw '+g+(itemSpent(h,it,fight)?" spent":"")+'" data-item="'+esc(it.n)+'" data-ih="'+esc(h.name||"")+'" style="--fr:'+fr+'">'
           +itemIcon(it)+'</span>';   /* data-ih — 설명 창이 「이 대원의」 수치를 채울 수 있게 (2026-10-12) */
     } else out+='<span class="gs"></span>';
   }
@@ -27116,6 +27134,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 398, "v": "0.8", "d": "2026-11-07", "t": "다 쓴 장신구는 상태창에서 어두워짐", "big": 0},
  {"b": 397, "v": "0.8", "d": "2026-11-07", "t": "구역은 하루 첫 입장만 활동량과 시간, 과부하 금화 구멍 수정", "big": 0},
  {"b": 396, "v": "0.8", "d": "2026-11-06", "t": "2막은 당분간 광기의 투기장만", "big": 0},
  {"b": 395, "v": "0.8", "d": "2026-11-05", "t": "모형 창병 진급 강조 — 이름판, 소리, 대사", "big": 0},
@@ -28705,7 +28724,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=397;
+const BUILD_NO=398;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -45520,7 +45539,7 @@ function drawBattle(app){
       const [esW,shW]=barWard(esW0,shW0,h.hp/h.maxHp*100);   /* 둘의 합이 체력을 덮지 않게 (2026-10-20) */
       if(h.isMin&&h.mimic&&h.mimic.act) d.innerHTML+=`<div class="intentbar">${mimicHtml(h)}</div>`;
       d.innerHTML+=`<div class="res">${manaPips(h)}${heroRes(h)}${
-          h.mom?`<span class="rr">${ic("move")}${h.mom}</span>`:""}</div>${h.isMin?"":gearRow(h)}
+          h.mom?`<span class="rr">${ic("move")}${h.mom}</span>`:""}</div>${h.isMin?"":gearRow(h,1)}
         <div class="art${(h.name==="카제"&&h.hp>0&&h.sk[0]&&h.sk[0].n==="회오리")?" charged":""}${h.bigArt?" bigart":""}${(typeof gsdBodyOff==="function"&&gsdBodyOff(h))?" vanish":""}"${(h.name==="페블"&&h.tag&&h.tag.giant)?` style="--pbgiant:${(1+0.12*Math.min(4,h.tag.giant)).toFixed(2)}"`:""}>${pmk}${mrf}${iraa}${auraHtml(h)[0]}${(h.mobile&&h.hp>0&&skinIcon("fx_it_aura"))?`<i class="mobaura kw" style="background-image:url(${skinIcon("fx_it_aura")})" data-kw="기동 상태" data-tip="다른 기술을 쓴 뒤 1칸 물러서고 에너지 보호막을 얻습니다."></i>`:""}${ksoulAuraHtml(h)}${figure((h.artAs&&Date.now()-(h.artAsT||0)<5000)?h.artAs:h.name,poseNow(h),h)}${(h.mobile&&h.hp>0&&skinIcon("fx_it_aura"))?`<i class="mobaura front" style="background-image:url(${skinIcon("fx_it_aura")})"></i>`:""}${ksoulAuraHtml(h,1)}${auraHtml(h)[1]}${(h.name==="카제"&&h.hp>0&&h.sk[0]&&h.sk[0].n==="회오리")?`<i class="swglow kw" data-kw="회오리" data-tip="회오리가 찼습니다."></i>`:""}</div>
         <div class="nm">${esc(h.name)}</div>${(sel&&sel.hero===h)?raceLine(h):""}
         <div class="bar" data-hpk="${hpKey(h)}" data-hpv="${Math.max(0,h.hp/h.maxHp*100)}" data-hpn="${h.hp}"
