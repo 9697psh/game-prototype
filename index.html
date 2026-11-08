@@ -6619,6 +6619,11 @@ body.cheerin .hand{visibility:hidden}   /* 입장 글과 겹치지 않게 — �
 /* 진급 이름판 — 시안의 「진 급 / 이름」 */
 .promoplate{position:absolute;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:2px;white-space:nowrap;font-family:var(--serif);text-shadow:0 1px 0 #130f0c,0 0 6px #130f0c}
 .promoplate i{font-style:normal;font-size:18px;color:#e4bf74} .promoplate b{font-weight:400;font-size:28px;color:#ffedc7}
+/* 적 행동 의도의 글자는 보라 (사용자 2026-11-08 : 「의도인지 버프인지 헷갈린다」). 숫자 · 아이콘의 색(피해 갈래)은 그대로.
+   약화로 줄어든 의도(.cut) · 정화(.purge) · 기절(.istun) · 디버프(글자색을 그 상태 색으로)는 제 색을 지킨다 — 클래스 둘이라 이 줄보다 세다 */
+.intent,.intent .tgt,.intent.t-move,.intent.up{color:#c49bff}
+/* 버프 딱지의 글자(흡수 100% 따위)는 초록 — 대원 · 적 같이 (사용자 2026-11-08) */
+.bfstage .slot .st.g .bd{color:#9fe07e}
 </style>
 </head>
 <body>
@@ -16758,8 +16763,8 @@ const HERO_REWARDS={
       toast(`강탈 — 금화 ${g}를 털어 하급 보상 ${n}개`) }),{okf:()=>(run&&run.gold||0)>=15}),
   Object.assign(R("부착: 기계식 조준기","중급","저격소총의 거리 당 증가하는 피해량이 1 증가합니다.\n*변형: 저격소총 선택 후에만 등장",
     h=>h.tag.farAddPlus=(h.tag.farAddPlus||0)+1),{okf:()=>derrGun()==="저격소총"}),
-  Object.assign(R("부착: 흡혈총검","중급","흡수 +10%를 얻습니다.\n*변형: 산탄총, 리볼버 선택 후에만 등장",
-    h=>{ h.tag.gunLeech=(h.tag.gunLeech||0)+10; if(typeof iraLeechSync==="function") iraLeechSync(h) }),   /* 늘 붙는 흡수는 iraLeechSync 한 곳이 셈한다 (2026-10-15) */
+  Object.assign(R("부착: 흡혈총검","상급","흡수 +15%를 얻습니다.\n*변형: 산탄총, 리볼버 선택 후에만 등장",   /* 중급 10% → 상급 15% (사용자 2026-11-08) */
+    h=>{ h.tag.gunLeech=(h.tag.gunLeech||0)+15; if(typeof iraLeechSync==="function") iraLeechSync(h) }),   /* 늘 붙는 흡수는 iraLeechSync 한 곳이 셈한다 (2026-10-15) */
     {okf:()=>derrGun()==="산탄총"||derrGun()==="리볼버"}),
   Object.assign(R("무법의 쾌감","중급","데린저가 적을 처치한 후, 이번 전투에서만 무기 피해량이 2 증가합니다.\n*변형: 리볼버, 산탄총 선택 후에만 등장",
     h=>h.tag.killGunUp=(h.tag.killGunUp||0)+2),
@@ -17500,7 +17505,14 @@ Object.assign(REW_KIND,{
 Object.assign(REW_COND,{
  "하급|사냥 수첩":{once:1},"중급|부지런한 아침":{once:1},"상급|사치품":{once:1},"상급|최종성장":{once:1},
  "중급|원수":{once:1},"상급|완전한 대형":{once:1}});
-function rewCond(r){ return REW_COND[rwKey(r)]||null }
+/* 🔑 **설명의 「*획득시 보상에서 다시 등장하지 않음」을 그대로 읽는다** (사용자 2026-11-08 : 「부착: 장전 손잡이를 여러 번 고르면 마나가 0이 된다」).
+   표에 once 를 적는 것을 대원마다 잊어 왔다 — 파벨(2026-10-13)에 이어 데린저 상급 일곱 줄이 통째로 빠져 있었다.
+   표에 max 가 따로 적힌 것은 표를 따른다. 한 번 읽으면 표에 적어 둔다 */
+function rewCond(r){
+  const k=rwKey(r), c=REW_COND[k]||null;
+  if(rwMax(c)||!/\*\s*획득시 보상에서 다시 등장하지 않음/.test(String((r&&r.d)||""))) return c;
+  return (REW_COND[k]=Object.assign({},c||{},{once:1}));
+}
 /* 설명의 `*[○○] 기술이 없을 때 등장하지 않음` 에서 기술 이름들을 뽑는다.
    한 번 뽑으면 적어 둔다 (보상을 뽑을 때마다 글을 훑지 않게) */
 const REW_NEED_SK={};
@@ -19840,9 +19852,9 @@ const FOE={
     {n:"앞을 막아서기",w:6,tg:"self",cond:"demonFront",must:1,guardDemon:1,taunt:2,cd:2,
       d:"(사슬에 묶인 마귀가 가장 앞에 있을 때) 마귀와 자리를 바꿔 가장 앞으로 나서고, 2턴 동안 도발합니다."}],
    hit:"사슬 공격"},
- "피 먹는 자":{hp:16,atk:3,def:2,rng:2,exp:2,demon:1,
+ "피 먹는 자":{hp:19,atk:3,def:2,rng:2,exp:2,demon:1,   /* 체력 16 → 19 · 흡수 100% → 50% (사용자 2026-11-08) */
    el:"공격",
-   pas:[{k:"drain",v:1,n:"흡수 100%",d:"보호막에 막히지 않은 피해를 준 만큼 체력을 회복합니다."},
+   pas:[{k:"drain",v:0.5,n:"흡수 50%",d:"보호막에 막히지 않은 피해의 50%만큼 체력을 회복합니다."},
         {k:"lowAtk",pct:0.5,v:3,n:"피의 갈증",d:"체력이 절반 아래일 때 공격력 +3"}],
    sk:[
     {n:"깨물기",w:5,tg:"near",dmg:3,chase:1,d:"가장 가까운 상대에게 공격 피해를 3 줍니다."},
@@ -20754,10 +20766,11 @@ const FOE={
    ai:{open:"back",back:10,weak:5,near:4,twin:4,any:2,chase:1,debs:["bind"]},
    hit:"목덜미 물어뜯기"},
  /* 동화의 방 — 지도에서 쫓아오다 따라잡으면 혼자 달려든다 (사용자 2026-10-10). 표는 사용자가 준 것 그대로:
-    계열 공격 · 체력 80 · 사거리 6 · 지속능력 둘 · 패턴 여섯. fixHp — 체력은 배율을 안 받고 기술 숫자는 적은 그대로 들어간다.
+    계열 공격 · 체력 80 · 사거리 6 · 지속능력 둘 · 패턴 여섯.
+    2026-11-08 fixHp 를 뺐다 (사용자 : 「강화 배율이 적용되어 있지 않다」) — 표의 숫자는 밑값이고, 체력 · 공격력 · 기술 피해가 정예 배율을 탄다.
     ⚠️ 표에 없어 내가 정한 것: 보호력 0 · 경험치 12(/map 이 세운 값) · 패턴 가중(w) · 「방어도」는 이 집에 없는 말이라 보호막으로 읽었다.
     ⚠️ 전투 그림은 아직 안 구워졌다 — art/_받은묶음/spire-wolves-64-v1/poses/red_hood_wolf (/art 몫) */
- "붉은 망토 늑대":{hp:80,fixHp:1,atk:10,def:0,rng:6,exp:12,
+ "붉은 망토 늑대":{hp:80,atk:10,def:0,rng:6,exp:12,
    el:"공격", race:"야수",
    pas:[{k:"hunger",v:50,n:"굶주림",d:"체력이 절반 이하가 되면 흡수 +50%를 얻습니다."},
         {k:"hood",v:1,n:"붉은 망토",d:"적 턴이 시작될 때 회피를 1 얻습니다."}],
@@ -21919,7 +21932,7 @@ function foeStatusRows(f){
   /* 데린저의 조준 — **조준당한 적 쪽**에 띄운다 (사용자 2026-10-15 : 「누굴 조준했는지 알기 힘들다」).
      상태는 데린저가 들고 있다(h.aimAt) — 적에게 거는 디버프가 아니라서 여기서 되물어 그린다.
      ⚠️ 적에게 값을 심지 마라. 정화·해독에 벗겨지면 안 되는 상태다 (aimBound 와 같은 결) */
-  { const dr=(typeof onField==="function")&&onField().find(x=>x&&x.name==="데린저"&&x.aimAt===f.id);
+  { const dr=(typeof onField==="function")&&onField().find(x=>x&&x.name==="데린저"&&(x.aimAt===f.id||(x.aimAt2!=null&&x.aimAt2===f.id)));   /* 이중 조준경의 둘째도 (2026-11-08) */
     if(dr) o.push(bd("o","조준","","데린저가 이 적을 조준하고 있습니다. 데린저가 주는 피해는 치명타가 되고, 다른 적은 피해를 받지 않습니다.","조준")) }   /* 오리온 (노트 2026-10-14) */
   { const wd=(f.weak||0)-(f.willDef||0), wa=(f.weakAtk||0)-(f.willAtk||0);   /* 의지 약화 몫은 약화가 아니다 — 추가 능력치 칸에 (-N) 으로 (사용자 2026-10-06) */
     if(wd>0) o.push(bd("o","보호력 감소",wd,`보호력이 ${wd} 줄어듭니다`,"보호약화"));
@@ -23844,9 +23857,11 @@ function wolfSpawn(){
 function wolfBattle(){
   run.route=null; run.walkTo=0; run.mapSel=null;
   SFX.play("danger");
-  startDungeon({t:"dungeon",waves:1,wolf:1},null,null);
+  /* 정예 전투로 — 강화 배율 · 보상이 정예 몫 (사용자 2026-11-08 : 「강화 배율이 안 붙고 보상이 적다」).
+     첨탑 · 울창한 수목처럼 t:"elite" 로 연다. 오염도 감소는 c.wolf 라 그대로 특수 전투(20) */
+  startDungeon({t:"elite",waves:1,wolf:1},null,null);
   run.dun.forceFoes=[["붉은 망토 늑대",1]];
-  startBattle("battle");
+  startBattle("elite");
   setTimeout(()=>stepBanner("붉 은 망 토 늑 대","굶주린 늑대가 달려듭니다"),40);
 }
 /* 마차가 우두머리에게 가는 길 — 빈 칸으로만(대원이 선 칸도 못 지난다), 마지막 한 걸음만 우두머리 칸.
@@ -25647,7 +25662,7 @@ const HERO_TRAITS={
         "중급|변형: 산탄총",
         "하급|근접사격",
         "하급|부착: 초크",
-        "중급|부착: 흡혈총검",
+        "상급|부착: 흡혈총검",
         "중급|무법의 쾌감",
         "상급|근접 난사",
         "상급|부착: 충격 흡수 개머리판",
@@ -25678,7 +25693,7 @@ const HERO_TRAITS={
       "own": [
         "중급|변형: 리볼버",
         "하급|부착: 강화약실",
-        "중급|부착: 흡혈총검",
+        "상급|부착: 흡혈총검",
         "중급|무법의 쾌감",
         "상급|납탄",
         "상급|은탄",
@@ -27175,6 +27190,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 401, "v": "0.8", "d": "2026-11-08", "t": "한 번만 뜨는 보상 · 늑대 정예 · 흡혈총검 상급 · 이중 조준경 · 벨트 길 밝힘 · 의도 보라 · 버프 초록 · 피 먹는 자 · 과열된 장치 연출", "big": 0},
  {"b": 400, "v": "0.8", "d": "2026-11-08", "t": "희귀 장신구 이펙트 v2 · 막힌 이벤트 나가기 · 죽기 직전으로 돌아가기", "big": 0},
  {"b": 399, "v": "0.8", "d": "2026-11-07", "t": "희귀 장신구 이펙트 — 보루, 애곤의 발톱, 검기, 마력탄, 그리모어 표식 외", "big": 1},
  {"b": 398, "v": "0.8", "d": "2026-11-07", "t": "다 쓴 장신구는 상태창에서 어두워짐", "big": 0},
@@ -28767,7 +28783,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=400;
+const BUILD_NO=401;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -32901,17 +32917,24 @@ function beltWays(r,c){
 /* 그 쪽으로 벨트가 끝날 때까지 가고, **한 칸 더** 간다.
    ⚠️ 꺾인 칸에서는 **이어진 다른 쪽으로 돈다** — 전에는 똑바로만 가서 꺾인 칸을 지나쳐 벨트 밖으로 빠졌다 (사용자 2026-11-04) */
 function beltRide(r,c,dr,dc){
-  const S=run.size; let cr=r, cc=c, n=0;
+  const S=run.size; let cr=r, cc=c, n=0; const path=[];   /* 지나간 벨트 칸 — 타면 지도에서 밝힌다 (beltSee) */
   while(n<40){ const nr=cr+dr, nc=cc+dc;
     if(nr<0||nc<0||nr>=S||nc>=S) break;
     cr=nr; cc=nc; n++;
-    if(!isBelt(cr,cc)) break;   /* 벨트가 아닌 칸에 닿으면 거기서 멈춘다 — 「한 칸 더」 */
+    if(!isBelt(cr,cc)) break;
+    path.push({r:cr,c:cc});   /* 벨트가 아닌 칸에 닿으면 거기서 멈춘다 — 「한 칸 더」 */
     const g=run.grid[cr][cc];
     if(g.t==="beltT"&&g.turn){ const out=String(g.turn).split("").map(k=>TURN_D[k]).find(w=>w&&!(w[0]===-dr&&w[1]===-dc));
       if(out){ dr=out[0]; dc=out[1] } }
   }
-  return {r:cr,c:cc,n:n};
+  return {r:cr,c:cc,n:n,path:path};
 }
+/* 탄 길의 벨트를 지도에서 밝힌다 (사용자 2026-11-08) — 벨트 칸만, 실려 간 차례대로 어둠이 걷힌다.
+   둘레는 밝히지 않는다 (내려선 자리는 여느 때처럼 seeAround 가) */
+function beltSee(path){ if(!run||!run.seen||!path) return 0; let n=0;
+  path.forEach((p,i)=>{ const k=p.r+"-"+p.c; if(run.seen[k]) return; run.seen[k]=1; n++;
+    if(typeof SEE_NEW!=="undefined") SEE_NEW.push({k:k,wait:SEE_STEP*(i+1)}) });
+  return n }
 /* 벨트 칸 하나 — 꼴에 맞는 방향만 선택지로 (사용자 2026-10-21) */
 function beltNode(cell,r,c){
   const ways=beltWays(r,c);
@@ -32921,6 +32944,7 @@ function beltNode(cell,r,c){
     const to=beltRide(r,c,dr,dc);
     return {t:ro,d:`벨트를 타고 ${ro} 실려 갑니다 (${to.n}칸).`,end:1,
       f:()=>{ cell.visited=1;   /* 한 번 탔으면 그 칸은 더 발을 묶지 않는다 (2026-10-23) */
+        beltSee(to.path);
         run.pos={r:to.r,c:to.c}; run.mapSel=null; run.route=null;
         return `벨트가 돌며 ${ro} ${to.n}칸 실어 갑니다.` }};
   });
@@ -43147,7 +43171,7 @@ function foeDrain(f,t,before){
       const v=healUp(f,Math.min(Math.round(dealt*(hg.v||50)/100),f.maxHp-f.hp),1)||0;
       if(v>0){ fx({side:"foe",slot:f.slot,s:"heal",trig:"흡수",ring:"#a34f4f",txt:"+"+v,cls:"heal",gap:80}); say(`${f.name} 굶주림 — 흡수로 체력 +${v}`,"t2") } } }
   if((foePas(f,"drain")||(f.drainTurn&&B&&f.drainTurn===B.turn))&&f.hp<f.maxHp){
-    const rate=foePas(f,"drain")?1:(f.drainRate||1);   /* 피의 계약 — 50% */
+    const DP=foePas(f,"drain"), rate=DP?(DP.v||1):(f.drainRate||1);   /* 지속 능력은 그 비율(피 먹는 자 50%, 2026-11-08) · 피의 계약 — 50% */
     const v=healUp(f,Math.min(Math.round(dealt*rate),f.maxHp-f.hp),1)||0;   /* 보호약화면 절반 (점검 2026-10-07) */
     fx({side:"foe",slot:f.slot,s:"heal",ring:"#a34f4f",txt:"+"+v,cls:"heal",gap:80});
     say(`${f.name} 흡수 — 체력 +${v}`,"t2") }
@@ -47280,7 +47304,7 @@ function pickCount(n){
     }
     if(el2.dataset.fintn){
       const nm2=el2.dataset.fintn, d2=el2.dataset.fintd||"";
-      b.innerHTML='<b style="color:var(--brass)">'+nm2+'</b>'+(d2?'\n'+d2:"");
+      b.innerHTML='<b style="color:#c49bff">'+nm2+'</b>'+(d2?'\n'+d2:"");   /* 의도의 설명창 제목은 보라 — 머리 위 의도 글자와 같은 색 (사용자 2026-11-08) */
       b.style.display="block";
       const rf=el2.getBoundingClientRect(), wf=b.offsetWidth, hf=b.offsetHeight;
       let xf=rf.left+rf.width/2-wf/2, yf=rf.top-hf-9;
@@ -48133,7 +48157,7 @@ function iraLeechSync(h){
   const 갈증=(th&&h.hp>0&&h.maxHp>0&&h.hp*2<=h.maxHp)?th:0;
   let 나눔=0;
   onField().forEach(a=>{ if(a!==h&&a.hp>0&&a.slot>0&&a.tag&&a.tag.shareLeech) 나눔+=a.tag.shareLeech });
-  /* 제가 늘 지니는 몫 — 부착: 흡혈총검 (사용자 2026-10-15 : 「흡수 +10%가 발동되는지」).
+  /* 제가 늘 지니는 몫 — 부착: 흡혈총검 (사용자 2026-10-15 : 「흡수 +10%가 발동되는지」, 2026-11-08 상급 15%).
      ⚠️ 이 함수가 leechOn 을 **통째로 다시 셈해 덮어쓴다** — 여기 안 적힌 몫은 그 자리에서 지워진다.
         흡혈총검이 보상에서 setLeechOn 으로 한 번 켜 두었다가 다음 셈에 조용히 꺼지고 있었다 */
   const 총검=(h.tag&&h.tag.gunLeech)||0;
@@ -48828,7 +48852,7 @@ function predictDmg(h,s,tgt){
       /* 저격소총 — 「2(추가 † + 대상과의 거리)」. runEffect 와 **같은 차례**여야 예고가 맞는다
          (2026-10-14 에 한 번 어긋나 probe 가 아니라 그물이 잡았다) */
       if(s.farAdd) dmg+=dist(h.slot,tgt.slot);
-      if(h.aimAt!=null){ if(tgt.id===h.aimAt){ dmg*=2; crit=1 } else dmg=0 }
+      if(h.aimAt!=null){ if(tgt.id===h.aimAt){ dmg*=2; crit=1 } else if(!(h.aimAt2!=null&&tgt.id===h.aimAt2)) dmg=0 }   /* 이중 조준경 — runEffect 와 같게 (2026-11-08) */
       if(s.ammo&&h.tag.headshot&&!h.headshotUsed){
         const add=8+ATK;
         dmg=(h.aimAt!=null&&tgt.id===h.aimAt)?Math.round((dmg/2+add)*3):dmg+add;
@@ -50053,8 +50077,8 @@ function onDeath(kind,who){
     run.heroes.forEach(h=>{
       if(h.name==="보아"&&h.slot>0&&h.venom) gainScale(h,10);
       if(h.name==="데린저"&&who&&h.aimAt2!=null&&h.aimAt2===who.id){ h.aimAt2=null }
-      if(h.name==="데린저"&&who&&h.aimAt!=null&&h.aimAt===who.id){ h.aimAt=h.aimAt2!=null?h.aimAt2:null; h.aimAt2=null; SFX.play("조준 해제");
-        if(h.deb) h.deb.bind=0; say(`${h.name} 조준이 풀립니다.`,"t2") }
+      if(h.name==="데린저"&&who&&h.aimAt!=null&&h.aimAt===who.id){ h.aimAt=h.aimAt2!=null?h.aimAt2:null; h.aimAt2=null;
+        if(h.aimAt==null){ SFX.play("조준 해제"); if(h.deb) h.deb.bind=0; say(`${h.name} 조준이 풀립니다.`,"t2") } }   /* 이중 조준경 — 둘째가 남으면 조준이 이어진다 (2026-11-08) */
     });
   }
   run.heroes.forEach(h=>{
@@ -52569,7 +52593,9 @@ function runEffect0(h,i,s,target){
     if(h.name==="데린저"){
       /* 저격소총 — 「2(추가 † + 대상과의 거리)」. 치명타보다 **먼저** 얹어야 예고와 같다 */
       if(s.farAdd) dmg+=dist(h.slot,tgt.slot);
-      if(h.aimAt!=null){ if(tgt.id===h.aimAt){ dmg*=2; CRIT=1 } else dmg=0 }
+      /* 부착: 이중 조준경 — 둘째 대상(aimAt2)도 조준한 적이다. 0 으로 지우면 안 된다 (사용자 2026-11-08 : 둘째에게 쏘면 피해 0).
+         그 치명타는 아래 critWhy(「정확 조준」) 한 곳이 준다 — 여기서 또 곱하면 네 배 */
+      if(h.aimAt!=null){ if(tgt.id===h.aimAt){ dmg*=2; CRIT=1 } else if(!(h.aimAt2!=null&&tgt.id===h.aimAt2)) dmg=0 }
       if(s.ammo&&h.tag.headshot&&!h.headshotUsed){
         h.headshotUsed=1;
         const add=8+h.atk;
@@ -53543,6 +53569,8 @@ function endPhase(){
 }
 /* 대원 한 사람의 「내 턴이 끝날 때」 — endPhase 가 대원마다 (회중시계면 두 번) 부르고,
    페블 시간의 광맥이 처치했을 때 한 번 더 부른다 (2026-11-02). bump — 턴 종료 머리말을 달지 셈 */
+/* 과열된 장치의 폭발 띠 차례 — 예고 두 칸(0 · 1)을 네 번 부글부글(점점 빨리) → 2 부터 터짐 (사용자 2026-11-08) */
+const OH_ORDER=[0,1,0,1,0,1,0,1,2,3,4,5,6,7], OH_MS=[150,130,130,110,110,90,90,75,65,90,200,110,170,450];
 function heroEndOnce(h,bump){
     { const en=itemBt(h,"endNeg"); if(en){ negGain(h,en); bump(); if(itemBt(h,"negMana")) h.negManaNext=1;
         fx({side:"mine",slot:h.slot,s:"guard",ring:"#7fd39a",txt:"부정 보호막 "+h.negShield,cls:"shd",gap:150}) }
@@ -53559,8 +53587,23 @@ function heroEndOnce(h,bump){
     { const oh=itemBt(h,"overheat");
       if(oh){ h.endCount=(h.endCount||0)+1;
         if(h.endCount%3===0){ const n=oh*(h.endCount/3);
-          fx({side:"mine",slot:h.slot,quake:1,s:"boom",gap:180});
-          B.foes.filter(f=>f.alive).forEach(f=>asSrc(h,()=>hurt(f,n,"과열된 장치","mag")));
+          /* 연출 (사용자 2026-11-08 : 「따로 피해 줄 때 이펙트가 있으면」) — 장치가 달아오르며 떨고, 적마다 연료 장치의 폭발 띠.
+             받은 그림 그대로 — 이 장신구를 떨구는 실험 책임자의 연료 장치 폭발(fx_fuel_explosion)이다. 새로 그리지 않는다 */
+          { const sl=h.slot; fx({side:"mine",slot:sl,fn:()=>{ try{ poseShake("mine",sl,380) }catch(e){} },gap:380}) }
+          /* 부글부글하다 터진다 (사용자 2026-11-08 : 「더 크게, 좀 더 부글부글하다가 터지면」).
+             띠의 앞 두 칸(0 · 1)이 예고라 그 둘을 네 번 되풀이하며 점점 빨라지고(OH_ORDER), 셋째 칸(2)부터 터진다. 그동안 적도 떤다.
+             ⚠️ 피해는 **터지는 칸**에 맞춘다 (「터지는 이펙트와 피해 타이밍이 맞아야」) — 터짐까지 기다린 뒤
+             소리 · 흔들림과 함께 피해(hurt 의 숫자 · 맞는 자세)가 들어간다. 실제 빠르기로 재서 맞췄다 — 폭발 띠 +885ms 가 터짐, 숫자는 그 30ms 뒤.
+             ⚠️ 슬로 GIF(cap.slow)로 맞추지 말 것 — 띠는 setTimeout 이라 안 느려지고 기다림(gap)만 늘어 어긋나 보인다 */
+          { const L=B.foes.filter(f=>f.alive), bub=OH_MS.slice(0,OH_ORDER.indexOf(2)).reduce((a,b)=>a+b,0), pre=bub+30;
+            L.forEach(f=>{ const sl=f.slot; fx({side:"foe",slot:sl,fn:()=>{ try{ poseShake("foe",sl,bub) }catch(e){} },gap:0}) });
+            L.forEach((f,i)=>fx({side:"foe",slot:f.slot,sheet:"fx_fuel_explosion",gap:i<L.length-1?0:pre,
+              sheetOpt:{cellW:128,cellH:208,frames:8,order:OH_ORDER,z:1,feet:1,frameMs:OH_MS,burst:1,tag:"overheat"}}));
+            fx({side:"mine",slot:h.slot,quake:1,s:"boom",gap:0}) }
+          /* 모든 적이 **한꺼번에** 맞는다 — hurt 가 적마다 줄에 단 기다림(gap)을 지워, 터짐과 같은 순간에 숫자가 다 뜨게 (마지막 것만 남긴다) */
+          { const q0=FXQ.length;
+            B.foes.filter(f=>f.alive).forEach(f=>asSrc(h,()=>hurt(f,n,"과열된 장치","mag")));
+            for(let i=q0;i<FXQ.length-1;i++) if(FXQ[i]) FXQ[i].gap=0 }
           bump(); say(`과열된 장치 — 모든 적에게 피해 ${n}`,"t1") } } }
     const es=itemBt(h,"endShield");
     if(es){ const add=es+(itemBt(h,"endShieldDef")?h.def:0);
