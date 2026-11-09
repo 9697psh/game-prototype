@@ -17867,14 +17867,17 @@ function modParts(sk,key){ return (sk.mods||[]).filter(m=>m.k===key) }
 function bump(h,name,key,v,label){ addMod(h,name,key,v,label||"강화") }
 /* 장신구 — 기획노트 그대로.
    설명 순서 : 마나 / 최대 체력 / 공격력 / 마법력 / 보호력 /
-              내 턴 종료 후 보호막 / 대원 배치 후 부정 보호막 / 내 턴에 이동 후 추진력 */
+              내 턴이 끝날 때, 보호막 / 대원 배치 후 부정 보호막 / 내 턴에 이동 후 추진력 */
 const ITEM_ORDER=["maxMana","firstMana","maxHp","atk","mag","def","endShield","negShield","moveMom"];
 const ITEM_LINE={
  maxMana:v=>`최대 마나 +${v}`, firstMana:v=>`각 라운드 첫 턴에 추가 마나 +${v}`,   /* 노트 문장 (2026-10-03) */
  maxHp:v=>`최대 체력 +${v}`, atk:v=>`공격력 +${v}`, mag:v=>`마법력 +${v}`, def:v=>`보호력 +${v}`,
- endShield:v=>`내 턴 종료 후 보호막 +${v}`, negShield:v=>`대원 배치 후 부정 보호막 +${v}`,
+ endShield:v=>`내 턴이 끝날 때, 보호막 +${v}`, negShield:v=>`대원 배치 후 부정 보호막 +${v}`,
  moveMom:v=>`내 턴에 이동 후 추진력 +${v}`
 };
+/* 장신구 설명 말투 — 「내 턴 종료 후」는 쓰지 않고 「내 턴이 끝날 때,」 (사용자 2026-11-09 : 이후에 추가할 장신구들도).
+   노트에서 옛 말로 옮겨 적어도 여기서 바뀐다. 기술 · 상태 설명은 건드리지 않는다 (장신구만) */
+const itemWords=t=>String(t||"").replace(/내 턴 종료 후,?\s*/g,"내 턴이 끝날 때, ");
 function itemDesc(it){
   const out=[];
   ITEM_ORDER.forEach(k=>{
@@ -17882,10 +17885,10 @@ function itemDesc(it){
     if(v) out.push(ITEM_LINE[k](v));
   });
   if(it.x) out.push(it.x);
-  return out.join("\n");
+  return itemWords(out.join("\n"));
 }
 const IT=(n,g,rc,cost,st,bt,x)=>{
-  const o={n:n,g:g,cost:cost,st:st||{},bt:bt||{},x:x||""};
+  const o={n:n,g:g,cost:cost,st:st||{},bt:bt||{},x:itemWords(x)};
   if(rc) o.rc=rc;
   o.d=itemDesc(o);
   return o;
@@ -17924,11 +17927,11 @@ const ITEMS=[
  IT("마나흡수자","희귀",["옥 수정","사파이어 수정"],20,{maxHp:15,maxMana:1},{winHeal:25},
    "전투 종료 후 체력을 25% 회복합니다."),
  IT("동력 전환화","희귀",["옥 수정","에메랄드 수정"],20,{maxHp:15},{moveMom:1,momShield:3},
-   "내 턴 종료 후 추진력을 최대 6 소모하여 그 3배만큼 보호막을 얻습니다."),
+   "내 턴이 끝날 때, 추진력을 최대 6 소모하여 그 3배만큼 보호막을 얻습니다."),
  IT("불굴의 방패","희귀",["옥 수정","균열석"],20,{maxHp:15},{negShield:5,negHeal:2},
    "부정적인 효과를 받은 후, 체력을 2 회복합니다."),
  IT("불타는 호각","희귀",["옥 수정","라이티늄 수정"],20,{maxHp:15},{endShield:4,alwaysTaunt:1,endBurn:2},
-   "항상 도발 상태가 됩니다.\n거리 2 내의 적들에게 내 턴 종료 후 화상을 2 부여합니다."),
+   "항상 도발 상태가 됩니다.\n거리 2 내의 적들에게 내 턴이 끝날 때, 화상을 2 부여합니다."),
  IT("애곤의 발톱","희귀",["옥 수정","전투 검"],20,{maxHp:15,atk:3},{lastStand:3,endShield:8},
    "체력이 50% 이하일때 에너지 보호막(추가 ⇧ )과 공격력 +3을 얻습니다. *(전투당 1회)*"),
  IT("기초 마법서: 생명","희귀",["옥 수정","전투 마법서"],20,{maxHp:15,mag:3},{hpMag:5},
@@ -17948,13 +17951,13 @@ const ITEMS=[
    "마나를 사용할 때마다 가장 가까운 적에게 이 대원의 추가 공격력*( )*만큼 피해를 줍니다."),
  IT("기초 마법서: 마나","희귀",["사파이어 수정","전투 마법서"],20,{maxMana:1,mag:3},{manaBolt:"mag"},
    "마나를 사용할 때마다 가장 먼 적에게 이 대원의 추가 마법력*( )*만큼 피해를 줍니다."),
- IT("전장의 함성","희귀",["사파이어 수정","전투 방패"],20,{maxMana:1,def:3},{manaShield:1},
-   "마나를 사용할 때마다 이 대원의 추가 보호력*( )*만큼 보호막을 얻습니다."),
+ IT("전장의 함성","희귀",["사파이어 수정","전투 방패"],20,{maxMana:1,def:3},{manaShield:2},   /* 추가 보호력의 2배 (노트 2026-11-09) */
+   "마나를 사용할 때마다 2배만큼 보호막*( )*을 얻습니다."),
  /* ── 희귀 : 에메랄드 계열 ── */
  IT("질주","희귀",["에메랄드 수정","에메랄드 수정"],20,null,{moveMom:2,moveBlast:8},
    "내 턴에 직접 이동할 때마다 모든 적에게 피해를 8 줍니다."),
  IT("바람소리","희귀",["에메랄드 수정","균열석"],20,null,{moveMom:1,negShield:5,momNeg:3},
-   "내 턴 종료 후 추진력을 최대 3 소모하여 부정 보호막을 얻습니다."),
+   "내 턴이 끝날 때, 추진력을 최대 3 소모하여 부정 보호막을 얻습니다."),
  IT("군마의 발굽","희귀",["에메랄드 수정","라이티늄 수정"],20,null,{moveMom:1,endShield:8,moveShield:4},
    "내 턴에 직접 이동할 때마다 보호막을 4 얻습니다."),
  IT("질풍날","희귀",["에메랄드 수정","전투 검"],20,{atk:3},{moveMom:1,moveStat:"atk"},
@@ -17967,7 +17970,7 @@ const ITEMS=[
  IT("차원 생성석","희귀",["균열석","균열석"],20,null,{negShield:10,negEsh:3},
    "부정 보호막으로 부정적인 효과를 막을 때마다 에너지 보호막을 3 얻습니다."),
  IT("뿔투구","희귀",["균열석","라이티늄 수정"],20,null,{negShield:5,endShield:8,endNeg:1},
-   "내 턴 종료 후 부정 보호막 +1"),
+   "내 턴이 끝날 때, 부정 보호막 +1"),
  IT("그림자 망토","희귀",["균열석","전투 검"],20,{atk:3},{negShield:5,startEvade:3,startHide:1},
    "대원 배치 후 회피를 3 얻고, 은신 상태가 됩니다."),
  IT("네코럽티콘","희귀",["균열석","전투 마법서"],20,{mag:3},{negShield:5,startDefDn:3},
@@ -17991,7 +17994,7 @@ const ITEMS=[
  IT("검과 방패","희귀",["전투 검","전투 방패"],20,{atk:3,def:3},{tauntPierce:100},
    "도발 능력이 있는 적에게 공격 피해가 관통 +100%을 얻습니다."),
  IT("그리모어","희귀",["전투 마법서","전투 마법서"],20,{mag:6},{startMark:1},
-   "대원 배치 후, 적 전장에서 체력이 가장 낮은 적에게 표식을 부여합니다.\n그 적에게 이 대원의 마법 피해가 치명타로 적용됩니다."),
+   "대원 배치 후, 적 전장에서 체력이 가장 낮은 적에게 3턴 동안 표식을 부여합니다.\n그 적에게 이 대원의 마법 피해가 치명타로 적용됩니다."),
  IT("성서","희귀",["전투 마법서","전투 방패"],20,{mag:3,def:3},{allyBuff:2},
    "다른 모든 아군이 해당 전투에서 추가 마법력과 보호력을 2 얻습니다."),
  IT("오토의 여분손","희귀",["전투 방패","전투 방패"],20,{def:6},{shieldToEsh:12},
@@ -27194,6 +27197,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 404, "v": "0.8", "d": "2026-11-09", "t": "전장의 함성 2배 · 장신구 「내 턴이 끝날 때,」 · 그리모어 표식 3턴", "big": 0},
  {"b": 403, "v": "0.8", "d": "2026-11-09", "t": "2막 3막 구역 깃발이 탁자 뒤에 가려지던 것", "big": 0},
  {"b": 402, "v": "0.8", "d": "2026-11-09", "t": "적 기술 대상 — 쫓는 기술만 따라가고 나머지는 칸을 때린다 · 노리는 곳 설명", "big": 0},
  {"b": 401, "v": "0.8", "d": "2026-11-08", "t": "한 번만 뜨는 보상 · 늑대 정예 · 흡혈총검 상급 · 이중 조준경 · 벨트 길 밝힘 · 의도 보라 · 버프 초록 · 피 먹는 자 · 과열된 장치 연출", "big": 0},
@@ -28789,7 +28793,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=403;
+const BUILD_NO=404;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -47980,7 +47984,7 @@ function onSummon(h){
   if(itemBt(h,"startHide")){ h.hide=1; hideFX(h.slot); say(`${h.name}${jo(h.name,"ig")} 그림자에 숨습니다.`,"t2") }
   if(itemBt(h,"startMark")){
     const f=B.foes.filter(x=>x.alive).sort((a,b)=>a.hp-b.hp)[0];
-    if(f){ f.grimoireMarks=f.grimoireMarks||{}; f.grimoireMarks[h.name]=(f.grimoireMarks[h.name]||0)+1;
+    if(f){ f.grimoireMarks=f.grimoireMarks||{}; f.grimoireMarks[h.name]=Math.max(f.grimoireMarks[h.name]||0,GRIM_TURNS);   /* 값 = 남은 턴 (3턴 동안, 사용자 2026-11-09 너프) */
       fx({side:"foe",slot:f.slot,ring:"#aa83d8",txt:"그리모어 표식",cls:"dmg",gap:70});
       say(`그리모어 — ${f.name}에게 표식`,"t2") } }
   if(t.placeEvade){ h.evade+=t.placeEvade; say(`${h.name} 회피 +${t.placeEvade} (자취 감추기)`,"t2") }
@@ -48639,6 +48643,7 @@ const PRED_OFF=["aim","armorUp","darkShadow","encore","frontal","fuse","grow","h
    ★ 새 치명타 보상은 반드시 여기 한 줄 — 안 그러면 예고가 또 샌다.
    tgt 를 주지 않으면 **대상과 상관없이 늘 치명타인가**를 묻는 꼴이 된다 — 기술 칸이 그렇게 쓴다.
    돌려주는 것 : 치명타면 그 까닭(글), 아니면 null */
+const GRIM_TURNS=3;   /* 그리모어 표식 — 3턴 동안 (사용자 2026-11-09 너프). grimoireMarks[대원] = 남은 턴, 적 턴이 끝날 때 1 줄고 0 이면 지운다 */
 function grimoireCount(f,h){
   const M=f&&f.grimoireMarks||{};
   return h?M[h.name]||0:Object.values(M).reduce((n,v)=>n+(+v||0),0);
@@ -50367,7 +50372,7 @@ function doSkill(target){
       h.mana-=C; h.manaUsed=(h.manaUsed||0)+C; mpAbsorbHook(h,C);   /* 마력 흡수 — 마나를 쓴 만큼 마력 (2026-10-12) */
       if(C){
         const mm=itemBt(h,"manaMom"); if(mm){ h.mom+=mm; itemPing(h,"manaMom") }   /* '마나를 소모할 때마다 추진력 +1' — 쓴 마나만큼 주던 것 (점검 2026-10-07) */
-        const ms2=itemBt(h,"manaShield"); if(ms2){ addShield(h,(h.def||0)*ms2); itemPing(h,"manaShield") }   /* 전장의 함성 — 쓴 마나가 아니라 **추가 보호력**만큼 (사용자 2026-10-12) */
+        const ms2=itemBt(h,"manaShield"); if(ms2){ addShield(h,(h.def||0)*ms2); itemPing(h,"manaShield") }   /* 전장의 함성 — 쓴 마나가 아니라 **추가 보호력 × manaShield(2)** (사용자 2026-10-12 · 2배 2026-11-09) */
         (h.items||[]).forEach(it=>{ const k=it.bt&&it.bt.manaBolt; if(!k) return;
           const list=B.foes.filter(f=>f.alive);
           if(!list.length) return;
@@ -54133,6 +54138,8 @@ function startMyTurn(){
       fx({side:"foe",slot:f.slot,ring:"#8fa8c0",txt:"정지 풀림",cls:"buf",gap:90});
       say(`${f.name}의 정지가 풀립니다.`,"t2") }
     if(f.alive&&!f.stop) foePromoteTick(f);   /* 진급 (모형 창병) */
+    { const M=f.grimoireMarks; if(M) Object.keys(M).forEach(k=>{ if(M[k]>0&&--M[k]<=0){ delete M[k];   /* 그리모어 표식 — 3턴 (사용자 2026-11-09) */
+        if(f.alive) say(`${f.name}의 그리모어 표식(${k})이 사라집니다.`,"t2") } }) }
     if(f.deb){ ["atkDn","magDn","defDn"].forEach(k=>{ if(f.deb[k]>0) f.deb[k]-- });
       /* 속박도 턴마다 1 — 빠져 있어 끌려온 적의 속박이 영영 남았다 (사용자 2026-09-30). 묶인 마귀의 99 는 제 규칙이 푼다 */
       if(f.deb.bind>0&&f.deb.bind<99) f.deb.bind--;
