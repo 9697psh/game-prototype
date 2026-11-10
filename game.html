@@ -20757,7 +20757,7 @@ function garPreload(){
   Object.values(GAR_ART.rooms).forEach(R=>{ garImg(R.bg,0); R.objects.forEach(o=>garImg(o.src,1)) });
   const T=GAR_TERRACE; Object.values(T.sky).concat(Object.values(T.regions)).forEach(u=>garImg(u,0));
   Object.values(T.fac).forEach(L=>L.forEach(l=>{ garImg(l.base,1); garImg(l.idle.src,0) }));
-  Object.values(T.tracks).forEach(x=>garImg(x.src,0)); garImg(T.dust.src,0); if(T.worker){ garImg(T.worker.idle,1); garImg(T.worker.hammer,0) } Object.values(T.stage).forEach(x=>garImg(x.src,0)) }
+  Object.values(T.tracks).forEach(x=>garImg(x.src,0)); garImg(T.dust.src,0); if(T.worker){ garImg(T.worker.idle,1); garImg(T.worker.hammer,0); Object.values(T.worker.acts||{}).forEach(a=>garImg(a.src,0)) } Object.values(T.stage).forEach(x=>garImg(x.src,0)) }
 function garEnter(){ garPreload();   /* 지도 ↔ 전경 — 위아래 덧판 (사용자 2026-11-10 밤) */
   const go=()=>{ GAR_UI.mode="terrace"; GAR_UI.panel=null; GAR_UI.hover=null; GAR_UI.busy=0; view="garrison" };
   if(typeof shutPlay==="function") shutPlay(go); else { go(); render() } }
@@ -20892,6 +20892,8 @@ function garWkTalk(labs){
   const K=GAR_TERRACE.worker, H=GAR_TERRACE.canvas[1], W=GAR_TERRACE.canvas[0];
   labs.querySelectorAll(".garbark").forEach(x=>x.remove());
   labs.appendChild(el(`<div class="bark garbark" style="left:${K.home[0]/W*100}%;top:calc(${(K.home[1]-K.idleFoot[1])/H*100}% - 1.6em)">${esc(GAR_WORKER_SAY[GAR_WK_LINE++%GAR_WORKER_SAY.length])}</div>`));
+  /* 인사 · 점프 중 하나 (무작위, 하는 중이면 끝까지) */
+  const A=K.acts&&Object.keys(K.acts); if(A&&A.length&&!GAR_UI.wkAct) GAR_UI.wkAct={k:A[Math.floor(Math.random()*A.length)],t0:performance.now()};
   try{ SFX.play("click") }catch(e){} }
 /* 일꾼 한 칸 — 공사가 있으면 그 건물 앞에서 망치질, 없으면 가운데에서 대기. hide — 완공 연출 동안 */
 function garWorker(ctx,now,hide,light){
@@ -20914,9 +20916,14 @@ function garWorker(ctx,now,hide,light){
   const im=garImg(K.idle,1); if(!im.complete||!im.width) return;
   const bx=K.home[0]-K.idleFoot[0], by=K.home[1]-K.idleFoot[1];
   let a=1; if(GAR_UI.wkBack!=null){ const t=now-GAR_UI.wkBack; a=garCl01(t/90); if(t<520) garTDust(ctx,K.home[0],K.home[1],t*1.6,130,.45); else GAR_UI.wkBack=null }
-  const g=light>.005?garWkGlow():null;
+  const g=light>.005&&!GAR_UI.wkAct?garWkGlow():null;   /* 짓을 하는 동안은 대기 모양 빛을 안 그린다 */
   if(g){ ctx.save(); ctx.globalAlpha=light*.6; ctx.shadowColor="#ffcd70"; ctx.shadowBlur=12; ctx.drawImage(g,bx,by); ctx.shadowBlur=0;
     ctx.globalAlpha=light*.5; for(const [dx,dy] of [[-2,0],[2,0],[0,-2],[0,2]]) ctx.drawImage(g,bx+dx,by+dy); ctx.restore() }
+  /* 누른 뒤의 짓 — 그 시트로 바꿔 그린다 (대기 그림을 겹치지 않는다) */
+  if(GAR_UI.wkAct&&K.acts){ const A=K.acts[GAR_UI.wkAct.k], f=A?Math.floor((now-GAR_UI.wkAct.t0)/A.ms):99;
+    if(!A||f>=A.order.length) GAR_UI.wkAct=null;
+    else { const sh=garImg(A.src,0);
+      if(sh.complete&&sh.width){ ctx.globalAlpha=a; ctx.drawImage(sh,A.order[f]*A.size[0],0,A.size[0],A.size[1],K.home[0]-A.foot[0],K.home[1]-A.foot[1],A.size[0],A.size[1]); ctx.globalAlpha=1; return } } }
   ctx.globalAlpha=a; ctx.drawImage(im,bx,by); ctx.globalAlpha=1;
   if(g){ ctx.save(); ctx.globalAlpha=light*.13; ctx.drawImage(g,bx,by); ctx.restore() } }
 /* 완공 연출 — 미리보기 시간 : 240 먼지 · 500 새 외형 · 900 이름 · 2200 끝. 끝나면 true */
@@ -28603,6 +28610,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 418, "v": "0.8", "d": "2026-11-11", "t": "주둔지 일꾼 — 누르면 인사 · 점프", "big": 0},
  {"b": 417, "v": "0.8", "d": "2026-11-11", "t": "대원 표시 · 성향 발동 확률 · 숙련도 화면 · 종탑 · 정찰대장", "big": 0},
  {"b": 416, "v": "0.8", "d": "2026-11-11", "t": "주둔지 공사 · 일꾼 · 지속 기술 테두리 걷음", "big": 0},
  {"b": 415, "v": "0.8", "d": "2026-11-10", "t": "우두머리 전리품 — 고른 것을 한 번 더 누르면 확정", "big": 0},
@@ -30212,7 +30220,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=417;
+const BUILD_NO=418;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
