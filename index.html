@@ -6733,6 +6733,18 @@ body.vnew #app>.garwrap>.gartop{position:absolute;top:0;left:0;right:0;z-index:6
 body.vnew #app>.garwrap>.gartop>*{pointer-events:auto}
 body.vnew #app>.garwrap>.garfoot{position:absolute;bottom:0;left:0;right:0;z-index:6;padding:30px 22px 12px;background:linear-gradient(transparent,rgba(0,0,0,.72));pointer-events:none}
 body.vnew #app>.garwrap>.garfoot>*{pointer-events:auto}
+
+/* 주둔지 (2026-11-10 밤) — 전경이 가운데 판 구멍을 꽉 (cover), 건물 이름은 늘 흰 글씨, 정찰대장 이름 · 누름 자리 */
+.garhost .garwrap.gterr{padding:0;gap:0}
+.garhost .gterr .gtfit{overflow:hidden}
+.garhost .gterr .gtstage{width:max(100cqw,calc(100cqh*1280/1104));height:auto;aspect-ratio:1280/1104;border:0;box-shadow:none;flex:0 0 auto}
+.gtlabs{position:absolute;inset:0;pointer-events:none}
+.gtlab{position:absolute;transform:translate(-50%,-100%);white-space:nowrap;color:#fff;font-size:clamp(11px,1.9cqw,16px);letter-spacing:.04em;
+  text-shadow:0 0 3px #000,0 1px 0 #000,1px 0 0 #000,-1px 0 0 #000,0 -1px 0 #000}
+.garnpcname{position:absolute;transform:translate(-50%,-100%);white-space:nowrap;pointer-events:none;font-family:var(--serif);letter-spacing:.14em;
+  color:#f0d890;font-size:clamp(12px,1.25vw,20px);text-shadow:0 2px 0 #000,0 0 6px rgba(0,0,0,.9)}
+body #app button.garnpc{position:absolute;pointer-events:auto;background:none;border:0;padding:0;margin:0;min-width:0;height:auto;border-radius:0;box-shadow:none}
+.garlabels .garbark{transform:translate(-50%,-100%)}
 </style>
 </head>
 <body>
@@ -7670,7 +7682,7 @@ function gHandDraw(){
 }
 if(typeof window!=="undefined"&&window.addEventListener){
   window.addEventListener("pointermove",e=>{ if(e.pointerType&&e.pointerType!=="mouse") return; GHAND_XY=[e.clientX,e.clientY];
-    GHAND_IN_STAGE=!!(e.target&&e.target.closest&&e.target.closest(".pstage:not(.placemode):not(.placemap)")); gHandDraw() },{passive:true});   /* 장소 화면(덧판 안)은 제 손이 없다 — 이 손을 쓴다 (2026-10-30) */
+    GHAND_IN_STAGE=!!(e.target&&e.target.closest&&e.target.closest(".pstage:not(.placemode):not(.placemap):not(.garmode)")); gHandDraw() },{passive:true});   /* 장소 화면(덧판 안)은 제 손이 없다 — 이 손을 쓴다 (2026-10-30) */
   window.addEventListener("pointerdown",e=>{ if(e.pointerType==="mouse"){ GHAND_MODE="press"; gHandDraw();
       /* 꾹 누르기 — 빈 곳에서만, 카드를 들거나 연출이 도는 중이 아니면 */
       const H=holdPick(holdBase());
@@ -20395,7 +20407,9 @@ function garDrawObj(ctx,o){
   const gs=light>.005?garGlowSprite(o):null;
   if(gs){ ctx.globalAlpha=light*.52; ctx.shadowColor="#ffcd70"; ctx.shadowBlur=9; ctx.drawImage(gs,-p.px,-p.py); ctx.shadowBlur=0;
     ctx.globalAlpha=light*.46; for(const [x,y] of [[-1,0],[1,0],[0,-1],[0,1]]) ctx.drawImage(gs,-p.px+x,-p.py+y); ctx.globalAlpha=1 }
-  ctx.drawImage(im,-p.px,-p.py,p.w,p.h);   /* 정찰대장은 96 → 192 (같은 배율 · 최근접) */
+  { const f=o.npc?garLaughFrame(o):-1, lg=f>=0?garImg(o.laugh,0):null;
+    if(lg&&lg.complete&&lg.width) ctx.drawImage(lg,f*96,0,96,96,-p.px,-p.py,p.w,p.h);
+    else ctx.drawImage(im,-p.px,-p.py,p.w,p.h) }   /* 정찰대장은 96 → 192 (같은 배율 · 최근접) */
   if(o.key==="bath-tub"){ ctx.save(); ctx.translate(-p.px,-p.py); garBath(ctx,t); ctx.restore() }
   if(gs){ ctx.globalAlpha=light*.13; ctx.drawImage(gs,-p.px,-p.py); ctx.globalAlpha=1 }
   ctx.restore() }
@@ -20424,6 +20438,22 @@ function garLoop(cv){
     R.objects.forEach(o=>garDrawObj(ctx,o));
     GAR_UI.raf=requestAnimationFrame(tick) };
   GAR_UI.raf=requestAnimationFrame(tick) }
+/* 정찰대장 대사 — 시안 (사용자가 글을 주면 바꾼다) */
+const GAR_NPC_SAY=["큭큭… 길은 내가 먼저 봐 두지.","안개 너머가 궁금하지 않나? 은화만 있으면 된다.","내 정찰대는 돌아오지 않은 적이 없다. 큭큭."];
+let GAR_NPC_AT=0, GAR_NPC_LAST=-1;
+function garNpcTalk(lab,o,cx,top){
+  const now=Date.now(); if(now-GAR_NPC_AT<500) return; GAR_NPC_AT=now;
+  let i=Math.floor(Math.random()*GAR_NPC_SAY.length); if(i===GAR_NPC_LAST) i=(i+1)%GAR_NPC_SAY.length; GAR_NPC_LAST=i;
+  lab.querySelectorAll(".garbark").forEach(x=>x.remove());
+  lab.appendChild(el(`<div class="bark garbark" style="left:${cx}%;top:calc(${top}% - 2.4em)">${esc(GAR_NPC_SAY[i])}</div>`));
+  if(o.laugh) GAR_UI.laugh=performance.now();
+  try{ SFX.play("click") }catch(e){} }
+/* 웃음 프레임 — 1 2 3 4 1 (받은 시간 150 · 120 · 130 · 170) */
+function garLaughFrame(o){
+  if(!GAR_UI.laugh||!o.laugh) return -1;
+  let t=performance.now()-GAR_UI.laugh; const S=o.laughSeq||[[0,150],[1,120],[2,130],[3,170],[0,150]];
+  for(const [f,ms] of S){ if(t<ms) return f; t-=ms }
+  GAR_UI.laugh=0; return -1 }
 const garActOf=key=>garActs().find(a=>a.obj===key&&a.fac===GAR_UI.room);
 function garPress(o){
   const m=GAR_MOTION[o.key], t=garT(o);
@@ -20441,7 +20471,9 @@ function garPreload(){
   const T=GAR_TERRACE; Object.values(T.sky).concat(Object.values(T.regions)).forEach(u=>garImg(u,0));
   Object.values(T.fac).forEach(L=>L.forEach(l=>{ garImg(l.base,1); garImg(l.idle.src,0) }));
   Object.values(T.tracks).forEach(x=>garImg(x.src,0)); garImg(T.dust.src,0); Object.values(T.stage).forEach(x=>garImg(x.src,0)) }
-function garEnter(){ GAR_UI.mode="terrace"; GAR_UI.panel=null; GAR_UI.hover=null; GAR_UI.busy=0; garPreload(); view="garrison"; render() }
+function garEnter(){ garPreload();   /* 지도 ↔ 전경 — 위아래 덧판 (사용자 2026-11-10 밤) */
+  const go=()=>{ GAR_UI.mode="terrace"; GAR_UI.panel=null; GAR_UI.hover=null; GAR_UI.busy=0; view="garrison" };
+  if(typeof shutPlay==="function") shutPlay(go); else { go(); render() } }
 /* 옮겨 가기 — 어둡게 덮고 바꾼 뒤 걷는다 */
 function garGo(fn){
   if(GAR_UI.busy) return; GAR_UI.busy=1;
@@ -20455,7 +20487,9 @@ function garDoor(fn){
   GAR_UI.busy=1; coverInto(()=>{ try{ fn() }finally{ GAR_UI.busy=0; render() } }) }
 function garRoom(id){ garDoor(()=>{ GAR_UI.mode="room"; GAR_UI.room=id; GAR_UI.hover=null; GAR_UI.st={}; GAR_UI.glow={}; GAR_UI.panel=null }) }
 function garBack(){ garDoor(()=>{ GAR_UI.mode="terrace"; GAR_UI.hover=null; GAR_UI.panel=null; GAR_UI.st={} }) }
-function garLeave(){ if(GAR_UI.busy) return; GAR_UI.panel=null; GAR_UI.hover=null; GAR_UI.st={}; GAR_UI.mode="terrace"; cancelAnimationFrame(GAR_UI.raf); view="map"; run.mapSel=null; render() }
+function garLeave(){ if(GAR_UI.busy) return;
+  const go=()=>{ GAR_UI.panel=null; GAR_UI.hover=null; GAR_UI.st={}; GAR_UI.mode="terrace"; cancelAnimationFrame(GAR_UI.raf); view="map"; run.mapSel=null };
+  if(typeof shutPlay==="function") shutPlay(go); else { go(); render() } }
 function garSilverHtml(){ return `<span class="garres kw" data-kw="은화" data-tip="주둔지 건물 활동에 씁니다. 날이 밝을 때 종탑에서 얻습니다.">${resIcon("silver")} <b>${run.silver||0}</b></span>` }
 const garResHtml=()=>`<div class="garreses">${garSilverHtml()}<span class="garres">${ic("gold")||"금화"} <b>${run.gold}</b></span><span class="garres">제련석 <b>${run.stone||0}</b></span></div>`;
 function drawGarrison(app){
@@ -20488,14 +20522,18 @@ function garTGlow(id,L){ const k="t|"+id+"|"+L.lv; if(GAR_UI.glowC[k]) return GA
   const im=garImg(L.base,1); if(!im.complete||!im.width) return null;
   const c=document.createElement("canvas"); c.width=im.width; c.height=im.height; const g=c.getContext("2d");
   g.drawImage(im,0,0); g.globalCompositeOperation="source-in"; g.fillStyle="#ffe2a0"; g.fillRect(0,0,c.width,c.height); return GAR_UI.glowC[k]=c }
+/* 대기 조명 · 연기 빠르기 (사용자 2026-11-10 밤 「너무 빠르고 다 같이 번쩍인다」) — 받은 그림 120ms 를 GAR_T_SLOW 배로,
+   건물마다 조금씩 다른 배율 · 시작점이라 서로 엇갈린다 */
+const GAR_T_SLOW=2.5, GAR_T_JIT=[1,1.17,.88,1.09,.95];
+const garTK=id=>{ const i=Math.max(0,GAR_IDS.indexOf(id)); return {m:GAR_T_SLOW*GAR_T_JIT[i%GAR_T_JIT.length],off:i*1777} };
 /* 건물 하나 — 대기 시트(본체 + 조명 + 연기) + 그 단계의 장면 트랙. dy · clip 은 강화 연출용 */
 function garTBuilding(ctx,id,L,now,light){
-  const I=L.idle, r=I.rects[Math.floor(now/I.ms)%I.rects.length];
+  const I=L.idle, K=garTK(id), r=I.rects[Math.floor((now+K.off)/(I.ms*K.m))%I.rects.length];
   const g=light>.005?garTGlow(id,L):null;
   if(g){ ctx.save(); ctx.globalAlpha=light*.55; ctx.shadowColor="#ffcd70"; ctx.shadowBlur=14; ctx.drawImage(g,L.tl[0],L.tl[1]); ctx.shadowBlur=0;
     ctx.globalAlpha=light*.5; for(const [x,y] of [[-2,0],[2,0],[0,-2],[0,2]]) ctx.drawImage(g,L.tl[0]+x,L.tl[1]+y); ctx.restore() }
   garTSprite(ctx,I.src,r,I.tl[0],I.tl[1]);
-  L.extra.forEach(k=>{ const T=GAR_TERRACE.tracks[k]; if(T) garTSprite(ctx,T.src,T.rects[Math.floor(now/T.ms)%T.rects.length],T.tl[0],T.tl[1]) });
+  L.extra.forEach(k=>{ const T=GAR_TERRACE.tracks[k]; if(T) garTSprite(ctx,T.src,T.rects[Math.floor((now+K.off)/(T.ms*K.m))%T.rects.length],T.tl[0],T.tl[1]) });
   if(g){ ctx.save(); ctx.globalAlpha=light*.13; ctx.drawImage(g,L.tl[0],L.tl[1]); ctx.restore() } }
 /* 강화 연출 — 시안 prototype/scene.js 의 시간 : 먼지 500 · 교체 760(아래부터 240ms 드러남) · 조명 1040~1640 · 이름 1350~2800 */
 const garEase=x=>1-Math.pow(1-Math.max(0,Math.min(1,x)),3), garCl=x=>Math.max(0,Math.min(1,x));
@@ -20512,7 +20550,7 @@ function garTUp(ctx,U,now){
     garTSprite(ctx,D.src,D.rects[fr],A[0]-w/2,A[1]-h*D.anchor[1]/128,w,h,fr===D.rects.length-1?1-garCl((dt-720)/120):1) }
   if(t>1350){ ctx.save(); ctx.globalAlpha=garEase((t-1350)/200)*(1-garCl((t-2500)/300)); ctx.textAlign="center";
     const ff=(getComputedStyle(document.body).fontFamily)||"sans-serif"; ctx.font=`28px ${ff}`; ctx.lineWidth=5; ctx.strokeStyle="#17130e"; ctx.fillStyle="#f5d899";
-    const tx=`${GAR_NAME[U.id]} Lv.${U.to}`, x=nx.anchor[0], y=Math.max(48,nx.tl[1]-35); ctx.strokeText(tx,x,y); ctx.fillText(tx,x,y); ctx.restore() }
+    const tx=`${U.to}단계 ${GAR_NAME[U.id]}`, x=nx.anchor[0], y=Math.max(48,nx.tl[1]-35); ctx.strokeText(tx,x,y); ctx.fillText(tx,x,y); ctx.restore() }
   return t>=2800 }
 function garTHit(x,y){
   return garTOrder().reverse().find(id=>{ const L=garTL(id), M=GAR_UI.mask[L.base]; const lx=Math.floor(x-L.tl[0]), ly=Math.floor(y-L.tl[1]);
@@ -20520,16 +20558,17 @@ function garTHit(x,y){
 function garDrawTerrace(app){
   const T=GAR_TERRACE, W=T.canvas[0], H=T.canvas[1], reg=garRegionId();
   const w=el(`<div class="garwrap gterr">
-    <div class="gtfit"><div class="garstage gtstage"><canvas width="${W}" height="${H}"></canvas><div class="gthover" hidden></div></div></div></div>`);
+    <div class="gtfit"><div class="garstage gtstage"><canvas width="${W}" height="${H}"></canvas><div class="gtlabs">${GAR_IDS.map(id=>{ const L=garTL(id);
+      return `<span class="gtlab" data-id="${id}" style="left:${L.anchor[0]/W*100}%;top:${Math.max(30,L.tl[1]-6)/H*100}%">${garLv(id)}단계 ${esc(GAR_NAME[id])}</span>` }).join("")}</div></div></div></div>`);
   app.appendChild(w);
-  const cv=w.querySelector("canvas"), tip=w.querySelector(".gthover"), ctx=cv.getContext("2d");
+  const cv=w.querySelector("canvas"), ctx=cv.getContext("2d");
+  const labShow=(id,on)=>{ const x=w.querySelector(`.gtlab[data-id="${id}"]`); if(x) x.style.visibility=on?"":"hidden" };
   /* 기다리는 강화 연출 — 한 번 보여 주고 지운다(소비) */
   let U=null; if(run.gar.upFx&&run.gar.upFx.length){ U=Object.assign({},run.gar.upFx.shift()); U.t0=Infinity; U.wait=1; try{ saveGame() }catch(e){} }
   const at=e=>{ const r=cv.getBoundingClientRect(); return garTHit((e.clientX-r.left)*W/r.width,(e.clientY-r.top)*H/r.height) };
-  cv.onpointermove=e=>{ if(U||GAR_UI.busy){ GAR_UI.hover=null; return } const id=at(e); GAR_UI.hover=id; cv.style.cursor=id?"pointer":"default";
-    if(id){ const L=garTL(id); tip.hidden=false; tip.textContent=`${GAR_NAME[id]} Lv.${garLv(id)}`;
-      tip.style.left=(L.anchor[0]/W*100)+"%"; tip.style.top=(Math.max(30,L.tl[1]-6)/H*100)+"%" } else tip.hidden=true };
-  cv.onpointerleave=()=>{ GAR_UI.hover=null; tip.hidden=true };
+  if(U) labShow(U.id,0);   /* 강화 연출 동안은 그 건물 이름을 감춘다 — 연출이 새 이름을 띄운다 */
+  cv.onpointermove=e=>{ if(U||GAR_UI.busy){ GAR_UI.hover=null; return } GAR_UI.hover=at(e) };
+  cv.onpointerleave=()=>{ GAR_UI.hover=null };
   cv.onpointerdown=e=>{ if(U||GAR_UI.busy) return; const id=at(e); if(!id) return; try{ SFX.play("click") }catch(_){} garRoom(id) };
   cancelAnimationFrame(GAR_UI.raf);
   const tick=now=>{
@@ -20540,7 +20579,7 @@ function garDrawTerrace(app){
     garTSprite(ctx,run.night?T.sky.night:T.sky.day,[0,0,1280,480],0,0);
     { const im=garImg(T.regions[reg],0); if(im.complete&&im.width) ctx.drawImage(im,0,0) }
     garTOrder().forEach(id=>{ const k="t|"+id, tg=GAR_UI.hover===id?1:0, v=GAR_UI.glow[k]||0; GAR_UI.glow[k]=v+(tg-v)*(1-Math.exp(-dt/(tg?65:110)));
-      if(U&&U.id===id){ if(garTUp(ctx,U,now)) U=null }
+      if(U&&U.id===id){ if(garTUp(ctx,U,now)){ labShow(U.id,1); U=null } }
       else garTBuilding(ctx,id,garTL(id),now,GAR_UI.glow[k]) });
     GAR_UI.raf=requestAnimationFrame(tick) };
   GAR_UI.raf=requestAnimationFrame(tick) }
@@ -20572,6 +20611,12 @@ function garDrawRoom(app){
   GAR_ART.rooms[id].objects.filter(o=>o.interactive).forEach(o=>{ const a=garActOf(o.key); if(!a) return;
     const why=garWhy(a), b=el(`<button type="button" class="garlab${why?" off":""}" style="left:${(o.pos[0]+o.size[0]/2)/764*100}%;top:${Math.max(0,o.pos[1]-4)/408*100}%">${esc(a.n)}</button>`);
     b.onclick=e=>{ e.stopPropagation(); if(!GAR_UI.busy) garPress(o) }; lab.appendChild(b) });
+  /* 정찰대장 — 상점 주인처럼 위에 이름, 누르면 대사 (사용자 2026-11-10 밤) */
+  GAR_ART.rooms[id].objects.filter(o=>o.npc).forEach(o=>{
+    const cx=(o.pos[0]+o.size[0]/2)/764*100, top=(o.pos[1]+6)/408*100;
+    lab.appendChild(el(`<span class="garnpcname" style="left:${cx}%;top:${top}%">${esc(o.name||"")}</span>`));
+    const hot=el(`<button type="button" class="garnpc" aria-label="${esc(o.name||"")}" style="left:${(o.pos[0]+o.size[0]*.22)/764*100}%;top:${top}%;width:${o.size[0]*.56/764*100}%;height:${Math.max(10,(o.talkBottom||o.pos[1]+o.size[1])-o.pos[1]-6)/408*100}%"></button>`);
+    hot.onclick=e=>{ e.stopPropagation(); if(!GAR_UI.busy) garNpcTalk(lab,o,cx,top) }; lab.appendChild(hot) });
   /* 캔버스 — 누름 · 올림 */
   const cv=w.querySelector("canvas");
   const at=e=>{ const r=cv.getBoundingClientRect(); return garHit((e.clientX-r.left)*764/r.width,(e.clientY-r.top)*408/r.height) };
@@ -28088,6 +28133,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 412, "v": "0.8", "d": "2026-11-10", "t": "주둔지 위아래 덧판 · 전경 꽉 · 커서 · 건물 이름 늘 · N단계 · 조명 느리게 · 정찰대장 대사", "big": 0},
  {"b": 411, "v": "0.8", "d": "2026-11-10", "t": "주둔지 시설 내부 — 상점처럼 화면 전체", "big": 0},
  {"b": 410, "v": "0.8", "d": "2026-11-10", "t": "주둔지 시설 내부 전체 화면 · 양옆 문 · 흰 글씨 · 오른쪽 칸 은화 · 새 금화 은화 아이콘 · 숙련도 대원 강화 정리", "big": 0},
  {"b": 409, "v": "0.8", "d": "2026-11-10", "t": "주둔지 전경 — 지역별 배경 · 건물 단계 · 강화 연출, 지도 판 안", "big": 0},
@@ -29691,7 +29737,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=411;
+const BUILD_NO=412;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -33069,7 +33115,7 @@ function shutImgs(box,ms){
 function shutCursor(){
   if(typeof GHAND_XY==="undefined"||!GHAND_XY||typeof gHandDraw!=="function") return;
   const t=document.elementFromPoint(GHAND_XY[0],GHAND_XY[1]);
-  GHAND_IN_STAGE=!!(t&&t.closest&&t.closest(".pstage:not(.placemode):not(.placemap)")); gHandDraw();
+  GHAND_IN_STAGE=!!(t&&t.closest&&t.closest(".pstage:not(.placemode):not(.placemap):not(.garmode)")); gHandDraw();
 }
 let SHUT_KEYS=0;
 function shutBlock(on){
@@ -33079,6 +33125,36 @@ function shutBlock(on){
   if(!SHUT_KEYS){ SHUT_KEYS=1;
     /* 도는 동안 키는 먹는다 (지도 · 장소 둘 다) — 맨 앞(capture)에서 */
     window.addEventListener("keydown",e=>{ if(SHUT_BUSY&&e.key!=="F11"){ e.stopImmediatePropagation(); e.preventDefault() } },true) }
+}
+/* 덧판으로 감싼 바꿈 하나 — 지도 ↔ 주둔지 전경처럼 둘 다 지도 판 가운데에 그려지는 화면 (사용자 2026-11-10 밤).
+   닫고 → fn() 뒤 render → 새 무대에 닫힌 판을 붙여 연다. 판을 못 쓰면 그냥 바꾼다 */
+function shutPlay(fn){
+  if(SHUT_OK===0) shutLoad();
+  const st0=document.querySelector("#app .mb-mid .pstage");
+  if(SHUT_BUSY) return;
+  if(SHUT_OK!==1||!st0){ fn(); render(); return }
+  const K=shutReduce()?SHUT.REDUCE:1, T={CLOSE:SHUT.CLOSE*K,HOLD:SHUT.HOLD*K,OPEN:SHUT.OPEN*K};
+  let swapped=false, done=false;
+  const swap=()=>{ if(swapped) return; swapped=true; SHUT_SWAP=1; try{ fn(); render() }catch(e){ console.error(e) } finally{ SHUT_SWAP=0 } };
+  const refit=()=>document.querySelectorAll("#app .pstage > .shut").forEach(x=>x._fit&&x._fit());
+  const finish=()=>{ if(done) return; done=true; clearTimeout(dog); swap();
+    document.querySelectorAll("#app .pstage > .shut").forEach(x=>x.remove());
+    document.querySelectorAll("#app .pstage.shutting").forEach(x=>x.classList.remove("shutting"));
+    removeEventListener("resize",refit); SHUT_BUSY=0; shutBlock(false);
+    if(SHUT_DIRTY){ SHUT_DIRTY=0; render() }
+    shutCursor() };
+  SHUT_BUSY=1; shutBlock(true); addEventListener("resize",refit); shutCursor();
+  const dog=setTimeout(finish,SHUT.DOG);
+  st0.classList.add("shutting");
+  shutAttach(st0,0)._move(0,1,T.CLOSE,SHUT.EASE_CLOSE);
+  { const S=SH_SND.닫힘, i=sndNth(S.k,S.충돌.length), hit=(S.충돌[i]+(S.앞당김||0))*1000;
+    if(hit<=T.CLOSE) setTimeout(()=>sndPlaySet(S,0,i),T.CLOSE-hit); else sndPlaySet(S,(hit-T.CLOSE)/1000,i) }
+  setTimeout(()=>{ if(done) return; swap();
+    const st1=document.querySelector("#app .mb-mid .pstage"); if(!st1){ finish(); return }
+    st1.classList.add("shutting"); const L=shutAttach(st1,1);
+    shutImgs(st1,SHUT.WAIT).then(()=>setTimeout(()=>{ if(done) return;
+      if(L.isConnected){ L._move(1,0,T.OPEN,SHUT.EASE_OPEN); sndPlaySet(SH_SND.열림) }
+      setTimeout(finish,T.OPEN+30) },T.HOLD/2)) },T.CLOSE+T.HOLD/2);
 }
 /* 넘김 하나 — enter : 지도 → 장소(1) · 장소 → 다른 화면(0) */
 function shutRun(enter){
