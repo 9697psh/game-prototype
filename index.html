@@ -6687,6 +6687,30 @@ body.cheerin .hand{visibility:hidden}   /* 입장 글과 겹치지 않게 — �
 .gmrow em{font-style:normal;color:#a8c890;font-size:12px}
 .gmhead{font-size:14px;color:#f0d890;margin:4px 0}
 .gmpick span{line-height:1.5}
+
+/* 주둔지 전경 (2026-11-10) — 장면 1280×1104 를 같은 배율로. 건물 이름 · 단계는 호버 때만 */
+.gtstage{height:min(calc(100vh - 160px),calc(94vw*1104/1280));width:auto;max-width:none;max-height:none;aspect-ratio:1280/1104;align-self:center;margin:0}
+.gterr .gartitle{font-size:22px}
+.gthover{position:absolute;transform:translate(-50%,-100%);pointer-events:none;white-space:nowrap;font-size:15px;padding:3px 10px;background:rgba(18,13,8,.86);color:#f6dd9c;border:1px solid rgba(201,162,39,.75);border-radius:3px;text-shadow:0 1px 0 #000}
+.garbody.groom{display:flex;justify-content:center}
+.garbody.groom .garstage{height:min(calc(100vh - 190px),calc(94vw*408/764));width:auto;max-width:none;max-height:none;aspect-ratio:764/408;margin:0}
+.garfoot{padding-left:0}
+.garfade{position:fixed;inset:0;background:#000;opacity:0;pointer-events:auto;z-index:9800;transition:opacity 250ms ease}
+.garfade.on{opacity:1}
+@media (prefers-reduced-motion:reduce){ .garfade{transition:none} }
+
+/* 주둔지 — 지도 판 가운데 무대 안 (2026-11-10). 판 크기에 맞춰 장면을 같은 배율로 (컨테이너 단위) */
+.pstage.garmode{cursor:default}
+.garhost{position:absolute;top:5.25%;right:1.95%;bottom:3.61%;left:.85%;z-index:3;background:#0d0b08;display:flex}   /* 지도 틀 안쪽 구멍 — 장소 화면(.placebox)과 같은 자리 */
+.garhost .garwrap{width:100%;height:100%;margin:0;padding:8px 10px;box-sizing:border-box;gap:6px;display:flex;flex-direction:column}
+.garhost .gartop{flex:0 0 auto}
+.garhost .gartitle{font-size:18px}
+.garhost .garbody,.garhost .gtfit{flex:1 1 auto;min-height:0;container-type:size;display:flex;align-items:center;justify-content:center}
+.garhost .garstage{width:min(100cqw,calc(100cqh*764/408));height:auto;max-width:none;max-height:none;aspect-ratio:764/408;margin:0}
+.garhost .gtstage{width:min(100cqw,calc(100cqh*1280/1104));height:auto;aspect-ratio:1280/1104}
+.garhost .garbody.groom .garstage{width:min(100cqw,calc(100cqh*764/408));height:auto}
+.garhost .garfoot{flex:0 0 auto;min-height:28px}
+.garhost .garpanel{position:absolute}
 </style>
 </head>
 <body>
@@ -20368,7 +20392,7 @@ function garLoop(cv){
   cancelAnimationFrame(GAR_UI.raf);
   const ctx=cv.getContext("2d"), bg=garImg(GAR_ART.rooms[GAR_UI.room].bg,0);
   const tick=now=>{
-    if(!cv.isConnected||view!=="garrison"){ GAR_UI.raf=0; return }   /* 화면을 떠나면 멈춘다 */
+    if(!cv.isConnected||view!=="garrison"||GAR_UI.mode!=="room"){ GAR_UI.raf=0; return }   /* 화면을 떠나면 멈춘다 */
     const dt=Math.min(80,now-(GAR_UI.last||now)); GAR_UI.last=now;
     const R=GAR_ART.rooms[GAR_UI.room];
     R.objects.forEach(o=>{ const tg=o.interactive&&GAR_UI.hover===o.id?1:0, v=GAR_UI.glow[o.id]||0;
@@ -20384,42 +20408,143 @@ function garPress(o){
   if(!(m&&t>=0&&t<m[0])) GAR_UI.st[o.id]=performance.now();   /* 모션은 끝난 뒤에만 다시 — 겹치지 않게 */
   try{ SFX.play("click") }catch(e){}
   const a=garActOf(o.key); if(a){ GAR_UI.panel=a.k; render() } }
-function garRoom(id){ GAR_UI.room=id; GAR_UI.hover=null; GAR_UI.st={}; GAR_UI.glow={}; GAR_UI.panel=null; render() }
-function garLeave(){ GAR_UI.panel=null; GAR_UI.hover=null; GAR_UI.st={}; cancelAnimationFrame(GAR_UI.raf); view="map"; run.mapSel=null; render() }
+/* ═══ 화면 셋 : 지도 → 주둔지 전경(terrace) → 시설 내부(room) ═══
+   GAR_UI.mode — "terrace" | "room". 지도에서 들어오면 전경(garEnter). 내부의 「주둔지로」 → 전경, 전경의 「지도로」 → 지도.
+   ⚠️ 들어가고 나오는 것은 활동이 아니다 — 시간 · 활동량 · 은화를 쓰지 않는다 (옛 주둔지 칸도 들어갈 때 안 썼다).
+   ⚠️ 옮겨 가는 250ms 동안은 누름을 막는다(GAR_UI.busy). 그림은 들어올 때 미리 읽는다(garPreload) */
+const GAR_FADE=250;
+function garPreload(){
+  if(GAR_UI.pre) return; GAR_UI.pre=1;
+  Object.values(GAR_ART.rooms).forEach(R=>{ garImg(R.bg,0); R.objects.forEach(o=>garImg(o.src,1)) });
+  const T=GAR_TERRACE; Object.values(T.sky).concat(Object.values(T.regions)).forEach(u=>garImg(u,0));
+  Object.values(T.fac).forEach(L=>L.forEach(l=>{ garImg(l.base,1); garImg(l.idle.src,0) }));
+  Object.values(T.tracks).forEach(x=>garImg(x.src,0)); garImg(T.dust.src,0); Object.values(T.stage).forEach(x=>garImg(x.src,0)) }
+function garEnter(){ GAR_UI.mode="terrace"; GAR_UI.panel=null; GAR_UI.hover=null; GAR_UI.busy=0; garPreload(); view="garrison"; render() }
+/* 옮겨 가기 — 어둡게 덮고 바꾼 뒤 걷는다 */
+function garGo(fn){
+  if(GAR_UI.busy) return; GAR_UI.busy=1;
+  const f=el(`<div class="garfade"></div>`); document.body.appendChild(f);
+  requestAnimationFrame(()=>f.classList.add("on"));
+  setTimeout(()=>{ try{ fn() }finally{ GAR_UI.busy=0; render(); requestAnimationFrame(()=>{ f.classList.remove("on"); setTimeout(()=>f.remove(),GAR_FADE) }) } },GAR_FADE) }
+function garRoom(id){ garGo(()=>{ GAR_UI.mode="room"; GAR_UI.room=id; GAR_UI.hover=null; GAR_UI.st={}; GAR_UI.glow={}; GAR_UI.panel=null }) }
+function garBack(){ garGo(()=>{ GAR_UI.mode="terrace"; GAR_UI.hover=null; GAR_UI.panel=null; GAR_UI.st={} }) }
+function garLeave(){ if(GAR_UI.busy) return; GAR_UI.panel=null; GAR_UI.hover=null; GAR_UI.st={}; GAR_UI.mode="terrace"; cancelAnimationFrame(GAR_UI.raf); view="map"; run.mapSel=null; render() }
 function garSilverHtml(){ return `<span class="garres kw" data-kw="은화" data-tip="주둔지 건물 활동에 씁니다. 날이 밝을 때 종탑에서 얻습니다.">은화 <b>${run.silver||0}</b></span>` }
+const garResHtml=()=>`<div class="garreses">${garSilverHtml()}<span class="garres">${ic("gold")||"금화"} <b>${run.gold}</b></span><span class="garres">제련석 <b>${run.stone||0}</b></span></div>`;
 function drawGarrison(app){
-  garEnsure();
+  garEnsure(); garPreload();
+  /* 지도 판 가운데 무대(.mb-mid .pstage)에 — 바깥 틀 · 좌우 판 · 자원 줄은 지도 그대로 (사용자 2026-11-10) */
+  let host=app;
+  if(typeof drawMap==="function"){ drawMap(app);
+    const old=app.querySelector(".mb-mid .pstage");
+    if(old){ const st=old.cloneNode(false); st.classList.remove("unfolding"); st.classList.add("garmode"); old.replaceWith(st);
+      host=el(`<div class="garhost"></div>`); st.appendChild(host) } }
+  if(GAR_UI.mode==="room") return garDrawRoom(host);
+  return garDrawTerrace(host) }
+
+/* ── 전경 ── 장면 1280×1104 (지역 배경 v4 · 건물 단계 v2 · idle-lit v1). 게임 지역 → 아트 지역은 이 표로만 */
+const GAR_REGION={"핏빛 감옥":"blood-prison","고철의 무덤":"scrap-graveyard","정령숲":"spirit-forest","광기의 투기장":"madness-arena","마력의 탑":"magic-tower"};
+const garRegionId=()=>GAR_REGION[(typeof fieldLabel==="function"&&fieldLabel())||""]||"blood-prison";
+const garTL=id=>GAR_TERRACE.fac[id][garLv(id)-1];
+/* 앞(바닥 y 가 큰 것)이 나중 — 겹치면 앞 건물이 가린다 */
+const garTOrder=()=>GAR_IDS.slice().sort((a,b)=>garTL(a).anchor[1]-garTL(b).anchor[1]);
+function garTSprite(ctx,u,r,x,y,w,h,al){ const im=garImg(u,0); if(!im.complete||!im.width) return; if(al!=null) ctx.globalAlpha=al;
+  ctx.drawImage(im,r[0],r[1],r[2],r[3],Math.round(x),Math.round(y),w||r[2],h||r[3]); ctx.globalAlpha=1 }
+function garTGlow(id,L){ const k="t|"+id+"|"+L.lv; if(GAR_UI.glowC[k]) return GAR_UI.glowC[k];
+  const im=garImg(L.base,1); if(!im.complete||!im.width) return null;
+  const c=document.createElement("canvas"); c.width=im.width; c.height=im.height; const g=c.getContext("2d");
+  g.drawImage(im,0,0); g.globalCompositeOperation="source-in"; g.fillStyle="#ffe2a0"; g.fillRect(0,0,c.width,c.height); return GAR_UI.glowC[k]=c }
+/* 건물 하나 — 대기 시트(본체 + 조명 + 연기) + 그 단계의 장면 트랙. dy · clip 은 강화 연출용 */
+function garTBuilding(ctx,id,L,now,light){
+  const I=L.idle, r=I.rects[Math.floor(now/I.ms)%I.rects.length];
+  const g=light>.005?garTGlow(id,L):null;
+  if(g){ ctx.save(); ctx.globalAlpha=light*.55; ctx.shadowColor="#ffcd70"; ctx.shadowBlur=14; ctx.drawImage(g,L.tl[0],L.tl[1]); ctx.shadowBlur=0;
+    ctx.globalAlpha=light*.5; for(const [x,y] of [[-2,0],[2,0],[0,-2],[0,2]]) ctx.drawImage(g,L.tl[0]+x,L.tl[1]+y); ctx.restore() }
+  garTSprite(ctx,I.src,r,I.tl[0],I.tl[1]);
+  L.extra.forEach(k=>{ const T=GAR_TERRACE.tracks[k]; if(T) garTSprite(ctx,T.src,T.rects[Math.floor(now/T.ms)%T.rects.length],T.tl[0],T.tl[1]) });
+  if(g){ ctx.save(); ctx.globalAlpha=light*.13; ctx.drawImage(g,L.tl[0],L.tl[1]); ctx.restore() } }
+/* 강화 연출 — 시안 prototype/scene.js 의 시간 : 먼지 500 · 교체 760(아래부터 240ms 드러남) · 조명 1040~1640 · 이름 1350~2800 */
+const garEase=x=>1-Math.pow(1-Math.max(0,Math.min(1,x)),3), garCl=x=>Math.max(0,Math.min(1,x));
+function garTUp(ctx,U,now){
+  const t=now-U.t0, F=GAR_TERRACE.fac[U.id], old=F[U.from-1], nx=F[U.to-1];
+  if(t<760) garTBuilding(ctx,U.id,old,now,0);
+  else { const rv=garEase((t-760)/240), b=nx.tl; ctx.save(); ctx.beginPath();
+    ctx.rect(b[0]-80,b[1]+nx.size[1]*(1-rv)-180*rv,nx.size[0]+160,nx.size[1]*rv+240*rv); ctx.clip();
+    ctx.translate(0,-8*(1-rv)); garTBuilding(ctx,U.id,nx,now,0); ctx.restore() }
+  if(t>=1040&&t<1640){ const S=GAR_TERRACE.stage[U.id+"|"+U.to]; if(S){ ctx.save(); ctx.globalCompositeOperation="screen";
+    garTSprite(ctx,S.src,S.rects[Math.floor(now/120)%S.rects.length],S.tl[0],S.tl[1],S.size[0],S.size[1],Math.sin(garCl((t-1040)/600)*Math.PI)*.65); ctx.restore() } }
+  const D=GAR_TERRACE.dust, dt=t-500; let sum=0, fr=-1; D.durs.forEach((d,i)=>{ if(dt>=sum&&dt<sum+d) fr=i; sum+=d });
+  if(fr>=0){ const w=Math.max(old.size[0],nx.size[0])*1.25, h=Math.min(550,Math.max(320,nx.size[1]*1.5)), A=nx.anchor;
+    garTSprite(ctx,D.src,D.rects[fr],A[0]-w/2,A[1]-h*D.anchor[1]/128,w,h,fr===D.rects.length-1?1-garCl((dt-720)/120):1) }
+  if(t>1350){ ctx.save(); ctx.globalAlpha=garEase((t-1350)/200)*(1-garCl((t-2500)/300)); ctx.textAlign="center";
+    const ff=(getComputedStyle(document.body).fontFamily)||"sans-serif"; ctx.font=`28px ${ff}`; ctx.lineWidth=5; ctx.strokeStyle="#17130e"; ctx.fillStyle="#f5d899";
+    const tx=`${GAR_NAME[U.id]} Lv.${U.to}`, x=nx.anchor[0], y=Math.max(48,nx.tl[1]-35); ctx.strokeText(tx,x,y); ctx.fillText(tx,x,y); ctx.restore() }
+  return t>=2800 }
+function garTHit(x,y){
+  return garTOrder().reverse().find(id=>{ const L=garTL(id), M=GAR_UI.mask[L.base]; const lx=Math.floor(x-L.tl[0]), ly=Math.floor(y-L.tl[1]);
+    return !!(M&&lx>=0&&ly>=0&&lx<L.size[0]&&ly<L.size[1]&&M[(ly*L.size[0]+lx)*4+3]>=33) })||null }
+function garDrawTerrace(app){
+  const T=GAR_TERRACE, W=T.canvas[0], H=T.canvas[1], reg=garRegionId();
+  const w=el(`<div class="garwrap gterr">
+    <div class="gartop">${garResHtml()}<div class="gartitle">주둔지</div><button type="button" class="garout">지도로</button></div>
+    <div class="gtfit"><div class="garstage gtstage"><canvas width="${W}" height="${H}"></canvas><div class="gthover" hidden></div></div></div></div>`);
+  app.appendChild(w);
+  w.querySelector(".garout").onclick=garLeave;
+  const cv=w.querySelector("canvas"), tip=w.querySelector(".gthover"), ctx=cv.getContext("2d");
+  /* 기다리는 강화 연출 — 한 번 보여 주고 지운다(소비) */
+  let U=null; if(run.gar.upFx&&run.gar.upFx.length){ U=Object.assign({},run.gar.upFx.shift()); U.t0=performance.now()+150; try{ saveGame() }catch(e){} }
+  const at=e=>{ const r=cv.getBoundingClientRect(); return garTHit((e.clientX-r.left)*W/r.width,(e.clientY-r.top)*H/r.height) };
+  cv.onpointermove=e=>{ if(U||GAR_UI.busy){ GAR_UI.hover=null; return } const id=at(e); GAR_UI.hover=id; cv.style.cursor=id?"pointer":"default";
+    if(id){ const L=garTL(id); tip.hidden=false; tip.textContent=`${GAR_NAME[id]} Lv.${garLv(id)}`;
+      tip.style.left=(L.anchor[0]/W*100)+"%"; tip.style.top=(Math.max(30,L.tl[1]-6)/H*100)+"%" } else tip.hidden=true };
+  cv.onpointerleave=()=>{ GAR_UI.hover=null; tip.hidden=true };
+  cv.onpointerdown=e=>{ if(U||GAR_UI.busy) return; const id=at(e); if(!id) return; try{ SFX.play("click") }catch(_){} garRoom(id) };
+  cancelAnimationFrame(GAR_UI.raf);
+  const tick=now=>{
+    if(!cv.isConnected||view!=="garrison"||GAR_UI.mode!=="terrace"){ GAR_UI.raf=0; return }
+    const dt=Math.min(80,now-(GAR_UI.last||now)); GAR_UI.last=now;
+    ctx.imageSmoothingEnabled=false; ctx.clearRect(0,0,W,H);
+    garTSprite(ctx,run.night?T.sky.night:T.sky.day,[0,0,1280,480],0,0);
+    { const im=garImg(T.regions[reg],0); if(im.complete&&im.width) ctx.drawImage(im,0,0) }
+    garTOrder().forEach(id=>{ const k="t|"+id, tg=GAR_UI.hover===id?1:0, v=GAR_UI.glow[k]||0; GAR_UI.glow[k]=v+(tg-v)*(1-Math.exp(-dt/(tg?65:110)));
+      if(U&&U.id===id){ if(garTUp(ctx,U,now)) U=null }
+      else garTBuilding(ctx,id,garTL(id),now,GAR_UI.glow[k]) });
+    GAR_UI.raf=requestAnimationFrame(tick) };
+  GAR_UI.raf=requestAnimationFrame(tick) }
+
+/* ── 시설 내부 ── */
+function garDrawRoom(app){
   if(!GAR_ART.rooms[GAR_UI.room]) GAR_UI.room="infirmary";
   const id=GAR_UI.room, lv=garLv(id), upc=garUpCost(id);
-  const bellNote=id==="bell-tower"?`날이 밝을 때 활동량 ${garV("bellAct","bell-tower")} · 은화 ${garV("bellSilver","bell-tower")}개를 얻습니다.`:"";
+  const bellNote=id==="bell-tower"?`날이 밝을 때 활동량 ${garV("bellAct","bell-tower")}, 은화 ${garV("bellSilver","bell-tower")}개를 얻습니다.`:"";
   const w=el(`<div class="garwrap">
-    <div class="gartop">
-      <div class="garreses">${garSilverHtml()}<span class="garres">${ic("gold")||"금화"} <b>${run.gold}</b></span><span class="garres">제련석 <b>${run.stone||0}</b></span></div>
+    <div class="gartop">${garResHtml()}
       <div class="gartitle">${lv}단계 ${esc(GAR_NAME[id])}</div>
-      <button type="button" class="garout">주둔지 나가기</button></div>
-    <div class="garbody">
-      <div class="garnav">${GAR_IDS.map(x=>`<button type="button" class="${x===id?"on":""}" data-g="${x}">${esc(GAR_NAME[x])}<small>${garLv(x)}단계</small></button>`).join("")}</div>
+      <button type="button" class="garout">주둔지로</button></div>
+    <div class="garbody groom">
       <div class="garstage"><canvas width="764" height="408"></canvas><div class="garlabels"></div></div>
     </div>
     <div class="garfoot"><span class="garnote">${esc(bellNote)}</span>
       ${upc?`<button type="button" class="garup" ${garUpOk(id)?"":"disabled"}>강화 — 금화 ${upc}</button>`:`<span class="garmax">최대 단계</span>`}</div>
   </div>`);
   app.appendChild(w);
-  w.querySelector(".garout").onclick=garLeave;
-  w.querySelectorAll(".garnav button").forEach(b=>b.onclick=()=>garRoom(b.dataset.g));
-  { const u=w.querySelector(".garup"); if(u) u.onclick=()=>{ if(garUp(id)){ try{ SFX.play(sfxHas("level")?"level":"click") }catch(e){}
-      toast(`${GAR_NAME[id]}을(를) ${garLv(id)}단계로 강화했습니다.`); try{ saveGame() }catch(e){} render() } } }
+  w.querySelector(".garout").onclick=garBack;
+  { const u=w.querySelector(".garup"); if(u) u.onclick=()=>{ if(u.disabled||GAR_UI.busy) return; u.disabled=true; const from=garLv(id);
+      if(garUp(id)){ (run.gar.upFx=run.gar.upFx||[]).push({id:id,from:from,to:garLv(id)});   /* 전경으로 돌아가면 한 번 보여 준다 */
+        try{ SFX.play(sfxHas("level")?"level":"click") }catch(e){}
+        toast(`${GAR_NAME[id]}을(를) ${garLv(id)}단계로 강화했습니다.`); try{ saveGame() }catch(e){} }
+      render() } }
   /* 물건 위 제목 — 마스터 좌표를 %로 (어느 크기에서도 그림과 같은 자리) */
   const lab=w.querySelector(".garlabels");
   GAR_ART.rooms[id].objects.filter(o=>o.interactive).forEach(o=>{ const a=garActOf(o.key); if(!a) return;
     const why=garWhy(a), b=el(`<button type="button" class="garlab${why?" off":""}" style="left:${(o.pos[0]+o.size[0]/2)/764*100}%;top:${Math.max(0,o.pos[1]-4)/408*100}%">${esc(a.n)}</button>`);
-    b.onclick=e=>{ e.stopPropagation(); garPress(o) }; lab.appendChild(b) });
+    b.onclick=e=>{ e.stopPropagation(); if(!GAR_UI.busy) garPress(o) }; lab.appendChild(b) });
   /* 캔버스 — 누름 · 올림 */
   const cv=w.querySelector("canvas");
   const at=e=>{ const r=cv.getBoundingClientRect(); return garHit((e.clientX-r.left)*764/r.width,(e.clientY-r.top)*408/r.height) };
   cv.onpointermove=e=>{ const o=at(e), h=o&&o.interactive?o.id:null; GAR_UI.hover=h; cv.style.cursor=h?"pointer":"default" };
   cv.onpointerleave=()=>{ GAR_UI.hover=null };
-  cv.onpointerdown=e=>{ const o=at(e); if(o&&o.interactive) garPress(o) };
+  cv.onpointerdown=e=>{ if(GAR_UI.busy||GAR_UI.panel) return; const o=at(e); if(o&&o.interactive) garPress(o) };
   garLoop(cv);
   if(GAR_UI.panel) w.appendChild(garPanel(GAR_UI.panel));
 }
@@ -27311,14 +27436,14 @@ function render0(){
   document.getElementById("_sandbarf")?.remove();
   document.querySelector(".sandstudio")?.remove();
   document.body.classList.toggle("vtitle",view==="title"||view==="saves"||view==="heropick"||view==="corepick"||view==="winface");   /* 머리줄 없는 화면 — 파수꾼 화면도 (2026-10-12) */
-  document.body.classList.toggle("vmap",view==="map"||(typeof placeMode==="function"&&placeMode()));   /* 장소 화면도 지도 판 안에 (덧판, 2026-10-30) */
+  document.body.classList.toggle("vmap",view==="map"||view==="garrison"||(typeof placeMode==="function"&&placeMode()));   /* 주둔지도 지도 판 안 (2026-11-10) */   /* 장소 화면도 지도 판 안에 (덧판, 2026-10-30) */
   document.body.classList.toggle("ghand",gHandOn()); try{ gHandDraw() }catch(e){}   /* 손 커서 — 전투 밖 (2026-10-01) */   /* 지도 — 머리줄 대신 제 띠를 그린다 (2026-09-18) */
   document.body.classList.toggle("vbattle",view==="battle"||view==="wavegap");
   document.body.classList.toggle("vchest",view==="chest");   /* 보상 상자 — 전투 배경 유지 */     /* 전투 — 전장 그림 위 (2026-09-19) */
   document.body.classList.toggle("vsand",!!(run&&run.sandbox)&&(view==="battle"||view==="wavegap"));   /* 연습장 — 손잡이·적 세우기가 아래에 있으니 화면을 굴릴 수 있게 (2026-09-29) */
-  document.body.classList.toggle("vpage",!["title","saves","heropick","corepick","map","battle","wavegap"].includes(view)&&!(typeof placeMode==="function"&&placeMode()));
+  document.body.classList.toggle("vpage",!["title","saves","heropick","corepick","map","battle","wavegap","garrison"].includes(view)&&!(typeof placeMode==="function"&&placeMode()));
   /* 화면 정비 (사용자 2026-10-05) — 시작 · 지도 · 전투 · 도감을 뺀 화면은 한 판 위에 그린다 */
-  document.body.classList.toggle("vnew",NEW_UI.includes(view)&&!(typeof placeMode==="function"&&placeMode()));   /* 나머지 화면 — 감옥 방 배경 + 철 테 판 (2026-09-19) */
+  document.body.classList.toggle("vnew",NEW_UI.includes(view)&&view!=="garrison"&&!(typeof placeMode==="function"&&placeMode()));   /* 나머지 화면 — 감옥 방 배경 + 철 테 판 (2026-09-19) */
   app.classList.remove("bt2","trait-stage");
   document.body.classList.remove("rwtable","trtable");   /* 보상 탁자 — 카드를 고르는 자리에서만 offerCards 가 다시 단다 (2026-10-31) */       /* 전투 화면만 두 단이다 — drawBattle 이 다시 단다 */
   const hr=document.getElementById("hRun");
@@ -27927,6 +28052,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 409, "v": "0.8", "d": "2026-11-10", "t": "주둔지 전경 — 지역별 배경 · 건물 단계 · 강화 연출, 지도 판 안", "big": 0},
  {"b": 408, "v": "0.8", "d": "2026-11-10", "t": "주둔지 실내 배경도 배포", "big": 0},
  {"b": 407, "v": "0.8", "d": "2026-11-10", "t": "주둔지 개편 — 건물 다섯 · 은화 · 피로도 · 성향 · 숙련도 · 전투 기술 숙련 · 벼려진 장신구", "big": 0},
  {"b": 406, "v": "0.8", "d": "2026-11-10", "t": "튼튼한 방어구 · 상승 기류(한 번만) · 추진력 비용 덤", "big": 0},
@@ -29527,7 +29653,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=408;
+const BUILD_NO=409;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -32000,7 +32126,7 @@ function mapInspector(at){
       const go=el(`<button class="go mgo">입장</button>`); go.onclick=()=>{ if(typeof mapIntroHold==="function"&&mapIntroHold()) return; mapEnter() };
       if(!_can) go.disabled=true;
       foot.appendChild(go);
-    } else if(kind==="camp"){ const go=el(`<button class="go mgo">주둔지 입장</button>`); go.onclick=()=>{ run.mapSel=null; view="garrison"; render() }; foot.appendChild(go) }
+    } else if(kind==="camp"){ if(view==="map"){ const go=el(`<button class="go mgo">주둔지 입장</button>`); go.onclick=()=>{ run.mapSel=null; garEnter() }; foot.appendChild(go) } }   /* 주둔지 안에서는 단추를 감춘다 */
     else foot.appendChild(el(`<div class="mif">지금 서 있는 칸</div>`));
   } else if(kind==="wall"){ foot.appendChild(el(`<div class="mif">지나갈 수 없습니다</div>`)) }
   else if(locked){ foot.appendChild(el(`<div class="mif on">${lockMsg().replace(/\.$/,"")}</div>`)) }
@@ -32418,7 +32544,7 @@ function mapEnter(){
   const r=run.pos.r, c=run.pos.c, cell=run.grid[r][c];
   /* 전용 구역 도감 — **들어간 칸의 종류**를 적는다 (이름이 아니라). 이벤트가 안 열리는 칸도 여기로 걸린다 */
   try{ if(cell&&cell.t&&typeof GIM_T!=="undefined"&&GIM_T[cell.t]) dexSee("gimT",cell.t) }catch(e){}
-  if(cell.t==="camp"){ run.mapSel=null; view="garrison"; render(); return }   /* 주둔지 — 들어간다 (2026-11-10) */
+  if(cell.t==="camp"){ run.mapSel=null; if(typeof garEnter==="function") garEnter(); else { view="garrison"; render() } return }   /* 주둔지 전경으로 (2026-11-10) */
   if(cell.t==="empty"||cell.done||cell.t==="wall") return;
   run.mapSel=null; enterCell(r,c);
 }
@@ -33396,7 +33522,7 @@ function enterCell0(r,c){
   if(cell.giftStone){ const v=cell.giftStone; delete cell.giftStone; run.stone=(run.stone||0)+v;
     toast(`대장장이 친구 — 제련석 +${v}`) }
   if(cell.done||cell.t==="empty"){ view="map"; render(); return }
-  if(cell.t==="camp"){ view="garrison"; render(); return }   /* 주둔지 화면으로 (2026-11-10 — 전에는 지도 판 안) */
+  if(cell.t==="camp"){ if(typeof garEnter==="function") garEnter(); else { view="garrison"; render() } return }   /* 주둔지 전경으로 (2026-11-10) */
   if(cell.t==="dungeon"||cell.t==="elite"||cell.t==="event") keyQuestTick(cell.t);   /* 열쇠방의 퀘스트 — 입장 수 */
   if(GIM_T[cell.t]){ gimEnter(cell,r,c); return }
   if(cell.t==="ship"){ run.nodeCost=0; run.here={r:r,c:c}; shipOpen(); view="shop"; shopVoice("enter");   /* 오볼 — 들러도 사라지지 않는다 (visited 를 안 단다) */
