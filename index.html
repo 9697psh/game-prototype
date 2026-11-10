@@ -6827,6 +6827,45 @@ body #app button.skarr,body #app button.dbarr{width:30px;height:30px;padding:0}
 .arbet .evdesc .abstake a.mn:hover::before,.arbet .evdesc .abstake a.pl:hover::before{filter:brightness(1.35)}
 body #app button.skarr:disabled,body #app button.dbarr:disabled{opacity:.25}
 #app .shopstage button.shpg::before{width:150%}
+
+/* 주둔지 공사 (2026-11-10 밤) — 오른쪽 칸 강화 목록 · 확인, 건물 이름의 공사 중 */
+.mb-right .minsp .garbuilds{display:flex;flex-direction:column;gap:6px;margin-top:12px;width:100%}
+body.vmap #app .mb-right button.gbrow{display:grid;grid-template-columns:4.2em 3.6em 1fr;align-items:center;gap:6px;width:100%;padding:6px 8px;
+  background:rgba(0,0,0,.28);border:1px solid rgba(230,214,178,.12);border-radius:3px;color:#fff;font:inherit;font-size:14px;cursor:pointer;text-align:left;min-height:0;box-shadow:none;border-image:none}
+body.vmap #app .mb-right button.gbrow:hover:not(:disabled),body.vmap #app .mb-right button.gbrow.on{border-color:rgba(244,214,124,.6);background:rgba(60,46,20,.45)}
+body.vmap #app .mb-right button.gbrow:disabled{cursor:default;opacity:1}
+.gbrow .gbn{white-space:nowrap}
+.gbrow .gblv{white-space:nowrap;color:#e8dcc0}
+.gbrow .gbr{display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-size:12px}
+.gbrow .gbcost,.gbrow .gbtime,.gbconfirm .gbsub{display:inline-flex;align-items:center;gap:4px}
+.gbrow .ri,.gbrow img,.gbconfirm .ri,.gbconfirm img{width:18px;height:18px;image-rendering:pixelated}
+.gbrow .gbcost.short b{color:#ff8a72}
+.gbrow .gbstate{color:#f0d890;font-size:12px;display:flex;flex-direction:column;align-items:flex-end}
+.gbrow .gbstate small{color:#cdbb92;font-size:11px}
+.gbconfirm{margin-top:10px;padding:10px;border:1px solid rgba(244,214,124,.35);background:rgba(0,0,0,.35);display:flex;flex-direction:column;gap:6px;align-items:center;width:100%;box-sizing:border-box}
+.gbconfirm .gbq{color:#fff;font-size:15px}
+.gbconfirm .gbsub{font-size:13px;gap:6px}
+.gbconfirm .gbwhy{color:#ff9a7a;font-size:12px}
+.gbconfirm .gbbtns{display:flex;gap:8px}
+body.vmap #app .gbconfirm button{font:inherit;font-size:13px;padding:4px 12px;background:rgba(0,0,0,.45);border:1px solid rgba(230,214,178,.35);color:#f0e2c4;cursor:pointer;min-height:0;border-image:none;box-shadow:none}
+body.vmap #app .gbconfirm button.gbgo{border-color:rgba(244,214,124,.7);color:#f4d67c}
+body.vmap #app .gbconfirm button:disabled{opacity:.4;cursor:default}
+.gtlab em{font-style:normal;color:#f4d67c;margin-left:.4em}
+.gtlabs .garbark{transform:translate(-50%,-100%)}
+
+/* 강화 목록 한 줄 · 확인은 아래 단추 자리 (2026-11-10 밤) */
+body.vmap #app .mb-right button.gbrow{grid-template-columns:auto 1fr auto;padding:4px 8px;font-size:13px;gap:8px}
+.gbrow .gblv{text-align:center}
+.gbrow .gbr{flex-direction:row;align-items:center;gap:8px}
+.gbrow .gbstate{flex-direction:row;gap:6px;align-items:baseline}
+.mb-right .minsp .garbuilds{gap:4px;margin-top:8px}
+.gbconfirm{margin:0;padding:0;border:0;background:none;gap:4px}
+body.vmap #app .gbconfirm .gbbtns{display:flex;flex-direction:column;align-items:center;gap:4px}
+body.vmap #app .gbconfirm button.gbgo{border:0;color:inherit}
+body.vmap #app .gbconfirm button.gbno{background:none;border:0;color:#cdbb92;font-size:13px;padding:2px 8px}
+body.vmap #app .gbconfirm button.gbno:hover{color:#fff}
+/* 기술창의 지속 기술 — 테두리 · 판 없이 그림과 이름만 (사용자 2026-11-11) */
+body.vbattle .passes .pass{background:none!important;border:0!important;border-image:none!important;box-shadow:none!important;padding-left:2px;padding-right:2px}
 </style>
 </head>
 <body>
@@ -20298,6 +20337,7 @@ function garEnsure(){
   GAR_IDS.forEach(id=>{ if(!run.gar.lv[id]) run.gar.lv[id]=1 });
   if(run.silver==null) run.silver=0;
   if(run.gar.day!==run.day){ run.gar.day=run.day; run.gar.used={} }
+  garBuildTick(run.gar);
   return run.gar }
 const garLv=id=>{ const g=garEnsure(); return g?g.lv[id]||1:1 };
 const garV=(k,id)=>GAR_V[k][garLv(id)-1];
@@ -20305,7 +20345,40 @@ const garUsed=k=>{ const g=garEnsure(); return (g&&g.used[k])||0 };
 /* 강화 */
 function garUpCost(id){ const l=garLv(id); return l>=GAR_MAX?0:GAR_UP[l-1] }
 function garUpOk(id){ const c=garUpCost(id); return c>0&&run.gold>=c }
-function garUp(id){ if(!garUpOk(id)) return false; run.gold-=garUpCost(id); run.gar.lv[id]=garLv(id)+1; return true }
+function garUp(id){ if(!garUpOk(id)) return false; run.gold-=garUpCost(id); run.gar.lv[id]=garLv(id)+1; return true }   /* 옛 즉시 강화 — 이제 화면은 공사(garBuildStart)를 쓴다 */
+/* ── 공사 (사용자 2026-11-10 밤) ──
+   강화 = 금화를 **한 번** 내고 공사를 건다. 끝남은 원정 시간으로 잰다 (run.day*24 + run.time — 날 넘김 · 종 울리기도 그대로 흐른다).
+   화면 시간(requestAnimationFrame · setTimeout)으로는 재지 않는다 — 화면이 닫혀 있어도 시간이 흐르면 끝난다.
+   run.gar.build[시설] = {id, from, to, startAt, endAt, state:"working"|"done", seen:0|1}
+     · 시설마다 하나 — 같은 시설에 겹쳐 걸 수 없다. 다른 시설끼리는 막지 않는다 (기획에 동시 공사 제한이 없다)
+     · 새 단계는 **시간이 지나는 순간** 적용된다 (garBuildTick — garEnsure 가 부를 때마다). ⚠️ 기획 확인 필요 (아래 GAR_BUILD_APPLY)
+     · seen — 전경에서 완공 연출을 보여 줬나. 연출을 시작할 때 1 로 적고 저장한다 → 다시 열어도 한 번만
+     · 공사 중에도 그 시설의 활동은 그대로 쓸 수 있다 (기획에 막는 규칙이 없다) */
+const GAR_BUILD_H=[6,12,18,24];   /* 1→2 · 2→3 · 3→4 · 4→5 공사 시간(시간) — 사용자 2026-11-10 밤 */
+const garNow=()=>((run&&run.day)||1)*24+((run&&run.time)||0);
+const garBuildOf=id=>(run&&run.gar&&run.gar.build&&run.gar.build[id])||null;
+const garBuilding=id=>{ const b=garBuildOf(id); return !!(b&&b.state==="working") };
+const garBuildHours=id=>{ const l=garLv(id); return l>=GAR_MAX?0:GAR_BUILD_H[l-1] };
+const garBuildLeft=id=>{ const b=garBuildOf(id); return b&&b.state==="working"?Math.max(0,Math.round((b.endAt-garNow())*60)/60):0 };
+function garBuildWhy(id){
+  if(garBuilding(id)) return "공사 중입니다.";
+  const c=garUpCost(id); if(!c) return "최대 단계입니다.";
+  if((run.gold||0)<c) return `금화가 ${c-(run.gold||0)}개 부족합니다.`;
+  return "" }
+function garBuildStart(id){
+  const g=garEnsure(); if(!g||garBuildWhy(id)) return null;
+  const from=garLv(id), c=garUpCost(id), now=garNow();
+  run.gold-=c;
+  (g.build=g.build||{})[id]={id:id, from:from, to:from+1, startAt:now, endAt:now+GAR_BUILD_H[from-1], state:"working", seen:0};
+  return g.build[id] }
+function garBuildTick(g){
+  const B=g&&g.build; if(!B) return; const now=garNow();
+  for(const id in B){ const b=B[id]; if(b&&b.state==="working"&&now>=b.endAt){ b.state="done"; b.seen=0; g.lv[id]=Math.max(g.lv[id]||1,b.to) } } }
+/* 완공했는데 아직 연출을 안 본 것 — 끝난 차례대로 */
+function garBuildUnseen(){ const B=run.gar&&run.gar.build; return B?Object.values(B).filter(b=>b&&b.state==="done"&&!b.seen).sort((a,b)=>a.endAt-b.endAt):[] }
+/* 일꾼이 지금 일하는 곳 — 가장 늦게 시작한 공사 (일꾼은 한 명이라 한 곳에만 서 있다. 공사 자체는 여럿이 함께 흐른다) */
+function garWorkSite(){ const B=run.gar&&run.gar.build; if(!B) return null;
+  return Object.values(B).filter(b=>b&&b.state==="working").sort((a,b)=>b.startAt-a.startAt)[0]||null }
 /* 날이 밝을 때 — 종탑 (nextDay 가 부른다) */
 function garBellAct(){ return (typeof run!=="undefined"&&run)?garV("bellAct","bell-tower"):GAR_V.bellAct[0] }
 function garNewDay(){
@@ -20552,7 +20625,7 @@ function garPreload(){
   Object.values(GAR_ART.rooms).forEach(R=>{ garImg(R.bg,0); R.objects.forEach(o=>garImg(o.src,1)) });
   const T=GAR_TERRACE; Object.values(T.sky).concat(Object.values(T.regions)).forEach(u=>garImg(u,0));
   Object.values(T.fac).forEach(L=>L.forEach(l=>{ garImg(l.base,1); garImg(l.idle.src,0) }));
-  Object.values(T.tracks).forEach(x=>garImg(x.src,0)); garImg(T.dust.src,0); Object.values(T.stage).forEach(x=>garImg(x.src,0)) }
+  Object.values(T.tracks).forEach(x=>garImg(x.src,0)); garImg(T.dust.src,0); if(T.worker){ garImg(T.worker.idle,1); garImg(T.worker.hammer,0) } Object.values(T.stage).forEach(x=>garImg(x.src,0)) }
 function garEnter(){ garPreload();   /* 지도 ↔ 전경 — 위아래 덧판 (사용자 2026-11-10 밤) */
   const go=()=>{ GAR_UI.mode="terrace"; GAR_UI.panel=null; GAR_UI.hover=null; GAR_UI.busy=0; view="garrison" };
   if(typeof shutPlay==="function") shutPlay(go); else { go(); render() } }
@@ -20589,7 +20662,31 @@ function garSide(app){
   const b=app.querySelector(".mb-right .minsp .mib"); if(!b) return;
   b.querySelectorAll(".mit,.mifoot").forEach(x=>x.remove());
   b.appendChild(el(`<div class="mit garside"><div>${garSilverHtml()}</div></div>`));
-  const foot=el(`<div class="mifoot"></div>`), go=el(`<button type="button" class="go mgo">나가기</button>`);
+  /* 시설 강화 — 공사 (사용자 2026-11-10 밤 시안 : 이름 · 단계 · 금화 · 시간). 누르면 아래에 확인, 「공사 시작」으로 건다 */
+  const list=el(`<div class="garbuilds"></div>`);
+  GAR_IDS.forEach(id=>{ const lv=garLv(id), bd=garBuildOf(id), wk=garBuilding(id), c=garUpCost(id), h=garBuildHours(id);
+    const right=wk?`<span class="gbstate">공사 중<small>${hrsTxt(garBuildLeft(id))} 남음</small></span>`
+      :!c?`<span class="gbstate">최대 단계</span>`
+      :`<span class="gbcost${(run.gold||0)<c?" short":""}">${resIcon("gold")}<b>${c}</b></span><span class="gbtime">${uiPng("clock")}<b>${h}</b></span>`;
+    const r=el(`<button type="button" class="gbrow${wk?" busy":""}${GAR_UI.confirm===id?" on":""}" ${wk||!c?"disabled":""}>
+      <span class="gbn">${esc(GAR_NAME[id])}</span><span class="gblv">${wk?`${bd.from} → ${bd.to}`:c?`${lv} → ${lv+1}`:lv}</span><span class="gbr">${right}</span></button>`);
+    r.onclick=()=>{ if(r.disabled||(typeof SHUT_BUSY!=="undefined"&&SHUT_BUSY)) return; GAR_UI.confirm=GAR_UI.confirm===id?null:id; try{ SFX.play("click") }catch(e){} render() };
+    list.appendChild(r) });
+  b.appendChild(list);
+  const foot=el(`<div class="mifoot"></div>`);
+  if(GAR_UI.confirm&&!garBuilding(GAR_UI.confirm)){ const id=GAR_UI.confirm, why=garBuildWhy(id);
+    const cf=el(`<div class="gbconfirm">${why?`<div class="gbwhy">${esc(why)}</div>`:""}
+      <div class="gbbtns"><button type="button" class="go mgo gbgo" ${why?"disabled":""}>공사 시작</button><button type="button" class="gbno">취소</button></div></div>`);
+    cf.querySelector(".gbno").onclick=()=>{ GAR_UI.confirm=null; render() };
+    const go=cf.querySelector(".gbgo");
+    go.onclick=()=>{ if(go.disabled) return; go.disabled=true;   /* 한 번만 — 금화도 한 번 */
+      const B=garBuildStart(id); GAR_UI.confirm=null;
+      if(B){ GAR_UI.wkT0=performance.now(); GAR_UI.wkLeave=GAR_UI.wkT0;
+        try{ SFX.play(sfxHas("level")?"level":"click") }catch(e){}
+        toast(`${GAR_NAME[id]} 공사를 시작했습니다. ${hrsTxt(GAR_BUILD_H[B.from-1])} 뒤에 끝납니다.`); try{ saveGame() }catch(e){} }
+      render() };
+    foot.appendChild(cf); b.appendChild(foot); return }
+  const go=el(`<button type="button" class="go mgo">나가기</button>`);
   go.onclick=()=>garLeave(); foot.appendChild(go); b.appendChild(foot) }
 
 /* ── 전경 ── 장면 1280×1104 (지역 배경 v4 · 건물 단계 v2 · idle-lit v1). 게임 지역 → 아트 지역은 이 표로만 */
@@ -20634,6 +20731,71 @@ function garTUp(ctx,U,now){
     const ff=(getComputedStyle(document.body).fontFamily)||"sans-serif"; ctx.font=`28px ${ff}`; ctx.lineWidth=5; ctx.strokeStyle="#17130e"; ctx.fillStyle="#f5d899";
     const tx=`${U.to}단계 ${GAR_NAME[U.id]}`, x=nx.anchor[0], y=Math.max(48,nx.tl[1]-35); ctx.strokeText(tx,x,y); ctx.fillText(tx,x,y); ctx.restore() }
   return t>=2800 }
+/* ── 일꾼 · 공사 (사용자 2026-11-10 밤, 미리보기 garrison-worker-construction-v1) ── */
+const GAR_WORKER_SAY=["어디를 고쳐 드릴까요?","망치는 준비됐습니다. 일만 맡겨 주세요!","돌 하나도 단단하게 쌓아야 오래 갑니다.","다녀오세요. 여기는 제가 맡겠습니다."];
+/* 건물마다 작업 자리 고침 (장면 좌표 dx · dy · 폭 off) — 벽 · 계단에 묻히지 않게. 비면 미리보기 식 그대로 */
+const GAR_WORK_FIX={};
+const garCl01=x=>Math.max(0,Math.min(1,x));
+/* 공사 먼지 한 번 — 같은 시트를 크기 · 투명도로 (t 는 먼지 시작부터 ms) */
+function garTDust(ctx,x,y,t,size,alpha){
+  const Dd=GAR_TERRACE.dust; if(t<0) return; let sum=0;
+  for(let i=0;i<Dd.durs.length;i++){ sum+=Dd.durs[i]; if(t<sum){ garTSprite(ctx,Dd.src,Dd.rects[i],x-size/2,y-size*Dd.anchor[1]/128,size,size,alpha); return } } }
+/* 건물 앞 좌우 작업 자리 — 그 건물의 (지금 보이는) 단계 지면 기준점과 폭 */
+function garWorkPos(id){
+  const L=garTL(id), F=GAR_WORK_FIX[id+"|"+garLv(id)]||GAR_WORK_FIX[id]||{}, off=F.off!=null?F.off:Math.min(110,L.size[0]*.33);
+  const x=L.anchor[0]+(F.dx||0), y=L.anchor[1]+20+(F.dy||0);
+  return {xl:x-off, xr:x+off, y:y} }
+function garWkMask(){ return GAR_UI.mask[GAR_TERRACE.worker.idle] }
+function garWkHit(x,y){
+  const K=GAR_TERRACE.worker, M=garWkMask(); if(!M) return false;
+  const lx=Math.floor(x-(K.home[0]-K.idleFoot[0])), ly=Math.floor(y-(K.home[1]-K.idleFoot[1]));
+  return lx>=0&&ly>=0&&lx<128&&ly<128&&M[(ly*128+lx)*4+3]>64 }
+function garWkGlow(){
+  const K=GAR_TERRACE.worker; if(GAR_UI.glowC.worker) return GAR_UI.glowC.worker;
+  const im=garImg(K.idle,1); if(!im.complete||!im.width) return null;
+  const c=document.createElement("canvas"); c.width=im.width; c.height=im.height; const g=c.getContext("2d");
+  g.drawImage(im,0,0); g.globalCompositeOperation="source-in"; g.fillStyle="#ffe2a0"; g.fillRect(0,0,c.width,c.height); return GAR_UI.glowC.worker=c }
+let GAR_WK_LINE=0;
+function garWkTalk(labs){
+  const K=GAR_TERRACE.worker, H=GAR_TERRACE.canvas[1], W=GAR_TERRACE.canvas[0];
+  labs.querySelectorAll(".garbark").forEach(x=>x.remove());
+  labs.appendChild(el(`<div class="bark garbark" style="left:${K.home[0]/W*100}%;top:calc(${(K.home[1]-K.idleFoot[1])/H*100}% - 1.6em)">${esc(GAR_WORKER_SAY[GAR_WK_LINE++%GAR_WORKER_SAY.length])}</div>`));
+  try{ SFX.play("click") }catch(e){} }
+/* 일꾼 한 칸 — 공사가 있으면 그 건물 앞에서 망치질, 없으면 가운데에서 대기. hide — 완공 연출 동안 */
+function garWorker(ctx,now,hide,light){
+  const K=GAR_TERRACE.worker; if(!K||hide) return;
+  const S=garWorkSite();
+  if(S){
+    if(GAR_UI.wkT0==null) GAR_UI.wkT0=now;
+    if(GAR_UI.wkLeave!=null){ const t=now-GAR_UI.wkLeave; if(t<520) garTDust(ctx,K.home[0],K.home[1],t*1.6,130,.45); else GAR_UI.wkLeave=null }   /* 가운데에서 사라지는 먼지 */
+    const P=garWorkPos(S.id), el0=now-GAR_UI.wkT0, cyc=Math.floor(el0/K.swapMs), local=el0%K.swapMs, left=cyc%2===1;
+    const x=left?P.xl:P.xr, y=P.y, loop=local%K.hammerMs.reduce((a,b)=>a+b,0);
+    let f=0, sum=0; for(let i=0;i<K.hammerMs.length;i++){ sum+=K.hammerMs[i]; if(loop<sum){ f=i; break } }
+    const im=garImg(K.hammer,0);
+    if(im.complete&&im.width){ ctx.save(); ctx.translate(Math.round(x),Math.round(y)); if(left) ctx.scale(-1,1);
+      ctx.globalAlpha=garCl01(local/90); ctx.drawImage(im,f*128,0,128,128,-K.hammerFoot[0],-K.hammerFoot[1],128,128); ctx.restore() }
+    const strike=K.hammerMs.slice(0,3).reduce((a,b)=>a+b,0), hit=loop-strike;   /* 내려치는 칸(4번째)부터 */
+    if(hit>=0) garTDust(ctx,x+(left?38:-38),y,hit,110,.65);
+    if(local<260) garTDust(ctx,x,y,local*2,130,.45);   /* 자리를 옮겨 나타날 때 */
+    return }
+  GAR_UI.wkT0=null;
+  const im=garImg(K.idle,1); if(!im.complete||!im.width) return;
+  const bx=K.home[0]-K.idleFoot[0], by=K.home[1]-K.idleFoot[1];
+  let a=1; if(GAR_UI.wkBack!=null){ const t=now-GAR_UI.wkBack; a=garCl01(t/90); if(t<520) garTDust(ctx,K.home[0],K.home[1],t*1.6,130,.45); else GAR_UI.wkBack=null }
+  const g=light>.005?garWkGlow():null;
+  if(g){ ctx.save(); ctx.globalAlpha=light*.6; ctx.shadowColor="#ffcd70"; ctx.shadowBlur=12; ctx.drawImage(g,bx,by); ctx.shadowBlur=0;
+    ctx.globalAlpha=light*.5; for(const [dx,dy] of [[-2,0],[2,0],[0,-2],[0,2]]) ctx.drawImage(g,bx+dx,by+dy); ctx.restore() }
+  ctx.globalAlpha=a; ctx.drawImage(im,bx,by); ctx.globalAlpha=1;
+  if(g){ ctx.save(); ctx.globalAlpha=light*.13; ctx.drawImage(g,bx,by); ctx.restore() } }
+/* 완공 연출 — 미리보기 시간 : 240 먼지 · 500 새 외형 · 900 이름 · 2200 끝. 끝나면 true */
+function garTDone(ctx,D,now){
+  const t=now-D.t0, F=GAR_TERRACE.fac[D.id], old=F[D.from-1], nx=F[D.to-1];
+  garTBuilding(ctx,D.id,t<500?old:nx,now,0);
+  garTDust(ctx,nx.anchor[0],nx.anchor[1],t-240,Math.max(360,nx.size[0]*1.2),1);
+  if(t>900){ ctx.save(); ctx.globalAlpha=garCl01((t-900)/200)*(1-garCl01((t-1900)/300)); ctx.textAlign="center";
+    const ff=(getComputedStyle(document.body).fontFamily)||"sans-serif"; ctx.font=`28px ${ff}`; ctx.lineWidth=5; ctx.strokeStyle="#17130e"; ctx.fillStyle="#ffffff";
+    const tx=`${D.to}단계 ${GAR_NAME[D.id]}`, x=nx.anchor[0], y=Math.max(48,nx.tl[1]-35); ctx.strokeText(tx,x,y); ctx.fillText(tx,x,y); ctx.restore() }
+  return t>=2200 }
 function garTHit(x,y){
   return garTOrder().reverse().find(id=>{ const L=garTL(id), M=GAR_UI.mask[L.base]; const lx=Math.floor(x-L.tl[0]), ly=Math.floor(y-L.tl[1]);
     return !!(M&&lx>=0&&ly>=0&&lx<L.size[0]&&ly<L.size[1]&&M[(ly*L.size[0]+lx)*4+3]>=33) })||null }
@@ -20641,7 +20803,8 @@ function garDrawTerrace(app){
   const T=GAR_TERRACE, W=T.canvas[0], H=T.canvas[1], reg=garRegionId();
   const w=el(`<div class="garwrap gterr">
     <div class="gtfit"><div class="garstage gtstage"><canvas width="${W}" height="${H}"></canvas><div class="gtlabs">${GAR_IDS.map(id=>{ const L=garTL(id);
-      return `<span class="gtlab" data-id="${id}" style="left:${L.anchor[0]/W*100}%;top:${Math.max(30,L.tl[1]-6)/H*100}%">${garLv(id)}단계 ${esc(GAR_NAME[id])}</span>` }).join("")}</div></div></div></div>`);
+      return `<span class="gtlab" data-id="${id}" style="left:${L.anchor[0]/W*100}%;top:${Math.max(30,L.tl[1]-6)/H*100}%">${garLv(id)}단계 ${esc(GAR_NAME[id])}${garBuilding(id)?`<em>공사 중</em>`:""}</span>` }).join("")}
+      <span class="gtlab gtwk" style="left:${T.worker.home[0]/W*100}%;top:${(T.worker.home[1]-T.worker.idleFoot[1]-4)/H*100}%">일꾼</span></div></div></div></div>`);
   app.appendChild(w);
   const cv=w.querySelector("canvas"), ctx=cv.getContext("2d");
   const labShow=(id,on)=>{ const x=w.querySelector(`.gtlab[data-id="${id}"]`); if(x) x.style.visibility=on?"":"hidden" };
@@ -20649,20 +20812,33 @@ function garDrawTerrace(app){
   let U=null; if(run.gar.upFx&&run.gar.upFx.length){ U=Object.assign({},run.gar.upFx.shift()); U.t0=Infinity; U.wait=1; try{ saveGame() }catch(e){} }
   const at=e=>{ const r=cv.getBoundingClientRect(); return garTHit((e.clientX-r.left)*W/r.width,(e.clientY-r.top)*H/r.height) };
   if(U) labShow(U.id,0);   /* 강화 연출 동안은 그 건물 이름을 감춘다 — 연출이 새 이름을 띄운다 */
-  cv.onpointermove=e=>{ if(U||GAR_UI.busy){ GAR_UI.hover=null; return } GAR_UI.hover=at(e) };
+  /* 완공 연출 — 돌아왔을 때 끝나 있던 공사 하나 (한 번만 : 시작하며 seen 을 적고 저장) */
+  let D=null; { const q=garBuildUnseen()[0]; if(q&&!U){ q.seen=1; D={id:q.id,from:q.from,to:q.to,t0:Infinity,wait:1}; labShow(q.id,0); try{ saveGame() }catch(e){} } }
+  const wkLab=w.querySelector(".gtwk"), labs=w.querySelector(".gtlabs");
+  const wkIdle=()=>!D&&!garWorkSite();
+  const xy=e=>{ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)*W/r.width,(e.clientY-r.top)*H/r.height] };
+  const atWk=e=>wkIdle()&&garWkHit(...xy(e));
+  cv.onpointermove=e=>{ if(U||D||GAR_UI.busy){ GAR_UI.hover=null; return } GAR_UI.hover=atWk(e)?"worker":at(e) };
   cv.onpointerleave=()=>{ GAR_UI.hover=null };
-  cv.onpointerdown=e=>{ if(U||GAR_UI.busy) return; const id=at(e); if(!id) return; try{ SFX.play("click") }catch(_){} garRoom(id) };
+  cv.onpointerdown=e=>{ if(U||D||GAR_UI.busy) return;
+    if(atWk(e)){ garWkTalk(labs); return }
+    const id=at(e); if(!id) return; try{ SFX.play("click") }catch(_){} garRoom(id) };
   cancelAnimationFrame(GAR_UI.raf);
   const tick=now=>{
     if(!cv.isConnected||view!=="garrison"||GAR_UI.mode!=="terrace"){ GAR_UI.raf=0; return }
     const dt=Math.min(80,now-(GAR_UI.last||now)); GAR_UI.last=now;
     if(U&&U.wait&&!(typeof CV_BUSY!=="undefined"&&CV_BUSY)){ U.wait=0; U.t0=now+150 }   /* 덮개가 다 열린 뒤에 */
+    if(D&&D.wait&&!(typeof CV_BUSY!=="undefined"&&CV_BUSY)&&!(typeof SHUT_BUSY!=="undefined"&&SHUT_BUSY)){ D.wait=0; D.t0=now+150 }   /* 덧판이 다 열린 뒤에 */
     ctx.imageSmoothingEnabled=false; ctx.clearRect(0,0,W,H);
     garTSprite(ctx,run.night?T.sky.night:T.sky.day,[0,0,1280,480],0,0);
     { const im=garImg(T.regions[reg],0); if(im.complete&&im.width) ctx.drawImage(im,0,0) }
     garTOrder().forEach(id=>{ const k="t|"+id, tg=GAR_UI.hover===id?1:0, v=GAR_UI.glow[k]||0; GAR_UI.glow[k]=v+(tg-v)*(1-Math.exp(-dt/(tg?65:110)));
       if(U&&U.id===id){ if(garTUp(ctx,U,now)){ labShow(U.id,1); U=null } }
+      else if(D&&D.id===id){ if(garTDone(ctx,D,now)){ labShow(D.id,1); D=null; GAR_UI.wkBack=now; if(garBuildUnseen().length) setTimeout(()=>{ if(view==="garrison"&&GAR_UI.mode==="terrace") render() },60) } }
       else garTBuilding(ctx,id,garTL(id),now,GAR_UI.glow[k]) });
+    { const k="t|worker", tg=GAR_UI.hover==="worker"?1:0, v=GAR_UI.glow[k]||0; GAR_UI.glow[k]=v+(tg-v)*(1-Math.exp(-dt/(tg?65:110))) }
+    garWorker(ctx,now,!!D,GAR_UI.glow["t|worker"]||0);
+    if(wkLab){ const on=wkIdle(); if(wkLab._on!==on){ wkLab._on=on; wkLab.style.visibility=on?"":"hidden" } }
     GAR_UI.raf=requestAnimationFrame(tick) };
   GAR_UI.raf=requestAnimationFrame(tick) }
 
@@ -20678,7 +20854,7 @@ function garDrawRoom(app){
       <div class="garstage"><canvas width="764" height="408"></canvas><div class="garlabels"></div></div>
     </div>
     <div class="garfoot"><span class="garnote">${esc(bellNote)}</span>
-      ${upc?`<button type="button" class="garup" ${garUpOk(id)?"":"disabled"}>강화 — 금화 ${upc}</button>`:`<span class="garmax">최대 단계</span>`}</div>
+      ${garBuilding(id)?`<span class="garmax">공사 중, ${hrsTxt(garBuildLeft(id))} 남음</span>`:upc?"":`<span class="garmax">최대 단계</span>`}</div>
   </div>`);
   app.appendChild(w);
   w.querySelector(".garexit").onclick=()=>{ if(!GAR_UI.busy) garBack() };   /* 상점 「나가기」와 같은 자리 (사용자 2026-11-10 밤) */
@@ -28246,6 +28422,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 416, "v": "0.8", "d": "2026-11-11", "t": "주둔지 공사 · 일꾼 · 지속 기술 테두리 걷음", "big": 0},
  {"b": 415, "v": "0.8", "d": "2026-11-10", "t": "우두머리 전리품 — 고른 것을 한 번 더 누르면 확정", "big": 0},
  {"b": 414, "v": "0.8", "d": "2026-11-10", "t": "넘김 화살표 — 석판 화살표 그림", "big": 0},
  {"b": 413, "v": "0.8", "d": "2026-11-10", "t": "주둔지 시설 내부 시안 — 제목 · 은화 · 나가기 · 큰 이름 · 철 테 활동 창 · Esc", "big": 0},
@@ -29853,7 +30030,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=415;
+const BUILD_NO=416;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
