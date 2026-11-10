@@ -6997,6 +6997,24 @@ body #app .gm2 button.gm2n.short b{color:#d8c9a8;text-shadow:none}
 .garwrap .garpanel .gpscout .gprow{flex-direction:column;align-items:center;gap:14px;text-align:center;border:0;font-size:clamp(15px,1.3cqw,21px);line-height:1.6}
 
 body.vmap #app .mb-right button.gbrow.wait{opacity:.45}   /* 다른 공사가 있는 동안 (2026-11-11) */
+
+/* 가방 판 탭 · 장신구 정리 (사용자 2026-11-11) */
+.bagtabs{display:flex;justify-content:center;gap:18px;margin:2px 0 8px}
+body #app .bagtabs button{background:none;border:0;border-radius:0;box-shadow:none;border-image:none;min-height:0;padding:2px 4px;font:inherit;font-size:14px;color:#b9a888;cursor:pointer;
+  border-bottom:2px solid transparent}
+body #app .bagtabs button.on{color:#f4d67c;border-bottom-color:rgba(244,214,124,.7)}
+body #app .bagtabs button:hover{color:#fff2cc}
+.baggear .center{padding:0;margin:0;max-width:none;text-align:center}
+.baggear .sub{font-size:11.5px;line-height:1.5;margin:0 0 8px}
+.baggear .gearwrap{display:flex;flex-direction:column;gap:8px;width:100%}
+.baggear .gearhero{width:100%;box-sizing:border-box;padding:6px;margin:0}
+.baggear .gearhero .gh{gap:8px}
+.baggear .gearhero .gh .art{width:44px;height:44px} .baggear .gearhero .gh .art img,.baggear .gearhero .gh .art svg{max-width:44px;max-height:44px}
+.baggear .gslots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+.baggear .gslot{min-width:0;padding:4px 2px;font-size:10.5px}
+.baggear .gslot b{font-size:10.5px;white-space:normal;word-break:keep-all;line-height:1.25}
+.baggear .bagwrap{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;width:100%}
+.baggear .title{font-size:14px!important}
 </style>
 </head>
 <body>
@@ -18406,6 +18424,11 @@ const ITEMS=[
  Object.assign(IT("고급 드라이버","특수",null,0,null,{driver:8},
    "악마 또는 기계 대원에게만 장착할 수 있습니다.\n이 장신구를 장착한 대원이 주둔지가 아닌 쉼터에서 휴식한 후, 최대 체력을 8 얻습니다."),
    {loot:1,onlyRace:["악마","기계"]}),
+ /* 우두머리 전리품 — 사탄 (사용자 2026-11-11) */
+ Object.assign(IT("등롱","특수",null,0,{atk:1,mag:1,def:1},{satanLantern:5},
+   "이 장신구를 장착한 대원이 적을 처치할 때마다, 5% 확률로 이 장신구의 모든 능력치가 영구히 1 증가합니다."),{loot:1}),
+ Object.assign(IT("사탄의 손톱","특수",null,0,null,{satanClaw:10},
+   "내 턴 시작 시, 무작위 적 하나에게 처형을 10 부여합니다."),{loot:1}),
  Object.assign(IT("간수장의 방패","특수",null,0,{def:3},{shieldSame:5},
    "이 장신구를 장착한 대원이 한 턴에 동일한 기술을 3번 사용할 때마다, 보호막을 5 얻습니다."),{loot:1}),
  IT("창조의 시침","특수",null,0,null,{endTwice:1},
@@ -23361,6 +23384,8 @@ function foeStatusRows(f){
     if(wd>0) o.push(bd("o","보호력 감소",wd,`보호력이 ${wd} 줄어듭니다`,"보호약화"));
     if(wa>0) o.push(bd("o","공격력 감소",wa,`이번 적 차례에 내놓는 피해가 ${wa} 줄어듭니다`,"공격약화")); }
   g.push(...arenaChips(f));   /* 광기의 투기장 — 손님 맞이 · 도전장 · 반사판 · 채점 */
+  if(B&&B.sac&&f.alive){ if(uid(f)===B.sac.id) o.push(bd("o","오늘의 제물","50%","이번 라운드 동안 받는 피해가 50% 증가합니다.","오늘의 제물","trophy_satan_sacrifice"));   /* 사탄 전리품 (2026-11-11) */
+    else g.push(bd("g","오늘의 제물","25%","이번 라운드 동안 받는 피해가 25% 감소합니다.","오늘의 제물","trophy_satan_sacrifice")) }
   o.push(...debBadges(f));
   return (t.length?`<div class="st t">${t.join("")}</div>`:"")+stRows(g,o);
 }
@@ -23433,6 +23458,7 @@ function heroStatusRows(h){
   (h&&h.pasv||[]).forEach(p=>{ if(p&&p.n) t.push(bd("t","지속","!",`${p.n} — ${p.d||""}`,"지속")) });
   if(h.echo) t.push(bd("t","메아리","","메아리: 쓰러질 때 한 번, 절반의 체력으로 다시 일어섭니다.","메아리"));   /* 생명의 메아리 */
   if(h.evade) g.push(bd("g","회피",h.evade,"다음 공격 한 번을 통째로 흘립니다"));
+  if(typeof wingOn==="function"&&wingOn(h)) g.push(bd("g","대악마의 날개죽지","50%","내 다음 턴이 시작할 때까지 받는 피해가 50% 감소합니다.","대악마의 날개죽지","trophy_satan_wing"));   /* 사탄 전리품 (2026-11-11) */
   /* 은신 — 그슨대만 보이던 것을 **누구든** 보이게 (사용자 2026-10-15 : 데린저 연막탄) */
   if(h.hide) g.push(bd("g","은신","","숨어 있어 적이 겨눌 수 없습니다. 전장에 혼자 남으면 풀립니다"));
   if(h.name==="그슨대"&&!h.isMin){ const pend=h.darkPend||0, dk=Math.max(0,(h.dark||0)-pend), got=Math.max(0,(h.darkGot||0)-pend);   /* 아직 연출이 안 닿은 몫은 빼고 (gsdShowStep) */
@@ -28615,6 +28641,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 420, "v": "0.8", "d": "2026-11-11", "t": "사탄 우두머리 전리품 · 장신구 정리 탭 · 성장제 80", "big": 0},
  {"b": 419, "v": "0.8", "d": "2026-11-11", "t": "주둔지 공사 한 번에 하나", "big": 0},
  {"b": 418, "v": "0.8", "d": "2026-11-11", "t": "주둔지 일꾼 — 누르면 인사 · 점프", "big": 0},
  {"b": 417, "v": "0.8", "d": "2026-11-11", "t": "대원 표시 · 성향 발동 확률 · 숙련도 화면 · 종탑 · 정찰대장", "big": 0},
@@ -30226,7 +30253,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=419;
+const BUILD_NO=420;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -35423,12 +35450,12 @@ function dropTo(el2,fn){
   el2.addEventListener("drop",ev=>{ if(!GDRAG) return; ev.preventDefault(); el2.classList.remove("dragover");
     const p=GDRAG; GDRAG=null; fn(p) });
 }
-function drawGear(app){
+function drawGear(app,inBag){   /* inBag — 지도 가방 판의 탭 안 (제목 · 마치기 단추 없이) */
   run.bag=run.bag||[];
   /* 옛 버그로 h.items 에 빈 칸(undefined)이 꽂힌 판을 살려 준다 — 그대로 두면 다른 화면이 터진다 */
   run.heroes.forEach(h=>{ if(h.items&&h.items.some(x=>!x)) h.items=h.items.filter(Boolean) });
   const sel2=run.gearPick;
-  app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">장 비 정 리</div>
+  app.appendChild(el(`<div class="center">${inBag?"":`<div class="title" style="font-size:20px">장 비 정 리</div>`}
     <div class="sub">${sel2?"놓을 자리를 고르세요. 이미 찬 칸을 누르면 서로 바뀝니다."
       :"장신구를 끌어다 칸에 놓거나, 눌러서 고르세요. 대원의 장비를 가방으로 끌면(또는 누르면) 벗습니다."}</div></div>`));
   const wrap=app.querySelector(".center");
@@ -35456,7 +35483,7 @@ function drawGear(app){
     rs.appendChild(box);
   });
   wrap.appendChild(rs);
-  wrap.appendChild(el(`<div class="title" style="font-size:16px;margin-top:26px">가 방 (${run.bag.length})</div>`));
+  wrap.appendChild(el(`<div class="title" style="font-size:16px;margin-top:${inBag?14:26}px">가 방 (${run.bag.length})</div>`));
   const bag=el(`<div class="bagwrap"></div>`);
   if(!run.bag.length) bag.appendChild(el(`<p class="hint">가방이 비어 있습니다.</p>`));
   run.bag.forEach((it,i)=>{
@@ -35471,6 +35498,7 @@ function drawGear(app){
   bag.classList.add("bagdrop");
   dropTo(bag,p=>gearMove(p,{bag:1}));
   wrap.appendChild(bag);
+  if(inBag) return;
   const back=el(`<div style="margin-top:24px"><button class="go">정리를 마친다</button></div>`);
   back.querySelector("button").onclick=()=>{ run.gearPick=null; view=run.gearBack||"camp"; run.gearBack=null; render() };   /* 제련소에서 열었으면 제련소로 (2026-10-01) */
   wrap.appendChild(back);
@@ -36387,6 +36415,7 @@ const CARD_META={
  "해독제":{src:"상점"}, "밧줄":{src:"상점"}, "마나 결정":{src:"상점"}, "각성초":{src:"상점"},
  "분해기":{src:"상점, 고철의 무덤"}, "자물쇠":{src:"간수장 전리품"}, "연료 장치":{src:"실험 책임자 전리품"},
  "집게손":{src:"콜로서스 전리품"},
+ "대악마의 날개죽지":{src:"사탄 전리품"}, "오늘의 제물":{src:"사탄 전리품"},
  "시기의 역병":{src:"인비디아",gone:1},
  "역병 지대":{src:"인비디아",gone:1}
 };
@@ -36400,6 +36429,18 @@ const CARD_LIB={
      say(`감시 — ${a.name}`,"t2"); addDeb(a,"stun",1) }},
  "불덩이":{d:"대상 적에게 피해를 6 줍니다.",foe:1,
    use:(f,h)=>{ hurt(f,6,"불덩이","boom") }},
+ /* 우두머리 전리품 — 사탄 (사용자 2026-11-11) */
+ "대악마의 날개죽지":{d:"내 다음 턴이 시작할 때까지 받는 피해가 50% 감소합니다.",
+   use:a=>{ if(!a||a.hp<=0) return "keep";
+     a.wingTurn=(B.turn||1)+1;   /* 같은 대원에게 또 내도 쌓이지 않는다 — 끝나는 때만 같다 (사용자 주석) */
+     fx({side:"mine",slot:a.slot,s:"shield",ring:"#c7452f",txt:"피해 50% 감소",cls:"shd",gap:80});
+     say(`대악마의 날개죽지 — ${a.name}, 다음 턴이 시작할 때까지 받는 피해 50% 감소`,"t1") }},
+ "오늘의 제물":{d:"적을 선택합니다. 이번 라운드 동안 선택한 적이 받는 피해가 50% 증가하고, 다른 적이 받는 피해는 25% 감소합니다. 한 라운드에 최대 1장 낼 수 있습니다.",foe:1,
+   use:f=>{ if(B.sac){ say("오늘의 제물 — 이번 라운드에는 이미 냈습니다.","t2"); return "keep" }
+     if(!f||!f.alive){ say("오늘의 제물 — 고를 적이 없습니다.","t2"); return "keep" }
+     B.sac={id:uid(f)};   /* B 는 라운드마다 새로 선다 — 라운드가 바뀌면 저절로 걷힌다 */
+     fx({side:"foe",slot:f.slot,ring:"#c7452f",txt:"받는 피해 +50%",cls:"crit",gap:100});
+     say(`오늘의 제물 — ${f.name}이 받는 피해 +50%, 다른 적은 −25% (이번 라운드)`,"t1") }},
  "빵":       {d:"아군 대상의 체력을 2 회복시킵니다.",
               use:a=>{ const v=healUp(a,2);
                        fx({side:"mine",slot:a.slot,s:"heal",ring:"#7fd39a",txt:"+"+v,cls:"heal",gap:60});
@@ -39183,9 +39224,9 @@ function restRecord(fn,from){ const L=run.heroes.map(h=>({n:h.name,b:h.down?0:Ma
 /* 훈련장 — 전 · 후 레벨과 경험치를 적어 두고 결과 판(drawRestRes 의 train)에 보인다 */
 function trainRecord(v){
   /* 오염된 수목 성장제 (콜로서스 전리품, 2026-10-23) — 경험치 +150, 쓸 때마다 오염도 +30 */
-  if(run.growTonic){ const n=run.growTonic;
-    v+=150*n; addTaint(30*n);
-    toast(`오염된 수목 성장제 — 경험치 +${150*n}, 오염도 +${30*n}`) }
+  if(run.growTonic){ const n=run.growTonic;   /* 150 → 80 (사용자 2026-11-11) */
+    v+=80*n; addTaint(30*n);
+    toast(`오염된 수목 성장제 — 경험치 +${80*n}, 오염도 +${30*n}`) }
   const pool=run.heroes.filter(h=>!h.down);
   const L=run.heroes.map(h=>({n:h.name,lv0:h.lv,e0:h.exp,n0:needExp(h.lv),down:!!h.down}));
   giveExp(v,pool,true);
@@ -40330,8 +40371,18 @@ const BOSS_LOOT={
   {k:"rew", n:"오염된 수목 성장제",ic:"trophy_col_tonic"},
   {k:"item",n:"콜로서스의 팔"},
   {k:"item",n:"보호막 충전기"}
+ ],
+ /* 사탄 (광기의 투기장, 사용자 2026-11-11) */
+ "사탄":[
+  {k:"rew", n:"피의 계약서",ic:"trophy_satan_blood"},
+  {k:"item",n:"등롱"},
+  {k:"item",n:"사탄의 손톱"},
+  {k:"card",n:"대악마의 날개죽지",c:5,d:"[대악마의 날개죽지] 카드를 5장 얻습니다.\n[대악마의 날개죽지] : 내 다음 턴이 시작할 때까지 받는 피해가 50% 감소합니다."},
+  {k:"rew", n:"사탄의 해골",ic:"trophy_satan_skull"},
+  {k:"card",n:"오늘의 제물",c:2,d:"[오늘의 제물] 카드를 2장 얻습니다.\n[오늘의 제물] : 적을 선택합니다. 이번 라운드 동안 선택한 적이 받는 피해가 50% 증가하고, 다른 적이 받는 피해는 25% 감소합니다. 한 라운드에 최대 1장 낼 수 있습니다."}
  ]
 };
+BOSS_LOOT["분노의 대군주"]=BOSS_LOOT["사탄"];   /* 해제한 모습으로 쓰러져도 같은 전리품 */
 /* 그 우두머리의 전리품 셋 — 한 전투에 한 번만 뽑는다 (화면을 다시 그려도 그대로) */
 function blRoll(boss){
   const L=(BOSS_LOOT[boss]||[]).slice(), out=[];
@@ -40410,6 +40461,9 @@ const QUESTS={
     d:"벼락칼날을 4번 연쇄시키기 {n}",rd:"벼락칼날의 피해량이 영구히 4 증가합니다.",reward:{boltUp:4}},
   "주인 찾아주기":{kind:"visit",need:4,field:1,who:"all",
     d:"이번 구역 동안 미지의 구역 {n}번 방문",get rd(){return `금화를 ${evScale("ownerGold")}개 얻습니다.`},reward:{get gold(){return evScale("ownerGold")}}},
+  /* 사탄의 해골 (사탄 전리품, 사용자 2026-11-11) */
+  "사탄의 해골":{kind:"kill",need:6,who:"hero",repeat:1,
+    d:"수락자가 적 {n}명 처치",rd:"금화 6개, 제련석 6개, 경험치 6을 얻습니다.",reward:{gold:6,stone:6,exp:6}},
   "공물 준비하기":{kind:"kill",need:20,who:"hero",
     d:"수락자가 적 {n}명 처치",rd:"수락자가 중급 보상을 받습니다.",reward:{grade:"중급"}},
   /* 2026-09-16 (사용자) — 저항군 결성 · 현상 수배 */
@@ -42134,6 +42188,7 @@ const ROUND_RESET={
   hide:0, shadowAt:0, gsMend:0, shPend:0, thornOff:0, stance:0, pbPrep:0, pbVeins:[],   /* 페블 — 준비 · 광맥은 라운드 */   /* 그슨대 — 그림자 · 그림자 이동 회복은 라운드 (노트 10) */
   leech:0, pierceNext:0, aimAt:null, headshotUsed:0, mobile:0, patFreeTurn:0, lastBas:null,   /* 최후의 보루 — 라운드를 넘지 않는다 */
   eshield:0,                       /* 에너지 보호막 — 그 라운드에서만 (사용자 2026-10-01) */
+  wingTurn:0,                      /* 대악마의 날개죽지 — 라운드를 넘지 않는다 (2026-11-11) */
   freeBlock:0, freePush:0, cutUses:0, shotUses:0, guardStack:0,
   limitUsed:{},                    /* 사용한도는 라운드마다 다시 찬다 */
   shotFree:0, thornTmp:0,
@@ -43345,8 +43400,15 @@ function topDmgHero(){
 
 /* ── 적이 맞을 때 (hurt) ── */
 function arenaFoeIn(f,amt){
-  if(amt>0&&f&&f.halfTurn&&B&&!B._arKill&&f.halfTurn===(B.turn||1)) return Math.ceil(amt/2);
-  return amt }
+  if(amt>0&&f&&f.halfTurn&&B&&!B._arKill&&f.halfTurn===(B.turn||1)) amt=Math.ceil(amt/2);
+  return sacFoeIn(f,amt) }
+/* 오늘의 제물 (사탄 전리품, 2026-11-11) — 이번 라운드 : 고른 적 +50%, 다른 적 −25% */
+function sacFoeIn(f,amt){
+  if(!(amt>0)||!f||!B||!B.sac) return amt;
+  return uid(f)===B.sac.id?Math.ceil(amt*1.5):Math.ceil(amt*0.75) }
+/* 대악마의 날개죽지 (사탄 전리품, 2026-11-11) — 내 다음 턴이 시작할 때까지 받는 피해 −50% */
+const wingOn=t=>!!(t&&t.wingTurn&&B&&(B.turn||1)<t.wingTurn);
+function wingCut(t,raw){ return raw>0&&wingOn(t)?Math.ceil(raw/2):raw }
 function arenaFoeHurt(f,amt){
   if(!B||!(amt>0)||!f) return;
   const by=B.lastAttacker, mine=!!(by&&!by.isFoe&&B.foes.indexOf(by)<0);
@@ -50536,6 +50598,7 @@ function incoming(){
     const m=get(u);
     let raw=arenaHitRaw(u,v,cr);   /* 상처 · 오늘의 주인공 — hurtAlly 와 같은 셈 */
     { const pg=portalGuardOf(u); if(pg&&raw>0) raw=Math.max(0,raw-pg) }   /* 감소의 문 */
+    raw=wingCut(u,raw);   /* 대악마의 날개죽지 — hurtAlly 와 같은 자리 */
     if(isFF(u)&&!ffFlare(u)&&raw>0){ const T=u.tag||{};   /* 플로우 — 피해 흘리기 · 파도 보호막 (hurtAlly 와 같게, 2026-10-01) */
       if(T.flowGuard) raw=Math.max(0,raw-T.flowGuard);
       if(T.waveGuard&&f&&foeAil(f)>0) raw=Math.max(0,raw-T.waveGuard) }
@@ -50980,6 +51043,15 @@ function selfHitTag(h,s,count){
 }
 /* ownFx — 이 대원은 제 그림이 따로 뜬다는 표시.
    옛 SVG 와 불티만 건너뛴다. art 값은 그대로 두어야 소리와 글자 색이 산다. */
+/* 등롱 — 끼고 있는 등롱마다 따로 굴린다. 표의 장신구(itemDef)를 같이 쓰고 있으면 먼저 제 몫으로 떼어 낸다 (다른 등롱 · 도감이 같이 커지지 않게) */
+function satanLanternKill(h){
+  (h.items||[]).forEach((it,i)=>{ if(!it||!it.bt||!it.bt.satanLantern) return;
+    if(Math.random()>=it.bt.satanLantern/100) return;
+    let c=it; if(!it.own){ c=JSON.parse(JSON.stringify(it)); c.own=1; h.items[i]=c }
+    ["atk","mag","def"].forEach(k=>{ c.st[k]=(c.st[k]||0)+1; h[k]=(h[k]||0)+1 });
+    try{ c.d=itemDesc(c) }catch(e){}
+    fx({side:"mine",slot:h.slot,ring:"#e0a040",txt:"등롱 +1",cls:"buf",gap:80});
+    say(`등롱 — ${h.name}의 등롱이 밝아집니다. 공격력 · 마법력 · 보호력 +1 (영구히)`,"t1") }) }
 function hurt(f,amt,tag,art,pierce,crit,ownFx){
   if(stopped(f)) return 0;   /* 정지 — 피해를 받지 않는다 (사용자 2026-10-07) */
   /* 치명적인 마법 — 기술 하나가 도는 동안, 그 대원이 적에게 주는 마법 피해 (기본 셈 기술은 runEffect 가 먼저 걸고 crit 을 넘긴다) */
@@ -51413,6 +51485,7 @@ function onKill(by,f,tag){
       say(`표식 편이 — ${nf.name}에게 표식`,"t2"); itMark(nf,by.tag.markChain) } }
   if(f&&!f.isPhantom&&!f.summoned&&!by.isMin) questProgress("kill",by.name);
   if(f&&!f.isPhantom&&run.bet&&f.name===run.bet.rival) questProgress("betRival",null);   /* 배당판 — 부정 행위 */
+  if(f&&!f.isPhantom&&!run.sandbox&&by&&!by.isMin) satanLanternKill(by);   /* 등롱 (사탄 전리품, 2026-11-11) */
   if(f&&!f.isPhantom&&!f.summoned&&!run.sandbox){ const p=itemBt(by,"mimicTooth");   /* 미믹의 이빨 (2026-10-05) */
     if(p&&Math.random()<p/100){ run.gold+=1; if(GOLDMEM!==null) GOLDMEM=run.gold|0;   /* 머리글의 금화 소리는 쉬고, 금화가 튀는 순간에 (mimicGoldFX) */
       fx({side:"foe",slot:f.slot,mimicGold:1,gap:80});   /* 쓰러진 그 적 위에서 */ say(`미믹의 이빨 — ${by.name} 금화 +1`,"t2") } }   /* 퀘스트 — 수락자가 직접 처치. 소환물은 안 센다 */
@@ -54656,6 +54729,7 @@ function hurtAlly(f,t,raw,label,el,evMsg,pierce,ownFx){   /* evMsg — 회피했
   /* 상처 — 치명타 · 오늘의 주인공 — 받는 피해 +N (광기의 투기장). 기술이 이미 치명타로 셈했으면 두 번 곱하지 않는다 (B._critHit) */
   { const r0=raw; raw=arenaHitRaw(t,raw,B&&B._critHit); if(raw>r0&&deb(t,"wound")>0&&!(B&&B._critHit)) critAlly(t) }
   { const pg=portalGuardOf(t); if(pg&&raw>0) raw=Math.max(0,raw-pg) }
+  raw=wingCut(t,raw);   /* 대악마의 날개죽지 — 받는 피해 절반 (incoming 의 hitOn 과 같은 자리) */
   /* 쇠약 (중급) — 감염된 적에게서 받는 피해가 준다 (2026-10-22) */
   if(t&&t.name==="인비디아"&&t.tag&&t.tag.invFrail&&raw>0&&f&&(f.infect||0)>0)
     raw=Math.max(0,raw-t.tag.invFrail);
@@ -55696,6 +55770,13 @@ function startMyTurn(){
     for(let i=0;i<v;i++){ const k=rnd(DEB_RAND);
       addDeb(f,k,1);
       say(`녹슨 그리퍼 — ${f.name}에게 ${DEBUFF[k].n} 1`,"t2") } });
+  /* 사탄의 손톱 (사탄 전리품, 2026-11-11) — 무작위 적 하나에게 처형 10. 차고 있는 수만큼 */
+  onField().forEach(h=>{ if(!h||h.hp<=0||h.isMin) return;
+    const v=itemBt(h,"satanClaw"); if(!v) return;
+    const L=B.foes.filter(x=>x.alive); if(!L.length) return;
+    const f=rnd(L); addDeb(f,"exec",v);
+    fx({side:"foe",slot:f.slot,ring:"#c7452f",txt:"처형 "+v,cls:"crit",gap:120});
+    say(`사탄의 손톱 — ${f.name}에게 처형 ${v}`,"t2") });
   rollIntents(); keepSel();
   say(run&&run.sandbox?`— ${B.turn}턴, 연습장 —`:`— ${B.turn}턴 시작 —`,"t1");
   /* 적 연출은 이미 다 흘렀다. 보호막이 걷히는 모습만 보고 알린다 */
@@ -55798,6 +55879,9 @@ function prideFall(h){
 }
 function battleWon(){
   fatBattleWon();   /* 피로도 — 전투 승리 40% −1~3 */
+  /* 피의 계약서 (사탄 전리품, 2026-11-11) — 전투 종료 시 피해 5. 겹쳐 받으면 그만큼. 체력 1 밑으로는 안 내린다 */
+  run.heroes.forEach(h=>{ const n=(h.tag&&h.tag.bloodPact)||0; if(!n||h.down||h.hp<=0) return;
+    const v=Math.min(5*n,Math.max(0,h.hp-1)); if(v>0){ h.hp-=v; say(`피의 계약서 — ${h.name} 피해 ${v}`,"t3") } });
   dispBattleEnd();  /* 성향 — 겸허 */
   { const v=coreFx("winMaxHp");   /* 생명의 세계핵 — 이기면 모든 대원 최대 체력 +1 */
     if(v) run.heroes.forEach(h=>addMaxHp(h,v,"전투 뒤")); }
@@ -55999,8 +56083,13 @@ const BL_REW={
  "호출용 호루라기":R("호출용 호루라기","상급","소환물 카드를 낸 후에, 그 소환물에게 공격력을 3 부여합니다.",
    h=>h.tag.whistleAtk=(h.tag.whistleAtk||0)+3),
  /* 콜로서스 (2026-10-23) — 판 전체에 걸린다 */
- "오염된 수목 성장제":R("오염된 수목 성장제","상급","이번 원정 동안 주둔지의 훈련장에서 획득할 수 있는 경험치량이 150 증가하지만, 훈련할 때마다 오염도를 30 얻습니다.",
-   h=>{ run.growTonic=(run.growTonic||0)+1 }),
+ "오염된 수목 성장제":R("오염된 수목 성장제","상급","이번 원정 동안 주둔지의 훈련장에서 획득할 수 있는 경험치량이 80 증가하지만, 훈련할 때마다 오염도를 30 얻습니다.",
+   h=>{ run.growTonic=(run.growTonic||0)+1 }),   /* 150 → 80 (사용자 2026-11-11) */
+ /* 사탄 (사용자 2026-11-11) */
+ "피의 계약서":R("피의 계약서","상급","최대 체력이 80 증가합니다. 전투 종료 시 피해를 5 받습니다.",
+   h=>{ addMaxHp(h,80,"피의 계약서"); h.tag.bloodPact=(h.tag.bloodPact||0)+1 }),
+ "사탄의 해골":R("사탄의 해골","상급","반복 퀘스트: 수락자가 적을 6회 처치할 때마다 금화 6개, 제련석 6개, 경험치 6을 얻습니다.",
+   h=>{ questAccept("사탄의 해골",h&&h.name) }),
  /* 폐기물 더미 (2026-10-23) */
  "용광로 잔해":R("용광로 잔해","상급","제련석을 30개 얻습니다.",
    h=>{ run.stone=(run.stone||0)+30 }),
@@ -56313,6 +56402,7 @@ function bagItems(bag){
       <span class="bgi-c">×${x.c}</span>
     </div>`).join("")+`</div>`;
 }
+let BAG_TAB="bag";   /* 가방 판의 탭 — bag 가방 · gear 장신구 정리 (사용자 2026-11-11) */
 function drawBag(app){
   run.bag=run.bag||[]; run.cards=run.cards||[];
   const wrap=el(`<div class="dexwrap bagframe"></div>`);
@@ -56320,6 +56410,15 @@ function drawBag(app){
 
   /* 머리 — 제목 + 제련석·금화 */
   wrap.appendChild(el(`<div class="mih bag-title">가 방</div>`));
+  /* 탭 — 가방 · 장신구 정리. 장신구 정리는 언제든 (사용자 2026-11-11) */
+  { const tb=el(`<div class="bagtabs"><button type="button" data-t="bag" class="${BAG_TAB==="bag"?"on":""}">가방</button><button type="button" data-t="gear" class="${BAG_TAB==="gear"?"on":""}">장신구 정리</button></div>`);
+    tb.querySelectorAll("button").forEach(b=>b.onclick=e=>{ e.stopPropagation(); if(BAG_TAB===b.dataset.t) return; BAG_TAB=b.dataset.t; run.gearPick=null; try{ SFX.play("click") }catch(_){} render() });
+    wrap.appendChild(tb) }
+  if(BAG_TAB==="gear"){
+    const g=el(`<div class="baggear"></div>`); wrap.appendChild(g); drawGear(g,1);
+    const foot=el(`<div class="mifoot bag-foot"></div>`), go=el(`<button class="go mgo">닫기</button>`);
+    go.onclick=()=>{ run.gearPick=null; view=run.bagBack||"map"; render() }; foot.appendChild(go); wrap.appendChild(foot);
+    return }
   wrap.appendChild(el(`<div class="mir2 bag-res">
     <span class="kw" data-kw="제련석" data-tip="주둔지 제련소에서 장신구 두 개를 합칠 때 씁니다.">${resIcon("stone")}<b>${run.stone||0}</b></span>
     <span class="kw" data-kw="금화" data-tip="상점에서 물건을 사고 팔 때 씁니다.">${resIcon("gold")}<b>${run.gold}</b></span>
@@ -56328,7 +56427,7 @@ function drawBag(app){
 
   /* 가방에 든 장신구 */
   const sec1=el(`<div class="misec"></div>`);
-  sec1.appendChild(el(`<div class="mil">장신구 <em style="font-style:normal;font-size:11px;color:#b9a888;margin-left:6px">주둔지에서 대원에게 채웁니다</em></div>`));
+  sec1.appendChild(el(`<div class="mil">장신구 <em style="font-style:normal;font-size:11px;color:#b9a888;margin-left:6px">「장신구 정리」에서 대원에게 채웁니다</em></div>`));
   if(!run.bag.length) sec1.appendChild(el(`<div class="hint" style="font-size:12px;padding:6px 0">비어 있습니다.</div>`));
   else sec1.appendChild(el(bagItems(run.bag)));
   wrap.appendChild(sec1);
