@@ -6668,7 +6668,10 @@ body.cheerin .hand{visibility:hidden}   /* 입장 글과 겹치지 않게 — �
 
 /* 성향 (2026-11-10) — 선 초록 · 악 붉은색, 작게 */
 .dispchips{display:inline-flex;flex-wrap:wrap;gap:3px;justify-content:center}
-.dchip{font-size:10.5px;line-height:1.3;padding:0 4px;border-radius:3px;background:rgba(10,8,6,.72);border:1px solid currentColor}
+.dchip{font-size:10.5px;line-height:1.3;padding:0;border:0;background:none;font-weight:700;text-shadow:0 1px 0 #000}   /* 테두리 · 바탕 없이 글자만 (사용자 2026-11-12) */
+.dchip.good:hover,.dchip.bad:hover{transform:none!important;box-shadow:none!important;border-color:transparent!important}   /* 상점 물건 .good:hover 가 번져 위로 떠올랐다 */
+.dchip{transition:none!important}
+.pkdisp .dchip{font-size:14px} .pkdisp .dispchips{gap:0 .6em}   /* 대원 고르기 — 성향 글자를 크게 (사용자 2026-11-12) */
 .dchip.good{color:#7fd39a}.dchip.bad{color:#ff7a68}
 .mcard>.dispchips.mcdisp{position:absolute;left:15%;top:24px;transform:translateX(-50%);z-index:3;max-width:44%}
 .bdisp{display:flex;margin:2px auto 0;max-width:150px}
@@ -20722,7 +20725,7 @@ function garActs(){
    {k:"shelter", fac:"scout-lodge", obj:"shelter-pack", n:"쉼터 배치", silver:2+((scoutTier().silver||{}).shelter||0), daily:1+(scoutTier().shelterDay||0),
     d:()=>`지도 위 무작위 위치에 ${garShelterTxt()}을 세웁니다.`, ok:()=>true, why:()=>""},
    {k:"smelt", fac:"forge", obj:"jewelry-anvil", n:"제련", silver:1, daily:0,
-    d:()=>`하루에 장신구를 ${garV("smeltDay","forge")}회 제련할 수 있습니다. (한 번에 은화 1)\n${smithLuckLine()}`, ok:()=>garUsed("smelt")<garV("smeltDay","forge"), why:()=>garUsed("smelt")<garV("smeltDay","forge")?"":"오늘 제련 횟수를 다 썼습니다."},
+    d:()=>`하루에 장신구를 ${garV("smeltDay","forge")}회 제련할 수 있습니다. (한 번에 은화 1)${smithLuckLine()?"\n"+smithLuckLine():""}`, ok:()=>garUsed("smelt")<garV("smeltDay","forge"), why:()=>garUsed("smelt")<garV("smeltDay","forge")?"":"오늘 제련 횟수를 다 썼습니다."},
    {k:"harden", fac:"forge", obj:"rare-setting-tools", n:"벼림", silver:1, daily:0, need:2, panel:1,
     d:()=>`제련석을 ${GAR_V.hardenStone}개 소모하여 희귀 장신구를 ${garV("hardenPct","forge")}% 확률로 벼립니다.`, ok:()=>true, why:()=>""},
    {k:"assay", fac:"forge", obj:"ore-assay-tools", n:"감정", silver:1, daily:1,
@@ -20928,11 +20931,12 @@ let GAR_NPC_AT=0, GAR_NPC_LAST=-1;
 let GAR_BARK=null;
 function garNpcTalk(lab,o,cx,top){
   const now=Date.now(); if(now-GAR_NPC_AT<500) return; GAR_NPC_AT=now;
-  if(o.key==="scout-captain"&&run.gar&&run.gar.scoutRes){ if(o.laugh) GAR_UI.laugh=performance.now(); try{ SFX.play("click") }catch(e){} GAR_UI.panel="scoutres"; render(); return }   /* 돌아온 정찰대 — 보상 창 */
+  const laugh=o.laugh&&!(o.key==="scout-captain"&&repGet("scout")<50);   /* 평판이 낮으면 웃지 않는다 (사용자 2026-11-12) */
+  if(o.key==="scout-captain"&&run.gar&&run.gar.scoutRes){ if(laugh) GAR_UI.laugh=performance.now(); try{ SFX.play("click") }catch(e){} GAR_UI.panel="scoutres"; render(); return }   /* 돌아온 정찰대 — 보상 창 */
   let i=Math.floor(Math.random()*GAR_NPC_SAY.length); if(i===GAR_NPC_LAST) i=(i+1)%GAR_NPC_SAY.length; GAR_NPC_LAST=i;
   lab.querySelectorAll(".garbark").forEach(x=>x.remove());
   lab.appendChild(el(`<div class="bark garbark" style="left:${cx}%;top:calc(${top}% - 2.4em)">${esc(GAR_NPC_SAY[i])}</div>`));
-  if(o.laugh) GAR_UI.laugh=performance.now();
+  if(laugh) GAR_UI.laugh=performance.now();
   try{ SFX.play("click") }catch(e){} }
 /* 웃음 프레임 — 1 2 3 4 1 (받은 시간 150 · 120 · 130 · 170) */
 function garLaughFrame(o){
@@ -28848,6 +28852,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 431, "v": "0.8", "d": "2026-11-12", "t": "성향 칩 테두리 없앰 · 평판 50 효과 없음 · 낮은 평판 웃음 없음", "big": 0},
  {"b": 430, "v": "0.8", "d": "2026-11-12", "t": "성향 9개 추가 — 낙천 의지 충만 아량 기개 분별력, 우울 의지 상실 허영심 소심", "big": 0},
  {"b": 429, "v": "0.8", "d": "2026-11-12", "t": "각인 — 마법력은 전투 마법서, 보호력은 전투 방패", "big": 0},
  {"b": 428, "v": "0.8", "d": "2026-11-12", "t": "평판 5·6단계 — 정찰대장 · 일꾼", "big": 0},
@@ -30471,7 +30476,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=430;
+const BUILD_NO=431;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -32397,8 +32402,8 @@ function pickPanel(nm){
       <span class="kw" data-kw="경험치 증가" data-tip="레벨마다 더 드는 경험치입니다">${icGrow("expLv")} ${needExp(2)-needExp(1)}</span>
       <span class="kw" data-kw="성장 체력" data-tip="레벨이 오를 때마다 늘어나는 최대 체력입니다">${icGrow("hpLv")} 성장 체력 ${d.hpLv}</span></div>
     ${d.focus?`<div class="pkpfocus">${richFocus(d.focus)}</div>`:""}
+    <div class="pkprow pkdisp"><span class="pkpl">성향</span>${dispChips(null,nm)}</div>
     <div class="pkprow"><span class="pkpl">지속 기술</span>${pas}</div>
-    <div class="pkprow"><span class="pkpl">성향</span>${dispChips(null,nm)}</div>
     <div class="pkprow sk">${sks}</div>
   </div>`);
 }
@@ -35831,7 +35836,8 @@ function smithLines(mood,jam){
 /* 브란의 소리 — 들어올 때 환영 · 하나 골랐을 때 생각 · 안 붙거나 돌이 모자라면 놀람 · 다 만들면 웃음.
    녹음이 없으면 조용하다 (상인 shopVoice 와 같은 꼴) */
 function smithVoice(kind){
-  const pool={enter:["브란 환영","브란 웃음"],done:["브란 웃음","브란 놀람"],bad:["브란 생각"]}[kind]||[];
+  const low=typeof repGet==="function"&&repGet("smith")<50;   /* 평판이 낮으면 웃지 않는다 (사용자 2026-11-12) */
+  const pool={enter:low?["브란 환영"]:["브란 환영","브란 웃음"],done:["브란 웃음","브란 놀람"],bad:["브란 생각"]}[kind]||[];
   const k=pool.filter(sfxHas); if(!k.length) return null;
   const pick=rnd(k); SFX.play(pick);
   /* 웃음소리가 나면 웃는 네 칸도 한 바퀴 (상인처럼 한 번만). 연출(forgeFX) 안에서는 제가 알아서 돌린다 */
@@ -35988,14 +35994,14 @@ function drawForge(app){
   { const bb=stage.querySelector(".fgbran");
     bb.onclick=()=>{ if(stage.classList.contains("forging")) return;
       const P=repMood("smith")==="mute"?smithLines("idle"):(SMITH_SAY.click&&SMITH_SAY.click.length)?SMITH_SAY.click:smithLines(run.smithMood).concat(smithLines("idle"));
-      if(smithVoice("enter")==="브란 웃음") setTimeout(smithLaughRun,0);
+      if(smithVoice("enter")==="브란 웃음") setTimeout(smithLaughRun,0);   /* 평판 50 아래면 웃음이 안 뽑힌다 (smithVoice) */
       npcTalk(stage,bb,rnd(P),L.say) } }
   { const jb=stage.querySelector(".fgjam"), bb=stage.querySelector(".fgbran");   /* 방해하기 — 70% 확률로 평판 −2 (2026-11-12) */
     jb.onclick=()=>{ if(stage.classList.contains("forging")) return; FORGE_BARK={line:smithLines("jam",smithJam()),t0:Date.now()}; render() } }
   bDex.onclick=()=>openDex("itemdex");
   bGear.onclick=()=>{ run.forgePick=[]; run.forgeOpen=null; run.gearPick=null; run.gearBack="forge"; view="gear"; render() };
   bOut.onclick=()=>{ forgeOut(); render() };   /* 나가는 셈은 규칙이 쥔다 (src/rules/forge-out.js) */
-  if(made) bGo.onmouseenter=()=>shopTipShow(stage,bGo,`<b>${esc(made.n)}</b><i>${esc(made.g)} 장신구, 제련석 ${made.cost}${made.gold?`, 금화 ${made.gold}`:""}</i><p>${rich(made.d)}</p>${(made.mix||made.lux||made.clean)?"":recipeHtml(made)}${smithLuckable(made)?`<p class="fgluck">${esc(smithLuckLine())}</p>`:""}`);
+  if(made) bGo.onmouseenter=()=>shopTipShow(stage,bGo,`<b>${esc(made.n)}</b><i>${esc(made.g)} 장신구, 제련석 ${made.cost}${made.gold?`, 금화 ${made.gold}`:""}</i><p>${rich(made.d)}</p>${(made.mix||made.lux||made.clean)?"":recipeHtml(made)}${smithLuckable(made)&&smithLuckLine()?`<p class="fgluck">${esc(smithLuckLine())}</p>`:""}`);
   bGo.onmouseleave=shopTipHide;
   bGo.onclick=()=>{ if(!ok) return; shopTipHide(); forgeRun(stage,pk,made) };
   /* 앞선 제련이 아직 손에 안 들어왔다 — 연출이 날아갔어도 여기서 받는다 (사용자 2026-10-15) */
@@ -36948,7 +36954,8 @@ const REP_SHOP_TIERS=[
   {lo:80, hi:89, min:8, disc:[30,50],q:[30,50],gUp:["중급"]},
   {lo:70, hi:79, min:7, disc:[20,40],q:[25,40],gUp:["하급","중급"]},
   {lo:60, hi:69, min:6, disc:[10,30],q:[20,30],gUp:["하급"]},
-  {lo:50, hi:59, min:5, disc:[5,20], q:[10,20]},
+  {lo:50, hi:50},   /* 딱 50 — 효과 없음 (사용자 2026-11-12) */
+  {lo:51, hi:59, min:5, disc:[5,20], q:[10,20]},
   {lo:40, hi:49, max:6, up:[5,10],  q:[-20,-10]},
   {lo:30, hi:39, max:5, up:[10,30], q:[-30,-20],gDn:["하급"]},
   {lo:20, hi:29, max:4, up:[20,40], q:[-40,-25],gDn:["하급","중급"]},
@@ -37042,7 +37049,8 @@ function repShopRobbed(){
 const REP_SCOUT_TIERS=[
  {lo:90,hi:100,p:30,q:1,shelterDay:1},
  {lo:70,hi:89,p:20,q:1},
- {lo:50,hi:69,p:10},
+ {lo:50,hi:50},   /* 딱 50 — 효과 없음 */
+ {lo:51,hi:69,p:10},
  {lo:30,hi:49,p:-10},
  {lo:10,hi:29,p:-20,q:-1,shelterDn:1,silver:{scout:1}},
  {lo:0,hi:9,p:-30,q:-1,shelterDn:1,shelterN:1,silver:{scout:1,shelter:1}}];
@@ -37054,7 +37062,8 @@ function scoutJam(){ const g=run.gar||{}; g.jam=(g.jam||0)+1; if(Math.random()<0
 const REP_WORKER_TIERS=[
  {lo:90,hi:100,cost:-20,time:-30},
  {lo:70,hi:89,cost:-10,time:-20},
- {lo:50,hi:69,cost:-5,time:-10},
+ {lo:50,hi:50,cost:0,time:0},   /* 딱 50 — 효과 없음 */
+ {lo:51,hi:69,cost:-5,time:-10},
  {lo:30,hi:49,cost:5,time:10},
  {lo:10,hi:29,cost:10,time:20},
  {lo:0,hi:9,cost:20,time:30}];
@@ -37071,8 +37080,8 @@ function repEffectLines(k){
     if(T.shelterDn) L.push(T.shelterN?"쉼터 배치 등급 감소, 한 곳만":"쉼터 배치 등급 감소");
     if(T.silver) L.push(`${Object.keys(T.silver).map(a=>a==="scout"?"정찰 보내기":"쉼터 배치").join(", ")} 은화 비용 +1`);
     return L }
-  if(k==="worker"){ const T=workerTier(); return [`강화 비용 ${Math.abs(T.cost)}% ${T.cost<0?"감소":"증가"}`,`공사 시간 ${Math.abs(T.time)}% ${T.time<0?"감소":"증가"}`] }
-  if(k==="smith"){ const T=smithTier(); return T.cut?[`제련석 비용 ${T.cut[0]}~${T.cut[1]} 감소`,`솜씨 발휘 확률 ${T.luck}%`]:[`제련석 비용 ${T.up[0]}~${T.up[1]} 증가`,`제련 실수 확률 ${T.slip}%`] }
+  if(k==="worker"){ const T=workerTier(); if(!T.cost&&!T.time) return []; return [`강화 비용 ${Math.abs(T.cost)}% ${T.cost<0?"감소":"증가"}`,`공사 시간 ${Math.abs(T.time)}% ${T.time<0?"감소":"증가"}`] }
+  if(k==="smith"){ const T=smithTier(); if(!T.cut&&!T.up) return []; return T.cut?[`제련석 비용 ${T.cut[0]}~${T.cut[1]} 감소`,`솜씨 발휘 확률 ${T.luck}%`]:[`제련석 비용 ${T.up[0]}~${T.up[1]} 증가`,`제련 실수 확률 ${T.slip}%`] }
   if(k!=="merchant"&&k!=="spirit"&&k!=="ghost") return [];
   const T=repTier(k), L=[], ship=k==="ghost";   /* 선박 상점 — 진열 수는 배 단계, 보상 등급은 물자라 안 쓴다 */
   if(T.min&&!ship) L.push(`진열 품목 ${T.min}개 이상`);
@@ -37150,7 +37159,8 @@ const REP_SMITH_TIERS=[
  {lo:80,hi:89,cut:[4,7],luck:30},
  {lo:70,hi:79,cut:[3,6],luck:25},
  {lo:60,hi:69,cut:[2,4],luck:20},
- {lo:50,hi:59,cut:[1,2],luck:15},
+ {lo:50,hi:50},   /* 딱 50 — 효과 없음 (사용자 2026-11-12) */
+ {lo:51,hi:59,cut:[1,2],luck:15},
  {lo:40,hi:49,up:[1,2],slip:15},
  {lo:30,hi:39,up:[1,3],slip:20},
  {lo:20,hi:29,up:[2,4],slip:25},
@@ -37162,11 +37172,11 @@ function smithTier(){ const v=repGet("smith"); return REP_SMITH_TIERS.find(t=>v>
 function smithCost(c){
   if(!(c>0)) return c;
   if(run.forgeU==null) run.forgeU=Math.random();
-  const T=smithTier(), r=T.cut||T.up, d=r[0]+Math.floor(run.forgeU*(r[1]-r[0]+1));
+  const T=smithTier(), r=T.cut||T.up; if(!r) return c; const d=r[0]+Math.floor(run.forgeU*(r[1]-r[0]+1));
   return T.cut?Math.max(0,c-d):c+d }
 /* 솜씨 발휘 · 제련 실수를 굴릴 수 있는 제련 — 일반 · 희귀가 나오는 조합법 (파편 섞기 · 본따기 틀 · 세공석은 아니다) */
 const smithLuckable=made=>!!(made&&!made.mix&&!made.copy&&!made.clean&&(made.g==="일반"||made.g==="희귀"));
-function smithLuckLine(){ const T=smithTier(); return T.luck?`제련공 브란의 솜씨 발휘 확률 ${T.luck}%`:`제련공 브란의 제련 실수 확률 ${T.slip}%` }
+function smithLuckLine(){ const T=smithTier(); return T.luck?`제련공 브란의 솜씨 발휘 확률 ${T.luck}%`:T.slip?`제련공 브란의 제련 실수 확률 ${T.slip}%`:"" }
 /* 제련으로 오르는 평판 — 서로 다른 파편 +1~4 · 파편 둘(일반) +2~5 · 일반 둘(희귀) +10~20 */
 function smithForgeGain(plan,a,b){
   if(!plan||plan.copy||plan.clean) return 0;
