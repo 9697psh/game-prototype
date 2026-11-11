@@ -20610,7 +20610,7 @@ const garLv=id=>{ const g=garEnsure(); return g?g.lv[id]||1:1 };
 const garV=(k,id)=>GAR_V[k][garLv(id)-1];
 const garUsed=k=>{ const g=garEnsure(); return (g&&g.used[k])||0 };
 /* 강화 */
-function garUpCost(id){ const l=garLv(id); return l>=GAR_MAX?0:GAR_UP[l-1] }
+function garUpCost(id){ const l=garLv(id); if(l>=GAR_MAX) return 0; const T=workerTier(); return Math.max(1,Math.round(GAR_UP[l-1]*(1+T.cost/100))) }   /* 일꾼 평판 ±% (2026-11-12) */
 function garUpOk(id){ const c=garUpCost(id); return c>0&&run.gold>=c }
 function garUp(id){ if(!garUpOk(id)) return false; run.gold-=garUpCost(id); run.gar.lv[id]=garLv(id)+1; return true }   /* 옛 즉시 강화 — 이제 화면은 공사(garBuildStart)를 쓴다 */
 /* ── 공사 (사용자 2026-11-10 밤) ──
@@ -20626,7 +20626,7 @@ const GAR_BUILD_H=[6,12,18,24];   /* 1→2 · 2→3 · 3→4 · 4→5 공사 시
 const garNow=()=>((run&&run.day)||1)*24+((run&&run.time)||0);
 const garBuildOf=id=>(run&&run.gar&&run.gar.build&&run.gar.build[id])||null;
 const garBuilding=id=>{ const b=garBuildOf(id); return !!(b&&b.state==="working") };
-const garBuildHours=id=>{ const l=garLv(id); return l>=GAR_MAX?0:GAR_BUILD_H[l-1] };
+const garBuildHours=id=>{ const l=garLv(id); if(l>=GAR_MAX) return 0; const T=workerTier(); return Math.max(1,Math.round(GAR_BUILD_H[l-1]*(1+T.time/100))) };   /* 일꾼 평판 ±% */
 const garBuildLeft=id=>{ const b=garBuildOf(id); return b&&b.state==="working"?Math.max(0,Math.round((b.endAt-garNow())*60)/60):0 };
 function garBuildWhy(id){
   if(garBuilding(id)) return "공사 중입니다.";
@@ -20636,13 +20636,17 @@ function garBuildWhy(id){
   return "" }
 function garBuildStart(id){
   const g=garEnsure(); if(!g||garBuildWhy(id)) return null;
-  const from=garLv(id), c=garUpCost(id), now=garNow();
+  const from=garLv(id), c=garUpCost(id), now=garNow(), hrs=garBuildHours(id);
   run.gold-=c;
-  (g.build=g.build||{})[id]={id:id, from:from, to:from+1, startAt:now, endAt:now+GAR_BUILD_H[from-1], state:"working", seen:0};
+  /* 일꾼 평판 — 맡기면 +3~6, 지난 48시간 일한 시간 + 이번 공사가 36시간을 넘으면 과로 −5~−10 (2026-11-12) */
+  const over=workerPast(now)+hrs>WORK_MAX, rd=repAdd("worker",over?-repRoll([5,10]):repRoll([3,6]),"",1);
+  (g.work=g.work||[]).push({s:now,e:now+hrs}); g.work=g.work.filter(w=>w.e>now-WORK_WIN);
+  (g.build=g.build||{})[id]={id:id, from:from, to:from+1, startAt:now, endAt:now+hrs, state:"working", seen:0, rep:rd, over:over?1:0};
   return g.build[id] }
 function garBuildTick(g){
   const B=g&&g.build; if(!B) return; const now=garNow();
-  for(const id in B){ const b=B[id]; if(b&&b.state==="working"&&now>=b.endAt){ b.state="done"; b.seen=0; g.lv[id]=Math.max(g.lv[id]||1,b.to) } } }
+  for(const id in B){ const b=B[id]; if(b&&b.state==="working"&&now>=b.endAt){ b.state="done"; b.seen=0; g.lv[id]=Math.max(g.lv[id]||1,b.to);
+    if(id==="scout-lodge") repAdd("scout",6,"정찰소 강화") } } }   /* 정찰대장 평판 — 정찰소가 올라가면 +6 (2026-11-12) */
 /* 완공했는데 아직 연출을 안 본 것 — 끝난 차례대로 */
 function garBuildUnseen(){ const B=run.gar&&run.gar.build; return B?Object.values(B).filter(b=>b&&b.state==="done"&&!b.seen).sort((a,b)=>a.endAt-b.endAt):[] }
 /* 일꾼이 지금 일하는 곳 — 가장 늦게 시작한 공사 (일꾼은 한 명이라 한 곳에만 서 있다. 공사 자체는 여럿이 함께 흐른다) */
@@ -20653,6 +20657,7 @@ function garBellAct(){ return (typeof run!=="undefined"&&run)?garV("bellAct","be
 function garNewDay(){
   const g=garEnsure(); if(!g) return;
   const s=garV("bellSilver","bell-tower"); run.silver=(run.silver||0)+s;
+  { const now=garNow(); if(!garWorkSite()&&!(g.work||[]).some(w=>w.e>now-24)) repAdd("worker",repRoll([1,2]),"휴식") }   /* 일꾼이 하루 쉬었다 (2026-11-12) */
   /* 정찰대가 돌아온다 — 밝혀지지 않은 구역 N 곳 + 보상 (확인은 정찰소에서) */
   if(g.scout){ const lv=g.scout.lv; g.scout=null; g.scoutRes=garScoutRoll(lv);
     try{ toast(`정찰대가 돌아왔습니다. 주둔지 정찰소에서 보상을 확인하세요. (은화 +${s})`) }catch(e){} }
@@ -20674,10 +20679,10 @@ function garActs(){
     d:()=>`모든 대원이 경험치를 ${garLv("training-hall")>=2?garV("trainExp","training-hall"):GAR_V.trainExp[1]} 얻습니다.`, ok:()=>true, why:()=>""},
    {k:"shelf", fac:"training-hall", obj:"combat-manual-shelf", n:"전투 기술 숙련", silver:0, daily:0, panel:1,
     d:()=>"숙련도로 대원의 기술을 강화하고, 3번 기술과 궁극기를 해제합니다.", ok:()=>true, why:()=>""},
-   {k:"scout", fac:"scout-lodge", obj:"scouting-map-table", n:"정찰 보내기", silver:1, daily:1,
+   {k:"scout", fac:"scout-lodge", obj:"scouting-map-table", n:"정찰 보내기", silver:1+((scoutTier().silver||{}).scout||0), daily:1,
     d:()=>`정찰을 보냅니다. 다음 날 밝혀지지 않은 구역을 ${garV("scoutCells","scout-lodge")}개 밝히고 정찰대가 획득한 보상을 확인할 수 있습니다.`,
     ok:()=>!run.gar.scout&&!run.gar.scoutRes, why:()=>run.gar.scoutRes?"정찰대장에게서 돌아온 정찰대의 보상을 먼저 받으세요.":run.gar.scout?"정찰대가 아직 돌아오지 않았습니다.":""},
-   {k:"shelter", fac:"scout-lodge", obj:"shelter-pack", n:"쉼터 배치", silver:2, daily:1,
+   {k:"shelter", fac:"scout-lodge", obj:"shelter-pack", n:"쉼터 배치", silver:2+((scoutTier().silver||{}).shelter||0), daily:1+(scoutTier().shelterDay||0),
     d:()=>`지도 위 무작위 위치에 ${garShelterTxt()}을 세웁니다.`, ok:()=>true, why:()=>""},
    {k:"smelt", fac:"forge", obj:"jewelry-anvil", n:"제련", silver:1, daily:0,
     d:()=>`하루에 장신구를 ${garV("smeltDay","forge")}회 제련할 수 있습니다. (한 번에 은화 1)\n${smithLuckLine()}`, ok:()=>garUsed("smelt")<garV("smeltDay","forge"), why:()=>garUsed("smelt")<garV("smeltDay","forge")?"":"오늘 제련 횟수를 다 썼습니다."},
@@ -20687,8 +20692,11 @@ function garActs(){
     d:()=>"광석을 감정합니다.", ok:()=>true, why:()=>""}
   ] }
 const GAR_RK={tent:"천막 쉼터",camp:"야영지 쉼터",fort:"요새 쉼터"};
-function garShelterTxt(){ const L=garV("shelter","scout-lodge");
-  return L[0]===L[1]?`${GAR_RK[L[0]]} 2곳`:`${GAR_RK[L[0]]}, ${GAR_RK[L[1]]} 1곳씩` }
+/* 세울 쉼터 — 정찰소 단계 표에 정찰대장 평판 (낮으면 한 단계 낮게 · 한 곳만, 2026-11-12) */
+function garShelterL(){ const T=scoutTier(), dn={fort:"camp",camp:"tent",tent:"tent"};
+  let L=garV("shelter","scout-lodge").slice(); if(T.shelterDn) L=L.map(k=>dn[k]); if(T.shelterN) L=L.slice(0,1); return L }
+function garShelterTxt(){ const L=garShelterL();
+  return L.length<2?`${GAR_RK[L[0]]} 1곳`:L[0]===L[1]?`${GAR_RK[L[0]]} 2곳`:`${GAR_RK[L[0]]}, ${GAR_RK[L[1]]} 1곳씩` }
 /* 불 꺼진 건물 (사용자 2026-11-12) — 은화가 모자라거나 오늘 한도를 다 써서 그 건물의 활동을 하나도 할 수 없다.
    단계가 모자란 활동도 못 하는 것으로 친다. 다른 까닭(쓰러진 대원이 없다 · 18시 전)은 불을 끄지 않는다.
    공사 중인 건물은 공사 그림이 따로라 끄지 않는다 */
@@ -20723,10 +20731,11 @@ function garDo(k,arg){
   if(k==="bell"){ pay(); const v=garV("bellCleanse","bell-tower"); addTaint(-v); if(!run.lost) nextDay(); return `종소리가 밤을 걷어 냅니다. 오염도가 ${v} 감소했습니다.` }
   if(k==="train"){ pay(); const v=garV("trainExp","training-hall"); run.pendingLv=run.pendingLv||[];
     run.heroes.forEach(h=>{ if(!h.down) addExp(h,v) }); return `모든 대원이 경험치를 ${v} 얻었습니다.` }
-  if(k==="scout"){ pay(); run.gar.scout={lv:garLv("scout-lodge"),day:run.day}; return "정찰대가 떠났습니다. 다음 날 돌아옵니다." }
-  if(k==="shelter"){ const L=garV("shelter","scout-lodge");
+  const sRep=()=>{ const d=repAdd("scout",repRoll([2,4]),"",1); return d?` (정찰대장 평판 ${d>0?"+":""}${d})`:"" };   /* 정찰소를 쓰면 +2~4 (2026-11-12) */
+  if(k==="scout"){ pay(); run.gar.scout={lv:garLv("scout-lodge"),day:run.day}; return "정찰대가 떠났습니다. 다음 날 돌아옵니다."+sRep() }
+  if(k==="shelter"){ const L=garShelterL();
     const put=L.reduce((s,rk)=>s+sprinkleCell("rest",1,{rk:rk}),0); if(!put) return "쉼터를 세울 빈 자리가 없습니다.";
-    pay(); return `${garShelterTxt()}을 세웠습니다.` }
+    pay(); return `${garShelterTxt()}을 세웠습니다.`+sRep() }
   if(k==="assay"){ pay(); return garAssay() }
   if(k==="smelt"){ /* 은화는 제련을 마칠 때(forgeTake) 낸다 — 들어가기만 하고 나오면 안 든다 */
     run.forgePick=[]; run.forgeMade=0; run.forgeGar=1; run.smithMood=null; try{ smithVoice("enter") }catch(e){} view="forge"; return "" }
@@ -20758,8 +20767,9 @@ const GAR_SCOUT=[
   [[.2,"상급",1,1],[.6,"중급",1,3],[1,"하급",1,5]]];
 function garScoutRoll(lv){
   const r=Math.random(), res=r<.05?"great":r<.55?"ok":"fail";
-  const F=GAR_V.scoutFail[lv-1], gold=garRr(F[0],F[1]), grades=[];
-  if(res!=="fail") GAR_SCOUT[lv-1].forEach(([p,g,a,b])=>{ if(Math.random()<p){ const n=garRr(a,b); for(let i=0;i<n;i++) grades.push(g) } });
+  const T=scoutTier(), pm=1+(T.p||0)/100;   /* 정찰대장 평판 — 확률 · 금화 ±% · 수량 ± (2026-11-12) */
+  const F=GAR_V.scoutFail[lv-1], gold=Math.max(1,Math.round(garRr(F[0],F[1])*pm)), grades=[];
+  if(res!=="fail") GAR_SCOUT[lv-1].forEach(([p,g,a,b])=>{ if(Math.random()<Math.min(1,p*pm)){ const n=Math.max(1,garRr(a,b)+(T.q||0)); for(let i=0;i<n;i++) grades.push(g) } });
   const mul=res==="great"?2:1;
   /* 밝히기 — 아직 안 보인 칸 N 곳 */
   let lit=0;
@@ -20878,6 +20888,7 @@ function garLoop(cv){
 /* 정찰대장 대사 — 시안 (사용자가 글을 주면 바꾼다) */
 const GAR_NPC_SAY=["큭큭… 길은 내가 먼저 봐 두지.","안개 너머가 궁금하지 않나? 은화만 있으면 된다.","내 정찰대는 돌아오지 않은 적이 없다. 큭큭."];
 let GAR_NPC_AT=0, GAR_NPC_LAST=-1;
+let GAR_BARK=null;
 function garNpcTalk(lab,o,cx,top){
   const now=Date.now(); if(now-GAR_NPC_AT<500) return; GAR_NPC_AT=now;
   if(o.key==="scout-captain"&&run.gar&&run.gar.scoutRes){ if(o.laugh) GAR_UI.laugh=performance.now(); try{ SFX.play("click") }catch(e){} GAR_UI.panel="scoutres"; render(); return }   /* 돌아온 정찰대 — 보상 창 */
@@ -20967,7 +20978,7 @@ function garSide(app){
       const B=garBuildStart(id); GAR_UI.confirm=null;
       if(B){ GAR_UI.wkT0=performance.now(); GAR_UI.wkLeave=GAR_UI.wkT0;
         try{ SFX.play(sfxHas("level")?"level":"click") }catch(e){}
-        toast(`${GAR_NAME[id]} 공사를 시작했습니다. ${hrsTxt(GAR_BUILD_H[B.from-1])} 뒤에 끝납니다.`); try{ saveGame() }catch(e){} }
+        toast(`${GAR_NAME[id]} 공사를 시작했습니다. ${hrsTxt(B.endAt-B.startAt)} 뒤에 끝납니다.${B.rep?` (일꾼 평판 ${B.rep>0?"+":""}${B.rep}${B.over?", 과로":""})`:""}`); try{ saveGame() }catch(e){} }
       render() };
     foot.appendChild(cf); b.appendChild(foot); return }
   const go=el(`<button type="button" class="go mgo">나가기</button>`);
@@ -21184,6 +21195,12 @@ function garDrawRoom(app){
     lab.appendChild(el(`<span class="garnpcname" style="left:${cx}%;top:${top}%">${esc(o.name||"")}</span>`));
     const hot=el(`<button type="button" class="garnpc kw" aria-label="${esc(o.name||"")}" ${o.key==="scout-captain"?repTidAttr("scout"):""} style="left:${(o.pos[0]+o.size[0]*.22)/764*100}%;top:${top}%;width:${o.size[0]*.56/764*100}%;height:${Math.max(10,(o.talkBottom||o.pos[1]+o.size[1])-o.pos[1]-6)/408*100}%"></button>`);
     hot.onclick=e=>{ e.stopPropagation(); if(!GAR_UI.busy) garNpcTalk(lab,o,cx,top) };
+    if(o.key==="scout-captain"){   /* 방해하기 — 70% 확률로 평판 −3 (2026-11-12). 말풍선은 다시 그려도 2.4초 남는다 */
+      const jb=el(`<button type="button" class="garlab garjam" style="left:${cx-16}%;top:${top+14}%">방해하기</button>`);
+      jb.onclick=e=>{ e.stopPropagation(); if(GAR_UI.busy) return; GAR_BARK={key:o.key,line:scoutJam(),t0:Date.now()}; try{ SFX.play("click") }catch(_){} render() };
+      lab.appendChild(jb);
+      if(GAR_BARK&&GAR_BARK.key===o.key&&Date.now()-GAR_BARK.t0<2400)
+        lab.appendChild(el(`<div class="bark garbark" style="left:${cx}%;top:calc(${top}% - 3.4em);animation-delay:-${Date.now()-GAR_BARK.t0}ms">${esc(GAR_BARK.line)}</div>`)) }
     hot.onpointerenter=()=>{ GAR_UI.hover=o.id }; hot.onpointerleave=()=>{ if(GAR_UI.hover===o.id) GAR_UI.hover=null };   /* 상점 주인처럼 금빛 (사용자 2026-11-11) */
     lab.appendChild(hot) });
   /* 캔버스 — 누름 · 올림 */
@@ -28794,6 +28811,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 428, "v": "0.8", "d": "2026-11-12", "t": "평판 5·6단계 — 정찰대장 · 일꾼", "big": 0},
  {"b": 427, "v": "0.8", "d": "2026-11-12", "t": "평판 4단계 — 제련공 브란 각인 · 솜씨 발휘 · 제련 실수 · 세공석", "big": 0},
  {"b": 426, "v": "0.8", "d": "2026-11-12", "t": "주둔지 — 쓸 수 없는 건물은 불을 끈다", "big": 0},
  {"b": 425, "v": "0.8", "d": "2026-11-12", "t": "평판 2·3단계 — 떠돌이 상인 방해하기 · 결투 · 정령 상인 · 유령 선장", "big": 0},
@@ -30414,7 +30432,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=427;
+const BUILD_NO=428;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -36979,8 +36997,42 @@ function repShopRobbed(){
   const sh=run.shop; if(!sh) return;
   sh.robbed=1; sh.goods.forEach(g=>{ if(g.left>0){ if(g.cost0==null) g.cost0=g.cost; g.cost=0; if(g.gcost!=null) g.gcost=0 } }) }
 
+/* ── 정찰대장 (사용자 2026-11-12) — 내림 조건이 적어 오름을 작게, 효과는 확률 · 수량을 % 로 (합연산).
+   p : 정찰 보상 줄마다 확률 · 금화 ±% · q : 보상 수량 ± · shelterDay : 쉼터 배치 하루 한도 + · shelterDn : 쉼터 한 단계 낮게
+   shelterN : 쉼터 한 곳만 · silver : 은화 비용 + {활동:개} (은화가 적으니 1 만) */
+const REP_SCOUT_TIERS=[
+ {lo:90,hi:100,p:30,q:1,shelterDay:1},
+ {lo:70,hi:89,p:20,q:1},
+ {lo:50,hi:69,p:10},
+ {lo:30,hi:49,p:-10},
+ {lo:10,hi:29,p:-20,q:-1,shelterDn:1,silver:{scout:1}},
+ {lo:0,hi:9,p:-30,q:-1,shelterDn:1,shelterN:1,silver:{scout:1,shelter:1}}];
+const scoutTier=()=>{ const v=repGet("scout"); return REP_SCOUT_TIERS.find(t=>v>=t.lo&&v<=t.hi)||REP_SCOUT_TIERS[2] };
+const SCOUT_JAM_SAY=["이봐, 지도 위에 손 올리지 마.","정찰 계획을 짜는 중이다. 방해하지 마라.","...한 번만 더 그러면 내쫓겠다."];
+function scoutJam(){ const g=run.gar||{}; g.jam=(g.jam||0)+1; if(Math.random()<0.7) repAdd("scout",-3,"방해");
+  return SCOUT_JAM_SAY[Math.min(SCOUT_JAM_SAY.length-1,g.jam-1)] }
+/* ── 일꾼 (사용자 2026-11-12) — 강화 비용 · 공사 시간 ±% */
+const REP_WORKER_TIERS=[
+ {lo:90,hi:100,cost:-20,time:-30},
+ {lo:70,hi:89,cost:-10,time:-20},
+ {lo:50,hi:69,cost:-5,time:-10},
+ {lo:30,hi:49,cost:5,time:10},
+ {lo:10,hi:29,cost:10,time:20},
+ {lo:0,hi:9,cost:20,time:30}];
+const workerTier=()=>{ const v=repGet("worker"); return REP_WORKER_TIERS.find(t=>v>=t.lo&&v<=t.hi)||REP_WORKER_TIERS[2] };
+/* 과로 — 공사를 맡길 때, 지난 48시간에 일한 시간 + 새 공사 시간이 36시간을 넘으면 */
+const WORK_WIN=48, WORK_MAX=36;
+function workerPast(now){ return ((run.gar&&run.gar.work)||[]).reduce((a,w)=>a+Math.max(0,Math.min(w.e,now)-Math.max(w.s,now-WORK_WIN)),0) }
 /* ── 설명 — 지금 단계의 효과 (화면이 그대로 보인다) ── */
 function repEffectLines(k){
+  if(k==="scout"){ const T=scoutTier(), L=[];
+    if(T.p) L.push(`정찰 보상 확률 ${Math.abs(T.p)}% ${T.p>0?"증가":"감소"}`);
+    if(T.q) L.push(`정찰 보상 수량 ${Math.abs(T.q)} ${T.q>0?"증가":"감소"}`);
+    if(T.shelterDay) L.push(`쉼터 배치 하루 한도 +${T.shelterDay}`);
+    if(T.shelterDn) L.push(T.shelterN?"쉼터 배치 등급 감소, 한 곳만":"쉼터 배치 등급 감소");
+    if(T.silver) L.push(`${Object.keys(T.silver).map(a=>a==="scout"?"정찰 보내기":"쉼터 배치").join(", ")} 은화 비용 +1`);
+    return L }
+  if(k==="worker"){ const T=workerTier(); return [`강화 비용 ${Math.abs(T.cost)}% ${T.cost<0?"감소":"증가"}`,`공사 시간 ${Math.abs(T.time)}% ${T.time<0?"감소":"증가"}`] }
   if(k==="smith"){ const T=smithTier(); return T.cut?[`제련석 비용 ${T.cut[0]}~${T.cut[1]} 감소`,`솜씨 발휘 확률 ${T.luck}%`]:[`제련석 비용 ${T.up[0]}~${T.up[1]} 증가`,`제련 실수 확률 ${T.slip}%`] }
   if(k!=="merchant"&&k!=="spirit"&&k!=="ghost") return [];
   const T=repTier(k), L=[], ship=k==="ghost";   /* 선박 상점 — 진열 수는 배 단계, 보상 등급은 물자라 안 쓴다 */
