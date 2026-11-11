@@ -7036,6 +7036,10 @@ body #app .bagtabs button:hover{color:#fff2cc}
 .reptip .repfx.none{color:#9a8a6a}
 
 .gtlabs .gtwkrep{position:absolute;z-index:4;pointer-events:none;background:rgba(14,11,8,.94);border:1px solid rgba(201,162,39,.55);padding:8px 10px;box-shadow:0 6px 18px rgba(0,0,0,.6)}
+
+/* 방해하기 · 상인 없는 가게 (사용자 2026-11-11) */
+#app .shopstage button.shjam{font-size:1.7cqw;color:#e8c9b0}
+#app .shopstage button.shjam:hover:not(:disabled){color:#ff9a7a}
 </style>
 </head>
 <body>
@@ -22578,6 +22582,17 @@ const FOE={
     {n:"뱉어내기",w:3,tg:"none",cond:"mateNoTag",selfHp:10,parasite:{who:"피 웅덩이",sum:1,n:"피 웅덩이"},d:"체력을 10 소모합니다. 다른 무작위 적에게 「죽음: 피 웅덩이를 소환합니다」 효과를 부여합니다."},
     {n:"막기",w:3,tg:"self",shield:6,d:"보호막을 6 얻습니다."}],
    hit:"갈고리 발톱"},
+ /* ── 떠돌이 상인 (사용자 2026-11-11) — 상점에서 「방해하기」를 거듭하면 싸운다. 정예 취급.
+    값은 막마다 (기름 항아리 화상 4/8/12 …) — merchantV 가 고른다. 기술마다의 셈은 arena.js 의 merchant* */
+ "떠돌이 상인":{hp:70,atk:4,mag:4,def:2,rng:9,exp:6,
+   el:"마법",
+   pas:[{k:"mPotion",get n(){return "비상 물약"},get d(){return `체력이 처음 40% 이하가 되면, 체력을 ${merchantV([20,30,40])}% 회복합니다. (1회)`}}],
+   sk:[
+    {n:"상점 물품 던지기",w:5,tg:"any",heroOnly:1,mThrow:1,d:"상점 물품을 무작위 대원에게 던집니다. 어떤 물품인지는 모릅니다."},
+    {n:"소형 방패",w:2,tg:"self",mShield:1,get d(){return `보호막을 ${merchantV([8,16,24])} 얻습니다.`}},
+    {n:"각성초 섭취",w:2,tg:"self",mHerb:1,d:"모든 능력치를 1 얻습니다."},
+    {n:"해독제 섭취",w:1,tg:"self",mCure:1,cond:"selfDeb",d:"부정적인 효과를 모두 제거합니다."}],
+   hit:"상점 물품 던지기"},
  "호객꾼":{hp:20,atk:3,def:3,rng:6,exp:2,
    el:"보호",
    pas:[{k:"welcome",v:3,n:"손님 맞이",d:"호객꾼이 3번 행동하면, 전투에서 퇴장하고 무작위 검투사를 전장에 호출합니다."}],
@@ -28738,6 +28753,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 425, "v": "0.8", "d": "2026-11-12", "t": "평판 2·3단계 — 떠돌이 상인 방해하기 · 결투 · 정령 상인 · 유령 선장", "big": 0},
  {"b": 424, "v": "0.8", "d": "2026-11-12", "t": "평판 1단계 — 떠돌이 상인 · 인물 평판 풍선 · 제련공 브란", "big": 0},
  {"b": 423, "v": "0.8", "d": "2026-11-12", "t": "재화 숫자 돌림 · 실험 책임자 카드 그림", "big": 0},
  {"b": 422, "v": "0.8", "d": "2026-11-11", "t": "카드 글 넘치면 크기 맞춤", "big": 0},
@@ -30355,7 +30371,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=424;
+const BUILD_NO=425;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -36455,6 +36471,10 @@ function backToMap(){
     /* 문이 닫히고 → 닫힌 채 깃발(coverIntroCheck) → 다음 막 (사용자 2026-11-05). 이미 닫혀 있으면 그대로 */
     if(typeof coverInto==="function"&&CV_OK>0&&!CV_MID) coverInto(nextField); else nextField();
     return }
+  if(run.shopRob&&run.shop){ run.shopRob=0; run.dun=null; repShopRobbed();   /* 떠돌이 상인을 이겼다 — 상인 없는 가게 (사용자 2026-11-11) */
+    const go=()=>{ view="shop"; run.shopSay=null; run.shopGreet=0; render() };
+    if(typeof coverInto==="function"&&CV_OK>0&&!CV_MID) coverInto(go); else go();
+    return }
   run.dun=null;
   if(run.pendingEnter){
     const e=run.pendingEnter; run.pendingEnter=null;
@@ -36808,9 +36828,10 @@ function repShopApply(goods,k){
   goods.forEach(g=>{
     if(g.cost>0&&(T.disc||T.up)){ const p=T.disc?-repRoll(T.disc):repRoll(T.up), c=Math.max(1,Math.round(g.cost*(1+p/100)));
       if(c!==g.cost){ g.cost0=g.cost; g.cost=c; g.repPct=p } }
+    if(g.gcost>0&&(T.disc||T.up)){ const p=T.disc?-repRoll(T.disc):repRoll(T.up); g.gcost=Math.max(1,Math.round(g.gcost*(1+p/100))) }   /* 유령 금화 값도 */
     if(T.q&&g.qty>0){ const p=repRoll(T.q.slice().sort((a,b)=>a-b)), q=Math.max(1,repRound(g.qty*(1+p/100))); g.qty=q; g.left=q } });
-  if(T.free&&goods.length){ const L=goods.filter(g=>g.cost>0); const g=L.length?rnd(L):null;
-    if(g){ if(g.cost0==null) g.cost0=g.cost; g.cost=0; g.repFree=1 } } }
+  if(T.free&&goods.length){ const L=goods.filter(g=>g.cost>0||g.gcost>0); const g=L.length?rnd(L):null;
+    if(g){ if(g.cost>0){ if(g.cost0==null) g.cost0=g.cost; g.cost=0 } if(g.gcost>0) g.gcost=0; g.repFree=1 } } }
 
 /* ── 떠돌이 상인 — 오르고 내리는 것 ── */
 /* 살 때 — 값(금화)에 따라 */
@@ -36826,6 +36847,15 @@ function repBuyGain(cost){
   else if(c<120) v=repRoll([7,10]);
   else v=repRoll([10,20]);
   return v }
+/* 정령 상인 · 유령 선장 — 살 때 (사용자 2026-11-11 「떠돌이 상인 참고해서」).
+   정령 상인 : 오염도로 치른 품목은 원래 금화 값(g.gold)으로 같은 표, 푸른 수정은 +1~2.
+   유령 선장 : 금화 값 그대로, 유령 금화는 한 닢을 금화 2 로 친다 */
+function repBuyAny(sh,g,gh,tp){
+  const k=repShopKey(sh); if(k==="merchant") return;
+  let v=0;
+  if(k==="spirit") v=g.k==="crystal"?repRoll([1,2]):repBuyGain(tp?(g.gold||0):(g.cost||0));
+  if(k==="ghost"){ if(g.k==="shipup") return; v=repBuyGain(gh?(g.gcost||0)*2:(g.cost||0)) }
+  if(v) repAdd(k,v,"구매") }
 /* 팔 때 — 등급에 따라 (벼려진 희귀는 따로) */
 function repSellGain(it){
   if(!it) return 0;
@@ -36838,17 +36868,47 @@ function repSellGain(it){
 /* 아무것도 안 사고 나갈 때 — 50% 확률로 −2~−10 */
 function repLeaveLoss(){ return Math.random()<.5?-repRoll([2,10]):0 }
 
+/* ── 방해하기 (사용자 2026-11-11) — 누를 때마다 대사, 70% 확률로 평판 −1.
+   떠돌이 상인은 정해 둔 횟수(3~5, 상점마다)를 넘기면 싸운다 → 막마다 평판 −30/−50/−70 · 정예 전투 · 이기면 상인 없는 가게 */
+const REP_JAM_SAY={
+  merchant:["이봐, 장사 방해하지 마시오.","손님, 그건 만지면 안 되오!","자꾸 이러면 곤란하오.","...마지막 경고요."],
+  spirit:["...하지 마!","싫어...!","정령들이... 화낸다..."],
+  ghost:["어이, 내 배에서 행패 부리지 마라.","흐흐, 겁이 없군.","바다에 던져 버릴까?"]};
+const REP_JAM_FIGHT="좋소, 그렇게 원한다면 직접 상대해 주지!";
+const REP_FIGHT_LOSS=[30,50,70];
+function repJam(){
+  const sh=run.shop; if(!sh||sh.robbed) return null;
+  const k=repShopKey(sh); sh.jam=(sh.jam||0)+1;
+  if(sh.jamMax==null) sh.jamMax=repRoll([3,5]);
+  if(Math.random()<0.7) repAdd(k,-1,"방해");
+  if(k==="merchant"&&sh.jam>=sh.jamMax) return {line:REP_JAM_FIGHT,fight:1};
+  const L=REP_JAM_SAY[k]||REP_JAM_SAY.merchant;
+  return {line:L[Math.min(L.length-1,sh.jam-1)]} }
+/* 싸움을 건다 — 평판을 깎고 정예 전투로. 이기면 backToMap 이 상인 없는 가게(run.shopRob)로 돌려보낸다 */
+function repMerchantFight(){
+  const sh=run.shop; if(!sh) return;
+  repAdd("merchant",-REP_FIGHT_LOSS[Math.min(2,run.field||0)],"상인과 결투");
+  run.shopRob=1;
+  const p=run.pos||{r:0,c:0};
+  startDungeon({t:"elite",waves:1,merchantFight:1},p.r,p.c);
+  run.dun.forceFoes=[["떠돌이 상인",3]];
+  startBattle("elite") }
+/* 이긴 뒤 — 상인은 없고 남은 물건은 모두 공짜 */
+function repShopRobbed(){
+  const sh=run.shop; if(!sh) return;
+  sh.robbed=1; sh.goods.forEach(g=>{ if(g.left>0){ if(g.cost0==null) g.cost0=g.cost; g.cost=0; if(g.gcost!=null) g.gcost=0 } }) }
+
 /* ── 설명 — 지금 단계의 효과 (화면이 그대로 보인다) ── */
 function repEffectLines(k){
-  if(k!=="merchant") return [];
-  const T=repTier(k), L=[];
-  if(T.min) L.push(`진열 품목 ${T.min}개 이상`);
-  if(T.max) L.push(`진열 품목 ${T.max}개 이하`);
+  if(k!=="merchant"&&k!=="spirit"&&k!=="ghost") return [];
+  const T=repTier(k), L=[], ship=k==="ghost";   /* 선박 상점 — 진열 수는 배 단계, 보상 등급은 물자라 안 쓴다 */
+  if(T.min&&!ship) L.push(`진열 품목 ${T.min}개 이상`);
+  if(T.max&&!ship) L.push(`진열 품목 ${T.max}개 이하`);
   if(T.disc) L.push(`품목 할인 ${T.disc[0]}~${T.disc[1]}%`);
   if(T.up) L.push(`품목 비용 ${T.up[0]}~${T.up[1]}% 증가`);
   if(T.q) L.push(T.q[0]>0?`품목 수량 ${T.q[0]}~${T.q[1]}% 증가`:`품목 수량 ${-T.q[1]}~${-T.q[0]}% 감소`);
-  if(T.gUp) L.push(`${T.gUp.join(", ")} 보상 등장 확률 증가`);
-  if(T.gDn) L.push(`${T.gDn.join(", ")} 보상 등장 확률 감소`);
+  if(T.gUp&&!ship) L.push(`${T.gUp.filter(g=>k!=="spirit"||g!=="상급").join(", ")||"중급"} 보상 등장 확률 증가`);
+  if(T.gDn&&!ship) L.push(`${T.gDn.filter(g=>k!=="spirit"||g!=="상급").join(", ")||"중급"} 보상 등장 확률 감소`);
   if(T.free) L.push("방문 시 무작위 품목 하나의 비용 0");
   return L }
 /* 기분 — 말투가 바뀐다. hi(70~) · ok(50~69) · lo(30~49) · mute(~29, 거의 말을 안 한다) */
@@ -36927,7 +36987,7 @@ function makeShop(){
   run.sellPick=null; run.sellOpen=0;
   const st=run.field;
   let pool=SHOP_STOCK.filter(g=>(g.stage||0)<=st&&(g.upto==null||st<=g.upto)).map(g=>Object.assign({},g));   /* 베껴 쓴다 — 평판이 뽑힐 무게를 고친다 */
-  const repK=run.shopKind==="dry"?null:"merchant";   /* 평판 (사용자 2026-11-11) — 떠돌이 상인의 단계 효과. 마른숲(정령 상인)은 따로 */
+  const repK=run.shopKind==="dry"?"spirit":"merchant";   /* 평판 (사용자 2026-11-11) — 떠돌이 상인 · 정령 상인(마른숲) */
   if(repK) pool.forEach(g=>{ if(g.k==="하급"||g.k==="중급"||g.k==="상급") g.w=(g.w==null?1:g.w)*repGradeW(repK,g.k) });
   /* 무기 상점 — 장신구과 제련에 관한 것만 판다 */
   if(run.shopKind==="weapon") pool=pool.filter(g=>["shard","normal","stone"].indexOf(g.k)>=0);
@@ -36950,7 +37010,7 @@ function makeShop(){
     goods.push({n:g.n,d:g.d,k:g.k,card:g.card,item:g.item,
                 cost:rr(pr), left:q0, qty:q0});
   }
-  if(repK) repShopApply(goods,repK);   /* 평판 — 할인 · 값 오름 · 수량 · 공짜 품목 */
+  if(repK==="merchant") repShopApply(goods,repK);   /* 평판 — 할인 · 값 오름 · 수량 · 공짜 품목 (마른숲은 오염도 값으로 바꾼 뒤에) */
   /* 생산라인 (폐기물 더미 전리품, 2026-10-23) — **다음에 들어선 상점 한 번**만 */
   if(run.lineShop){ run.lineShop=0;
     const g0=SHOP_STOCK.find(x=>x.k==="pickrare");
@@ -36973,7 +37033,8 @@ function makeShop(){
   obolExportGoods(goods);   /* 오볼 물자 수출 — 물자 카드 칸 (2026-10-31) */
   run.shop={npc:rnd(SHOP_NPC),goods:goods,sold:[],bought:0}; run.shopGreet=1;
   sellList().forEach(x=>sellPrice(x.it));   /* 들어선 그때 가진 것의 파는 값을 정해 둔다 */
-  if(run.shopKind==="dry") dryShop(run.shop);
+  if(run.shopKind==="dry"){ dryShop(run.shop); repShopApply(run.shop.goods,"spirit");
+    if((run.taint||0)>=50&&Math.random()<0.5) repAdd("spirit",-repRoll([1,3]),"오염된 손님") }
 }
 /* 마른숲 상점 (사용자 2026-10-01) — 금화 대신 오염도로 값을 치른다. 대신 물건마다 수량은 1~2개
    (처음엔 '가게 전체에서 1~2개' 로 읽었다 — 사용자: 수량이 남았는데 왜 못 사나 → 물건마다 수량으로 고침).
@@ -37223,6 +37284,7 @@ function makeShipShop(){
   { const gi=pool.findIndex(x=>x.k==="ghost"); if(gi>=0&&Math.random()<0.8){ const g=pool.splice(gi,1)[0], q0=rr(g.q); goods.push(oneCoin(Object.assign({},g,{left:q0,qty:q0}))) } }
   while(goods.length<lv+2&&pool.length){ const g=pool.splice(Math.floor(Math.random()*pool.length),1)[0];
     const q0=rr(g.q); goods.push(oneCoin(Object.assign({},g,{left:q0,qty:q0}))) }
+  if(typeof repShopApply==="function") repShopApply(goods.filter(g=>g.k!=="shipup"&&g.k!=="cargoup"),"ghost");   /* 평판 — 그날 진열이 설 때 한 번 (2026-11-11) */
   shipFixed(goods);
   run.ship.goods=goods; run.ship.day=run.day;
 }
@@ -37258,7 +37320,7 @@ function shipOpen(){
 function shipBought(g){
   if(g.k==="ghost"){ obolGhost(1); return true }
   if(g.k==="supply"){ (run.cargo=run.cargo||[]).push({n:g.sup,lv:g.lv}); if(typeof dexSee==="function") dexSee("card",g.n); toast(`${g.n} — 오볼의 짐칸에 실었습니다. (${run.cargo.length}/${cargoMax()})`); return true }
-  if(g.k==="shipup"){ obolShipUp(1); return true }
+  if(g.k==="shipup"){ obolShipUp(1); if(typeof repAdd==="function") repAdd("ghost",2*((run.ship&&run.ship.lv)||1),"선박 강화"); return true }   /* 평판 — 강화한 단계 × 2 (2026-11-11) */
   if(g.k==="cargoup"){ run.cargoMax=cargoMax()+CARGO_UP; run.cargoUps=(run.cargoUps||0)+1;
     toast(`오볼의 짐칸이 ${run.cargoMax}칸이 되었습니다.`); return true }
   return false;
@@ -37269,7 +37331,7 @@ function pirateCall(){
   obolEnsure();
   const p=shipAt(); if(!p||!run.ship) return;   /* 오볼이 없거나 배가 없으면 도망으로 끝 (fleeBattle 이 지도를 그렸다) */
   leaveVisited(); run.pos={r:p.r,c:p.c}; if(typeof fogLift==="function") fogLift(p.r,p.c);
-  run.here={r:p.r,c:p.c}; shipOpen(); view="shop"; render();
+  run.here={r:p.r,c:p.c}; shipOpen(); if(typeof repAdd==="function"&&Math.random()<0.5) repAdd("ghost",repRoll([1,3]),"해적의 부름"); view="shop"; render();
 }
 /* ── 궁극기 「난파」 — 적 전장에 체력 15 의 유령선 (소환물 판정, 사용자 2026-10-31) ──
    자리에 있던 적은 거리 1 안의 빈 칸으로 밀려난다. 못 움직이면(속박 · 고정 · 빈 칸 없음) 피해 15 + 보호력 × 5.
@@ -38050,7 +38112,7 @@ function arTrapShutFX(slot){
 /* 던진 것이 날아간다 — 돌은 높은 궤도, 단검은 낮은 궤도로 돌면서 (사용자 2026-11-03).
    o.arc 높은 궤도 · o.spin 돈다 · o.z 크기 배율(단검 피해가 오를 때마다 조금씩 커진다) */
 function arThrowFX(fromSlot,toSlot,key,o){
-  o=o||{}; const u=ICON_PNG[key]; if(!u) return;
+  o=o||{}; const u=o.src||ICON_PNG[key]; if(!u) return;   /* src — 그림 주소를 바로 (떠돌이 상인이 던지는 카드 그림) */
   const a=bodyPoint("foe",fromSlot)||ctrOf("foe",fromSlot), b=bodyPoint("mine",toSlot)||ctrOf("mine",toSlot); if(!a||!b) return;
   const ms=Math.round((o.arc?480:340)*SPD), S=Math.round(30*(o.z||1));
   const nd=spawn(`<img class="arthrow" src="${u}" alt=""${o.flip?' style="scale:-1 1"':''}>`,ms+80); if(!nd) return;   /* flip — 오른쪽을 보고 그려진 그림 (오염물) */
@@ -38974,9 +39036,10 @@ const SHOP_SAY={
 };
 /* 평판에 따른 말 — 떠돌이 상인만. 70 이상은 _hi, 30~49 는 _lo, 30 아래는 거의 말이 없다(mute) */
 function shopMoodLines(key){
-  const sh=run&&run.shop; if(!sh||sh.dry||sh.ship||typeof repMood!=="function") return SHOP_SAY[key];
-  const m=repMood("merchant");
+  const sh=run&&run.shop; if(!sh||typeof repMood!=="function") return SHOP_SAY[key];
+  const m=repMood(repShopKey(sh));
   if(m==="mute") return SHOP_SAY.mute;
+  if(sh.dry||sh.ship) return SHOP_SAY[key];
   if(m==="hi"&&SHOP_SAY[key+"_hi"]) return SHOP_SAY[key+"_hi"];
   if(m==="lo"&&SHOP_SAY[key+"_lo"]) return SHOP_SAY[key+"_lo"];
   return SHOP_SAY[key] }
@@ -39091,29 +39154,39 @@ function shopGoodTip(g){
     <em>${resIcon(tp?"taint":"gold")} ${(g.cost0!=null&&g.cost0!==g.cost)?`<s>${g.cost0}</s> `:""}${g.cost}${
       g.left<=0?", 품절":tp?(kills?", 오염도 100 에 닿아 살 수 없습니다":""):(run.gold<g.cost?`, 금화 ${g.cost-run.gold} 부족`:"")}</em>`;
 }
+let SHOP_BARK=null;
 function drawShop(app){
   const sh=run.shop;
   const own=ownedItems();
   /* 대사는 말풍선 — 들어올 때, 판매 띠를 열 때, 사고팔 때만 잠깐 (사용자 2026-10-05: 대원 대사처럼) */
-  const line=run.shopSay||(run.shopGreet?rnd((sh.dry&&(SHOP_SAY.dryGreet||[]).length)?SHOP_SAY.dryGreet:shopMoodLines("greet")):"")||"";
+  { const nl=run.shopSay||(run.shopGreet?rnd((sh.dry&&(SHOP_SAY.dryGreet||[]).length&&repMood("spirit")!=="mute")?SHOP_SAY.dryGreet:shopMoodLines("greet")):"")||"";
+    if(nl) SHOP_BARK={line:nl,t0:Date.now()} }
+  const barkK=SHOP_BARK&&Date.now()-SHOP_BARK.t0<2400&&!sh.robbed?SHOP_BARK:null, line=barkK?barkK.line:"";   /* 말풍선은 2.4초 — 그 사이 다시 그려도 이어진다 (2026-11-11) */
   const face=sh.ship?"npc_ghost_merchant":sh.dry?"npc_spirit_merchant":"npc_shop_merchant";
   run.shopSay=null; run.shopGreet=0;
   shopTipHide();
   const LY=shopLay();
   const stage=el(`<div class="shscene">
-    <div class="shmerch kw" style="${shopPct(LY.merch[0],LY.merch[1])};width:${LY.mw}cqw" data-kw="${esc(sh.npc)}" ${repTidAttr(repShopKey(sh))}><div class="npcface">${iconImg(face)||figure("도미니코")}</div></div>
+    ${sh.robbed?"":`<div class="shmerch kw" style="${shopPct(LY.merch[0],LY.merch[1])};width:${LY.mw}cqw" data-kw="${esc(sh.npc)}" ${repTidAttr(repShopKey(sh))}><div class="npcface">${iconImg(face)||figure("도미니코")}</div></div>`}
     ${LY.fg?`<div class="shfg" style="background-image:url('${LY.fg}')"></div>`:""}
     <div class="shsign" style="${shopPct(LY.sign[0],LY.sign[1])}">${sh.ship?`유령 선박 ${run.ship.lv}단계`:sh.dry?"마른숲 상점":run.shopKind==="weapon"?"무기 상점":"떠돌이 상점"}</div>
-    ${line?`<div class="bark shbark" style="${shopPct(LY.say[0],LY.say[1])}">${talk(line)}</div>`:""}
-    <button class="shsell${run.sellOpen?" on":""}" style="${shopPct(LY.sell[0],LY.sell[1])}">${run.sellOpen?"판매 그만두기":"판매하기"}<small>보유 장신구 ${own.length}개${sh.dry&&spiritOn()
-      ?`, 수정 ${run.crystal==null?CRYSTAL_MAX:run.crystal}/${CRYSTAL_MAX}`:""}</small></button>
+    ${line?`<div class="bark shbark" style="${shopPct(LY.say[0],LY.say[1])};animation-delay:-${Date.now()-barkK.t0}ms">${talk(line)}</div>`:""}
+    ${sh.robbed?"":`<button class="shsell${run.sellOpen?" on":""}" style="${shopPct(LY.sell[0],LY.sell[1])}">${run.sellOpen?"판매 그만두기":"판매하기"}<small>보유 장신구 ${own.length}개${sh.dry&&spiritOn()
+      ?`, 수정 ${run.crystal==null?CRYSTAL_MAX:run.crystal}/${CRYSTAL_MAX}`:""}</small></button>`}
     <button class="shout" style="${shopPct(LY.out[0],LY.out[1])}">상점 나가기</button>
+    ${sh.robbed?"":`<button class="shout shjam" style="${shopPct(LY.merch[0]-175,LY.merch[1]-70)}">방해하기</button>`}
   </div>`);
-  stage.querySelector(".shsell").onclick=()=>{ run.sellOpen=!run.sellOpen; run.sellPick=null; run.sellPage=0;
+  if(stage.querySelector(".shsell")) stage.querySelector(".shsell").onclick=()=>{   /* 상인 없는 가게에는 판매하기가 없다 */ run.sellOpen=!run.sellOpen; run.sellPick=null; run.sellPage=0;
     if(run.sellOpen) shopSay("sell"); render() };
   stage.querySelector(".shout").onclick=()=>{ shopTipHide(); leaveNode() };
+  /* 방해하기 (사용자 2026-11-11) — 대사만 (웃는 얼굴은 안 띄운다). 떠돌이 상인은 거듭하면 싸움 */
+  { const jb=stage.querySelector(".shjam"); if(jb) jb.onclick=()=>{ if(jb.disabled) return; const r=repJam(); if(!r) return;
+      try{ SFX.play("click") }catch(_){}
+      if(r.fight){ jb.disabled=true; run.shopSay=r.line; render();
+        setTimeout(()=>{ if(view!=="shop") return; shopTipHide(); const go=()=>repMerchantFight(); if(typeof coverInto==="function"&&CV_OK>0) coverInto(go); else go() },1400); return }
+      run.shopSay=r.line; render() } }
   { const m=stage.querySelector(".shmerch");
-    m.onclick=()=>{ const C=sh.dry?SHOP_SAY.dryClick:SHOP_SAY.click;
+    if(m) m.onclick=()=>{ const C=sh.dry?SHOP_SAY.dryClick:SHOP_SAY.click;
       const P=(C&&C.length)?C:sh.dry?SHOP_SAY.dryGreet:SHOP_SAY.greet.concat(SHOP_SAY.sell,SHOP_SAY.buy);
       shopVoice("enter"); npcTalk(stage,m,rnd(P),LY.say) } }
   /* 선반 */
@@ -39235,7 +39308,7 @@ function sellItem(i){
   else { const back=unequip(x.h,x.i,1); if(!back){ toast("벗길 수 없는 물건입니다."); return } }
   run.gold+=g;         /* 소리는 goldWatch 가 낸다 */
   if(typeof questProgress==="function") questProgress("sellItem",null);
-  if(run.shop&&repShopKey(run.shop)==="merchant"){ const v=repSellGain(x.it); if(v) repAdd("merchant",v,"판매") }   /* 평판 (사용자 2026-11-11) */
+  if(run.shop){ const v=repSellGain(x.it); if(v) repAdd(repShopKey(run.shop),v,"판매") }   /* 세 상인 모두 */   /* 평판 (사용자 2026-11-11) */
   if(x.it.n==="라이티늄 조약돌"&&typeof questProgress==="function") questProgress("sellPebble",null);   /* 일당 환전 (페블, 2026-11-02) */   /* 생산라인 (폐기물 더미 전리품, 2026-10-23) */
   toast(`${x.it.n}을 ${g} 금화에 팔았습니다.`);
   shopSay("sold"+(x.it.g==="파편"?"파편":x.it.g==="희귀"?"희귀":"일반"));   /* 팔 때는 늘 */
@@ -39253,7 +39326,8 @@ function buy(g,via){
     g.left--; addTaint(g.cost); if(run.lost) return }   /* 마른숲 상점 — 오염도로 치른다 (수정이 닳을 수 있다) */
   else { if(run.gold<g.cost) return;
     run.gold-=g.cost; g.left--; if(g.cost>0) questProgress("shopGold",null,g.cost)
-    if(sh&&repShopKey(sh)==="merchant"&&g.k!=="supply"){ const v=repBuyGain(g.cost); if(v) repAdd("merchant",v,"구매") } }   /* 평판 — 금화로 산 값에 따라 (사용자 2026-11-11) */   /* 소리는 goldWatch 가 낸다 · 배당판 검투 시장 감독 */
+    if(sh&&repShopKey(sh)==="merchant"&&g.k!=="supply"){ const v=repBuyGain(g.cost); if(v) repAdd("merchant",v,"구매") } }
+  if(sh) repBuyAny(sh,g,gh,tp);   /* 정령 상인 · 유령 선장 평판 (사용자 2026-11-11) */   /* 평판 — 금화로 산 값에 따라 (사용자 2026-11-11) */   /* 소리는 goldWatch 가 낸다 · 배당판 검투 시장 감독 */
   if(sh) sh.bought=1;
   if(sh&&(sh.ship||g.k==="supply")&&shipBought(g)){ if(g.k==="shipup"){ shopSay("shipUp"); shopLaugh() } else shopSay("buy",0.35); render(); return }   /* 강화 — 상인이 꼭 한마디 */   /* 선박 상점에서만 나는 품목 (물자는 물자 수출로 일반 상점에도) */
   shopSay("buy",0.35);          /* 살 때는 가끔 */
@@ -41377,8 +41451,8 @@ function evRow(c,act){
 }
 function leaveNode(){
   /* 평판 — 떠돌이 상인 가게에서 아무것도 안 사고 나가면 50% 확률로 −2~−10 (사용자 2026-11-11) */
-  if(typeof view!=="undefined"&&view==="shop"&&run.shop&&!run.shop.bought&&!run.shop.robbed&&typeof repShopKey==="function"&&repShopKey(run.shop)==="merchant"){
-    const v=repLeaveLoss(); if(v) repAdd("merchant",v,"그냥 나감") }
+  if(typeof view!=="undefined"&&view==="shop"&&run.shop&&!run.shop.bought&&!run.shop.robbed&&typeof repShopKey==="function"){
+    const v=repLeaveLoss(); if(v) repAdd(repShopKey(run.shop),v,"그냥 나감") }
   run.here=null; run.sellPick=null; run.sellOpen=0;
   /* 장신구 선택 띠를 열어 두고 나가면 — 돈은 이미 냈으니 무작위로 하나 받는다 (2026-10-14) */
   if(run.pickBar){ const L=ITEMS.filter(i=>i.g===run.pickBar.g);
@@ -43479,14 +43553,44 @@ Object.assign(SK_COND,{
   cheerAny:  f=>arenaOn()&&cheerNow()>0&&f.hp<f.maxHp,
   slaveRoom: f=>{ for(let s=1;s<=SLOTS;s++) if(!occAt(s)) return true; return false },
   noDuel:    f=>!(B&&B.duel)&&onField().filter(h=>h.hp>0&&!h.isMin).length>=1,
+  selfDeb:   f=>Object.keys(f.deb||{}).some(k=>f.deb[k]>0),   /* 떠돌이 상인 해독제 (2026-11-11) */
   hurtSelf:  f=>f.hp<f.maxHp
 });
 
 /* 기술에 붙은 녹음 — 「적 이름 기술 이름」 → 열쇠말 (풀려난 야수에게도 포효가 있어 이름까지 본다, 사용자 2026-11-04) */
 const AR_SK_SND={"나팔꾼 팡파르":"나팔꾼 팡파르","광기의 관중단 광란의 합창":"광기의 관중단 합창","피 웅덩이 피 빨기":"피 빨기","분노의 대군주 포효":"분노의 대군주 포효","분노의 대군주 날개 감싸기":"분노의 대군주 날개 감싸기",
   "거울 검투사 되비추기":"거울 되비추기","기침하는 관중 재채기":"역병 재채기","종지기 종 울리기":"종지기 종 울리기"};
+/* ═══ 떠돌이 상인 (사용자 2026-11-11) ═══ */
+const merchantV=a=>a[Math.min(2,Math.max(0,(typeof run!=="undefined"&&run&&run.field)||0))];
+/* 던지는 물품 — 막마다 값. 피해는 추가 능력치(불덩이 마법력 · 밧줄 공격력)만큼 더한다 */
+const MERCH_THROW=[
+  {n:"기름 항아리",fx:(f,t)=>{ const v=merchantV([4,8,12]); addDeb(t,"burn",v,f); return `화상 ${v}` }},
+  {n:"불덩이",fx:(f,t)=>{ const v=merchantV([8,16,24])+(f.mag||0); hurtAlly(f,t,v,"불덩이","마법"); return `마법 피해 ${v}` }},
+  {n:"밧줄",fx:(f,t)=>{ pullFront(f,t); const v=merchantV([10,20,30])+(f.atk||0); if(t.hp>0) hurtAlly(f,t,v,"밧줄","공격"); return `끌어와 공격 피해 ${v}` }},
+  {n:"섬광이 담긴 병",fx:(f,t)=>{ const v=merchantV([1,2,3]); addDeb(t,"atkDn",v,f); addDeb(t,"magDn",v,f); return `공격약화 · 마법약화 ${v}` }},
+  {n:"산성 병",fx:(f,t)=>{ t.shield=0; t.eshield=0; t.negShield=0; return "보호막 · 에너지 보호막 · 부정 보호막 제거" }}];
+function merchantSkPre(f,s){
+  if(s.mShield){ const v=merchantV([8,16,24]); const g=addShield(f,v); fx({side:"foe",slot:f.slot,s:"shield",ring:"#e0c85a",txt:"보호막 +"+g,cls:"shd",gap:120}); say(`${s.n} — ${f.name} 보호막 +${g}`,"t3"); return true }
+  if(s.mHerb){ f.atk+=1; f.atkUp=(f.atkUp||0)+1; f.mag=(f.mag||0)+1; f.magUp=(f.magUp||0)+1; f.def+=1; f.defUp=(f.defUp||0)+1; f.buffs=(f.buffs||0)+1;
+    fx({side:"foe",slot:f.slot,ring:"#7fd39a",txt:"모든 능력치 +1",cls:"buf",gap:120}); say(`${s.n} — ${f.name}의 모든 능력치 +1`,"t3"); return true }
+  if(s.mCure){ const n=Object.keys(f.deb||{}).filter(k=>f.deb[k]>0).length; f.deb={};
+    fx({side:"foe",slot:f.slot,ring:"#9cc6ee",txt:n?"정화":"정화할 것 없음",cls:"miss",gap:120}); say(`${s.n} — ${f.name}의 부정적인 효과가 모두 걷힙니다.`,"t3"); return true }
+  return false }
+function merchantSkHit(f,s,t){
+  if(!s.mThrow||!t||t.hp<=0) return;
+  const it=rnd(MERCH_THROW);
+  { const m=/src="([^"]+)"/.exec((typeof cardArt==="function"&&cardArt(it.n))||""); const src=m&&m[1];
+    if(src) fx({side:"mine",slot:t.slot,fn:()=>{ if(typeof arThrowFX==="function") arThrowFX(f.slot,t.slot,null,{arc:1,spin:1,src:src}) },gap:520}) }
+  const what=it.fx(f,t);
+  say(`${s.n} — ${it.n}! ${t.name}에게 ${what}`,"t3") }
+/* 비상 물약 — 체력이 처음 40% 이하가 되면 한 번 */
+function merchantPotion(f){
+  if(!f||f.name!=="떠돌이 상인"||f.potionUsed||!(f.hp>0)||f.hp>f.maxHp*0.4) return;
+  f.potionUsed=1; const v=Math.round(f.maxHp*merchantV([20,30,40])/100), g=healUp(f,v);
+  fx({side:"foe",slot:f.slot,s:"heal",txt:"+"+g,cls:"heal",gap:140}); say(`비상 물약 — ${f.name} 체력 +${g}`,"t3") }
 /* ── 적 기술 — skExec0 가 대상을 잡기 **전에** 부른다. 참을 돌려주면 그 기술은 여기서 끝난다 ── */
 function arenaSkPre(f,s,I){
+  if(f&&f.name==="떠돌이 상인"&&merchantSkPre(f,s)) return true;
   if(s.atkPose===undefined&&s.pose&&!s.dmg) fx({side:"foe",slot:f.slot,pose:s.pose,gap:0});
   if(f.name==="호객꾼"&&typeof foeBark==="function") foeBark(f,"atk");   /* 말이 많다 — 행동할 때마다 (사용자) */
   { const k=AR_SK_SND[f.name+" "+s.n]; if(k&&sfxHas(k)) fx({side:"foe",slot:f.slot,s:k,gap:0}) }
@@ -43574,6 +43678,7 @@ function arenaSkPre(f,s,I){
   return false }
 /* 맞은 대상마다 — 피해 · 상태 이상 다음 */
 function arenaSkHit(f,s,t){
+  merchantSkHit(f,s,t);   /* 떠돌이 상인 — 상점 물품 던지기 */
   if(s.maxDrain&&t&&t.hp>0){ const Q=s.maxDrain;
     const v=(typeof addMaxHp==="function"&&!t.isMin)?-addMaxHp(t,-Q.v,"피 빨기"):(t.maxHp=Math.max(1,t.maxHp-Q.v),t.hp=Math.min(t.hp,t.maxHp),Q.v);
     f.maxHp+=Q.gain; f.hp+=Q.gain;
@@ -51320,6 +51425,7 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
   if(B&&d>0) B._hpHit=(B._hpHit||0)+Math.min(d,Math.max(0,f.hp));   /* 흡수 — 체력에 닿은 몫 (2026-10-05) */
   f.hp-=d;
   arenaFoeHurt(f,amt);   /* 채점 · 관중의 촉망 · 비추기 · 도전장 */
+  if(d>0) merchantPotion(f);   /* 떠돌이 상인 — 비상 물약 (2026-11-11) */
   if(d>0&&f.obolShip) obolShipHit(f);   /* 약탈꾼 (오볼 중급) */
   if(d>0&&f.hp>0&&foePas(f,"shift")) setTimeout(()=>shiftIntent(f),0);   /* 균열 군체 — 변화 (2026-10-01) */
   if(crit){
