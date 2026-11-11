@@ -28811,6 +28811,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 429, "v": "0.8", "d": "2026-11-12", "t": "각인 — 마법력은 전투 마법서, 보호력은 전투 방패", "big": 0},
  {"b": 428, "v": "0.8", "d": "2026-11-12", "t": "평판 5·6단계 — 정찰대장 · 일꾼", "big": 0},
  {"b": 427, "v": "0.8", "d": "2026-11-12", "t": "평판 4단계 — 제련공 브란 각인 · 솜씨 발휘 · 제련 실수 · 세공석", "big": 0},
  {"b": 426, "v": "0.8", "d": "2026-11-12", "t": "주둔지 — 쓸 수 없는 건물은 불을 끈다", "big": 0},
@@ -30432,7 +30433,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=428;
+const BUILD_NO=429;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -37052,18 +37053,18 @@ function repMood(k){ const v=repGet(k); return v>=70?"hi":v>=50?"ok":v>=30?"lo":
    ⚠️ 표의 장신구(ITEMS)는 여럿이 같이 쓴다 — 새기기 전에 반드시 제 몫으로 떼어 낸다 (engOwn).
    ⚠️ 능력치는 끼우고 뺄 때(equipAt · unequip) itemStats 한 곳에서 센다. 받는 피해는 engTaken 한 곳 (hurtAlly · 예고 hitOn).
    범위 r 은 [파편, 일반, 희귀]. null 이면 그 등급에는 안 새겨진다.
-   sword — 일반은 「전투 검」에만, 희귀는 재료에 「전투 검」이 든 장신구에만 (노트 그대로) */
+   base — 일반은 그 장신구에만, 희귀는 재료에 그 장신구가 든 것에만 (공격력 전투 검 · 마법력 전투 마법서 · 보호력 전투 방패, 사용자 2026-11-12) */
 const ENG={
  "깨짐":     {neg:1, st:"maxHp", r:[[1,4],[3,10],[5,15]]},
- "무딤":     {neg:1, st:"atk",   r:[null,[1,2],[2,3]], sword:1},
- "약한 기운":{neg:1, st:"mag",   r:[null,[1,2],[2,3]], sword:1},
- "찢어짐":   {neg:1, st:"def",   r:[null,[1,2],[2,3]], sword:1},
+ "무딤":     {neg:1, st:"atk",   r:[null,[1,2],[2,3]], base:"전투 검"},
+ "약한 기운":{neg:1, st:"mag",   r:[null,[1,2],[2,3]], base:"전투 마법서"},
+ "찢어짐":   {neg:1, st:"def",   r:[null,[1,2],[2,3]], base:"전투 방패"},
  "더러움":   {neg:1, taint:1,    r:[[2,6],[4,12],[6,18]]},
  "조각남":   {neg:1, taken:1,    r:[[1,2],[2,4],[3,5]]},
  "단단함":   {st:"maxHp", r:[[1,4],[3,10],[5,15]]},
- "날카로움": {st:"atk",   r:[null,[1,2],[2,3]], sword:1},
- "강한 기운":{st:"mag",   r:[null,[1,2],[2,3]], sword:1},
- "질김":     {st:"def",   r:[null,[1,2],[2,3]], sword:1},
+ "날카로움": {st:"atk",   r:[null,[1,2],[2,3]], base:"전투 검"},
+ "강한 기운":{st:"mag",   r:[null,[1,2],[2,3]], base:"전투 마법서"},
+ "질김":     {st:"def",   r:[null,[1,2],[2,3]], base:"전투 방패"},
  "깨끗함":   {taint:1,    r:[[2,6],[4,12],[6,18]]},
  "푹신함":   {taken:1,    r:[[1,2],[2,4],[3,5]]}
 };
@@ -37078,10 +37079,10 @@ function engLine(e){ const D=ENG[e.k]; if(!D) return "";
 /* 제 몫으로 — 표의 장신구를 같이 쓰고 있으면 떼어 낸다 (등롱 satanLanternKill 과 같은 꼴) */
 function engOwn(it){ if(!it) return it; const c=JSON.parse(JSON.stringify(it)); c.own=1; return c }
 function engPut(it,k,v){ if(!it||!ENG[k]||!(v>0)) return; const L=it.eng=it.eng||[]; const x=L.find(e=>e.k===k); if(x) x.v+=v; else L.push({k:k,v:v}) }
-/* 그 장신구에 새겨질 수 있는 각인 — 등급 · 전투 검 조건 */
+/* 그 장신구에 새겨질 수 있는 각인 — 등급 · 바탕 장신구 조건 */
 function engCan(it,neg){
-  const gi=engGi(it), sword=gi===1?it.n==="전투 검":gi===2?(it.rc||[]).indexOf("전투 검")>=0:false;
-  return Object.keys(ENG).filter(k=>{ const D=ENG[k]; return !!D.neg===!!neg&&D.r[gi]&&(!D.sword||sword) }) }
+  const gi=engGi(it), on=b=>gi===1?it.n===b:gi===2?(it.rc||[]).indexOf(b)>=0:false;
+  return Object.keys(ENG).filter(k=>{ const D=ENG[k]; return !!D.neg===!!neg&&D.r[gi]&&(!D.base||on(D.base)) }) }
 /* 무작위로 n 개 새긴다 — 새긴 이름들을 돌려준다 */
 function engRoll(it,neg,n){
   const out=[]; for(let i=0;i<n;i++){ const L=engCan(it,neg); if(!L.length) break;
