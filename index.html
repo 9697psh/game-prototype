@@ -20676,6 +20676,19 @@ function garActs(){
 const GAR_RK={tent:"천막 쉼터",camp:"야영지 쉼터",fort:"요새 쉼터"};
 function garShelterTxt(){ const L=garV("shelter","scout-lodge");
   return L[0]===L[1]?`${GAR_RK[L[0]]} 2곳`:`${GAR_RK[L[0]]}, ${GAR_RK[L[1]]} 1곳씩` }
+/* 불 꺼진 건물 (사용자 2026-11-12) — 은화가 모자라거나 오늘 한도를 다 써서 그 건물의 활동을 하나도 할 수 없다.
+   단계가 모자란 활동도 못 하는 것으로 친다. 다른 까닭(쓰러진 대원이 없다 · 18시 전)은 불을 끄지 않는다.
+   공사 중인 건물은 공사 그림이 따로라 끄지 않는다 */
+function garOut(a){
+  if(a.need&&garLv(a.fac)<a.need) return true;
+  if(a.daily&&garUsed(a.k)>=a.daily) return true;
+  if(a.k==="smelt"&&garUsed("smelt")>=garV("smeltDay","forge")) return true;
+  return !!(a.silver&&(run.silver||0)<a.silver) }
+function garDark(fac){
+  if(!run||!run.gar) return false;
+  const b=run.gar.build&&run.gar.build[fac]; if(b&&b.state==="working") return false;
+  const A=garActs().filter(a=>a.fac===fac);
+  return A.length>0&&A.every(garOut) }
 /* 지금 할 수 있나 — 빈 글이면 된다 */
 function garWhy(a){
   garEnsure();
@@ -20965,6 +20978,7 @@ const GAR_T_SLOW=2.5, GAR_T_JIT=[1,1.17,.88,1.09,.95];
 const garTK=id=>{ const i=Math.max(0,GAR_IDS.indexOf(id)); return {m:GAR_T_SLOW*GAR_T_JIT[i%GAR_T_JIT.length],off:i*1777} };
 /* 건물 하나 — 대기 시트(본체 + 조명 + 연기) + 그 단계의 장면 트랙. dy · clip 은 강화 연출용 */
 function garTBuilding(ctx,id,L,now,light){
+  if(L.used&&garDark(id)) return garTUsed(ctx,id,L,light);   /* 쓸 수 있는 활동이 없다 — 불 꺼진 칸 (사용자 2026-11-12) */
   const I=L.idle, K=garTK(id), r=I.rects[Math.floor((now+K.off)/(I.ms*K.m))%I.rects.length];
   const g=light>.005?garTGlow(id,L):null;
   if(g){ ctx.save(); ctx.globalAlpha=light*.55; ctx.shadowColor="#ffcd70"; ctx.shadowBlur=14; ctx.drawImage(g,L.tl[0],L.tl[1]); ctx.shadowBlur=0;
@@ -20972,6 +20986,19 @@ function garTBuilding(ctx,id,L,now,light){
   garTSprite(ctx,I.src,r,I.tl[0],I.tl[1]);
   L.extra.forEach(k=>{ const T=GAR_TERRACE.tracks[k]; if(T) garTSprite(ctx,T.src,T.rects[Math.floor((now+K.off)/(T.ms*K.m))%T.rects.length],T.tl[0],T.tl[1]) });
   if(g){ ctx.save(); ctx.globalAlpha=light*.13; ctx.drawImage(g,L.tl[0],L.tl[1]); ctx.restore() } }
+/* 불 꺼진 건물 — 받은 그림의 used 칸 (조명 · 연기 없음). 금빛 윤곽은 그대로 */
+function garTUsed(ctx,id,L,light){
+  const g=light>.005?garTGlow(id,L):null;
+  if(g){ ctx.save(); ctx.globalAlpha=light*.55; ctx.shadowColor="#ffcd70"; ctx.shadowBlur=14; ctx.drawImage(g,L.tl[0],L.tl[1]); ctx.shadowBlur=0;
+    ctx.globalAlpha=light*.5; for(const [x,y] of [[-2,0],[2,0],[0,-2],[0,2]]) ctx.drawImage(g,L.tl[0]+x,L.tl[1]+y); ctx.restore() }
+  const im=garImg(L.used,0); if(im.complete&&im.width) ctx.drawImage(im,L.tl[0],L.tl[1]);
+  if(g){ ctx.save(); ctx.globalAlpha=light*.13; ctx.drawImage(g,L.tl[0],L.tl[1]); ctx.restore() } }
+/* 지역 소등 패치 — 불 꺼진 건물 밑 땅의 불빛을 걷는다. 건물보다 먼저 그린다 */
+function garTPatches(ctx,reg){
+  const P=GAR_TERRACE.patch, M=P&&P.regions[reg]; if(!M) return;
+  const im=garImg(P.src,0); if(!im.complete||!im.width) return;
+  for(const id in M){ if(!garDark(id)) continue; const q=M[id];
+    ctx.drawImage(im,q.frameRect[0],q.frameRect[1],q.frameRect[2],q.frameRect[3],q.sceneTopLeft[0],q.sceneTopLeft[1],q.frameRect[2],q.frameRect[3]) } }
 /* 강화 연출 — 시안 prototype/scene.js 의 시간 : 먼지 500 · 교체 760(아래부터 240ms 드러남) · 조명 1040~1640 · 이름 1350~2800 */
 const garEase=x=>1-Math.pow(1-Math.max(0,Math.min(1,x)),3), garCl=x=>Math.max(0,Math.min(1,x));
 function garTUp(ctx,U,now){
@@ -21098,6 +21125,7 @@ function garDrawTerrace(app){
     ctx.imageSmoothingEnabled=false; ctx.clearRect(0,0,W,H);
     garTSprite(ctx,run.night?T.sky.night:T.sky.day,[0,0,1280,480],0,0);
     { const im=garImg(T.regions[reg],0); if(im.complete&&im.width) ctx.drawImage(im,0,0) }
+    garTPatches(ctx,reg);
     garTOrder().forEach(id=>{ const k="t|"+id, tg=GAR_UI.hover===id?1:0, v=GAR_UI.glow[k]||0; GAR_UI.glow[k]=v+(tg-v)*(1-Math.exp(-dt/(tg?65:110)));
       if(U&&U.id===id){ if(garTUp(ctx,U,now)){ labShow(U.id,1); U=null } }
       else if(D&&D.id===id){ if(garTDone(ctx,D,now)){ labShow(D.id,1); D=null; GAR_UI.wkBack=now; if(garBuildUnseen().length) setTimeout(()=>{ if(view==="garrison"&&GAR_UI.mode==="terrace") render() },60) } }
@@ -28753,6 +28781,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 426, "v": "0.8", "d": "2026-11-12", "t": "주둔지 — 쓸 수 없는 건물은 불을 끈다", "big": 0},
  {"b": 425, "v": "0.8", "d": "2026-11-12", "t": "평판 2·3단계 — 떠돌이 상인 방해하기 · 결투 · 정령 상인 · 유령 선장", "big": 0},
  {"b": 424, "v": "0.8", "d": "2026-11-12", "t": "평판 1단계 — 떠돌이 상인 · 인물 평판 풍선 · 제련공 브란", "big": 0},
  {"b": 423, "v": "0.8", "d": "2026-11-12", "t": "재화 숫자 돌림 · 실험 책임자 카드 그림", "big": 0},
@@ -30371,7 +30400,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=425;
+const BUILD_NO=426;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
