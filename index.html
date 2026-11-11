@@ -7039,6 +7039,11 @@ body #app .bagtabs button:hover{color:#fff2cc}
 
 /* 방해하기 · 상인 없는 가게 (사용자 2026-11-11) */
 #app .shopstage button.shjam{font-size:1.7cqw;color:#e8c9b0}
+/* 각인 — 장신구 설명 아래 (사용자 2026-11-12) */
+.engl{margin-top:4px;line-height:1.45}
+.engl .eng-neg{color:#e07a6e}
+.engl .eng-pos{color:#7fd39a}
+.fgluck{color:#e8c98a}
 #app .shopstage button.shjam:hover:not(:disabled){color:#ff9a7a}
 </style>
 </head>
@@ -12626,8 +12631,10 @@ function forgeAnimFX(stage,made){
   TO.push(setTimeout(()=>{
     stage.querySelector(".fgplus").style.opacity="0";
     const f=el(`<div class="fgflash" style="${shopPct(L.plus[0],L.plus[1])}"></div>`); stage.appendChild(f); setTimeout(()=>f.remove(),900);
-    const o=el(`<div class="fgout" style="${shopPct(L.plus[0],L.plus[1])}"><div class="fgi">${rewardIcon(made)}</div><b class="gc${gcls(made.g)}">${esc(made.n)}</b></div>`);
-    stage.appendChild(o);
+    if(!made.fail){ const o=el(`<div class="fgout" style="${shopPct(L.plus[0],L.plus[1])}"><div class="fgi">${rewardIcon(made)}</div><b class="gc${gcls(made.g)}">${esc(made.n)}</b></div>`);
+      stage.appendChild(o) }
+    const lk=run.smithLuck, bb=stage.querySelector(".fgbran");   /* 솜씨 발휘 · 제련 실수 — 브란의 한마디 (2026-11-12) */
+    if(lk&&bb&&SMITH_SAY[lk.k]&&SMITH_SAY[lk.k].length) npcTalk(stage,bb,rnd(repMood("smith")==="mute"?["..."]:SMITH_SAY[lk.k]),L.say);
   },2340));
   TO.push(setTimeout(()=>SFX.stop("제련 부딪힘"),2340));
   [2340,2510,2680].forEach(t=>TO.push(setTimeout(()=>SFX.play("제련 완성"),t)));   /* 완성 — 깡깡깡 */
@@ -18514,6 +18521,9 @@ const ITEMS=[
    "이 장신구를 다른 장신구와 제련하면, 그 장신구를 둘 복사하여 얻습니다."),{loot:1}),
  Object.assign(IT("녹슨 그리퍼","특수",null,0,null,{gripDeb:1},
    "내 턴이 시작할 때, 가장 앞의 적에게 무작위 부정적인 효과를 1 부여합니다."),{loot:1}),
+ /* 세공석 (사용자 2026-11-12) — 장신구와 제련하면 각인을 모두 지운다 (src/rules/engrave.js forgeClean) */
+ IT("세공석","특수",null,0,null,{lapidary:1},
+   "이 장신구를 다른 장신구와 제련하면, 그 장신구의 모든 각인을 지웁니다.\n제련석 2/5/10개와 금화 5/20/40개가 필요합니다. (파편/일반/희귀)"),
  /* 우두머리 전리품 — 실험 책임자 (사용자 2026-10-23) */
  Object.assign(IT("투척용 스패너","특수",null,0,null,{wrench:5},
    "이 장신구를 장착한 대원이 기술을 사용한 후, 가장 먼 적에게 스패너를 던져 피해를 5 줍니다."),{loot:1}),
@@ -18608,6 +18618,9 @@ function itemLive(h,it,txt){
   if(it.bt.manaShield) t=t.replace("*( )*","*("+((h.def||0)*it.bt.manaShield)+")*");
   return t;
 }
+/* 각인 줄 — 나쁜 것은 붉게, 좋은 것은 푸르게 「이름: 설명」 (사용자 2026-11-12) */
+function engHtml(it){ const L=(it&&it.eng)||[]; if(!L.length) return "";
+  return `<div class="engl">${L.map(e=>`<div class="${ENG[e.k]&&ENG[e.k].neg?"eng-neg":"eng-pos"}">${esc(engLine(e))}</div>`).join("")}</div>` }
 function itemCard(it,own){
   if(!it) return "";
   const into=ITEMS.filter(x=>x.rc&&x.rc.indexOf(it.n)>=0);
@@ -18622,7 +18635,7 @@ function itemCard(it,own){
     <div>
       <div class="ic-n">${esc(it.n)}</div>
       <div class="ic-g">${esc(it.g)}</div>
-      <div class="ic-d">${rich(itemLive(own,it,it.d))}</div>
+      <div class="ic-d">${rich(itemLive(own,it,it.d))}</div>${engHtml(it)}
       ${it.rc?`<div class="ic-rowh">조합법, 제련석 ${it.cost}</div>
         <div class="ic-row">${rc}</div>`:""}
     </div>
@@ -19830,14 +19843,14 @@ function equipAt(h,it,at){
   SFX.play("equip");
   const i=Math.max(0,Math.min(at==null?h.items.length:at,h.items.length));
   h.items.splice(i,0,it);
-  if(it.st) for(const k in it.st){ h[k]+=it.st[k]; if(k==="maxHp") h.hp+=it.st[k] }
+  { const S=itemStats(it); for(const k in S){ h[k]+=S[k]; if(k==="maxHp") h.hp+=S[k] } }   /* 본디 st + 각인 (2026-11-12) */
 }
 /* 대원이 스스로 얻은 능력치 — 장착한 장신구가 더해 준 몫(it.st)을 뺀 것. 장신구를 빼도 남는 값 (오토 모드 전환, 사용자 2026-10-06) */
-function ownStat(h,k){ let v=(h&&h[k])||0; ((h&&h.items)||[]).forEach(it=>{ if(it&&it.st&&it.st[k]) v-=it.st[k] }); return v }
+function ownStat(h,k){ let v=(h&&h[k])||0; ((h&&h.items)||[]).forEach(it=>{ const s=it&&itemStats(it)[k]; if(s) v-=s }); return v }
 function unequip(h,idx,force){
   if(!force&&h.items[idx]&&h.items[idx].bind){ return null }
   const it=h.items.splice(idx,1)[0];
-  if(it&&it.st) for(const k in it.st){ h[k]-=it.st[k]; if(k==="maxHp") h.hp=Math.min(h.hp,h.maxHp) }
+  if(it){ const S=itemStats(it); for(const k in S){ h[k]-=S[k]; if(k==="maxHp") h.hp=Math.min(h.hp,h.maxHp) } }
   return it;
 }
 function itemBt(h,key){ return (h.items||[]).reduce((a,i)=>a+((i.bt&&i.bt[key])||0),0) }
@@ -20266,7 +20279,7 @@ function gearRow(h,fight){
     if(it){
       const fr=GRADE_FRAME[it.g]||GRADE_FRAME["일반"];
       const g={"파편":"g-frag","일반":"g-common","희귀":"g-rare","특수":"g-special","전설":"g-legend"}[it.g]||"g-common";   /* 등급마다 빛을 달리 (사용자 2026-09-29) */
-      out+='<span class="gs on kw '+g+(itemSpent(h,it,fight)?" spent":"")+'" data-item="'+esc(it.n)+'" data-ih="'+esc(h.name||"")+'" style="--fr:'+fr+'">'
+      out+='<span class="gs on kw '+g+(itemSpent(h,it,fight)?" spent":"")+'" data-item="'+esc(it.n)+'" data-ih="'+esc(h.name||"")+'" data-ii="'+i+'" style="--fr:'+fr+'">'
           +itemIcon(it)+'</span>';   /* data-ih — 설명 창이 「이 대원의」 수치를 채울 수 있게 (2026-10-12) */
     } else out+='<span class="gs"></span>';
   }
@@ -20667,7 +20680,7 @@ function garActs(){
    {k:"shelter", fac:"scout-lodge", obj:"shelter-pack", n:"쉼터 배치", silver:2, daily:1,
     d:()=>`지도 위 무작위 위치에 ${garShelterTxt()}을 세웁니다.`, ok:()=>true, why:()=>""},
    {k:"smelt", fac:"forge", obj:"jewelry-anvil", n:"제련", silver:1, daily:0,
-    d:()=>`하루에 장신구를 ${garV("smeltDay","forge")}회 제련할 수 있습니다. (한 번에 은화 1)`, ok:()=>garUsed("smelt")<garV("smeltDay","forge"), why:()=>garUsed("smelt")<garV("smeltDay","forge")?"":"오늘 제련 횟수를 다 썼습니다."},
+    d:()=>`하루에 장신구를 ${garV("smeltDay","forge")}회 제련할 수 있습니다. (한 번에 은화 1)\n${smithLuckLine()}`, ok:()=>garUsed("smelt")<garV("smeltDay","forge"), why:()=>garUsed("smelt")<garV("smeltDay","forge")?"":"오늘 제련 횟수를 다 썼습니다."},
    {k:"harden", fac:"forge", obj:"rare-setting-tools", n:"벼림", silver:1, daily:0, need:2, panel:1,
     d:()=>`제련석을 ${GAR_V.hardenStone}개 소모하여 희귀 장신구를 ${garV("hardenPct","forge")}% 확률로 벼립니다.`, ok:()=>true, why:()=>""},
    {k:"assay", fac:"forge", obj:"ore-assay-tools", n:"감정", silver:1, daily:1,
@@ -28781,6 +28794,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 427, "v": "0.8", "d": "2026-11-12", "t": "평판 4단계 — 제련공 브란 각인 · 솜씨 발휘 · 제련 실수 · 세공석", "big": 0},
  {"b": 426, "v": "0.8", "d": "2026-11-12", "t": "주둔지 — 쓸 수 없는 건물은 불을 끈다", "big": 0},
  {"b": 425, "v": "0.8", "d": "2026-11-12", "t": "평판 2·3단계 — 떠돌이 상인 방해하기 · 결투 · 정령 상인 · 유령 선장", "big": 0},
  {"b": 424, "v": "0.8", "d": "2026-11-12", "t": "평판 1단계 — 떠돌이 상인 · 인물 평판 풍선 · 제련공 브란", "big": 0},
@@ -30400,7 +30414,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=426;
+const BUILD_NO=427;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -35617,7 +35631,7 @@ function drawGear(app,inBag){   /* inBag — 지도 가방 판의 탭 안 (제�
     for(let i=0;i<itemMax(h);i++){
       const it=h.items[i];
       const cell=el(`<div class="gslot ${it?"kw":"empty"} ${sel2?"drop":""}"
-        ${it?`data-item="${esc(it.n)}" data-ih="${esc(h.name||"")}"`:""}>
+        ${it?`data-item="${esc(it.n)}" data-ih="${esc(h.name||"")}" data-ii="${i}"`:""}>
         ${it?`<div class="gi">${rewardIcon(it)}</div><b>${esc(it.n)}</b>`:`<span>빈 칸</span>`}</div>`);
       cell.onclick=()=>{
         if(sel2){ gearMove(sel2,{h:hi,i:i}); return }
@@ -35635,7 +35649,7 @@ function drawGear(app,inBag){   /* inBag — 지도 가방 판의 탭 안 (제�
   if(!run.bag.length) bag.appendChild(el(`<p class="hint">가방이 비어 있습니다.</p>`));
   run.bag.forEach((it,i)=>{
     const on=sel2&&sel2.from==="bag"&&sel2.i===i;
-    const c=el(`<div class="gslot kw ${on?"on":""}" data-item="${esc(it.n)}">
+    const c=el(`<div class="gslot kw ${on?"on":""}" data-item="${esc(it.n)}" data-ib="${i}">
       <div class="gi">${rewardIcon(it)}</div><b>${esc(it.n)}</b>
       <span class="gg">${esc(it.g)}</span></div>`);
     c.onclick=()=>{ run.gearPick=on?null:{from:"bag",i:i}; render() };
@@ -35738,8 +35752,25 @@ const SMITH_SAY={
   click:[],   /* 브란을 눌렀을 때 — 설명 고치기에서 적는다 */
   done:["가져가게. 두들긴 값은 했네.",
         "쓸 만하지? 다음엔 더 좋은 걸 물어 오게.",
-        "불이 잘 먹었어."]
+        "불이 잘 먹었어."],
+  /* 평판에 따라 (사용자 2026-11-12) — 70 이상 기분 좋게 · 30~49 퉁명하게 · 30 아래는 거의 말이 없다 */
+  idle_hi:["오, 자네 왔나! 오늘은 뭘 붙여 볼까?","자네 일이라면 화덕을 더 달궈 두지.","반갑네. 좋은 쇠를 가져왔길 바라네."],
+  idle_lo:["...뭘 붙일 건가. 빨리 고르게.","용건만 말하게.","불 꺼지기 전에 고르게."],
+  ok_hi:["좋아, 이건 내가 제대로 두들겨 주지!","자네 부탁이니 공을 들이겠네."],
+  ok_lo:["...붙이긴 하겠네.","시작하지. 말 걸지 말게."],
+  done_hi:["이번 건 손꼽을 물건이네!","자네라서 특별히 공을 들였지.","허허, 잘 나왔구먼. 가져가게."],
+  done_lo:["됐네. 가져가게.","두들겼으니 값은 했겠지."],
+  luck:["오늘은 손이 잘 풀리는구먼!","허허, 이건 내 솜씨가 좀 들어갔지."],
+  slip:["...이런, 손이 미끄러졌군.","...불이 고르지 않았어."],
+  fail:["...녹아 버렸네.","...이번엔 글렀군."]
 };
+/* 평판에 따른 말 — 그 형편의 기분 좋은 · 퉁명한 줄이 있으면 그것, 30 아래면 「...」 */
+function smithLines(mood,jam){
+  const m=typeof repMood==="function"?repMood("smith"):"ok";
+  if(m==="mute") return jam!=null?"...":["..."];
+  if(jam!=null) return jam;
+  const L=m==="hi"?SMITH_SAY[mood+"_hi"]:m==="lo"?SMITH_SAY[mood+"_lo"]:null;
+  return (L&&L.length)?L:(SMITH_SAY[mood]||SMITH_SAY.idle) }
 /* 브란의 소리 — 들어올 때 환영 · 하나 골랐을 때 생각 · 안 붙거나 돌이 모자라면 놀람 · 다 만들면 웃음.
    녹음이 없으면 조용하다 (상인 shopVoice 와 같은 꼴) */
 function smithVoice(kind){
@@ -35774,12 +35805,15 @@ function smithLaughRun(){
    그래야 '이것 둘이 있으니 붙일 수 있겠다' 가 눈에 바로 들어온다. */
 function forgeStock(){
   const out=[];
+  /* 세공석 (2026-11-12) — 세공석 자신, 그리고 세공석이 있으면 각인된 장신구는 등급과 상관없이 재료가 된다 */
+  const lap=run.heroes.some(h=>h.items.some(isLapidary))||(run.bag||[]).some(isLapidary);
+  const can=it=>it.g==="파편"||it.g==="일반"||isLapidary(it)||(lap&&it.eng&&it.eng.length);
   run.heroes.forEach((h,hi)=>h.items.forEach((it,ii)=>{
-    if(it.g!=="파편"&&it.g!=="일반") return;     /* 재료가 될 수 있는 등급만 */
+    if(!can(it)) return;     /* 재료가 될 수 있는 등급만 */
     out.push({key:hi+":"+ii, it:it, who:h.name});
   }));
   (run.bag||[]).forEach((it,bi)=>{
-    if(it.g!=="파편"&&it.g!=="일반") return;
+    if(!can(it)) return;
     out.push({key:"B:"+bi, it:it, who:"가방"});
   });
   /* ITEM_GRADES 는 낮은 것부터다 — 뒤집어 높은 것이 먼저 오게 한다 */
@@ -35823,6 +35857,7 @@ function forgePlan(){
   run.forgePick=[pk[0]?pk[0].key:null,pk[1]?pk[1].key:null];
   const both=pk[0]&&pk[1];
   let made=both?findRecipe(pk[0].it.n,pk[1].it.n):null;
+  if(both&&!made) made=forgeClean(pk[0].it,pk[1].it);   /* 세공석 (2026-11-12) */
   if(both&&!made) made=forgeCopy(pk[0].it,pk[1].it);   /* 본따기 틀 (2026-10-23) — 조합법보다 뒤, 섞기보다 앞 */
   if(both&&!made&&forgeMix(pk[0].it,pk[1].it)) made=FORGE_MIX;
   /* 사치품 — 파편 둘로 일반이 나올 자리를 희귀로 갈아 끼운다 (2026-10-14) */
@@ -35830,6 +35865,8 @@ function forgePlan(){
     made=Object.assign({},FORGE_LUX,{cost:made.cost});
   /* 장인의 눈 — 값을 깎은 사본을 쓴다. forgeRun 도 이 사본을 받으므로 값이 한 곳에서만 정해진다 */
   if(made&&forgeCut()) made=Object.assign({},made,{cost:Math.max(0,made.cost-forgeCut())});
+  /* 제련공 브란의 평판 — 제련석 값 ± (2026-11-12). 범위 안의 자리는 들어설 때 한 번 */
+  if(made&&made.cost>0) made=Object.assign({},made,{cost:smithCost(made.cost)});
   const stock=forgeStock();
   /* 형편 — 브란이 무슨 말을 할지, 아래 한 줄에 무엇을 적을지 */
   let note="", ok=false, mood="idle";
@@ -35837,6 +35874,7 @@ function forgePlan(){
   else if(!pk[0]&&!pk[1]) mood="idle";
   else if(!both){ mood="one" }
   else if(!made){ note="조합법이 없는 둘입니다."; mood="bad" }
+  else if(made.clean&&made.bare){ note="지울 각인이 없습니다."; mood="bad" }
   else if((run.stone||0)<made.cost){ note=`제련석 ${made.cost}개가 필요합니다. (지금 ${run.stone||0}개)`; mood="poor" }
   else if(made.gold&&run.gold<made.gold){ note=`금화 ${made.gold}개가 필요합니다. (지금 ${run.gold}개)`; mood="poor" }
   else { note=`${esc(made.n)}, 제련석 ${made.cost}${made.gold?`, 금화 ${made.gold}`:""}`; ok=true; mood="ok" }
@@ -35860,22 +35898,27 @@ function forgeOut(){
   if(run.forgeHold){ forgeTake(); return }   /* 아직 안 받은 것이 있으면 먼저 건넨다 */
   run.forgePick=[]; run.forgeOpen=null;
   const m=run.forgeMade; run.forgeMade=0;
+  if(run.here&&!m&&typeof repAdd==="function") repAdd("smith",-repRoll([5,10]),"그냥 나감");   /* 지도의 제련소에서 아무것도 안 만들고 (2026-11-12) */
+  run.forgeU=null; run.forgeJam=0;
   if(run.here){ leaveNode(); return }        /* 지도의 제련소에서 왔다 */
   if(run.forgeGar){ run.forgeGar=0; view="garrison"; return }   /* 주둔지 제련소 — 주둔지로 (2026-11-10) */
   if(!m) run.campDone=0;                     /* 아무것도 안 만들고 그만두면 오늘 방문을 돌려준다 */
   view="map"; run.mapSel=null;               /* 지도의 주둔지 판으로 */
 }
+let FORGE_BARK=null;
 function drawForge(app){
   const P=forgePlan();   /* 셈은 규칙 한 곳 (src/rules/forge-plan.js) */
   const pk=P.pk, made=P.made, stock=P.stock, note=P.note, ok=P.ok, mood=P.mood;
   const said=run.smithMood!==mood;              /* 형편이 바뀌었을 때만 말풍선 */
   smithMood(mood);
-  const line=said?rnd(SMITH_SAY[mood]||SMITH_SAY.idle):"";
+  { const nl=said?rnd(smithLines(mood)):""; if(nl&&!(FORGE_BARK&&Date.now()-FORGE_BARK.t0<2400)) FORGE_BARK={line:nl,t0:Date.now()} }
+  const fb=FORGE_BARK&&Date.now()-FORGE_BARK.t0<2400?FORGE_BARK:null, line=fb?fb.line:"";   /* 말풍선은 2.4초 — 그 사이 다시 그려도 이어진다 (상점 SHOP_BARK 와 같은 꼴, 2026-11-12) */
   const L=FORGE_LAY, bran=iconImg("npc_smith_bran")||nodeArt("forge");
   const stage=el(`<div class="shscene forgestage">
     <div class="fgbran kw" style="${shopPct(L.bran[0],L.bran[1])};width:${L.bw}cqw" data-kw="${esc(SMITH_NAME)}" ${repTidAttr("smith")}>${bran}</div>
+    <button class="shout shjam fgjam" style="${shopPct(L.bran[0]-175,L.bran[1]-70)}">방해하기</button>
     <div class="shfg" style="background-image:url('${L.fg}')"></div>
-    ${line?`<div class="bark shbark" style="${shopPct(L.say[0],L.say[1])}">${esc(line)}</div>`:""}
+    ${line?`<div class="bark shbark" style="${shopPct(L.say[0],L.say[1])};animation-delay:-${Date.now()-fb.t0}ms">${esc(line)}</div>`:""}
     <div class="fgres" style="${shopPct(L.res[0],L.res[1])}">${resIcon("gold")} <b data-roll="gold">${run.gold}</b><span>${resIcon("stone")} 제련석 <b data-roll="stone">${run.stone||0}</b></span></div>
     <span class="fgplus" style="${shopPct(L.plus[0],L.plus[1])}">+</span>
     <button class="shout fggo${ok?"":" off"}" style="${shopPct(L.go[0],L.go[1])}">제련 시작</button>
@@ -35884,16 +35927,18 @@ function drawForge(app){
     <button class="shout fgsm" style="${shopPct(L.gear[0],L.gear[1])}">장신구 정리</button>
     <button class="shout fgsm" style="${shopPct(L.out[0],L.out[1])}">${run.forgeMade?"제련소 나가기":"그만둔다"}</button>
   </div>`);
-  const [bGo,bDex,bGear,bOut]=stage.querySelectorAll("button");
+  const [bGo,bDex,bGear,bOut]=stage.querySelectorAll("button:not(.fgjam)");   /* 방해하기는 따로 */
   { const bb=stage.querySelector(".fgbran");
     bb.onclick=()=>{ if(stage.classList.contains("forging")) return;
-      const P=(SMITH_SAY.click&&SMITH_SAY.click.length)?SMITH_SAY.click:(SMITH_SAY[run.smithMood]||[]).concat(SMITH_SAY.idle);
+      const P=repMood("smith")==="mute"?smithLines("idle"):(SMITH_SAY.click&&SMITH_SAY.click.length)?SMITH_SAY.click:smithLines(run.smithMood).concat(smithLines("idle"));
       if(smithVoice("enter")==="브란 웃음") setTimeout(smithLaughRun,0);
       npcTalk(stage,bb,rnd(P),L.say) } }
+  { const jb=stage.querySelector(".fgjam"), bb=stage.querySelector(".fgbran");   /* 방해하기 — 70% 확률로 평판 −2 (2026-11-12) */
+    jb.onclick=()=>{ if(stage.classList.contains("forging")) return; FORGE_BARK={line:smithLines("jam",smithJam()),t0:Date.now()}; render() } }
   bDex.onclick=()=>openDex("itemdex");
   bGear.onclick=()=>{ run.forgePick=[]; run.forgeOpen=null; run.gearPick=null; run.gearBack="forge"; view="gear"; render() };
   bOut.onclick=()=>{ forgeOut(); render() };   /* 나가는 셈은 규칙이 쥔다 (src/rules/forge-out.js) */
-  if(made) bGo.onmouseenter=()=>shopTipShow(stage,bGo,`<b>${esc(made.n)}</b><i>${esc(made.g)} 장신구, 제련석 ${made.cost}${made.gold?`, 금화 ${made.gold}`:""}</i><p>${rich(made.d)}</p>${(made.mix||made.lux)?"":recipeHtml(made)}`);
+  if(made) bGo.onmouseenter=()=>shopTipShow(stage,bGo,`<b>${esc(made.n)}</b><i>${esc(made.g)} 장신구, 제련석 ${made.cost}${made.gold?`, 금화 ${made.gold}`:""}</i><p>${rich(made.d)}</p>${(made.mix||made.lux||made.clean)?"":recipeHtml(made)}${smithLuckable(made)?`<p class="fgluck">${esc(smithLuckLine())}</p>`:""}`);
   bGo.onmouseleave=shopTipHide;
   bGo.onclick=()=>{ if(!ok) return; shopTipHide(); forgeRun(stage,pk,made) };
   /* 앞선 제련이 아직 손에 안 들어왔다 — 연출이 날아갔어도 여기서 받는다 (사용자 2026-10-15) */
@@ -35901,7 +35946,7 @@ function drawForge(app){
     const hold=run.forgeHold;
     bGo.textContent="받는다"; bGo.classList.remove("off"); bGo.classList.add("take");
     bGo.onmouseenter=null; bGo.onclick=ev=>{ ev.stopPropagation(); forgeTake() };
-    stage.appendChild(el(`<div class="fgout" style="${shopPct(L.plus[0],L.plus[1])}"><div class="fgi">${rewardIcon(hold)}</div><b class="gc${gcls(hold.g)}">${esc(hold.n)}</b></div>`));
+    if(!hold.fail) stage.appendChild(el(`<div class="fgout" style="${shopPct(L.plus[0],L.plus[1])}"><div class="fgi">${rewardIcon(hold)}</div><b class="gc${gcls(hold.g)}">${esc(hold.n)}</b></div>`));
   }
   /* 재료 칸 둘 */
   [0,1].forEach(k=>{
@@ -35910,7 +35955,7 @@ function drawForge(app){
       ${e?`<b class="gc${gcls(e.it.g)}">${esc(e.it.n)}</b><div class="fgi">${rewardIcon(e.it)}</div><small>${esc(e.bag?"가방":e.h.name)}</small>`
          :`<span>재료 ${k+1}</span>`}</div>`);
     c.onclick=()=>{ run.forgeOpen=open?null:k; run.forgePage=0; render() };
-    if(e){ c.onmouseenter=()=>shopTipShow(stage,c,`<b>${esc(e.it.n)}</b><i>${esc(e.it.g)} 장신구, ${esc(e.bag?"가방":e.h.name+" 착용")}</i><p>${rich(e.it.d)}</p>${recipeHtml(e.it)}`);
+    if(e){ c.onmouseenter=()=>shopTipShow(stage,c,`<b>${esc(e.it.n)}</b><i>${esc(e.it.g)} 장신구, ${esc(e.bag?"가방":e.h.name+" 착용")}</i><p>${rich(e.it.d)}</p>${engHtml(e.it)}${recipeHtml(e.it)}`);
       c.onmouseleave=shopTipHide }
     stage.appendChild(c);
   });
@@ -35918,7 +35963,7 @@ function drawForge(app){
   if(run.forgeOpen!=null){
     const k=run.forgeOpen, other=pk[1-k];
     const groups=[]; stock.forEach(x=>{ if(other&&x.key===other.key) return;
-      let g=groups.find(y=>y.n===x.it.n&&y.it.g===x.it.g); if(!g){ g={n:x.it.n,it:x.it,list:[]}; groups.push(g) } g.list.push(x) });
+      let g=groups.find(y=>y.n===x.it.n&&y.it.g===x.it.g&&engSig(y.it)===engSig(x.it)); if(!g){ g={n:x.it.n,it:x.it,list:[]}; groups.push(g) } g.list.push(x) });
     const pages=Math.max(1,Math.ceil(groups.length/FORGE_PER));
     run.forgePage=Math.min(Math.max(0,run.forgePage||0),pages-1);
     const from=run.forgePage*FORGE_PER;
@@ -35935,13 +35980,13 @@ function drawForge(app){
     if(!groups.length) bl.appendChild(el(`<div class="shnone">제련할 수 있는 재료가 없습니다.</div>`));
     groups.slice(from,from+FORGE_PER).forEach(gr=>{
       const x=gr.list[0];
-      const mate=other&&(findRecipe(other.it.n,gr.it.n)||forgeMix(other.it,gr.it)), dull=other&&!mate;
+      const cl=other&&forgeClean(other.it,gr.it), mate=other&&(findRecipe(other.it.n,gr.it.n)||forgeMix(other.it,gr.it)||(cl&&!cl.bare)), dull=other&&!mate;
       const c=el(`<div class="shs${gcls(gr.it.g)}${mate?" mate":""}${dull?" dull":""}">
         <b class="shn">${esc(gr.n)}</b>
         <div class="shic">${rewardIcon(gr.it)}</div>
         <span class="shp"><b class="fgg gc${gcls(gr.it.g)}">${esc(gr.it.g)}</b> ${gr.list.length}</span>
       </div>`);
-      c.onmouseenter=()=>shopTipShow(stage,c.querySelector(".shic"),`<b>${esc(gr.n)}</b><i>${esc(gr.it.g)} 장신구${gr.list.length>1?`, ${gr.list.length}개`:`, ${esc(x.who)}`}</i><p>${rich(gr.it.d)}</p>${recipeHtml(gr.it)}`);
+      c.onmouseenter=()=>shopTipShow(stage,c.querySelector(".shic"),`<b>${esc(gr.n)}</b><i>${esc(gr.it.g)} 장신구${gr.list.length>1?`, ${gr.list.length}개`:`, ${esc(x.who)}`}</i><p>${rich(gr.it.d)}</p>${engHtml(gr.it)}${recipeHtml(gr.it)}`);
       c.onmouseleave=shopTipHide;
       c.onclick=()=>{ shopTipHide(); SFX.play("pick"); run.forgePick[k]=x.key; run.forgeOpen=null;
         if(!run.forgePick[1-k]) run.forgeOpen=1-k;   /* 다른 칸이 비었으면 바로 그 칸 띠를 연다 */
@@ -35979,20 +36024,29 @@ function forgeTake(){
   const owner=run.heroes[run.forgeOwner||0]||run.heroes[0];
   run.forgeHold=null; run.forgeOwner=0;
   garSmeltPaid();   /* 주둔지 제련소 — 은화 1 · 오늘 횟수 (2026-11-10) */
-  toast(`${made.n}${jo(made.n,"eul")} 제련했습니다.`);
+  /* 알림은 한 줄 — 솜씨 발휘 · 제련 실수 · 평판을 제련 결과와 함께 (알림이 서로를 덮는다) */
+  const luck=run.smithLuck; run.smithLuck=null;
+  const rg=run.forgeRepGain?repAdd("smith",run.forgeRepGain,"",1):0; run.forgeRepGain=0;
+  const head=luck?`${luck.k==="luck"?"제련공 브란의 솜씨 발휘!":"제련공 브란의 제련 실수!"} ${luck.lines.join(", ")} — `:"", tail=rg?` (제련공 브란 평판 ${rg>0?"+":""}${rg})`:"";
+  if(luck&&SMITH_SAY[luck.k]) FORGE_BARK={line:rnd(repMood("smith")==="mute"?["..."]:SMITH_SAY[luck.k]),t0:Date.now()};
+  if(made.fail){ run.forgeMade=1; toast(head.replace(/ — $/,"")+tail); render(); return true }   /* 제련 실패 — 재료와 값만 들었다 */
+  toast(`${head}${made.n}${jo(made.n,"eul")} 제련했습니다.${tail}`);
   itemGained(made); pending={stage:"hero",list:[],item:made,hero:owner,back:"forge"};   /* 만든 뒤에도 제련소에 머문다 (사용자 2026-10-01) */
   run.forgeMade=1;
   if(owner.items.length>=ITEM_MAX){ pending.stage="swap"; view="item"; render(); return true }
   equip(owner,made); itemDone(); return true;
 }
 function forgeRun(stage,pk,made){
-  const matA=pk[0].it, matB=pk[1].it;
+  const matA=pk[0].it, matB=pk[1].it, plan=made;
   run.stone-=made.cost;
-  if(made.mix){ run.gold-=made.gold||0; made=rnd(ITEMS.filter(i=>i.g==="파편")) }
+  if(made.clean){ run.gold-=made.gold||0; made=engClear(isLapidary(matA)?matB:matA) }   /* 세공석 — 각인을 다 지운 그 장신구 */
+  else if(made.mix){ run.gold-=made.gold||0; made=rnd(ITEMS.filter(i=>i.g==="파편")) }
   else if(made.lux){ made=rnd(ITEMS.filter(i=>i.g==="희귀")) }   /* 사치품 — 여기서 굴린다 */
   else if(made.copy){ const it=itemDef(made.copy);
     /* 둘 가운데 하나는 여느 길로 건네고(forgeHold), 나머지 하나는 받는 줄에 쌓는다 */
     if(it){ (run.after=run.after||[]).push({item:it}); made=it } }
+  if(!plan.clean&&!plan.copy) made=engMerge(made,matA,matB);   /* 두 재료의 각인이 합쳐진다 */
+  run.forgeRepGain=smithForgeGain(plan,matA,matB); made=smithLuck(plan,made,[matA,matB]);   /* 솜씨 발휘 · 제련 실수 (2026-11-12). 평판은 받을 때 — 알림이 연출 중에 화면을 다시 그린다 */
   const bags=pk.filter(p=>p.bag).sort((a,b)=>b.i-a.i);
   const eqs =pk.filter(p=>!p.bag).sort((a,b)=>b.i-a.i);
   bags.forEach(p=>run.bag.splice(p.i,1));
@@ -36819,11 +36873,11 @@ const REP_BASE=50;
 function repEnsure(){ if(typeof run==="undefined"||!run) return null; if(!run.rep) run.rep={}; return run.rep }
 function repGet(k){ const R=repEnsure(); return (R&&R[k]!=null)?R[k]:REP_BASE }
 /* 올리고 내린다 — 0~100 안에서. 실제로 바뀐 몫을 돌려준다. 시뮬 · 연습장은 건드리지 않는다 */
-function repAdd(k,v,why){
+function repAdd(k,v,why,quiet){   /* quiet — 알림은 부르는 쪽이 한 줄로 (제련) */
   if(!v||typeof run==="undefined"||!run||run.sandbox) return 0;
   const R=repEnsure(), o=repGet(k), n=Math.max(0,Math.min(100,o+v)); R[k]=n;
   const d=n-o;
-  if(d&&typeof toast==="function") toast(`${REP_NPC[k]||k} 평판 ${d>0?"+":""}${d} (${n})${why?" — "+why:""}`);
+  if(d&&!quiet&&typeof toast==="function") toast(`${REP_NPC[k]||k} 평판 ${d>0?"+":""}${d} (${n})${why?" — "+why:""}`);
   return d }
 const repRoll=a=>a[0]+Math.floor(Math.random()*(a[1]-a[0]+1));
 /* 상점 주인 — 어느 상점이 누구의 것인가 */
@@ -36919,9 +36973,7 @@ function repMerchantFight(){
   repAdd("merchant",-REP_FIGHT_LOSS[Math.min(2,run.field||0)],"상인과 결투");
   run.shopRob=1;
   const p=run.pos||{r:0,c:0};
-  startDungeon({t:"elite",waves:1,merchantFight:1},p.r,p.c);
-  run.dun.forceFoes=[["떠돌이 상인",3]];
-  startBattle("elite") }
+  startDungeon({t:"elite",waves:1,merchantFight:1,force:[["떠돌이 상인",3]]},p.r,p.c) }   /* startDungeon 이 전투를 연다 — 두 번 열지 않는다 */
 /* 이긴 뒤 — 상인은 없고 남은 물건은 모두 공짜 */
 function repShopRobbed(){
   const sh=run.shop; if(!sh) return;
@@ -36929,6 +36981,7 @@ function repShopRobbed(){
 
 /* ── 설명 — 지금 단계의 효과 (화면이 그대로 보인다) ── */
 function repEffectLines(k){
+  if(k==="smith"){ const T=smithTier(); return T.cut?[`제련석 비용 ${T.cut[0]}~${T.cut[1]} 감소`,`솜씨 발휘 확률 ${T.luck}%`]:[`제련석 비용 ${T.up[0]}~${T.up[1]} 증가`,`제련 실수 확률 ${T.slip}%`] }
   if(k!=="merchant"&&k!=="spirit"&&k!=="ghost") return [];
   const T=repTier(k), L=[], ship=k==="ghost";   /* 선박 상점 — 진열 수는 배 단계, 보상 등급은 물자라 안 쓴다 */
   if(T.min&&!ship) L.push(`진열 품목 ${T.min}개 이상`);
@@ -36942,6 +36995,128 @@ function repEffectLines(k){
   return L }
 /* 기분 — 말투가 바뀐다. hi(70~) · ok(50~69) · lo(30~49) · mute(~29, 거의 말을 안 한다) */
 function repMood(k){ const v=repGet(k); return v>=70?"hi":v>=50?"ok":v>=30?"lo":"mute" }
+/* ═══════════ 각인 (사용자 2026-11-12, 평판 4단계 「제련공 브란」) ═══════════
+   장신구 한 개(인스턴스)에 새겨진 좋은 · 나쁜 효과. it.eng = [{k:"깨짐",v:3}, …] — v 는 크기(늘 양수), 방향은 표가 정한다.
+   ⚠️ 표의 장신구(ITEMS)는 여럿이 같이 쓴다 — 새기기 전에 반드시 제 몫으로 떼어 낸다 (engOwn).
+   ⚠️ 능력치는 끼우고 뺄 때(equipAt · unequip) itemStats 한 곳에서 센다. 받는 피해는 engTaken 한 곳 (hurtAlly · 예고 hitOn).
+   범위 r 은 [파편, 일반, 희귀]. null 이면 그 등급에는 안 새겨진다.
+   sword — 일반은 「전투 검」에만, 희귀는 재료에 「전투 검」이 든 장신구에만 (노트 그대로) */
+const ENG={
+ "깨짐":     {neg:1, st:"maxHp", r:[[1,4],[3,10],[5,15]]},
+ "무딤":     {neg:1, st:"atk",   r:[null,[1,2],[2,3]], sword:1},
+ "약한 기운":{neg:1, st:"mag",   r:[null,[1,2],[2,3]], sword:1},
+ "찢어짐":   {neg:1, st:"def",   r:[null,[1,2],[2,3]], sword:1},
+ "더러움":   {neg:1, taint:1,    r:[[2,6],[4,12],[6,18]]},
+ "조각남":   {neg:1, taken:1,    r:[[1,2],[2,4],[3,5]]},
+ "단단함":   {st:"maxHp", r:[[1,4],[3,10],[5,15]]},
+ "날카로움": {st:"atk",   r:[null,[1,2],[2,3]], sword:1},
+ "강한 기운":{st:"mag",   r:[null,[1,2],[2,3]], sword:1},
+ "질김":     {st:"def",   r:[null,[1,2],[2,3]], sword:1},
+ "깨끗함":   {taint:1,    r:[[2,6],[4,12],[6,18]]},
+ "푹신함":   {taken:1,    r:[[1,2],[2,4],[3,5]]}
+};
+const ENG_STAT={maxHp:"최대 체력",atk:"공격력",mag:"마법력",def:"보호력"};
+const engGi=it=>({"파편":0,"일반":1}[it&&it.g]!=null?{"파편":0,"일반":1}[it.g]:2);
+/* 그 각인이 주는 값 — 부호까지. 능력치는 나쁘면 빼고, 오염도 · 받는 피해는 나쁘면 더한다 */
+function engSigned(e){ const D=ENG[e.k]; if(!D) return 0; return D.st?(D.neg?-e.v:e.v):(D.neg?e.v:-e.v) }
+function engLine(e){ const D=ENG[e.k]; if(!D) return "";
+  if(D.st){ const s=engSigned(e); return `${e.k}: ${ENG_STAT[D.st]} ${s>0?"+":""}${s}` }
+  if(D.taint) return `${e.k}: 전투 입장 시 오염도 ${e.v} ${D.neg?"증가":"감소"}`;
+  return `${e.k}: 받는 피해 ${e.v} ${D.neg?"증가":"감소"}` }
+/* 제 몫으로 — 표의 장신구를 같이 쓰고 있으면 떼어 낸다 (등롱 satanLanternKill 과 같은 꼴) */
+function engOwn(it){ if(!it) return it; const c=JSON.parse(JSON.stringify(it)); c.own=1; return c }
+function engPut(it,k,v){ if(!it||!ENG[k]||!(v>0)) return; const L=it.eng=it.eng||[]; const x=L.find(e=>e.k===k); if(x) x.v+=v; else L.push({k:k,v:v}) }
+/* 그 장신구에 새겨질 수 있는 각인 — 등급 · 전투 검 조건 */
+function engCan(it,neg){
+  const gi=engGi(it), sword=gi===1?it.n==="전투 검":gi===2?(it.rc||[]).indexOf("전투 검")>=0:false;
+  return Object.keys(ENG).filter(k=>{ const D=ENG[k]; return !!D.neg===!!neg&&D.r[gi]&&(!D.sword||sword) }) }
+/* 무작위로 n 개 새긴다 — 새긴 이름들을 돌려준다 */
+function engRoll(it,neg,n){
+  const out=[]; for(let i=0;i<n;i++){ const L=engCan(it,neg); if(!L.length) break;
+    const k=rnd(L), r=ENG[k].r[engGi(it)]; engPut(it,k,r[0]+Math.floor(Math.random()*(r[1]-r[0]+1))); out.push(k) }
+  return out }
+/* 제련 — 두 재료의 각인이 결과물에 합쳐진다 (같은 이름은 더한다) */
+function engMerge(made,a,b){
+  if(!((a&&a.eng&&a.eng.length)||(b&&b.eng&&b.eng.length))) return made;
+  const c=engOwn(made); [a,b].forEach(x=>((x&&x.eng)||[]).forEach(e=>engPut(c,e.k,e.v))); return c }
+function engClear(it){ const c=engOwn(it); delete c.eng; return c }
+const engSig=it=>((it&&it.eng)||[]).map(e=>e.k+e.v).join(",");
+/* 장신구가 주는 능력치 전부 — 본디 st + 각인. 끼우고 · 빼고 · 출처를 셀 때 이 함수 하나 */
+function itemStats(it){
+  const o=Object.assign({},(it&&it.st)||{});
+  ((it&&it.eng)||[]).forEach(e=>{ const D=ENG[e.k]; if(D&&D.st) o[D.st]=(o[D.st]||0)+engSigned(e) });
+  return o }
+/* 오염도 · 받는 피해 — 끼고 있는 장신구의 각인을 더한다 */
+const engSum=(h,key)=>((h&&h.items)||[]).reduce((a,it)=>a+((it&&it.eng)||[]).reduce((s,e)=>s+((ENG[e.k]&&ENG[e.k][key])?engSigned(e):0),0),0);
+function engTaken(t,raw){ if(!(raw>0)) return raw; const v=engSum(t,"taken"); return v?Math.max(0,raw+v):raw }
+/* 전투 입장 시 — 모든 대원의 각인 오염도 (첫 라운드 한 번, startBattle) */
+function engTaintIn(){ return (run.heroes||[]).reduce((a,h)=>a+engSum(h,"taint"),0) }
+
+/* ═══ 제련공 브란의 평판 — 제련석 값 · 솜씨 발휘 · 제련 실수 ═══ */
+const REP_SMITH_TIERS=[
+ {lo:100,hi:100,cut:[5,20],luck:50},
+ {lo:90,hi:99,cut:[5,10],luck:40},
+ {lo:80,hi:89,cut:[4,7],luck:30},
+ {lo:70,hi:79,cut:[3,6],luck:25},
+ {lo:60,hi:69,cut:[2,4],luck:20},
+ {lo:50,hi:59,cut:[1,2],luck:15},
+ {lo:40,hi:49,up:[1,2],slip:15},
+ {lo:30,hi:39,up:[1,3],slip:20},
+ {lo:20,hi:29,up:[2,4],slip:25},
+ {lo:10,hi:19,up:[3,5],slip:30},
+ {lo:1,hi:9,up:[4,6],slip:40},
+ {lo:0,hi:0,up:[5,10],slip:50}];
+function smithTier(){ const v=repGet("smith"); return REP_SMITH_TIERS.find(t=>v>=t.lo&&v<=t.hi)||REP_SMITH_TIERS[5] }
+/* 제련석 값 — 범위 안의 자리는 **제련소에 들어설 때** 한 번 정한다 (run.forgeU). 미리보기 · 실제 값이 같도록 */
+function smithCost(c){
+  if(!(c>0)) return c;
+  if(run.forgeU==null) run.forgeU=Math.random();
+  const T=smithTier(), r=T.cut||T.up, d=r[0]+Math.floor(run.forgeU*(r[1]-r[0]+1));
+  return T.cut?Math.max(0,c-d):c+d }
+/* 솜씨 발휘 · 제련 실수를 굴릴 수 있는 제련 — 일반 · 희귀가 나오는 조합법 (파편 섞기 · 본따기 틀 · 세공석은 아니다) */
+const smithLuckable=made=>!!(made&&!made.mix&&!made.copy&&!made.clean&&(made.g==="일반"||made.g==="희귀"));
+function smithLuckLine(){ const T=smithTier(); return T.luck?`제련공 브란의 솜씨 발휘 확률 ${T.luck}%`:`제련공 브란의 제련 실수 확률 ${T.slip}%` }
+/* 제련으로 오르는 평판 — 서로 다른 파편 +1~4 · 파편 둘(일반) +2~5 · 일반 둘(희귀) +10~20 */
+function smithForgeGain(plan,a,b){
+  if(!plan||plan.copy||plan.clean) return 0;
+  if(plan.mix) return repRoll([1,4]);
+  if(a.g==="파편"&&b.g==="파편") return repRoll([2,5]);
+  if(a.g==="일반"&&b.g==="일반") return repRoll([10,20]);
+  return 0 }
+/* 솜씨 발휘 · 제련 실수 — forgeRun 이 값을 다 치른 뒤 부른다. 결과물(made)을 돌려준다(각인이 새겨진 제 몫 · 실패면 {fail}).
+   돌려받는 재료는 받는 줄(run.after)에. 무엇이 일어났는지는 run.smithLuck 에 적어 둔다 (화면이 말풍선 · 알림으로) */
+const SMITH_LUCK_FAIL=0.3;   /* 제련 실수 가운데 실패의 몫 — 부정적 각인보다 드물게 */
+function smithLuck(plan,made,mats){
+  run.smithLuck=null;
+  if(!smithLuckable(plan)) return made;
+  const T=smithTier(), rare=plan.g==="희귀";
+  if(T.luck&&Math.random()*100<T.luck){
+    let fx=[0,1,2].filter(()=>Math.random()<.5); if(!fx.length) fx=[rnd([0,1,2])];
+    const L=[];
+    if(fx.indexOf(0)>=0){ const d=Math.min(plan.cost||0,repRoll(rare?[5,20]:[1,5])); if(d>0){ run.stone=(run.stone||0)+d; L.push(`제련석 ${d}개 할인`) } }
+    if(fx.indexOf(1)>=0){ made=engOwn(made); const ks=engRoll(made,0,repRoll([1,2])); if(ks.length) L.push(`긍정적 각인: ${ks.join(", ")}`) }
+    if(fx.indexOf(2)>=0){ const back=mats.slice().sort(()=>Math.random()-.5).slice(0,repRoll([1,2]));
+      back.forEach(m=>(run.after=run.after||[]).push({item:m})); if(back.length) L.push(`재료 ${back.map(m=>m.n).join(", ")} 돌려받기`) }
+    if(L.length) run.smithLuck={k:"luck",lines:L};
+    return made }
+  if(T.slip&&Math.random()*100<T.slip){
+    if(Math.random()<SMITH_LUCK_FAIL){ run.smithLuck={k:"fail",lines:["제련 실패"]}; return {fail:1,n:"제련 실패",g:plan.g} }
+    made=engOwn(made); const ks=engRoll(made,1,repRoll([1,2]));
+    if(ks.length) run.smithLuck={k:"slip",lines:[`부정적 각인: ${ks.join(", ")}`]};
+    return made }
+  return made }
+/* 세공석 — 장신구와 제련하면 모든 각인을 지운다. 제련석 2/5/10 · 금화 5/20/40 (파편/일반/희귀) */
+const isLapidary=it=>!!(it&&it.bt&&it.bt.lapidary);
+function forgeClean(a,b){
+  const t=isLapidary(a)?b:(isLapidary(b)?a:null);
+  if(!t||isLapidary(t)) return null;
+  const gi=Math.min(2,engGi(t));
+  return {n:t.n,g:t.g,cost:[2,5,10][gi],gold:[5,20,40][gi],clean:1,bare:!(t.eng&&t.eng.length),
+    d:`세공석 — ${t.n}의 모든 각인을 지웁니다.`} }
+/* 방해하기 — 70% 확률로 −2, 싸움은 없다 */
+const SMITH_JAM_SAY=["어이, 망치질하는 데 끼어들지 말게.","불똥 맞고 싶은가?","자꾸 이러면 화덕에 집어넣겠네."];
+function smithJam(){ run.forgeJam=(run.forgeJam||0)+1; if(Math.random()<0.7) repAdd("smith",-2,"방해");
+  return SMITH_JAM_SAY[Math.min(SMITH_JAM_SAY.length-1,run.forgeJam-1)] }
 const SHOP_STOCK=[
  {n:"빵",              d:"아군 대상의 체력을 2 회복시키는 카드",           p:[1,2],  q:[1,4], k:"card", card:"빵", s3p:[3,5]},   /* 3구역 값 올림 (사용자 2026-10-12) */
  {n:"소형 방패",        d:"아군 대원에게 보호막을 5 부여하는 카드",         p:[2,3],  q:[1,3], k:"card", card:"소형 방패", s3p:[5,8]},   /* 3구역 값 올림 (사용자 2026-10-12) */
@@ -36977,6 +37152,8 @@ const SHOP_STOCK=[
                         s2p:[8,12], s3p:[11,18], w:0.4, stage:2},
  {n:"각성초",          d:"아군 대상이 이번 턴에만 모든 추가 능력치를 2 얻는 카드", p:[3,4], q:[1,2], k:"card", card:"각성초",
                         s2p:[5,6],  s3p:[7,9], stage:2},
+ {n:"세공석",           d:"장신구와 함께 제련하면 모든 각인을 지웁니다.",     p:[12,18],q:[1,1], k:"named", get item(){ return itemDef("세공석") },
+                        s2p:[16,24], s3p:[22,32], w:0.6},   /* 값은 내가 정함 (사용자 2026-11-12) */
  /* ── 장신구 선택 — 사고 나면 띠에서 하나를 고른다 (사용자 2026-10-14) ── */
  {n:"파편 장신구 선택", d:"파편 장신구 다섯 가운데 하나를 고릅니다.",          p:[14,24],q:[1,1], k:"pickshard",
                         s2p:[18,30], s3p:[28,46]},
@@ -42277,6 +42454,7 @@ function startBattle(kind,pinned){
   if(fresh&&!run.sandbox&&(run.taint||0)>=80&&(kind==="battle"||kind==="elite")) questProgress("taintIn",null);
   /* 작업 지시판 — 고통 체험 (오염도 90 이상, 2026-10-21) */
   if(fresh&&!run.sandbox&&(run.taint||0)>=90&&(kind==="battle"||kind==="elite")) questProgress("taintIn90",null);
+  if(fresh&&!run.sandbox){ const v=engTaintIn(); if(v){ addTaint(v); say(`각인 — 전투 입장 시 오염도 ${Math.abs(v)} ${v>0?"증가":"감소"}`,"t2") } }   /* 더러움 · 깨끗함 (2026-11-12) */
   if(fresh&&!run.sandbox){   /* 각성제 · 모닥불 이야기 — '다음 1회의 전투' (2026-09-16). 전투가 끝나면(backToMap·battleLost) 걷힌다 */
     if(run.stimNext){ run.stimOn=run.stimNext; run.stimNext=0 }
     if(run.campfire){ run.fireOn=run.campfire; run.campfire=0 }
@@ -49191,10 +49369,15 @@ function pickCount(n){
       return;
     }
     if(el2.dataset.item){
-      const it=itemDef(el2.dataset.item);
+      let it=itemDef(el2.dataset.item);
       if(!it) return;
       /* 임자를 알면 괄호에 그 대원의 수치가 들어간다 (전투 화면). 모르면 빈 괄호 그대로 */
       const own=el2.dataset.ih?((run&&run.heroes)||[]).find(x=>x.name===el2.dataset.ih):null;
+      /* 각인 — 그 칸에 낀 그 장신구로 (2026-11-12). 칸 번호(data-ii) · 가방 번호(data-ib)가 없으면 이름이 같은 것 가운데 각인된 것 */
+      { const n=el2.dataset.item, ii=el2.dataset.ii, ib=el2.dataset.ib, bag=(run&&run.bag)||[];
+        const x=own?(ii!=null&&own.items[+ii]&&own.items[+ii].n===n?own.items[+ii]:own.items.find(y=>y&&y.n===n&&y.eng)):
+          (ib!=null&&bag[+ib]&&bag[+ib].n===n?bag[+ib]:null);
+        if(x) it=x }
       b.innerHTML=itemCard(it,own);
       b.classList.add("wide"); b.classList.add("itemtip");   /* 게임 틀 그림 (사용자 2026-10-30) */
       b.style.display="block";
@@ -50953,6 +51136,7 @@ function incoming(){
     let raw=arenaHitRaw(u,v,cr);   /* 상처 · 오늘의 주인공 — hurtAlly 와 같은 셈 */
     { const pg=portalGuardOf(u); if(pg&&raw>0) raw=Math.max(0,raw-pg) }   /* 감소의 문 */
     raw=wingCut(u,raw);   /* 대악마의 날개죽지 — hurtAlly 와 같은 자리 */
+    raw=engTaken(u,raw);   /* 각인 — hurtAlly 와 같은 자리 */
     if(isFF(u)&&!ffFlare(u)&&raw>0){ const T=u.tag||{};   /* 플로우 — 피해 흘리기 · 파도 보호막 (hurtAlly 와 같게, 2026-10-01) */
       if(T.flowGuard) raw=Math.max(0,raw-T.flowGuard);
       if(T.waveGuard&&f&&foeAil(f)>0) raw=Math.max(0,raw-T.waveGuard) }
@@ -55085,6 +55269,7 @@ function hurtAlly(f,t,raw,label,el,evMsg,pierce,ownFx){   /* evMsg — 회피했
   { const r0=raw; raw=arenaHitRaw(t,raw,B&&B._critHit); if(raw>r0&&deb(t,"wound")>0&&!(B&&B._critHit)) critAlly(t) }
   { const pg=portalGuardOf(t); if(pg&&raw>0) raw=Math.max(0,raw-pg) }
   raw=wingCut(t,raw);   /* 대악마의 날개죽지 — 받는 피해 절반 (incoming 의 hitOn 과 같은 자리) */
+  raw=engTaken(t,raw);   /* 각인 조각남 · 푹신함 — 받는 피해 ± (hitOn 과 같은 자리) */
   /* 쇠약 (중급) — 감염된 적에게서 받는 피해가 준다 (2026-10-22) */
   if(t&&t.name==="인비디아"&&t.tag&&t.tag.invFrail&&raw>0&&f&&(f.infect||0)>0)
     raw=Math.max(0,raw-t.tag.invFrail);
@@ -56356,7 +56541,7 @@ function statWatch(label,persist,fn){
 /* 쪽지에 쓸 줄 — [{n, v}] 와 「기본」 몫. total 은 화면에 보인 값 */
 function statRows(u,k,total){
   const R=[];
-  ((u&&u.items)||[]).forEach(it=>{ const v=it&&it.st&&it.st[k]; if(v) R.push({n:it.n||"장신구",v}) });
+  ((u&&u.items)||[]).forEach(it=>{ const v=it&&itemStats(it)[k]; if(v) R.push({n:it.n||"장신구",v}) });   /* 각인까지 */
   if(k==="atk"&&u&&u.prideAtk) R.push({n:"전장의 승자",v:u.prideAtk});   /* 나이코스 — 전투가 끝날 때 오른 몫은 길목 밖이라 「기본」에 들어갔다 (사용자 2026-11-04) */
   const P=(u&&u.ssrc&&u.ssrc[k])||{}; Object.keys(P).forEach(n=>{ if(P[n]) R.push({n:n==="레벨업"?n:`보상(${n})`,v:P[n]}) });   /* 원정 내내 남는 몫은 레벨업 말고는 다 보상이다 — 읽을 때 붙여 지난 저장도 같이 (사용자 2026-11-04) */
   const S=statBStore(), bx=S&&S.get(u), BB=(bx&&bx[k])||{}; Object.keys(BB).forEach(n=>{ if(BB[n]) R.push({n,v:BB[n]}) });
@@ -56750,8 +56935,8 @@ function toBag(it){ (run.bag=run.bag||[]).push(it); flyToBag() }
    ⚠️ 그 글은 여기서 베껴 쓰지 않는다. `kw data-item` 이면 설명창이 **itemCard** 를 그대로 띄운다 */
 function bagItems(bag){
   const L=[];
-  (bag||[]).forEach(it=>{ if(!it) return; const k=L.find(x=>x.n===it.n); if(k) k.c++; else L.push({n:it.n,g:it.g,it:it,c:1}) });
-  return `<div class="bagitems">`+L.map(x=>`<div class="bgi g${esc(x.g)} kw" data-item="${esc(x.n)}">
+  (bag||[]).forEach((it,i)=>{ if(!it) return; const k=L.find(x=>x.n===it.n&&engSig(x.it)===engSig(it)); if(k) k.c++; else L.push({n:it.n,g:it.g,it:it,c:1,i:i}) });   /* 각인이 다르면 따로 (2026-11-12) */
+  return `<div class="bagitems">`+L.map(x=>`<div class="bgi g${esc(x.g)} kw" data-item="${esc(x.n)}" data-ib="${x.i}">
       <span class="bgi-a">${itemIcon(x.it,30)}</span>
       <span class="bgi-t"><b class="bgi-n">${esc(x.n)}</b><em class="bgi-g">${esc(x.g)}</em></span>
       <span class="bgi-c">×${x.c}</span>
