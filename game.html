@@ -7015,6 +7015,16 @@ body #app .bagtabs button:hover{color:#fff2cc}
 .baggear .gslot b{font-size:10.5px;white-space:normal;word-break:keep-all;line-height:1.25}
 .baggear .bagwrap{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;width:100%}
 .baggear .title{font-size:14px!important}
+
+/* 재화 숫자 돌림 (사용자 2026-11-11) — 바뀐 자릿수 칸(.rd)은 진짜 숫자를 투명하게 두고, 위아래 두 숫자를 ::before 한 줄기로 쌓아 칸 안에서 민다 */
+[data-roll].rolling{font-variant-numeric:tabular-nums}
+[data-roll] .rd{position:relative;display:inline-block;height:1.2em;line-height:1.2em;overflow:hidden;vertical-align:bottom;color:transparent}
+[data-roll] .rd.gone{min-width:.62em}
+[data-roll] .rd::before{content:attr(data-c);position:absolute;left:0;right:0;top:0;white-space:pre;line-height:1.2em;text-align:center;color:var(--rc,#fff);
+  animation:420ms cubic-bezier(.2,.8,.25,1) var(--rdl,0ms) both}
+[data-roll] .rd.dn::before{animation-name:rollDn} [data-roll] .rd.up::before{animation-name:rollUp}
+@keyframes rollDn{from{transform:translateY(-1.2em)}to{transform:translateY(0)}}
+@keyframes rollUp{from{transform:translateY(0)}to{transform:translateY(-1.2em)}}
 </style>
 </head>
 <body>
@@ -7270,16 +7280,65 @@ function evOptHtml(d){
 /* 카드 글 맞추기 (사용자 2026-11-11 「글자가 많으면 크기를 줄여 카드 칸에 들어가게, 앞으로 넣을 카드도」).
    카드 틀(.ccard)의 설명 칸(.cc-d)에 글(.cc-di)이 넘치면 글 크기를 조금씩 줄인다 — 60% 까지.
    손패 · 설명 풍선 · 도감 · 가방 · 보상 어디서 그려지든 화면에 붙는 순간 한 번 (MutationObserver). 셈은 건드리지 않는다 */
+const CC_FIT_SEEN=new WeakSet();   /* 맞춘 글 — 속성(data-*)을 달면 지도 판 다시 쓰기(innerHTML 견줌)가 흔들린다 */
 function ccFitOne(di){
   const box=di.parentElement; if(!box||!box.clientHeight) return false;   /* 아직 안 보인다 — 다음에 */
   di.style.fontSize=""; let k=1;
   while(di.scrollHeight>box.clientHeight+1&&k>0.6){ k=Math.round((k-0.05)*100)/100; di.style.fontSize=k+"em" }
-  di.dataset.fit="1"; return true }
-function ccFitAll(root){ (root||document).querySelectorAll(".ccard .cc-d>.cc-di:not([data-fit])").forEach(ccFitOne) }
+  CC_FIT_SEEN.add(di); return true }
+function ccFitAll(root){ (root||document).querySelectorAll(".ccard .cc-d>.cc-di").forEach(di=>{ if(!CC_FIT_SEEN.has(di)) ccFitOne(di) }) }
 if(typeof document!=="undefined"&&typeof MutationObserver!=="undefined"){
   let ccFitQ=0;
   const go=()=>{ ccFitQ=0; try{ ccFitAll() }catch(e){} };
   const start=()=>{ try{ new MutationObserver(()=>{ if(!ccFitQ) ccFitQ=requestAnimationFrame(go) }).observe(document.body,{childList:true,subtree:true}) }catch(e){} };
+  if(document.body) start(); else document.addEventListener("DOMContentLoaded",start) }
+
+/* ═══ 재화 숫자 돌림 (사용자 2026-11-11) ═══
+   회전식 숫자 계수기 — 자릿수마다 제 칸(overflow 로 가림) 안에서 세로로 넘어간다. **바뀐 자릿수만.**
+   얻으면(전체가 늘면) 옛 숫자가 아래로 빠지고 새 숫자가 위에서 내려온다 · 쓰면 반대. 9→0 이어도 전체가 늘었으면 아래로.
+   표시 자리는 <b data-roll="열쇠"> 하나로 — 열쇠마다 지난 값을 기억한다(ROLL_MEM).
+   화면은 자주 새로 그린다 — 도는 중에 다시 그려지면 지난 시간만큼 앞당겨(음수 지연) 이어 돈다. 셈은 건드리지 않는다 */
+const ROLL_MS=420;
+let ROLL_MEM={}, ROLL_RUN=null, ROLL_SEEN=new WeakSet();
+/* 자릿수마다 : 같으면 그냥 글자, 바뀌면 <span class="rd" data-c="위&#10;아래">새숫자</span> — 새 숫자는 투명한 진짜 글(자리 · 읽기용), 보이는 두 숫자는 ::before */
+function rollHtml(from,to,el0){
+  const a=String(from), b=String(to), L=Math.max(a.length,b.length), A=a.padStart(L," "), Bv=b.padStart(L," "), dn=to>from;
+  let h="";
+  for(let i=0;i<L;i++){
+    const x=A[i]===" "?"":A[i], y=Bv[i]===" "?"":Bv[i];
+    if(x===y){ h+=y; continue }
+    const c=dn?`${y||" "}&#10;${x||" "}`:`${x||" "}&#10;${y||" "}`;
+    h+=`<span class="rd ${dn?"dn":"up"}${y?"":" gone"}" data-c="${c}" style="--rdl:-${Math.round(el0)}ms">${y}</span>` }
+  return h }
+/* 도는 중인 숫자를 맨 숫자로 되돌린 HTML — 지도 판을 다시 쓸지 견줄 때 (mapPanelAfter). 도는 동안에도 같은 판이면 같다고 본다 */
+function rollPlainHTML(el){
+  if(!el||!el.querySelector||!el.querySelector("[data-roll].rolling,.ccard .cc-di[style]")) return el?el.innerHTML:"";
+  const c=el.cloneNode(true);
+  c.querySelectorAll(".ccard .cc-di[style]").forEach(e=>e.removeAttribute("style"));   /* 카드 글 맞추기(ccFit)가 줄인 크기 — 그리는 쪽은 안 단다 */
+  c.querySelectorAll("[data-roll].rolling").forEach(e=>{ e.textContent=e.textContent; e.classList.remove("rolling"); if(!e.className) e.removeAttribute("class");
+    e.style.removeProperty("--rc"); if(!e.getAttribute("style")) e.removeAttribute("style") });
+  return c.innerHTML }
+function rollPass(){
+  if(typeof run==="undefined"||!run){ ROLL_MEM={}; ROLL_RUN=null; return }
+  if(ROLL_RUN!==run){ ROLL_MEM={}; ROLL_RUN=run }
+  const now=performance.now(), reduce=(()=>{ try{ return matchMedia("(prefers-reduced-motion: reduce)").matches }catch(e){ return false } })();
+  document.querySelectorAll("[data-roll]").forEach(e=>{
+    if(ROLL_SEEN.has(e)) return; ROLL_SEEN.add(e);
+    const k=e.dataset.roll, v=parseInt(e.textContent,10); if(isNaN(v)) return;
+    let M=ROLL_MEM[k];
+    if(!M){ ROLL_MEM[k]={v:v}; return }
+    if(M.v!==v){ M.from=M.v; M.to=v; M.t0=now; M.v=v }
+    if(reduce||M.t0==null||M.to!==v) return;
+    const el0=now-M.t0; if(el0>=ROLL_MS) return;
+    e.style.setProperty("--rc",getComputedStyle(e).color);
+    e.classList.add("rolling"); e.innerHTML=rollHtml(M.from,M.to,el0);
+    setTimeout(()=>{ if(!e.isConnected) return;   /* 다 돌면 맨 숫자로 — 속성까지 처음 꼴로 되돌린다 */
+      e.textContent=String(v); e.classList.remove("rolling"); if(!e.className) e.removeAttribute("class");
+      e.style.removeProperty("--rc"); if(!e.getAttribute("style")) e.removeAttribute("style") },ROLL_MS-el0+30) }) }
+if(typeof document!=="undefined"&&typeof MutationObserver!=="undefined"){
+  let rollQ=0;
+  const go=()=>{ rollQ=0; try{ rollPass() }catch(e){} };
+  const start=()=>{ try{ new MutationObserver(()=>{ if(!rollQ) rollQ=requestAnimationFrame(go) }).observe(document.body,{childList:true,subtree:true,characterData:true}) }catch(e){} };
   if(document.body) start(); else document.addEventListener("DOMContentLoaded",start) }
 const esc=s=>String(s??"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
 function jo(w,p){const c=String(w||"").trim().slice(-1).charCodeAt(0);
@@ -20818,8 +20877,8 @@ function garBack(){ garDoor(()=>{ GAR_UI.mode="terrace"; GAR_UI.hover=null; GAR_
 function garLeave(){ if(GAR_UI.busy) return;
   const go=()=>{ GAR_UI.panel=null; GAR_UI.hover=null; GAR_UI.st={}; GAR_UI.mode="terrace"; cancelAnimationFrame(GAR_UI.raf); view="map"; run.mapSel=null };
   if(typeof shutPlay==="function") shutPlay(go); else { go(); render() } }
-function garSilverHtml(){ return `<span class="garres kw" data-kw="은화" data-tip="주둔지 건물 활동에 씁니다. 날이 밝을 때 종탑에서 얻습니다.">${resIcon("silver")} <b>${run.silver||0}</b></span>` }
-const garResHtml=()=>`<div class="garreses">${garSilverHtml()}<span class="garres">${ic("gold")||"금화"} <b>${run.gold}</b></span><span class="garres">제련석 <b>${run.stone||0}</b></span></div>`;
+function garSilverHtml(){ return `<span class="garres kw" data-kw="은화" data-tip="주둔지 건물 활동에 씁니다. 날이 밝을 때 종탑에서 얻습니다.">${resIcon("silver")} <b data-roll="silver">${run.silver||0}</b></span>` }
+const garResHtml=()=>`<div class="garreses">${garSilverHtml()}<span class="garres">${ic("gold")||"금화"} <b data-roll="gold">${run.gold}</b></span><span class="garres">제련석 <b>${run.stone||0}</b></span></div>`;
 function drawGarrison(app){
   garEnsure(); garPreload();
   /* 지도 판 가운데 무대(.mb-mid .pstage)에 — 바깥 틀 · 좌우 판 · 자원 줄은 지도 그대로 (사용자 2026-11-10) */
@@ -27860,11 +27919,12 @@ function mapPanelBefore(){
 function mapPanelAfter(saved){
   if(!saved||view!=="map"||run!==saved.journey||run.field!==saved.field)return;
   const left=document.querySelector('.mboard .mb-left .ledger'),buttons=document.querySelector('.mboard .mb-btns');
-  if(buttons&&saved.buttons.innerHTML===buttons.innerHTML)buttons.replaceWith(saved.buttons);
+  const plain=e=>typeof rollPlainHTML==="function"?rollPlainHTML(e):e.innerHTML;   /* 재화 숫자 돌림 중이어도 같은 판이면 같다 (2026-11-11) */
+  if(buttons&&plain(saved.buttons)===buttons.innerHTML)buttons.replaceWith(saved.buttons);
   if(!left||!saved.left||left.className!==saved.panel)return;
   left.style.animation='none';
   let kept=left;
-  if(saved.left.innerHTML===left.innerHTML){saved.left.style.animation='none';left.replaceWith(saved.left);kept=saved.left}
+  if(plain(saved.left)===left.innerHTML){saved.left.style.animation='none';left.replaceWith(saved.left);kept=saved.left}
   kept.scrollTop=saved.scroll;
   if(saved.active&&kept.contains(saved.active))saved.active.focus({preventScroll:true});
 }
@@ -28063,12 +28123,12 @@ function render0(){
       <span class="res rday kw ${dLeft<=1?"bad":dLeft<=2?"warn":""}" data-kw="일차" data-tip="${run.day}일차 / ${FIELDS[run.field].days}일. 오늘까지 세어 ${dLeft}일 남았습니다. 다 쓰면 그 자리에서 끝납니다.">
         ${resIcon("day")}<b>${run.day}</b><i>/${FIELDS[run.field].days}일</i></span>
       <span class="res act kw" data-kw="활동량" data-tip="구역에 들어갈 때 씁니다. 날이 밝으면 기본 +6 쌓입니다.">
-        ${resIcon("act")}<b>${Math.max(0,run.act)}</b></span>
+        ${resIcon("act")}<b data-roll="act">${Math.max(0,run.act)}</b></span>
       ${taintChip()}
       <span class="res kw" data-kw="원정 시간" data-tip="이번 원정을 붙잡고 있은 시간입니다. 창을 덮어 둔 동안은 세지 않습니다."><b id="ptv">${playTime(run.playMs)}</b></span>
-      <span class="res gold kw" data-kw="금화" data-tip="상점에서 물건을 사고 팔 때 씁니다.">${resIcon("gold")}<b>${run.gold}</b></span>
+      <span class="res gold kw" data-kw="금화" data-tip="상점에서 물건을 사고 팔 때 씁니다.">${resIcon("gold")}<b data-roll="gold">${run.gold}</b></span>
       ${ghostChip()}
-      ${`<span class="res stone kw" data-kw="제련석" data-tip="주둔지 제련소에서 장신구 두 개를 합칠 때 씁니다.">${resIcon("stone")}<b>${run.stone||0}</b></span>`}`;
+      ${`<span class="res stone kw" data-kw="제련석" data-tip="주둔지 제련소에서 장신구 두 개를 합칠 때 씁니다.">${resIcon("stone")}<b data-roll="stone">${run.stone||0}</b></span>`}`;
     { const ck=hr.querySelector(".clock");
       if(ck){ const L=el(`<span class="hL"></span>`), R=el(`<span class="hR"></span>`);
         [".res.crystal","CORE",".res.taint",".res.cheer",".res.act"].forEach(q=>{
@@ -28655,6 +28715,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 423, "v": "0.8", "d": "2026-11-12", "t": "재화 숫자 돌림 · 실험 책임자 카드 그림", "big": 0},
  {"b": 422, "v": "0.8", "d": "2026-11-11", "t": "카드 글 넘치면 크기 맞춤", "big": 0},
  {"b": 422, "v": "0.8", "d": "2026-11-11", "t": "카드 글 넘치면 크기 맞춤", "big": 0},
  {"b": 421, "v": "0.8", "d": "2026-11-11", "t": "전리품 카드 설명 한 줄", "big": 0},
@@ -30270,7 +30331,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=422;
+const BUILD_NO=423;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -32550,11 +32611,11 @@ function drawMap(app){
   /* 오른쪽 — 자원 넷 · 살펴보기 판 · 퀘스트 */
   { const rs=app.querySelector(".mtop .mres");
     { const t=el(`<span>${taintChip("mchip")}</span>`); [...t.children].forEach(x=>rs.appendChild(x)) }
-    rs.appendChild(el(`<span class="res act mchip kw" data-kw="활동량" data-tip="구역에 들어갈 때 씁니다. 날이 밝으면 기본 +6 쌓입니다.">${resIcon("act")}<b>${Math.max(0,run.act)}</b></span>`));
+    rs.appendChild(el(`<span class="res act mchip kw" data-kw="활동량" data-tip="구역에 들어갈 때 씁니다. 날이 밝으면 기본 +6 쌓입니다.">${resIcon("act")}<b data-roll="act">${Math.max(0,run.act)}</b></span>`));
     { const cc=coreChip("mcore"); if(cc) rs.appendChild(cc) }
-    rs.appendChild(el(`<span class="res gold mchip kw" data-kw="금화" data-tip="상점에서 물건을 사고 팔 때 씁니다.">${resIcon("gold")}<b>${run.gold}</b></span>`));
+    rs.appendChild(el(`<span class="res gold mchip kw" data-kw="금화" data-tip="상점에서 물건을 사고 팔 때 씁니다.">${resIcon("gold")}<b data-roll="gold">${run.gold}</b></span>`));
     { const g=ghostChip("mchip"); if(g) rs.appendChild(el(g)) }   /* 오볼 — 유령 금화 */
-    rs.appendChild(el(`<span class="res stone mchip kw" data-kw="제련석" data-tip="주둔지 제련소에서 장신구 두 개를 합칠 때 씁니다.">${resIcon("stone")}<b>${run.stone||0}</b></span>`)); }
+    rs.appendChild(el(`<span class="res stone mchip kw" data-kw="제련석" data-tip="주둔지 제련소에서 장신구 두 개를 합칠 때 씁니다.">${resIcon("stone")}<b data-roll="stone">${run.stone||0}</b></span>`)); }
   R.appendChild(typeof placeMode==="function"&&placeMode()?placeMiniMap():mapInspector());
   /* 받은 가죽 틀로 옮겨 담는다 (사용자 2026-10-14).
      three(.mapwrap.m3) 는 지금까지대로 지어 두고 **조각만 칸으로 옮긴다** —
@@ -35746,7 +35807,7 @@ function drawForge(app){
     <div class="fgbran kw" style="${shopPct(L.bran[0],L.bran[1])};width:${L.bw}cqw" data-kw="${esc(SMITH_NAME)}" data-tip="주둔지 제련소의 주인입니다.">${bran}</div>
     <div class="shfg" style="background-image:url('${L.fg}')"></div>
     ${line?`<div class="bark shbark" style="${shopPct(L.say[0],L.say[1])}">${esc(line)}</div>`:""}
-    <div class="fgres" style="${shopPct(L.res[0],L.res[1])}">${resIcon("gold")} ${run.gold}<span>${resIcon("stone")} 제련석 ${run.stone||0}</span></div>
+    <div class="fgres" style="${shopPct(L.res[0],L.res[1])}">${resIcon("gold")} <b data-roll="gold">${run.gold}</b><span>${resIcon("stone")} 제련석 <b data-roll="stone">${run.stone||0}</b></span></div>
     <span class="fgplus" style="${shopPct(L.plus[0],L.plus[1])}">+</span>
     <button class="shout fggo${ok?"":" off"}" style="${shopPct(L.go[0],L.go[1])}">제련 시작</button>
     ${note?`<div class="fgnote${ok?" ok":""}" style="${shopPct(L.note[0],L.note[1])}">${note}</div>`:""}
@@ -39006,7 +39067,7 @@ function cargoGroups(){
 }
 function ghostChip(cls){
   if(!obolOn()) return "";
-  return `<span class="res rghost kw ${cls||""}" data-kw="유령 금화" data-tip="오볼의 선박 상점에서 쓰는 금화입니다. 선박 상점에서 금화로 살 수 있습니다.">${resIcon("ghost")}<b>${run.ghost||0}</b></span>`;
+  return `<span class="res rghost kw ${cls||""}" data-kw="유령 금화" data-tip="오볼의 선박 상점에서 쓰는 금화입니다. 선박 상점에서 금화로 살 수 있습니다.">${resIcon("ghost")}<b data-roll="ghost">${run.ghost||0}</b></span>`;
 }
 /* 짐칸 판 — 특별한 쪽지 (#kwtip.cargotip) */
 function obolCargoTip(){
@@ -56437,8 +56498,8 @@ function drawBag(app){
     go.onclick=()=>{ run.gearPick=null; view=run.bagBack||"map"; render() }; foot.appendChild(go); wrap.appendChild(foot);
     return }
   wrap.appendChild(el(`<div class="mir2 bag-res">
-    <span class="kw" data-kw="제련석" data-tip="주둔지 제련소에서 장신구 두 개를 합칠 때 씁니다.">${resIcon("stone")}<b>${run.stone||0}</b></span>
-    <span class="kw" data-kw="금화" data-tip="상점에서 물건을 사고 팔 때 씁니다.">${resIcon("gold")}<b>${run.gold}</b></span>
+    <span class="kw" data-kw="제련석" data-tip="주둔지 제련소에서 장신구 두 개를 합칠 때 씁니다.">${resIcon("stone")}<b data-roll="stone">${run.stone||0}</b></span>
+    <span class="kw" data-kw="금화" data-tip="상점에서 물건을 사고 팔 때 씁니다.">${resIcon("gold")}<b data-roll="gold">${run.gold}</b></span>
     ${ghostChip()}
   </div>`));
 
@@ -56795,6 +56856,9 @@ function rewardIcon0(r){
 }
 /* 카드 그림 — 아이콘 표에 그림이 있으면 그것, 없으면 기본 도형 */
 function cardArt(name){
+  /* 우두머리 전리품 카드는 받은 전리품 그림이 먼저 — 소환물(연료 장치)의 전투 그림은 작고 발밑에 붙어 카드 칸에서 아래로 처졌다 (사용자 2026-11-11) */
+  { const src=(typeof CARD_META!=="undefined")&&CARD_META[name]&&CARD_META[name].src, id=(typeof CARD_ICON!=="undefined")&&CARD_ICON[name];
+    if(id&&src&&/전리품/.test(src)){ const im=iconImg(id); if(im) return im } }
   { const set=(typeof PNG_SPRITE!=="undefined")&&PNG_SPRITE[name];
     if(set&&set.idle) return '<img class="ricon" src="'+set.idle.u+'" alt="" draggable="false">'; }
   const id=(typeof CARD_ICON!=="undefined")&&CARD_ICON[name];
