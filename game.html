@@ -18119,13 +18119,13 @@ function rewLive(h,d){
   return t;
 }
 function rwDescHtml(d,h){
-  const html=zoneBold(rich(rewDesc(rewLive(h,d))));
-  if(typeof document==="undefined") return html;
-  const box=document.createElement("div"); box.innerHTML=html;
+  if(typeof document==="undefined") return zoneBold(rich(rewDesc(rewLive(h,d))));
   const sks=[]; const seen={};
   const add=sk=>{ if(sk&&sk.n&&!seen[sk.n]&&sk.n.length>=2){ seen[sk.n]=1; sks.push(sk) } };
   ((h&&h.sk)||[]).forEach(add);
   ((h&&HEROES[h.name]&&HEROES[h.name].sk)||[]).forEach(add);
+  /* 전환 · 교체 기술의 다른 쪽(sk.alt — 번개 구체 · 주술사의 다짐 · 방패 밀치기 …)도 (사용자 2026-11-12 : 「번개 구체」 설명이 없었다) */
+  ((h&&h.sk)||[]).concat((h&&HEROES[h.name]&&HEROES[h.name].sk)||[]).forEach(sk=>{ if(sk&&sk.alt) add(sk.alt) });
   const syn=SYNERGY.map(x=>x.n).sort((a,b)=>b.length-a.length);
   const esc2=x=>x.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
   const synAlt=syn.map(esc2).join("|");   /* 「사후, 학살자 대원」 처럼 늘어놓아도 앞 이름까지 (사용자 2026-11-05) */
@@ -18135,6 +18135,14 @@ function rwDescHtml(d,h){
   const terms={};
   sks.forEach(sk=>{ terms[sk.n]={sk:sk} });
   if(h&&typeof heroPassives==="function") heroPassives(h.name).forEach(p=>{ if(p.n&&p.n.length>=2&&!terms[p.n]) terms[p.n]={pas:p} });
+  /* 띄어 쓴 기술 · 지속 능력 이름은 rich 보다 먼저 감싼다 (사용자 2026-11-12) —
+     rich 가 이름 속 낱말(「그림자 이동」의 이동 · 「굳건한 성벽」의 성벽 · 「사냥개 부리기」의 사냥개)을 먼저 집어 이름이 끊겼다 */
+  const hold=[], pre=Object.keys(terms).filter(n=>n.indexOf(" ")>=0).sort((a,b)=>b.length-a.length);
+  let raw=String(rewDesc(rewLive(h,d)));
+  if(pre.length) raw=raw.replace(new RegExp("("+pre.map(esc2).join("|")+")","g"),m=>{ hold.push(m); return "\uE000"+String.fromCharCode(0xE100+hold.length-1)+"\uE001" });
+  const html=zoneBold(rich(raw)).replace(/\uE000([\uE100-\uEFFF])\uE001/g,(m,c)=>{ const n=hold[c.charCodeAt(0)-0xE100], T=terms[n], id="rwsk-"+(h?h.name:"")+"-"+n;
+    TIP_HTML[id]=T.pas?pasTipHtml(T.pas):skTipHtml(h,T.sk); return `<u class="kw rwsk" data-tid="${esc(id)}">${esc(n)}</u>` });
+  const box=document.createElement("div"); box.innerHTML=html;
   rwTermCards(h).forEach(([shown,card])=>{ if(shown&&!terms[shown]) terms[shown]={card:card} });
   const skN=Object.keys(terms).sort((a,b)=>b.length-a.length);
   const reSk=skN.length?new RegExp("("+skN.map(esc2).join("|")+")","g"):null;
@@ -28913,6 +28921,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 433, "v": "0.8", "d": "2026-11-12", "t": "보상 글의 기술 이름 풍선 — 전환 · 교체 기술, 띄어 쓴 기술 이름", "big": 0},
  {"b": 432, "v": "0.8", "d": "2026-11-12", "t": "종 울리기 후 주둔지로 · 기술 강화 화면 전환 기술 그림 · 기술 전용 보상 붉은 카드 화면", "big": 0},
  {"b": 431, "v": "0.8", "d": "2026-11-12", "t": "성향 칩 테두리 없앰 · 평판 50 효과 없음 · 낮은 평판 웃음 없음", "big": 0},
  {"b": 430, "v": "0.8", "d": "2026-11-12", "t": "성향 9개 추가 — 낙천 의지 충만 아량 기개 분별력, 우울 의지 상실 허영심 소심", "big": 0},
@@ -30538,7 +30547,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=432;
+const BUILD_NO=433;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
