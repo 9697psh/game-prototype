@@ -7171,6 +7171,9 @@ body #app .garwrap button.ghpick:hover{opacity:1}
 body.vpage #app button.garlab.garjam{font-size:clamp(12px,1.15cqw,19px);letter-spacing:.04em}
 #app .shopstage button.shjam,#app .forgestage button.shjam{font-size:1.15cqw}
 .garwrap .gop:not(:has(.gobar)){justify-content:center}.garwrap .gop:not(:has(.gobar)) b{flex:0 0 auto;text-align:center}
+/* 지도 대원 카드 — 숙련도 (사용자 2026-11-13) */
+.mcard .mcn .mcm{display:inline-flex;align-items:center;gap:1px;margin-left:5px;font-family:var(--sans);font-size:.75em;color:#9fd6ff;letter-spacing:0;vertical-align:middle}
+.mcard .mcn .mcm img{width:1.25em;height:1.25em;image-rendering:pixelated}
 </style>
 </head>
 <body>
@@ -29105,6 +29108,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 436, "v": "0.8", "d": "2026-11-13", "t": "전투 상자 금화 ×1.5 · 지도 대원 장부에 숙련도 · 분해기를 잔해에 바로", "big": 0},
  {"b": 435, "v": "0.8", "d": "2026-11-12", "t": "의지 성향 한 전투 한 번 · 주둔지 창 다듬기(상자 걷기 · 게임 막대 · 글씨 줄임 · 쉼터 그림만) · 방해하기 작게", "big": 0},
  {"b": 434, "v": "0.8", "d": "2026-11-12", "t": "주둔지 활동 창 — 벼림(고르기 · 지금과 벼린 뒤 · 단계별 확률) · 정찰(결과 확률 · 가져오는 것 표) · 쉼터 · 감정 · 정찰 결과", "big": 0},
  {"b": 433, "v": "0.8", "d": "2026-11-12", "t": "보상 글의 기술 이름 풍선 — 전환 · 교체 기술, 띄어 쓴 기술 이름", "big": 0},
@@ -30733,7 +30737,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=435;
+const BUILD_NO=436;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -33112,7 +33116,7 @@ function heroCardM(h,i){
   const hp=Math.max(0,Math.min(100,h.hp/h.maxHp*100)), ex=Math.max(0,Math.min(100,h.exp/needExp(h.lv)*100));
   const c=el(`<div class="mcard kw ${h.down?"down":""} ${run.showHero===i?"on":""}" data-kw="${esc(h.name)}" data-tip="눌러서 자세히 봅니다.">
     <div class="mca">${faceArt(h.name)}</div>${fatChip(h,"mcfat")}${dispChips(h,null,"mcdisp")}
-    <div class="mcn">${esc(h.name)}<i>Lv.${h.lv}</i></div>
+    <div class="mcn">${esc(h.name)}<i>Lv.${h.lv}</i><span class="mcm kw" data-kw="숙련도" data-tip="숙련도 ${h.mastery||0}. 주둔지 훈련소에서 기술을 강화하는 데 씁니다.">${iconImg("currency_mastery")}${h.mastery||0}</span></div>
     ${h.down?`<div class="mcs">쓰러짐</div>`:""}
     <div class="mcb hp kw" data-kw="체력" data-tip="${h.hp}/${h.maxHp}. 0 이 되면 쓰러집니다."><u style="width:${hp}%"></u><span>${ic("hp")}${h.hp}/${h.maxHp}</span></div>
     <div class="mcb ex kw" data-kw="경험치" data-tip="${h.exp}/${needExp(h.lv)}. 다 채우면 레벨이 오릅니다."><u style="width:${ex}%"></u><span>${ic("exp")}${h.exp}/${needExp(h.lv)}</span></div>
@@ -36530,13 +36534,13 @@ const CHEST3={
  boss  :[["금화",50,80,1],["하급",0,0,3],["일반",0,0,1],["경험치",8,20,1],["중급",0,0,2],["상급",0,0,1],["동료",0,0,1]],
  ambush:[["금화",8,14,1],["하급",0,0,.35],["파편",0,0,.18],["경험치",5,12,.40]]
 };
-const CHEST_GOLD=1.25;   /* 전투 상자 금화 — 주둔지 강화에 금화가 들어 조금 늘림 (사용자 2026-11-10). 1→2 · 2→3 · 8→10 · 16→20 */
+const CHEST_GOLD=1.5;   /* 전투 상자 금화 — 주둔지 강화에 금화가 들어 조금 늘림 (사용자 2026-11-10 ×1.25 → 2026-11-13 ×1.5 「조금씩 더」). 1→2 · 2→3 · 8→12 · 16→24 */
 function rollChest(kind){
   const T=[CHEST,CHEST2,CHEST3][Math.min(run.field,2)][kind]||CHEST.battle;
   const out=[];
   const boost=(run.dun&&run.dun.cell&&run.dun.cell.boost)||[];   /* 칸마다 잘 나오는 갈래 (lootRoll) — 확률 ×1.5(최대 +25%p), 금화·경험치 양 ×1.4 */
   const one=row0=>{ const bo=boost.indexOf(row0[0])>=0, row=bo?[row0[0],Math.round(row0[1]*1.4),Math.round(row0[2]*1.4),row0[3]]:row0; const type=row[0], lo=row[1], hi=row[2];
-    if(type==="금화") out.push({t:"금화",v:Math.ceil((lo+Math.floor(Math.random()*(hi-lo+1)))*CHEST_GOLD)});   /* ×1.25 올림 (2026-11-10) */
+    if(type==="금화") out.push({t:"금화",v:Math.ceil((lo+Math.floor(Math.random()*(hi-lo+1)))*CHEST_GOLD)});   /* ×1.5 올림 (2026-11-13) */
     else if(type==="경험치") out.push({t:"경험치",v:lo+Math.floor(Math.random()*(hi-lo+1))});
     else out.push({t:type}) };
   T.forEach(row=>{
@@ -37056,9 +37060,10 @@ const CARD_LIB={
      try{ plagueZoneSync() }catch(e){} }},
  /* 고철의 무덤 전용 상점 카드 (사용자 2026-10-21) — 잔해를 부순다 */
  "분해기":{d:"전장의 잔해를 하나 파괴합니다.",
-   use:()=>{ const W=(B&&B.foes||[]).filter(x=>!x.alive&&x.wreck&&x.slot>0);
+   wreck:1,   /* 잔해에 바로 던질 수 있다 — 그 잔해를 부순다 (사용자 2026-11-13 : 잔해에 놓으면 「아군 칸에 놓아야」로 막혔다). 아군 칸에 놓으면 전처럼 맨 앞 잔해 */
+   use:t=>{ const W=(B&&B.foes||[]).filter(x=>!x.alive&&x.wreck&&x.slot>0);
      if(!W.length){ say("부술 잔해가 없습니다.","t2"); return "keep" }
-     const w=W[0]; w.wreck=0;
+     const w=(t&&W.indexOf(t)>=0)?t:W[0]; w.wreck=0;
      fx({side:"foe",slot:w.slot,s:"boom",ring:"#b08030",txt:"분해",cls:"dmg",gap:120});
      say(`분해기 — ${w.name}의 잔해를 부쉈습니다.`,"t2") }},
  "밧줄":{single:1,d:"대상 적을 맨 앞으로 끌어옵니다.",foe:1,
@@ -48167,7 +48172,10 @@ function drawBattle(app){
           bmb?`<div class="bombcd kw" data-kw="${bmb.burn?"잔해":"자폭"}" data-tip="${btip}">${left?left+"턴 뒤 폭발":"이번 턴 끝 폭발"} <b>${bmb.burn?"화상 "+bmb.burn:bmb.v}</b></div>`:""}</div>
         <div class="nm">${esc(w.wallFoe?"잔해":w.name)}</div>
         <div class="mini"><span class="chip on">${bmb?(left?`째깍 ${left}`:"째깍"):(w===rw?"부활":w.riseAt?`부활 ${Math.max(0,w.riseAt-(B.turn||1))}`:w.wallFoe?"잔해":"부서짐")}</span></div></div>`);
-      dw.dataset.slot=s;dw.dataset.foeId=w.id; fs.appendChild(dw); continue }
+      dw.dataset.slot=s;dw.dataset.foeId=w.id;
+      { const pc=B.pick!=null&&B.hand[B.pick], wk=pc&&(CARD_LIB[pc.stock||pc.name]||{}).wreck;   /* 분해기를 집었으면 잔해도 놓는 자리 (2026-11-13) */
+        if(wk&&!w.alive&&w.wreck){ dw.classList.add("drop"); dw.onclick=()=>{ playCard(B.pick,s,"foe") } } }
+      fs.appendChild(dw); continue }
     const d=el(`<div class="slot ${f?"":"empty"}${f&&f.big?" big":""}"><span class="no">${foeNo(s)}${f&&f.big?""+foeNo(s+1):""}</span>${
       preSkill&&f?`<span class="reach">거리 ${dist(sel.hero.slot,s)}</span>`:""}</div>`);
     if(f){ const t=(f._viewReal||f).riseShow, g=t?Date.now()-t:1e9, ms=Math.round(AR_RISE.show*SPD);   /* 발밑부터 드러난다 — 다시 그려도 이어서 (wkgrow 와 같은 길) */
@@ -50876,6 +50884,7 @@ function cardWhy(i,slot,side){
   /* any — 아군 칸에도 적 칸에도 던질 수 있는 카드 (산성 병, 2026-10-14). 적 칸에 놓으면 적 대상 길로 간다 */
   const wantFoe=!!(c.stock&&CARD_LIB[c.stock]&&CARD_LIB[c.stock].foe)||!!c.foe
     ||!!((CARD_LIB[c.stock||c.name]||{}).any&&side==="foe");
+  if(side==="foe"&&(CARD_LIB[c.stock||c.name]||{}).wreck) return wreckAt(slot)?"":"그 칸에는 잔해가 없습니다.";   /* 분해기 — 잔해 칸 */
   if(wantFoe){ if(side!=="foe") return `${c.name}${jo(c.name,"eun")} 적의 칸에 던져야 합니다.`;
     return foeAt(slot)?"":"그 칸에는 적이 없습니다." }
   if(side==="foe"){
@@ -50982,6 +50991,11 @@ function playCardOne(i,slot,side){
     say('부속 카드는 낼 수 없습니다 — 재료와 영혼이 모이면 저절로 합쳐집니다.','t2'); render(); return }
   const wantFoe=!!(c.stock&&CARD_LIB[c.stock]&&CARD_LIB[c.stock].foe)||!!c.foe
     ||!!((CARD_LIB[c.stock||c.name]||{}).any&&side==="foe");   /* any — 산성 병 (2026-10-14) */
+  if(side==="foe"&&(CARD_LIB[c.stock||c.name]||{}).wreck){   /* 분해기 — 놓은 칸의 잔해를 부순다 (2026-11-13) */
+    const w=wreckAt(slot); if(!w) return;
+    if(c.use(w)==="keep"){ render(); return }
+    cardMagic(); if(cardGone(c)) goneFX("foe",slot);
+    spendHandCard(c); checkEnd(); render(); return true }
   if(wantFoe){
     const f=foeAt(slot); if(!f) return;   /* cardWhy 가 이미 걸렀다 */
     B.lastAttacker=null;     /* 카드는 되받아칠 사람이 없다 */
