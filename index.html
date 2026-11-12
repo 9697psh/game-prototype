@@ -6947,6 +6947,14 @@ body #app .gm2 button.gm2sk{height:92px;box-sizing:border-box;display:flex;flex-
 body #app .gm2 button.gm2sk:hover,body #app .gm2 button.gm2sk.pin{border-color:rgba(244,214,124,.4)}
 .gm2sk .gm2ic img,.gm2sk .gm2ic svg{width:40px;height:40px;image-rendering:pixelated}
 .gm2sk .gm2nm{font-size:12.5px;line-height:1.2;text-align:center}
+/* 전환 · 교체 기술 — 그림 둘(셋)이 번갈아 흐리게 (사용자 2026-11-12) */
+.gm2alt{position:relative;display:inline-block;width:40px;height:40px;vertical-align:middle}
+.gm2alt>span{position:absolute;inset:0;opacity:0;animation:gm2f2 4.4s linear infinite}
+.gm2alt.n3>span{animation-name:gm2f3;animation-duration:6.6s}
+@keyframes gm2f2{0%{opacity:1}42%{opacity:1}50%{opacity:0}92%{opacity:0}100%{opacity:1}}
+@media(min-width:621px){.trait-choices.mastpk.n1{grid-template-columns:minmax(0,232px)}.trait-choices.mastpk.n2{grid-template-columns:repeat(2,minmax(0,232px))}.trait-choices.mastpk.n4{grid-template-columns:repeat(4,minmax(0,232px))}}
+.mastpk .trait-icon{margin:0 auto}.mastpk .trait-icon>*{margin:auto}   /* 기술 전용 보상 고르기 — 그림을 가운데로 */
+@keyframes gm2f3{0%{opacity:1}28%{opacity:1}33.3%{opacity:0}95%{opacity:0}100%{opacity:1}}
 .gm2sk small{font-size:11.5px;color:#cdbb92;display:inline-flex;align-items:center;gap:2px}
 .gm2sk small img{width:14px;height:14px}
 .gm2sk.locked .gm2ic,.gm2sk.locked .gm2nm{filter:grayscale(1) brightness(.45)}
@@ -6962,6 +6970,12 @@ body #app .gm2 button.gm2n{display:flex;flex-direction:column;align-items:center
 .gm2n .gm2rw small{font-size:10.5px;color:#e8dcc0;white-space:nowrap}
 .gm2n .gm2c{display:inline-flex;align-items:center;gap:2px;font-size:12px;color:#e9d9ff}
 .gm2n .gm2c img{width:14px;height:14px;image-rendering:pixelated}
+/* 보상과 강화가 한 칸에 — 줄 높이(92px) 안에 들게 줄인다 (사용자 2026-11-12 : 아래 줄 보상과 겹쳤다) */
+body #app .gm2 button.gm2n.both{gap:0;line-height:1.05}
+.gm2n.both .gm2rw img,.gm2n.both .gm2rw svg{width:22px;height:22px}
+.gm2n.both .gm2rw small{font-size:10px}
+.gm2n.both b{font-size:15px;line-height:1.15}
+.gm2n.both .gm2c{font-size:11px}
 .gm2n.done{opacity:.32}
 body #app .gm2 button.gm2n.next{cursor:pointer;border-color:rgba(244,214,124,.55);background:rgba(244,214,124,.08)}
 body #app .gm2 button.gm2n.next:hover{background:rgba(244,214,124,.16)}
@@ -20768,7 +20782,7 @@ function garDo(k,arg){
     run.heroes.forEach(h=>{ if(!h.down) h.hp=Math.min(h.maxHp,h.hp+Math.round(h.maxHp*p/100)) });
     return `모든 대원이 체력을 ${p}% 회복했습니다.` }
   if(k==="bath"){ pay(); const v=garV("bathFat","infirmary"); fatAll(-v); return `모든 대원의 피로도가 ${v} 감소했습니다.` }
-  if(k==="bell"){ pay(); const v=garV("bellCleanse","bell-tower"); addTaint(-v); if(!run.lost) nextDay(); return `종소리가 밤을 걷어 냅니다. 오염도가 ${v} 감소했습니다.` }
+  if(k==="bell"){ pay(); const v=garV("bellCleanse","bell-tower"); addTaint(-v); if(!run.lost) nextDay(1); return `종소리가 밤을 걷어 냅니다. 오염도가 ${v} 감소했습니다.` }
   if(k==="train"){ pay(); const v=garV("trainExp","training-hall"); run.pendingLv=run.pendingLv||[];
     run.heroes.forEach(h=>{ if(!h.down) addExp(h,v) }); return `모든 대원이 경험치를 ${v} 얻었습니다.` }
   const sRep=()=>{ const d=repAdd("scout",repRoll([2,4]),"",1); return d?` (정찰대장 평판 ${d>0?"+":""}${d})`:"" };   /* 정찰소를 쓰면 +2~4 (2026-11-12) */
@@ -21293,8 +21307,7 @@ function garPanel(k){
     try{ SFX.play(k==="bell"?(sfxHas("아침 종")?"아침 종":"click"):k==="rest"||k==="revive"?"heal":"click") }catch(e){}
     try{ saveGame() }catch(e){}
     if(k==="bell"){ if(view==="over"){ render(); return }
-      const go=()=>{ GAR_UI.mode="terrace"; view="map"; run.mapSel=null; render() };
-      if(typeof coverInto==="function") coverInto(go); else go(); return }   /* 시설 내부(전체 화면) → 지도 — 덮개 */   /* 밤을 넘겼다 — 아침 지도로 */
+      garBack(); return }   /* 밤을 넘겼다 — 문이 닫혔다 주둔지 전경으로 (사용자 2026-11-12 — 전에는 아침 탁자 · 지도 · 우두머리 대사까지 갔다) */
     if(k==="train"&&run.pendingLv&&run.pendingLv.length){ pending={queue:run.pendingLv,idx:0}; run.pendingLv=null; run.afterBack="garrison"; view="reward"; render(); return }
     if((run.after||[]).length){ run.afterBack="garrison"; afterChest(); return }
     render() };
@@ -21325,6 +21338,12 @@ function garPrevRows(k){
   return "" }
 /* 전투 기술 숙련 (사용자 2026-11-10 — 「임의로 만들어줘」). 규칙은 src/rules/mastery.js */
 let GAR_MH=0;   /* 고른 대원 */
+/* 기술 칸의 그림 — 전환 · 교체 기술(「벼락칼날/번개 구체」)은 그림을 서로 번갈아 흐리게 바꾼다 (사용자 2026-11-12) */
+function mastIconHtml(nm){
+  const L=String(nm).split("/").map(s=>skillIcon(s.trim(),1)).filter(Boolean);
+  if(L.length<2) return L[0]||skillIcon(nm,1)||"";
+  const n=Math.min(3,L.length);
+  return `<span class="gm2alt n${n}">${L.slice(0,n).map((x,i)=>`<span style="animation-delay:${-((n-i)%n)*2.2}s">${x}</span>`).join("")}</span>` }
 function garShelfBody(body){
   /* 전투 기술 숙련 — 사용자 시안 (2026-11-11) :
      왼쪽 대원 세로 목록 · 오른쪽 기술마다 한 줄 = 기술 그림(이름 · 단계) + 단계 사슬(강화 / 기술 전용 보상 · 숙련도 비용)
@@ -21343,6 +21362,8 @@ function garShelfBody(body){
     b.onclick=()=>{ if(GAR_MH===i) return; GAR_MH=i; GAR_UI.mpin=null; try{ SFX.play("click") }catch(e){} render() }; HL.appendChild(b) });
   wrap.querySelector(".gm2top").innerHTML=`<b>${esc(h.name)}</b><span class="gm2pt">${mi}숙련도 ${h.mastery||0}</span>`;
   /* 고를 보상이 걸려 있으면 그것부터 (옛 고르기 그대로) */
+  /* 고를 보상이 걸려 있으면 — 특성 고르기 화면과 같은 카드 화면으로 (사용자 2026-11-12). 고르면 이 강화 화면으로 돌아온다 */
+  if(h.mastPend&&mastPendList(h).length){ run.mastPickH=h.name; view="mastpick"; setTimeout(()=>{ if(view==="mastpick") render() },0); return }
   if(h.mastPend){ const L=mastPendList(h), bx=wrap.querySelector(".gm2body"); bx.innerHTML=""; bx.classList.add("pend");
     bx.appendChild(el(`<div class="gmhead">${esc(mastSlotName(h,h.mastPend.slot))} — ${h.mastPend.grade==="morph"?"총 변환을 고르세요":`${esc(h.mastPend.grade)} 보상 하나를 고르세요`}</div>`));
     L.forEach(r=>{ const row=el(`<div class="gprow gmpick"><span><b>${esc(r.n)}</b><small>${esc(r.g)}</small><br>${rich?rich(String(r.d||"").replace(/\n/g," ")):esc(r.d)}</span><button type="button">고르기</button></div>`);
@@ -21361,11 +21382,11 @@ function garShelfBody(body){
   let firstNext=99;
   MAST_SLOTS.forEach(sl=>{ const R=mastRow(h,sl); if(!R) return;
     const i=MAST_SKI[sl], locked=i>=2&&!skOpen(Object.assign({},h,{_lvB:null}),i), lv=mastLv(h,sl);
-    const nm=mastSlotName(h,sl), icn=sl==="대원"?faceArt(h.name):(skillIcon(nm,1)||"");
+    const nm=mastSlotName(h,sl), icn=sl==="대원"?faceArt(h.name):mastIconHtml(nm);
     const tid="gm2-"+h.name+"-"+sl; TIP_HTML[tid]=tipOf(sl);
     const sub=locked?`<small class="lk">${mastUnlockOk(h,i)?`${mi}${MAST_UNLOCK[i]} 해제`:esc(skLockTxt(h,i))}</small>`:R.lv.length?`<small>${lv}/${R.max} 단계</small>`:"";
     const head=el(`<button type="button" class="gm2sk${locked?" locked":""}${GAR_UI.mpin&&GAR_UI.mpin.h===h.name&&GAR_UI.mpin.sl===sl?" pin":""}" data-tid="${tid}">
-      <span class="gm2ic">${icn}</span><span class="gm2nm">${esc(nm)}</span>${sub}</button>`);
+      <span class="gm2ic">${icn}</span><span class="gm2nm">${nm.split("/").map(esc).join("/<br>")}</span>${sub}</button>`);
     head.onclick=()=>{ const P=GAR_UI.mpin, same=P&&P.h===h.name&&P.sl===sl;
       if(locked&&same){   /* 설명을 본 뒤 한 번 더 — 해제 */
         if(mastUnlock(h,i)){ try{ SFX.play(sfxHas("level")?"level":"click") }catch(_){} toast(`${h.name} — ${h.sk[i].n} 해제`); try{ saveGame() }catch(_){} }
@@ -21379,7 +21400,7 @@ function garShelfBody(body){
       const done=N[0]<=lv, next=!locked&&N[0]===lv+1, why=next?mastWhy(h,sl):"";
       const eff=N[2]?mastEffTxt([N[0],N[1],N[2],N[3],null]):"", rw=N[4]?(N[4]==="morph"?"총 변환 고르기":`기술 전용 ${N[4]} 보상`):"";
       const tip=[eff,rw].filter(Boolean).join(", ")||"강화";
-      const node=el(`<button type="button" class="gm2n${done?" done":""}${next?" next":""}${next&&why?" short":""}" ${next&&!why?"":"disabled"} data-kw="${N[0]}단계" data-tip="${esc(tip)}${next&&why?" "+esc(why):""}">
+      const node=el(`<button type="button" class="gm2n${done?" done":""}${next?" next":""}${rw&&N[2]?" both":""}${next&&why?" short":""}" ${next&&!why?"":"disabled"} data-kw="${N[0]}단계" data-tip="${esc(tip)}${next&&why?" "+esc(why):""}">
         ${rw?`<span class="gm2rw">${N[4]==="morph"?"":chestIcon(N[4])}<small>${esc(rw)}</small></span>`:""}
         <b>${N[2]?"강화":rw?"":"강화"}</b><span class="gm2c">${mi}${N[1]}</span></button>`);
       node.classList.add("kw");
@@ -25887,7 +25908,7 @@ function taintChip(extra){
   const cr=run.crystal==null?CRYSTAL_MAX:run.crystal;
   return tc+`<span class="res crystal use kw ${extra||""} ${cr<=0?"empty":""}" role="button" data-kw="푸른 수정" data-tip="누르면 수정 1칸으로 오염도를 ${CRYSTAL_CURE} 걷어 냅니다. 기력의 샘, 마른숲 상점의 파편으로 채웁니다.">${iconImg("item_spirit_blue_crystal")?`<span class="ri">${iconImg("item_spirit_blue_crystal")}</span>`:""}<b>${cr}</b><i>/${CRYSTAL_MAX}</i><em class="cruse">사용</em><u style="width:${cr/CRYSTAL_MAX*100}%"></u></span>`;
 }
-function nextDay(){
+function nextDay(quiet){   /* quiet — 아침 탁자 연출 없이 (종탑 종 울리기 : 문이 닫혔다 주둔지로, 사용자 2026-11-12) */
   leaveVisited();
   run.mapUnfold=1;                    /* 자고 나면 지도를 다시 펼친다 (사용자 2026-09-14) */
   wagonStep();                        /* 호송 마차는 날마다 두 칸 (사용자 2026-10-08, 전에는 한 칸) */                     /* 들른 상점·제련소는 날이 바뀌면 사라진다 (respawn 이 딴 데 새로 놓는다) */
@@ -25926,7 +25947,7 @@ function nextDay(){
   const left=FIELDS[run.field].days-run.day;
   /* 새날 — 탁자가 닫힌 채 아침빛을 맞고 열린다 (사용자 2026-10-30, dawnBreak). 못 쓰면 예전 암전(dayBreak) */
   { const fn=fieldLabel()||FIELDS[run.field].n, lb=left>0?`${fn} 남은 날 ${left}일`:`${fn} 마지막 날`;
-    if(typeof dawnBreak==="function") dawnBreak(run.day,lb); else dayBreak(run.day,lb); }
+    if(quiet){} else if(typeof dawnBreak==="function") dawnBreak(run.day,lb); else dayBreak(run.day,lb); }
   /* 어둠이 걷힌 뒤에 한 번 더 그린다 — 마차 · 뿌리의 연출이 그때부터 돈다 (사용자 2026-10-14) */
   setTimeout(()=>{ try{ if(typeof view!=="undefined"&&view==="map") render() }catch(e){} },Math.max(0,MAP_BO_UNTIL-Date.now())+60);
   if(!(typeof DAWN_ON!=="undefined"&&DAWN_ON)) toast(`${run.day}일차 아침이 밝았습니다.`);   /* 탁자 연출은 가운데 문구가 날을 알린다 — 겹치지 않게 */
@@ -27806,6 +27827,45 @@ function traitInfoHtml(h){
   const t=chosenTrait(h),decided=h.tag&&h.tag.traitDecided;
   return `<div class="hero-trait-info"><b>이번 원정의 특성</b><span>${t?`<button type="button" class="hero-trait-toggle" aria-expanded="false">${esc(t.n)} <small>보상 보기</small></button>`:decided?"선택하지 않음":h.lv<7?"7레벨에 선택":"미선택"}</span>${t?`<small>${esc(t.d)}</small>${traitRewardListHtml(h,t)}`:""}</div>`;
 }
+/* 기술 전용 보상 고르기 — 주둔지 기술 강화에서 보상 칸을 열면 (사용자 2026-11-12 : 특성 고르기 화면과 카드 그대로).
+   고르면 주둔지의 기술 강화 화면으로 돌아간다 (GAR_UI.panel 은 그대로 「shelf」) */
+function drawMastPick(app){
+  const h=(run.heroes||[]).find(x=>x.name===run.mastPickH), P=h&&h.mastPend, L=P?mastPendList(h):[];
+  if(!h||!P||!L.length){ if(h&&P&&!L.length) h.mastPend=null; run.mastPickH=null; view="garrison"; return render() }
+  { const kt=document.getElementById("kwtip"); if(kt) kt.style.display="none" }   /* 누른 강화 칸의 풍선이 남지 않게 */
+  app.classList.add("trait-stage");
+  app.appendChild(el(`<div class="center"><div class="title">${P.grade==="morph"?"총 변환 고르기":`기술 전용 ${esc(P.grade)} 보상`}</div>
+    <div class="sub">${esc(mastSlotName(h,P.slot))} — ${P.grade==="morph"?"총 변환을 고르세요":`${esc(P.grade)} 보상 하나를 고르세요`}</div>
+    <div class="trait-owner">${esc(h.name)} · Lv.${h.lv}</div></div>`));
+  /* 카드 — 레벨업 보상 카드 그대로, 그림은 옛 특성 보상의 붉은 카드(trait-guarantee) (사용자 2026-11-12) */
+  const row=el(`<div class="rewards rwmat mastpk"></div>`);
+  document.body.classList.add("rwtable","trtable");
+  let locked=false;
+  L.forEach(r=>{
+    const card=el(`<div class="rw rwpick${gcls(r.g)} trait-guarantee" data-reward-key="${esc(rwKey(r))}"><div class="rwi">${rewardIcon(r)}</div>
+      <b>${esc(r.n)}</b>
+      <div class="rwd"><p>${rwDescHtml(r.d,h)}</p></div>${rewCondHtml(r,h)}<div class="rwft"></div></div>`);
+    card.tabIndex=0; card.setAttribute("role","button");
+    card.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); card.click() } };
+    card.onclick=()=>{
+      if(locked||h.mastPend!==P) return; locked=true;
+      card.classList.add("chosen"); row.classList.add("picked"); try{ pickBurst(card,r.g) }catch(e){}
+      row.querySelectorAll(".rw").forEach(x=>{ if(x!==card) x.classList.add("faded") });
+      const got=mastPick(h,rwKey(r)); if(got) toast(`${h.name} — ${got.n}`);
+      try{ saveGame() }catch(e){}
+      setTimeout(()=>{ if(view!=="mastpick") return; run.mastPickH=null;
+        if((run.after||[]).length){ run.afterBack="garrison"; view="garrison"; afterChest(); return }
+        view="garrison"; render() },460) };
+    row.appendChild(card) });
+  app.querySelector(".center").appendChild(row);
+  rwMatFit(row);
+  { const dk="mast|"+h.name+"|"+P.slot+"|"+P.keys.join(",");
+    if(TRAIT_DEALT!==dk){ TRAIT_DEALT=dk; rwFadeIn(null);
+      [...row.children].forEach((c,i)=>{ const d=i*110;
+        c.classList.add("deal"); c.style.animationDelay=d+"ms";
+        setTimeout(()=>{ try{ SFX.play(SND_FLIP()) }catch(e){} },d);
+        setTimeout(()=>{ c.classList.remove("deal"); c.style.animationDelay="" },d+520) }) } }
+}
 function drawTraitStep(app,cur){
   const h=cur.hero;
   if(cur.lv!==7||(h.tag&&h.tag.traitDecided))return false;
@@ -28225,7 +28285,7 @@ document.addEventListener("keydown",e=>{
   if(!run||view==="title"||view==="map"||(typeof placeMode==="function"&&placeMode())) return;
   if(e.key==="m"||e.key==="M"||e.key==="ㅡ"){ run.mapPeek=!run.mapPeek; mapTipHide(); render() }
 });
-const NEW_UI=["chest","reward","bloot","questpick","questdone","winnew","item","shop","relic","rest","recruit","pickhero","clear","wavegap","forge","gear","over","runs","bag","camp","gimres"];
+const NEW_UI=["chest","reward","bloot","questpick","questdone","winnew","item","shop","relic","rest","recruit","pickhero","clear","wavegap","forge","gear","over","runs","bag","camp","gimres","mastpick"];
 function render0(){
   const app=document.getElementById("app");
   /* 연습장 띠는 body 에 붙어 있어 화면을 갈아도 저절로 사라지지 않는다 — 여기서 걷고,
@@ -28333,6 +28393,7 @@ function render0(){
   if(view==="heropick") return drawStart(app);
   if(view==="corepick") return drawCorePick(app);
   if(view==="map"){ drawMap(app); if(run&&run.qShow) questModal(); return }   /* 퀘스트 완료 상자 (사용자 2026-10-30) */
+  if(view==="mastpick") return drawMastPick(app);   /* 주둔지 기술 강화 — 기술 전용 보상 고르기 (2026-11-12) */
   if(view==="garrison") return drawGarrison(app);   /* 주둔지 — 건물 다섯 (2026-11-10) */
   if(view==="camp"){ view="map"; run.mapSel=null; return render() }   /* 주둔지 따로 화면은 없앴다 — 지도의 주둔지 판 (사용자 2026-10-05) */
   if(view==="battle")   return drawBattle(app);
@@ -28852,6 +28913,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 432, "v": "0.8", "d": "2026-11-12", "t": "종 울리기 후 주둔지로 · 기술 강화 화면 전환 기술 그림 · 기술 전용 보상 붉은 카드 화면", "big": 0},
  {"b": 431, "v": "0.8", "d": "2026-11-12", "t": "성향 칩 테두리 없앰 · 평판 50 효과 없음 · 낮은 평판 웃음 없음", "big": 0},
  {"b": 430, "v": "0.8", "d": "2026-11-12", "t": "성향 9개 추가 — 낙천 의지 충만 아량 기개 분별력, 우울 의지 상실 허영심 소심", "big": 0},
  {"b": 429, "v": "0.8", "d": "2026-11-12", "t": "각인 — 마법력은 전투 마법서, 보호력은 전투 방패", "big": 0},
@@ -30476,7 +30538,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=431;
+const BUILD_NO=432;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
