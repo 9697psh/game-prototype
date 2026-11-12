@@ -7135,6 +7135,42 @@ body #app .garwrap button.ghpick.on{border-color:#e0c85a;background:rgba(224,200
 .garwrap .ghnone{font-size:1em;padding:10px 0}
 body #app .garwrap .garpanel.gphard .gpcard{width:min(900px,70cqw)}
 .garwrap .gpbody.goodds,.garwrap .gpbody.ghbody{max-height:none;overflow:visible}
+
+/* 활동 창 다듬기 (사용자 2026-11-12 「세로로 늘리고 폰트 줄여」 「검정 상자 지우고 확률은 내 게임 막대로」) */
+body #app .garwrap .garpanel .gpcard{min-height:min(66%,600px);justify-content:center;gap:clamp(12px,1.1cqw,18px)}
+.garwrap .garpanel .gpd{font-size:clamp(13px,1.1cqw,18px);line-height:1.6}
+body #app .garwrap .garpanel button.gpgo{font-size:clamp(16px,1.45cqw,24px)}
+.garwrap .garpanel .gpc,.garwrap .garpanel .gpwhy{font-size:clamp(11px,.85cqw,14px)}
+.garwrap .gpres .rtop{font-size:clamp(12px,.95cqw,15px)}
+.garwrap .gpres .rst,.garwrap .gpres .rnum{font-size:clamp(10px,.8cqw,13px)}
+.garwrap .gpres .rgain{font-size:clamp(12px,1cqw,16px)}
+.garwrap .gpres .expart{height:44px;flex:0 0 44px}
+.garwrap .goodds,.garwrap .ghbody{font-size:clamp(11px,.9cqw,15px)}
+.garwrap .gsrt{font-size:clamp(18px,1.6cqw,27px)}
+/* 검은 상자 걷기 — 줄 사이 옅은 금만 */
+.garwrap :is(.gorow,.gsr,.gsh,.gsg,.ghit,.ghit.forged,.ghst){background:none;border:0}
+.garwrap .gorow{border-bottom:1px solid rgba(230,214,178,.1);padding:6px 4px}
+.garwrap .gsres{gap:0}
+.garwrap .gsr+.gsr{border-left:1px solid rgba(230,214,178,.12)}
+.garwrap .gsh+.gsh{border-left:0}
+.garwrap .ghit{padding:4px 2px}
+.garwrap .ghst{min-width:48px;padding:2px 4px}
+.garwrap .ghst.on{background:none;color:#f4d67c}
+.garwrap .ghst.on b{text-decoration:underline;text-underline-offset:3px}
+body #app .garwrap button.ghpick,body #app .garwrap button.ghpick.on{background:none;border:0;padding:4px 4px}
+body #app .garwrap button.ghpick.on .ghpn{color:#f4d67c}
+body #app .garwrap button.ghpick:not(.on){opacity:.72}
+body #app .garwrap button.ghpick:hover{opacity:1}
+/* 확률 막대 — 쉼터 회복 결과와 같은 큰 틀(208×14) + 경험치 띠 */
+.garwrap .gop{display:flex;align-items:center;gap:8px;height:auto;background:none;border:0}
+.garwrap .gobar{position:relative;flex:1;height:14px;box-sizing:border-box;border-style:solid;border-color:transparent;border-width:3px 4px;
+  border-image:url("map/체력-큰틀.png") 3 4 3 4 fill / 3px 4px 3px 4px round;image-rendering:pixelated}
+.garwrap .gobar i{position:absolute;left:0;top:0;bottom:0;background:url("map/체력-경험치.png") 0 0/8px 100% repeat-x;image-rendering:pixelated}
+.garwrap .gop b{flex:0 0 3.2em;text-align:right;line-height:1;font-size:1em;color:#f2e6c8}
+/* 방해하기 — 작게 (정찰대장 · 떠돌이 상인 · 제련공 브란, 자리는 그대로) */
+body.vpage #app button.garlab.garjam{font-size:clamp(12px,1.15cqw,19px);letter-spacing:.04em}
+#app .shopstage button.shjam,#app .forgestage button.shjam{font-size:1.15cqw}
+.garwrap .gop:not(:has(.gobar)){justify-content:center}.garwrap .gop:not(:has(.gobar)) b{flex:0 0 auto;text-align:center}
 </style>
 </head>
 <body>
@@ -20531,6 +20567,7 @@ function dispRoundEnd(){
     h.hp=Math.min(h.maxHp,h.hp+v); dispSay(h,"뚝심",`체력 +${v}`) }) }
 /* 전투가 끝날 때 (battleWon) — 겸허 · 낙천 · 아량 · 우울 · 허영심 */
 function dispBattleEnd(){
+  dispWillOff();
   if(!dispOn()) return;
   run.heroes.forEach(h=>{ if(h.down) return;
     if(dispFire(h,"겸허")){ const v=dispVal("겸허"); addExp(h,v); dispSay(h,"겸허",`경험치 +${v}`) }
@@ -20543,8 +20580,13 @@ function dispBattleEnd(){
 function dispAllyDown(t){
   if(!dispOn()||!run.heroes||run.heroes.indexOf(t)<0) return;
   run.heroes.forEach(h=>{ if(h===t||h.down||h.hp<=0) return;
-    [["의지 상실",-1],["의지 충만",1]].forEach(([n,s])=>{ if(!dispFire(h,n)) return; const v=dispVal(n)*s;
-      ["atk","mag","def"].forEach(k=>bumpTmp(h,k,v)); dispSay(h,n,`모든 능력치 ${v>0?"+":"−"}${Math.abs(v)}`) }) }) }
+    /* 한 전투에 성향마다 한 번만 — 쌓이지 않는다. 붙인 몫은 willLoss · willGain (BATTLE_RESET), 전투가 끝나면 dispWillOff 가 걷는다 (사용자 2026-11-12) */
+    [["의지 상실",-1,"willLoss"],["의지 충만",1,"willGain"]].forEach(([n,s,f])=>{ if(h[f]||!dispFire(h,n)) return; const v=dispVal(n)*s;
+      h[f]=v; ["atk","mag","def"].forEach(k=>bumpTmp(h,k,v)); dispSay(h,n,`모든 능력치 ${v>0?"+":"−"}${Math.abs(v)}`) }) }) }
+/* 의지 상실 · 의지 충만 — 그 전투에서만. 전투가 끝나면(이기든 지든) 걷는다 */
+function dispWillOff(){
+  (run&&run.heroes||[]).forEach(h=>{ const v=(h.willLoss||0)+(h.willGain||0);
+    if(v) ["atk","mag","def"].forEach(k=>bumpTmp(h,k,-v)); h.willLoss=0; h.willGain=0 }) }
 /* 체력이 절반 이하일 때 (alwaysSync) — 기개. 절반 아래로 내려설 때마다 한 번 굴리고, 절반 위로 오르면 걷힌다 (이라 분노와 같은 꼴) */
 function dispGritSync(h){
   if(!h||!h.disp||h.disp.good.indexOf("기개")<0||!dispOn()) return;
@@ -21338,7 +21380,7 @@ function garDrawRoom(app){
     const hot=el(`<button type="button" class="garnpc kw" aria-label="${esc(o.name||"")}" ${o.key==="scout-captain"?repTidAttr("scout"):""} style="left:${(o.pos[0]+o.size[0]*.22)/764*100}%;top:${top}%;width:${o.size[0]*.56/764*100}%;height:${Math.max(10,(o.talkBottom||o.pos[1]+o.size[1])-o.pos[1]-6)/408*100}%"></button>`);
     hot.onclick=e=>{ e.stopPropagation(); if(!GAR_UI.busy) garNpcTalk(lab,o,cx,top) };
     if(o.key==="scout-captain"){   /* 방해하기 — 70% 확률로 평판 −3 (2026-11-12). 말풍선은 다시 그려도 2.4초 남는다 */
-      const jb=el(`<button type="button" class="garlab garjam" style="left:${cx-16}%;top:${top+14}%">방해하기</button>`);
+      const jb=el(`<button type="button" class="garlab garjam" style="left:${cx+16}%;top:${top+14}%">방해하기</button>`);
       jb.onclick=e=>{ e.stopPropagation(); if(GAR_UI.busy) return; GAR_BARK={key:o.key,line:scoutJam(),t0:Date.now()}; try{ SFX.play("click") }catch(_){} render() };
       lab.appendChild(jb);
       if(GAR_BARK&&GAR_BARK.key===o.key&&Date.now()-GAR_BARK.t0<2400)
@@ -21514,8 +21556,8 @@ function garShelfBody(body){
 const garPct=p=>Math.round(p*100);
 const garRng=(a,b)=>a===b?`${a}`:`${a}~${b}`;
 /* 표 한 줄 — 그림 · 이름 · 확률(막대) · 수량 */
-function garOddRow(ic,nm,p,q){ return `<div class="gorow"><span class="goic">${ic}</span><span class="gonm">${nm}</span>
-  <span class="gop"><i style="width:${Math.max(0,Math.min(100,p))}%"></i><b>${p}%</b></span><span class="goq">${q}</span></div>` }
+function garOddRow(ic,nm,p,q,nobar){ return `<div class="gorow"><span class="goic">${ic}</span><span class="gonm">${nm}</span>
+  <span class="gop">${nobar?"":`<span class="gobar"><i style="width:${Math.max(0,Math.min(100,p))}%"></i></span>`}<b>${p}%</b></span><span class="goq">${q}</span></div>` }
 function garRepLine(key,pick){ const L=repEffectLines(key).filter(pick); if(!L.length) return "";
   return `<div class="gorep">정찰대장 평판 ${repGet(key)}: ${esc(L.join(", "))}</div>` }
 /* 벼림 — 고르는 줄 · 지금과 벼린 뒤 · 단계별 성공 확률 · 실패하면 */
@@ -21563,19 +21605,17 @@ function garScoutOddsBody(body){
     ${garRepLine("scout",l=>l.indexOf("정찰")===0||l.indexOf("정찰 보내기")>=0)}` }
 /* 쉼터 배치 — 세울 쉼터마다 그림 · 이름 · 들어갈 때 활동량 · 단련하기 보상 */
 function garShelterBody(body){
-  const n0=(typeof coreFx==="function"&&coreFx("trainMore"))||0;
   body.classList.add("goodds");
   body.innerHTML=`<div class="gshl">${garShelterL().map(rk=>{ const K=restKind(rk);
-    return `<div class="gsh"><div class="gsha">${gimCellArt({t:"rest",rk:rk})}</div><b>${esc(K.n)}</b><small>${esc(K.sub)}</small>
-      <div class="gshf"><span>들어갈 때 활동량 <b>${K.act}</b></span><span>단련하기 <b>${esc(K.grade)} 보상 ${K.give+n0}개</b></span></div></div>` }).join("")}</div>
+    return `<div class="gsh"><div class="gsha">${gimCellArt({t:"rest",rk:rk})}</div><b>${esc(K.n)}</b></div>` }).join("")}</div>
     ${garRepLine("scout",l=>l.indexOf("쉼터")>=0)}` }
 /* 감정 — 이 단계에서 나올 수 있는 것 (줄마다 따로 굴린다) */
 function garAssayBody(body){
   const nm={stone:"제련석",gold:"금화"};
   body.classList.add("goodds");
   body.innerHTML=`<div class="gohd"><span>나올 수 있는 것</span><span>확률</span><span>수량</span></div>
-    ${GAR_ASSAY[garLv("forge")-1].map(([p,k,a,b])=>garOddRow(chestIcon(nm[k]||k),nm[k]||`${k} 장신구`,garPct(p),garRng(a,b)+"개")).join("")}
-    <div class="gonote">줄마다 따로 정해집니다. 아무것도 나오지 않을 수도 있습니다.</div>` }
+    ${GAR_ASSAY[garLv("forge")-1].map(([p,k,a,b])=>garOddRow(chestIcon(nm[k]||k),nm[k]||`${k} 장신구`,garPct(p),garRng(a,b)+"개",1)).join("")}
+    ` }
 /* 정찰 결과 받기 — 결과 · 밝힌 구역 · 받는 것 */
 function garScoutBody(body){
   const s=run.gar.scoutRes, T={great:"대성공",ok:"성공",fail:"실패"}[s.res];
@@ -29065,6 +29105,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 435, "v": "0.8", "d": "2026-11-12", "t": "의지 성향 한 전투 한 번 · 주둔지 창 다듬기(상자 걷기 · 게임 막대 · 글씨 줄임 · 쉼터 그림만) · 방해하기 작게", "big": 0},
  {"b": 434, "v": "0.8", "d": "2026-11-12", "t": "주둔지 활동 창 — 벼림(고르기 · 지금과 벼린 뒤 · 단계별 확률) · 정찰(결과 확률 · 가져오는 것 표) · 쉼터 · 감정 · 정찰 결과", "big": 0},
  {"b": 433, "v": "0.8", "d": "2026-11-12", "t": "보상 글의 기술 이름 풍선 — 전환 · 교체 기술, 띄어 쓴 기술 이름", "big": 0},
  {"b": 432, "v": "0.8", "d": "2026-11-12", "t": "종 울리기 후 주둔지로 · 기술 강화 화면 전환 기술 그림 · 기술 전용 보상 붉은 카드 화면", "big": 0},
@@ -30692,7 +30733,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=434;
+const BUILD_NO=435;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -43043,7 +43084,8 @@ const BATTLE_RESET={
   reiChargeUp:0, reiKSeen:{}, crossAtkOn:0, crossMagOn:0,
   studyOn:0, invUndyingUsed:0,
   dark:0, darkGot:0, darkPend:0,
-  pbHeroLeft:0, pbHero:0, pbHeartOn:0, ironUp:0, pbDoomLeft:0};   /* 철광 벼림 · 영웅의 운명 — 그 전투 */   /* 페블 — 영웅 등장 · 라이티늄 심장 몫은 그 전투 (노트 21) */   /* 그슨대 어둠 조각 — 「그 전투 동안」 (노트 10-0-1, 2026-11-02) */   /* 인비디아 — 전투 단위 (역병 연구 몫 · 불사, 2026-10-22) */   /* 레이 — 전투 단위 (충 전 누적 · 거친 태세 · 벼락 과충전, 2026-10-21) */   /* 조합 몫 — applySynergy 가 다시 채운다 */
+  pbHeroLeft:0, pbHero:0, pbHeartOn:0, ironUp:0, pbDoomLeft:0,
+  willLoss:0, willGain:0};   /* 성향 의지 상실 · 의지 충만 — 그 전투 한 번 (2026-11-12) */   /* 철광 벼림 · 영웅의 운명 — 그 전투 */   /* 페블 — 영웅 등장 · 라이티늄 심장 몫은 그 전투 (노트 21) */   /* 그슨대 어둠 조각 — 「그 전투 동안」 (노트 10-0-1, 2026-11-02) */   /* 인비디아 — 전투 단위 (역병 연구 몫 · 불사, 2026-10-22) */   /* 레이 — 전투 단위 (충 전 누적 · 거친 태세 · 벼락 과충전, 2026-10-21) */   /* 조합 몫 — applySynergy 가 다시 채운다 */
 function resetVals(h,T){ for(const k in T){ const v=T[k]; h[k]=(v&&typeof v==="object")?(Array.isArray(v)?[]:{}):v } }
 function resetBattle(){
   if(run&&run.sandbox){sandRestartBattle();return}
@@ -55508,6 +55550,7 @@ function battleLost(){
   if(run.dun&&run.dun.trial){ trialLost(); return }   /* 시련의 문 — 판이 끝나지 않고 절반의 체력으로 벗어난다 */
   lvBattleEnd();
   run.stimOn=0; run.fireOn=0; run.hangOn=0;   /* 각성제 · 모닥불 이야기는 전투 하나까지 */
+  dispWillOff();   /* 성향 의지 — clearTmp 가 몫을 걷고 표시도 비운다 */
   run.heroes.forEach(clearTmp); run.heroes.forEach(clearRndTmp);
   run.heroes.forEach(clearTurnTmp);
   run.heroes.forEach(h=>{ if(h.hp<=0){ h.hp=0; h.down=1; h.slot=0 } });
