@@ -7204,9 +7204,9 @@ body.vpage #app button.garlab.garjam{font-size:clamp(12px,1.15cqw,19px);letter-s
 @keyframes engN{0%,100%{box-shadow:0 0 3px 1px rgba(255,64,48,.35)}50%{box-shadow:0 0 12px 3px rgba(255,64,48,.9)}}
 @keyframes engP{0%,100%{box-shadow:0 0 3px 1px rgba(72,220,110,.35)}50%{box-shadow:0 0 12px 3px rgba(72,220,110,.9)}}
 @keyframes engM{0%,100%{box-shadow:0 0 10px 3px rgba(255,64,48,.85)}50%{box-shadow:0 0 10px 3px rgba(72,220,110,.85)}}
-:is(.gs,.gslot,.fgslot).engn{animation:engN 1.8s ease-in-out infinite}
-:is(.gs,.gslot,.fgslot).engp{animation:engP 1.8s ease-in-out infinite}
-:is(.gs,.gslot,.fgslot).engm{animation:engM 2.4s ease-in-out infinite}
+
+
+
 @keyframes engNd{0%,100%{filter:drop-shadow(0 0 2px rgba(255,64,48,.4))}50%{filter:drop-shadow(0 0 8px rgba(255,64,48,.95))}}
 @keyframes engPd{0%,100%{filter:drop-shadow(0 0 2px rgba(72,220,110,.4))}50%{filter:drop-shadow(0 0 8px rgba(72,220,110,.95))}}
 @keyframes engMd{0%,100%{filter:drop-shadow(0 0 7px rgba(255,64,48,.9))}50%{filter:drop-shadow(0 0 7px rgba(72,220,110,.9))}}
@@ -7227,6 +7227,19 @@ body.vpage #app button.garlab.garjam{font-size:clamp(12px,1.15cqw,19px);letter-s
 .hdfx.ok .hdn{color:#ffe08a;text-shadow:0 0 10px #ffd75a,0 2px 0 #000}
 .hdfx.no .hdn{color:#9a9088}
 .intent .iname{font-style:normal;font-weight:700;margin-right:.15em}   /* 의도에 기술 이름 (앙코르, 2026-11-14) */
+/* 각인 빛 — 테두리가 아니라 안쪽 그림에 (사용자 2026-11-14 둘째). 그림 뒤에 은은한 빛 + 그림 둘레 빛 */
+:is(.gs,.gslot,.fgslot):is(.engn,.engp,.engm) :is(.gi,.fgi){position:relative}
+:is(.gslot,.fgslot):is(.engn,.engp,.engm) :is(.gi,.fgi)::before{content:"";position:absolute;inset:-38%;border-radius:50%;pointer-events:none;z-index:0;animation:engBg 1.8s ease-in-out infinite;background:radial-gradient(circle,var(--eg) 0%,transparent 68%)}
+:is(.gslot,.fgslot):is(.engn,.engp,.engm) :is(.gi,.fgi)>*{position:relative;z-index:1}
+:is(.gs,.gslot,.fgslot).engn{--eg:rgba(255,64,48,.75)} :is(.gs,.gslot,.fgslot).engp{--eg:rgba(72,230,110,.8)}
+:is(.gs,.gslot,.fgslot).engm :is(.gi,.fgi)::before{animation:engBgM 2.4s ease-in-out infinite}
+@keyframes engBg{0%,100%{opacity:.45}50%{opacity:1}}
+@keyframes engBgM{0%,100%{opacity:.9;background:radial-gradient(circle,rgba(255,64,48,.6) 0%,transparent 68%)}50%{opacity:.9;background:radial-gradient(circle,rgba(72,220,110,.6) 0%,transparent 68%)}}
+:is(.gslot,.fgslot).engn :is(.gi,.fgi) :is(img,svg),.gs.engn :is(img,svg){animation:engNd 1.8s ease-in-out infinite}
+:is(.gslot,.fgslot).engp :is(.gi,.fgi) :is(img,svg),.gs.engp :is(img,svg){animation:engPd 1.8s ease-in-out infinite}
+:is(.gslot,.fgslot).engm :is(.gi,.fgi) :is(img,svg),.gs.engm :is(img,svg){animation:engMd 2.4s ease-in-out infinite}
+:is(.gs,.gslot,.fgslot):is(.engn,.engp,.engm) :is(.gi,.fgi){overflow:visible}
+:is(.gs,.gslot,.fgslot).engn{--eg:rgba(255,64,48,.6)} :is(.gs,.gslot,.fgslot).engp{--eg:rgba(72,230,110,.6)}
 </style>
 </head>
 <body>
@@ -29251,6 +29264,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 444, "v": "0.8", "d": "2026-11-14", "t": "각인 빛 — 테두리 대신 안쪽 그림 뒤에", "big": 0},
  {"b": 443, "v": "0.8", "d": "2026-11-14", "t": "그리퍼 기절 줄임 · 배당 부정 행위 퀘스트 · 관중단 능력치 쪽지 · 앙코르 이름 · 던지기 크게 · 기술 강화 연출 고침", "big": 0},
  {"b": 442, "v": "0.8", "d": "2026-11-14", "t": "제련 결과 연출 · 벼림 연출 · 기술 강화 연출 · 각인 빛 · 그리퍼 빙빙 · 평판 낮은 NPC · 투기장 체력", "big": 0},
  {"b": 441, "v": "0.8", "d": "2026-11-14", "t": "녹슨 그리퍼 궤도 날기 · 제련 연출 건너뛰기 막음", "big": 0},
@@ -30887,7 +30901,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=443;
+const BUILD_NO=444;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
