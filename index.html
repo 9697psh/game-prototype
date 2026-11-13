@@ -7226,6 +7226,7 @@ body.vpage #app button.garlab.garjam{font-size:clamp(12px,1.15cqw,19px);letter-s
 .hdfx .hdn{font-family:var(--serif);font-size:clamp(16px,1.5cqw,24px);color:#e0c85a;text-shadow:0 2px 0 #000;letter-spacing:.06em}
 .hdfx.ok .hdn{color:#ffe08a;text-shadow:0 0 10px #ffd75a,0 2px 0 #000}
 .hdfx.no .hdn{color:#9a9088}
+.intent .iname{font-style:normal;font-weight:700;margin-right:.15em}   /* 의도에 기술 이름 (앙코르, 2026-11-14) */
 </style>
 </head>
 <body>
@@ -21591,7 +21592,9 @@ function garPrevRows(k){
 let GAR_MH=0;   /* 고른 대원 */
 /* 기술 강화 · 해제 연출 (사용자 2026-11-14) — 강화 : 그 단계 칸이 금빛으로 번쩍, 기술 그림이 튀며 불티.
    해제 : 잠겼던 그림이 잿빛에서 빛으로, 불티 두 번 */
-function mastFX(head,node,kind){
+function mastFX(tid,lv,kind){
+  const H=[...document.querySelectorAll(".gm2sk")], head=H.find(x=>x.dataset.tid===tid), ix=H.indexOf(head);
+  const row=ix>=0?document.querySelectorAll(".gm2ch")[ix]:null, node=(row&&lv!=null)?row.querySelector(`.gm2n[data-lv="${lv}"]`):null;
   const ic=head&&head.querySelector(".gm2ic"); if(!ic||!ic.animate) return;
   const mid=e=>{ const r=e.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2} };
   if(kind==="open"){
@@ -21662,7 +21665,7 @@ function garShelfBody(body){
     HD.appendChild(head);
     /* 방금 강화 · 해제한 기술 — 다시 그린 뒤 그 칸과 그림에 연출 (사용자 2026-11-14 「지금은 아예 없음」) */
     { const F=GAR_UI.mastFx; if(F&&F.h===h.name&&F.sl===sl){ GAR_UI.mastFx=null;
-      setTimeout(()=>{ try{ mastFX(head,F.n!=null?CH.querySelector(`.gm2n[data-lv="${F.n}"]`):null,F.k) }catch(e){} },40) } }
+      setTimeout(()=>{ try{ mastFX(tid,F.n,F.k) }catch(e){} },120) } }   /* 그 사이 다시 그려질 수 있어 살아 있는 칸을 찾아서 */
     /* 단계 사슬 */
     const row=el(`<div class="gm2ch${locked?" locked":""}"></div>`);
     R.lv.forEach(N=>{ if(N[0]<2) return;
@@ -23124,7 +23127,7 @@ const FOE={
     {n:"물건 던지기",w:4,tg:"any2",heroOnly:1,dmg:3,cheerUp:10,throwFx:"fx_ar_stone",arc:1,d:"무작위 대원 둘에게 마법 피해를 3 줍니다. 환호가 10 상승합니다."},
     {n:"야유",w:3,tg:"all",anyRng:1,deb:{fear:1},cheerUp:-20,d:"모든 상대에게 공포를 1 부여합니다. 환호가 20 감소합니다."},
     {n:"떼창",w:1,tg:"weak",anyRng:1,heroOnly:1,deb:{stun:8},d:"체력이 가장 낮은 대원에게 기절을 8 부여합니다."},
-    {n:"앙코르",w:3,tg:"self",shield:15,encore:5,d:"보호막을 15 얻습니다. 1턴 동안 피해를 받을 때마다 환호가 5씩 상승합니다."}],
+    {n:"앙코르",w:3,tg:"self",shield:15,encore:5,intentName:2,d:"보호막을 15 얻습니다. 1턴 동안 피해를 받을 때마다 환호가 5씩 상승합니다."}],
    hit:"광란의 합창"},
  "풀려난 야수":{hp:45,atk:4,def:3,rng:4,exp:6,elite:1,
    el:"공격",
@@ -29248,6 +29251,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 443, "v": "0.8", "d": "2026-11-14", "t": "그리퍼 기절 줄임 · 배당 부정 행위 퀘스트 · 관중단 능력치 쪽지 · 앙코르 이름 · 던지기 크게 · 기술 강화 연출 고침", "big": 0},
  {"b": 442, "v": "0.8", "d": "2026-11-14", "t": "제련 결과 연출 · 벼림 연출 · 기술 강화 연출 · 각인 빛 · 그리퍼 빙빙 · 평판 낮은 NPC · 투기장 체력", "big": 0},
  {"b": 441, "v": "0.8", "d": "2026-11-14", "t": "녹슨 그리퍼 궤도 날기 · 제련 연출 건너뛰기 막음", "big": 0},
  {"b": 440, "v": "0.8", "d": "2026-11-14", "t": "상점 세공석 그림 줄임", "big": 0},
@@ -30883,7 +30887,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=442;
+const BUILD_NO=443;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -38830,7 +38834,7 @@ function arTrapShutFX(slot){
 function arThrowFX(fromSlot,toSlot,key,o){
   o=o||{}; const u=o.src||ICON_PNG[key]; if(!u) return;   /* src — 그림 주소를 바로 (떠돌이 상인이 던지는 카드 그림) */
   const a=bodyPoint("foe",fromSlot)||ctrOf("foe",fromSlot), b=bodyPoint("mine",toSlot)||ctrOf("mine",toSlot); if(!a||!b) return;
-  const ms=Math.round((o.arc?480:340)*SPD), S=Math.round(30*(o.z||1));
+  const ms=Math.round((o.arc?480:340)*SPD), S=Math.round(58*(o.z||1));   /* 30 → 58 — 작아서 잘 안 보였다 (사용자 2026-11-14) */
   const nd=spawn(`<img class="arthrow" src="${u}" alt=""${o.flip?' style="scale:-1 1"':''}>`,ms+80); if(!nd) return;   /* flip — 오른쪽을 보고 그려진 그림 (오염물) */
   Object.assign(nd.style,{left:(a.x-S/2)+"px",top:(a.y-S/2)+"px",width:S+"px",height:S+"px"});
   const H=o.arc?Math.max(60,Math.abs(a.x-b.x)*0.28):14, K=[];
@@ -43925,9 +43929,11 @@ function foeStatLine(f){
   const D=FOE[f.name]||{}, th=foeAtkCond(f);
   const mv=foeMagShow(f);
   /* 커서를 올리면 그 수의 출처 (stat-src.js, 사용자 2026-10-30) */
-  return `<div class="stats fstats"><span${statTipAttr(f,"atk",f.atk||0)}>${ic("atk")}${foeAtkTxt(f,th)}${f.willAtk?` <em class="fdn">(-${f.willAtk})</em>`:""}</span>`
-    +(foeHasMag(f)?`<span${statTipAttr(f,"mag",f.mag||0)}>${ic("mag")}${mv>=0?"+"+mv:String(mv)}</span>`:"")
-    +`<span${statTipAttr(f,"def",f.def||0)}>${ic("def")}${foeDefTxt(f)}${f.willDef?` <em class="fdn">(-${f.willDef})</em>`:""}</span></div>`;   /* 의지 약화 — 추가 능력치 칸에 (-N) */
+  /* 쪽지의 합은 칸에 보인 수와 같게 — 「+N」 칸은 더해진 몫만, 남는 몫은 「적 강화」 (사용자 2026-11-14) */
+  const ax=foeSkHas(D,"dmg"), dx=foeSkHas(D,"shield")||foeSkHas(D,"eshield");
+  return `<div class="stats fstats"><span${ax?statTipAttr(f,"atk",foeAtkShow(f),"적 강화"):statTipAttr(f,"atk",f.atk||0)}>${ic("atk")}${foeAtkTxt(f,th)}${f.willAtk?` <em class="fdn">(-${f.willAtk})</em>`:""}</span>`
+    +(foeHasMag(f)?`<span${statTipAttr(f,"mag",mv,"적 강화")}>${ic("mag")}${mv>=0?"+"+mv:String(mv)}</span>`:"")
+    +`<span${dx?statTipAttr(f,"def",foeDefShow(f),"적 강화"):statTipAttr(f,"def",f.def||0)}>${ic("def")}${foeDefTxt(f)}${f.willDef?` <em class="fdn">(-${f.willDef})</em>`:""}</span></div>`;   /* 의지 약화 — 추가 능력치 칸에 (-N) */
 }
 function foePeekHtml(f){
   const D=FOE[f.name]||{};
@@ -44623,7 +44629,9 @@ function cheerMagSync(){
   if(!B||!B.foes) return;
   B.foes.forEach(f=>{ const p=f.alive&&foePas(f,"cheerMag"); if(!p) return;
     const want=Math.floor(cheerNow()/(p.per||10)), d=want-(f.cheerMag||0); if(!d) return;
-    f.mag=(f.mag||0)+d; f.magUp=(f.magUp||0)+d; f.cheerMag=want }) }
+    f.mag=(f.mag||0)+d; f.magUp=(f.magUp||0)+d; f.cheerMag=want;
+    if(typeof statNote==="function") statNote(f,"mag","열광",d);   /* 출처 쪽지 — 바깥 길목이 제 몫으로 가져가지 않게 */
+    say(`${p.n||"열광"} — ${f.name} 추가 마법력 ${d>0?"+":"−"}${Math.abs(d)} (환호 ${cheerNow()}, 합계 ${want})`,"t3") }) }   /* 기록 (사용자 2026-11-14) */
 /* 흥행 감독관 — 3턴마다 검투사 입장 */
 function boutTick(){
   B.foes.forEach(f=>{ const p=f.alive&&foePas(f,"nextBout"); if(!p) return;
@@ -47136,8 +47144,9 @@ function skIntentHtml(f,I){
   const k=(s&&(s.shield||s.eshield))?"def":(s&&(s.buff||s.snack||s.riot))?"atk":(s&&s.fire)?"atk":"move";
   /* intentName — **이름**을 띄운다 (사용자 2026-10-21 : 「에너지 전환」이 보호막 숫자만 떠
      무슨 수인지 알 수 없었다). 효과 숫자보다 이름이 중요한 기술에 단다 */
-  const eff=(s&&s.intentName)?esc(I.n):(skEffectHtml(s,f)||esc(I.n));   /* 효과가 글로 안 되면 이름 */
-  const lead=(/^<(svg|img)/.test(eff)||/^<span class="ideb"/.test(eff)   /* 아이콘이 받은 그림(img)이 된 뒤로 svg 만 보던 검사가 놓쳐 보호력이 둘 떴다 (사용자 2026-10-30) */||(s&&s.partBuff)||k==="move")?"":ic(k)+" ";   /* 효과 글이 이미 아이콘으로 시작하면(보호막·회복·에너지·부정·부품) 앞 아이콘을 겹쳐 그리지 않는다 */
+  /* intentName:2 — 이름과 효과를 같이 (「앙코르 🛡23」, 사용자 2026-11-14 : 보호막만 떠서 무슨 기술인지 몰랐다) */
+  const both=s&&s.intentName===2, eff=both?`<i class="iname">${esc(I.n)}</i> ${skEffectHtml(s,f)||""}`:(s&&s.intentName)?esc(I.n):(skEffectHtml(s,f)||esc(I.n));   /* 효과가 글로 안 되면 이름 */
+  const lead=(both||/^<(svg|img)/.test(eff)||/^<span class="ideb"/.test(eff)   /* 아이콘이 받은 그림(img)이 된 뒤로 svg 만 보던 검사가 놓쳐 보호력이 둘 떴다 (사용자 2026-10-30) */||(s&&s.partBuff)||k==="move")?"":ic(k)+" ";   /* 효과 글이 이미 아이콘으로 시작하면(보호막·회복·에너지·부정·부품) 앞 아이콘을 겹쳐 그리지 않는다 */
   const tclsk=(s&&(s.shield||s.eshield))?"t-def":(s&&(s.buff||s.snack||s.riot))?"t-atk":(s&&s.fire)?"t-atk":"t-move";
   return `<span class="intent${(s&&(s.buff||s.snack||s.riot))?" up":""} ${tclsk} kw" data-fintn="${esc(I.n)}" data-fintd="${tip}">${lead}${eff} ${who}</span>`;
 }
@@ -52557,7 +52566,6 @@ function onKill(by,f,tag){
     if(L.length){ const nf=L.reduce((a,b)=>dist(by.slot,a.slot)<=dist(by.slot,b.slot)?a:b);
       say(`표식 편이 — ${nf.name}에게 표식`,"t2"); itMark(nf,by.tag.markChain) } }
   if(f&&!f.isPhantom&&!f.summoned&&!by.isMin) questProgress("kill",by.name);
-  if(f&&!f.isPhantom&&run.bet&&f.name===run.bet.rival) questProgress("betRival",null);   /* 배당판 — 부정 행위 */
   if(f&&!f.isPhantom&&!run.sandbox&&by&&!by.isMin) satanLanternKill(by);   /* 등롱 (사탄 전리품, 2026-11-11) */
   if(f&&!f.isPhantom&&!f.summoned&&!run.sandbox){ const p=itemBt(by,"mimicTooth");   /* 미믹의 이빨 (2026-10-05) */
     if(p&&Math.random()<p/100){ run.gold+=1; if(GOLDMEM!==null) GOLDMEM=run.gold|0;   /* 머리글의 금화 소리는 쉬고, 금화가 튀는 순간에 (mimicGoldFX) */
@@ -52712,6 +52720,9 @@ function gainSouls(n,label){
 /* 폭식의 악마 — 전투당 얻을 수 있는 최대 체력. 노트 2 · 강화로 +1 · 무한한 식욕이면 끝없이 */
 function greedCapOf(h){ return (h&&h.tag&&h.tag.greedNoCap)?999:(2+((h&&h.tag&&h.tag.greedPlus)||0)) }
 function onDeath(kind,who){
+  /* 배당판 — 부정 행위(상대 검투사 처치). 누가 어떻게 죽였든 센다 (사용자 2026-11-14 : 유망주를 잡았는데 안 올랐다 —
+     전에는 onKill 안이라 대원이 직접 친 때만 셌다. 소환물 · 화상 · 카드 · 반사로 잡으면 빠졌다) */
+  if(kind==="foe"&&who&&!who.isPhantom&&run&&run.bet&&who.name===run.bet.rival) questProgress("betRival",null);
   /* 쿠렘타이 영혼 수확 */
   if(run.heroes.some(h=>h.name==="쿠렘타이")){
     let g=0;
@@ -56615,6 +56626,9 @@ function colIdle(){
   setTimeout(()=>{ if(!B||B.over||!f.alive) return; if(sfxHas("콜로서스 대기")) SFX.play("콜로서스 대기");
     const L=(BARK["콜로서스"]||{}).idle; if(L&&L.length) barkShow(f,fxPick(L),Date.now()) },900);   /* ⚠️ 연출 줄 — 대사다 */
 }
+/* 녹슨 그리퍼의 무작위 부정 효과 — 기절만 무게 1/3 (사용자 2026-11-14 : 기절이 너무 자주 나온다. 약 11% → 4%) */
+function gripDebPick(){ const W=DEB_RAND.map(k=>k==="stun"?1/3:1), T=W.reduce((a,b)=>a+b,0); let x=Math.random()*T;
+  for(let i=0;i<DEB_RAND.length;i++){ x-=W[i]; if(x<=0) return DEB_RAND[i] } return DEB_RAND[DEB_RAND.length-1] }
 function startMyTurn(){
   FOE_VIEW=null;
   try{ colIdle() }catch(e){}
@@ -56844,7 +56858,7 @@ function startMyTurn(){
     const f=nearestFoe(h); if(!f||!f.alive) return;
     /* 그리퍼가 찬 대원에게서 천천히 궤도를 그리며 날아가 닿고, 닿은 뒤에 부정 효과 (사용자 2026-11-14 — 전에는 위에서 내려쳤다).
        addDeb 의 걸림 연출(debIc)은 이 fx 뒤에 줄 서므로 gap 이 나는 시간만큼 기다린다 */
-    const ks=[]; for(let i=0;i<v;i++) ks.push(rnd(DEB_RAND));
+    const ks=[]; for(let i=0;i<v;i++) ks.push(gripDebPick());
     { const sl=f.slot, from=h.slot, kw=ks.map(k=>DEBUFF[k].n); fx({side:"foe",slot:sl,fn:()=>gripFlyFX(from,sl,kw),gap:820}) }
     ks.forEach(k=>{
       addDeb(f,k,1);
@@ -57078,20 +57092,22 @@ function statWatch(label,persist,fn){
   }
 }
 /* 쪽지에 쓸 줄 — [{n, v}] 와 「기본」 몫. total 은 화면에 보인 값 */
-function statRows(u,k,total){
+function statRows(u,k,total,baseLabel){
   const R=[];
   ((u&&u.items)||[]).forEach(it=>{ const v=it&&itemStats(it)[k]; if(v) R.push({n:it.n||"장신구",v}) });   /* 각인까지 */
   if(k==="atk"&&u&&u.prideAtk) R.push({n:"전장의 승자",v:u.prideAtk});   /* 나이코스 — 전투가 끝날 때 오른 몫은 길목 밖이라 「기본」에 들어갔다 (사용자 2026-11-04) */
   const P=(u&&u.ssrc&&u.ssrc[k])||{}; Object.keys(P).forEach(n=>{ if(P[n]) R.push({n:n==="레벨업"?n:`보상(${n})`,v:P[n]}) });   /* 원정 내내 남는 몫은 레벨업 말고는 다 보상이다 — 읽을 때 붙여 지난 저장도 같이 (사용자 2026-11-04) */
-  const S=statBStore(), bx=S&&S.get(u), BB=(bx&&bx[k])||{}; Object.keys(BB).forEach(n=>{ if(BB[n]) R.push({n,v:BB[n]}) });
+  const S=statBStore(), bx=S&&S.get(u), BB=(bx&&bx[k])||{}; Object.keys(BB).forEach(n=>{ if(BB[n]&&n!=="열광") R.push({n,v:BB[n]}) });
+  if(k==="mag"&&u&&u.cheerMag) R.push({n:"열광",v:u.cheerMag});   /* 관중단 — 환호 10 당. 라운드가 바뀌어 쪽지가 비어도 지금 몫 그대로 (2026-11-14) */
   const sum=R.reduce((a,x)=>a+x.v,0), base=(total||0)-sum;
-  if(base) R.unshift({n:"기본",v:base});
+  if(base) R.unshift({n:baseLabel||"기본",v:base});
   return R;
 }
 /* 능력치 칸에 붙일 쪽지 글 — 「이름 (+2)」 줄들 (battle-ui 의 피해 출처 쪽지 꼴, data-tipic 이 머리 아이콘) */
 const STAT_NAME={atk:"공격력",mag:"마법력",def:"보호력"};
-function statTipAttr(u,k,total){
-  const R=statRows(u,k,total).map(x=>`${x.n} (${x.v>0?"+":x.v<0?"−":""}${Math.abs(x.v)})`);
+/* baseLabel — 적의 「더해진 몫(+N)」 칸은 남는 몫이 적 강화다 (사용자 2026-11-14 : 칸은 +8 인데 쪽지는 「기본 +12」 였다) */
+function statTipAttr(u,k,total,baseLabel){
+  const R=statRows(u,k,total,baseLabel).map(x=>`${x.n} (${x.v>0?"+":x.v<0?"−":""}${Math.abs(x.v)})`);
   const q=t=>String(t).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
   return ` class="kw" data-kw="${STAT_NAME[k]}" data-dmgtip="1" data-tipic="${k}" data-tip="${q(R.join("\n"))}" data-tipsum=""`;
 }
