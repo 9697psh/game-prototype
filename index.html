@@ -8005,8 +8005,13 @@ const SFX=(()=>{
      저절로 갈린다 — s:"shield" 를 부르는 곳을 하나도 안 고쳐도 된다.
      녹음이 없는 열쇠말만 합성음으로 내려간다. */
   return { loop(k){ if(PRED_DRY||!on||!k||vol<=0||(LIVE[k]||[]).length) return; try{ sample(k,1) }catch(e){} },   /* 되풀이 — stop(k) 로 끈다 (콜로서스 빔 충전, 2026-10-07) */
-           play(k,o){ if(PRED_DRY||!on||!k||vol<=0||(document.hidden&&!BG_SND)) return;
+           play(k,o){ if(PRED_DRY||!on||!k||vol<=0||(typeof sndAway==="function"&&sndAway())) return;
              try{ if(!sample(k,false,o)&&K[k]) K[k]() }catch(e){} },
+           /* 창이 뒤로 갔다 / 돌아왔다 — 울리던 녹음을 세우고, 되풀이 소리만 돌아와서 다시 튼다 */
+           away(v){ Object.keys(LIVE).forEach(k=>{ const L=LIVE[k];
+               for(let i=L.length-1;i>=0;i--){ const p=L[i];
+                 if(v){ try{ p.pause() }catch(e){} if(!p.loop) L.splice(i,1) }
+                 else if(p.loop){ const q=p.play(); if(q&&q.catch) q.catch(()=>{}) } } }) },
            /* 미리 받아 둔다 (울리지 않는다) — 번호 붙은 짝이면 다 */
            prep(k){ try{ if(typeof SND==="undefined"||!k) return;
              (SND[k]?[k]:Object.keys(SND).filter(x=>x.indexOf(k+" ")===0)).forEach(x=>load(x,SND[x])) }catch(e){} },
@@ -8720,7 +8725,7 @@ const BGM=(()=>{
     sync(){
       const key=on?sceneBgm():null;
       want=key;
-      if(!unlocked) return;
+      if(!unlocked||hidden) return;   /* 창이 뒤에 있는 동안 바뀐 곡은 돌아와서 튼다 (show) */
       if(key===cur) return;
       if(!key){ if(live){ fade(live,0,FADE,()=>{try{live.pause()}catch(e){}}) } cur=null; return }
       swap(key);
@@ -8733,7 +8738,7 @@ const BGM=(()=>{
     },
     /* 보상·레벨업처럼 한 번만 울리는 곡. 그동안 배경음은 낮춘다 */
     once(key){
-      if(!on||!unlocked||!BGM_SRC[key]) return;
+      if(!on||!unlocked||hidden||!BGM_SRC[key]) return;
       try{ if(sting){ sting.pause() } }catch(e){}
       sting=new Audio(파일(key)); sting.volume=lv(key)*1.25;
       if(live) fade(live,lv(cur)*0.35,300);
@@ -8788,11 +8793,22 @@ volLoad();
 /* 브라우저는 손을 대기 전에는 소리를 못 내게 막는다. 첫 손짓에 푼다 */
 ["pointerdown","keydown","touchstart"].forEach(k=>
   document.addEventListener(k,()=>BGM.unlock(),{capture:true,once:false}));
-/* 창을 덮거나 다른 탭으로 옮기면 노래를 멈춘다.
-   게임 창을 뒤로 보내 놓고 잊어버려도 소리가 따라다니지 않게. */
-document.addEventListener("visibilitychange",()=>{
-  try{ if(!document.hidden) BGM.show(); else if(!BG_SND) BGM.hide() }catch(e){}
-});
+/* 창을 덮거나 다른 탭으로 옮기면 — 또는 다른 창을 눌러 게임 창이 뒤로 가기만 해도 — 소리를 멈춘다.
+   게임 창을 뒤로 보내 놓고 잊어버려도 소리가 따라다니지 않게.
+   예전에는 탭을 내렸을 때(document.hidden)만 봐서, 다른 창을 눌러도 소리가 났다 (사용자 2026-11-14) */
+function sndAway(){
+  if(BG_SND) return false;
+  try{ return document.hidden||(document.hasFocus&&!document.hasFocus()) }catch(e){ return false }
+}
+let SND_AWAY=false;
+function sndAwaySync(){
+  const v=sndAway(); if(v===SND_AWAY) return; SND_AWAY=v;
+  try{ if(v) BGM.hide(); else BGM.show() }catch(e){}
+  try{ SFX.away(v) }catch(e){}
+}
+document.addEventListener("visibilitychange",sndAwaySync);
+window.addEventListener("blur",sndAwaySync);
+window.addEventListener("focus",sndAwaySync);
 /* 창을 닫거나 다른 곳으로 옮겨 갈 때 확실히 끊는다 */
 ["pagehide","beforeunload"].forEach(k=>
   window.addEventListener(k,()=>{ try{ BGM.kill() }catch(e){} }));
@@ -29289,6 +29305,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 451, "v": "0.8", "d": "2026-11-14", "t": "백그라운드 소리 끔 — 다른 창을 눌러 게임 창이 뒤로 가기만 해도 노래 · 효과음 멈춤 (전에는 탭을 내렸을 때만)", "big": 0},
  {"b": 450, "v": "0.8", "d": "2026-11-14", "t": "라이티늄 지팡이 회복량 강화 뺌 · 코드 상자 → 게임 상자 그림", "big": 0},
  {"b": 449, "v": "0.8", "d": "2026-11-14", "t": "제련 결과 판 — 게임 상자 그림", "big": 0},
  {"b": 448, "v": "0.8", "d": "2026-11-14", "t": "브란 솜씨 발휘 · 제련 실수 결과 판", "big": 0},
@@ -30932,7 +30949,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=450;
+const BUILD_NO=451;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
