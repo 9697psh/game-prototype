@@ -7240,6 +7240,13 @@ body.vpage #app button.garlab.garjam{font-size:clamp(12px,1.15cqw,19px);letter-s
 :is(.gslot,.fgslot).engm :is(.gi,.fgi) :is(img,svg),.gs.engm :is(img,svg){animation:engMd 2.4s ease-in-out infinite}
 :is(.gs,.gslot,.fgslot):is(.engn,.engp,.engm) :is(.gi,.fgi){overflow:visible}
 :is(.gs,.gslot,.fgslot).engn{--eg:rgba(255,64,48,.6)} :is(.gs,.gslot,.fgslot).engp{--eg:rgba(72,230,110,.6)}
+
+/* 제련소 — 솜씨 발휘 · 제련 실수 결과 판 (사용자 2026-11-14) */
+.fgluck{position:absolute;transform:translate(-50%,-50%);z-index:7;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:.25cqw;
+  padding:.6cqw 1.4cqw;background:rgba(14,10,6,.82);border:1px solid rgba(224,200,90,.5);box-shadow:0 .4cqw 1.2cqw rgba(0,0,0,.6);white-space:nowrap}
+.fgluck b{font-family:var(--serif);font-size:1.25cqw;letter-spacing:.06em;color:#f4d67c;text-shadow:0 1px 0 #000}
+.fgluck span{font-size:1cqw;color:#cfe8a8}
+.fgluck.bad{border-color:rgba(224,86,74,.55)} .fgluck.bad b{color:#ff8a7a} .fgluck.bad span{color:#ffb0a4}
 </style>
 </head>
 <body>
@@ -12832,6 +12839,10 @@ function forgeAnimFX(stage,made){
     if(!made.fail){ o=el(`<div class="fgout fo-${tier}" style="${shopPct(L.plus[0],L.plus[1])}"><div class="fgi">${rewardIcon(made)}</div><b class="gc${gcls(made.g)}">${esc(made.n)}</b></div>`);
       stage.appendChild(o) }
     forgeResultFX(stage,{x:S.left+cx,y:S.top+cy},tier,o);
+    /* 솜씨 발휘 · 제련 실수 — 무엇이 바뀌었는지 「받는다」를 누를 때까지 남는 판 (사용자 2026-11-14) */
+    if(lk&&lk.lines&&lk.lines.length){
+      const P=el(`<div class="fgluck ${lk.k==="luck"?"good":"bad"}" style="${shopPct(L.go[0],L.go[1]+92)}"><b>${lk.k==="luck"?"제련공 브란의 솜씨 발휘!":"제련공 브란의 제련 실수"}</b>${lk.lines.map(t=>`<span>${esc(t)}</span>`).join("")}</div>`);
+      stage.appendChild(P); try{ P.animate([{opacity:0,transform:"translate(-50%,-30%) scale(.9)"},{opacity:1,transform:"translate(-50%,-50%) scale(1)"}],{duration:320,easing:"cubic-bezier(.2,1.3,.4,1)"}) }catch(e){} }
     const bb=stage.querySelector(".fgbran");   /* 솜씨 발휘 · 제련 실수 — 브란의 한마디 (2026-11-12) */
     if(lk&&bb&&SMITH_SAY[lk.k]&&SMITH_SAY[lk.k].length) npcTalk(stage,bb,rnd(repMood("smith")==="mute"?["..."]:SMITH_SAY[lk.k]),L.say);
   },2340));
@@ -29264,6 +29275,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 448, "v": "0.8", "d": "2026-11-14", "t": "브란 솜씨 발휘 · 제련 실수 결과 판", "big": 0},
  {"b": 447, "v": "0.8", "d": "2026-11-14", "t": "도전장 — 결투 중 새로 선 것도 정지", "big": 0},
  {"b": 446, "v": "0.8", "d": "2026-11-14", "t": "과부하 — 그 막 그 날만", "big": 0},
  {"b": 445, "v": "0.8", "d": "2026-11-14", "t": "벼림 표시 오른쪽 아래 작게", "big": 0},
@@ -30904,7 +30916,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=447;
+const BUILD_NO=448;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
