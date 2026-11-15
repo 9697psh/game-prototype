@@ -24416,7 +24416,7 @@ const ACT2={
  }
 };
 const ACT2_LIST=Object.keys(ACT2);
-const ACT2_ONLY="광기의 투기장";   /* 당분간 2막은 투기장만 (사용자 2026-11-06). 판마다 갈리게 되돌리려면 null */
+const ACT2_ONLY=null;   /* 2막도 판마다 정령숲 · 광기의 투기장 (사용자 2026-11-15 : 정령숲이 안 나온다). 투기장만 못 박으려면 "광기의 투기장" (2026-11-06 에 그랬다) */
 let ACT2_PIN=null;   /* 2막을 못 박는 고리 — 그물과 시뮬이 쓴다 (ACT1_PIN 과 같은 결) */
 const act2Name=()=>(run&&run.act2&&ACT2[run.act2])?run.act2:ACT2_LIST[0];
 /* 투기장에 서 있나 · 정령숲에 서 있나 — 2막 전용은 이 둘로 건다 */
@@ -29256,6 +29256,7 @@ function loadGame(i){
     heroes.forEach(h=>{ try{ syncSkillDefs(h) }catch(e){} });
     run=decRef(s.run,heroes) || {};
     run.heroes=heroes;
+    if(run.introSeen==null&&run.field!=null&&(run.day>1||!run.mapUnfold)) run.introSeen=run.field;   /* 옛 저장본 — 지도를 이미 펼친 판이면 첫 펼침 연출을 본 것으로 (2026-11-15) */
     /* 희귀 장신구 이름이 노트를 따라 바뀌었다 (2026-09-13). 옛 저장본의 장신구는 이름·설명만 새것으로 */
     try{ heroes.forEach(h=>(h.items||[]).forEach(renameItem)); (run.bag||[]).forEach(renameItem) }catch(e){}
     pending=decRef(s.pending,heroes);
@@ -29311,6 +29312,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 453, "v": "0.8", "d": "2026-11-15", "t": "지도 첫 펼침 연출(덮개 · 깃발 · 우두머리)을 막마다 한 번만 — 저장되는 표시로 · 2막 다시 정령숲/투기장 판마다", "big": 0},
  {"b": 452, "v": "0.8", "d": "2026-11-15", "t": "치명타 기본 계수 2배 → 1.5배 · 오리온 사냥개 상시 도발 삭제 + 상급 보상 용맹한 사냥개 · 제련공 브란 · 일꾼 평판 오름 줄임", "big": 0},
  {"b": 451, "v": "0.8", "d": "2026-11-14", "t": "백그라운드 소리 끔 — 다른 창을 눌러 게임 창이 뒤로 가기만 해도 노래 · 효과음 멈춤 (전에는 탭을 내렸을 때만)", "big": 0},
  {"b": 450, "v": "0.8", "d": "2026-11-14", "t": "라이티늄 지팡이 회복량 강화 뺌 · 코드 상자 → 게임 상자 그림", "big": 0},
@@ -30956,7 +30958,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=452;
+const BUILD_NO=453;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -34160,16 +34162,19 @@ function coverIntroCheck(){
   if(typeof run==="undefined"||!run||view!=="map"||!run.mapUnfold||CV_OK!==1) return;
   if(typeof navigator!=="undefined"&&navigator.webdriver&&!CV_INTRO_FORCE) return;
   if(CV_INTRO_SEEN.run===run&&CV_INTRO_SEEN.field===run.field) return;
+  /* 막마다 한 번만 — 저장되는 표시로 (사용자 2026-11-15 : 주둔지 종 울리기 뒤 지도로 오면 덮개 · 깃발 · 우두머리가 또 나왔다).
+     메모리 표시(CV_INTRO_SEEN)는 run 객체가 바뀌면(이어하기 · 전투 초기화) 잊혀서 다시 돌았다 */
+  if(run.introSeen===run.field){ CV_INTRO_SEEN={run:run,field:run.field}; return }
   const fw=typeof flagFor==="function"?flagFor():null, useF=!!(fw&&flagReady(fw.region));
   /* 다음 막 — 전투에서 돌아오는 덮개가 닫혀 있는 가운데 그렸다. 덮개는 그대로 두고 깃발만 맡긴다 (열기 전에 coverInto 가 띄운다).
      날이 바뀌는 암전이 걷힌 뒤에 날아오고, 지도는 탁자가 반쯤 열렸을 때 펴진다 */
   if(CV_BUSY){
-    if(CV_MID&&useF){ CV_INTRO_SEEN={run:run,field:run.field}; if(typeof bossMapArm==="function") bossMapArm();
+    if(CV_MID&&useF){ CV_INTRO_SEEN={run:run,field:run.field}; run.introSeen=run.field; if(typeof bossMapArm==="function") bossMapArm();
       const at=Math.max(Date.now(),typeof MAP_BO_UNTIL!=="undefined"?MAP_BO_UNTIL:0);
       CV_FLAG_PEND=Object.assign(fw,{at});
       if(typeof MAP_BO_UNTIL!=="undefined") MAP_BO_UNTIL=Math.max(MAP_BO_UNTIL,at+FLAG_T.clear+FLAG_T.open+CV.OPEN_MS*cvK()*0.55) }
     return }
-  CV_INTRO_SEEN={run:run,field:run.field};
+  CV_INTRO_SEEN={run:run,field:run.field}; run.introSeen=run.field;
   if(typeof bossMapArm==="function") bossMapArm();   /* 우두머리 칸이 지도가 펴진 뒤 떠오른다 (boss-map-intro.js) */
   if(matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches){ if(useF){ fw.reduce=1; flagShow(fw) }
     if(typeof bossMapGo==="function") setTimeout(bossMapGo,0); return }   /* 짧고 조용히 — 탁자 없이 */
