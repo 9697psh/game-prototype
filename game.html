@@ -21023,6 +21023,11 @@ function mastEffTxt(N){ if(!N) return ""; const p=[];
 const GAR_IDS=["infirmary","bell-tower","forge","training-hall","scout-lodge"];
 const GAR_NAME={"infirmary":"휴식소","bell-tower":"종탑","forge":"제련소","training-hall":"훈련소","scout-lodge":"정찰소"};
 const GAR_UP=[10,20,30,40];                      /* 1→2 … 4→5 금화 */
+const GAR_UP_BY={"bell-tower":[15,30,45,60]};   /* 시설마다 따로 — 종탑 (사용자 2026-11-15) */
+/* 짓기 (사용자 2026-11-15) — 원정을 시작하면 종탑 · 훈련소만 서 있다(1단계). 나머지는 0단계(빈 터)에서 금화 · 시간을 들여 짓는다.
+   0단계 시설은 전경에 그리지 않고 활동도 못 한다. 짓는 동안 일꾼은 그 자리(1단계 자리)에서 일한다. 옛 저장본은 다 지어진 채 */
+const GAR_START={"bell-tower":1,"training-hall":1};
+const GAR_MAKE={"infirmary":{gold:5,h:6},"scout-lodge":{gold:10,h:6},"forge":{gold:10,h:6}};
 const GAR_MAX=5;
 /* 단계별 값 */
 const GAR_V={
@@ -21030,24 +21035,25 @@ const GAR_V={
   trainExp:[0,20,35,50,65],                       /* 2단계부터 */
   bellAct:[7,8,9,10,11], bellSilver:[1,2,3,4,5], bellCleanse:[40,45,50,55,60],
   smeltDay:[1,2,3,4,5], hardenPct:[0,30,40,50,60], hardenStone:5,   /* 벼림 2단계부터 — 1단계 값(20)은 쓰지 않는다 */
-  scoutCells:[1,2,3,4,5], scoutFail:[[3,10],[8,15],[12,20],[15,25],[20,30]],
+  scoutCells:[1,2,3,4,5], scoutFail:[[5,12],[10,18],[15,24],[20,30],[25,36]],   /* 정찰 금화 — 조금 올림 (사용자 2026-11-15, 전에는 3~10/8~15/12~20/15~25/20~30) */
   shelter:[["tent","tent"],["tent","camp"],["camp","camp"],["camp","fort"],["fort","fort"]]
 };
 /* 원문 벼림 확률 20/30/40/50/60 은 단계 1~5. 「2단계부터 쓸 수 있다」라 1단계 20 은 보이지 않는다 */
 GAR_V.hardenPct=[20,30,40,50,60];
 function garEnsure(){
   if(!run) return null;
-  if(!run.gar) run.gar={lv:{}, used:{}, day:run.day||1, scout:null, scoutRes:null};
-  GAR_IDS.forEach(id=>{ if(!run.gar.lv[id]) run.gar.lv[id]=1 });
+  if(!run.gar){ run.gar={lv:{}, used:{}, day:run.day||1, scout:null, scoutRes:null}; GAR_IDS.forEach(id=>{ run.gar.lv[id]=GAR_START[id]||0 }) }   /* 처음엔 종탑 · 훈련소만 (2026-11-15) */
+  GAR_IDS.forEach(id=>{ if(run.gar.lv[id]==null) run.gar.lv[id]=1 });   /* 옛 저장본 — 빠진 시설은 지어진 것으로 */
   if(run.silver==null) run.silver=1;   /* 처음 시작할 때 은화 1 (사용자 2026-11-11) */
   if(run.gar.day!==run.day){ run.gar.day=run.day; run.gar.used={} }
   garBuildTick(run.gar);
   return run.gar }
-const garLv=id=>{ const g=garEnsure(); return g?g.lv[id]||1:1 };
-const garV=(k,id)=>GAR_V[k][garLv(id)-1];
+const garLv=id=>{ const g=garEnsure(); return g?(g.lv[id]==null?1:g.lv[id]):1 };   /* 0 = 아직 안 지었다 */
+const garBuilt=id=>garLv(id)>=1;
+const garV=(k,id)=>GAR_V[k][Math.max(1,garLv(id))-1];   /* 안 지은 시설은 1단계 값으로 보여 준다 (설명용 — 활동은 garWhy 가 막는다) */
 const garUsed=k=>{ const g=garEnsure(); return (g&&g.used[k])||0 };
 /* 강화 */
-function garUpCost(id){ const l=garLv(id); if(l>=GAR_MAX) return 0; const T=workerTier(); return Math.max(1,Math.round(GAR_UP[l-1]*(1+T.cost/100))) }   /* 일꾼 평판 ±% (2026-11-12) */
+function garUpCost(id){ const l=garLv(id); if(l>=GAR_MAX) return 0; const T=workerTier(), base=l<1?((GAR_MAKE[id]||{}).gold||GAR_UP[0]):(GAR_UP_BY[id]||GAR_UP)[l-1]; return Math.max(1,Math.round(base*(1+T.cost/100))) }   /* 일꾼 평판 ±% (2026-11-12) */
 function garUpOk(id){ const c=garUpCost(id); return c>0&&run.gold>=c }
 function garUp(id){ if(!garUpOk(id)) return false; run.gold-=garUpCost(id); run.gar.lv[id]=garLv(id)+1; return true }   /* 옛 즉시 강화 — 이제 화면은 공사(garBuildStart)를 쓴다 */
 /* ── 공사 (사용자 2026-11-10 밤) ──
@@ -21063,7 +21069,7 @@ const GAR_BUILD_H=[6,12,18,24];   /* 1→2 · 2→3 · 3→4 · 4→5 공사 시
 const garNow=()=>((run&&run.day)||1)*24+((run&&run.time)||0);
 const garBuildOf=id=>(run&&run.gar&&run.gar.build&&run.gar.build[id])||null;
 const garBuilding=id=>{ const b=garBuildOf(id); return !!(b&&b.state==="working") };
-const garBuildHours=id=>{ const l=garLv(id); if(l>=GAR_MAX) return 0; const T=workerTier(); return Math.max(1,Math.round(GAR_BUILD_H[l-1]*(1+T.time/100))) };   /* 일꾼 평판 ±% */
+const garBuildHours=id=>{ const l=garLv(id); if(l>=GAR_MAX) return 0; const T=workerTier(), base=l<1?((GAR_MAKE[id]||{}).h||GAR_BUILD_H[0]):GAR_BUILD_H[l-1]; return Math.max(1,Math.round(base*(1+T.time/100))) };   /* 일꾼 평판 ±% */
 const garBuildLeft=id=>{ const b=garBuildOf(id); return b&&b.state==="working"?Math.max(0,Math.round((b.endAt-garNow())*60)/60):0 };
 function garBuildWhy(id){
   if(garBuilding(id)) return "공사 중입니다.";
@@ -21082,7 +21088,7 @@ function garBuildStart(id){
   return g.build[id] }
 function garBuildTick(g){
   const B=g&&g.build; if(!B) return; const now=garNow();
-  for(const id in B){ const b=B[id]; if(b&&b.state==="working"&&now>=b.endAt){ b.state="done"; b.seen=0; g.lv[id]=Math.max(g.lv[id]||1,b.to);
+  for(const id in B){ const b=B[id]; if(b&&b.state==="working"&&now>=b.endAt){ b.state="done"; b.seen=0; g.lv[id]=Math.max(g.lv[id]||0,b.to);
     if(id==="scout-lodge") repAdd("scout",6,"정찰소 강화") } } }   /* 정찰대장 평판 — 정찰소가 올라가면 +6 (2026-11-12) */
 /* 완공했는데 아직 연출을 안 본 것 — 끝난 차례대로 */
 function garBuildUnseen(){ const B=run.gar&&run.gar.build; return B?Object.values(B).filter(b=>b&&b.state==="done"&&!b.seen).sort((a,b)=>a.endAt-b.endAt):[] }
@@ -21138,6 +21144,7 @@ function garShelterTxt(){ const L=garShelterL();
    단계가 모자란 활동도 못 하는 것으로 친다. 다른 까닭(쓰러진 대원이 없다 · 18시 전)은 불을 끄지 않는다.
    공사 중인 건물은 공사 그림이 따로라 끄지 않는다 */
 function garOut(a){
+  if(!garBuilt(a.fac)) return true;
   if(a.need&&garLv(a.fac)<a.need) return true;
   if(a.daily&&garUsed(a.k)>=a.daily) return true;
   if(a.k==="smelt"&&garUsed("smelt")>=garV("smeltDay","forge")) return true;
@@ -21150,6 +21157,7 @@ function garDark(fac){
 /* 지금 할 수 있나 — 빈 글이면 된다 */
 function garWhy(a){
   garEnsure();
+  if(!garBuilt(a.fac)) return `${GAR_NAME[a.fac]}${jo(GAR_NAME[a.fac],"eul")} 먼저 지어야 합니다.`;
   if(a.need&&garLv(a.fac)<a.need) return `${GAR_NAME[a.fac]} ${a.need}단계부터 사용할 수 있습니다.`;
   if(a.daily&&garUsed(a.k)>=a.daily) return "오늘은 이미 했습니다.";
   if(a.silver&&(run.silver||0)<a.silver) return `은화가 ${a.silver-(run.silver||0)}개 부족합니다.`;
@@ -21412,7 +21420,7 @@ function garSide(app){
       :`<span class="gbcost${(run.gold||0)<c?" short":""}">${resIcon("gold")}<b>${c}</b></span><span class="gbtime">${uiPng("clock")}<b>${h}</b></span>`;
     const other=!wk&&GAR_BUILD_ONE&&!!garWorkSite();   /* 다른 시설이 공사 중 — 고를 수 없다 */
     const r=el(`<button type="button" class="gbrow${wk?" busy":""}${other?" wait":""}${GAR_UI.confirm===id?" on":""}" ${wk||!c||other?"disabled":""}>
-      <span class="gbn">${esc(GAR_NAME[id])}</span><span class="gblv">${wk?`${bd.from} → ${bd.to}`:c?`${lv} → ${lv+1}`:lv}</span><span class="gbr">${right}</span></button>`);
+      <span class="gbn">${esc(GAR_NAME[id])}</span><span class="gblv">${(wk?bd.from:lv)<1?"짓기":wk?`${bd.from} → ${bd.to}`:c?`${lv} → ${lv+1}`:lv}</span><span class="gbr">${right}</span></button>`);
     r.onclick=()=>{ if(r.disabled||(typeof SHUT_BUSY!=="undefined"&&SHUT_BUSY)) return; GAR_UI.confirm=GAR_UI.confirm===id?null:id; try{ SFX.play("click") }catch(e){} render() };
     list.appendChild(r) });
   b.appendChild(list);
@@ -21426,7 +21434,7 @@ function garSide(app){
       const B=garBuildStart(id); GAR_UI.confirm=null;
       if(B){ GAR_UI.wkT0=performance.now(); GAR_UI.wkLeave=GAR_UI.wkT0;
         try{ SFX.play(sfxHas("level")?"level":"click") }catch(e){}
-        toast(`${GAR_NAME[id]} 공사를 시작했습니다. ${hrsTxt(B.endAt-B.startAt)} 뒤에 끝납니다.${B.rep?` (일꾼 평판 ${B.rep>0?"+":""}${B.rep}${B.over?", 과로":""})`:""}`); try{ saveGame() }catch(e){} }
+        toast(`${GAR_NAME[id]} ${B.from<1?"짓기":"공사"}를 시작했습니다. ${hrsTxt(B.endAt-B.startAt)} 뒤에 끝납니다.${B.rep?` (일꾼 평판 ${B.rep>0?"+":""}${B.rep}${B.over?", 과로":""})`:""}`); try{ saveGame() }catch(e){} }
       render() };
     foot.appendChild(cf); b.appendChild(foot); return }
   const go=el(`<button type="button" class="go mgo garout">나가기</button>`);   /* 카드 테 (사용자 2026-11-15) */
@@ -21435,9 +21443,9 @@ function garSide(app){
 /* ── 전경 ── 장면 1280×1104 (지역 배경 v4 · 건물 단계 v2 · idle-lit v1). 게임 지역 → 아트 지역은 이 표로만 */
 const GAR_REGION={"핏빛 감옥":"blood-prison","고철의 무덤":"scrap-graveyard","정령숲":"spirit-forest","광기의 투기장":"madness-arena","마력의 탑":"magic-tower"};
 const garRegionId=()=>GAR_REGION[(typeof fieldLabel==="function"&&fieldLabel())||""]||"blood-prison";
-const garTL=id=>GAR_TERRACE.fac[id][garLv(id)-1];
-/* 앞(바닥 y 가 큰 것)이 나중 — 겹치면 앞 건물이 가린다 */
-const garTOrder=()=>GAR_IDS.slice().sort((a,b)=>garTL(a).anchor[1]-garTL(b).anchor[1]);
+const garTL=id=>GAR_TERRACE.fac[id][Math.max(1,garLv(id))-1];   /* 안 지은 시설(0단계)은 1단계 자리 — 일꾼이 그 앞에서 짓는다 */
+/* 앞(바닥 y 가 큰 것)이 나중 — 겹치면 앞 건물이 가린다. 안 지은 시설은 그리지 않는다 (사용자 2026-11-15) */
+const garTOrder=()=>GAR_IDS.filter(id=>garBuilt(id)).sort((a,b)=>garTL(a).anchor[1]-garTL(b).anchor[1]);
 function garTSprite(ctx,u,r,x,y,w,h,al){ const im=garImg(u,0); if(!im.complete||!im.width) return; if(al!=null) ctx.globalAlpha=al;
   ctx.drawImage(im,r[0],r[1],r[2],r[3],Math.round(x),Math.round(y),w||r[2],h||r[3]); ctx.globalAlpha=1 }
 function garTGlow(id,L){ const k="t|"+id+"|"+L.lv; if(GAR_UI.glowC[k]) return GAR_UI.glowC[k];
@@ -21554,8 +21562,8 @@ function garWorker(ctx,now,hide,light){
   if(g){ ctx.save(); ctx.globalAlpha=light*.13; ctx.drawImage(g,bx,by); ctx.restore() } }
 /* 완공 연출 — 미리보기 시간 : 240 먼지 · 500 새 외형 · 900 이름 · 2200 끝. 끝나면 true */
 function garTDone(ctx,D,now){
-  const t=now-D.t0, F=GAR_TERRACE.fac[D.id], old=F[D.from-1], nx=F[D.to-1];
-  garTBuilding(ctx,D.id,t<500?old:nx,now,0);
+  const t=now-D.t0, F=GAR_TERRACE.fac[D.id], old=D.from>=1?F[D.from-1]:null, nx=F[D.to-1];
+  if(t>=500) garTBuilding(ctx,D.id,nx,now,0); else if(old) garTBuilding(ctx,D.id,old,now,0);   /* 새로 지은 것(0 → 1)은 먼지 속에서 나타난다 */
   garTDust(ctx,nx.anchor[0],nx.anchor[1],t-240,Math.max(360,nx.size[0]*1.2),1);
   if(t>900){ ctx.save(); ctx.globalAlpha=garCl01((t-900)/200)*(1-garCl01((t-1900)/300)); ctx.textAlign="center";
     const ff=(getComputedStyle(document.body).fontFamily)||"sans-serif"; ctx.font=`28px ${ff}`; ctx.lineWidth=5; ctx.strokeStyle="#17130e"; ctx.fillStyle="#ffffff";
@@ -21567,8 +21575,8 @@ function garTHit(x,y){
 function garDrawTerrace(app){
   const T=GAR_TERRACE, W=T.canvas[0], H=T.canvas[1], reg=garRegionId();
   const w=el(`<div class="garwrap gterr">
-    <div class="gtfit"><div class="garstage gtstage"><canvas width="${W}" height="${H}"></canvas><div class="gtlabs">${GAR_IDS.map(id=>{ const L=garTL(id);
-      return `<span class="gtlab" data-id="${id}" style="left:${L.anchor[0]/W*100}%;top:${Math.max(30,L.tl[1]-6)/H*100}%">${garLv(id)}단계 ${esc(GAR_NAME[id])}${garBuilding(id)?`<em>공사 중</em>`:""}</span>` }).join("")}
+    <div class="gtfit"><div class="garstage gtstage"><canvas width="${W}" height="${H}"></canvas><div class="gtlabs">${GAR_IDS.filter(id=>garBuilt(id)||garBuilding(id)).map(id=>{ const L=garTL(id);
+      return `<span class="gtlab" data-id="${id}" style="left:${L.anchor[0]/W*100}%;top:${Math.max(30,L.tl[1]-6)/H*100}%">${garBuilt(id)?garLv(id)+"단계 ":""}${esc(GAR_NAME[id])}${garBuilding(id)?`<em>공사 중</em>`:""}</span>` }).join("")}
       <span class="gtlab gtwk" style="left:${T.worker.home[0]/W*100}%;top:${(T.worker.home[1]-T.worker.idleFoot[1]-4)/H*100}%">일꾼</span>
       <div class="gtwkrep" hidden style="left:${(T.worker.home[0]+60)/W*100}%;top:${(T.worker.home[1]-T.worker.idleFoot[1])/H*100}%">${typeof repTipHtml==="function"?repTipHtml("worker"):""}</div></div></div></div></div>`);
   app.appendChild(w);
@@ -29425,6 +29433,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 461, "v": "0.8", "d": "2026-11-15", "t": "주둔지 — 처음엔 종탑 · 훈련소만, 휴식소 · 정찰소 · 제련소는 짓기 · 종탑 강화 15/30/45/60 · 정찰 금화 조금 올림", "big": 0},
  {"b": 460, "v": "0.8", "d": "2026-11-15", "t": "레벨업을 한 화면에 모아 보이고 계속하기 한 번 뒤 보상 고르기만 (일괄 레벨업, 철 테)", "big": 0},
  {"b": 459, "v": "0.8", "d": "2026-11-15", "t": "미지의 구역 · 전용 구역 새 배치(왼쪽 그림) · 훈련소 수련 연출 · 하루 한도 · 정찰 창 · 전설 등급 · 가방 화면(흩어진 자루 · 전투 중 미끄러지는 판) · 머리줄 · 회색 돌판", "big": 0},
  {"b": 458, "v": "0.8", "d": "2026-11-15", "t": "장신구 선택 줄 · 주둔지 줄 · 나가기 · 평판 카드를 회색 돌판(menu-iron-trim)으로", "big": 0},
@@ -31078,7 +31087,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=460;
+const BUILD_NO=461;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
