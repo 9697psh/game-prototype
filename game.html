@@ -20202,7 +20202,7 @@ function drawGimRes(app){
   if(typeof placeMode==="function"&&placeMode()&&run.ev){
     const e=run.ev, pic=evImg(e.pic||e.n), big=pic||(e.art&&iconImg(e.art))||"", S=evSide(e);   /* 왼쪽 그림 배치 — 사건 화면과 같게 (사용자 2026-11-15) */
     const box=el(`<div class="evbox${S.side?" evside":""}">
-      <div class="evart${S.side?(S.fk?" side":" side icon"):big?(pic?" wide pic":" wide"):""}">${S.side||big||figure(e.face||"작은 죄수")}</div>
+      <div class="evart${S.side?(S.fk?" side":S.crop?" side crop":" side icon"):big?(pic?" wide pic":" wide"):""}">${S.side||big||figure(e.face||"작은 죄수")}</div>
       <div class="evpanel"><div class="evtitle">${esc(R.title)}</div>
       <div class="evdesc">${R.sub?`<div class="evp">${esc(R.sub)}</div>`:""}${R.msg?`<div class="evp">${evRich(evSent(R.msg))}</div>`:""}</div></div>
       <div class="evopts gimres-opts"></div></div>`);
@@ -28685,6 +28685,8 @@ function mapPanelAfter(saved){
 function render(){
   if(FOE_CAPTURING||CARD_BATCH) return;   /* 적의 셈 도중 다시 그리면 아직 모으는 연출 큐가 먼저 흘러간다 */
   if(PRED_DRY) return;   /* 미리 돌려 보는 중 — 그리지 않는다. 안 막으면 되돌이로 화면이 멈춘다 */
+  if(typeof GEAR_SOFT!=="undefined"&&GEAR_SOFT&&Date.now()-GEAR_SOFT<80){ GEAR_SOFT=0;   /* 가방 장신구 탭 — 그 탭 속만 (사용자 2026-11-16) */
+    const g=document.querySelector("#app .baggear:not(.bagpile-b)"); if(g&&(view==="map"||view==="bag")){ g.innerHTML=""; drawGear(g,1); return } }
   if(typeof dawnGate==="function"&&dawnGate()) return;   /* 새날 — 탁자 덮개가 다 닫힐 때까지 밤 지도를 그대로 (dawn-table.js) */
   if(typeof shutGate==="function"&&shutGate()) return;   /* 지도 ↔ 쉼터 · 미지의 구역 · 전용 구역 — 가운데 덧판이 닫힌 뒤에 그린다 */
   if(typeof document!=="undefined"&&!(typeof run!=="undefined"&&run&&run.qShow&&(view==="map"||(typeof placeMode==="function"&&placeMode())))) document.querySelectorAll("#qmodal").forEach(x=>x.remove());   /* 퀘스트 완료 상자 — 받았거나 화면이 바뀌면 걷는다 */
@@ -29472,6 +29474,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 470, "v": "0.8", "d": "2026-11-16", "t": "현상 수배 · 행상인 수레도 왼쪽 그림 · 새 장신구 화면 탁자 배경 · 가방 장착 때 다시 그리지 않음", "big": 0},
  {"b": 469, "v": "0.8", "d": "2026-11-16", "t": "적 살펴보기 강조 · 기술창 닫기 뺌 · 손패 더 아래 · 해적의 검 적 칸 · 전투 가방 탭 · 환호 강화 배율 · 사탄 환호 · 사탄 등장 안 끊김 · 미믹 막마다 · 유령 선박 겹침 · 가방 장신구 누름 고정 · 보상 목록 크게 · 제련소 장신구 정리 뺌", "big": 0},
  {"b": 468, "v": "0.8", "d": "2026-11-16", "t": "어인 물약상도 왼쪽 그림 배치 (받은 그림 이름 수상한 물약상과 잇기)", "big": 0},
  {"b": 467, "v": "0.8", "d": "2026-11-16", "t": "전투 가방 판(철 테 바깥 · 카드 2열 · 전투 카드 그림 · 아래 장신구 자루) · 맞춤 갑옷은 전용 레벨에서 안 씀", "big": 0},
@@ -31134,7 +31137,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=469;
+const BUILD_NO=470;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -34643,6 +34646,7 @@ body.vmap #app .placebox.p-relic .pin .evbox.evside>*{grid-column:1/-1}
 body.vmap #app .placebox.p-relic .pin .evbox.evside>.evart.side{grid-column:1;width:256px;height:256px;margin:0;padding:0;display:flex;align-items:center;justify-content:center;border:0;border-image:none;background:none;box-shadow:none;overflow:visible}
 body.vmap #app .placebox.p-relic .pin .evbox.evside>.evart.side>img{width:256px;height:256px;display:block;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 6px 10px rgba(0,0,0,.55))}
 body.vmap #app .placebox.p-relic .pin .evbox.evside>.evart.side.icon>img{width:176px;height:176px}
+body.vmap #app .placebox.p-relic .pin .evbox.evside>.evart.side.crop>img{width:236px;height:236px;object-fit:cover;object-position:50% 50%;filter:drop-shadow(0 6px 10px rgba(0,0,0,.55))}   /* 받은 사건 그림의 가운데 (핵심 그림이 없는 사건) */
 body.vmap #app .placebox.p-relic .pin .evbox.evside>.evpanel{grid-column:2;margin:0;padding:0;align-self:center;box-shadow:none!important}
 body.vmap #app .placebox.p-relic .pin .evbox.evside.evgame>.evpanel,body.vmap #app .placebox.p-relic .pin .evbox.evside.evgame>.evpanel .evtitle{display:block!important}   /* 작은 놀이도 제목 · 말을 그림 오른쪽에 (2026-11-15) */
 body.vmap #app .placebox.p-relic .pin .evbox.evside>.evpanel .evtitle{font-size:25px;margin:0 0 14px;color:#f4d67c}
@@ -36332,6 +36336,8 @@ function gearMove(src,dst){
 }
 /* 끌고 있는 것 — 화면을 다시 그려도 남게 전역에 */
 let GDRAG=null;
+/* 가방 장신구 탭에서 옮긴 직후의 render 는 탭 속만 다시 그린다 (screen.js render 머리, 50ms 안의 한 번) */
+let GEAR_SOFT=0;
 function dragFrom(el2,payload){
   el2.draggable=true;
   el2.addEventListener("dragstart",ev=>{ GDRAG=payload; el2.classList.add("dragging");
@@ -36370,11 +36376,12 @@ function drawGear(app,inBag){   /* inBag — 지도 가방 판의 탭 안 (제�
         ${it?`data-item="${esc(it.n)}" data-ih="${esc(h.name||"")}" data-ii="${i}"`:""}>
         ${it?`<div class="gi">${rewardIcon(it)}</div><b>${esc(it.n)}</b>`:`<span>빈 칸</span>`}</div>`);
       cell.onclick=()=>{
+        if(inBag) GEAR_SOFT=Date.now();
         if(sel2){ gearMove(sel2,{h:hi,i:i}); return }
         if(it) gearMove({h:hi,i:i},{bag:1});
       };
       if(it&&!it.bind) dragFrom(cell,{h:hi,i:i});
-      dropTo(cell,p=>gearMove(p,{h:hi,i:i}));
+      dropTo(cell,p=>{ if(inBag) GEAR_SOFT=Date.now(); gearMove(p,{h:hi,i:i}) });
       gs.appendChild(cell);
     }
     rs.appendChild(box);
@@ -36425,7 +36432,7 @@ function gearPile(sel2,ro){   /* ro — 옮기기만 (전투 가방 : 고르기 
   pile.addEventListener("drop",ev=>{ if(!GDRAG||GDRAG.from==="bag") return; ev.preventDefault(); pile.classList.remove("dragover");
     const p=GDRAG; GDRAG=null; const sh=run.heroes[p.h], it=sh&&sh.items[p.i]; if(!it) return;
     const r=pile.getBoundingClientRect();
-    gearMove(p,{bag:1});
+    GEAR_SOFT=Date.now(); gearMove(p,{bag:1});
     if(run.bag.indexOf(it)>=0){ it.bx=Math.min(1,Math.max(0,(ev.clientX-r.left)/r.width)); it.by=Math.min(1,Math.max(0,(ev.clientY-r.top)/r.height)); it.bz=++GPILE_Z; render() } });
   return pile }
 function gearPileDrag(ev,c,it,i,pile,on,ro){
@@ -36441,7 +36448,7 @@ function gearPileDrag(ev,c,it,i,pile,on,ro){
     const t=moved&&e.type==="pointerup"&&slotAt(e.clientX,e.clientY);   /* ⚠️ 누름을 되살리기 전에 찾는다 — 먼저 되살리면 끌던 아이콘 자신이 잡힌다 */
     clear(); c.classList.remove("lift"); c.style.pointerEvents="";
     if(!moved) return;   /* 끌지 않고 누르면 — 설명창 고정(#kwtip 의 누름 고정, 다른 곳을 누르면 풀린다). 다시 그리지 않는다 (사용자 2026-11-16) */
-    if(t){ gearMove({from:"bag",i:i},{h:+t.dataset.hi,i:+t.dataset.si}); return }
+    if(t){ GEAR_SOFT=Date.now(); gearMove({from:"bag",i:i},{h:+t.dataset.hi,i:+t.dataset.si}); return }
     const W=Math.max(1,pile.clientWidth), H=Math.max(1,pile.clientHeight);
     it.bx=Math.min(1,Math.max(0,(e.clientX-r0.left-ox+26)/W)); it.by=Math.min(1,Math.max(0,(e.clientY-r0.top-oy+26)/H));   /* 자리는 아이콘 가운데 */ it.bz=++GPILE_Z;
     /* 자루 안에서 옮길 때는 다시 그리지 않고 그 자리에만 놓는다 (사용자 2026-11-16 : 옮길 때마다 탭이 새로고침되듯 움직였다) */
@@ -42389,6 +42396,7 @@ function evSide(e){
   const fk=(typeof EVF_PNG!=="undefined"&&!e.gimEv)?(EVF_PNG[e.pic]?e.pic:EVF_PNG[e.n]?e.n:""):"";
   const gk=e.gimEv?(e.gimInk||(run.here&&run.grid&&run.grid[run.here.r]&&cellIconKey(run.grid[run.here.r][run.here.c]))||""):"";
   const ff=fk&&(typeof EVF_PNG[fk]==="string"?EVF_PNG[fk]:fk);   /* 이름이 바뀐 사건은 받은 그림 이름으로 (어인 물약상 → 수상한 물약상) */
+  if(!fk&&!e.gimEv){ const pic=evImg(e.pic||e.n); if(pic) return {fk:"", crop:1, side:pic} }   /* 핵심 그림이 없는 사건 — 받은 사건 그림의 가운데를 (현상 수배 · 행상인 수레, 2026-11-16) */
   return {fk:fk, side:fk?`<img class="evfo" src="${EVF_DIR}${encodeURIComponent(ff)}.png" alt="" draggable="false">`:(gk&&iconImg(gk))||""} }
 function drawRelic(app){
   KW_SKIP=(run&&run.ev&&run.ev.gimEv)?GIM_KW_SKIP:null;   /* 전용 구역 칸의 글이면 '이동' 을 키워드로 안 바꾼다 */
@@ -42410,9 +42418,9 @@ function drawRelic0(app){
   const o=(run.evPick!=null&&e.o)?e.o[run.evPick]:null;
   /* 왼쪽 칸 그림 (사용자 2026-11-15 시안) — 미지의 구역은 이벤트 핵심 그림(art/이벤트-핵심), 전용 구역은 그 칸의 아이콘.
      있으면 그림 왼쪽 · 제목과 설명 오른쪽 · 선택지 아래(evside). 없으면 예전처럼 넓은 그림 위 */
-  const {fk,side}=evSide(e);
+  const {fk,side,crop}=evSide(e);
   const box=el(`<div class="evbox${side?" evside":""}">
-    <div class="evart${side?(fk?" side":" side icon"):big?(pic?" wide pic":" wide"):""}">${
+    <div class="evart${side?(fk?" side":crop?" side crop":" side icon"):big?(pic?" wide pic":" wide"):""}">${
       side||big||figure(e.face||"작은 죄수")}</div>
     <div class="evpanel"><div class="evtitle">${esc(e.n)}</div>
     <div class="evdesc" id="evd"></div></div>
@@ -57762,23 +57770,7 @@ function drawItem(app){
   if(st==="hero"){
     app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px">새 장신구</div></div>`));   /* 안내 문구 걷음 (사용자 2026-10-05) */
     app.querySelector(".center").appendChild(incomingCard(pending.item));
-    const row=el(`<div class="picks"></div>`);
-    const anyUp=run.heroes.some(h=>!h.down);
-    run.heroes.forEach(h=>{
-      const off=anyUp&&h.down;
-      const c=el(`<div class="pick${off?" off":""}" style="width:200px"><div class="art">${figure(h.name)}</div>
-        <h3>${esc(h.name)}</h3>
-        <p>${off?`<span style="color:#e08a8a">쓰러짐</span>, `:""}${h.items.map(x=>`<span class="kw" data-item="${esc(x.n)}" data-ih="${esc(h.name||"")}">${esc(x.n)}</span>`).join(", ")||"장비 없음"}</p>
-        ${itemSlots(h)}</div>`);
-      if(off){ row.appendChild(c); return }
-      c.onclick=()=>{
-        pending.hero=h;
-        if(h.items.length>=itemMax(h)){ pending.stage="swap"; render() }
-        else { equip(h,pending.item); SFX.play("summon"); itemDone() }
-      };
-      row.appendChild(c);
-    });
-    app.querySelector(".center").appendChild(row);
+    rwChestTable(pending);   /* 다른 보상 화면처럼 보상 탁자 위 (사용자 2026-11-16). 대원 카드는 뺐다 — 장착은 가방 「장신구」 탭에서 */
     const sk=el(`<div style="text-align:center;margin-top:18px">
       <button class="go">가방에 넣기 (${(run.bag||[]).length})</button></div>`);   /* 버리기 걷음 (사용자 2026-10-05) */
     sk.querySelector("button").onclick=e=>{ const bt=e.currentTarget; if(bt.disabled) return; bt.disabled=true;   /* 날아가는 동안 두 번 눌려 두 개 들어가지 않게 */
