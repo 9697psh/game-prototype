@@ -5654,6 +5654,28 @@ body.vbattle:has(.blstage) .hand{visibility:hidden}   /* 전리품을 고르는 
 .chfly img,.chfly svg{width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
 /* 레벨 업 연출 */
 .lvup{cursor:default}
+/* 일괄 레벨업 요약 (사용자 2026-11-15, levelup-summary-preview-v1 참고) — 대원마다 철 테(menu-iron-trim, 가운데 돌기 제 비율) 한 줄 */
+.lvsum{max-width:880px;margin:0 auto}
+.lvsum .lvsum-t{font-size:28px;letter-spacing:.14em;color:#f4d67c;text-shadow:0 2px 0 #000}
+.lvsum-list{display:flex;flex-direction:column;gap:14px;margin-top:20px;text-align:left}
+.lvsr{--ctw:14px;position:relative;display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:20px;align-items:center;padding:16px 24px;box-shadow:0 10px 22px rgba(0,0,0,.45);
+  border-style:solid;border-width:0;border-image:url("ui/menu-iron-trim-plain.png") 26 fill/var(--ctw) stretch;animation:lvsrIn .45s cubic-bezier(.2,.9,.3,1) backwards}
+.lvsr::before,.lvsr::after{content:"";position:absolute;left:50%;width:calc(var(--ctw)*40/26);height:calc(var(--ctw)*16/26);transform:translateX(-50%);background:url("ui/menu-iron-trim-orn-top.png") 0 0/100% 100% no-repeat;pointer-events:none}
+.lvsr::before{top:0} .lvsr::after{bottom:0;background-image:url("ui/menu-iron-trim-orn-bot.png")}
+@keyframes lvsrIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.lvsr-l{display:flex;align-items:center;gap:18px;min-width:0}
+.lvsr-fig{flex:0 0 96px;height:96px;display:flex;align-items:flex-end;justify-content:center}
+.lvsr-fig img,.lvsr-fig svg{height:calc(84px * var(--ph,1));max-height:96px;width:auto;image-rendering:pixelated;filter:drop-shadow(0 0 10px rgba(255,220,130,.35))}
+.lvsr-who{flex:1;min-width:0}
+.lvsr-who b{font-size:19px;color:#f0e2c4}
+.lvsr-lv{margin:4px 0 8px;font-size:15px;color:#cdbb92} .lvsr-lv span{color:#8f8068;margin:0 4px} .lvsr-lv em{font-style:normal;font-size:24px;color:#9fe0b0;text-shadow:0 0 10px rgba(159,224,176,.35)}
+.lvsr-bar{height:8px;background:rgba(0,0,0,.5);box-shadow:inset 0 0 0 1px rgba(230,214,178,.18)} .lvsr-bar i{display:block;height:100%;background:linear-gradient(#d8f0c8,#8fc89a)}
+.lvsr-ex{margin-top:3px;font-size:11.5px;color:#a8977a}
+.lvsr-r{display:flex;flex-direction:column;gap:7px;padding-left:20px;box-shadow:-1px 0 0 rgba(230,214,178,.14)}
+.lvsr-rw{display:flex;align-items:center;gap:10px;font-size:15px;color:#e6d6b2}
+.lvsr-ic{flex:0 0 28px;display:flex;justify-content:center} .lvsr-ic img,.lvsr-ic svg{width:28px;height:28px;image-rendering:pixelated}
+.lvsr-rw b{flex:1;font-weight:normal} .lvsr-rw i{font-style:normal;color:#f4d67c;font-size:16px}
+.lvsum-go{margin-top:24px}
 .lvup .lvstage{position:relative;width:200px;height:200px;margin:10px auto 0;display:flex;align-items:flex-end;justify-content:center}
 .lvup .lvrays{position:absolute;left:50%;top:55%;width:520px;height:520px;margin:-260px 0 0 -260px;border-radius:50%;pointer-events:none;
   background:repeating-conic-gradient(from 0deg,rgba(255,212,94,.55) 0 6deg,transparent 6deg 20deg);
@@ -29403,6 +29425,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 460, "v": "0.8", "d": "2026-11-15", "t": "레벨업을 한 화면에 모아 보이고 계속하기 한 번 뒤 보상 고르기만 (일괄 레벨업, 철 테)", "big": 0},
  {"b": 459, "v": "0.8", "d": "2026-11-15", "t": "미지의 구역 · 전용 구역 새 배치(왼쪽 그림) · 훈련소 수련 연출 · 하루 한도 · 정찰 창 · 전설 등급 · 가방 화면(흩어진 자루 · 전투 중 미끄러지는 판) · 머리줄 · 회색 돌판", "big": 0},
  {"b": 458, "v": "0.8", "d": "2026-11-15", "t": "장신구 선택 줄 · 주둔지 줄 · 나가기 · 평판 카드를 회색 돌판(menu-iron-trim)으로", "big": 0},
  {"b": 457, "v": "0.8", "d": "2026-11-15", "t": "주둔지 나가기 단추도 카드 테로", "big": 0},
@@ -31055,7 +31078,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=459;
+const BUILD_NO=460;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -57539,6 +57562,9 @@ function drawReward(app){
     rwHeroPanel(app,pending.hero);
     return;
   }
+  /* 일괄 레벨업 (사용자 2026-11-15) — 레벨업을 대원마다 한 화면에 모아 한 번 보이고, 「계속하기」 한 번 뒤에는 보상 고르기만 이어 간다.
+     전에는 레벨 하나마다 레벨업 화면 → 보상 → 레벨업 화면 … 을 오갔다. 숙련도만 주는 레벨은 고를 것이 없어 건너뛴다 */
+  if(!pending.sumShown){ if(pending.idx>0||pending.queue.every(q=>q.lvShown)) pending.sumShown=1; else { lvSummary(app); return } }   /* 이미 다 보인 줄(이어하기 · 그물)이면 건너뛴다 */
   const cur=pending.queue[pending.idx];
   if(!cur.lvShown){
     const w=el(`<div class="center lvup"><div class="lvstage"><div class="lvfig">${figure(cur.hero.name)}</div></div>
@@ -57591,7 +57617,7 @@ function drawReward(app){
     </div>`));
   offerCards(app,cur.hero,lvGrade(cur.lv)||"하급",()=>{
     pending.tookKey=null;   /* 이 자리를 떠난다 */
-    pending.idx++;
+    pending.idx++; lvSkipBare();
     if(pending.idx>=pending.queue.length){ afterChest() } else render();
   },1);
   rwHeroPanel(app,cur.hero);
@@ -58273,6 +58299,27 @@ function heroPanel(h){
 }
 /* 전투 밖에서도 쓸 수 있는 수치 요약 */
 /* 지금 이 대원이 다음 레벨까지 얼마나 왔는지 */
+/* 일괄 레벨업 요약 — 대원마다 한 줄 (철 테) : 그림 · Lv 처음 → 끝 · 경험치 막대 | 받을 보상(등급 · 전용별 개수) · 숙련도 합 */
+function lvSkipBare(){ while(pending&&pending.queue&&pending.idx<pending.queue.length&&!lvGrade(pending.queue[pending.idx].lv)) pending.idx++ }
+function lvSummary(app){
+  const Q=pending.queue, by=[];
+  Q.forEach(q=>{ let g=by.find(x=>x.h===q.hero); if(!g){ g={h:q.hero,from:q.lv-1,to:q.lv,mast:0,rw:[]}; by.push(g) }
+    g.from=Math.min(g.from,q.lv-1); g.to=Math.max(g.to,q.lv); g.mast+=lvMastery(q.lv);
+    const lg=lvGrade(q.lv); if(lg){ const k=(LV_OWN[q.lv]?"전용 ":"")+lg, r=g.rw.find(x=>x.k===k); if(r) r.n++; else g.rw.push({k:k,g:lg,n:1}) } });
+  rwChestTable(pending);   /* 보상을 고르는 그 탁자 위에서 — 보상 화면으로 자연스럽게 이어진다 */
+  const bar=h=>{ const need=needExp(h.lv), pct=Math.min(100,Math.round(h.exp/need*100)); return `<div class="lvsr-bar"><i style="width:${pct}%"></i></div><div class="lvsr-ex">${h.exp}/${need}</div>` };
+  const w=el(`<div class="center lvsum"><div class="title lvsum-t">레벨 업</div>
+    <div class="lvsum-list">${by.map((g,i)=>`<div class="lvsr" style="animation-delay:${i*90}ms">
+      <div class="lvsr-l"><div class="lvsr-fig">${figure(g.h.name)}</div>
+        <div class="lvsr-who"><b>${esc(g.h.name)}</b><div class="lvsr-lv">Lv.${g.from} <span>→</span> <em>Lv.${g.to}</em></div>${bar(g.h)}</div></div>
+      <div class="lvsr-r">${g.rw.map(r=>`<div class="lvsr-rw"><span class="lvsr-ic">${chestIcon(r.g)}</span><b>${esc(r.k)} 보상</b><i>×${r.n}</i></div>`).join("")}
+        <div class="lvsr-rw"><span class="lvsr-ic">${iconImg("currency_mastery")}</span><b>숙련도</b><i>+${g.mast}</i></div></div>
+    </div>`).join("")}</div>
+    <div class="lvsum-go"><button class="go">계속하기</button></div></div>`);
+  app.appendChild(w);
+  if(!pending.sndLv){ pending.sndLv=1; try{ SFX.play("level") }catch(e){} }
+  w.querySelector(".lvsum-go button").onclick=()=>{ if(pending.sumShown) return; pending.sumShown=1; Q.forEach(q=>{ q.lvShown=1 }); lvSkipBare();
+    if(pending.idx>=Q.length) afterChest(); else render() } }
 function expBar(h){
   if(!h) return "";
   const need=needExp(h.lv), pct=Math.min(100,Math.round(h.exp/need*100));
