@@ -7351,7 +7351,7 @@ const KW_TAB=[
  {n:"메아리",c:"buff",d:"죽으면 절반의 생명력으로 1회 부활합니다",re:"메아리(?!\\s*정령)"},
  {n:"감염",c:"debuff",d:"감염은 중첩될 수 있고, 감염된 적에게는 턴이 끝날 때 피해를 1(추가 ∴ ) 주고 감염 중첩을 1 감소"},
  {n:"관통",c:"atk",d:"일정량의 피해가 보호막을 무시함"},
- {n:"치명타",c:"atk",d:"치명타 조건을 만족하면 피해가 2배로 적용"},
+ {n:"치명타",c:"atk",d:"치명타 조건을 만족하면 피해가 1.5배로 적용"},
  {n:"공격력",c:"atk",d:"근거리 공격 대원이 주로 사용 (†)"},
  {n:"마법력",c:"mag",d:"원거리 공격 대원이 주로 사용 (∴)"},
  {n:"보호력",c:"def",d:"보호막이나 치유 증폭에 사용 (¤)"},
@@ -15328,11 +15328,11 @@ function golemDeath(u,why,산채로){
     L.forEach(a=>negGain(a,M.deathNeg));
     if(L.length) say(`균열석 — ${L.map(a=>a.name).join(", ")} 부정 보호막 +${M.deathNeg}`,"t2") }
   /* 「이 소환물의 피해가 항상 치명타」는 **죽음 피해에도** 간다 (사용자 2026-10-13) */
-  const 치=M.critAlways?1:0, 곱=치?2:1;
-  if(M.deathAll){ const v=(M.deathAll+up)*곱, L=B.foes.filter(f=>f.alive);
+  const 치=M.critAlways?1:0, 곱=치?CRIT_X:1;
+  if(M.deathAll){ const v=Math.round((M.deathAll+up)*곱), L=B.foes.filter(f=>f.alive);
     if(L.length){ say(`금속 — 모든 적에게 피해 ${v}${치?" (치명타)":""}`,"t1");
       L.forEach(f=>asSrc(ow,()=>hurt(f,v,why||"금속",null,0,치,1))) } }
-  if(M.deathNear){ const v=(M.deathNear+up)*곱, f=nearestFoe(u);
+  if(M.deathNear){ const v=Math.round((M.deathNear+up)*곱), f=nearestFoe(u);
     if(f){ say(`드론파편 — ${f.name}에게 피해 ${v}${치?" (치명타)":""}`,"t2"); asSrc(ow,()=>hurt(f,v,why||"드론파편",null,0,치,1)) } }
   /* 재조립 — 그 골렘의 부속 카드 하나를 돌려받는다 (노트 highRewards).
      손패에 짝이 있으면 golemMerge 가 바로 합친다 — 길은 그 한 곳이다 */
@@ -15541,7 +15541,7 @@ const SKILL_FULL={
  "상급 찌르기":"관통 피해를 15 줍니다.",
  "전투식량":"사용한도(2). 악마 하수인을 잡아먹고 체력을 10 회복합니다.",
  "쇠약":"사용한도(1). 모든 적에게 부여된 부정적인 효과를 2배로 만듭니다.",
- "헤드샷":"매 턴 첫번째 자동변환단총의 공격 피해량이 8(추가 † ) 증가합니다. 이 피해는 치명타가 적용될때 2배가 아닌 3배의 피해를 줍니다.",
+ "헤드샷":"매 턴 첫번째 자동변환단총의 공격 피해량이 8(추가 † ) 증가합니다. 이 피해는 치명타가 적용될때 1.5배가 아닌 2.5배의 피해를 줍니다.",
  "화음과 리듬":"리페는 _음율란_을 3개 가지고 시작합니다.\n기술을 통해 _음을란_을 모두 채우면, _음율_을 노래합니다",
  "화살비":"사용한도(1). 모든 적에게 피해를 8(추가 † ) 줍니다.",
  "확산":"적을 감염시킵니다. 감염이 2회 이상 중첩되었다면, 보호약화를 1 부여하고 거리 1 내의 대상도 감염시킵니다.",
@@ -15556,10 +15556,11 @@ const SUMMONS={
  /* 광기의 투기장 — 유망주가 **대원 전장에** 끌어다 놓는 노예 (사용자 2026-11-03). 아무것도 하지 않는다 */
  "투기장의 노예":{hp:30,mana:0,race:"인간",noMove:1,
    d:"죽음: 유망주에게 모든 추가 능력치를 3 부여합니다.",sk:[]},
- /* 오리온의 사냥개 (노트 카드, 2026-10-14) — 도발. 소멸성 카드로 들어온다.
+ /* 오리온의 사냥개 (노트 카드, 2026-10-14) — 소멸성 카드로 들어온다.
+    도발은 상급 보상 「용맹한 사냥개」로 옮겼다 (사용자 2026-11-15 — 전에는 늘 도발).
     마나 2 에 기술이 1 이라 한 턴에 **두 번** 문다 — 표식이 쌓이는 자원이 된다 */
- "사냥개":{hp:8,mana:2,owner:"오리온",taunt:1,race:"악마",
-   d:"도발. 오리온이 균열에서 길들인 악마 사냥개.",
+ "사냥개":{hp:8,mana:2,owner:"오리온",race:"악마",
+   d:"오리온이 균열에서 길들인 악마 사냥개.",
    sk:[{n:"상처 남기기",cost:1,el:"공격",tg:"foe",dmg:2,scent:1,d:"적에게 피해 2, 사냥감 냄새 표식을 남긴다"}]},
  /* 우두머리 전리품 — 실험 책임자 (사용자 2026-10-23).
     사용한도를 다 쓰면 터져 **아군 · 적군 모두**에게 피해를 준다 */
@@ -16891,7 +16892,7 @@ const HERO_REWARDS={
   R("홀로그램 분신","상급","점프백이 원래 자리에 홀로그램 분신을 남깁니다. 이테리오가 분신이 있는 자리로 이동하면, 회피를 2 얻습니다. 분신은 최대 1개까지 존재할 수 있습니다. 점프백의 비용이 1 증가합니다.",
     h=>{ h.tag.holo=1; h.sk.forEach(k=>{ if(k&&k.n==="점프백") k.cost=(k.cost||0)+1 }) }),   /* 비용 +1 (사용자 2026-09-30) */
   R("반란군 결집","상급","대원 배치 후, 아군 기계 대원들에게 모든 추가 능력치를 4 부여합니다.",h=>h.tag.rebel=(h.tag.rebel||0)+1),
-  R("정밀 공학","상급","이테리오의 치명타 피해가 2배에서 2.5배가 됩니다.",h=>h.tag.precise=1,0.5)
+  R("정밀 공학","상급","이테리오의 치명타 피해가 1.5배에서 2배가 됩니다.",h=>h.tag.precise=1,0.5)
  ],
  "트리스탄":[
   /* ── 하급 ── */
@@ -17579,7 +17580,7 @@ const HERO_REWARDS={
     h=>h.tag.barrage=(h.tag.barrage||0)+1),{okf:()=>derrGun()==="기관총"}),
   Object.assign(R("납탄","상급","리볼버가 대상에게 _납탄_ 표식을 남깁니다. 표식이 4개인 적에게 리볼버가 비용없이 1번 더 발사되고 표식을 모두 제거합니다.\n*변형: 리볼버 선택 후에만 등장\n*획득시 보상에서 다시 등장하지 않음",
     h=>h.tag.lead=1),{okf:()=>derrGun()==="리볼버"}),
-  Object.assign(R("은탄","상급","리볼버의 치명타 배율이 3배가 됩니다.\n*변형: 리볼버 선택 후에만 등장\n*획득시 보상에서 다시 등장하지 않음",
+  Object.assign(R("은탄","상급","리볼버의 치명타 배율이 2.5배가 됩니다.\n*변형: 리볼버 선택 후에만 등장\n*획득시 보상에서 다시 등장하지 않음",
     h=>h.tag.critPlus=(h.tag.critPlus||0)+1),{okf:()=>derrGun()==="리볼버"}),
   Object.assign(R("철갑탄","상급","저격소총이 관통 피해를 줍니다.\n*변형: 저격소총 선택 후에만 등장",
     h=>h.tag.gunPierce=1),{okf:()=>derrGun()==="저격소총"}),
@@ -17658,6 +17659,10 @@ const HERO_REWARDS={
   R("전우애","상급","이번 원정동안 사냥개에게 '죽음: 이 소환물의 추가 능력치를 오리온에게 부여합니다.'를 부여합니다.\n*획득시 보상에서 다시 등장하지 않음",
     h=>{ h.tag.houndWill=1;
       if(typeof houndsOn==="function") houndsOn().forEach(m=>minGrant(m)) }),
+  R("용맹한 사냥개","상급","사냥개가 항상 도발 상태가 됩니다. 사냥개의 최대 체력이 40 증가합니다.\n*획득시 보상에서 다시 등장하지 않음",
+    h=>{ h.tag.houndBrave=1;
+      /* 이미 전장에 선 사냥개도 그 자리에서 */
+      if(typeof houndsOn==="function") houndsOn().forEach(m=>{ m.taunt=1; m.perma=1; m.maxHp+=HOUND_BRAVE_HP; m.hp+=HOUND_BRAVE_HP }) }),
   R("무리 사냥","상급","사냥개를 최대 2마리까지 둘 수 있습니다. 사냥개 부리기가 사냥개가 이미 손이나 전장에 있어도 1장 더 가져옵니다.\n*획득시 보상에서 다시 등장하지 않음",
     h=>h.tag.packHunt=1),
   R("포식자의 표적","상급","내 턴이 끝날 때, 사냥감 냄새 표식이 있는 적들에게 피해를 4 줍니다. 표식의 수만큼 반복합니다.",
@@ -18279,7 +18284,7 @@ Object.assign(REW_COND,{
  "중급|침흘리는 사냥개":{need:["미끼 던지기"]},
  "중급|악마의 뼈로 만든 무기들":{once:1},
  "상급|동료애":{once:1},"상급|전우애":{once:1},"상급|무리 사냥":{once:1},
- "상급|거대 사냥개":{once:1},
+ "상급|거대 사냥개":{once:1},"상급|용맹한 사냥개":{once:1},
  "상급|표적 확인":{need:["쇠사슬 올가미"]},
  "상급|균열 화살촉 보급":{once:1}});
 Object.assign(REW_KIND,{
@@ -20980,8 +20985,8 @@ function garBuildStart(id){
   const g=garEnsure(); if(!g||garBuildWhy(id)) return null;
   const from=garLv(id), c=garUpCost(id), now=garNow(), hrs=garBuildHours(id);
   run.gold-=c;
-  /* 일꾼 평판 — 맡기면 +3~6, 지난 48시간 일한 시간 + 이번 공사가 36시간을 넘으면 과로 −5~−10 (2026-11-12) */
-  const over=workerPast(now)+hrs>WORK_MAX, rd=repAdd("worker",over?-repRoll([5,10]):repRoll([3,6]),"",1);
+  /* 일꾼 평판 — 맡기면 +1~3 (2026-11-15 : 3~6 이 너무 빨랐다), 지난 48시간 일한 시간 + 이번 공사가 36시간을 넘으면 과로 −5~−10 (2026-11-12) */
+  const over=workerPast(now)+hrs>WORK_MAX, rd=repAdd("worker",over?-repRoll([5,10]):repRoll([1,3]),"",1);
   (g.work=g.work||[]).push({s:now,e:now+hrs}); g.work=g.work.filter(w=>w.e>now-WORK_WIN);
   (g.build=g.build||{})[id]={id:id, from:from, to:from+1, startAt:now, endAt:now+hrs, state:"working", seen:0, rep:rd, over:over?1:0};
   return g.build[id] }
@@ -20999,7 +21004,7 @@ function garBellAct(){ return (typeof run!=="undefined"&&run)?garV("bellAct","be
 function garNewDay(){
   const g=garEnsure(); if(!g) return;
   const s=garV("bellSilver","bell-tower"); run.silver=(run.silver||0)+s;
-  { const now=garNow(); if(!garWorkSite()&&!(g.work||[]).some(w=>w.e>now-24)) repAdd("worker",repRoll([1,2]),"휴식") }   /* 일꾼이 하루 쉬었다 (2026-11-12) */
+  { const now=garNow(); if(!garWorkSite()&&!(g.work||[]).some(w=>w.e>now-24)) { if(Math.random()<.5) repAdd("worker",1,"휴식") } }   /* 일꾼이 하루 쉬었다 — 50% 로 +1 (2026-11-15, 전에는 +1~2) */
   /* 정찰대가 돌아온다 — 밝혀지지 않은 구역 N 곳 + 보상 (확인은 정찰소에서) */
   if(g.scout){ const lv=g.scout.lv; g.scout=null; g.scoutRes=garScoutRoll(lv);
     try{ toast(`정찰대가 돌아왔습니다. 주둔지 정찰소에서 보상을 확인하세요. (은화 +${s})`) }catch(e){} }
@@ -24022,12 +24027,12 @@ function golemPartLines(u){
   const live=L.filter(x=>!/^죽음\s*:/.test(x)).join(" ");
   /* 죽음 글은 **지금 값**으로 짓는다 — 드론파편이 올린 몫(B.minDeathUp)과 금속의 치명타까지
      (사용자 2026-10-13 : 「죽음 설명에 수치 반영」). 노트 글을 그대로 베끼면 늘 처음 값이다 */
-  const up=(u&&u.deathUp)||0, 곱=M.critAlways?2:1;
+  const up=(u&&u.deathUp)||0, 곱=M.critAlways?CRIT_X:1;
   const 치=M.critAlways?" (치명타)":"";
   const d=[];
   if(M.deathNeg) d.push(`다른 모든 대원에게 부정 보호막을 ${M.deathNeg} 부여합니다.`);
-  if(M.deathAll) d.push(`모든 적에게 피해를 ${(M.deathAll+up)*곱} 줍니다.${치}`);
-  if(M.deathNear) d.push(`가장 가까운 적에게 피해를 ${(M.deathNear+up)*곱} 줍니다.${치}`);
+  if(M.deathAll) d.push(`모든 적에게 피해를 ${Math.round((M.deathAll+up)*곱)} 줍니다.${치}`);
+  if(M.deathNear) d.push(`가장 가까운 적에게 피해를 ${Math.round((M.deathNear+up)*곱)} 줍니다.${치}`);
   if(M.deathAir) d.push("모든 적을 공중에 뜸 상태로 만듭니다.");
   if(M.deathGive) d.push("이 소환물의 추가 능력치를 무작위 아군에게 부여합니다.");
   return {지속:live,죽음:d.join(" ")};
@@ -27677,6 +27682,7 @@ const HERO_TRAITS={
         "중급|침흘리는 사냥개",
         "상급|동료애",
         "상급|거대 사냥개",
+        "상급|용맹한 사냥개",
         "상급|전우애",
         "상급|무리 사냥",
         "상급|고단백 살점",
@@ -29305,6 +29311,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 452, "v": "0.8", "d": "2026-11-15", "t": "치명타 기본 계수 2배 → 1.5배 · 오리온 사냥개 상시 도발 삭제 + 상급 보상 용맹한 사냥개 · 제련공 브란 · 일꾼 평판 오름 줄임", "big": 0},
  {"b": 451, "v": "0.8", "d": "2026-11-14", "t": "백그라운드 소리 끔 — 다른 창을 눌러 게임 창이 뒤로 가기만 해도 노래 · 효과음 멈춤 (전에는 탭을 내렸을 때만)", "big": 0},
  {"b": 450, "v": "0.8", "d": "2026-11-14", "t": "라이티늄 지팡이 회복량 강화 뺌 · 코드 상자 → 게임 상자 그림", "big": 0},
  {"b": 449, "v": "0.8", "d": "2026-11-14", "t": "제련 결과 판 — 게임 상자 그림", "big": 0},
@@ -30949,7 +30956,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=451;
+const BUILD_NO=452;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -37655,9 +37662,10 @@ function smithLuckLine(){ const T=smithTier(); return T.luck?`제련공 브란�
 /* 제련으로 오르는 평판 — 서로 다른 파편 +1~4 · 파편 둘(일반) +2~5 · 일반 둘(희귀) +10~20 */
 function smithForgeGain(plan,a,b){
   if(!plan||plan.copy||plan.clean) return 0;
-  if(plan.mix) return repRoll([1,4]);
-  if(a.g==="파편"&&b.g==="파편") return repRoll([2,5]);
-  if(a.g==="일반"&&b.g==="일반") return repRoll([10,20]);
+  /* 너무 빨리 올라 줄였다 (사용자 2026-11-15) — 서로 다른 파편 1~4 → 50% 로 1 / 파편+파편 2~5 → 1~2 / 일반+일반 10~20 → 3~6 */
+  if(plan.mix) return Math.random()<.5?1:0;
+  if(a.g==="파편"&&b.g==="파편") return repRoll([1,2]);
+  if(a.g==="일반"&&b.g==="일반") return repRoll([3,6]);
   return 0 }
 /* 솜씨 발휘 · 제련 실수 — forgeRun 이 값을 다 치른 뒤 부른다. 결과물(made)을 돌려준다(각인이 새겨진 제 몫 · 실패면 {fail}).
    돌려받는 재료는 받는 줄(run.after)에. 무엇이 일어났는지는 run.smithLuck 에 적어 둔다 (화면이 말풍선 · 알림으로) */
@@ -38547,8 +38555,8 @@ function gsdDarkFear(t){
     f.alive=0; f.expTaken=1; f.fled=1; f.loot=null; f.bounty=0 });
   say(`어두운 공포 — ${L.map(f=>f.name).join(", ")}${jo(L[L.length-1].name,"ig")} 전투에서 달아납니다!`,"t1");
 }
-/* 급습 치명타 배율 — 암살 계약 (퀘스트) 이면 2 → 2.5 (정밀 공학과 같은 읽기) */
-const gsdAmbX=h=>2+0.5*((h&&h.tag&&h.tag.ambX)||0);
+/* 급습 치명타 배율 — 기본 계수에 암살 계약 (퀘스트) 이면 +0.5 (정밀 공학과 같은 읽기) */
+const gsdAmbX=h=>CRIT_X+0.5*((h&&h.tag&&h.tag.ambX)||0);
 /* 공격 피해 덤 — runEffect · predictDmg 가 같은 자리에서 (치명타 앞) */
 function gsdDmgAdd(h,s,tgt){
   if(!gsdIs(h)||!s||!tgt) return 0; const T=h.tag||{}; let v=0;
@@ -39431,7 +39439,7 @@ function pebbleSmashAfter(h,tgt){
   const hit=(tgt?[tgt]:[]).concat(more);
   let kills=0;
   if(tgt&&!tgt.alive) kills++;
-  more.forEach(f=>{ asSrc(h,()=>hurt(f,crit?base*2:base,"내려찍기","slash",T.smashPierce?100:0,crit?1:0)); if(!f.alive) kills++ });
+  more.forEach(f=>{ asSrc(h,()=>hurt(f,crit?critUp(base):base,"내려찍기","slash",T.smashPierce?100:0,crit?1:0)); if(!f.alive) kills++ });
   if(pbFxOn()) more.forEach(f=>{ const fs=f.slot; fx({side:"foe",slot:fs,s:pbSnd("암석 솟음"),fn:()=>pebbleFX("lift","foe",fs,0,0),gap:0}) });   /* 격동 · 파괴로 맞은 적도 솟는다 */
   hit.forEach(f=>{ if(f.alive) airborne(h,f) });
   if(V.indexOf("진동")>=0) hit.forEach(f=>{ if(f.alive){ addDeb(f,"atkDn",2,h); addDeb(f,"magDn",2,h) } });
@@ -39464,7 +39472,7 @@ function pebbleSwingOnce(h,s){
   let kills=0; const dn=[];
   L.forEach(f=>{ const b0=(f.hp||0)+(f.shield||0), c=crit.has(f);
     if(c) say(`${T.worldHammer&&pebbleHas(h,"철")?"철 광맥":"관자놀이 타격"} — ${f.name}에게 치명타!`,"t1");
-    asSrc(h,()=>hurt(f,c?v*2:v,"휘두르기","slash",0,c?1:0,!!pbFxOn()));   /* 받은 타격 섬광이 있으니 옛 베기 그림은 빼고 */
+    asSrc(h,()=>hurt(f,c?critUp(v):v,"휘두르기","slash",0,c?1:0,!!pbFxOn()));   /* 받은 타격 섬광이 있으니 옛 베기 그림은 빼고 */
     if(!f.alive){ kills++; return }
     const got=Math.max(0,b0-Math.max(0,f.hp||0)-(f.shield||0));
     if(got>0) dn.push([f,got]) });
@@ -42621,8 +42629,8 @@ function derrFreeShot(h,f){
   const s=(h.sk&&h.sk[0]); if(!s||!s.ammo) return;
   let dmg=s.dmg+mod(s,"dmg")+h.atk+derrGunAdd(h,s,f);
   /* 치명타 — 손으로 쏠 때와 **같은 셈**이어야 한다 (사용자 2026-10-15 : 배치 후 자동 발사에 치명타가 안 들었다).
-     보상으로 걸리는 치명타는 critMul(은탄이면 3배), 전투의 첫 한 방은 runEffect 와 같이 ×2 */
-  let crit=0, mul=2;
+     보상으로 걸리는 치명타는 critMul(은탄이면 +1), 전투의 첫 한 방은 runEffect 와 같이 기본 계수 */
+  let crit=0, mul=CRIT_X;
   if(critWhy(h,s,f)){ crit=1; mul=critMul(h) }
   else if(critOnce(h,s,1)) crit=1;
   if(crit) dmg=Math.round(dmg*mul);
@@ -43586,7 +43594,7 @@ function ottoEndTurn(h){
     if(d>0){ bumpTmp(h,"def",-d); bumpTmp(h,"mag",d); say(`프로토타입-02 — 추가 보호력을 ${d} 마법력으로 바꿉니다.`,"t1") }
     const s0=h.sk.find(k=>k.n==="쓰담쓰담");
     for(let q=0;q<T.proto02;q++){ const L=B.foes.filter(f=>f.alive);   /* 겹친 수만큼 (2026-10-11) — 적은 돌 때마다 다시 본다 */
-    if(s0&&L.length){ const v=(s0.dmg+mod(s0,"dmg")+(skillFlat(s0)?0:h.mag))*2;
+    if(s0&&L.length){ const v=critUp(s0.dmg+mod(s0,"dmg")+(skillFlat(s0)?0:h.mag));
       say(`프로토타입-02 — 모든 적에게 치명타 쓰담쓰담 (${v})`,"t1");
       if(h.slot>0){ const ms=h.slot, own=skillSfx(h,s0);
         fx({side:"mine",slot:ms,pose:"atk",poseMs:520,s:own,lunge:1,gap:60});
@@ -43668,8 +43676,9 @@ function makeMin0(name,slot,card){
   if(/^악마 (하수인|장군)$/.test(name)){ const ow=run&&run.heroes.find(x=>x.name==="굴라");
     if(ow&&ow.tag){ hp+=ow.tag.impHp||0; matk=ow.tag.impAtk||0 } }
   /* 오리온의 사냥개 — 주인의 보상이 몸집 · 마나 · 이빨을 키운다 (노트 2026-10-15).
+     HOUND_BRAVE_HP — 용맹한 사냥개가 더하는 최대 체력 (rewards.js 와 같이 쓴다)
      ⚠️ **여기 한 군데서만** 키운다. 보상이 늘어도 꼬리표만 더 읽으면 된다 */
-  let mleech=0;
+  let mleech=0, mtaunt=d.taunt?1:0;
   if(name==="사냥개"){ const ow=run&&run.heroes.find(x=>x.name==="오리온");
     if(ow&&ow.tag){ const T=ow.tag;
       hp   += T.houndHp||0;
@@ -43677,6 +43686,8 @@ function makeMin0(name,slot,card){
       matk += T.houndAtk||0;
       ev   += T.houndEvade||0;
       mleech= T.houndLeech||0;
+      /* 용맹한 사냥개 (상급) — 늘 도발 · 최대 체력 +40 (사용자 2026-11-15). 거대 사냥개(×2)는 소환 뒤라 이 위에 곱한다 */
+      if(T.houndBrave){ hp+=HOUND_BRAVE_HP; mtaunt=1 }
       /* 「박치기」(중급 추가 기술) — 사냥개에게 기술이 하나 더 생긴다 */
       if(T.houndHead&&!sk.some(k=>k&&k.n==="박치기"))
         sk.push({n:"박치기",cost:0,el:"공격",tg:"foe",limit:1,headbutt:1,dmg:0,
@@ -43684,7 +43695,7 @@ function makeMin0(name,slot,card){
   return {name:name,slot:slot,isMin:1,alive:1,lv:99,
     maxHp:hp,hp:hp,maxMana:mana,mana:mana,
     sk:sk,
-    taunt:d.taunt?1:0, perma:d.taunt?1:0, noMove:d.noMove?1:0,
+    taunt:mtaunt, perma:mtaunt, noMove:d.noMove?1:0,
     owner:d.owner, revive:d.revive?1:0, curseOnDeath:d.curseOnDeath||0,
     atk:matk,mag:0,def:0,shield:0,evade:ev,armor:0,mom:0,free:0,windBuff:0,leechOn:mleech,
     lock:{},limitUsed:{},tag:{},items:[],first:{},minions:[],
@@ -43899,6 +43910,8 @@ function tauntWall(a){
   return allUnits().find(x=>x.taunt&&x!==a&&x.slot>a.slot)||null;
 }
 function canAim(a){ return !tauntWall(a) }
+/* 용맹한 사냥개 (상급, 사용자 2026-11-15) — 사냥개의 최대 체력 +40 */
+var HOUND_BRAVE_HP=40;
 /* ═══════════ 우두머리의 정화 ═══════════
    우두머리는 홀로 서는 일이 많아 상태 이상에 그대로 노출된다.
    그래서 몸에 걸린 것을 떨쳐내는 패턴을 여럿 가지고 있다. */
@@ -44224,7 +44237,7 @@ function arenaFieldIn(){ if(!run) return; if(arenaOn()) run.cheer=CHEER.start; e
    (적이 건 상처 1 이 내 턴 하나 · 다음 적 차례 하나를 간다. 덫 표적 1 도 1턴) ── */
 function arenaHitRaw(t,raw,critDone){
   if(!(raw>0)||!t) return raw;
-  if(!critDone&&deb(t,"wound")>0) raw*=2;
+  if(!critDone&&deb(t,"wound")>0) raw=critUp(raw);
   const st=deb(t,"star"); if(st>0) raw+=st;          /* 오늘의 주인공 — 받는 피해 +N */
   return raw }
 function arenaWoundTick(){
@@ -46668,7 +46681,7 @@ function skExec0(f,I){
       if(f.painBonus){ one+=f.painBonus; say(`고통 감내 — 피해 +${f.painBonus}`,"t2"); f.painBonus=0 }
       let crit=!!(s.burnCrit&&deb(t,"burn")>0)||!!(s.debCrit&&DEB_KEYS.some(k=>deb(t,k)>0))||outRangeCritFor(f,t)||deb(t,"wound")>0||!!(s.critHalf&&t.hp<=t.maxHp/2);   /* 상처 — 받는 모든 피해가 치명타 */
       if(eyeCritFor(f,t)){ crit=true; say(`뺨다귀 — ${t.name}${jo(t.name,"eun")} 간수의 손 공격 범위 안이라 ${s.n}이 치명타!`,"t1") }
-      if(crit){ one*=2; if(s.burnCrit) say(`${s.n} — 화상 입은 ${t.name}에게 치명타!`,"t1"); if(s.debCrit) say(`${s.n} — 부정적인 효과가 걸린 ${t.name}에게 치명타!`,"t1") }
+      if(crit){ one=critUp(one); if(s.burnCrit) say(`${s.n} — 화상 입은 ${t.name}에게 치명타!`,"t1"); if(s.debCrit) say(`${s.n} — 부정적인 효과가 걸린 ${t.name}에게 치명타!`,"t1") }
       if(crit) critAlly(t);   /* 보이고 들리게 — 대원 쪽엔 있는데 적 쪽엔 없었다 (⑳) */
       for(let q=0;q<hits;q++){
         if(t.hp<=0) break;
@@ -48846,7 +48859,7 @@ function breakdown(h,sk,key){
   else if(key==="shield"&&h.def&&!skillFlat(sk)){ total+=h.def; parts.push({n:"추가 보호력",v:h.def}) }
   if(key==="houndHeal"&&h.def&&!skillFlat(sk)){ total+=h.def; parts.push({n:"추가 보호력",v:h.def}) }   /* 사냥개 부리기 — 노트 18-2 의 ¤ (사용자 2026-10-15) */
   extraParts(h,sk,key).forEach(p=>{ total+=p.v; parts.push(p) });
-  if(key==="dmg"){ const w=critWhy(h,sk,null); if(w){ total*=2; parts.push({n:w,v:"치명타 ×2"}) } }   /* 늘 치명타 — 기술 칸과 같은 값 */
+  if(key==="dmg"){ const w=critWhy(h,sk,null); if(w){ total=critUp(total,critMul(h)); parts.push({n:w,v:"치명타 ×"+critMul(h)}) } }   /* 늘 치명타 — 기술 칸과 같은 값 */
   const cut=weakCut(h,key,total);
   if(cut){ total-=cut; parts.push({n:"보호약화",v:-cut}) }
   return {total:total,parts:parts};
@@ -48872,7 +48885,7 @@ function liveVal(h,sk,key,base,syms){
   if(own) extraParts(h,sk,key).forEach(p=>{ total+=p.v; parts.push(p) });
   /* 늘 치명타인 기술은 두 배가 실제 값이다 — 칸이 절반만 보이면 거짓이 된다 (사용자 2026-10-09).
      대상에 걸린 치명타(대상 포착 · 반전활 · 치명적 명중)는 대상을 모르니 critWhy 가 알아서 뺀다 */
-  if(own&&key==="dmg"){ const w=critWhy(h,sk,null); if(w){ total*=2; parts.push({n:w,v:"치명타 ×2"}) } }
+  if(own&&key==="dmg"){ const w=critWhy(h,sk,null); if(w){ total=critUp(total,critMul(h)); parts.push({n:w,v:"치명타 ×"+critMul(h)}) } }
   /* 보호약화 — 기술 칸의 숫자는 그 기술 자신의 값만 깎아 보인다 (실제로는 모든 보호막 · 회복이 반, 2026-10-05) */
   const cut=own?weakCut(h,key,total):0;
   if(cut){ total-=cut; parts.push({n:"보호약화",v:-cut}) }
@@ -48899,7 +48912,7 @@ function livePlace(h,sk){
     if(T.painPlus){ total+=T.painPlus; parts.push({n:"환상통 강화",v:T.painPlus}) }
     if(T.painX2){ total*=2; parts.push({n:"환상폭발",v:"×2"}) }
     if(T.painNear){ total*=3; parts.push({n:"의식 제거",v:"×3"}) }
-    if(T.painCrit){ total*=2; parts.push({n:"치명적인 고통",v:"×2"}) }
+    if(T.painCrit){ total=critUp(total); parts.push({n:"치명적인 고통",v:"×"+CRIT_X}) }
     return {total:total,parts:parts};
   }
   if(n==="정의의 기운"){ return {total:h.shield||0,parts:[]} }
@@ -50825,7 +50838,7 @@ function iraClawFree(h,s){ return !!(s&&s.claw&&iraCharged(h)) }
       hurt 의 crit 인자는 「이미 치명타다」는 표시일 뿐이다 (domShackle 과 같은 결) */
 function iraMask(h){ return !!(h&&h.tag&&h.tag.demonMask&&iraCharged(h)) }
 /* 악마의 가면이 **이 기술에** 걸리나 — 할퀴기 · 찢어발기기 · 대가 치르기 (2026-10-29).
-   실제(iraClaw · iraRend · iraPay)는 셋 다 iraMask 로 묻고 한 대마다 두 배로 친다.
+   실제(iraClaw · iraRend · iraPay)는 셋 다 iraMask 로 묻고 한 대마다 치명타(critUp)로 친다.
    예고도 이 한 곳에 묻는다 — 예고가 할퀴기 · 찢어발기기 몫을 안 세고 있었다 (probe-foretell).
    ⚠️ critWhy 에 넣지 않는다 — breakdown 이 critWhy 를 불러 이미 두 배를 하므로 실제가 네 배가 된다 */
 function iraMaskCrit(h,s){ return !!(s&&(s.claw||s.rend||s.payPrice)&&iraMask(h)) }
@@ -51399,7 +51412,7 @@ function scentMark(f,why,n){
 function orionFreeHit(u,sk,tgt){
   const dmg=(sk.dmg||0)+mod(sk,"dmg")+(u.atk||0);
   const crit=critWhy(u,sk,tgt)?1:0;
-  return {dmg:dmg, crit:crit, 들어감:crit?dmg*2:dmg};
+  return {dmg:dmg, crit:crit, 들어감:crit?critUp(dmg,critMul(u)):dmg};
 }
 function orionFree(u,skName,tgt,times,why){
   if(!u||!tgt||!tgt.alive||!B||B.over) return;
@@ -51408,7 +51421,7 @@ function orionFree(u,skName,tgt,times,why){
     const {dmg,crit}=orionFreeHit(u,sk,tgt);
     say(`${why||skName} — ${u.name}${jo(u.name,"ig")} 비용 없이 ${skName}${jo(skName,"eul")} 씁니다.`,"t2");
     if(u.name==="오리온") fx({side:"foe",slot:tgt.slot,orion:{side:"mine",slot:u.slot,kind:"bolt"},gap:0});
-    asSrc(u,()=>hurt(tgt,crit?dmg*2:dmg,skName,"slash",0,crit,1));
+    asSrc(u,()=>hurt(tgt,crit?critUp(dmg,critMul(u)):dmg,skName,"slash",0,crit,1));
     if(sk.scent&&tgt.alive) scentMark(tgt,skName,1);
     if(sk.scentUse&&tgt.alive&&(tgt.scent||0)>0) tgt.scent--;
   }
@@ -51468,11 +51481,11 @@ function predictDmg(h,s,tgt){
      충전이면 한 번 몫만 보였다 (probe-foretell, 2026-10-29). 반복 수도 실제와 같이 2 (+날 선 대가) */
   else if(s.payPrice){ if(!iraCharged(h)) return null;
     dmg=breakdown(h,s,"dmg").total+((h.tag&&h.tag.payHitUp)||0);
-    if(iraMaskCrit(h,s)){ dmg*=2; crit=1 }   /* 악마의 가면 — 충전이면 한 대마다 치명타 (iraMaskCrit 한 곳) */
+    if(iraMaskCrit(h,s)){ dmg=critUp(dmg); crit=1 }   /* 악마의 가면 — 충전이면 한 대마다 치명타 (iraMaskCrit 한 곳) */
     times=2+((h.tag&&h.tag.payRepeat)||0) }
   /* 플레어와 플로우 — 균형은 플레어일 때만 때리고, 조화는 마법력+보호력에 플레어면 치명타 */
   else if(s.balance){ if(!ffFlare(h)) return null; dmg=bs("dmg")+MAG+(h.balFirst||0) }
-  else if(s.harmony){ dmg=bs("dmg")+MAG+(h.def||0); if(critWhy(h,s,tgt)){ dmg*=2; crit=1 } }   /* 플레어 · 부조화 — critWhy 한 곳에서 (2026-10-09) */
+  else if(s.harmony){ dmg=bs("dmg")+MAG+(h.def||0); if(critWhy(h,s,tgt)){ dmg=critUp(dmg,critMul(h)); crit=1 } }   /* 플레어 · 부조화 — critWhy 한 곳에서 (2026-10-09) */
   else if(s.thrust)      dmg=(h.cutSum||0)*3;
   else if(s.dump)        dmg=h.ammo||0;
   else if(s.scaleBoom)   dmg=h.scale||0;
@@ -51486,7 +51499,7 @@ function predictDmg(h,s,tgt){
     const T=h.tag||{}; dmg=MAG+(T.painPlus||0); if(!dmg) return null;
     if(T.painX2) dmg*=2;
     if(T.painNear){ if(near0&&tgt!==near0) return null; dmg*=3 }
-    if(T.painCrit){ dmg*=2; crit=1 } }
+    if(T.painCrit){ dmg=critUp(dmg); crit=1 } }
   else if(s.verdict){ if(tgt.boss) return null; dmg=tgt.hp+(tgt.shield||0); tail="즉사" }
   else if(s.burst)       dmg=3+MAG+((tgt.infect||0)*(h.tag.burstX||2));
   else if(s.seed){ if(!topHp||tgt!==topHp) return null; dmg=bs("dmg")+MAG*2 }
@@ -51498,20 +51511,20 @@ function predictDmg(h,s,tgt){
     if(T.armorShot&&h.armor>0) dmg+=T.armorShot;
     if(T.roundShot&&(h.first||{}).shot!==1) dmg+=T.roundShot+ATK;
     dmg+=(h.shotBonus||0);
-    if(critWhy(h,s,tgt)){ dmg*=2; crit=1 }   /* 반전활 · 대상 포착 — critWhy 한 곳에서 (2026-10-09) */
+    if(critWhy(h,s,tgt)){ dmg=critUp(dmg,critMul(h)); crit=1 }   /* 반전활 · 대상 포착 — critWhy 한 곳에서 (2026-10-09) */
   }
   else if(s.nearest)     dmg=bs("dmg")+MAG;
   else if(s.magnet)      dmg=bs("dmg")+MAG;
   else if(s.scaleGain)   dmg=bs("dmg")+MAG;
   else if(s.drain){ dmg=bs("dmg")+MAG; if((run.souls||0)>=200) times=2 }
-  else if(s.wand){ dmg=domWandDmg(h,s,tgt); if(domDemon(h)&&h.blessed){ dmg*=2; crit=1 }
+  else if(s.wand){ dmg=domWandDmg(h,s,tgt); if(domDemon(h)&&h.blessed){ dmg=critUp(dmg); crit=1 }
     if(h.tag.worldWand){ times=2;
       /* 세계의 지팡이 — 두 번 나간다. 충전의 지팡이는 첫 타에 다 쓰여 둘째 타에는 없다 (domWand 와 같은 셈) */
-      const chg=(h.wandChg||0)*(crit?2:1); tot=dmg*2-chg } }
+      const chg=crit?critUp(h.wandChg||0):(h.wandChg||0); tot=dmg*2-chg } }
   else if(s.penance) return null;   /* 참회의 기류 — 지나는 차례마다 값이 달라 칸 하나로 예고하지 않는다 (2026-10-06) */
   else if(s.shackle){
     if(near0&&tgt!==near0&&!h.tag.shackleAll) return null;   /* 피해는 가장 가까운 적에게만 (족쇄 난사면 모두) — 축복은 기절(공포)만 넓힌다 (노트 2026-10-06) */
-    dmg=domShackleDmg(h,s,tgt); if(h.tag.critShackle){ dmg*=2; crit=1 }
+    dmg=domShackleDmg(h,s,tgt); if(h.tag.critShackle){ dmg=critUp(dmg); crit=1 }
   }
   else if(s.allHit){
     if(h.tag.pressAtk&&dist(h.slot,tgt.slot)>2) return null;
@@ -51520,14 +51533,14 @@ function predictDmg(h,s,tgt){
     /* 다중 내려치기 — 실제는 **한 번 더**(1 + slamTwice 번) 쏜다. 예고가 한 번 몫만 보였다
        (probe-foretell : 예고 22 / 실제 44, 2026-10-29) */
     if(s.slam&&h.tag&&h.tag.slamTwice) times=1+h.tag.slamTwice;
-    if(critWhy(h,s,tgt)){ dmg*=2; crit=1 }   /* 지진파 따위 — 실제와 같은 자리에서 (2026-10-13) */
+    if(critWhy(h,s,tgt)){ dmg=critUp(dmg,critMul(h)); crit=1 }   /* 지진파 따위 — 실제와 같은 자리에서 (2026-10-13) */
     if(h.name==="이테리오"&&s.n==="팽창 공격"&&(tgt.mark||0)>0&&h.tag.aimFix) dmg+=h.tag.aimFix;
     if(h.name==="이테리오"&&itCritEl(h,s)&&(tgt.mark||0)>0){ dmg=Math.round(dmg*itCritX(h)); crit=1 }
   }
   /* 그슨대 — 그림자가 있으면 기습 · 잠식 · 증식은 적을 치지 않는다 (src/rules/gsd.js) */
   else if((s.gsStrike||s.gsFear||s.gsBloom)&&h.shadowAt) return null;
   else if(s.gsFear){ dmg=1; times=3 }
-  else if(s.pbSwing){ dmg=bs("dmg")+ATK; if(pebbleSwingCrit(h,s,tgt)){ dmg*=2; crit=1 } }   /* 관자놀이 타격 · 세계핵의 망치(철 광맥) — pebbleSwingOnce 와 같은 물음 */   /* 페블 휘두르기 — 모든 적 (pebbleCast 와 같은 셈) */   /* 두려움 잠식 — 1씩 3번 (추가 능력치 없음) */
+  else if(s.pbSwing){ dmg=bs("dmg")+ATK; if(pebbleSwingCrit(h,s,tgt)){ dmg=critUp(dmg); crit=1 } }   /* 관자놀이 타격 · 세계핵의 망치(철 광맥) — pebbleSwingOnce 와 같은 물음 */   /* 페블 휘두르기 — 모든 적 (pebbleCast 와 같은 셈) */   /* 두려움 잠식 — 1씩 3번 (추가 능력치 없음) */
   else if(s.gsBloom){ dmg=gsdBloomOne(h)+((h.tag&&h.tag.prey&&deb(tgt,"fear")>0)?h.tag.prey:0); times=(h.dark||0); if(!(h.atk>0)||!times) return null }   /* 어둠 증식 — 추가 공격력씩, 조각 수만큼 */
   else if(s.dmg==null) return null;
   else if(h.name==="카제"&&(s.n==="진선풍도"||s.n==="회오리")){
@@ -51558,31 +51571,31 @@ function predictDmg(h,s,tgt){
     /* 레이 되울림 — runEffect 와 **같은 차례**여야 예고가 맞는다 (2026-10-21) */
     if(s.rayBolt&&h.tag&&h.tag.reiEcho&&!foeTouch(tgt))   /* 예고와 실제가 같은 물음을 본다 (2026-10-23) */
       dmg+=h.tag.reiEcho;
-    { if(critOnce(h,s)){ dmg*=2; crit=1 } MAINC=1 }   /* 치명적인 공격 · 마법 — 그 전투의 첫 한 방. 예고는 닳게 하지 않는다 (critOnce 한 곳에서 묻는다) */
-    if(!crit&&critWhy(h,s,tgt)){ dmg*=2; crit=1 }   /* 보상으로 걸리는 치명타 — 실제와 같은 자리에서 묻는다 (2026-10-09) */
-    if(!crit&&iraMaskCrit(h,s)){ dmg*=2; crit=1 }   /* 이라 악마의 가면 — 할퀴기 · 찢어발기기 (2026-10-29) */
+    { if(critOnce(h,s)){ dmg=critUp(dmg); crit=1 } MAINC=1 }   /* 치명적인 공격 · 마법 — 그 전투의 첫 한 방. 예고는 닳게 하지 않는다 (critOnce 한 곳에서 묻는다) */
+    if(!crit&&critWhy(h,s,tgt)){ dmg=critUp(dmg,critMul(h)); crit=1 }   /* 보상으로 걸리는 치명타 — 실제와 같은 자리에서 묻는다 (2026-10-09) */
+    if(!crit&&iraMaskCrit(h,s)){ dmg=critUp(dmg); crit=1 }   /* 이라 악마의 가면 — 할퀴기 · 찢어발기기 (2026-10-29) */
     if(!crit&&gsdAmbush(h,s)){ dmg=Math.round(dmg*gsdAmbX(h)); crit=1 }   /* 그슨대 급습 — runEffect 와 같은 물음 · 같은 배율 */
     if(h.name==="데린저"){
       /* 저격소총 — 「2(추가 † + 대상과의 거리)」. runEffect 와 **같은 차례**여야 예고가 맞는다
          (2026-10-14 에 한 번 어긋나 probe 가 아니라 그물이 잡았다) */
       if(s.farAdd) dmg+=dist(h.slot,tgt.slot);
-      if(h.aimAt!=null){ if(tgt.id===h.aimAt){ dmg*=2; crit=1 } else if(!(h.aimAt2!=null&&tgt.id===h.aimAt2)) dmg=0 }   /* 이중 조준경 — runEffect 와 같게 (2026-11-08) */
+      if(h.aimAt!=null){ if(tgt.id===h.aimAt){ dmg=critUp(dmg); crit=1 } else if(!(h.aimAt2!=null&&tgt.id===h.aimAt2)) dmg=0 }   /* 이중 조준경 — runEffect 와 같게 (2026-11-08) */
       if(s.ammo&&h.tag.headshot&&!h.headshotUsed){
         const add=8+ATK;
-        dmg=(h.aimAt!=null&&tgt.id===h.aimAt)?Math.round((dmg/2+add)*3):dmg+add;
+        dmg=(h.aimAt!=null&&tgt.id===h.aimAt)?Math.round((dmg/CRIT_X+add)*(CRIT_X+1)):dmg+add;
       }
     }
     if(h.name==="굴라"&&s.n==="씹어먹기"){   /* 혀 내밀기 · 음미(데펴먹기) — runEffect 와 같게 (2026-10-01) */
       const T=h.tag||{};
       if(T.tongue&&dist(h.slot,tgt.slot)>=3) dmg+=T.tongue;
-      if(T.portalCrit&&!crit&&(B.portals||[]).some(p=>p.side==="foe"&&p.slot===tgt.slot)){ dmg*=2; crit=1 }
+      if(T.portalCrit&&!crit&&(B.portals||[]).some(p=>p.side==="foe"&&p.slot===tgt.slot)){ dmg=critUp(dmg); crit=1 }
     }
     if(h.name==="나이코스"&&s.n==="베기"){
       if(h.tag.nearHit&&dist(h.slot,tgt.slot)===1) dmg+=h.tag.nearHit;
       if(h.tag.firstCut&&(h.first||{}).cut!==1) dmg+=h.tag.firstCut+ATK;
       if(h.tag.guardThen&&h.guardStack) dmg+=h.tag.guardThen*h.guardStack;
       dmg+=(h.cutGrow||0);
-      if(h.tag.bloodBlade&&((h.cutUses||0)+1)%4===0){ dmg*=2; crit=1 }
+      if(h.tag.bloodBlade&&((h.cutUses||0)+1)%4===0){ dmg=critUp(dmg); crit=1 }
       if(s.twice) times=2;
     }
     dmg+=portalImpAtk(h);   /* 물량 공세 — runEffect 와 같은 자리 */
@@ -51598,7 +51611,7 @@ function predictDmg(h,s,tgt){
   dmg=Math.max(0,Math.round(dmg));
   if(!MAINC&&!crit&&dmg>0&&s.el==="마법"&&!s.verdict&&critLeft(h,"critMag")>0){   /* 치명적인 마법 — 따로 셈하는 기술 (2026-10-03) */
     const al=B.foes.filter(x=>x.alive), first=CRITM_ALL(s)?al.slice(0,critLeft(h,"critMag")):[tgt];
-    if(first.indexOf(tgt)>=0){ dmg*=2; crit=1 } }
+    if(first.indexOf(tgt)>=0){ dmg=critUp(dmg); crit=1 } }
   /* 기술 밖에서 **같은 적에게 이번 수에** 덧붙는 피해 — 꼬리 글로 (2026-10-01, sim/audit5.js).
      ★ 글만 적지 말고 숫자(extra)도 함께 모은다 — 해골(willKill)이 그것까지 세야 참이 된다
        (사용자 2026-10-09 : 페일노트의 「조각 1」이 안 세어져 죽는데 해골이 안 떴다).
@@ -51803,7 +51816,7 @@ function incoming(){
       const R=foeTarget(f,f.intent,null,VV);                  /* 실행(foePhase)과 같은 셈 — 공포 · 도발 · 공격 범위 · 쫓던 대상이 없으면 헛손질 */
       if(R.why) return;
       const t=R.t;
-      const one=(foeDmg(f,f.intent.v+up(f),f.intent.el)+(f.painBonus||0))*(outRangeCritFor(f,t,hsl,fsl)?2:1);   /* 고통 감내 몫도 예고에 (2026-09-20) */
+      const one=(o=>outRangeCritFor(f,t,hsl,fsl)?critUp(o):o)(foeDmg(f,f.intent.v+up(f),f.intent.el)+(f.painBonus||0));   /* 고통 감내 몫도 예고에 (2026-09-20) */
       const hits=Math.max(1,f.intent.hits||1);
       for(let q=0;q<hits;q++) hitOn(t,one,f);
     }
@@ -51901,7 +51914,7 @@ function incoming(){
       else if(s&&(tg==="near2"||tg==="back2"||tg==="distAll"||tg==="within"||tg==="any2"))
         T=skTargets(f,s,list.filter(u=>u.hp>0),VV);   /* 밀려난 뒤의 자리로 — 아랫줄 foeTarget 과 같게 (2026-10-10) */
       else if(s&&tg!=="self"&&tg!=="none"){ const R=foeTarget(f,I,s,VV); if(!R.why&&R.t) T=[R.t] }
-      T.forEach(t=>{ let one=foeDmg(f,I.v+up(f),I.el)+(f.painBonus||0); const cr=!!(s&&((s.burnCrit&&burnV(t)>0)||(s.debCrit&&DEB_KEYS.some(k=>deb(t,k)>0))||eyeCritFor(f,t,hsl,fsl)||outRangeCritFor(f,t,hsl,fsl)))||deb(t,"wound")>0||!!(s&&s.critHalf&&t.hp<=t.maxHp/2); if(cr) one*=2;   /* 고통 감내 몫도 예고에 (2026-09-20) */
+      T.forEach(t=>{ let one=foeDmg(f,I.v+up(f),I.el)+(f.painBonus||0); const cr=!!(s&&((s.burnCrit&&burnV(t)>0)||(s.debCrit&&DEB_KEYS.some(k=>deb(t,k)>0))||eyeCritFor(f,t,hsl,fsl)||outRangeCritFor(f,t,hsl,fsl)))||deb(t,"wound")>0||!!(s&&s.critHalf&&t.hp<=t.maxHp/2); if(cr) one=critUp(one);   /* 고통 감내 몫도 예고에 (2026-09-20) */
         for(let q=0;q<(s&&s.kindHits?Math.max(1,debKindsOnField()):Math.max(1,I.hits||1));q++) hitOn(t,one,f,s?skPierce(f,t,s):undefined,undefined,cr);
         /* 맞은 대원이 밀리거나 끌려온다 — 다음 적은 바뀐 자리를 잰다 (pushBack · pullFront · pullN 과 같은 셈) */
         const sh0=hsl(t), bound=deb(t,"bind")>0;
@@ -52172,7 +52185,7 @@ function hitWhy(h,s,f,p,n,tot){
     L.push(`기본 피해 (${s.dmg||0})`);
     bd.parts.forEach(x=>L.push(typeof x.v==="number"?`${x.n} (${x.v>=0?"+":"−"}${Math.abs(x.v)})`:`${x.n} (${x.v})`)) }catch(e){}
   const cr=p.crit&&!L.some(x=>/치명타/.test(x));
-  if(cr){ L.push("치명타 (×2)"); if(sum!=null) sum*=2 }
+  if(cr){ L.push("치명타 (×"+CRIT_X+")"); if(sum!=null) sum=critUp(sum) }
   if(sum!=null&&p.v!==sum) L.push(`최종 피해량 (${p.v})`);   /* 대상 · 상태 · 기술마다 붙는 몫을 거친 값 (사용자 2026-10-30 — 전에는 「이 적과 상태, 기술 고유 셈」 이라 알아듣기 어려웠다) */
   if(n>1) S.push(tot!=null?`${n}번 합쳐 (${tot})`:`번 수 (×${n})`);
   if(p.eat) S.push(`적 보호막이 막음 (${p.eat})`);
@@ -52208,7 +52221,7 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
     const H=B._efHero, el=B._efEl;
     if((el==="마법"&&deb(H,"magDn")>0)||(el==="공격"&&deb(H,"atkDn")>0)) amt=Math.ceil(amt*0.5) }
   if(!crit&&amt>0&&B&&B._ef&&B._efEl==="마법"&&B._efHero&&B.lastAttacker===B._efHero&&f&&B.foes&&B.foes.indexOf(f)>=0&&f.alive&&!(f.evade>0)&&critLeft(B._efHero,"critMag")>0){
-    const H=B._efHero; H.critMagUsed=(H.critMagUsed||0)+1; amt*=2; crit=1;
+    const H=B._efHero; H.critMagUsed=(H.critMagUsed||0)+1; amt=critUp(amt); crit=1;
     say(`치명적인 마법 — ${H.critMagUsed>1?H.critMagUsed+"번째 ":"첫 "}마법 피해가 치명타로 꽂힙니다!`,"t1") }
   /* 관통 장신구(칼리번 · 검과 방패) — **보통 길은 제 자리에서 따로 챙기므로**(기술 셈의 PR)
      여기서는 _wkDone 으로 막아 두 번 더하지 않는다. 따로 셈하는 기술(진선풍도 · 착취 …)만 여기서 받는다 */
@@ -52224,7 +52237,7 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
      ⚠️ pierce!==true 도 떼었다 — 관통을 **더하지 않으려던** 조건이지 치명타와는 상관이 없다 */
   if(!crit&&amt>0&&B&&B._ef&&B._efEl==="마법"&&B._efHero&&B.lastAttacker===B._efHero
      &&f&&B.foes&&B.foes.indexOf(f)>=0&&grimoireCount(f,B._efHero)>0){
-    amt*=2; crit=1; itemFxAt("foe",f.slot,"burst"); say(`그리모어 — ${f.name}에게 치명타!`,"t1") }
+    amt=critUp(amt); crit=1; itemFxAt("foe",f.slot,"burst"); say(`그리모어 — ${f.name}에게 치명타!`,"t1") }
   amt=arenaAtkDn(amt);   /* 피해량 감소 — 때린 대원 쪽 (광기의 투기장) */
   amt=arenaFoeIn(f,amt);   /* 반사판 — 받는 피해 절반 (거울 검투사) */
   if(f.armor>0&&amt>f.armor) amt=f.armor;   /* 갑피 — 한 번에 받는 피해를 이 수치까지로 (적도 같게, 사용자 2026-10-07 시평선의 문지기) */
@@ -52917,7 +52930,7 @@ function airborne(h,f){
     fx({side:"foe",slot:f.slot,airslash:kz.slot,s:sfxOr("카제 바람처럼 사라져라",null),gap:150});   /* 순간이동해 베는 카제 + 녹음 같은 순간 (사용자 2026-09-16) */
     barkPick(kz,["skill:바람처럼 사라져라"],1);   /* 대사 (사용자 2026-09-17) */
     punchIn("foe",f.slot);
-    { const crit=!!(kz.tag.airCritBurn&&(f.burn||0)>0); const v=(4+kz.atk+(kz.tag.airBonus||0))*(crit?2:1);
+    { const crit=!!(kz.tag.airCritBurn&&(f.burn||0)>0); const v0=4+kz.atk+(kz.tag.airBonus||0), v=crit?critUp(v0):v0;
       if(crit) say("화염칼날 — 불붙은 적에게 치명타!","t1");
       asSrc(kz,()=>hurt(f,v,"바람처럼 사라져라","wind",0,crit?1:0)); veilAct(kz,1);   /* 처치의 주인은 카제 */
       if(!f.alive&&kz.tag.airKillMom){ kz.mom=(kz.mom||0)+kz.tag.airKillMom; say(`잔향 — 추진력 +${kz.tag.airKillMom}`,"t2") } }   /* 잔향 (노트 2026-09-17) */
@@ -53434,7 +53447,7 @@ function domBless(h){ if(h&&h.blessed){ h.blessed=0; return true } return false 
 const domStunned=u=>!!(u&&((u.stun||0)>0||deb(u,"stun")>0));   /* 기절 — 적은 f.stun 과 상태(deb) 둘 다 (사용자 2026-10-06: 죄수의 일기가 deb 기절을 못 봤다) */
 function domChgTake(h){ const v=h.wandChg||0; h.wandChg=0; return v }   /* 충전의 지팡이 — 다음 1회의 피해 */
 const DOM_DEMON_FULL={
- "라이티늄 지팡이":"아군이면 체력을 1(추가 ) 회복시킵니다.\n적이면 피해를 2(추가 † ) 줍니다.\n\n_독서 중첩_을 1 얻습니다.\n\n_축복 상태_라면 치명타로 적중합니다. (체력도 2배 회복)",
+ "라이티늄 지팡이":"아군이면 체력을 1(추가 ) 회복시킵니다.\n적이면 피해를 2(추가 † ) 줍니다.\n\n_독서 중첩_을 1 얻습니다.\n\n_축복 상태_라면 치명타로 적중합니다. (체력도 1.5배 회복)",
  "의지 약화":"다음 턴 동안 선택한 적의 모든 추가 능력치를 3(추가 ) 감소시킵니다.\n\n_독서 중첩_을 2 얻습니다.\n\n_축복 상태_라면 도미니코가 추가 공격력을 3 얻습니다.",
  "영광의 족쇄":"잠금(1). 추가 보호력과 마법력을 공격력으로 변환합니다. \n가장 가까운 적에게 보호약화를 1 부여하고 피해를 8(추가 † ) 줍니다.\n\n_독서 중첩_을 1 얻습니다.\n\n_축복 상태_라면 공포도 1 부여합니다.",
  "참회의 기류":"잠금(3). 사용한도(2). 아군에게 추가 공격력을 1, 적에게 피해를 1(추가  ) 주는 기류를 날립니다.\n\n기류는 가장 먼 적에게 날아갔다가 돌아오고, 캐릭터를 지날 때마다 공격력 부여량과 피해량이 1(추가 ) 증가합니다."};
@@ -53503,7 +53516,7 @@ function domWand(h,s,target){
     if(target<0){
       const a=unitAt(-target); if(!a){ say("그 칸에는 아군이 없습니다.","t2"); return }
       const L=[a].concat(T.willWand?[unitAt(a.slot-1),unitAt(a.slot+1)].filter(u=>u&&u.hp>0):[]);   /* 의지의 지팡이 — 양옆도 */
-      L.forEach(u=>{ let v=(s.wheal!=null?s.wheal:1)+mod(s,"wheal")+(T.strict&&domBound(u)?T.strict:0); if(crit) v*=2;
+      L.forEach(u=>{ let v=(s.wheal!=null?s.wheal:1)+mod(s,"wheal")+(T.strict&&domBound(u)?T.strict:0); if(crit) v=critUp(v);
         const sl=u.slot; fx({side:"mine",slot:sl,fn:()=>domSheet(h,"burst","mine",sl,{px:110,y:.45}),gap:0});
         if(T.insight){ const g=addShield(u,v+h.def); fx({side:"mine",slot:sl,s:"shield",txt:"+"+g,cls:"shd",gap:130}); say(`${u.name} 보호막 +${g} (통찰력)`) }
         else { healUp(u,v); fx({side:"mine",slot:sl,s:"heal",txt:"+"+v,cls:"heal",gap:130}); say(`${u.name} 체력 +${v}`) } });
@@ -53512,7 +53525,7 @@ function domWand(h,s,target){
     } else {
       const f=foeAt(target); if(!f||!f.alive){ if(!k) say("그 칸에는 적이 없습니다.","t2"); return }
       const L=[f].concat(T.willWand?[foeAt(f.slot-1),foeAt(f.slot+1)].filter(x=>x&&x.alive):[]);
-      let v=domWandDmg(h,s,f); h.wandChg=0; if(crit) v*=2;
+      let v=domWandDmg(h,s,f); h.wandChg=0; if(crit) v=critUp(v);
       B._ownSnd=1;   /* 라이티늄 발사 · 피격 녹음 — 합성 타격음은 뺀다 (사용자 2026-10-06) */
       L.forEach((x,j)=>{ const sl=x.slot;
         if(!j) fx({side:"mine",slot:h.slot,s:sfxOr("도미니코 라이티늄 발사",null),fn:()=>domBeamFX(h,"foe",sl),gap:170});
@@ -53560,8 +53573,8 @@ function domShackle(h,s){
   if(bl&&dem){ say("축복 — 공포도 1","t1") }   /* 악마판 축복 — 공포는 위에서 적마다 걸었다 (사용자 2026-10-12) */   /* 악마판 축복 (사용자 2026-10-06) */
   else if(bl) say("축복 — 속박 대신 기절","t1");
   const crit=!!T.critShackle;
-  let v=domShackleDmg(h,s,near,1); if(crit) v*=2;   /* 연쇄 족쇄가 쓰는 값 — 가까운 적 기준 */
-  tgts.forEach(f=>{ if(!f.alive) return; let w=domShackleDmg(h,s,f,1); if(crit) w*=2; hurt(f,w,"영광의 족쇄","mag",0,crit?1:0,1) });
+  let v=domShackleDmg(h,s,near,1); if(crit) v=critUp(v);   /* 연쇄 족쇄가 쓰는 값 — 가까운 적 기준 */
+  tgts.forEach(f=>{ if(!f.alive) return; let w=domShackleDmg(h,s,f,1); if(crit) w=critUp(w); hurt(f,w,"영광의 족쇄","mag",0,crit?1:0,1) });
   h.wandChg=0;
   if(T.chainShackle&&!all){   /* 연쇄 족쇄 — 뒤의 적에게도 같은 피해, 기절은 없다 */
     alive.filter(f=>f!==near&&f.alive).sort((a,b)=>dist(h.slot,a.slot)-dist(h.slot,b.slot)).slice(0,T.chainShackle)
@@ -53838,7 +53851,7 @@ function phantomPain(h,s,label){
   if(!v){ say("아직 추가 마법력이 없습니다.","t2"); return 0 }
   if(T.painX2) v*=2;
   if(T.painNear) v*=3;
-  const crit=!!T.painCrit; if(crit) v*=2;
+  const crit=!!T.painCrit; if(crit) v=critUp(v);
   let list=B.foes.filter(f=>f.alive);
   if(T.painNear&&list.length) list=[list.reduce((a,b)=>dist(h.slot,a.slot)<=dist(h.slot,b.slot)?a:b)];
   /* 퍼지는 고리 · 보랏빛 암전은 뺐다 — 받은 그림(환상통 파열)만 (사용자 2026-10-03) */
@@ -53878,7 +53891,7 @@ function iraRend(h,s,target){
   /* ⚠️ 마지막 1 은 ownFx — 「제 연출이 있다」는 깃발이다.
      이것이 없으면 hurt 가 art 를 "slash"(코드로 그린 SVG)로 **스스로 채운다**
      (사용자 2026-10-13 : 「전용 아트만 써야되는데 클로드가 만든 공격 이펙트 없애줘」) */
-  hurt(f,가면?v*2:v,"찢어발기기",null,0,가면?1:0,1);   /* ⚠️ "slash" 를 주지 않는다 — 코드로 그린 SVG(ART.slash) 다. 이라는 받은 발톱 띠를 쓴다 (사용자 2026-10-13 : 「전용 아트만」) */
+  hurt(f,가면?critUp(v):v,"찢어발기기",null,0,가면?1:0,1);   /* ⚠️ "slash" 를 주지 않는다 — 코드로 그린 SVG(ART.slash) 다. 이라는 받은 발톱 띠를 쓴다 (사용자 2026-10-13 : 「전용 아트만」) */
   const dealt=Math.max(0,hp0-Math.max(0,f.hp)-shieldSum(f));
   applyLeech(h,dealt);   /* 흡수 — 얹어 둔 몫(타락의 초읽기 · 늘 붙는 갈증)을 여기서 터뜨린다 (2026-10-13) */
   if(ch&&iraChargeUse(h)){
@@ -53923,7 +53936,7 @@ function iraPay(h,s){
     { const k=sfxOr("이라 대가 치르기 충전",null); if(k) SFX.play(k) }   /* 충전 몫의 녹음 셋 (2026-10-13) */
     for(let q=0;q<rep2;q++) L.forEach(f=>{ if(!f.alive) return;
       const hp0=f.hp+shieldSum(f);
-      hurt(f,가면?v*2:v,"대가 치르기",null,0,가면?1:0,1);   /* 코드로 그린 SVG 를 안 쓴다 (2026-10-13) */
+      hurt(f,가면?critUp(v):v,"대가 치르기",null,0,가면?1:0,1);   /* 코드로 그린 SVG 를 안 쓴다 (2026-10-13) */
       준것+=Math.max(0,hp0-Math.max(0,f.hp)-shieldSum(f));
       /* 되묻기 — 피해를 줄 때마다 보호막 1 */
       if(h.tag&&h.tag.payShield) addShield(h,h.tag.payShield) });
@@ -53986,7 +53999,7 @@ function iraClaw(h,s,target){
      ⚠️ 띠는 /art 가 두 바퀴로 돌린다 — 여기서 다시 부르면 **네 바퀴**가 된다 */
   /* 피해 넷을 발톱이 서는 그 네 때에 맞춘다 — 위에서 잰 수를 그대로 쓴다 (두 곳에 따로 적지 않는다) */
   for(let q=0;q<n;q++){ if(!f.alive) break;
-    hurt(f,가면?v*2:v,"할퀴기",null,0,가면?1:0,1);   /* 코드로 그린 SVG 를 안 쓴다 (2026-10-13) */
+    hurt(f,가면?critUp(v):v,"할퀴기",null,0,가면?1:0,1);   /* 코드로 그린 SVG 를 안 쓴다 (2026-10-13) */
     if(q<n-1) fx({side:"mine",slot:h.slot,gap:CLAW_GAP[Math.min(q+1,CLAW_GAP.length-1)]}) }
   /* 이번 턴 비용이 1 오른다 — **쓴 뒤에** (공짜로 쓴 때에도 오른다. 사용자 2026-10-16).
      비우는 곳은 startMyTurn 한 곳이다 */
@@ -54233,7 +54246,7 @@ function runEffect0(h,i,s,target){
     fx({worm:sl,gap:0});
     if(f&&f.alive){
       let d=s.dmg+mod(s,"dmg")+h.atk, crit=0;
-      if(critWhy(h,s,f)){ d*=2; crit=1; say(`${s.n} — 치명타!`,"t1") }
+      if(critWhy(h,s,f)){ d=critUp(d,critMul(h)); crit=1; say(`${s.n} — 치명타!`,"t1") }
       B.lastAttacker=h;
       hurt(f,d,s.n,"slash",0,crit,1);
       if(f.alive) addDeb(f,"stun",1,h);
@@ -54295,7 +54308,7 @@ function runEffect0(h,i,s,target){
       let d=base, crit=0;
       /* 보상으로 늘 치명타가 되는 것(지진파 …) — **critWhy 한 곳**에서 묻는다 (규칙-기술숫자.md).
          여기서 안 묻던 탓에 기술 칸은 ×2 로 보이는데 실제 피해는 그대로였다 (2026-10-13) */
-      if(critWhy(h,s,f)){ d*=2; crit=1 }
+      if(critWhy(h,s,f)){ d=critUp(d,critMul(h)); crit=1 }
       if(h.name==="이테리오"){
         if(s.n==="팽창 공격"&&(f.mark||0)>0&&h.tag.aimFix) d+=h.tag.aimFix;   /* 조준 보정 */
         if(itCritEl(h,s)&&(f.mark||0)>0){ d=Math.round(d*itCritX(h)); f.mark--; crit=1; itOnCrit(h) }
@@ -54344,9 +54357,9 @@ function runEffect0(h,i,s,target){
       const f=L.reduce((a,b)=>a.hp<=b.hp?a:b);
       /* ⚠️ **치명타를 여기서 따로 묻는다.** 이 길은 일반 피해 셈을 지나지 않아 critWhy 를 안 거쳤다 —
          그래서 금속 부속(늘 치명타)이 **별똥별에만 안 걸렸다** (사용자 2026-10-13).
-         설명창(breakdown)은 critWhy 를 보고 이미 2배를 적고 있었으니 **보이는 숫자와 맞는 숫자가 어긋났다.**
-         ⚠️ 두 배는 **부르는 쪽**이 한다 — hurt 의 여섯째 자리는 연출·소리를 가르는 깃발이다 (찢어발기기와 같은 결) */
-      const CR=critWhy(h,s,f)?1:0, v=CR?v0*2:v0;
+         설명창(breakdown)은 critWhy 를 보고 이미 치명타 배율을 적고 있었으니 **보이는 숫자와 맞는 숫자가 어긋났다.**
+         ⚠️ 곱하기는 **부르는 쪽**이 한다 — hurt 의 여섯째 자리는 연출·소리를 가르는 깃발이다 (찢어발기기와 같은 결) */
+      const CR=critWhy(h,s,f)?1:0, v=CR?critUp(v0,critMul(h)):v0;
       fx({side:"foe",slot:f.slot,art:"star",ring:"#9ad8ff",gap:90});
       hurt(f,v,s.n,"mag",0,CR,1) }
     return }
@@ -54689,7 +54702,7 @@ function runEffect0(h,i,s,target){
       say(`활시위 당기기 — 시위를 끝까지 당겼습니다.`,"t2") }
     dmg+=(h.shotBonus||0);
     if(critWhy(h,s,f)) CRIT=1;   /* 반전활 · 대상 포착 — critWhy 한 곳에서 (2026-10-09) */
-    if(CRIT){ dmg*=2; say(`${s.n} — 치명타!`,"t1") }
+    if(CRIT){ dmg=critUp(dmg); say(`${s.n} — 치명타!`,"t1") }
     if(isArcher(h)) fx({side:"foe",slot:f.slot,arrow:{side:"mine",slot:h.slot,who:h.name},gap:0});
     else fx({side:"foe",slot:f.slot,streak:{side:"mine",slot:h.slot},s:"arrow",gap:120});
     const was=f.alive;
@@ -54968,7 +54981,7 @@ function runEffect0(h,i,s,target){
     const f=foeAt(target); if(!f){ say("그 칸에는 적이 없습니다.","t2"); return }
     let dmg=s.dmg+mod(s,"dmg")+h.mag+h.def, crit=0;
     const both=!!T.disharmony;                           /* 부조화 — 늘 치명타 + 보호막 */
-    if(critWhy(h,s,f)){ dmg*=2; crit=1; say("조화 — 치명타!","t1") }   /* critWhy 한 곳에서 (2026-10-09) */
+    if(critWhy(h,s,f)){ dmg=critUp(dmg,critMul(h)); crit=1; say("조화 — 치명타!","t1") }   /* critWhy 한 곳에서 (2026-10-09) */
     if(T.taintHarmony){ let n=0;                          /* 오염된 조화 — 대상의 부정 효과 2배 */
       if(f.deb) DEB_KEYS.forEach(k=>{ if(f.deb[k]>0){ n+=f.deb[k]; f.deb[k]*=2 } });
       ["infect","burn","mark","weak"].forEach(k=>{ if(f[k]>0){ n+=f[k]; f[k]*=2 } });
@@ -55318,7 +55331,7 @@ function runEffect0(h,i,s,target){
       dmg=Math.round(dmg*itCritX(h)); tgt.mark--; CRIT=1; say(`정밀 표식 — 치명타!`,"t1"); itOnCrit(h);
     }
     /* 치명적인 공격 · 치명적인 마법 — 그 전투의 첫 한 방 (critOnce 한 곳에서 묻고 닳는다) */
-    if(critOnce(h,s,1)){ dmg*=2; CRIT=1 }
+    if(critOnce(h,s,1)){ dmg=critUp(dmg); CRIT=1 }
     /* 그슨대 급습 — 묻는 것은 gsdAmbush 한 곳(예고와 같이). 은신은 이 한 방에 걷힌다 */
     if(!CRIT&&gsdAmbush(h,s)){ dmg=Math.round(dmg*gsdAmbX(h)); CRIT=1; h._gsAmb=tgt; h.gsAmbUsed=1; say("급습 — 치명타!","t1") }   /* _gsAmb — 뒤처리(gsdAfter : 어둠에 잠긴 칼 · 그늘 속 칼날 · 암살 계약) */
     if(gsdIs(h)&&h.hide&&!h.hideTurn&&s.el==="공격"){ h.hide=0 }   /* 턴이 정해진 은신(hideTurn)은 쳐도 안 걷힌다 */
@@ -55328,11 +55341,11 @@ function runEffect0(h,i,s,target){
       if(s.farAdd) dmg+=dist(h.slot,tgt.slot);
       /* 부착: 이중 조준경 — 둘째 대상(aimAt2)도 조준한 적이다. 0 으로 지우면 안 된다 (사용자 2026-11-08 : 둘째에게 쏘면 피해 0).
          그 치명타는 아래 critWhy(「정확 조준」) 한 곳이 준다 — 여기서 또 곱하면 네 배 */
-      if(h.aimAt!=null){ if(tgt.id===h.aimAt){ dmg*=2; CRIT=1 } else if(!(h.aimAt2!=null&&tgt.id===h.aimAt2)) dmg=0 }
+      if(h.aimAt!=null){ if(tgt.id===h.aimAt){ dmg=critUp(dmg); CRIT=1 } else if(!(h.aimAt2!=null&&tgt.id===h.aimAt2)) dmg=0 }
       if(s.ammo&&h.tag.headshot&&!h.headshotUsed){
         h.headshotUsed=1;
         const add=8+h.atk;
-        dmg=(h.aimAt!=null&&tgt.id===h.aimAt) ? Math.round((dmg/2+add)*3) : dmg+add;
+        dmg=(h.aimAt!=null&&tgt.id===h.aimAt) ? Math.round((dmg/CRIT_X+add)*(CRIT_X+1)) : dmg+add;
         say("헤드샷!","t1");
       }
     }
@@ -55341,7 +55354,7 @@ function runEffect0(h,i,s,target){
       const T=h.tag||{};
       if(T.tongue&&dist(h.slot,tgt.slot)>=3){ dmg+=T.tongue; say(`혀 내밀기 — 피해 +${T.tongue}`,"t2") }
       if(T.portalCrit&&!CRIT&&(B.portals||[]).some(p=>p.side==="foe"&&p.slot===tgt.slot)){
-        dmg*=2; CRIT=1; say("차원문 위의 적 — 씹어먹기 치명타!","t1") }
+        dmg=critUp(dmg); CRIT=1; say("차원문 위의 적 — 씹어먹기 치명타!","t1") }
       if(T.chompLeech) addLeech(h,T.chompLeech);
     }
     /* 레이 되울림 (중급) — 대상 거리 1 내에 다른 적이 없으면 (노트 20). **치명타 앞**이라 예고와 같다 */
@@ -55380,7 +55393,7 @@ function runEffect0(h,i,s,target){
     if(h.name==="트리스탄"){
       const T=h.tag||{};
       const cr=!!critWhy(h,s,tgt);   /* 서릿빛 용의 비늘촉 · 대상 포착 · 치명적 명중 — critWhy 한 곳에서 (2026-10-09) */
-      if(cr&&!CRIT){ dmg*=2; CRIT=1; say(`${s.n} — 치명타!`,"t1") }
+      if(cr&&!CRIT){ dmg=critUp(dmg); CRIT=1; say(`${s.n} — 치명타!`,"t1") }
       if(s.pierce&&T.pierceLeech) addLeech(h,T.pierceLeech);
     }
     if(h.name==="나이코스"&&i===0){
@@ -55395,7 +55408,7 @@ function runEffect0(h,i,s,target){
       dmg+=(h.cutGrow||0);
       if(h.tag.cutHeal){ healUp(h,h.tag.cutHeal) }
       /* 치명타는 자리마다 손으로 곱한다. 여기서도 마지막에 곱해 준다 */
-      if(blood) dmg*=2;
+      if(blood) dmg=critUp(dmg);
       h.cutSum=(h.cutSum||0)+dmg;
     }
     const times=((h.name==="나이코스"&&i===0&&h.sk[0].twice)||(h.name!=="나이코스"&&s.twice))?2+obolCutExtra(h,s):1;   /* 오볼 커틀러스 — 1씩 2번 (2026-10-31) · 유령 선장의 검 +1 */
@@ -55678,11 +55691,16 @@ function runEffect0(h,i,s,target){
 const itCritEl=(h,s)=>((h&&h.tag&&h.tag.invert)?s.el==="마법":s.el!=="마법");
 /* 표식을 남기는 피해 — 보통은 표식 기술(수축 공격), 반전화면 공격 피해 */
 const itMarksOn=(h,s)=>((h&&h.tag&&h.tag.invert)?s.el!=="마법":!!s.mark);
-/* 치명타 배율 — 정밀 공학이면 2.5 */
-const itCritX=h=>(h&&h.tag&&h.tag.precise)?2.5:2;
-/* 치명타가 몇 곱절인가 — 보통 2배, 꼬리표가 올린다 (은탄 : 리볼버 3배, 노트 2026-10-15).
+/* 🔴 기본 치명타 계수 — 치명타가 곱하는 값은 **모두 여기서** (사용자 2026-11-15 : 2배 → 1.5배).
+   보상이 올리는 몫(정밀 공학 +0.5 · 은탄 +1 · 암살 계약 +0.5)은 이 위에 **더한다** (합연산).
+   critUp — 곱한 뒤 반올림 (7.5 → 8). ⚠️ 치명타 자리에 *2 를 다시 박지 말 것 */
+var CRIT_X=1.5;
+function critUp(v,x){ return Math.round((v||0)*(x==null?CRIT_X:x)) }
+/* 치명타 배율 — 정밀 공학이면 +0.5 */
+const itCritX=h=>CRIT_X+((h&&h.tag&&h.tag.precise)?0.5:0);
+/* 치명타가 몇 곱절인가 — 기본 계수에 꼬리표가 더한다 (은탄 : 리볼버 +1, 노트 2026-10-15).
    ⚠️ 새 「치명타 배율」 보상은 여기 한 곳에 더한다 */
-const critMul=h=>2+((h&&h.tag&&h.tag.critPlus)||0);
+const critMul=h=>CRIT_X+((h&&h.tag&&h.tag.critPlus)||0);
 function itOnCrit(h){   /* 융합 보호 */
   if(h&&h.tag&&h.tag.fuseGuard){ addShield(h,h.tag.fuseGuard);
     fx({side:"mine",slot:h.slot,s:"shield",txt:"보호막 +"+h.tag.fuseGuard,cls:"shd",gap:60});
@@ -56537,7 +56555,7 @@ function foePhase(){
       const hits=Math.max(1,f.intent.hits||1);
       let one=foeDmg(f,f.intent.v,f.intent.el);
       if(f.painBonus){ one+=f.painBonus; say(`고통 감내 — 피해 +${f.painBonus}`,"t2"); f.painBonus=0 }   /* 여느 공격에도 (2026-09-20 — 기술 공격에만 얹히던 것) */
-      if(outRangeCritFor(f,t)){one*=2;critAlly(t)}
+      if(outRangeCritFor(f,t)){one=critUp(one);critAlly(t)}
       if(hits>1) say(`${f.name} ${f.intent.pat||"연타"} — ${hits}번 몰아칩니다.`,"t2");
       for(let q=0;q<hits;q++){
         if(!t.alive&&t.isMin) break;
