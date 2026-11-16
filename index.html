@@ -6728,6 +6728,8 @@ body.cheerin .hand{visibility:hidden}   /* 입장 글과 겹치지 않게 — �
 .dchip{font-size:10.5px;line-height:1.3;padding:0;border:0;background:none;font-weight:700;text-shadow:0 1px 0 #000}   /* 테두리 · 바탕 없이 글자만 (사용자 2026-11-12) */
 .dchip.dgood:hover,.dchip.dbad:hover{transform:none!important;box-shadow:none!important;border-color:transparent!important}   /* 상점 물건 .good:hover 가 번져 위로 떠올랐다 */
 .dchip{transition:none!important}
+.ub-d+.engl{margin-top:8px;font-size:12.5px} .engbk{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 12px} .engbk .kw{cursor:help} .rw.stele .rwd{display:flex;flex-wrap:wrap;justify-content:center;align-content:flex-start;gap:6px 14px} .rw.stele .rwd .dchip{font-size:15px}   /* 비석 카드 (2026-11-17) */
+.pkdesc .pkdw2{margin-top:6px;font-size:12px;opacity:.7}   /* 모닥불의 위로 — 덤인 까닭 (2026-11-17) */
 .pkdisp .dchip{font-size:14px} .pkdisp .dispchips{gap:0 .6em}   /* 대원 고르기 — 성향 글자를 크게 (사용자 2026-11-12) */
 .dchip.dgood{color:#7fd39a}.dchip.dbad{color:#ff7a68}
 .mcard>.dispchips.mcdisp{position:absolute;left:15%;top:24px;transform:translateX(-50%);z-index:3;max-width:44%}
@@ -16495,6 +16497,22 @@ const COMMON=[
  R("하급: 에너지 강화","하급","전투 시작 후, 에너지 보호막을 3 얻습니다.",
    h=>h.tag.eshield=(h.tag.eshield||0)+3,0.3),
  R("하급: 제련석","하급","제련석을 3개 얻습니다.",h=>{ run.stone=(run.stone||0)+3 }),
+ /* ── 각인서 · 피로도 · 평판 (사용자 2026-11-17) ── */
+ R("하급: 각인서","하급","무작위 각인이 적힌 각인서를 얻습니다.",
+   h=>{ (run.after=run.after||[]).push({item:engBookMake(0,0,engBookN())}) }),
+ R("찢겨진 각인서","하급","무작위 긍정적 각인과 부정적 각인이 1개씩 적힌 각인서를 얻습니다. 제련석을 2개 얻습니다.",
+   h=>{ (run.after=run.after||[]).push({item:engBookMake(1,1)}); run.stone=(run.stone||0)+2 }),
+ R("중급: 각인서","중급","무작위 긍정적인 각인이 적힌 각인서를 얻습니다.",
+   h=>{ (run.after=run.after||[]).push({item:engBookMake(engBookN(),0)}) }),
+ R("상급: 각인서","상급","무작위 긍정적인 각인이 3개 적힌 각인서를 얻습니다.",
+   h=>{ (run.after=run.after||[]).push({item:engBookMake(3,0)}) }),
+ R("목 축이기","하급","피로도가 10 감소합니다. 금화를 4개 얻습니다.",h=>{ fatAdd(h,-10); run.gold+=4 }),
+ R("추가 작업","하급","피로도가 15 증가합니다. 금화를 11개 얻습니다.",h=>{ fatAdd(h,15); run.gold+=11 }),
+ R("채광","하급","피로도가 15 증가합니다. 제련석을 6개 얻습니다.",h=>{ fatAdd(h,15); run.stone=(run.stone||0)+6 }),
+ R("상인과 인사","하급","떠돌이 상인의 평판이 5 상승합니다. 금화를 5개 얻습니다.",h=>{ repAdd("merchant",5,"상인과 인사"); run.gold+=5 }),
+ R("브란과 하이파이브","하급","브란의 평판이 5 상승합니다. 제련석을 2개 얻습니다.",h=>{ repAdd("smith",5,"브란과 하이파이브"); run.stone=(run.stone||0)+2 }),
+ R("정찰대장과 냄새맡기","하급","정찰대장의 평판이 5 상승합니다. 활동량을 1 얻습니다.",
+   h=>{ repAdd("scout",5,"정찰대장과 냄새맡기"); run.act+=1; if(run.act>0) run.night=0 }),
  R("오염 정화","하급","현재 오염도가 15 감소합니다.",h=>addTaint(-15)),
  R("하급: 발 마사지","하급","활동량을 1 얻습니다. 금화를 4개 얻습니다.",
    h=>{ run.act+=1; run.gold+=4; if(run.act>0) run.night=0 }),
@@ -18953,6 +18971,9 @@ const ITEMS=[
  /* 세공석 (사용자 2026-11-12) — 장신구와 제련하면 각인을 모두 지운다 (src/rules/engrave.js forgeClean) */
  IT("세공석","특수",null,0,null,{lapidary:1},
    "이 장신구를 다른 장신구와 제련하면, 그 장신구의 모든 각인을 지웁니다.\n제련석 2/5/10개와 금화 5/20/40개가 필요합니다. (파편/일반/희귀)"),
+ /* 각인서 (사용자 2026-11-17) — 적힌 각인은 it.ebook (src/rules/engrave.js forgeEngrave) */
+ IT("각인서","특수",null,0,null,{engbook:1},
+   "이 장신구를 다른 장신구와 제련하면, 그 장신구에 적힌 각인을 새깁니다."),   /* 제련석 5/10/15 줄은 뺐다 (사용자 2026-11-17) — 값은 제련소 아래 줄에 */
  /* 우두머리 전리품 — 실험 책임자 (사용자 2026-10-23) */
  Object.assign(IT("투척용 스패너","전설",null,0,null,{wrench:5},
    "이 장신구를 장착한 대원이 기술을 사용한 후, 가장 먼 적에게 스패너를 던져 피해를 5 줍니다."),{loot:1}),
@@ -19048,10 +19069,11 @@ function itemLive(h,it,txt){
   return t;
 }
 /* 각인 줄 — 나쁜 것은 붉게, 좋은 것은 푸르게 「이름: 설명」 (사용자 2026-11-12) */
-function engHtml(it){ const L=(it&&it.eng)||[]; if(!L.length) return "";
-  return `<div class="engl">${L.map(e=>`<div class="${ENG[e.k]&&ENG[e.k].neg?"eng-neg":"eng-pos"}">${esc(engLine(e))}</div>`).join("")}</div>` }
+function engHtml(it){ const L=(it&&it.eng)||[], B=engBookRows(it); if(!L.length&&!B.length) return "";
+  return `<div class="engl">${L.map(e=>`<div class="${ENG[e.k]&&ENG[e.k].neg?"eng-neg":"eng-pos"}">${esc(engLine(e))}</div>`).join("")}${
+    B.length?`<div class="engbk">${B.map(x=>`<span class="${ENG[x.e.k]&&ENG[x.e.k].neg?"eng-neg":"eng-pos"} kw" data-kw="${esc(x.e.k)}" data-tip="${esc(engBookTip(it,x.e.k))}">${esc(x.e.k)}${x.n>1?` ×${x.n}`:""}</span>`).join("")}</div>`:""}</div>` }   /* 이름만 — 값은 커서로 (사용자 2026-11-17) */   /* 각인서는 적힌 각인 (2026-11-17) */
 /* 각인 빛 — 장신구 칸이 부정 각인이면 붉게, 긍정이면 푸르게(초록), 둘 다면 번갈아 (사용자 2026-11-14) */
-function engGlow(it){ const L=(it&&it.eng)||[]; if(!L.length) return "";
+function engGlow(it){ const L=((it&&it.eng)||[]).concat((it&&it.ebook)||[]); if(!L.length) return "";
   const n=L.some(e=>ENG[e.k]&&ENG[e.k].neg), p=L.some(e=>ENG[e.k]&&!ENG[e.k].neg);
   return n&&p?" engm":n?" engn":p?" engp":"" }
 function itemCard(it,own){
@@ -20733,7 +20755,7 @@ const LV_GRADE=[0,
 const LV_OWN={13:1,23:1,28:1,30:1};               /* 전용 보상만 나오는 레벨 */
 const LV_MAST={5:2,10:5,15:10,25:20,30:3};       /* 그 레벨에 더 주는 숙련도 */
 const MAST_START=1, MAST_CAP=100;                 /* 처음 1 · 대원 하나가 얻는 숙련도 최대 100 */
-const MAST_UNLOCK=[0,0,5,5];                      /* 3번 기술 · 궁극기를 여는 숙련도 (궁극기는 3번을 연 뒤) */
+const MAST_UNLOCK=[0,0,3,3];   /* 5 → 3 (사용자 2026-11-17) */                      /* 3번 기술 · 궁극기를 여는 숙련도 (궁극기는 3번을 연 뒤) */
 function lvGrade(lv){ return LV_GRADE[lv]||null }
 /* 레벨마다 숙련도 — 1~10레벨 1 · 11~20레벨 2 · 21~30레벨 3, 보상과 따로. 거기에 LV_MAST */
 function lvMastery(lv){ return (lv<=10?1:lv<=20?2:3)+(LV_MAST[lv]||0) }
@@ -20749,7 +20771,7 @@ function mastLegacy(){ return MAST_LEGACY||(typeof navigator!=="undefined"&&!!na
 function skOpen(h,i){ if(i<2) return true; if(h&&h.skOpen&&!mastLegacy()) return !!h.skOpen[i]; return skLv(h)>=UNLOCK[i] }
 function mastUnlockOk(h,i){ return !!(h&&h.skOpen&&!mastLegacy()&&(i===2||i===3)&&!h.skOpen[i]&&(i===2||h.skOpen[2])&&(h.mastery||0)>=MAST_UNLOCK[i]) }
 function mastUnlock(h,i){ if(!mastUnlockOk(h,i)) return false; h.mastery-=MAST_UNLOCK[i]; h.skOpen[i]=1; return true }
-function skLockTxt(h,i){ return h&&h.skOpen&&!mastLegacy()?(i===3&&!h.skOpen[2]?"3번 기술 해제 뒤 숙련도 5":"숙련도 5로 해제"):`${UNLOCK[i]}레벨에 열림` }   /* 21 · 24 · 26 을 하급 → 중급 (사용자 2026-10-23) */
+function skLockTxt(h,i){ return h&&h.skOpen&&!mastLegacy()?(i===3&&!h.skOpen[2]?`3번 기술 해제 뒤 숙련도 ${MAST_UNLOCK[3]}`:`숙련도 ${MAST_UNLOCK[i]}${[0,3,6].indexOf(MAST_UNLOCK[i]%10)>=0?"으로":"로"} 해제`):`${UNLOCK[i]}레벨에 열림` }   /* 21 · 24 · 26 을 하급 → 중급 (사용자 2026-10-23) */
 /* ═══════════ 피로도 (사용자 2026-11-10) ═══════════
    대원마다 0~100, 처음 30. 쓰러졌다 일어나면 50 에서 다시.
    ★ 굴림은 **대원마다 따로** (확률도 대원마다). 게임 주사위(Math.random)를 쓴다 — 규칙이다.
@@ -20778,7 +20800,12 @@ function fatAll(v){ fatParty().forEach(h=>fatAdd(h,v)) }                   /* �
 /* 쓰러졌다 일어남 — 50 에서 다시 */
 function fatRevive(h){ if(h) h.fat=FAT_REVIVE }
 /* ═══════════ 성향 (사용자 2026-11-10) ═══════════
-   원정 시작 · 새 대원 영입 때 무작위 — 선성향 1~2 · 악성향 1~2 (h.disp = {good:[…], bad:[…]}).
+   원정 시작 · 새 대원 영입 때 무작위 (h.disp = {good:[…], bad:[…]}).
+   ★ 2026-11-17 : 없음 50% · 1개 30% · 2개 20%, 하나하나 선 · 악 무작위 (전에는 선 1~2 · 악 1~2).
+     첫 대원이 악성향만 가졌으면 파수꾼의 선물 「모닥불의 위로」를 덤으로 (newRun, PACK_COMFORT).
+   ★ 2026-11-17 발현 확률 : 악성향 = 피로도% · 선성향 = (100 − 피로도)% 에 성향마다 ±15% 오차 (h.dispOff, 얻을 때 한 번 굴린다).
+     예) 피로도 50 → 둘 다 50% 안팎 · 70 → 악 70% · 선 30% 안팎. 조급함은 그 확률 × 0.2 (최대 20%) — 피로도를 따른다.
+     아래 「발현」 줄은 옛 셈이다 (2026-11-10 ~ 11-16).
    ★ 「특성」(HERO_TRAITS — 지운 보상 묶음)과 다른 것이다. 이름이 겹치지 않게 disp 로 부른다.
    ★ 발현 — 그 일이 일어날 때마다 피로도로 굴린다 (사용자 승인 2026-11-10) :
        선성향 = 1 − (피로도/50)²  (피로도 50 이상이면 0)   · 악성향 = 1 − ((100−피로도)/50)²  (50 이하면 0)
@@ -20800,7 +20827,7 @@ const DISP_GOOD={
 };
 const DISP_BAD={
   "겁":{d:v=>`밤에서 진행하는 전투 입장 후, 해당 전투에서 모든 능력치를 ${v} 잃습니다.`, v:[1,3,5]},
-  "조급함":{d:()=>"기술이 빗나갑니다. (최대 20%)", v:[0,0,0], cap:.2},
+  "조급함":{d:()=>"기술이 빗나갑니다. (최대 20%)", v:[0,0,0], scale:.2},   /* 발현 확률 × 0.2 — 피로도를 따른다 (사용자 2026-11-17, 전에는 상한 20%) */
   "도벽":{d:()=>"대원 배치 후, 무작위 대원과 장신구를 맞바꿉니다.", v:[0,0,0]},
   "엄살":{d:v=>`대원 배치 후, 피해를 ${v} 받습니다.`, v:[3,7,15]},
   "이기심":{d:()=>"다른 대원에게 카드를 내면, 이 대원이 뺏어 사용합니다.", v:[0,0,0]},
@@ -20814,25 +20841,51 @@ const dispOn=()=>typeof run!=="undefined"&&run&&!run.sandbox&&!(typeof MAST_LEGA
 const dispAct=()=>Math.min(2,(run&&run.field)||0);
 function dispVal(n){ const T=DISP_GOOD[n]||DISP_BAD[n]; return T?T.v[dispAct()]:0 }
 function dispDesc(n){ const T=DISP_GOOD[n]||DISP_BAD[n]; return T?T.d(dispVal(n)):"" }
-/* 굴리기 — 선 1~2 · 악 1~2, 겹치지 않게 */
+/* 굴리기 — 없음 50% · 1개 30% · 2개 20%, 하나하나 선 · 악 무작위, 겹치지 않게 (사용자 2026-11-17) */
+const DISP_N=[.5,.3,.2];
 function dispRoll(){
-  const pick=(L,k)=>{ const a=L.slice(), o=[]; while(o.length<k&&a.length) o.push(a.splice(Math.floor(Math.random()*a.length),1)[0]); return o };
-  return {good:pick(Object.keys(DISP_GOOD),1+(Math.random()<.5?1:0)), bad:pick(Object.keys(DISP_BAD),1+(Math.random()<.5?1:0))} }
+  let r=Math.random(), n=0; while(n<DISP_N.length-1&&r>=DISP_N[n]){ r-=DISP_N[n]; n++ }
+  const o={good:[],bad:[]};
+  for(let i=0;i<n;i++){ const g=Math.random()<.5, L=Object.keys(g?DISP_GOOD:DISP_BAD).filter(x=>(g?o.good:o.bad).indexOf(x)<0);
+    if(L.length) (g?o.good:o.bad).push(L[Math.floor(Math.random()*L.length)]) }
+  return o }
+const dispOnlyBad=D=>!!(D&&D.bad.length&&!D.good.length);   /* 악성향만 — 첫 대원이면 모닥불의 위로 */
 /* 고르기 화면에 미리 보이는 것 — 같은 대원을 고르면 그 성향이 그대로 붙는다 */
 let DISP_PRE={};
 function dispPre(name){ return DISP_PRE[name]||(DISP_PRE[name]=dispRoll()) }
-function dispGive(h){ if(!h||h.disp||!dispOn()) return;   /* 시뮬은 굴리지 않는다 — 주사위가 밀리면 골든이 흔들린다 */ h.disp=DISP_PRE[h.name]||dispRoll(); delete DISP_PRE[h.name] }
-/* 발현 확률 */
-function dispP(h,good){ const f=fatOf(h);
-  return good?(f<50?1-Math.pow(f/50,2):0):(f>50?1-Math.pow((100-f)/50,2):0) }
-/* 지금 발동 확률 0~1 — 피로도 · 조급함 상한 (dispFire 와 같은 셈, 화면이 보여 준다) */
-function dispChance(h,n){ if(!h) return 0; const good=!!DISP_GOOD[n]; let p=dispP(h,good); const T=DISP_BAD[n]; if(T&&T.cap) p=Math.min(p,T.cap); return p }
+function dispGive(h){ if(!h||h.disp||!dispOn()) return;   /* 시뮬은 굴리지 않는다 — 주사위가 밀리면 골든이 흔들린다 */ h.disp=DISP_PRE[h.name]||dispRoll(); delete DISP_PRE[h.name];
+  h.disp.good.concat(h.disp.bad).forEach(n=>dispSway(h,n)) }
+/* 성향마다의 오차 ±15% — 얻을 때 한 번 굴려 h.dispOff 에 (옛 저장본은 처음 볼 때) */
+const DISP_SWAY=.15;
+function dispSway(h,n){ const o=h.dispOff||(h.dispOff={}); if(o[n]==null) o[n]=Math.round((Math.random()*2-1)*DISP_SWAY*100)/100; return o[n] }
+/* 발현 확률 바탕 — 악 = 피로도% · 선 = (100 − 피로도)% (사용자 2026-11-17). 오차는 dispChance 가 더한다 */
+function dispP(h,good){ const f=fatOf(h)/FAT_MAX; return good?1-f:f }
+/* 지금 발동 확률 0~1 — 피로도 · 오차 · 조급함 배율 (dispFire 와 같은 셈, 화면이 보여 준다) */
+function dispChance(h,n){ if(!h) return 0; const good=!!DISP_GOOD[n];
+  let p=Math.max(0,Math.min(1,dispP(h,good)+dispSway(h,n))); const T=DISP_BAD[n]; if(T&&T.scale) p*=T.scale; return p }
 /* 이 대원에게 그 성향이 있고 지금 발현하나 */
 function dispFire(h,n){
   if(!dispOn()||!h||!h.disp) return false;
   const good=!!DISP_GOOD[n], L=good?h.disp.good:h.disp.bad; if(!L||L.indexOf(n)<0) return false;
-  let p=dispP(h,good); const T=DISP_BAD[n]; if(T&&T.cap) p=Math.min(p,T.cap);
-  return Math.random()<p }
+  return Math.random()<dispChance(h,n) }
+/* ═══ 비석 (사용자 2026-11-17) — 대원을 고르고, 성향 묶음 카드 둘 가운데 하나를 새긴다 ═══
+   빛나는 비석 : 정예 전투 보상 상자(1막 20% · 2막 40% · 3막 60%, CHEST 의 줄). 선성향 1개 70% · 2개 20% · 3개 10%,
+                 2개면 70% 로 악성향 1개 · 3개면 70% 로 악성향 1~2개가 같이.
+   어두운 비석 : 사건에서 — 악성향 1개 70% · 2개 20% · 3개 10%.
+   이미 가진 성향은 다시 나오지 않는다. 시뮬에서는 상자에 안 든다 (rollChest) */
+const STELE={"빛나는 비석":{ic:"item_alignment_radiant_stele",gc:"#ffe7a0"},"어두운 비석":{ic:"item_alignment_dark_stele",gc:"#e0705a"}};
+function steleCard(h,kind){
+  const has=n=>!!(h&&h.disp&&(h.disp.good.indexOf(n)>=0||h.disp.bad.indexOf(n)>=0));
+  const take=(T,k,o)=>{ const L=Object.keys(T).filter(n=>!has(n)&&o.indexOf(n)<0); while(o.length<k&&L.length) o.push(L.splice(Math.floor(Math.random()*L.length),1)[0]) };
+  const r=Math.random(), n=r<.7?1:r<.9?2:3, o={good:[],bad:[]};
+  if(kind==="어두운 비석"){ take(DISP_BAD,n,o.bad); return o }
+  take(DISP_GOOD,n,o.good);
+  if(n>=2&&Math.random()<.7) take(DISP_BAD,n===3&&Math.random()<.5?2:1,o.bad);
+  return o }
+function steleOffer(h,kind){ return [steleCard(h,kind),steleCard(h,kind)].filter(c=>c.good.length+c.bad.length) }
+function steleGive(h,c){ if(!h||!c) return; const D=h.disp||(h.disp={good:[],bad:[]});
+  c.good.forEach(n=>{ if(D.good.indexOf(n)<0){ D.good.push(n); dispSway(h,n) } });
+  c.bad.forEach(n=>{ if(D.bad.indexOf(n)<0){ D.bad.push(n); dispSway(h,n) } }) }
 function dispSay(h,n,txt){ try{ say(`${n} — ${h.name}${txt?" "+txt:""}`,DISP_GOOD[n]?"t1":"t3") }catch(e){} }
 /* ── 거는 곳 ── */
 /* 대원 배치 후 (onSummon) */
@@ -26297,6 +26350,8 @@ const PACKS=[
  {n:"고향 지도",d:"귀환서 카드를 3장 얻습니다.",i:"map",
   fx:r=>{ addCard(r,"귀환서",3) }}
 ];
+/* 모닥불의 위로 (사용자 2026-11-17) — 고르는 선물이 아니다. 첫 대원이 악성향만 가졌으면 덤으로 (newRun · run.comfort) */
+const PACK_COMFORT={n:"모닥불의 위로",d:"최대 체력을 추가로 6 얻습니다.",i:"life",fx:r=>{ addMaxHp(r.heroes[0],6,"모닥불의 위로") }};
 function packArt(i,name){
   /* 새로 받은 그림이 있으면 그것부터 */
   { const id=(typeof PACK_ICON!=="undefined")&&name&&PACK_ICON[name];
@@ -26353,6 +26408,7 @@ function newRun(name,pack){
   try{ run.unlock0=unlockSnap() }catch(e){}   /* 이번 판에 새로 열린 것을 끝에서 견주려고 (사용자 2026-10-12) */
   rollPatrol();                       /* 간수 순찰로 — 튜토리얼이 아닌 새 판에서도 (사용자 2026-09-15 — 안 나오던 버그) */
   run.heroes.forEach(dispGive);       /* 성향 — 원정 시작 때 (2026-11-10). 고르기 화면에서 본 것 그대로 */
+  if(dispOnlyBad(run.heroes[0].disp)){ run.comfort=1; PACK_COMFORT.fx(run) }   /* 악성향만 — 모닥불의 위로 (2026-11-17) */
   seeStart();                         /* 지도 밝히기 — 선 자리 둘레만 보인다 (사용자 2026-10-30). 주사위를 안 굴린다 */
   if(pack) pack.fx(run);
   const q=run.bonusLv; run.bonusLv=null;
@@ -29474,6 +29530,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 474, "v": "0.8", "d": "2026-11-17", "t": "각인서 · 비석 · 성향 수와 발동 확률 · 피로도 / 평판 보상 · 해금 숙련도 3", "big": 0},
  {"b": 473, "v": "0.8", "d": "2026-11-16", "t": "게임 정보 페이지(info.html) — 확률표 · 보상 목록 · 적 · 사건, 배포 때마다 게임 코드에서 새로", "big": 0},
  {"b": 472, "v": "0.8", "d": "2026-11-16", "t": "현상 수배 핵심 그림 (wanted-notice v2)", "big": 0},
  {"b": 471, "v": "0.8", "d": "2026-11-16", "t": "가방 장신구 칸을 정확히 2배(56px)로 — 칸 그림이 깨지지 않게", "big": 0},
@@ -31140,7 +31197,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=473;
+const BUILD_NO=474;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -33011,12 +33068,16 @@ function drawStart(app){
     packs.appendChild(c);
   });
   /* 골라 둔 선물의 설명 카드 — 왼쪽에 고정. 안의 낱말(카드·장신구)은 여느 풍선처럼 커서로 본다 */
-  if(PICK_PACK!=null&&startPacks[PICK_PACK]){
-    const p=startPacks[PICK_PACK];
+  /* 모닥불의 위로 — 가운데 대원이 악성향만 가졌으면 덤으로 얻는 선물. 고른 선물 칸 밑에 같이 (사용자 2026-11-17) */
+  const comfort=!TUT.on&&dispOnlyBad(dispPre(center));
+  if((PICK_PACK!=null&&startPacks[PICK_PACK])||comfort){
+    const p=PICK_PACK!=null?startPacks[PICK_PACK]:null, cp=PACK_COMFORT;
     /* 선물을 골랐으면 파수꾼 대사는 이 카드 밑에 (사용자 2026-09-19) */
-    g.appendChild(el(`<div class="pkdw"><div class="pkdesc"><div class="pkdi">${packArt(p.i,p.n)}</div>
-      <div class="pkdt"><b>${esc(p.n)}</b><div class="pkdd">${rich(p.d)}</div></div></div>
-      ${PICK_QUOTE?`<div class="pkquote under"><span>“</span>${esc(PICK_QUOTE)}<span>”</span></div>`:""}</div>`));
+    g.appendChild(el(`<div class="pkdw">${p?`<div class="pkdesc"><div class="pkdi">${packArt(p.i,p.n)}</div>
+      <div class="pkdt"><b>${esc(p.n)}</b><div class="pkdd">${rich(p.d)}</div></div></div>`:""}
+      ${comfort?`<div class="pkdesc pkcomf"><div class="pkdi">${packArt(cp.i,cp.n)}</div>
+      <div class="pkdt"><b>${esc(cp.n)}</b><div class="pkdd">${rich(cp.d)}</div><div class="pkdw2">악성향만 있어 함께 얻습니다.</div></div></div>`:""}
+      ${p&&PICK_QUOTE?`<div class="pkquote under"><span>“</span>${esc(PICK_QUOTE)}<span>”</span></div>`:""}</div>`));
   }
   /* 오른쪽 판 — 가운데 대원 */
   g.appendChild(pickPanel(center));
@@ -33066,7 +33127,7 @@ function pickPanel(nm){
       <span class="kw" data-kw="경험치 증가" data-tip="레벨마다 더 드는 경험치입니다">${icGrow("expLv")} ${needExp(2)-needExp(1)}</span>
       <span class="kw" data-kw="성장 체력" data-tip="레벨이 오를 때마다 늘어나는 최대 체력입니다">${icGrow("hpLv")} 성장 체력 ${d.hpLv}</span></div>
     ${d.focus?`<div class="pkpfocus">${richFocus(d.focus)}</div>`:""}
-    <div class="pkprow pkdisp"><span class="pkpl">성향</span>${dispChips(null,nm)}</div>
+    ${(dispPre(nm).good.length+dispPre(nm).bad.length)?`<div class="pkprow pkdisp">${dispChips(null,nm)}</div>`:""}
     <div class="pkprow"><span class="pkpl">지속 기술</span>${pas}</div>
     <div class="pkprow sk">${sks}</div>
   </div>`);
@@ -36653,6 +36714,7 @@ function forgePlan(){
   const both=pk[0]&&pk[1];
   let made=both?findRecipe(pk[0].it.n,pk[1].it.n):null;
   if(both&&!made) made=forgeClean(pk[0].it,pk[1].it);   /* 세공석 (2026-11-12) */
+  if(both&&!made) made=forgeEngrave(pk[0].it,pk[1].it);   /* 각인서 (2026-11-17) */
   if(both&&!made) made=forgeCopy(pk[0].it,pk[1].it);   /* 본따기 틀 (2026-10-23) — 조합법보다 뒤, 섞기보다 앞 */
   if(both&&!made&&forgeMix(pk[0].it,pk[1].it)) made=FORGE_MIX;
   /* 사치품 — 파편 둘로 일반이 나올 자리를 희귀로 갈아 끼운다 (2026-10-14) */
@@ -36773,7 +36835,7 @@ function drawForge(app){
     if(!groups.length) bl.appendChild(el(`<div class="shnone">제련할 수 있는 재료가 없습니다.</div>`));
     groups.slice(from,from+FORGE_PER).forEach(gr=>{
       const x=gr.list[0];
-      const cl=other&&forgeClean(other.it,gr.it), mate=other&&(findRecipe(other.it.n,gr.it.n)||forgeMix(other.it,gr.it)||(cl&&!cl.bare)), dull=other&&!mate;
+      const cl=other&&forgeClean(other.it,gr.it), mate=other&&(findRecipe(other.it.n,gr.it.n)||forgeMix(other.it,gr.it)||(cl&&!cl.bare)||forgeEngrave(other.it,gr.it)), dull=other&&!mate;
       const c=el(`<div class="shs${gcls(gr.it.g)}${mate?" mate":""}${dull?" dull":""}${engGlow(gr.it)}">
         <b class="shn">${esc(gr.n)}</b>
         <div class="shic">${rewardIcon(gr.it)}</div>
@@ -36833,12 +36895,13 @@ function forgeRun(stage,pk,made){
   const matA=pk[0].it, matB=pk[1].it, plan=made;
   run.stone-=made.cost;
   if(made.clean){ run.gold-=made.gold||0; made=engClear(isLapidary(matA)?matB:matA) }   /* 세공석 — 각인을 다 지운 그 장신구 */
+  else if(made.engr){ const bk=isEngBook(matA)?matA:matB; made=engBookApply(bk===matA?matB:matA,bk) }   /* 각인서 — 적힌 각인을 새긴 그 장신구 (2026-11-17) */
   else if(made.mix){ run.gold-=made.gold||0; made=rnd(ITEMS.filter(i=>i.g==="파편")) }
   else if(made.lux){ made=rnd(ITEMS.filter(i=>i.g==="희귀")) }   /* 사치품 — 여기서 굴린다 */
   else if(made.copy){ const it=itemDef(made.copy);
     /* 둘 가운데 하나는 여느 길로 건네고(forgeHold), 나머지 하나는 받는 줄에 쌓는다 */
     if(it){ (run.after=run.after||[]).push({item:it}); made=it } }
-  if(!plan.clean&&!plan.copy) made=engMerge(made,matA,matB);   /* 두 재료의 각인이 합쳐진다 */
+  if(!plan.clean&&!plan.copy&&!plan.engr) made=engMerge(made,matA,matB);   /* 두 재료의 각인이 합쳐진다 */
   run.forgeRepGain=smithForgeGain(plan,matA,matB); made=smithLuck(plan,made,[matA,matB]);   /* 솜씨 발휘 · 제련 실수 (2026-11-12). 평판은 받을 때 — 알림이 연출 중에 화면을 다시 그린다 */
   const bags=pk.filter(p=>p.bag).sort((a,b)=>b.i-a.i);
   const eqs =pk.filter(p=>!p.bag).sort((a,b)=>b.i-a.i);
@@ -36987,25 +37050,25 @@ function dungeonCleared(){
 /* ═══════════ 보상 상자 ═══════════ */
 const CHEST={   /* 금화 줄임 (사용자 2026-10-04: 수급이 많다) — 1스테이지 1~3 · 7~11 · 15~20 · 2~5 → 1~2 · 5~8 · 12~16 · 1~3, 2스테이지 3~6 · 10~16 · 30~50 · 4~8 → 2~4 · 7~11 · 22~32 · 3~5 */
  battle:[["금화",1,2,1],["하급",0,0,.10],["파편",0,0,.05],["경험치",1,6,.30],["중급",0,0,.02]],
- elite :[["금화",5,8,1],["하급",0,0,.60],["파편",0,0,.22],["경험치",3,8,.65],["중급",0,0,.10]],
+ elite :[["금화",5,8,1],["하급",0,0,.60],["파편",0,0,.22],["경험치",3,8,.65],["중급",0,0,.10],["빛나는 비석",0,0,.20]],   /* 비석 1막 20% · 2막 40% · 3막 60% (사용자 2026-11-17) */
  boss  :[["금화",12,16,1],["하급",0,0,1],["파편",0,0,1],["경험치",4,12,.50],["중급",0,0,1],["동료",0,0,1]],
  ambush:[["금화",1,3,1],["하급",0,0,.20],["파편",0,0,.10],["경험치",2,8,.40]]
 };
 const CHEST2={
  battle:[["금화",2,4,1],["하급",0,0,.20],["파편",0,0,.08],["경험치",1,6,.40],["중급",0,0,.05]],
- elite :[["금화",7,11,1],["하급",0,0,.75],["파편",0,0,.30],["경험치",5,13,.65],["중급",0,0,.20]],
+ elite :[["금화",7,11,1],["하급",0,0,.75],["파편",0,0,.30],["경험치",5,13,.65],["중급",0,0,.20],["빛나는 비석",0,0,.40]],
  boss  :[["금화",22,32,1],["하급",0,0,3],["일반",0,0,1],["경험치",4,12,.50],["중급",0,0,2],["동료",0,0,1]],
  ambush:[["금화",3,5,1],["하급",0,0,.25],["파편",0,0,.12],["경험치",3,10,.40]]
 };
 const CHEST3={
  battle:[["금화",7,10,1],["하급",0,0,.40],["파편",0,0,.20],["경험치",4,8,.40],["중급",0,0,.10],["상급",0,0,.05]],
- elite :[["금화",16,30,1],["하급",0,0,1],["파편",0,0,.42],["경험치",9,18,.75],["중급",0,0,.38],["상급",0,0,.22]],
+ elite :[["금화",16,30,1],["하급",0,0,1],["파편",0,0,.42],["경험치",9,18,.75],["중급",0,0,.38],["상급",0,0,.22],["빛나는 비석",0,0,.60]],
  boss  :[["금화",50,80,1],["하급",0,0,3],["일반",0,0,1],["경험치",8,20,1],["중급",0,0,2],["상급",0,0,1],["동료",0,0,1]],
  ambush:[["금화",8,14,1],["하급",0,0,.35],["파편",0,0,.18],["경험치",5,12,.40]]
 };
 const CHEST_GOLD=1.5;   /* 전투 상자 금화 — 주둔지 강화에 금화가 들어 조금 늘림 (사용자 2026-11-10 ×1.25 → 2026-11-13 ×1.5 「조금씩 더」). 1→2 · 2→3 · 8→12 · 16→24 */
 function rollChest(kind){
-  const T=[CHEST,CHEST2,CHEST3][Math.min(run.field,2)][kind]||CHEST.battle;
+  const T=([CHEST,CHEST2,CHEST3][Math.min(run.field,2)][kind]||CHEST.battle).filter(r=>!STELE[r[0]]||dispOn());   /* 비석 — 성향을 굴리지 않는 시뮬에서는 빼다 (주사위가 밀리면 골든이 흔들린다) */
   const out=[];
   const boost=(run.dun&&run.dun.cell&&run.dun.cell.boost)||[];   /* 칸마다 잘 나오는 갈래 (lootRoll) — 확률 ×1.5(최대 +25%p), 금화·경험치 양 ×1.4 */
   const one=row0=>{ const bo=boost.indexOf(row0[0])>=0, row=bo?[row0[0],Math.round(row0[1]*1.4),Math.round(row0[2]*1.4),row0[3]]:row0; const type=row[0], lo=row[1], hi=row[2];
@@ -37058,6 +37121,7 @@ function chestLabel(x){
        : x.t==="일반"   ? "무작위 일반 장신구"
        : x.t==="동료"   ? "새로운 대원 영입"
        : x.t==="전리품" ? "우두머리 전리품"
+       : STELE[x.t]     ? x.t
        : `${x.t} 보상`;
 }
 /* 금화 칸 밑의 덧줄 — 배수가 붙었을 때만 */
@@ -37073,7 +37137,7 @@ function chestExtra(x){
 const CHEST_ICON={"하급":"chest_bronze","중급":"chest_silver","상급":"chest_gold",
                   "파편":"fragment","일반":"chest","희귀":"chest","금화":"currency_gold",
                   "경험치":"exp_arrow","동료":"recruit_new","회복":"life","제련석":"ore",
-                  "전리품":"boss_loot"};
+                  "전리품":"boss_loot","빛나는 비석":"item_alignment_radiant_stele","어두운 비석":"item_alignment_dark_stele"};
 function chestIconKey(t){ return CHEST_ICON[t]||"" }
 /* 상자 **그림** 자체 — 등급과 구역으로 (브라우저의 `bigChest` 가 고르는 그것) */
 const CHEST_ART={"하급":"chest_bronze_open","중급":"chest_silver_open","상급":"chest_gold_open"};
@@ -37245,6 +37309,7 @@ function takeChest(){
     else if(x.t==="파편"||x.t==="일반"){ const it=x.it||rnd(ITEMS.filter(i=>i.g===x.t)); x.it=it;for(let n=0;n<copies;n++)later.push({item:Object.assign({},it)}) }
     else if(x.t==="전리품") later.push({bloot:run.lastBoss||""});   /* 우두머리 전리품 (2026-10-23) */
     else if(x.t==="동료") later.push({recruit:1});
+    else if(STELE[x.t]) later.push({stele:x.t});   /* 빛나는 비석 (2026-11-17) */
     else later.push({grade:x.t,noRun:isBoss?1:0,bountyCopy:copies===2?1:0});
   });
   /* 오른쪽 목록에는 상자에 들어 있던 것을 다 보여 준다.
@@ -37269,6 +37334,7 @@ function afterName(x){
   if(!x) return "보상";
   if(x.bloot!=null) return "전리품";
   if(x.recruit) return "동료";
+  if(x.stele) return x.stele;
   if(x.item) return x.item.g||"장신구";
   return x.grade||"보상";
 }
@@ -37277,14 +37343,14 @@ function afterChest(){
   /* 이 줄이 무엇으로 이루어졌는지 적어 둔다 — 화면 오른쪽에 차례를 보여 준다.
      상자에서 온 줄이면 takeChest 가 이미 금화·경험치까지 얹어 두었다. */
   if(q.length){
-    if(!run.afterList){ run.afterList=q.map(x=>({t:afterName(x)})); run.afterUsed=0 }
+    if(!run.afterList){ run.afterList=q.map(x=>({t:afterName(x),it:x.item})); run.afterUsed=0 }   /* it — 장신구 그림 (2026-11-17) */
     else{
       /* 받는 도중에 뒷일이 더 붙는 수가 있다 — '장신구: 희귀' 처럼 보상이
          또 보상을 부르는 것들이다. 늘어난 만큼 줄 끝에 이어 붙인다.
          안 그러면 자리 셈이 어긋나 마지막에 '—' 가 뜬다. */
       const todo=run.afterList.filter(x=>!x.done).length;
       const more=q.length-(todo-(run.afterUsed||0));
-      if(more>0) q.slice(q.length-more).forEach(x=>run.afterList.push({t:afterName(x)}));
+      if(more>0) q.slice(q.length-more).forEach(x=>run.afterList.push({t:afterName(x),it:x.item}));
     }
   }
   if(!q.length){
@@ -37306,6 +37372,7 @@ function afterChest(){
     const picks=blRoll(nx.bloot);
     if(!picks.length){ afterChest(); return }
     run.bloot={boss:nx.bloot,picks:picks,sel:null}; view="bloot"; render(); return }
+  if(nx.stele){ pending={stele:nx.stele,hero:(nx.hero&&run.heroes.find(h=>h.name===nx.hero))||null,back:"chain"}; view="reward"; render(); return }   /* 비석 — 대원을 고르고 성향 카드 둘 (2026-11-17) */
   if(nx.item){ itemGained(nx.item); pending={stage:"hero",list:[],item:nx.item,hero:null,back:"chain"}; view="item"; render(); return }
   if(nx.recruit){
     const owned=run.heroes.map(x=>x.name);
@@ -37871,7 +37938,38 @@ function engMerge(made,a,b){
   if(!((a&&a.eng&&a.eng.length)||(b&&b.eng&&b.eng.length))) return made;
   const c=engOwn(made); [a,b].forEach(x=>((x&&x.eng)||[]).forEach(e=>engPut(c,e.k,e.v))); return c }
 function engClear(it){ const c=engOwn(it); delete c.eng; return c }
-const engSig=it=>((it&&it.eng)||[]).map(e=>e.k+e.v).join(",");
+const engSig=it=>((it&&it.eng)||[]).map(e=>e.k+e.v).join(",")+((it&&it.ebook)?"|"+it.ebook.map(e=>e.k+e.u).join(","):"");   /* 각인서는 적힌 것까지 */
+/* ═══ 각인서 (사용자 2026-11-17) — 특수 장신구. 파편 · 일반 · 희귀 장신구와 제련하면 적힌 각인을 그 장신구에 새긴다 (제련석 5/10/15).
+   it.ebook=[{k,u}] — u(0~1)는 범위 안의 자리. 값은 새길 장신구 등급의 범위에서 그 자리로 (미리 굴려 둔다 — 볼 때와 새길 때가 같게).
+   ★ 바탕 장신구 조건(무딤 · 날카로움 …)이 없고 세 등급 모두에 새겨지는 각인만 적힌다 — 어느 장신구에나 새길 수 있게 */
+const ENG_BOOK=Object.keys(ENG).filter(k=>!ENG[k].base&&ENG[k].r.every(Boolean));
+const ENG_BOOK_COST=[5,10,15];
+const isEngBook=it=>!!(it&&it.bt&&it.bt.engbook);
+/* pos · neg 개 — 긍정 · 부정. any 개 — 하나하나 긍정 · 부정 무작위 */
+function engBookMake(pos,neg,any){
+  const b=engOwn(itemDef("각인서")), L=[];
+  const one=ng=>{ const K=ENG_BOOK.filter(k=>!!ENG[k].neg===!!ng); L.push({k:K[Math.floor(Math.random()*K.length)],u:Math.round(Math.random()*1000)/1000}) };
+  for(let i=0;i<(pos||0);i++) one(0); for(let i=0;i<(neg||0);i++) one(1); for(let i=0;i<(any||0);i++) one(Math.random()<.5);
+  b.ebook=L; return b }
+const engBookN=()=>1+Math.floor(Math.random()*3);   /* 특별한 말이 없으면 1~3개 */
+function engBookVal(e,t){ const r=ENG[e.k]&&ENG[e.k].r[engGi(t)]; return r?r[0]+Math.min(r[1]-r[0],Math.floor(e.u*(r[1]-r[0]+1))):0 }
+function engBookLine(e,n){ const D=ENG[e.k]; if(!D) return ""; const x=n>1?` ×${n}`:"", ud=D.neg?"증가":"감소";
+  if(D.st) return `${e.k}${x}: ${ENG_STAT[D.st]} ${D.neg?"감소":"증가"}`;
+  return `${e.k}${x}: ${D.taint?"전투 입장 시 오염도":"받는 피해"} ${ud}` }
+/* 풍선 — 새기면 붙는 값을 등급마다 (같은 이름은 더한 값) */
+function engBookTip(it,k){ const D=ENG[k]; if(!D) return ""; const L=((it&&it.ebook)||[]).filter(e=>e.k===k);
+  const v=[0,1,2].map(gi=>L.reduce((a,e)=>{ const r=D.r[gi]; return a+(r?r[0]+Math.min(r[1]-r[0],Math.floor(e.u*(r[1]-r[0]+1))):0) },0));
+  const sg=D.st?(D.neg?"-":"+"):"", vs=v.map(x=>sg+x).join("/");
+  const what=D.st?`${ENG_STAT[D.st]} ${vs}`:`${D.taint?"전투 입장 시 오염도":"받는 피해"} ${vs} ${D.neg?"증가":"감소"}`;
+  return `새기면 ${what} (파편/일반/희귀)${L.length>1?`, ${L.length}번 적혀 있어 더한 값`:""}` }
+/* 같은 이름은 한 줄로 */
+function engBookRows(it){ const L=[]; ((it&&it.ebook)||[]).forEach(e=>{ const x=L.find(y=>y.e.k===e.k); if(x) x.n++; else L.push({e:e,n:1}) }); return L }
+/* 제련 — 각인서 + 파편 · 일반 · 희귀 장신구 */
+function forgeEngrave(a,b){
+  const bk=isEngBook(a)?a:(isEngBook(b)?b:null), t=bk===a?b:a;
+  if(!bk||!t||isEngBook(t)||["파편","일반","희귀"].indexOf(t.g)<0) return null;
+  return {n:t.n,g:t.g,cost:ENG_BOOK_COST[engGi(t)],engr:1,d:`각인서 — ${t.n}에 각인을 새깁니다.`} }
+function engBookApply(t,bk){ const c=engOwn(t); ((bk&&bk.ebook)||[]).forEach(e=>engPut(c,e.k,engBookVal(e,c))); return c }
 /* 장신구가 주는 능력치 전부 — 본디 st + 각인. 끼우고 · 빼고 · 출처를 셀 때 이 함수 하나 */
 function itemStats(it){
   const o=Object.assign({},(it&&it.st)||{});
@@ -37906,11 +38004,11 @@ function smithCost(c){
   const T=smithTier(), r=T.cut||T.up; if(!r) return c; const d=r[0]+Math.floor(run.forgeU*(r[1]-r[0]+1));
   return T.cut?Math.max(0,c-d):c+d }
 /* 솜씨 발휘 · 제련 실수를 굴릴 수 있는 제련 — 일반 · 희귀가 나오는 조합법 (파편 섞기 · 본따기 틀 · 세공석은 아니다) */
-const smithLuckable=made=>!!(made&&!made.mix&&!made.copy&&!made.clean&&(made.g==="일반"||made.g==="희귀"));
+const smithLuckable=made=>!!(made&&!made.mix&&!made.copy&&!made.clean&&!made.engr&&(made.g==="일반"||made.g==="희귀"));
 function smithLuckLine(){ const T=smithTier(); return T.luck?`제련공 브란의 솜씨 발휘 확률 ${T.luck}%`:T.slip?`제련공 브란의 제련 실수 확률 ${T.slip}%`:"" }
 /* 제련으로 오르는 평판 — 서로 다른 파편 +1~4 · 파편 둘(일반) +2~5 · 일반 둘(희귀) +10~20 */
 function smithForgeGain(plan,a,b){
-  if(!plan||plan.copy||plan.clean) return 0;
+  if(!plan||plan.copy||plan.clean||plan.engr) return 0;
   /* 너무 빨리 올라 줄였다 (사용자 2026-11-15) — 서로 다른 파편 1~4 → 50% 로 1 / 파편+파편 2~5 → 1~2 / 일반+일반 10~20 → 3~6 */
   if(plan.mix) return Math.random()<.5?1:0;
   if(a.g==="파편"&&b.g==="파편") return repRoll([1,2]);
@@ -57511,7 +57609,8 @@ function afterListPanel(){
   const nm=x=>((x.t==="금화"||x.t==="경험치")
     ? `${x.t} ${x.v!=null?x.v:""}`.trim()
     : (x.t==="동료"?"새로운 대원"
-      :(x.t==="파편"||x.t==="일반"||x.t==="희귀")?`${x.t} 장신구`
+      :(x.t==="파편"||x.t==="일반"||x.t==="희귀"||x.t==="특수"||x.t==="전설")?`${x.t} 장신구`
+      :STELE[x.t]?x.t
       :`${x.t} 보상`))+(x.copies===2?" ×2":"");
   const left=L.filter((x,i)=>!x.done&&i>at).length;
   return el(`<aside class="rwq">
@@ -57591,7 +57690,51 @@ function drawBossLoot(app){
     row.appendChild(c) });
   app.querySelector(".center").appendChild(row);
 }
+/* 비석 — 대원을 고르고, 성향 묶음 카드 둘 가운데 하나 (사용자 2026-11-17). 뽑기 · 새기기는 규칙 (steleOffer · steleGive) */
+function drawStele(app){
+  const P=pending, kind=P.stele, S=STELE[kind]||{}, ico=iconImg(S.ic)||"";
+  if(!P.hero&&run.heroes.length>1){
+    app.appendChild(el(`<div class="center"><div class="whograde" style="--gc:${S.gc||"#e7dcc8"}"><span class="wgi">${ico}</span><b>${esc(kind)}</b></div>
+      <div class="sub">대원을 고르세요</div></div>`));
+    const row=el(`<div class="picks"></div>`), anyUp=run.heroes.some(h=>!h.down);
+    run.heroes.forEach(h=>{ const off=anyUp&&h.down;
+      const c=el(`<div class="pick${off?" off":""}" style="width:200px"><div class="art">${figure(h.name)}</div>
+        <h3>${esc(h.name)}</h3><p>Lv.${h.lv} ${ic("hp")}${h.hp}/${h.maxHp}${off?` <span style="color:#e08a8a">쓰러짐</span>`:""}</p></div>`);
+      if(!off) c.onclick=()=>{ P.hero=h; render() };
+      row.appendChild(c) });
+    app.querySelector(".center").appendChild(row);
+    { const q=afterListPanel(); if(q) app.appendChild(q) }
+    return }
+  if(!P.hero) P.hero=run.heroes.find(h=>!h.down)||run.heroes[0];
+  const h=P.hero;
+  if(!P.cards) P.cards=steleOffer(h,kind);
+  app.appendChild(el(`<div class="center">${expBar(h)}
+    <div class="title" style="font-size:20px">${esc(kind)}</div>
+    <div class="sub">${esc(h.name)}에게 줄 것을 고르세요</div></div>`));
+  const done=()=>afterChest();
+  const row=el(`<div class="rewards rwmat"></div>`);
+  document.body.classList.add("rwtable");
+  const line=(n,good)=>`<span class="dchip ${good?"dgood":"dbad"} kw" data-kw="${esc(n)}" data-tip="${esc(dispDesc(n))}">${esc(n)}</span>`;   /* 이름만 — 설명은 커서로 (사용자 2026-11-17) */
+  P.cards.forEach(cd=>{
+    const k=Math.max(cd.good.length,cd.bad.length), g=k>=3?"상급":k===2?"중급":"하급";
+    const c=el(`<div class="rw rwpick stele${gcls(g)}"><div class="rwi">${ico}</div>
+      <div class="rwd">${cd.good.map(n=>line(n,1)).join("")}${cd.bad.map(n=>line(n,0)).join("")}</div></div>`);
+    c.onclick=()=>{ if(P.took||chestHold()) return; P.took=1;
+      c.classList.add("chosen"); row.classList.add("picked"); pickBurst(c,g,"성향");
+      row.querySelectorAll(".rw").forEach(x=>{ if(x!==c) x.classList.add("faded") });
+      steleGive(h,cd); setTimeout(done,600) };
+    row.appendChild(c) });
+  app.querySelector(".center").appendChild(row);
+  rwMatFit(row);
+  const skip=el(`<div class="rwskip"><button>건너뛰기</button></div>`);
+  skip.querySelector("button").onclick=()=>{ if(P.took||chestHold()) return; P.took=1; done() };
+  app.appendChild(skip);
+  if(RW_FADE!==P){ RW_FADE=P; rwFadeIn(row,0) }
+  { const q=afterListPanel(); if(q) app.appendChild(q) }
+  rwHeroPanel(app,h);
+}
 function drawReward(app){
+  if(pending.stele){ drawStele(app); return }
   if(pending.free&&CHEST_C[pending.grade]&&!pending.chestDone){
     const gc={"하급":"#c9a27a","중급":"#d9dde6","상급":"#f0c040"}[pending.grade];
     app.appendChild(el(`<div class="center"><div class="title" style="font-size:20px;color:${gc}">${esc(pending.grade)} 보상</div>
@@ -57731,7 +57874,7 @@ function incomingCard(it){
     <div class="ub-tag">${esc(it.g)} 장신구 획득</div>
     <div class="ub-i">${rewardIcon(it)}</div>
     <div class="ub-n">${esc(it.n)}</div>
-    <div class="ub-d">${rich(it.d)}</div></div>`);
+    <div class="ub-d">${rich(it.d)}</div>${engHtml(it)}</div>`);   /* 각인 · 각인서에 적힌 각인 (2026-11-17) */
 }
 /* 가방으로 빨려 들어가는 연출 */
 function flyToBag(){
@@ -58026,6 +58169,11 @@ function rewKeyByName(n){
 }
 /* 전용 보상 아이콘 — 사용자가 하나하나 정한 것 (2026-09-16). ic 그림 · sk 기술 그림 · spr 소환물 스프라이트. rewardIcon 맨 앞에서 본다 */
 const REW_FIX={
+ /* ═══ 각인서 · 피로도 · 평판 (사용자 2026-11-17) ═══ */
+ "하급: 각인서":{"ic":"item_special_engraving_manual"}, "찢겨진 각인서":{"ic":"item_special_engraving_manual"},
+ "중급: 각인서":{"ic":"item_special_engraving_manual"}, "상급: 각인서":{"ic":"item_special_engraving_manual"},
+ "목 축이기":{"ic":"currency_fatigue"}, "추가 작업":{"ic":"currency_fatigue"}, "채광":{"ic":"currency_fatigue"},
+ "상인과 인사":{"ic":"currency_reputation"}, "브란과 하이파이브":{"ic":"currency_reputation"}, "정찰대장과 냄새맡기":{"ic":"currency_reputation"},
  /* ═══ 페블 (노트 21, 2026-11-02) — 광맥 · 조약돌 받은 그림. 「충격 흡수」는 레이에도 있어 주인을 붙인다 ═══ */
  "해금: 격동의 광맥":{"ic":"status_pebble_vein_turbulent"}, "해금: 황금 광맥":{"ic":"status_pebble_vein_golden"},
  "해금: 파괴의 광맥":{"ic":"status_pebble_vein_destruction"}, "해금: 시간의 광맥":{"ic":"status_pebble_vein_time"},
@@ -58308,8 +58456,8 @@ function heroPanel(h){
     toast(`${h.name} — ${i===2?"3번 기술":"궁극기"} ${h.sk[i].n}을(를) 해제했습니다. (숙련도 ${h.mastery} 남음)`);
     try{ saveGame() }catch(_){} render() });
   /* 튜토리얼처럼 꾸러미를 여럿 챙긴 판도 있다 */
-  { const pks=(run&&run.packs&&run.packs.length)?run.packs
-      :(run&&run.pack)?[{n:run.pack,d:run.packDesc,i:run.packIcon}]:[];
+  { const pks=((run&&run.packs&&run.packs.length)?run.packs
+      :(run&&run.pack)?[{n:run.pack,d:run.packDesc,i:run.packIcon}]:[]).concat(run&&run.comfort?[PACK_COMFORT]:[]);   /* 모닥불의 위로 (2026-11-17) */
     if(pks.length){
       box.appendChild(el(`<div class="hp-h">파수꾼의 선물${pks.length>1?` ${pks.length}개`:""}</div>`));
       pks.forEach(p=>box.appendChild(el(`<div class="hp-tr"><div class="tr1 withi">
