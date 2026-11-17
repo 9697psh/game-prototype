@@ -6767,6 +6767,7 @@ body.cheerin .hand{visibility:hidden}   /* 입장 글과 겹치지 않게 — �
 .zmro{display:grid;grid-template-columns:auto auto;gap:10px 26px;align-items:center;margin-top:6px} .zmorow{display:contents}
 .zmod{font-size:14px;color:#e8dfcc;text-align:left;display:flex;align-items:center;gap:4px} .zmod img{width:20px;height:20px;image-rendering:pixelated}
 .zmro:has(.zmorow:only-child){grid-template-columns:auto}
+.zmorow.off .zmopt,.zmorow.off .zmod{opacity:.45;cursor:default} .zmsm{font-size:12px;opacity:.8;margin-left:6px} .zmod .zmsm{display:inline}
 .zmrit img,.zmrit svg{width:26px;height:26px;image-rendering:pixelated}
 .zmc.ruin img{width:100%;height:100%}   /* 거대 유적 — 네 조각이 이어 붙는다 */
 .dchip.dgood{color:#7fd39a}.dchip.dbad{color:#ff7a68}
@@ -19012,6 +19013,8 @@ const ITEMS=[
  /* 세공석 (사용자 2026-11-12) — 장신구와 제련하면 각인을 모두 지운다 (src/rules/engrave.js forgeClean) */
  IT("세공석","특수",null,0,null,{lapidary:1},
    "이 장신구를 다른 장신구와 제련하면, 그 장신구의 모든 각인을 지웁니다.\n제련석 2/5/10개와 금화 5/20/40개가 필요합니다. (파편/일반/희귀)"),
+ /* 석재 열쇠 (사용자 2026-11-18) — 전투 구역 지도의 잠긴 상자를 연다 (src/rules/zone-map.js) */
+ IT("석재 열쇠","특수",null,0,null,{stoneKey:1},"끝이 뭉툭한 열쇠입니다."),
  /* 각인서 (사용자 2026-11-17) — 적힌 각인은 it.ebook (src/rules/engrave.js forgeEngrave) */
  IT("각인서","특수",null,0,null,{engbook:1},
    "다른 장신구와 제련하면, 그 장신구에 각인을 새깁니다."),   /* 제련석 5/10/15 줄은 뺐다 (사용자 2026-11-17) — 값은 제련소 아래 줄에 */
@@ -29572,6 +29575,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 482, "v": "0.8", "d": "2026-11-18", "t": "전투 구역 — 막마다 길, 유물 다섯 (고대의 석판 · 석재 열쇠 · 잠긴 상자 · 강철 모루 · 녹슨 쇠창살)", "big": 0},
  {"b": 481, "v": "0.8", "d": "2026-11-18", "t": "전투 구역 — 특수 입구 드물게", "big": 0},
  {"b": 480, "v": "0.8", "d": "2026-11-18", "t": "전투 구역 — 입구 수치 표시 · 대가 안내 · 발걸음 · 비율 조정", "big": 0},
  {"b": 479, "v": "0.8", "d": "2026-11-18", "t": "전투 구역 지도 — 판이 뜨면 뒤에 양피지만", "big": 0},
@@ -31246,7 +31250,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=481;
+const BUILD_NO=482;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -36970,7 +36974,7 @@ function startDungeon(cell,r,c){
   run.dun={cell:cell,r:r,c:c,wave:0,waves:cell.waves||1,
            kind:cell.t==="boss"?"boss":cell.t==="elite"?"elite":cell.t==="ambush"?"ambush":"battle"};
   if(cell.t==="ambush"&&!run.night) run.dun.dayAmbush=1;   /* 낮 습격 — 턴 한도는 일반 전투 (turnLimit) */
-  if(cell.t==="ambush"&&!run.night){ const n=Math.min(3,Math.max(2,run.heroes.length)); run.dun.forceFoes=[]; for(let i=0;i<n;i++) run.dun.forceFoes.push(["감옥 경비병",i+1]) }   /* 낮 습격 = 간수 초소·순찰로의 경비병 */
+  if(cell.t==="ambush"&&!run.night&&!cell.zmAmb){ const n=Math.min(3,Math.max(2,run.heroes.length)); run.dun.forceFoes=[]; for(let i=0;i<n;i++) run.dun.forceFoes.push(["감옥 경비병",i+1]) }   /* 낮 습격 = 간수 초소·순찰로의 경비병 */
   /* 여러 라운드 전투 — 절반은 짜여진 구성(ENC_SEQ), 절반은 라운드마다 무작위 (ppt 1장) */
   if(cell.seq){ run.dun.seq=cell.seq.slice(); run.dun.seqName=cell.seqName }   /* 칸을 놓을 때 정해 둔 구성 (encRoll) */
   else if(!cell.enc){ const f=Math.min(run.field,2), cands=(fieldPick("seq",ENC_SEQ,f)||[]).filter(q=>q.rounds.length===run.dun.waves&&floorFit(encFoesOf(f,q),towerKindAtRow(r)));   /* 탑 — 그 층에 맞는 묶음만 (없으면 라운드마다 고른다) */
@@ -37131,7 +37135,7 @@ const ZM_ENT={
 const ZM_ACT_AMT=[1,2,4], ZM_ACT_P=[1,1.5,2], ZM_DEPTH=[1,1.15,1.3], ZM_ELITE=3, ZM_STELE=[.2,.4,.6];
 const zmStepW=s=>s===1?1:.5;   /* 첫 15분은 한 묶음, 그다음 15분마다 반 묶음 (사용자 2026-11-18 비율 조정) */
 const ZM_N=[[2,.7],[1,.2],[3,.1]];   /* 입구 칸에서 고를 입구 수 */
-const ZM_W=9, ZM_H=9;                /* 지도 칸 */
+let ZM_W=9, ZM_H=9;                  /* 지도 칸 — 막마다 다르다 (ZM_SHAPE, zmBuild 가 정한다) */
 const zmAct=()=>Math.min(2,(run&&run.field)||0);
 /* 이 칸에 들어설 때 지도를 펴는가 */
 function zmOn(cell){
@@ -37141,16 +37145,23 @@ function zmOn(cell){
   if(cell.force||cell.trial!=null||cell.winItem) return false;
   const d=run.dun; if(!(d&&d.r!=null&&run.grid&&run.grid[d.r]&&run.grid[d.r][d.c]===cell)) return false;   /* 원정 지도의 그 칸으로 들어온 전투만 — 기믹 · 이벤트가 지어 낸 칸은 아니다 */
   return winTaintKind({cell:cell,kind:cell.t==="elite"?"elite":"battle"})!=="special" }
-/* ── 길 짓기 — 시작에서 위로, 한 칸 폭(곁에 다른 길이 붙지 않게). 라운드마다 2~3걸음 뒤에 입구 ──
-   반쯤은 「돌아가는 길」 하나 — 곧게 선 세 칸 곁에 나란한 세 칸을 붙여, 가운데 칸을 피해 갈 수 있게 (사용자 2026-11-18,
-   나중에 가운데 칸에 이벤트가 선다 — 그 칸은 bypass:1). 걷는 것은 이웃한 길 칸 사이 어디로든 (zmRoute) */
+/* ── 길 짓기 — 시작에서 위로, 한 칸 폭(곁에 다른 길이 붙지 않게). 구간마다 몇 걸음 뒤에 입구 ──
+   막이 갈수록 길고 복잡하게 (사용자 2026-11-18) — ZM_SHAPE : 구간 걸음 수 · 고리(3×3 테두리) 수와 확률 · 막다른 곁길 수와 확률 · 판 크기.
+   걷는 것은 이웃한 길 칸 사이 어디로든 (zmRoute) */
+const ZM_SHAPE=[
+ {seg:[2,3], ring:.5, rings:1, spur:0,   spurs:0, W:9,  H:9},    /* 1막 — 지금처럼 단순 */
+ {seg:[3,4], ring:.7, rings:1, spur:.6,  spurs:1, W:11, H:11},   /* 2막 — 길고, 막다른 곁길 */
+ {seg:[3,5], ring:.85,rings:2, spur:.85, spurs:2, W:13, H:13}];  /* 3막 — 더 길고, 고리 둘 · 곁길 둘 */
 function zmBuild(waves){
-  for(let tries=0;tries<80;tries++){
+  const SH=ZM_SHAPE[zmAct()]; ZM_W=SH.W; ZM_H=SH.H;
+  for(let tries=0;tries<120;tries++){
     const cells=[{r:ZM_H-1,c:Math.floor(ZM_W/2),k:"start"}], has=(r,c)=>cells.some(x=>x.r===r&&x.c===c);
-    let ok=true, ring=Math.random()<.5?Math.floor(Math.random()*waves):-1;   /* 반쯤은 고리 하나 — 몇 번째 구간 앞에 */
+    /* 고리를 놓을 구간들 (겹치지 않게) */
+    const rs=[]; for(let k=0;k<SH.rings;k++) if(Math.random()<SH.ring){ const i=Math.floor(Math.random()*waves); if(rs.indexOf(i)<0) rs.push(i) }
+    let ok=true;
     for(let i=0;i<waves&&ok;i++){
-      const L=2+Math.floor(Math.random()*2);
-      if(i===ring) zmRing(cells,cells[cells.length-1],i);
+      const L=SH.seg[0]+Math.floor(Math.random()*(SH.seg[1]-SH.seg[0]+1));
+      if(rs.indexOf(i)>=0) zmRing(cells,cells[cells.length-1],i);
       for(let s=0;s<L;s++){
         const cur=cells[cells.length-1];
         const D=[[-1,0],[-1,0],[-1,0],[0,-1],[0,1]].sort(()=>Math.random()-.5);
@@ -37159,12 +37170,25 @@ function zmBuild(waves){
         if(!nx){ ok=false; break }
         cells.push({r:nx.r,c:nx.c,k:s===L-1?"door":"road",seg:i});
         if(s===L-1){ const d=cells[cells.length-1]; d.i=i; d.offer=zmOffer() } } }
-    if(ok) return {cells:cells,pos:0,at:0}
+    if(!ok) continue;
+    for(let k=0;k<SH.spurs;k++) if(Math.random()<SH.spur) zmSpur(cells);
+    return {cells:cells,pos:0,at:0}
   }
   /* 끝내 못 지으면 곧은 길 */
   const cells=[{r:ZM_H-1,c:Math.floor(ZM_W/2),k:"start"}];
-  for(let i=0;i<waves;i++) for(let s=0;s<2;s++){ const r=cells[cells.length-1].r-1; cells.push({r:r,c:Math.floor(ZM_W/2),k:s?"door":"road"}); if(s){ cells[cells.length-1].i=i; cells[cells.length-1].offer=zmOffer() } }
+  for(let i=0;i<waves;i++) for(let s=0;s<2;s++){ const r=cells[cells.length-1].r-1; cells.push({r:r,c:Math.floor(ZM_W/2),k:s?"door":"road",seg:i}); if(s){ cells[cells.length-1].i=i; cells[cells.length-1].offer=zmOffer() } }
   return {cells:cells,pos:0,at:0} }
+/* 막다른 곁길 — 길 칸 하나에서 옆으로 1~2칸. 다른 길에 붙지 않게 (유물이 설 자리가 는다) */
+function zmSpur(cells){
+  const at=(r,c)=>cells.some(x=>x.r===r&&x.c===c);
+  const P=cells.filter(x=>x.k==="road").sort(()=>Math.random()-.5);
+  for(const p of P) for(const [dr,dc] of [[0,1],[0,-1],[-1,0]].sort(()=>Math.random()-.5)){
+    const n=1+(Math.random()<.5?1:0), B=[];
+    for(let k=1;k<=n;k++) B.push({r:p.r+dr*k,c:p.c+dc*k,k:"road",seg:p.seg,spur:1});
+    if(B.some(b=>b.r<0||b.r>=ZM_H||b.c<0||b.c>=ZM_W||at(b.r,b.c))) continue;
+    if(!B.every((b,bi)=>cells.every(x=>(x===p&&bi===0)||Math.abs(x.r-b.r)+Math.abs(x.c-b.c)>1))) continue;
+    B.forEach(b=>cells.push(b)); return true }
+  return false }
 /* 입구 칸 하나에 나올 입구들 — 수 · 종류(겹치지 않게) · 시간 */
 function zmOffer(){
   let r=Math.random(), n=2; for(const [k,p] of ZM_N){ if(r<p){ n=k; break } r-=p }
@@ -37184,6 +37208,14 @@ const ZM_TIER={"상":.7,"중":.4,"하":.15};
 const zmEul=v=>[0,1,3,6,7,8].indexOf(Math.abs(v)%10)>=0?"을":"를";   /* 숫자 뒤 을/를 */
 const zmRR=r=>r[0]+Math.floor(Math.random()*(r[1]-r[0]+1));
 function zmSpend(h){ spend(h,0) }   /* 원정 시계 — 유물에서 쓰는 시간 */
+/* ── 유물을 위한 손 — 가방 · 낀 장신구에서 찾고 쓰기, 지도에서 받는 피해(체력 1 아래로는 안 내린다), 최종 상자에 보상 넣기 ── */
+const zmItems=()=>(run.bag||[]).map((it,i)=>({it:it,bag:1,i:i})).concat(...run.heroes.map(h=>(h.items||[]).map((it,i)=>({it:it,h:h,i:i}))));
+const zmHasN=n=>zmItems().filter(x=>x.it&&x.it.n===n).length;
+function zmTakeN(n,k){ for(let j=0;j<k;j++){ const x=zmItems().find(y=>y.it&&y.it.n===n); if(!x) return; if(x.bag) run.bag.splice(x.i,1); else unequip(x.h,x.i,1) } }
+function zmHurt(list,v){ list.forEach(h=>{ if(!h.down&&h.hp>0) h.hp=Math.max(1,h.hp-v) }) }   /* 지도에서는 대원이 죽지 않는다 — 함정과 같은 길 */
+const zmUp=()=>run.heroes.filter(h=>!h.down&&h.hp>0);
+function zmLoot(t,n){ for(let i=0;i<(n||1);i++) zmPut(run.dun.zloot,{t:t}) }   /* 최종 상자에 — 상급 · 중급 보상 */
+const zmLootLine=(g,n)=>({ic:{"하급":"chest_bronze","중급":"chest_silver","상급":"chest_gold"}[g],txt:`${g} 보상${n>1?` ${n}개를`:"을"} 얻었습니다.`});
 const ZM_RELIC={
  "버려진 상자":{ic:"battle_zone_relic_abandoned_chest",icDone:"battle_zone_relic_abandoned_chest_open",tier:"중",
    tip:"바닥에 내팽겨진 상자입니다.", d:"바닥에 내팽겨진 상자를 발견합니다.",
@@ -37210,15 +37242,63 @@ const ZM_RELIC={
       {t:"누워 쉬기",d:"{clock}15분 소요됩니다. 모든 대원이 체력을 회복합니다.",f:()=>{ zmSpend(.25);
         const v=zmRR([[1,3],[3,5],[5,7]][zmAct()]); run.heroes.forEach(h=>{ if(!h.down&&h.hp>0) healUp(h,v,1) });
         return {lines:[{ic:"life",txt:`모든 대원이 체력을 ${v} 회복했습니다.`}]} }}],
-   all:()=>{ const v=[10,20,30][zmAct()]; run.gold+=v; return [{txt:"모든 유적을 둘러보았습니다."},{ic:"currency_gold",txt:`${v}${zmEul(v)} 발견했습니다.`}] }}
+   all:()=>{ const v=[10,20,30][zmAct()]; run.gold+=v; return [{txt:"모든 유적을 둘러보았습니다."},{ic:"currency_gold",txt:`${v}${zmEul(v)} 발견했습니다.`}] }},
+ /* ── 2026-11-18 둘째 묶음 (사용자) — 그림 GameProject2/art/maps/blood-prison-map-icons-v1 ── */
+ "고대의 석판":{ic:"blood_prison_relic_ancient_tablet",icDone:"blood_prison_relic_ancient_tablet_deciphered",tier:"중",
+   tip:"알 수 없는 문자가 나열된 석판입니다.", d:"알 수 없는 문자가 나열된 석판입니다.",
+   kinds:["battle1","battle2","battle3","elite"], acts:[0,1,2],
+   o:[{t:"해독",d:"{clock}30분 소요됩니다. 모든 대원이 경험치를 얻습니다. {i}(꼼꼼히 해독해야할 것 같습니다...){/i}",f:()=>{ zmSpend(.5);
+        const v=zmRR([[8,12],[16,24],[32,48]][zmAct()]); giveExp(v,zmUp(),true);
+        const L=[{ic:"exp_arrow",txt:`모든 대원이 경험치를 ${v} 얻었습니다.`}];
+        if(Math.random()<.1){ L.push({txt:"석판을 해독하던 중 기습을 받았습니다!",bad:1}); return {lines:L,ambush:1} }   /* 기습 전투 — 전용 적은 나중에 (사용자 2026-11-18) */
+        return {lines:L} }}]},
+ "석재 열쇠":{ic:"blood_prison_relic_stone_key",tier:"중",
+   tip:"오래되어 보이는 열쇠입니다.", d:"오래되어 보이는 열쇠를 발견했습니다.",
+   kinds:["battle2","battle3"], acts:[0,1,2],
+   o:[{t:"줍기",d:"[석재 열쇠] 장신구를 얻습니다.",f:()=>{ const it=Object.assign({},itemDef("석재 열쇠")); (run.bag=run.bag||[]).push(it);   /* 가방에 바로 — 같은 구역의 잠긴 상자에 쓰게 */
+        return {lines:[{items:[it],txt:"석재 열쇠를 얻었습니다."}]} }}]},
+ "잠긴 상자":{ic:"blood_prison_relic_locked_chest",tier:"하",aw:[0,.4,1],   /* 2막은 드물게 */
+   tip:"특이한 자물쇠로 잠겨있는 상자입니다.", d:"특이한 자물쇠로 잠겨있는 상자입니다.",
+   kinds:["battle2","battle3"], acts:[1,2],
+   o:[{t:"열기",d:"석재 열쇠를 사용합니다. 상급 보상을 얻습니다.",why:"(석재 열쇠를 보유할 때만 선택할 수 있습니다.)",ok:()=>zmHasN("석재 열쇠")>0,
+        f:()=>{ zmTakeN("석재 열쇠",1); zmLoot("상급"); return {lines:[zmLootLine("상급",1)]} }},
+      {t:"부수기",d:"{clock}30분 소요됩니다. 모든 대원이 피해를 받고 중급 보상을 얻습니다.",f:()=>{ zmSpend(.5);
+        const v=zmRR(zmAct()>=2?[4,8]:[2,6]), n=zmAct()>=2?2:1; zmHurt(zmUp(),v); zmLoot("중급",n);
+        return {lines:[{txt:`모든 대원이 피해를 ${v} 받았습니다.`,bad:1},zmLootLine("중급",n)]} }},
+      {t:"지나가기",d:"지나갑니다.",f:()=>({pass:1})}]},
+ "강철 모루":{ic:"blood_prison_relic_steel_anvil",icAlt:"facility_forge",tier:"하",   /* 그림이 아직 없으면 제련소 아이콘 */
+   tip:"누군가 사용하던 모루입니다.", d:"누군가 사용하던 모루를 발견했습니다.",
+   kinds:["battle1","battle2","battle3","elite"], acts:[0,1,2],
+   o:[{t:"제련",d:"{clock}15분 소요됩니다. 무작위 장신구의 부정적인 각인을 모두 제거합니다.",why:"(부정적인 각인이 있는 장신구가 있을 때만 선택할 수 있습니다.)",
+        ok:()=>zmItems().some(x=>x.it&&(x.it.eng||[]).some(e=>ENG[e.k]&&ENG[e.k].neg)),
+        f:()=>{ zmSpend(.25); const L=zmItems().filter(x=>x.it&&(x.it.eng||[]).some(e=>ENG[e.k]&&ENG[e.k].neg)), x=L[Math.floor(Math.random()*L.length)];
+          if(!x) return {lines:[{txt:"부정적인 각인이 있는 장신구가 없습니다."}]};
+          if(x.h){ const it=unequip(x.h,x.i,1), c=engOwn(it); c.eng=(c.eng||[]).filter(e=>!(ENG[e.k]&&ENG[e.k].neg)); if(!c.eng.length) delete c.eng; equip(x.h,c); }   /* 낀 것은 빼서 고쳐 다시 낀다 — 능력치가 itemStats 한 곳에서 다시 셈해진다 */
+          else { const c=engOwn(x.it); c.eng=(c.eng||[]).filter(e=>!(ENG[e.k]&&ENG[e.k].neg)); if(!c.eng.length) delete c.eng; run.bag[x.i]=c }
+          return {lines:[{items:[x.it],txt:`${x.it.n}의 부정적인 각인을 모두 제거했습니다.`}]} }},
+      {t:"가져가기",d:"{clock}30분 소요됩니다. 원정 지도 위 무작위 위치에 제련소를 추가합니다.",f:()=>{ zmSpend(.5);
+        const put=sprinkleCell("forge",1,{}); return {lines:[{ic:"facility_forge",txt:put?"원정 지도에 제련소가 하나 들어섰습니다.":"원정 지도에 빈 자리가 없어 제련소를 세우지 못했습니다."}]} }}]},
+ /* ── 핏빛 감옥 전용 ── */
+ "녹슨 쇠창살":{ic:"blood_prison_relic_rusted_bars",icDone:"blood_prison_relic_rusted_bars_broken",tier:"하",
+   only:()=>run.field===0&&run.act1==="핏빛 감옥",
+   tip:"길을 막고 있는 더러운 쇠창살입니다.", d:"길을 막고 있는 더러운 쇠창살이 보입니다.",
+   kinds:["battle1","battle2","battle3","elite"], acts:[0],
+   o:[{t:"비틀어 열기",d:"절반의 확률로 보상을 얻습니다. 절반의 확률로 무작위 대원이 피해를 받습니다.",f:()=>{
+        if(Math.random()<.5){ zmLoot("중급"); return {lines:[zmLootLine("중급",1)]} }
+        const U=zmUp(), h=U[Math.floor(Math.random()*U.length)], v=zmRR([3,7]); if(h) zmHurt([h],v);
+        return {lines:[{txt:h?`${h.name}${jo(h.name,"ig")} 피해를 ${v} 받았습니다.`:"아무 일도 일어나지 않았습니다.",bad:1}]} }},
+      {t:"부수기",d:"검 파편을 2개 소모합니다. 즉시 보상을 얻습니다.",why:"(검 파편을 2개 이상 보유할 때 선택할 수 있습니다.)",ok:()=>zmHasN("검 파편")>=2,
+        f:()=>{ zmTakeN("검 파편",2); zmLoot("중급"); return {lines:[zmLootLine("중급",1)]} }}]}
+
 };
 const zmKind=()=>{ const d=run.dun; return d.kind==="elite"?"elite":"battle"+Math.min(3,d.waves||1) };
 /* 구간 하나의 유물 이름들 */
 function zmRelicRoll(){
   const r=Math.random(), n=r<.7?0:r<.97?1:2; if(!n) return [];
-  const a=zmAct(), k=zmKind(), L=Object.keys(ZM_RELIC).filter(x=>ZM_RELIC[x].kinds.indexOf(k)>=0&&ZM_RELIC[x].acts.indexOf(a)>=0);
-  const out=[]; for(let i=0;i<n&&L.length;i++){ let tot=L.reduce((s,x)=>s+ZM_TIER[ZM_RELIC[x].tier],0), y=Math.random()*tot, pick=L[0];
-    for(const x of L){ y-=ZM_TIER[ZM_RELIC[x].tier]; if(y<0){ pick=x; break } } out.push(pick) }
+  const a=zmAct(), k=zmKind(), Wt=x=>ZM_TIER[ZM_RELIC[x].tier]*(ZM_RELIC[x].aw?ZM_RELIC[x].aw[a]:1);
+  const L=Object.keys(ZM_RELIC).filter(x=>{ const R=ZM_RELIC[x]; return R.kinds.indexOf(k)>=0&&R.acts.indexOf(a)>=0&&(!R.only||R.only())&&Wt(x)>0 });
+  const out=[]; for(let i=0;i<n&&L.length;i++){ let tot=L.reduce((s,x)=>s+Wt(x),0), y=Math.random()*tot, pick=L[0];
+    for(const x of L){ y-=Wt(x); if(y<0){ pick=x; break } } out.push(pick) }
   return out }
 /* 거대 유적 — 그 구간의 길 칸 P 곁에 2×2 곁길. P 와 맞닿은 한 칸으로만 이어지고, 다른 길에는 붙지 않게 */
 function zmRuinsPlace(cells,s,nm,grp){
@@ -37244,7 +37324,7 @@ function zmRelicPlace(cells){
     const c=(by.length&&Math.random()<.5)?by[0]:L[Math.floor(Math.random()*L.length)]; if(c) c.relic=nm }) }) }
 /* 유물을 고른다 — 결과를 돌려준다 (지나가기면 판만 닫고 유물은 남는다) */
 function zmRelicPick(j,i){ const z=run.dun.zm, c=z.cells[j], R=c&&ZM_RELIC[c.relic]; if(!R||c.relicDone) return null;
-  const o=R.o[i]; if(!o) return null; const res=o.f()||{};
+  const o=R.o[i]; if(!o||(o.ok&&!o.ok())) return null; const res=o.f()||{};
   if(res.pass){ c.relicSeen=1; return res }
   c.relicDone=1;
   if(c.grp&&R.all&&z.cells.filter(x=>x.grp===c.grp).every(x=>x.relicDone)) res.lines=(res.lines||[]).concat(R.all());   /* 거대 유적 — 네 칸 다 */
@@ -37325,6 +37405,8 @@ function zmPick(i){
   d.zgo={k:o.k,lines:said};   /* 고른 뒤 그 라운드에 들어가기 전 — 대가 안내 판, 저장 뒤 이어 해도 여기서 (zmGo 가 지운다) */
   spend(o.q*0.25,0);   /* 원정 시계 — 15분 단위 */
   return said }
+/* 유물에서 기습 — 지금 구역(run.dun)을 run.zmHold 에 맡기고 습격 전투. 이기고 상자까지 받으면 backToMap 이 이 지도로 돌려보낸다 */
+function zmAmbush(){ run.zmHold=run.dun; startDungeon({t:"ambush",waves:1,zmAmb:1},null,null) }
 /* 마지막 라운드를 이겼다 — 모은 것으로 상자를 연다 (openChest) */
 function zmChestList(kind){
   const d=run.dun, L=(d.zloot||[]).map(x=>Object.assign({},x));
@@ -37707,6 +37789,7 @@ function backToMap(){
     const go=()=>{ view="shop"; run.shopSay=null; run.shopGreet=0; render() };
     if(typeof coverInto==="function"&&CV_OK>0&&!CV_MID) coverInto(go); else go();
     return }
+  if(run.zmHold){ run.dun=run.zmHold; run.zmHold=null; view="zmap"; render(); return }   /* 전투 구역 지도의 기습을 이겼다 — 그 지도로 (2026-11-18) */
   run.dun=null;
   if(run.pendingEnter){
     const e=run.pendingEnter; run.pendingEnter=null;
@@ -59014,7 +59097,7 @@ function drawZoneMap(app){
   z.cells.forEach((c,j)=>{
     const done=c.k==="door"&&c.used, next=c===door, reach=!ZM_UI.walk&&zmReach(j);
     const RL=c.relic&&ZM_RELIC[c.relic];
-    const ic=c.k==="door"?(done?ZM_ENT[c.used].ic:"battle_zone_entrance"):RL?(c.relicDone?"":(RL.part?RL.part+c.part:RL.ic)):"";   /* 유적 조각은 들르면 사라진다 */
+    const ic=c.k==="door"?(done?ZM_ENT[c.used].ic:"battle_zone_entrance"):RL?(c.relicDone?"":(RL.part?RL.part+c.part:zmIc(RL,RL.ic))):"";   /* 유적 조각은 들르면 사라진다 */
     const im=ic&&typeof ICON_PNG!=="undefined"&&ICON_PNG[ic];
     const x=el(`<div class="zmc ${c.k}${done?" used":""}${next?" next":""}${reach?" zgo":""}${RL&&!c.relicDone?" relic":""}${RL&&RL.part?" ruin":""}${c.relicDone?" rdone":""}" style="left:${X(c)}px;top:${Y(c)}px;width:${S}px;height:${S}px">
       ${im?`<img src="${im}" alt="" draggable="false"${RL?` class="kw" data-kw="${esc(c.relic)}" data-tip="${esc(RL.tip)}"`:""}>`:""}</div>`);
@@ -59039,15 +59122,16 @@ function drawZoneMap(app){
 function zmRelicPanel(j){
   const c=run.dun.zm.cells[j], R=ZM_RELIC[c.relic], res=c.relicRes;
   const im=k=>(k&&typeof ICON_PNG!=="undefined"&&ICON_PNG[k])?`<img src="${ICON_PNG[k]}" alt="" draggable="false">`:"";
-  const big=res&&R.icDone?R.icDone:R.ic;
-  const tok=s=>esc(s).replace("{clock}",iconImg("clock")).replace("{ore}",iconImg("ore"));
-  const line=L=>`<p class="zmrr">${L.ic?iconImg(L.ic):""}${(L.items||[]).map(it=>`<span class="zmrit">${itemIcon(it,26)}</span>`).join("")}${esc(L.txt||"")}</p>`;
+  const big=zmIc(R,res&&R.icDone?R.icDone:R.ic);
+  const tok=s=>esc(s).replace("{clock}",iconImg("clock")).replace("{ore}",iconImg("ore")).replace("{i}",'<i class="zmsm">').replace("{/i}","</i>");
+  const line=L=>`<p class="zmrr${L.bad?" zmbad2":""}">${L.ic?iconImg(L.ic):""}${(L.items||[]).map(it=>`<span class="zmrit">${itemIcon(it,26)}</span>`).join("")}${esc(L.txt||"")}</p>`;
   const w=el(`<div class="zmpick zmrel"><div class="zmrb"><b>${esc(c.relic)}</b><div class="zmri">${im(big)}</div>
     ${res?(res.lines||[]).map(line).join(""):`<p>${esc(R.d)}</p><div class="zmro"></div>`}</div></div>`);
-  if(res){ w.onclick=()=>{ ZM_UI.relic=null; render() }; return w }
+  if(res){ w.onclick=()=>{ ZM_UI.relic=null; if(res.ambush){ delete res.ambush; blackout(()=>zmAmbush()); return } render() }; return w }   /* 석판 기습 — 닫으면 습격 전투 */
   const ro=w.querySelector(".zmro");
-  R.o.forEach((o,i)=>{ const b=el(`<div class="zmorow"><button type="button" class="zmopt">${esc(o.t)}</button>${o.d?`<span class="zmod">${tok(o.d)}</span>`:""}</div>`);
-    b.querySelector("button").onclick=e=>{ e.stopPropagation(); if(c.relicDone) return; try{ SFX.play("click") }catch(_){}
+  R.o.forEach((o,i)=>{ const off=!!(o.ok&&!o.ok());
+    const b=el(`<div class="zmorow${off?" off":""}"><button type="button" class="zmopt"${off?" disabled":""}>${esc(o.t)}</button>${o.d?`<span class="zmod">${tok(o.d)}${off&&o.why?`<i class="zmsm">${esc(o.why)}</i>`:""}</span>`:""}</div>`);
+    b.querySelector("button").onclick=e=>{ e.stopPropagation(); if(c.relicDone||off) return; try{ SFX.play("click") }catch(_){}
       const r=zmRelicPick(j,i); if(run.lost) return; if(r&&r.pass) ZM_UI.relic=null; render() };
     ro.appendChild(b) });
   return w }
@@ -59081,6 +59165,8 @@ function zmInk(cells,S,R0,C0,rows,cols){
     for(let k=0;k<6;k++) mark(e.x+e.dx*(t+Math.floor(k/2))+e.nx*(3+k),e.y+e.dy*(t+Math.floor(k/2))+e.ny*(3+k),[87,65,46],135-k*9) });
   ctx.putImageData(img,0,0);
   return cv }
+/* 유물 그림 — 받은 그림이 아직 없으면 대신 쓸 그림(icAlt) */
+const zmIc=(R,k)=>(typeof ICON_PNG!=="undefined"&&ICON_PNG[k])?k:(R.icAlt||k);
 /* 발걸음 — 원정 지도와 같은 소리, 발마다 번갈아 (field-map.js) */
 let ZM_FOOT=0;
 function zmFoot(){ try{ const k=["발걸음 1","발걸음 3"][ZM_FOOT++%2];
