@@ -6735,7 +6735,35 @@ body.cheerin .hand{visibility:hidden}   /* 입장 글과 겹치지 않게 — �
 .dchip{transition:none!important}
 .ub-d+.engl{margin-top:8px;font-size:12.5px} .engbk{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 12px} .engbk .kw{cursor:help} .rw.stele .rwd{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:6px} .rw.stele .rwd .dchip{font-size:15px}   /* 비석 카드 (2026-11-17) */
 .pkdesc .pkdw2{margin-top:6px;font-size:12px;opacity:.7}   /* 모닥불의 위로 — 덤인 까닭 (2026-11-17) */
-.pkdisp .dchip{font-size:14px} .pkdisp .dispchips{gap:0 .6em}   /* 대원 고르기 — 성향 글자를 크게 (사용자 2026-11-12) */
+.pkdisp .dchip{font-size:14px}
+/* ═══ 전투 구역 지도 (사용자 2026-11-18) — 양피지 위 한 칸 폭 길, 칸 테는 얇게 ═══ */
+.zmscr{position:fixed;left:0;right:0;bottom:0;background:#2a2016 url("bg/battle-zone.webp") center/100% 100% no-repeat;display:flex;align-items:center;justify-content:center;z-index:5}
+.zmgrid{position:relative}
+.zmc{position:absolute;box-sizing:border-box;border:1px solid rgba(58,40,24,.55);background:rgba(120,90,56,.10);display:flex;align-items:center;justify-content:center}
+.zmc img{width:56px;height:56px;image-rendering:pixelated;pointer-events:none}
+.zmc.reach{cursor:pointer} .zmc.reach:hover{background:rgba(120,90,56,.24)}
+.zmc.door.next img{filter:drop-shadow(0 0 6px rgba(255,214,120,.8))} .zmc.door.next{cursor:pointer}
+.zmc.door.used img{opacity:.45;filter:grayscale(.6)}
+
+.zmtok{position:absolute;height:46px;margin-top:-34px;display:flex;justify-content:center;pointer-events:none;transition:left .16s,top .16s;z-index:2}   /* 원정 지도처럼 칸 위에 붉은 화살표 */
+.zmtok img{width:46px;height:46px;image-rendering:pixelated;animation:mvDown 1.1s ease-in infinite}
+.zmpick{position:fixed;inset:0;z-index:30;background:rgba(10,6,3,.5);display:flex;align-items:center;justify-content:center;animation:zmIn .25s ease-out}
+@keyframes zmIn{from{opacity:0}to{opacity:1}}
+.zmrow{display:flex;gap:56px;align-items:flex-start}
+.zment{display:flex;flex-direction:column;align-items:center;gap:6px;width:200px;cursor:pointer;text-align:center;text-shadow:0 2px 0 #000}
+.zment b{font-family:var(--serif);font-size:20px;color:#f4e6c8;letter-spacing:.06em}
+.zmei img{width:128px;height:128px;image-rendering:pixelated;transition:transform .15s,filter .15s}
+.zment:hover .zmei img{transform:translateY(-4px);filter:drop-shadow(0 0 10px rgba(255,214,120,.55))}
+.zmt{display:flex;align-items:center;gap:5px;font-size:15px;color:#f0d79a} .zmt img{width:20px;height:20px}
+.zmbad{color:#ff6a5a;font-size:13px} .zmup{color:#e8dfcc;font-size:13px}
+.zmc.relic img{pointer-events:auto;cursor:help} .zmc.rdone img{opacity:.7}
+/* 유물 판 — 이름 · 그림 · 설명 · 선택지(글자만), 결과는 열린 그림 · 한 줄 (사용자 2026-11-18 그림) */
+.zmrel .zmrb{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;color:#f4e6c8;text-shadow:0 2px 0 #000}
+.zmrel .zmrb>b{font-family:var(--serif);font-size:22px;letter-spacing:.06em}
+.zmrel .zmri img{width:128px;height:128px;image-rendering:pixelated}
+.zmrel p{margin:0;font-size:17px;display:flex;align-items:center;gap:6px} .zmrel p img{width:26px;height:26px;image-rendering:pixelated}
+.zmopt{background:none;border:0;color:#f4e6c8;font-family:var(--serif);font-size:19px;font-weight:700;cursor:pointer;text-shadow:0 2px 0 #000;padding:4px 10px}
+.zmopt:hover{color:#ffd45e} .pkdisp .dispchips{gap:0 .6em}   /* 대원 고르기 — 성향 글자를 크게 (사용자 2026-11-12) */
 .dchip.dgood{color:#7fd39a}.dchip.dbad{color:#ff7a68}
 .mcard>.dispchips.mcdisp{position:absolute;left:15%;top:24px;transform:translateX(-50%);z-index:3;max-width:44%}
 .bdisp{display:flex;margin:2px auto 0;max-width:150px}
@@ -8784,6 +8812,7 @@ function bossAfterBgm(){
 /* 지금 화면에 맞는 곡. 없으면 null — 그러면 소리를 끈다 */
 function sceneBgm(){
   if(run&&run.lost) return "defeat";   /* 원정 실패 — 패배 카드부터 끝 화면까지 (사용자 2026-11-05) */
+  if(view==="zmap") return (run&&run.dun&&run.dun.bgm)||"battle";   /* 전투 구역 지도 — 그 전투의 곡 (2026-11-18) */
   if(view==="battle"||view==="wavegap"){
     if(B&&B.kind==="boss"&&B.claim===1) return bossAfterBgm();   /* 우두머리를 잡으면 그 구역 전투 곡 하나로 (사용자 2026-11-05) */
     { const fb=foeBgm(); if(fb) return fb }   /* 적 전용이 가장 먼저 — 구역 곡을 밀어낸다 */
@@ -16551,7 +16580,7 @@ const COMMON=[
    h=>h.tag.cardShield=(h.tag.cardShield||0)+2),
  R("하급: 독이 담긴 병","하급","대원 배치 후, 모든 적에게 공격약화, 마법약화, 보호약화 1을 부여합니다.",
    h=>h.tag.roundPoison=(h.tag.roundPoison||0)+1),
- R("탐험가","하급","지도 위 무작위 위치에 미지의 구역 2곳을 추가합니다. 해당 위치에 도착하면 오염도가 20 감소합니다.",
+ R("탐험가","하급","원정 지도 위 무작위 위치에 미지의 구역 2곳을 추가합니다. 해당 위치에 도착하면 오염도가 20 감소합니다.",
    h=>{ const n=sprinkleCell("event",2,{boon:20});
         toast(n?`탐험가 — 지도에 미지의 구역 ${n}곳이 나타납니다.`:"지도에 빈 자리가 없습니다.") },0.5),
  R("망토 두르기","하급","위장 망토 카드를 2장 얻습니다.",h=>{ addCard(run,"위장 망토",2) }),
@@ -16569,7 +16598,7 @@ const COMMON=[
  R("오염된 피부","하급","오염도가 50 이상일 때, 전투에서 모든 추가 능력치를 1 얻습니다.",
    h=>h.tag.taintStat=(h.tag.taintStat||0)+1),
  R("굶주린 시선","하급","악마 하수인 카드를 2장 얻습니다.",h=>{ addCard(run,"악마 하수인",2) }),
- R("무기 상인과 조우","하급","지도 위 무작위 위치에 무기 상점 1곳을 추가합니다. 해당 상점은 장신구 관련 품목만 판매합니다. 금화를 5 얻습니다.",
+ R("무기 상인과 조우","하급","원정 지도 위 무작위 위치에 무기 상점 1곳을 추가합니다. 해당 상점은 장신구 관련 품목만 판매합니다. 금화를 5 얻습니다.",
    h=>{ const n=sprinkleCell("shop",1,{weapon:1}); run.gold+=5;
         toast(n?"무기 상인과 조우 — 지도에 무기 상점이 나타납니다.":"지도에 빈 자리가 없습니다.") },0.5),
  /* ── 2026-09-16 하급 17개 (사용자) ── */
@@ -16599,7 +16628,7 @@ const COMMON=[
  R("하급: 달리기","하급","내 턴이 끝날 때, 추진력을 최대 3만큼 소모하고 그 2배만큼 보호막을 얻습니다.",
    h=>{ (h.tag.dashes=h.tag.dashes||[]).push([3,2]) }),
  /* ── 공용 하급 여섯 (사용자 2026-10-14) ── */
- Object.assign(R("현상 수배지","하급","지도의 무작위 전투에 현상금 표식이 부여됩니다.\n해당 전투에서 금화를 50% 추가로 얻습니다.\n*표식이 없는 전투 칸이 있을 때만 등장",
+ Object.assign(R("현상 수배지","하급","원정 지도의 무작위 전투에 현상금 표식이 부여됩니다.\n해당 전투에서 금화를 50% 추가로 얻습니다.\n*표식이 없는 전투 칸이 있을 때만 등장",
    h=>{ const L=bountySpots(); if(!L.length) return;
      const p=rnd(L); run.grid[p.r][p.c].bounty=1;
      toast("지도의 전투 하나에 현상금 표식이 붙었습니다.") }),{okf:()=>bountySpots().length>0}),
@@ -16609,7 +16638,7 @@ const COMMON=[
    h=>h.tag.dayGold=(h.tag.dayGold||0)+2),
  Object.assign(R("사냥 수첩","하급","퀘스트: 수락자가 적 20회 처치\n보상: 무작위 보상",
    h=>{ if(!questHas("사냥 수첩")) questAccept("사냥 수첩",h.name) }),{okf:()=>!questHas("사냥 수첩")}),   /* 고른 대원이 수락자 (2026-10-16) */
- R("안개지대","하급","지도 위 무작위 위치에 안개로 가려진 무작위 구역 1곳을 추가합니다.\n해당 구역에 도착하면 금화를 10개 얻습니다.",
+ R("안개지대","하급","원정 지도 위 무작위 위치에 안개로 가려진 무작위 구역 1곳을 추가합니다.\n해당 구역에 도착하면 금화를 10개 얻습니다.",
    h=>{ const k=rnd(["event","shop","forge","rest","elite","dungeon","dungeon","dungeon"]);
      let ex={fogged:1,giftGold:10};
      if(k==="dungeon"){ const w=1+Math.floor(Math.random()*3); ex=Object.assign(ex,{waves:w},encRoll("dungeon",run.field,w)) }
@@ -16626,7 +16655,7 @@ const COMMON=[
  R("책 읽기","하급","경험치를 8 얻습니다. 금화를 3개 얻습니다.",h=>{ addExp(h,8); run.gold+=3 }),
  R("선제 호흡","하급","매 라운드 시작 후, 첫 턴에만 마나를 1 얻습니다. 다음 턴에 마나를 1 잃습니다.",
    h=>h.tag.breathMana=(h.tag.breathMana||0)+1),   /* 다음 턴 -1 은 마나 저주(h.curse) — 에너지 과부하와 같은 길 */
- R("샛길","하급","지도 위 무작위 위치에 천막 쉼터를 둘 추가합니다.",
+ R("샛길","하급","원정 지도 위 무작위 위치에 천막 쉼터를 둘 추가합니다.",
    h=>{ const n=sprinkleCell("rest",2,{rk:"tent"}); toast(n?`샛길 — 지도에 천막 쉼터 ${n}곳이 나타납니다.`:"지도에 빈 자리가 없습니다.") },0.3),   /* 낮은 확률 */
  R("낡은 복권","하급","20% 확률로 일반 장신구를, 80% 확률로 금화 3개를 얻습니다.",
    h=>{ if(Math.random()<0.2){ (run.after=run.after||[]).push({item:rnd(ITEMS.filter(i=>i.g==="일반"))}); toast("낡은 복권 — 일반 장신구 당첨") }
@@ -16642,15 +16671,15 @@ const COMMON=[
    h=>h.tag.oilEsh=(h.tag.oilEsh||0)+1),{okf:h=>hasTag(h,"기계")}),   /* endPhase · endShieldAhead 둘 다 */
  R("끈기","하급","레벨업할 때 체력을 2 회복합니다.",h=>h.tag.lvHeal=(h.tag.lvHeal||0)+2),
  /* 탐색 — 밝혀지지 않은 그 갈래의 칸이 있을 때만 (지도 밝히기, seeKind · seeKindSpots) */
- Object.assign(R("상점 탐색","하급","지도 위 밝혀지지 않은 무작위 상점 2곳의 위치를 밝힙니다. 금화를 5개 얻습니다.",
+ Object.assign(R("상점 탐색","하급","원정 지도 위 밝혀지지 않은 무작위 상점 2곳의 위치를 밝힙니다. 금화를 5개 얻습니다.",
    h=>{ const n=seeKind(["shop","dryshop"],2); run.gold+=5; toast(`상점 탐색 — ${n?`상점 ${n}곳이 드러납니다. `:""}금화 +5`) }),{okf:()=>seeKindSpots(["shop","dryshop"]).length>0}),
- Object.assign(R("제련소 탐색","하급","지도 위 밝혀지지 않은 무작위 제련소 1곳의 위치를 밝힙니다. 제련석을 2개 얻습니다.",
+ Object.assign(R("제련소 탐색","하급","원정 지도 위 밝혀지지 않은 무작위 제련소 1곳의 위치를 밝힙니다. 제련석을 2개 얻습니다.",
    h=>{ const n=seeKind(["forge"],1); run.stone=(run.stone||0)+2; toast(`제련소 탐색 — ${n?"제련소가 드러납니다. ":""}제련석 +2`) }),{okf:()=>seeKindSpots(["forge"]).length>0}),
- Object.assign(R("미지의 탐색","하급","지도 위 밝혀지지 않은 무작위 미지의 구역 2곳의 위치를 밝힙니다. 활동량을 2 얻습니다.",
+ Object.assign(R("미지의 탐색","하급","원정 지도 위 밝혀지지 않은 무작위 미지의 구역 2곳의 위치를 밝힙니다. 활동량을 2 얻습니다.",
    h=>{ const n=seeKind(["event"],2); run.act+=2; toast(`미지의 탐색 — ${n?`미지의 구역 ${n}곳이 드러납니다. `:""}활동량 +2`) }),{okf:()=>seeKindSpots(["event"]).length>0}),
- Object.assign(R("위험 탐색","하급","지도 위 밝혀지지 않은 무작위 일반 전투 구역 3곳의 위치를 밝힙니다. 경험치를 6 얻습니다.",
+ Object.assign(R("위험 탐색","하급","원정 지도 위 밝혀지지 않은 무작위 일반 전투 구역 3곳의 위치를 밝힙니다. 경험치를 6 얻습니다.",
    h=>{ const n=seeKind(["dungeon"],3); addExp(h,6); toast(`위험 탐색 — ${n?`전투 구역 ${n}곳이 드러납니다. `:""}경험치 +6`) }),{okf:()=>seeKindSpots(["dungeon"]).length>0}),
- Object.assign(R("경고장","하급","지도 위 밝혀지지 않은 무작위 정예 전투 구역 1곳의 위치를 밝힙니다. 무작위 보상을 얻습니다.",
+ Object.assign(R("경고장","하급","원정 지도 위 밝혀지지 않은 무작위 정예 전투 구역 1곳의 위치를 밝힙니다. 무작위 보상을 얻습니다.",
    h=>{ const n=seeKind(["elite"],1); const t=randomReward(); toast(`경고장 — ${n?"정예 전투 구역이 드러납니다. ":""}${t||"무작위 보상"}`) }),{okf:()=>seeKindSpots(["elite"]).length>0}),
  /* ── 중급 ── */
  R("중급: 달리기","중급","내 턴이 끝날 때, 추진력을 최대 5만큼 소모하고 그 2배만큼 보호막을 얻습니다.",
@@ -16667,7 +16696,7 @@ const COMMON=[
    h=>h.tag.roundPoison=(h.tag.roundPoison||0)+2),
  R("중급: 가죽 장화끈","중급","이동할 때마다 보호막을 2 얻습니다.",
    h=>h.tag.moveShield=(h.tag.moveShield||0)+2),
- R("가벼운 발걸음","중급","지도에서 움직여서 얻는 오염도가 영구히 1 감소합니다.",
+ R("가벼운 발걸음","중급","원정 지도에서 움직여서 얻는 오염도가 영구히 1 감소합니다.",
    h=>h.tag.stepCut=(h.tag.stepCut||0)+1),
  R("치명적인 마법","중급","전투 시작 후, 첫 마법 피해가 치명타로 적중합니다.",
    h=>h.tag.critMag=(h.tag.critMag||0)+1),   /* 겹쳐 고르면 그 수만큼 (사용자 2026-10-03) */
@@ -16682,7 +16711,7 @@ const COMMON=[
    h=>{ healUp(h,Math.round(h.maxHp*0.4)) }),
  R("중급: 발 마사지","중급","활동량을 3 얻습니다. 금화를 10개 얻습니다.",
    h=>{ run.act+=3; run.gold+=10; if(run.act>0) run.night=0 }),
- R("오솔길","중급","지도 위 무작위 위치에 요새 쉼터를 둘 추가합니다.",   /* 사용자 2026-10-30 — 낮은 확률 */
+ R("오솔길","중급","원정 지도 위 무작위 위치에 요새 쉼터를 둘 추가합니다.",   /* 사용자 2026-10-30 — 낮은 확률 */
    h=>{ const n=sprinkleCell("rest",2,{rk:"fort"}); toast(n?`오솔길 — 지도에 요새 쉼터 ${n}곳이 나타납니다.`:"지도에 빈 자리가 없습니다.") },0.3),
  R("오염 정화","중급","현재 오염도가 30 감소합니다.",h=>addTaint(-30)),
  R("중급: 제련석","중급","제련석을 8개 얻습니다.",h=>{ run.stone=(run.stone||0)+8 }),
@@ -16703,7 +16732,7 @@ const COMMON=[
        if(idx.length){ const i=rnd(idx), nm=run.bag[i].n; run.bag.splice(i,1); toast(`깨진 상자 — ${nm}${jo(nm,"eul")} 잃었습니다.`) }
        else toast("깨진 상자 — 잃을 파편 장신구가 없습니다.") } }),
    {okf:()=>((run&&run.bag)||[]).filter(i=>i.g==="파편").length>=1}),
- Object.assign(R("전장 재배치","하급","지도의 2라운드 전투 2개를 1라운드 전투로 교체합니다.\n획득 가능한 보상은 유지됩니다.\n*2라운드 전투가 있을 때만 등장",
+ Object.assign(R("전장 재배치","하급","원정 지도의 2라운드 전투 2개를 1라운드 전투로 교체합니다.\n획득 가능한 보상은 유지됩니다.\n*2라운드 전투가 있을 때만 등장",
    h=>{ const L=twoWaveSpots(); let n=0;
      for(let q=0;q<2&&L.length;q++){ const p=L.splice(Math.floor(Math.random()*L.length),1)[0];
        const c=run.grid[p.r][p.c];
@@ -16742,7 +16771,7 @@ const COMMON=[
      const L=ITEMS.filter(i=>i.g==="일반");
      if(L.length){ (run.after=run.after||[]).push({item:rnd(L)}); toast("파편 셋을 녹여 일반 장신구 하나로 바꿉니다.") } }),
    {okf:()=>((run&&run.bag)||[]).filter(i=>i.g==="파편").length>=3}),
- R("대장장이 친구","중급","지도 위 무작위 위치에 제련소 1곳을 추가합니다.\n해당 제련소에 도착하면 제련석을 5개 얻습니다.",
+ R("대장장이 친구","중급","원정 지도 위 무작위 위치에 제련소 1곳을 추가합니다.\n해당 제련소에 도착하면 제련석을 5개 얻습니다.",
    h=>{ const put=sprinkleCell("forge",1,{giftStone:5});
      toast(put?"지도에 제련소가 하나 들어섰습니다.":"지도에 빈 자리가 없어 제련소를 세우지 못했습니다.") }),
  R("장인의 눈","중급","이번 원정 동안 제련소에서 제련할 때 제련석 비용이 2 감소합니다.",
@@ -16784,7 +16813,7 @@ const COMMON=[
  R("각성초 중독","중급","[각성초] 카드를 5장 얻습니다.",h=>{ addCard(run,"각성초",5) }),
  R("경계 태세","중급","이번 원정 동안 밤의 습격 확률이 10% 감소합니다.\n밤의 습격에서 승리한 후, 무작위 보상을 얻습니다.",
    h=>h.tag.guardStance=(h.tag.guardStance||0)+1,0.35),
- R("새로운 지도","중급","현재 지도를 다시 그립니다.\n활동량을 모두 잃습니다.",
+ R("새로운 지도","중급","현재 원정 지도를 다시 그립니다.\n활동량을 모두 잃습니다.",
    h=>{ remapAll(); run.act=0; toast("지도를 새로 그렸습니다. 활동량을 모두 썼습니다.") },0.12),
  Object.assign(R("궁수 강화","중급","궁수 조합의 능력치 증가량이 2 증가합니다.\n*궁수 조합이 켜져 있을 때만 등장",
    h=>synUpAdd("궁수",2),0.35),{okf:()=>synLit("궁수")}),
@@ -17797,7 +17826,7 @@ const HERO_REWARDS={
         d:"사용한도(1), 고른 자리에 미끼를 던져 피해 20과 기절"}) },0.5),
   R("침흘리는 사냥개","중급","미끼 던지기로 피해받은 적에게 사냥개가 상처 남기기를 비용없이 2번 사용합니다.\n*[미끼 던지기] 기술이 없을 때 등장하지 않음",
     h=>h.tag.baitHound=(h.tag.baitHound||0)+2),
-  R("악마의 뼈로 만든 무기들","중급","지도 위 무작위 일반 전투 2곳에 악마 차원문이 열립니다.\n퀘스트: 악마 차원문이 열린 일반 전투 2곳에서 승리\n보상: 무작위 일반 장신구 2개",
+  R("악마의 뼈로 만든 무기들","중급","원정 지도 위 무작위 일반 전투 2곳에 악마 차원문이 열립니다.\n퀘스트: 악마 차원문이 열린 일반 전투 2곳에서 승리\n보상: 무작위 일반 장신구 2개",
     h=>{ const n=openDemonGates(2);
       if(!questHas("악마의 뼈로 만든 무기들")) questAccept("악마의 뼈로 만든 무기들",h.name);
       toast(`악마의 뼈로 만든 무기들 — 전투 ${n}곳에 차원문이 열렸습니다.`) },0.5),
@@ -29018,6 +29047,7 @@ function render0(){
   if(view==="garrison") return drawGarrison(app);   /* 주둔지 — 건물 다섯 (2026-11-10) */
   if(view==="camp"){ view="map"; run.mapSel=null; return render() }   /* 주둔지 따로 화면은 없앴다 — 지도의 주둔지 판 (사용자 2026-10-05) */
   if(view==="battle")   return drawBattle(app);
+  if(view==="zmap")     return drawZoneMap(app);   /* 전투 구역 지도 (2026-11-18) */
   if(view==="chest")    return drawChest(app);
   if(view==="bloot")     return drawBossLoot(app);   /* 우두머리 전리품 — 상자보다 먼저 (2026-10-23) */
   if(view==="reward")   return drawReward(app);
@@ -29535,6 +29565,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 476, "v": "0.8", "d": "2026-11-18", "t": "전투 구역 지도 · 입구 · 유물(버려진 상자) · 원정 지도 글", "big": 0},
  {"b": 475, "v": "0.8", "d": "2026-11-18", "t": "각인 이름만 · 각인서 각인 겹침 없음 · 비석 한 줄씩 · 가방 설명 풍선 · 적 공격 범위 바닥 빛", "big": 0},
  {"b": 474, "v": "0.8", "d": "2026-11-17", "t": "각인서 · 비석 · 성향 수와 발동 확률 · 피로도 / 평판 보상 · 해금 숙련도 3", "big": 0},
  {"b": 473, "v": "0.8", "d": "2026-11-16", "t": "게임 정보 페이지(info.html) — 확률표 · 보상 목록 · 적 · 사건, 배포 때마다 게임 코드에서 새로", "big": 0},
@@ -31203,7 +31234,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=475;
+const BUILD_NO=476;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -36941,6 +36972,7 @@ function startDungeon(cell,r,c){
   fatBattleIn();   /* 피로도 — 전투 입장 50% +1~5 (사용자 2026-11-10) */
   dispBattleIn();  /* 성향 — 겁 (밤 전투) */
   run.lastBattleBgm=run.dun.bgm;
+  if(zmOn(cell)){ zmStart(); render(); return }   /* 전투 구역 지도 — 입구를 고른 뒤에 첫 라운드 (사용자 2026-11-18) */
   nextWave();
 }
 function nextWave(){
@@ -37053,6 +37085,179 @@ function dungeonCleared(){
   openChest(d.kind);
 }
 
+/* ═══════════ 전투 구역 지도 · 입구 (사용자 2026-11-18) ═══════════
+   일반 전투(1 · 2 · 3라운드)와 정예 전투에 들어서면 「전투 구역 지도」가 펼쳐진다 (원정 지도와 따로 논다).
+   길은 한 칸 폭으로 이어지고, 라운드마다 입구 칸이 하나. 입구 칸에 닿으면 입구 1~3개(2개 70% · 1개 20% · 3개 10%) 가운데 하나를 골라
+   그 라운드로 들어간다. 라운드를 이기고 남은 라운드가 있으면 다시 이 지도로 — 다음 입구까지 걷는다. 마지막 입구는 길 끝(막혀 있다).
+   ★ 지도에서 걷는 것은 시간 · 오염도가 들지 않는다. 입구는 그 입구의 시간(15분 단위)을 원정 시계에서 낸다.
+   ★ 보상은 입구가 정한다 (사용자 2026-11-18 「입구 선택이 보상을 정하는 게 좋겠다」) — 기본 상자는 없다.
+     15분마다 그 입구 보상 한 묶음. 깊이(몇 번째 입구) ×1 · 1.25 · 1.5, 정예 구역 ×2.5, 막마다 양 ×1 · 2 · 4 · 확률 ×1 · 1.5 · 2.
+     모은 것은 run.dun.zloot. 마지막 라운드를 이기면 그것으로 보상 상자를 연다 (openChest → zmChestList).
+     상자에 붙는 효과(현상금 · 죄악의 목걸이 · 투기장 환호 · 파편 상자 · 정예 사냥꾼)는 그 최종 상자에서 그대로 (사용자 2026-11-18).
+     칸의 「획득 확률 증가」는 묶음을 굴릴 때 (rollChest 와 같은 셈). 경험치는 서 있는 대원 모두 (상자와 같다).
+     정예 구역의 빛나는 비석은 따로 — 1막 20% · 2막 40% · 3막 60%.
+   ★ 우두머리 · 밤 습격 · 특수 전투(기믹 · 이벤트 · 시련 · 정해진 상대)는 예전대로 — 지도 없이 예전 상자 (사용자 2026-11-18).
+   ★ 시뮬(CLAIM_WAIT 끔) · 연습장에서는 안 편다. 그물은 ZONE_MAP=false 로 끌 수 있다.
+   ★ 중간 이벤트 칸은 나중에 (사용자가 따로 준다). */
+let ZONE_MAP=true;
+/* 입구 — t 는 시간(15분 몇 번) 범위, w 는 막마다 나올 무게, b 는 15분마다 한 묶음(1막 · 첫 입구 기준),
+   b3 은 세 번째 15분 묶음에만 더하는 것, up 은 고르는 화면의 「무엇이 좋은가」 줄 */
+const ZM_ENT={
+ stone:  {n:"석조 입구",  ic:"dungeon_entrance",           t:[1,2], w:[30,25,20], d:"일반적인 보상을 얻을 수 있습니다.",
+          b:{gold:[2,3],exp:[1,3],"하급":.10,"파편":.05,"중급":.02}, up:["일반적인 보상"]},
+ gold:   {n:"금빛 입구",  ic:"dungeon_entrance_gold",      t:[1,2], w:[20,20,15], d:"금화 획득량이 증가합니다.",
+          b:{gold:[5,7]}, up:["금화 획득량 증가"]},
+ ruins:  {n:"유적 입구",  ic:"dungeon_entrance_ruins",     t:[1,3], w:[15,15,15], d:"제련석 및 장신구 관련 보상 획득량이 증가합니다.",
+          b:{stone:[2,2],"파편":.12,"각인서":.08}, b3:{"일반":.10}, up:["제련석 획득량 증가","장신구 보상 확률 증가"]},
+ cursed: {n:"오염된 입구",ic:"dungeon_entrance_corrupted", t:[1,2], w:[10,15,18], d:"오염도가 증가하지만, 희귀한 보상을 얻을 수 있습니다.",
+          b:{"하급":.15,"중급":.10,"상급":.02}, taint:6, up:["중급 보상 확률 증가","상급 보상 확률 증가"]},
+ ancient:{n:"고대의 입구",ic:"dungeon_entrance_ancient",   t:[1,3], w:[15,15,15], d:"경험치 획득량이 증가합니다.",
+          b:{exp:[4,6],"하급":.05}, up:["경험치 획득량 증가"]},
+ danger: {n:"위험한 입구",ic:"dungeon_entrance_dangerous", t:[2,4], w:[10,10,17], d:"함정을 헤쳐나가 시간이 들고 피해를 받을 수 있지만, 희귀한 보상을 얻을 수 있습니다.",
+          b:{gold:[2,3],"중급":.15,"상급":.04,"일반":.06}, trap:[2,5], trapP:.5, up:["중급 보상 확률 증가","상급 보상 확률 증가"]}
+};
+const ZM_ACT_AMT=[1,2,4], ZM_ACT_P=[1,1.5,2], ZM_DEPTH=[1,1.25,1.5], ZM_ELITE=2.5, ZM_STELE=[.2,.4,.6];
+const ZM_N=[[2,.7],[1,.2],[3,.1]];   /* 입구 칸에서 고를 입구 수 */
+const ZM_W=9, ZM_H=9;                /* 지도 칸 */
+const zmAct=()=>Math.min(2,(run&&run.field)||0);
+/* 이 칸에 들어설 때 지도를 펴는가 */
+function zmOn(cell){
+  if(!ZONE_MAP||!run||run.sandbox||!cell) return false;
+  if(typeof CLAIM_WAIT!=="undefined"&&!CLAIM_WAIT) return false;   /* 시뮬 */
+  if(cell.t!=="dungeon"&&cell.t!=="elite") return false;
+  if(cell.force||cell.trial!=null||cell.winItem) return false;
+  const d=run.dun; if(!(d&&d.r!=null&&run.grid&&run.grid[d.r]&&run.grid[d.r][d.c]===cell)) return false;   /* 원정 지도의 그 칸으로 들어온 전투만 — 기믹 · 이벤트가 지어 낸 칸은 아니다 */
+  return winTaintKind({cell:cell,kind:cell.t==="elite"?"elite":"battle"})!=="special" }
+/* ── 길 짓기 — 시작에서 위로, 한 칸 폭(곁에 다른 길이 붙지 않게). 라운드마다 2~3걸음 뒤에 입구 ──
+   반쯤은 「돌아가는 길」 하나 — 곧게 선 세 칸 곁에 나란한 세 칸을 붙여, 가운데 칸을 피해 갈 수 있게 (사용자 2026-11-18,
+   나중에 가운데 칸에 이벤트가 선다 — 그 칸은 bypass:1). 걷는 것은 이웃한 길 칸 사이 어디로든 (zmRoute) */
+function zmBuild(waves){
+  for(let tries=0;tries<80;tries++){
+    const cells=[{r:ZM_H-1,c:Math.floor(ZM_W/2),k:"start"}], has=(r,c)=>cells.some(x=>x.r===r&&x.c===c);
+    let ok=true, ring=Math.random()<.5?Math.floor(Math.random()*waves):-1;   /* 반쯤은 고리 하나 — 몇 번째 구간 앞에 */
+    for(let i=0;i<waves&&ok;i++){
+      const L=2+Math.floor(Math.random()*2);
+      if(i===ring) zmRing(cells,cells[cells.length-1],i);
+      for(let s=0;s<L;s++){
+        const cur=cells[cells.length-1];
+        const D=[[-1,0],[-1,0],[-1,0],[0,-1],[0,1]].sort(()=>Math.random()-.5);
+        const nx=D.map(([dr,dc])=>({r:cur.r+dr,c:cur.c+dc})).find(p=>p.r>=0&&p.c>=0&&p.c<ZM_W&&!has(p.r,p.c)
+          &&!cells.some(x=>x!==cur&&Math.abs(x.r-p.r)+Math.abs(x.c-p.c)===1));
+        if(!nx){ ok=false; break }
+        cells.push({r:nx.r,c:nx.c,k:s===L-1?"door":"road",seg:i});
+        if(s===L-1){ const d=cells[cells.length-1]; d.i=i; d.offer=zmOffer() } } }
+    if(ok) return {cells:cells,pos:0,at:0}
+  }
+  /* 끝내 못 지으면 곧은 길 */
+  const cells=[{r:ZM_H-1,c:Math.floor(ZM_W/2),k:"start"}];
+  for(let i=0;i<waves;i++) for(let s=0;s<2;s++){ const r=cells[cells.length-1].r-1; cells.push({r:r,c:Math.floor(ZM_W/2),k:s?"door":"road"}); if(s){ cells[cells.length-1].i=i; cells[cells.length-1].offer=zmOffer() } }
+  return {cells:cells,pos:0,at:0} }
+/* 입구 칸 하나에 나올 입구들 — 수 · 종류(겹치지 않게) · 시간 */
+function zmOffer(){
+  let r=Math.random(), n=2; for(const [k,p] of ZM_N){ if(r<p){ n=k; break } r-=p }
+  const a=zmAct(), elite=!!(run&&run.dun&&run.dun.kind==="elite"), out=[];
+  const W=k=>ZM_ENT[k].w[a]*(elite&&(k==="danger"||k==="ancient")?2:1);
+  for(let i=0;i<n;i++){
+    const L=Object.keys(ZM_ENT).filter(k=>!out.some(o=>o.k===k)); if(!L.length) break;
+    let tot=L.reduce((s,k)=>s+W(k),0), x=Math.random()*tot, k=L[0];
+    for(const kk of L){ x-=W(kk); if(x<0){ k=kk; break } }
+    const T=ZM_ENT[k].t; out.push({k:k,q:T[0]+Math.floor(Math.random()*(T[1]-T[0]+1))}) }
+  return out }
+/* ═══ 유물 (사용자 2026-11-18) — 입구까지 이어지는 길목(구간마다)에 0개 70% · 1개 · 아주 드물게 2개.
+   있으면 등급 무게(상 70 · 중 40 · 하 15)로 어느 유물인지. kinds 는 그 유물이 나오는 전투(battle1~3 · elite), acts 는 막(0~2).
+   칸에 닿으면 멈추고 유물 판 — 설명 · 선택지. 고른 결과는 바로 받는다(금화 따위). 한 번 연 칸은 열린 그림 ═══ */
+const ZM_TIER={"상":.7,"중":.4,"하":.15};
+const ZM_RELIC={
+ "버려진 상자":{ic:"battle_zone_relic_abandoned_chest",icOpen:"battle_zone_relic_abandoned_chest_open",tier:"중",
+   tip:"바닥에 내팽겨진 상자입니다.", d:"바닥에 내팽겨진 상자를 발견합니다.",
+   kinds:["battle1","battle2","battle3","elite"], acts:[0,1,2],
+   o:[{t:"열기",f:()=>{ const R=[[1,5],[4,12],[10,30]][zmAct()], v=R[0]+Math.floor(Math.random()*(R[1]-R[0]+1)); run.gold+=v; return {ic:"currency_gold",txt:`${v}를 발견했습니다.`,open:1} }}]}
+};
+const zmKind=()=>{ const d=run.dun; return d.kind==="elite"?"elite":"battle"+Math.min(3,d.waves||1) };
+/* 구간 하나의 유물 이름들 */
+function zmRelicRoll(){
+  const r=Math.random(), n=r<.7?0:r<.97?1:2; if(!n) return [];
+  const a=zmAct(), k=zmKind(), L=Object.keys(ZM_RELIC).filter(x=>ZM_RELIC[x].kinds.indexOf(k)>=0&&ZM_RELIC[x].acts.indexOf(a)>=0);
+  const out=[]; for(let i=0;i<n&&L.length;i++){ let tot=L.reduce((s,x)=>s+ZM_TIER[ZM_RELIC[x].tier],0), y=Math.random()*tot, pick=L[0];
+    for(const x of L){ y-=ZM_TIER[ZM_RELIC[x].tier]; if(y<0){ pick=x; break } } out.push(pick) }
+  return out }
+/* 길목에 놓는다 — 구간마다, 그 구간의 길 칸(고리의 비켜 갈 칸을 먼저) */
+function zmRelicPlace(cells){
+  const segs=[...new Set(cells.filter(x=>x.seg!=null).map(x=>x.seg))];
+  segs.forEach(s=>{ zmRelicRoll().forEach(nm=>{
+    const L=cells.filter(x=>x.seg===s&&x.k==="road"&&!x.relic), by=L.filter(x=>x.bypass);
+    const c=(by.length&&Math.random()<.5)?by[0]:L[Math.floor(Math.random()*L.length)]; if(c) c.relic=nm }) }) }
+/* 유물을 고른다 — 결과(그림 · 글)를 돌려준다 */
+function zmRelicPick(j,i){ const c=run.dun.zm.cells[j], R=c&&ZM_RELIC[c.relic]; if(!R||c.relicDone) return null;
+  const o=R.o[i]; if(!o) return null; const res=o.f()||{}; c.relicDone=1; c.relicRes=res; return res }
+/* 지도를 펴고 첫 라운드는 입구를 고른 뒤에 (startDungeon 이 nextWave 대신 부른다) */
+function zmStart(){ const d=run.dun; d.zm=zmBuild(d.waves||1); zmRelicPlace(d.zm.cells); d.zloot=[]; view="zmap" }
+/* 고리 — 지금 칸(cur)을 아래 모서리로 하는 3×3 테두리 여덟 칸, 가운데는 빈칸 (사용자 2026-11-18 그림).
+   양쪽으로 돌아 맞은편 위 모서리에서 만난다 — 나가는 길은 거기서. 아래 맞은편 모서리는 나중에 이벤트가 설 칸(bypass:1),
+   다른 쪽으로 돌면 피해 간다. 테두리 칸은 cur 말고 다른 길에 붙지 않게. 놓았으면 위 모서리 칸을 돌려준다 */
+function zmRing(cells,cur,seg){
+  const at=(r,c)=>cells.some(x=>x.r===r&&x.c===c);
+  for(const s of [1,-1].sort(()=>Math.random()-.5)){
+    const R=[];
+    for(let dr=0;dr<3;dr++) for(let dc=0;dc<3;dc++){ if(dr===1&&dc===1) continue; if(dr===0&&dc===0) continue;
+      R.push({r:cur.r-dr,c:cur.c+s*dc,k:"road",seg:seg}) }
+    if(R.some(p=>p.r<0||p.c<0||p.c>=ZM_W||at(p.r,p.c))) continue;
+    if(!R.every(p=>cells.every(x=>x===cur||Math.abs(x.r-p.r)+Math.abs(x.c-p.c)>1))) continue;
+    const ex=R.find(p=>p.r===cur.r-2&&p.c===cur.c+2*s);
+    R.forEach(p=>{ if(p.r===cur.r&&p.c===cur.c+2*s) p.bypass=1; if(p!==ex) cells.push(p) });
+    cells.push(ex);   /* 나가는 모서리를 맨 끝에 — 다음 걸음이 거기서 */
+    return ex }
+  return null }
+const zmDoor=()=>{ const z=run&&run.dun&&run.dun.zm; return z?z.cells.find(x=>x.k==="door"&&x.i===z.at):null };
+/* 지나갈 수 없는 칸 — 아직 차례가 아닌 입구 */
+const zmShut=(z,c)=>c.k==="door"&&!c.used&&c.i!==z.at;
+/* 지금 자리에서 j 칸까지 걷는 길 (칸 번호들, 첫 칸 빼고). 못 가면 null. 지금 입구는 들어서기만 하고 지나가지 않는다 */
+function zmRoute(j){
+  const z=run.dun.zm, C=z.cells; if(j===z.pos||!C[j]||zmShut(z,C[j])) return null;
+  const prev={}, q=[z.pos]; prev[z.pos]=-1;
+  while(q.length){ const i=q.shift(); if(i===j) break;
+    const a=C[i]; if(i!==z.pos&&a.k==="door"&&!a.used) continue;
+    C.forEach((b,n)=>{ if(prev[n]!==undefined||zmShut(z,b)) return; if(Math.abs(a.r-b.r)+Math.abs(a.c-b.c)===1){ prev[n]=i; q.push(n) } }) }
+  if(prev[j]===undefined) return null;
+  const out=[]; for(let i=j;i!==z.pos;i=prev[i]) out.unshift(i); return out }
+const zmReach=j=>!!zmRoute(j);
+/* 그 입구의 값 — 대가 · 깊이 · 정예 · 막을 먹인 것 */
+function zmMul(){ const d=run.dun; return ZM_DEPTH[Math.min(2,(d.zm&&d.zm.at)||0)]*(d.kind==="elite"?ZM_ELITE:1) }
+function zmTaint(o){ const E=ZM_ENT[o.k]; return E.taint?Math.round(E.taint*o.q*ZM_ACT_P[zmAct()]):0 }
+function zmTrap(o){ const E=ZM_ENT[o.k]; return E.trap?E.trap.map(v=>v*ZM_ACT_AMT[zmAct()]):null }
+/* 15분 한 묶음 — 상자 줄(rollChest 와 같은 꼴)을 out 에 */
+function zmRollOne(k,step,out){
+  const E=ZM_ENT[k], a=zmAct(), m=zmMul(), boost=(run.dun&&run.dun.cell&&run.dun.cell.boost)||[];
+  const B=Object.assign({},E.b,step===3&&E.b3?E.b3:{});
+  const amt=(key,t)=>{ const r=B[key]; if(!r) return; const v=Math.round((r[0]+Math.floor(Math.random()*(r[1]-r[0]+1)))*ZM_ACT_AMT[a]*m); if(v>0) out.push({t:t,v:v}) };
+  amt("gold","금화"); amt("exp","경험치"); amt("stone","제련석");
+  Object.keys(B).forEach(key=>{ if(typeof B[key]!=="number") return;
+    let p=B[key]*ZM_ACT_P[a]*m; if(p<1&&boost.indexOf(key)>=0) p=Math.min(1,Math.min(p*1.5,p+0.25));
+    let n=Math.floor(p); if(Math.random()<p-n) n++; for(let i=0;i<n;i++) out.push({t:key}) }) }
+/* 같은 갈래의 양(금화 · 경험치 · 제련석)은 한 줄로 */
+function zmPut(list,x){ if(x.v!=null){ const y=list.find(z=>z.t===x.t&&z.v!=null); if(y){ y.v+=x.v; return } } list.push(Object.assign({},x)) }
+/* 입구를 고른다 — 시간 · 대가를 치르고 묶음을 모은 뒤 그 라운드로. 돌려주는 것 : 함정 피해 줄(알림) */
+function zmPick(i){
+  const d=run.dun, z=d.zm, door=zmDoor(); if(!door) return null;
+  const o=door.offer[i]; if(!o) return null;
+  const E=ZM_ENT[o.k], said=[];
+  door.used=o.k; door.q=o.q;
+  const got=[]; for(let s=1;s<=o.q;s++) zmRollOne(o.k,s,got);
+  got.forEach(x=>zmPut(d.zloot,x)); d.zlast=o.k;
+  const tn=zmTaint(o); if(tn){ addTaint(tn); said.push(`오염도 +${tn}`) }
+  const tr=zmTrap(o);
+  if(tr) for(let s=0;s<o.q;s++) if(Math.random()<(E.trapP||.5)){ const v=tr[0]+Math.floor(Math.random()*(tr[1]-tr[0]+1));
+    run.heroes.forEach(h=>{ if(!h.down&&h.hp>0) h.hp=Math.max(1,h.hp-v) }); said.push(`함정 — 모든 대원 피해 ${v}`) }
+  z.at++;
+  spend(o.q*0.25,0);   /* 원정 시계 — 15분 단위 */
+  return said }
+/* 마지막 라운드를 이겼다 — 모은 것으로 상자를 연다 (openChest) */
+function zmChestList(kind){
+  const d=run.dun, L=(d.zloot||[]).map(x=>Object.assign({},x));
+  if(kind==="elite"){ const n=tagSum("eliteHunt"); for(let i=0;i<n;i++){ const g=[]; zmRollOne(d.zlast||"stone",1,g); g.forEach(x=>zmPut(L,x)) } }   /* 정예 사냥꾼 — 마지막 입구 한 묶음씩 더 */
+  if(kind==="elite"&&dispOn()&&Math.random()<ZM_STELE[zmAct()]) L.push({t:"빛나는 비석"});
+  if(!L.length) L.push({t:"금화",v:1});
+  return L }
 /* ═══════════ 보상 상자 ═══════════ */
 const CHEST={   /* 금화 줄임 (사용자 2026-10-04: 수급이 많다) — 1스테이지 1~3 · 7~11 · 15~20 · 2~5 → 1~2 · 5~8 · 12~16 · 1~3, 2스테이지 3~6 · 10~16 · 30~50 · 4~8 → 2~4 · 7~11 · 22~32 · 3~5 */
  battle:[["금화",1,2,1],["하급",0,0,.10],["파편",0,0,.05],["경험치",1,6,.30],["중급",0,0,.02]],
@@ -37093,7 +37298,7 @@ function rollChest(kind){
   return out;
 }
 function openChest(kind){
-  let list=rollChest(kind);
+  let list=(run.dun&&run.dun.zm)?zmChestList(kind):rollChest(kind);   /* 전투 구역 — 입구에서 모은 것 (2026-11-18) */
   arenaChest(list);   /* 광기의 투기장 — 환호만큼 금화 · 경험치가 는다 (사용자 2026-11-03) */
   /* 우두머리 전리품 — 목록 **맨 앞**에 (사용자 2026-10-23). 받는 차례도 첫 번째다 */
   if(kind==="boss"&&!run.sandbox&&!run.blootGot&&(BOSS_LOOT[run.lastBoss||""]||[]).length)
@@ -37128,6 +37333,8 @@ function chestLabel(x){
        : x.t==="동료"   ? "새로운 대원 영입"
        : x.t==="전리품" ? "우두머리 전리품"
        : STELE[x.t]     ? x.t
+       : x.t==="제련석" ? `제련석 ${x.v}`
+       : x.t==="각인서" ? "무작위 각인서"
        : `${x.t} 보상`;
 }
 /* 금화 칸 밑의 덧줄 — 배수가 붙었을 때만 */
@@ -37143,7 +37350,7 @@ function chestExtra(x){
 const CHEST_ICON={"하급":"chest_bronze","중급":"chest_silver","상급":"chest_gold",
                   "파편":"fragment","일반":"chest","희귀":"chest","금화":"currency_gold",
                   "경험치":"exp_arrow","동료":"recruit_new","회복":"life","제련석":"ore",
-                  "전리품":"boss_loot","빛나는 비석":"item_alignment_radiant_stele","어두운 비석":"item_alignment_dark_stele"};
+                  "전리품":"boss_loot","빛나는 비석":"item_alignment_radiant_stele","각인서":"item_special_engraving_manual","어두운 비석":"item_alignment_dark_stele"};
 function chestIconKey(t){ return CHEST_ICON[t]||"" }
 /* 상자 **그림** 자체 — 등급과 구역으로 (브라우저의 `bigChest` 가 고르는 그것) */
 const CHEST_ART={"하급":"chest_bronze_open","중급":"chest_silver_open","상급":"chest_gold_open"};
@@ -37316,6 +37523,8 @@ function takeChest(){
     else if(x.t==="전리품") later.push({bloot:run.lastBoss||""});   /* 우두머리 전리품 (2026-10-23) */
     else if(x.t==="동료") later.push({recruit:1});
     else if(STELE[x.t]) later.push({stele:x.t});   /* 빛나는 비석 (2026-11-17) */
+    else if(x.t==="제련석") run.stone=(run.stone||0)+(x.v||0)*copies;   /* 유적 입구 (2026-11-18) */
+    else if(x.t==="각인서"){ for(let n=0;n<copies;n++) later.push({item:engBookMake(0,0,engBookN())}) }
     else later.push({grade:x.t,noRun:isBoss?1:0,bountyCopy:copies===2?1:0});
   });
   /* 오른쪽 목록에는 상자에 들어 있던 것을 다 보여 준다.
@@ -37327,7 +37536,7 @@ function takeChest(){
      엉뚱한 이름을 끝에 하나 더 붙인다 */
   run.afterList=(run.after||[]).map(x=>({t:afterName(x)}))
     .concat(ch.list.flatMap(x=>Array.from({length:(x.t==="파편"||x.t==="일반")&&x.copies===2?2:1},()=>({t:x.t, v:x.v, it:x.it,copies:(x.t==="파편"||x.t==="일반")?1:x.copies,
-      done:(x.t==="금화"||x.t==="경험치")?1:0}))));
+      done:(x.t==="금화"||x.t==="경험치"||x.t==="제련석")?1:0}))));
   run.afterUsed=0;
   run.chest=null;
   run.after=(run.after||[]).concat(later);   /* 남아 있던 뒷일을 지우지 않는다 */
@@ -40018,7 +40227,7 @@ HERO_REWARDS["페블"]=[
   R("해금: 황금 광맥","중급","광맥 목록에 황금 광맥을 추가합니다.\n*획득시 보상에서 다시 등장하지 않음",h=>pebbleVeinUnlock(h,"황금"),0.25),
   R("눈 밝은 광부","중급","광맥 살피기의 선택지가 1개 증가합니다.\n*획득시 보상에서 다시 등장하지 않음",
     h=>h.tag.veinOpts=(h.tag.veinOpts||0)+1,0.5),
-  R("곡괭이질","중급","이번 원정동안 지도 위 땅굴을 사용한 후, 제련석을 1개 얻습니다.",h=>h.tag.pickaxe=(h.tag.pickaxe||0)+1),
+  R("곡괭이질","중급","이번 원정동안 원정 지도 위 땅굴을 사용한 후, 제련석을 1개 얻습니다.",h=>h.tag.pickaxe=(h.tag.pickaxe||0)+1),
   R("조약돌의 긍지","중급","라이티늄 심장으로 얻을 수 있는 보호력이 1 증가합니다.",h=>h.tag.heartUp=(h.tag.heartUp||0)+1),
   R("일당 환전","중급","퀘스트: 상점에서 라이티늄 조약돌 8개 판매\n보상: 무작위 희귀 등급 라이티늄 장신구 1개",
     h=>{ if(!questHas("일당 환전")) questAccept("일당 환전",h.name) },0.5),
@@ -40094,7 +40303,7 @@ HERO_REWARDS["그슨대"]=[
     h=>h.tag.hideIntent=1,0.5),
   R("번지는 공포","중급","두려움 잠식으로 그림자에게 이동할 때, 무작위 적 1명에게 추가로 공포를 부여합니다.\n*[두려움 잠식] 기술이 없을 때 등장하지 않음",
     h=>h.tag.fearSpread=(h.tag.fearSpread||0)+1,0.25),
-  R("잠 못 이루는 밤","중급","이번 원정동안 밤에 지도에서 이동할 때 오염도가 증가하지 않습니다.\n*획득시 보상에서 다시 등장하지 않음",
+  R("잠 못 이루는 밤","중급","이번 원정동안 밤에 원정 지도에서 이동할 때 오염도가 증가하지 않습니다.\n*획득시 보상에서 다시 등장하지 않음",
     h=>h.tag.gsNoTaint=1,0.5),
   R("흔적 남기기","중급","그림자가 있는 위치로 이동한 후, 지나간 칸의 아군에게 보호막을 5 부여합니다.",h=>h.tag.trail=(h.tag.trail||0)+5),
   R("어둠 역류","중급","어둠 증식을 사용한 후, 소모한 어둠 조각의 25%를 다시 얻습니다.\n*[어둠 증식] 기술이 없을 때 등장하지 않음",
@@ -57506,7 +57715,9 @@ function afterWave(){
 }
 let CLAIM_WAIT=true;   /* 시뮬레이터는 끈다 (sim/harness) */
 /* 전장 한가운데 단추 · 스페이스바 — 다음 라운드면 바로 다음 라운드로, 아니면 보상 */
-function claimGo(){ if((B&&B.claim===2)||(run&&run.claim===2)){ if(B) B.claim=0; run.claim=0; nextWave(); return } claimReward() }
+function claimGo(){ if((B&&B.claim===2)||(run&&run.claim===2)){ if(B) B.claim=0; run.claim=0;
+  if(run.dun&&run.dun.zm){ zmBack(); return }   /* 전투 구역 지도로 — 다음 입구까지 (2026-11-18) */
+  nextWave(); return } claimReward() }
 function claimReward(){
   if(B) B.claim=0; if(run) run.claim=0;
   battleWon();
@@ -57621,11 +57832,12 @@ function afterListPanel(){
   if(!L||!L.length) return null;   /* 보상이 하나여도 보인다 (사용자 2026-10-05, 전에는 둘 이상일 때만) */
   const at=(run.afterAt==null)?-1:run.afterAt;
   const cur=L[at];
-  const nm=x=>((x.t==="금화"||x.t==="경험치")
+  const nm=x=>((x.t==="금화"||x.t==="경험치"||x.t==="제련석")
     ? `${x.t} ${x.v!=null?x.v:""}`.trim()
     : (x.t==="동료"?"새로운 대원"
       :(x.t==="파편"||x.t==="일반"||x.t==="희귀"||x.t==="특수"||x.t==="전설")?`${x.t} 장신구`
       :STELE[x.t]?x.t
+      :x.t==="각인서"?"각인서"
       :`${x.t} 보상`))+(x.copies===2?" ×2":"");
   const left=L.filter((x,i)=>!x.done&&i>at).length;
   return el(`<aside class="rwq">
@@ -58705,6 +58917,81 @@ function iconsFxLoad(){
     sc.onerror=()=>{ window.__fxAsked=0; console.warn("이펙트 띠를 못 받았다 — data/icons-fx.js") };
     document.head.appendChild(sc) }catch(e){ window.__fxAsked=0 }
 }
+/* ═══════════ 전투 구역 지도 화면 (사용자 2026-11-18) ═══════════
+   규칙은 src/rules/zone-map.js — 여기는 그리고 누르는 것만.
+   양피지(bg/battle-zone.webp) 위에 한 칸 폭의 길. 칸 테는 얇게. 입구 칸에는 석조 입구 그림. 지금 자리는 원정 지도와 같은 붉은 화살표.
+   길을 누르면 그 칸까지 한 칸씩 걷는다(시간 안 듦, zmRoute). 입구 칸에 닿으면 입구 고르기 판(배경 살짝 어둡게).
+   입구를 고르면 암전 → 전투, 라운드가 끝나 돌아올 때도 암전 → 지도 (문 닫히는 연출 없이, 사용자 2026-11-18) */
+let ZM_UI={pick:0,walk:0,relic:null};
+function drawZoneMap(app){
+  const d=run&&run.dun, z=d&&d.zm;
+  if(!z){ view="map"; return render() }
+  if(ZM_UI.z!==z) ZM_UI={pick:0,walk:0,relic:null,z:z};   /* 새 구역 — 지난 구역의 판 상태를 버린다 */
+  const hd=document.querySelector("header"), top=hd?hd.offsetHeight:40;
+  const scr=el(`<div class="zmscr" style="top:${top}px"><div class="zmgrid"></div></div>`);
+  const g=scr.querySelector(".zmgrid"), S=64;
+  g.style.width=(ZM_W*S)+"px"; g.style.height=(ZM_H*S)+"px";
+  const door=zmDoor(), di=door?z.cells.indexOf(door):-1;
+  z.cells.forEach((c,j)=>{
+    const done=c.k==="door"&&c.used, next=c===door, reach=!ZM_UI.walk&&zmReach(j);
+    const RL=c.relic&&ZM_RELIC[c.relic];
+    const ic=c.k==="door"?(done?ZM_ENT[c.used].ic:"battle_zone_entrance"):RL?(c.relicDone?RL.icOpen:RL.ic):"";
+    const im=ic&&typeof ICON_PNG!=="undefined"&&ICON_PNG[ic];
+    const x=el(`<div class="zmc ${c.k}${done?" used":""}${next?" next":""}${reach?" reach":""}${RL?" relic":""}${c.relicDone?" rdone":""}" style="left:${c.c*S}px;top:${c.r*S}px;width:${S}px;height:${S}px">
+      ${im?`<img src="${im}" alt="" draggable="false"${RL?` class="kw" data-kw="${esc(c.relic)}" data-tip="${esc(RL.tip)}"`:""}>`:""}</div>`);
+    x.onclick=()=>{
+      if(ZM_UI.walk) return;
+      if(j===z.pos&&next){ ZM_UI.pick=1; render(); return }
+      const R=zmRoute(j); if(R) zmWalk(R) };
+    g.appendChild(x) });
+  /* 지금 자리 — 원정 지도의 붉은 붓 화살표 (ui_map_you) */
+  const at=z.cells[z.pos], au=typeof ICON_PNG!=="undefined"&&(ICON_PNG.ui_map_you||ICON_PNG.ui_move_down);
+  g.appendChild(el(`<div class="zmtok" style="left:${at.c*S}px;top:${at.r*S}px;width:${S}px">${au?`<img src="${au}" alt="" draggable="false">`:""}</div>`));
+  app.appendChild(scr);
+  if(ZM_UI.relic!=null&&z.cells[ZM_UI.relic]) app.appendChild(zmRelicPanel(ZM_UI.relic));
+  else if(ZM_UI.pick&&door&&z.pos===di) app.appendChild(zmPickPanel(door));
+}
+/* 유물 — 이름 · 그림 · 설명 · 선택지. 고르면 열린 그림과 결과 한 줄, 아무 데나 누르면 닫힌다 (사용자 2026-11-18 그림) */
+function zmRelicPanel(j){
+  const c=run.dun.zm.cells[j], R=ZM_RELIC[c.relic], res=c.relicRes;
+  const im=k=>(typeof ICON_PNG!=="undefined"&&ICON_PNG[k])?`<img src="${ICON_PNG[k]}" alt="" draggable="false">`:"";
+  const w=el(`<div class="zmpick zmrel"><div class="zmrb"><b>${esc(c.relic)}</b><div class="zmri">${im(res&&res.open?R.icOpen:R.ic)}</div>
+    ${res?`<p class="zmrr">${res.ic?iconImg(res.ic):""}${esc(res.txt||"")}</p>`:`<p>${esc(R.d)}</p><div class="zmro"></div>`}</div></div>`);
+  if(res){ w.onclick=()=>{ ZM_UI.relic=null; render() }; return w }
+  const ro=w.querySelector(".zmro");
+  R.o.forEach((o,i)=>{ const b=el(`<button type="button" class="zmopt">${esc(o.t)}</button>`);
+    b.onclick=e=>{ e.stopPropagation(); if(c.relicDone) return; try{ SFX.play("click") }catch(_){} zmRelicPick(j,i); render() };
+    ro.appendChild(b) });
+  return w }
+/* 그 길을 한 칸씩 */
+function zmWalk(R){
+  const z=run.dun.zm, L=R.slice(); ZM_UI.walk=1; render();
+  const step=()=>{ if(view!=="zmap"||!run.dun||run.dun.zm!==z){ ZM_UI.walk=0; return }
+    if(L.length){ z.pos=L.shift(); try{ SFX.play("tick") }catch(e){}
+      const c=z.cells[z.pos]; if(c.relic&&!c.relicDone){ ZM_UI.walk=0; ZM_UI.relic=z.pos; render(); return }   /* 유물 — 멈춘다 */
+      render(); setTimeout(step,170); return }
+    ZM_UI.walk=0; const d=zmDoor(); if(d&&z.cells[z.pos]===d) ZM_UI.pick=1; render() };
+  setTimeout(step,60) }
+/* 입구 고르기 — 1~3개, 커서를 올리면 설명. 고르면 암전 → 그 라운드 */
+function zmPickPanel(door){
+  const w=el(`<div class="zmpick"><div class="zmrow"></div></div>`), row=w.querySelector(".zmrow");
+  w.onclick=e=>{ if(e.target===w){ ZM_UI.pick=0; render() } };   /* 바깥을 누르면 접고 지도를 본다 */
+  door.offer.forEach((o,i)=>{
+    const E=ZM_ENT[o.k], im=typeof ICON_PNG!=="undefined"&&ICON_PNG[E.ic], clk=iconImg("clock");
+    const tn=zmTaint(o), tr=zmTrap(o);
+    const bad=[tn?`오염도 +${tn}`:"",tr?`함정 피해 ${tr[0]}~${tr[1]}`:""].filter(Boolean);
+    const c=el(`<div class="zment">
+      <div class="zmei kw" data-kw="${esc(E.n)}" data-tip="${esc(E.d)}">${im?`<img src="${im}" alt="" draggable="false">`:""}</div>
+      <b>${esc(E.n)}</b><div class="zmt">${clk}${o.q*15}분</div>
+      ${bad.map(t=>`<div class="zmbad">${esc(t)}</div>`).join("")}${E.up.map(t=>`<div class="zmup">${esc(t)}</div>`).join("")}</div>`);
+    c.onclick=()=>{ if(c.dataset.go) return; c.dataset.go=1; try{ SFX.play("click") }catch(e){}
+      const kt=document.getElementById("kwtip"); if(kt) kt.style.display="none";
+      blackout(()=>{ ZM_UI.pick=0; const said=zmPick(i)||[]; if(run.lost) return;
+        if(view==="zmap"){ nextWave() } said.forEach(t=>toast(t)) }) };
+    row.appendChild(c) });
+  return w }
+/* 라운드를 이기고 남은 라운드가 있다 — 암전 → 지도 (claimGo 가 부른다) */
+function zmBack(){ blackout(()=>{ ZM_UI.pick=0; ZM_UI.walk=0; ZM_UI.relic=null; view="zmap"; render() }) }
 try{ requestAnimationFrame(()=>requestAnimationFrame(iconsFxLoad)) }catch(e){}
 txtApply();
 render();
