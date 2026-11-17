@@ -6738,10 +6738,10 @@ body.cheerin .hand{visibility:hidden}   /* 입장 글과 겹치지 않게 — �
 .pkdisp .dchip{font-size:14px}
 /* ═══ 전투 구역 지도 (사용자 2026-11-18) — 양피지 위 한 칸 폭 길, 칸 테는 얇게 ═══ */
 .zmscr{position:fixed;left:0;right:0;bottom:0;background:#2a2016 url("bg/battle-zone.webp") center/100% 100% no-repeat;display:flex;align-items:center;justify-content:center;z-index:5}
-.zmgrid{position:relative}
-.zmc{position:absolute;box-sizing:border-box;border:1px solid rgba(58,40,24,.55);background:rgba(120,90,56,.10);display:flex;align-items:center;justify-content:center}
+.zmgrid{position:relative} .zmink{position:absolute;image-rendering:pixelated;pointer-events:none;z-index:1} .zmc.here{box-shadow:0 0 0 2px var(--brass) inset}
+.zmc{position:absolute;box-sizing:border-box;display:flex;align-items:center;justify-content:center;z-index:2}   /* 칸마다 테 없이 — 길 테두리는 먹선(.zmink) */
 .zmc img{width:56px;height:56px;image-rendering:pixelated;pointer-events:none}
-.zmc.reach{cursor:pointer} .zmc.reach:hover{background:rgba(120,90,56,.24)}
+.zmc.reach{cursor:pointer} .zmc.reach:hover{background-color:rgba(255,236,190,.35);box-shadow:0 0 0 2px rgba(255,255,255,.95) inset,0 0 10px rgba(255,240,200,.7) inset,0 0 12px rgba(255,230,170,.6)}   /* 원정 지도와 같은 칸 빛 */
 .zmc.door.next img{filter:drop-shadow(0 0 6px rgba(255,214,120,.8))} .zmc.door.next{cursor:pointer}
 .zmc.door.used img{opacity:.45;filter:grayscale(.6)}
 
@@ -29565,6 +29565,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 477, "v": "0.8", "d": "2026-11-18", "t": "전투 구역 지도 — 칸 테 대신 먹선 테두리", "big": 0},
  {"b": 476, "v": "0.8", "d": "2026-11-18", "t": "전투 구역 지도 · 입구 · 유물(버려진 상자) · 원정 지도 글", "big": 0},
  {"b": 475, "v": "0.8", "d": "2026-11-18", "t": "각인 이름만 · 각인서 각인 겹침 없음 · 비석 한 줄씩 · 가방 설명 풍선 · 적 공격 범위 바닥 빛", "big": 0},
  {"b": 474, "v": "0.8", "d": "2026-11-17", "t": "각인서 · 비석 · 성향 수와 발동 확률 · 피로도 / 평판 보상 · 해금 숙련도 3", "big": 0},
@@ -31234,7 +31235,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=476;
+const BUILD_NO=477;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -58944,6 +58945,8 @@ function drawZoneMap(app){
       if(j===z.pos&&next){ ZM_UI.pick=1; render(); return }
       const R=zmRoute(j); if(R) zmWalk(R) };
     g.appendChild(x) });
+  g.appendChild(zmInk(z.cells,S));   /* 길의 바깥 테두리 — 마른 먹선 (칸마다 테 대신, 사용자 2026-11-18) */
+  { const h=z.cells[z.pos], hc=g.children[z.pos]; if(h&&hc) hc.classList.add("here") }
   /* 지금 자리 — 원정 지도의 붉은 붓 화살표 (ui_map_you) */
   const at=z.cells[z.pos], au=typeof ICON_PNG!=="undefined"&&(ICON_PNG.ui_map_you||ICON_PNG.ui_move_down);
   g.appendChild(el(`<div class="zmtok" style="left:${at.c*S}px;top:${at.r*S}px;width:${S}px">${au?`<img src="${au}" alt="" draggable="false">`:""}</div>`));
@@ -58963,6 +58966,36 @@ function zmRelicPanel(j){
     b.onclick=e=>{ e.stopPropagation(); if(c.relicDone) return; try{ SFX.play("click") }catch(_){} zmRelicPick(j,i); render() };
     ro.appendChild(b) });
   return w }
+/* 마른 먹선과 드문 빗금 (사용자 그림 GameProject2/art/maps/exploration-boundaries-v1 「exploration-ink-b」 의 build.cjs 를 옮긴 것).
+   길 칸들을 하나로 이은 바깥 테두리만 — 칸 사이 선 · 안쪽 채움은 없다. 그림 한 점 = 2px (원본도 두 배로 키운다).
+   원본은 칸 64점 기준이라 빗금 자리만 칸 크기에 맞춰 줄였다 */
+function zmInk(cells,S){
+  const L=S/2, M=8, W=ZM_W*L+M*2, H=ZM_H*L+M*2;
+  const cv=document.createElement("canvas"); cv.width=W; cv.height=H; cv.className="zmink";
+  cv.style.cssText=`left:${-M*2}px;top:${-M*2}px;width:${W*2}px;height:${H*2}px`;
+  const ctx=cv.getContext("2d"), img=ctx.createImageData(W,H), buf=img.data;
+  const occ=new Set(cells.map(c=>c.c+","+c.r)), edges=[];
+  cells.forEach(c=>{ const x=M+c.c*L, y=M+c.r*L;
+    if(!occ.has(c.c+","+(c.r-1))) edges.push({x:x,y:y,dx:1,dy:0,nx:0,ny:-1});
+    if(!occ.has((c.c+1)+","+c.r)) edges.push({x:x+L-1,y:y,dx:0,dy:1,nx:1,ny:0});
+    if(!occ.has(c.c+","+(c.r+1))) edges.push({x:x,y:y+L-1,dx:1,dy:0,nx:0,ny:1});
+    if(!occ.has((c.c-1)+","+c.r)) edges.push({x:x,y:y,dx:0,dy:1,nx:-1,ny:0}) });
+  const noise=(a,b,c)=>{ let n=(a*73856093^b*19349663^(c||0)*83492791)>>>0; n=Math.imul(n^(n>>>13),1274126177)>>>0; return (n^(n>>>16))>>>0 };
+  const mark=(x,y,col,al)=>{ x|=0; y|=0; if(x<0||y<0||x>=W||y>=H) return; const i=(y*W+x)*4; if(al<buf[i+3]) return;
+    buf[i]=col[0]; buf[i+1]=col[1]; buf[i+2]=col[2]; buf[i+3]=al };
+  edges.forEach((e,id)=>{
+    for(let t=0;t<L;t++){
+      const wob=t<2||t>L-3?0:noise(id,Math.floor(t/7),19)%5===0?1:0;
+      const x=e.x+e.dx*t+e.nx*wob, y=e.y+e.dy*t+e.ny*wob, n=noise(x,y,id);
+      mark(x,y,[65,48,35],n%43===0?93:182);
+      if(n%11!==0) mark(x+e.nx,y+e.ny,[77,57,39],146+n%27);
+      if(n%5<2) mark(x+e.nx*2,y+e.ny*2,[91,69,47],82+n%40);
+      if(n%29===0) mark(x+e.nx*3,y+e.ny*3,[109,82,55],67) }
+    if(id%3===1) return;
+    const t=Math.round((18+(id*13)%29)*L/64);   /* 바깥쪽 짧은 빗금 */
+    for(let k=0;k<6;k++) mark(e.x+e.dx*(t+Math.floor(k/2))+e.nx*(3+k),e.y+e.dy*(t+Math.floor(k/2))+e.ny*(3+k),[87,65,46],135-k*9) });
+  ctx.putImageData(img,0,0);
+  return cv }
 /* 그 길을 한 칸씩 */
 function zmWalk(R){
   const z=run.dun.zm, L=R.slice(); ZM_UI.walk=1; render();
