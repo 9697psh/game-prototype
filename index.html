@@ -28824,12 +28824,13 @@ function render(){
   if(FOE_CAPTURING||CARD_BATCH) return;   /* 적의 셈 도중 다시 그리면 아직 모으는 연출 큐가 먼저 흘러간다 */
   if(PRED_DRY) return;   /* 미리 돌려 보는 중 — 그리지 않는다. 안 막으면 되돌이로 화면이 멈춘다 */
   if(typeof GEAR_SOFT!=="undefined"&&GEAR_SOFT&&Date.now()-GEAR_SOFT<80){ GEAR_SOFT=0;   /* 가방 장신구 탭 — 그 탭 속만 (사용자 2026-11-16) */
-    const g=document.querySelector("#app .baggear:not(.bagpile-b)"); if(g&&(view==="map"||view==="bag")){ g.innerHTML=""; drawGear(g,1); return } }
+    const g=document.querySelector("#app .baggear:not(.bagpile-b)")||(typeof BAG_SLIDE!=="undefined"&&BAG_SLIDE&&document.querySelector("#bagslide .baggear:not(.bagpile-b)"));
+    if(g&&(view==="map"||view==="bag"||BAG_SLIDE)){ g.innerHTML=""; drawGear(g,1); return } }
   if(typeof dawnGate==="function"&&dawnGate()) return;   /* 새날 — 탁자 덮개가 다 닫힐 때까지 밤 지도를 그대로 (dawn-table.js) */
   if(typeof shutGate==="function"&&shutGate()) return;   /* 지도 ↔ 쉼터 · 미지의 구역 · 전용 구역 — 가운데 덧판이 닫힌 뒤에 그린다 */
   if(typeof document!=="undefined"&&!(typeof run!=="undefined"&&run&&run.qShow&&(view==="map"||(typeof placeMode==="function"&&placeMode())))) document.querySelectorAll("#qmodal").forEach(x=>x.remove());   /* 퀘스트 완료 상자 — 받았거나 화면이 바뀌면 걷는다 */
   if(FOE_VIEW&&(B!==FOE_VIEW.battle||view!=="battle")) FOE_VIEW=null;
-  if(typeof BAG_SLIDE!=="undefined"&&BAG_SLIDE&&view!=="battle") bagSlide(0);   /* 전투를 떠나면 가방 판을 걷는다 */
+  if(typeof BAG_SLIDE!=="undefined"&&BAG_SLIDE&&(_lastView!==view||view==="map"||view==="title")) bagSlide(0);   /* 화면이 바뀌면 가방 판을 걷는다 (지도는 제 왼쪽 판) */
   /* 전투를 떠나면 되풀이 녹음을 끈다 (사용자 2026-10-13 : 훈련장에서 복수귀가 켜진 채 나오면 소리가 따라왔다).
      ⚠️ 끄는 자리가 iraAuraHtml **안에만** 있었다 — 그 함수는 전투 화면을 그릴 때만 돈다.
         켜는 자리가 어떤 화면 안에 있으면, **끄는 자리는 그 화면 밖에도** 있어야 한다 */
@@ -28856,6 +28857,7 @@ function render(){
   nightVeil();
   const oldFoes=foeSlideBefore(),oldIdle=idleFramesBefore(),oldMap=mapPanelBefore();
   render0();
+  if(typeof BAG_SLIDE!=="undefined"&&BAG_SLIDE&&view!=="battle") bagSlideFill();   /* 가방 판이 떠 있으면 속도 새로 (장신구를 끼고 뺀 뒤) */
   if(typeof coverIdle==="function") coverIdle();   /* 탐험 탁자 덮개 — 지도에서만 경첩 (그린 판 자리에 맞춘다) */
   if(typeof resTidy==="function"){ if(!RES_OK) resLoad(); resTidy() }   /* 결과 연출 — 미리 받고, 화면이 바뀌면 걷는다 */
   idleFramesAfter(oldIdle);mapPanelAfter(oldMap);
@@ -29063,8 +29065,7 @@ function render0(){
         <path d="M4 8h16l-1.4 12H5.4L4 8Z" fill="none" stroke="currentColor" stroke-width="1.8"/>
         <path d="M9 8V6a3 3 0 0 1 6 0v2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>`}
       <span class="bgt">가방</span><b class="bgt">${n}</b>${c?`<span class="bgt" style="color:var(--faint)">, 카드 ${c}</span>`:""}</div>`);
-    bb.onclick=()=>{ if(view==="battle"){ bagSlide(); return }   /* 전투 — 미끄러져 나오는 판 (2026-11-15) */
-      if(view==="bag"){ view=run.bagBack||"map"; render(); return } run.bagBack=view; view="bag"; render() };
+    bb.onclick=()=>bagToggle();   /* 어디서든 미끄러져 나오는 판 (사용자 2026-11-19) */
     document.body.appendChild(bb);
   }
   app.innerHTML="";
@@ -29086,7 +29087,7 @@ function render0(){
   if(view==="encdex")   return drawEncDex(app);
   if(view==="foedex")   return drawFoeDex(app);
   if(view==="gimres"&&!(typeof placeMode==="function"&&placeMode())) return drawGimRes(app);   /* 장소 화면이면 아래 drawPlace 가 그 구역 화면 안에 (사용자 2026-10-30) */
-  if(view==="bag")      return drawBag(app);
+  if(view==="bag"){ view=run.bagBack||"map"; return render0() }   /* 가운데 가방 판은 없앴다 (사용자 2026-11-19) — 예전 저장이면 돌아간다 */
   if(view==="title")    return drawTitle(app);
   if(view==="heropick") return drawStart(app);
   if(view==="corepick") return drawCorePick(app);
@@ -29613,6 +29614,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 490, "v": "0.8", "d": "2026-11-19", "t": "가방 — 어디서든 왼쪽에서 미끄러져 나오는 판", "big": 0},
  {"b": 489, "v": "0.8", "d": "2026-11-19", "t": "전투 구역 지도 — 갈림길, 지나온 길 막기", "big": 0},
  {"b": 488, "v": "0.8", "d": "2026-11-19", "t": "전투 구역 지도 — 막마다 더 복잡하게, 입구 보상 아이콘", "big": 0},
  {"b": 487, "v": "0.8", "d": "2026-11-18", "t": "지도 말풍선 — 누르면 서서히 사라진다", "big": 0},
@@ -31295,7 +31297,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=489;
+const BUILD_NO=490;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -33539,7 +33541,7 @@ function drawMap(app){
   /* 시계 — 왼쪽 위, 그림만 (사용자 2026-09-18) */
   three.querySelector(".mclockbox").appendChild(el(`<span class="clock mclock kw ${run.night?"night":""}" data-kw="${run.night?"밤":"낮"} ${clock()}" data-tip="${run.night?"빈 칸에서 습격당할 수 있습니다. 18시부터 밤입니다.":"18시가 지나면 밤이 됩니다."}">${clockFace()}<b>${clock()}</b></span>`));   /* 시각 한 줄은 있어야 (사용자 2026-09-18) */
   { const bg=el(`<span class="clock mbag">${uiPng("ui_bag")||""}</span>`);   /* 가방 — 시계 밑 같은 상자 (사용자 2026-09-19) */
-    bg.onclick=e=>{ e.stopPropagation(); if(view==="bag"){ view=run.bagBack||"map"; render(); return } run.bagBack=view; view="bag"; render() };   /* 다시 누르면 닫힌다 (닫기 단추를 뺐다, 2026-11-15) */ three.querySelector(".mbtns").appendChild(bg); }
+    bg.onclick=e=>{ e.stopPropagation(); bagToggle() };   /* 다시 누르면 닫힌다 (닫기 단추를 뺐다, 2026-11-15) */ three.querySelector(".mbtns").appendChild(bg); }
   if(run.qNewFx&&run.qNewFx.length) setTimeout(questNewFX,550);   /* 새로 받은 퀘스트 — 아이콘이 흔들리며 빛나고 목록이 펼쳐져 들어온다 */
   if(run.qPend&&run.qPend.length) setTimeout(questPendPlay,500);   /* 밖에서 오른 퀘스트 — 지도의 퀘스트 칸에서 펼쳐 보인다 */
   { const L=questList(); const rdy=questReadyN();   /* 받을 수 있는 퀘스트 수 (사용자 2026-10-14) */
@@ -51030,9 +51032,7 @@ document.addEventListener("keydown",e=>{
     render(); return;
   }
   if(e.key==="b"||e.key==="B"){
-    if(view==="battle"){ bagSlide(); return }   /* 전투 — 미끄러져 나오는 판 (2026-11-15) */
-    if(view==="bag"){ view=run.bagBack||"map" } else { run.bagBack=view; view="bag" }
-    render(); return;
+    bagToggle(); return;   /* 어디서든 미끄러져 나오는 판 (지도는 왼쪽 판) — 사용자 2026-11-19 */
   }
 });
 /* Esc = 뒤로 가기 — 대원 · 도감 · 원정 기록 · 이어하기 · 가방 · 문구 수정 따위 (사용자 2026-10-07).
@@ -58450,11 +58450,11 @@ function drawBag(app){
   app.appendChild(wrap); bagBody(wrap,0) }
 /* 가방 판 속 — 지도(왼쪽 판)와 전투(미끄러져 나오는 판, battle=1 : 가방 탭만) 이 같이 쓴다.
    제목 · 자원 줄 · 곁말 · 닫기 단추는 뺐다 (사용자 2026-11-15 시안). 닫기는 가방 단추 · B · Esc */
-function bagBody(wrap,battle){
+function bagBody(wrap,battle,slide){   /* slide — 미끄러져 나오는 판 안 (탭을 바꾸면 판만 다시) */
   run.bag=run.bag||[]; run.cards=run.cards||[];
   /* 탭 — 가방 · 장신구 정리. 장신구 정리는 언제든 (사용자 2026-11-11). 전투 중에는 가방만 (2026-11-15) */
   { const tb=el(`<div class="bagtabs"><button type="button" data-t="bag" class="${BAG_TAB==="bag"?"on":""}">카드</button><button type="button" data-t="gear" class="${BAG_TAB==="gear"?"on":""}">장신구</button></div>`);
-    tb.querySelectorAll("button").forEach(b=>b.onclick=e=>{ e.stopPropagation(); if(BAG_TAB===b.dataset.t) return; BAG_TAB=b.dataset.t; run.gearPick=null; try{ SFX.play("click") }catch(_){} if(battle) bagSlide(1); else render() });   /* 전투 — 판만 다시 (2026-11-16) */
+    tb.querySelectorAll("button").forEach(b=>b.onclick=e=>{ e.stopPropagation(); if(BAG_TAB===b.dataset.t) return; BAG_TAB=b.dataset.t; run.gearPick=null; try{ SFX.play("click") }catch(_){} if(battle||slide) bagSlideFill(); else render() });   /* 전투 — 판만 다시 (2026-11-16) */
     wrap.appendChild(tb) }
   if(!battle&&BAG_TAB==="gear"){
     const g=el(`<div class="baggear"></div>`); wrap.appendChild(g); drawGear(g,1);
@@ -58480,9 +58480,18 @@ function bagSlide(on){
   let s=document.getElementById("bagslide");
   if(!on){ BAG_SLIDE=0; if(s) s.classList.remove("on"); return }
   if(!s){ s=document.createElement("div"); s.id="bagslide"; document.body.appendChild(s) }
-  BAG_SLIDE=1; s.innerHTML=""; const w=el(`<div class="dexwrap bagframe"></div>`); s.appendChild(w); bagBody(w,1);
+  BAG_SLIDE=1; bagSlideFill();
   try{ SFX.play("click") }catch(e){}
   void s.offsetWidth; s.classList.add("on") }
+/* 판 속을 다시 — 전투 밖이면 장신구 탭도 끼고 빼기까지 (drawGear). 스크롤은 그대로 (render 가 전투 밖에서 부른다) */
+function bagSlideFill(){
+  const s=typeof document!=="undefined"&&document.getElementById("bagslide"); if(!s||!BAG_SLIDE) return;
+  const o=s.querySelector(".bagframe"), st=o?o.scrollTop:0;
+  s.innerHTML=""; const w=el(`<div class="dexwrap bagframe"></div>`); s.appendChild(w); bagBody(w,view==="battle"?1:0,1); w.scrollTop=st }
+/* 가방 단추 · B — 원정 지도는 제 왼쪽 판, 그 밖은 어디서든 미끄러져 나오는 판 (사용자 2026-11-19 : 가운데 큰 가방 판은 없앴다) */
+function bagToggle(){
+  if(view==="map"&&typeof MAP_PANEL!=="undefined"){ MAP_PANEL=(MAP_PANEL==="bag")?"":"bag"; render(); return }
+  bagSlide() }
 if(typeof document!=="undefined"&&!window.__bagSlideEsc){ window.__bagSlideEsc=1;
   document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&BAG_SLIDE){ e.preventDefault(); bagSlide(0) } }) }
 function pickWeighted(pool,n){
