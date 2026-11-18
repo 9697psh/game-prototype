@@ -2755,7 +2755,8 @@ html.noscr, html.noscr body{overflow:hidden!important}   /* 가로만 숨기면 
   box-shadow:0 4px 14px rgba(0,0,0,.35);animation:msayIn .22s cubic-bezier(.2,1.4,.4,1);transform-origin:12% 100%}
 .pstage .msay::after{content:"";position:absolute;left:14%;bottom:-14px;border:9px solid transparent;border-top:10px solid #5a4632;border-bottom:0}
 .pstage .msay::before{content:"";position:absolute;left:calc(14% + 2px);bottom:-9px;border:7px solid transparent;border-top:8px solid #f7ecd2;border-bottom:0;z-index:1}
-.pstage .msay.out{opacity:0;transition:opacity .4s}
+.pstage .msay{cursor:pointer;pointer-events:auto}   /* 누르면 사라진다 (사용자 2026-11-18) — 원래는 클릭이 뚫고 지나가 가려진 칸이 보이지 않는 채 눌렸다 */
+.pstage .msay.out{opacity:0;transition:opacity .4s;pointer-events:none}   /* 사라지는 동안에는 밑의 칸이 바로 눌린다 */
 .pstage .tapdust{position:absolute;width:64px;height:64px;background-repeat:no-repeat;background-size:384px 64px;
   image-rendering:pixelated;pointer-events:none;z-index:7}
 @keyframes msayIn{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}   /* 폭은 그림마다 JS 가 (w/256) 로 다시 준다 */
@@ -8617,6 +8618,8 @@ function showMapBubble(){
   const at=MAP_BUBBLE.at, left=2600-(Date.now()-at); if(left<=0){ MAP_BUBBLE=null; return }
   const b=el(`<div class="msay"><span>${talk(MAP_BUBBLE.t)}</span></div>`);   /* 이름은 안 적는다 (사용자 2026-09-14) */
   st.appendChild(b);
+  /* 누르면 서서히 사라진다 — 바닥 누름(먼지 · 소리 · 말풍선)으로 번지지 않게 막는다 (사용자 2026-11-18) */
+  b.addEventListener("click",e=>{ e.stopPropagation(); if(MAP_BUBBLE&&MAP_BUBBLE.at===at) MAP_BUBBLE=null; b.classList.add("out"); setTimeout(()=>b.remove(),400) });
   setTimeout(()=>{ if(MAP_BUBBLE&&MAP_BUBBLE.at===at){ MAP_BUBBLE=null; b.classList.add("out"); setTimeout(()=>b.remove(),400) } },left);
 }
 /* 바닥 클릭 먼지 (art/effects/ground-tap-dust v1, 사용자 2026-09-14) — 64×64 여섯 칸 띠(먼지.png), 40/50/60/70/80/90ms 한 번.
@@ -29607,6 +29610,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 487, "v": "0.8", "d": "2026-11-18", "t": "지도 말풍선 — 누르면 서서히 사라진다", "big": 0},
  {"b": 486, "v": "0.8", "d": "2026-11-18", "t": "금화 비 — 받은 수만큼, 최대 60개", "big": 0},
  {"b": 485, "v": "0.8", "d": "2026-11-18", "t": "지도 말풍선 — 8초 사이, 한 길에 한 번", "big": 0},
  {"b": 484, "v": "0.8", "d": "2026-11-18", "t": "금화 비 — 바닥에서 튀는 것 빼기", "big": 0},
@@ -31286,7 +31290,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=486;
+const BUILD_NO=487;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
