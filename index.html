@@ -6743,6 +6743,7 @@ body.cheerin .hand{visibility:hidden}   /* 입장 글과 겹치지 않게 — �
 .zmc{position:absolute;box-sizing:border-box;display:flex;align-items:center;justify-content:center;z-index:2}   /* 칸마다 테 없이 — 길 테두리는 먹선(.zmink) */
 .zmc img{width:87.5%;height:87.5%;image-rendering:pixelated;pointer-events:none}
 .zmc.zgo{cursor:pointer;pointer-events:auto} .zmc.zgo:hover{background-color:rgba(255,236,190,.35);box-shadow:0 0 0 2px rgba(255,255,255,.95) inset,0 0 10px rgba(255,240,200,.7) inset,0 0 12px rgba(255,230,170,.6)}   /* 원정 지도와 같은 칸 빛 */
+.zmc.gone{background:rgba(40,26,12,.32)} .zmc.gone img{opacity:.4;filter:grayscale(.6)}   /* 지나온 길 · 고르지 않은 갈래 (2026-11-19) */
 .zmc.door.next img{filter:drop-shadow(0 0 6px rgba(255,214,120,.8))} .zmc.door.next{cursor:pointer}
 .zmc.door.used img{opacity:.45;filter:grayscale(.6)}
 
@@ -29612,6 +29613,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 489, "v": "0.8", "d": "2026-11-19", "t": "전투 구역 지도 — 갈림길, 지나온 길 막기", "big": 0},
  {"b": 488, "v": "0.8", "d": "2026-11-19", "t": "전투 구역 지도 — 막마다 더 복잡하게, 입구 보상 아이콘", "big": 0},
  {"b": 487, "v": "0.8", "d": "2026-11-18", "t": "지도 말풍선 — 누르면 서서히 사라진다", "big": 0},
  {"b": 486, "v": "0.8", "d": "2026-11-18", "t": "금화 비 — 받은 수만큼, 최대 60개", "big": 0},
@@ -31293,7 +31295,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=488;
+const BUILD_NO=489;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -37189,44 +37191,55 @@ function zmOn(cell){
   if(cell.force||cell.trial!=null||cell.winItem) return false;
   const d=run.dun; if(!(d&&d.r!=null&&run.grid&&run.grid[d.r]&&run.grid[d.r][d.c]===cell)) return false;   /* 원정 지도의 그 칸으로 들어온 전투만 — 기믹 · 이벤트가 지어 낸 칸은 아니다 */
   return winTaintKind({cell:cell,kind:cell.t==="elite"?"elite":"battle"})!=="special" }
-/* ── 길 짓기 — 시작에서 위로, 한 칸 폭(곁에 다른 길이 붙지 않게). 구간마다 몇 걸음 뒤에 입구 ──
+/* ── 길 짓기 — 시작에서 위로, 한 칸 폭(곁에 다른 길이 붙지 않게). 구간 끝에 입구 ──
+   구간(seg) = 시작이나 입구 하나에서 뻗어 나가 다음 입구(들)에 닿는 길. 칸의 seg 는 그 구간 번호, 입구의 id 는 그 너머 구간 번호.
+   갈림길 (사용자 2026-11-19) : 구간이 둘로 갈라져 입구가 둘 — 하나를 고르면 그쪽으로만 간다. 라운드 수 ≠ 입구 수.
+   지나온 길은 다시 못 간다 (zmShut) — 걸을 수 있는 것은 지금 구간과 방금 지나온 입구뿐.
    막이 갈수록 길고 복잡하게 (사용자 2026-11-18, 2026-11-19 더 세게) — ZM_SHAPE :
      seg   구간 걸음 수            side  옆으로 꺾는 무게 (위로 가는 무게는 3)
-     ring  고리 하나가 설 확률     rings 고리 수 (구간마다 하나까지)     loop  고리 크기 [가로 최소, 최대, 세로 최소, 최대]
+     fork  구간이 갈라질 확률      wide  한 라운드 깊이에 입구 최대 수
+     ring  고리 확률(라운드 수로 나눠 구간마다)   rings 고리 수 최대     loop  고리 크기 [가로 최소, 최대, 세로 최소, 최대]
      spur  막다른 곁길 확률        spurs 곁길 수     spurLen 곁길 길이     bend 곁길이 한 번 꺾일 확률
      W · H 판 크기
    걷는 것은 이웃한 길 칸 사이 어디로든 (zmRoute) */
 const ZM_SHAPE=[
- {seg:[2,3], side:1, ring:.5, rings:1, loop:[3,3,3,3], spur:0,   spurs:0, spurLen:[1,2], bend:0,  W:9,  H:9},    /* 1막 — 단순 (그대로) */
- {seg:[3,5], side:2, ring:.8, rings:2, loop:[3,4,3,4], spur:.7,  spurs:2, spurLen:[1,3], bend:.4, W:13, H:12},   /* 2막 — 길고 구불구불, 고리 둘, 곁길 둘 */
- {seg:[4,6], side:3, ring:.9, rings:3, loop:[3,5,3,5], spur:.85, spurs:3, spurLen:[2,3], bend:.7, W:15, H:13}];  /* 3막 — 더 길고, 큰 고리 셋, 꺾인 곁길 셋 */
+ {seg:[2,3], side:1, fork:.2,  wide:2, ring:.5, rings:1, loop:[3,3,3,3], spur:0,   spurs:0, spurLen:[1,2], bend:0,  W:11, H:9},    /* 1막 — 단순, 가끔 갈림길 */
+ {seg:[3,5], side:2, fork:.45, wide:2, ring:.8, rings:2, loop:[3,4,3,4], spur:.7,  spurs:2, spurLen:[1,3], bend:.4, W:13, H:12},   /* 2막 — 길고 구불구불, 갈림길, 고리, 곁길 */
+ {seg:[4,6], side:3, fork:.6,  wide:3, ring:.9, rings:3, loop:[3,5,3,5], spur:.85, spurs:3, spurLen:[2,3], bend:.7, W:15, H:13}];  /* 3막 — 더 길고, 갈림길 잦고, 큰 고리, 꺾인 곁길 */
 function zmBuild(waves){
   const SH=ZM_SHAPE[zmAct()]; ZM_W=SH.W; ZM_H=SH.H;
-  for(let tries=0;tries<200;tries++){
-    const cells=[{r:ZM_H-1,c:Math.floor(ZM_W/2),k:"start"}], has=(r,c)=>cells.some(x=>x.r===r&&x.c===c);
-    /* 고리를 놓을 구간들 (겹치지 않게) */
-    const rs=[...Array(waves).keys()].sort(()=>Math.random()-.5).filter((_,k)=>k<SH.rings&&Math.random()<SH.ring);   /* 서로 다른 구간에 */
-    let ok=true;
-    for(let i=0;i<waves&&ok;i++){
-      const L=zmRR(SH.seg);
-      if(rs.indexOf(i)>=0) zmRing(cells,cells[cells.length-1],i,SH.loop);
-      for(let s=0;s<L;s++){
-        const cur=cells[cells.length-1], D=[];
-        for(let k=0;k<3;k++) D.push([-1,0]); for(let k=0;k<SH.side;k++) D.push([0,-1],[0,1]);
-        D.sort(()=>Math.random()-.5);
-        const nx=D.map(([dr,dc])=>({r:cur.r+dr,c:cur.c+dc})).find(p=>p.r>=0&&p.c>=0&&p.c<ZM_W&&!has(p.r,p.c)
-          &&!cells.some(x=>x!==cur&&Math.abs(x.r-p.r)+Math.abs(x.c-p.c)===1));
-        if(!nx){ ok=false; break }
-        cells.push({r:nx.r,c:nx.c,k:s===L-1?"door":"road",seg:i});
-        if(s===L-1){ const d=cells[cells.length-1]; d.i=i; d.offer=zmOffer() } } }
+  for(let tries=0;tries<300;tries++){
+    const fk=tries<200?SH.fork:0;   /* 갈림길로 끝내 못 지으면 갈림길 없이 */
+    const cells=[{r:ZM_H-1,c:Math.floor(ZM_W/2),k:"start",seg:0}], has=(r,c)=>cells.some(x=>x.r===r&&x.c===c);
+    const free=(p,cur)=>p.r>=0&&p.c>=0&&p.c<ZM_W&&p.r<ZM_H&&!has(p.r,p.c)&&!cells.some(x=>x!==cur&&Math.abs(x.r-p.r)+Math.abs(x.c-p.c)===1);
+    /* from 에서 n 걸음 — 첫 걸음은 d0 쪽으로 (갈림길), 마지막 걸음 칸을 돌려준다 */
+    const walk=(from,n,sg,d0)=>{ let cur=from;
+      for(let s=0;s<n;s++){ let D;
+        if(s===0&&d0) D=[d0];
+        else { D=[]; for(let k=0;k<3;k++) D.push([-1,0]); for(let k=0;k<SH.side;k++) D.push([0,-1],[0,1]); D.sort(()=>Math.random()-.5) }
+        const nx=D.map(([dr,dc])=>({r:cur.r+dr,c:cur.c+dc})).find(p=>free(p,cur)); if(!nx) return null;
+        cur={r:nx.r,c:nx.c,k:"road",seg:sg}; cells.push(cur) }
+      return cur };
+    let nid=1, ok=true, rl=SH.rings; const at=[], q=[{o:cells[0],d:0,sg:0}];
+    while(q.length&&ok){
+      const g=q.shift(); let tip=g.o; at[g.d]=at[g.d]||0;
+      if(rl>0&&Math.random()<SH.ring/Math.max(1,waves)*1.5){ const ex=zmRing(cells,tip,g.sg,SH.loop); if(ex){ tip=ex; rl-- } }
+      const ends=[], wait=q.filter(x=>x.d===g.d).length;
+      if(Math.random()<fk&&at[g.d]+wait+2<=SH.wide){
+        const t0=walk(tip,zmRR([0,1]),g.sg), t1=t0&&walk(t0,1,g.sg,[-1,0]);   /* 갈라지는 자리 — 위로 한 걸음 들어선 칸에서 왼쪽 · 오른쪽 */
+        if(!t1){ ok=false; break }
+        for(const s of [-1,1]){ const t=walk(t1,zmRR(SH.seg),g.sg,[0,s]); if(!t){ ok=false; break } ends.push(t) } }
+      else { const t=walk(tip,zmRR(SH.seg),g.sg); if(!t){ ok=false; break } ends.push(t) }
+      if(!ok) break;
+      ends.forEach(t=>{ t.k="door"; t.i=g.d; t.id=nid++; t.offer=zmOffer(); at[g.d]++; if(g.d<waves-1) q.push({o:t,d:g.d+1,sg:t.id}) }) }
     if(!ok) continue;
     for(let k=0;k<SH.spurs;k++) if(Math.random()<SH.spur) zmSpur(cells,SH);
-    return {cells:cells,pos:0,at:0}
+    return {cells:cells,pos:0,at:0,nd:0}
   }
   /* 끝내 못 지으면 곧은 길 */
-  const cells=[{r:ZM_H-1,c:Math.floor(ZM_W/2),k:"start"}];
-  for(let i=0;i<waves;i++) for(let s=0;s<2;s++){ const r=cells[cells.length-1].r-1; cells.push({r:r,c:Math.floor(ZM_W/2),k:s?"door":"road",seg:i}); if(s){ cells[cells.length-1].i=i; cells[cells.length-1].offer=zmOffer() } }
-  return {cells:cells,pos:0,at:0} }
+  const cells=[{r:ZM_H-1,c:Math.floor(ZM_W/2),k:"start",seg:0}];
+  for(let i=0;i<waves;i++) for(let s=0;s<2;s++){ const r=cells[cells.length-1].r-1; cells.push({r:r,c:Math.floor(ZM_W/2),k:s?"door":"road",seg:i}); if(s){ const d=cells[cells.length-1]; d.i=i; d.id=i+1; d.offer=zmOffer() } }
+  return {cells:cells,pos:0,at:0,nd:0} }
 /* 막다른 곁길 — 길 칸 하나에서 옆(또는 위)으로 spurLen 칸, bend 확률로 한 번 꺾인다. 다른 길에 붙지 않게 (유물이 설 자리가 는다) */
 function zmSpur(cells,SH){
   const at=(r,c)=>cells.some(x=>x.r===r&&x.c===c);
@@ -37401,9 +37414,20 @@ function zmRing(cells,cur,seg,lp){
     cells.push(ex);   /* 나가는 모서리를 맨 끝에 — 다음 걸음이 거기서 */
     return ex }
   return null }
-const zmDoor=()=>{ const z=run&&run.dun&&run.dun.zm; return z?z.cells.find(x=>x.k==="door"&&x.i===z.at):null };
-/* 지나갈 수 없는 칸 — 아직 차례가 아닌 입구 */
-const zmShut=(z,c)=>c.k==="door"&&!c.used&&c.i!==z.at;
+/* 지금 구간 — 시작이면 0, 입구를 지나면 그 입구의 id (사용자 2026-11-19 : 갈림길 · 지나온 길 막기).
+   예전에 저장한 지도(구간 = 라운드, 입구에 id 없음)는 여기서 한 번 맞춘다 */
+function zmNode(z){
+  if(z.nd==null){ z.cells.forEach(c=>{ if(c.k==="door"&&c.id==null) c.id=c.i+1; if(c.k==="start") c.seg=0 }); z.nd=z.at||0 }
+  return z.nd }
+/* 걸을 수 있는 칸 — 지금 구간과 방금 지나온 입구뿐. 지나온 길 · 고르지 않은 갈래 · 아직 안 연 너머는 막힌다 */
+const zmShut=(z,c)=>!(c.seg===zmNode(z)||(c.k==="door"&&c.id===zmNode(z)));
+/* 고를 수 있는 입구 — 지금 구간 끝의 안 쓴 입구 (갈림길이면 둘 이상) */
+const zmNext=(z,c)=>c.k==="door"&&!c.used&&c.seg===zmNode(z);
+/* 지금 서 있는 입구 (고를 수 있을 때만) */
+const zmDoor=()=>{ const z=run&&run.dun&&run.dun.zm; if(!z) return null; const c=z.cells[z.pos]; return c&&zmNext(z,c)?c:null };
+/* 아직 갈 수 있는 너머인가 — 지금 구간 입구들의 뒤쪽 (막힌 지난 길과 달리 흐리게 하지 않는다) */
+function zmAhead(z,c){ const par={}; z.cells.forEach(x=>{ if(x.k==="door"&&x.id!=null) par[x.id]=x.seg });
+  let n=c.k==="door"?c.seg:c.seg; for(let k=0;k<20&&n!=null;k++){ if(n===zmNode(z)) return true; n=par[n] } return false }
 /* 지금 자리에서 j 칸까지 걷는 길 (칸 번호들, 첫 칸 빼고). 못 가면 null. 지금 입구는 들어서기만 하고 지나가지 않는다 */
 function zmRoute(j){
   const z=run.dun.zm, C=z.cells; if(j===z.pos||!C[j]||zmShut(z,C[j])) return null;
@@ -37457,7 +37481,7 @@ function zmPick(i){
   if(tr){ let hit=0; for(let s=0;s<o.q;s++) if(Math.random()<(E.trapP||.5)){ const v=tr[0]+Math.floor(Math.random()*(tr[1]-tr[0]+1)); hit++;
       run.heroes.forEach(h=>{ if(!h.down&&h.hp>0) h.hp=Math.max(1,h.hp-v) }); said.push(`함정에 걸려 모든 대원이 피해를 ${v} 받았습니다.`) }
     if(!hit) said.push("함정을 모두 피했습니다.") }
-  z.at++;
+  z.at++; z.nd=door.id;   /* 이 입구 너머로 — 지나온 길은 이제 막힌다 */
   d.zgo={k:o.k,lines:said};   /* 고른 뒤 그 라운드에 들어가기 전 — 대가 안내 판, 저장 뒤 이어 해도 여기서 (zmGo 가 지운다) */
   spend(o.q*0.25,0);   /* 원정 시계 — 15분 단위 */
   return said }
@@ -59151,11 +59175,11 @@ function drawZoneMap(app){
   const X=c=>(c.c-C0)*S, Y=c=>(c.r-R0)*S;
   const door=zmDoor(), di=door?z.cells.indexOf(door):-1;
   z.cells.forEach((c,j)=>{
-    const done=c.k==="door"&&c.used, next=c===door, reach=!ZM_UI.walk&&zmReach(j);
+    const done=c.k==="door"&&c.used, next=zmNext(z,c), reach=!ZM_UI.walk&&zmReach(j), gone=zmShut(z,c)&&!zmAhead(z,c);   /* 지나온 길 · 고르지 않은 갈래 — 흐리게 */
     const RL=c.relic&&ZM_RELIC[c.relic];
     const ic=c.k==="door"?(done?ZM_ENT[c.used].ic:"battle_zone_entrance"):RL?(c.relicDone?"":(RL.part?RL.part+c.part:zmIc(RL,RL.ic))):"";   /* 유적 조각은 들르면 사라진다 */
     const im=ic&&typeof ICON_PNG!=="undefined"&&ICON_PNG[ic];
-    const x=el(`<div class="zmc ${c.k}${done?" used":""}${next?" next":""}${reach?" zgo":""}${RL&&!c.relicDone?" relic":""}${RL&&RL.part?" ruin":""}${c.relicDone?" rdone":""}" style="left:${X(c)}px;top:${Y(c)}px;width:${S}px;height:${S}px">
+    const x=el(`<div class="zmc ${c.k}${done?" used":""}${next?" next":""}${reach?" zgo":""}${RL&&!c.relicDone?" relic":""}${RL&&RL.part?" ruin":""}${c.relicDone?" rdone":""}${gone?" gone":""}" style="left:${X(c)}px;top:${Y(c)}px;width:${S}px;height:${S}px">
       ${im?`<img src="${im}" alt="" draggable="false"${RL?` class="kw" data-kw="${esc(c.relic)}" data-tip="${esc(RL.tip)}"`:""}>`:""}</div>`);
     x.onclick=()=>{
       if(ZM_UI.walk) return;
