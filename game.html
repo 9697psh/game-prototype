@@ -6768,6 +6768,8 @@ body.cheerin .hand{visibility:hidden}   /* 입장 글과 겹치지 않게 — �
 .zmod{font-size:14px;color:#e8dfcc;text-align:left;display:flex;align-items:center;gap:4px} .zmod img{width:20px;height:20px;image-rendering:pixelated}
 .zmro:has(.zmorow:only-child){grid-template-columns:auto}
 .zmorow.off .zmopt,.zmorow.off .zmod{opacity:.45;cursor:default} .zmsm{font-size:12px;opacity:.8;margin-left:6px} .zmod .zmsm{display:inline}
+#goldrain{position:fixed;inset:0;pointer-events:none;z-index:9000;overflow:hidden}
+#goldrain .grcoin{position:absolute;image-rendering:pixelated;filter:drop-shadow(0 2px 2px rgba(0,0,0,.45))}
 .zmrit img,.zmrit svg{width:26px;height:26px;image-rendering:pixelated}
 .zmc.ruin img{width:100%;height:100%}   /* 거대 유적 — 네 조각이 이어 붙는다 */
 .dchip.dgood{color:#7fd39a}.dchip.dbad{color:#ff7a68}
@@ -9897,6 +9899,32 @@ function mimicGoldFX(side,slot){
     if(g.animate) g.animate([{transform:"translate(-50%,-50%) scale(.4)",opacity:0},{transform:"translate(-50%,-150%) scale(1.15)",opacity:1,offset:.3},{transform:"translate(-50%,-190%) scale(1)",opacity:0}],{duration:620,easing:"ease-out",fill:"forwards"});
     setTimeout(()=>g.remove(),650) },t-80);   /* 이빨이 다 드러난 즈음 */
   setTimeout(()=>{ if(d.animate) d.animate([{opacity:1},{opacity:0}],{duration:160,fill:"forwards"}); setTimeout(()=>d.remove(),180) },t+120);
+}
+/* 금화 비 (사용자 2026-11-18) — 전투 화면 밖에서 금화가 늘면 goldWatch 가 부른다.
+   그림은 금화 아이콘(currency_gold) 그대로. 화면 맨 위에 덮어 두고 손은 막지 않는다 (pointer-events:none).
+   받은 만큼 개수가 는다 (5~20개) — 위에서 떨어져 바닥에서 한 번 튀고 사라진다 */
+function goldRain(n){
+  const src=typeof ICON_PNG!=="undefined"&&ICON_PNG.currency_gold; if(!src||typeof document==="undefined"||!document.body) return;
+  let L=document.getElementById("goldrain"); if(!L){ L=document.createElement("div"); L.id="goldrain"; document.body.appendChild(L) }
+  if(L.childElementCount>40) return;   /* 한꺼번에 여러 번 받아도 너무 쌓이지 않게 */
+  const W=window.innerWidth, H=window.innerHeight, N=Math.max(5,Math.min(20,Math.round(4+Math.sqrt(Math.max(1,n))*1.6)));
+  const sz=Math.round(Math.max(22,Math.min(52,H*.046)));
+  for(let i=0;i<N;i++){
+    const c=document.createElement("img"); c.src=src; c.className="grcoin"; c.style.width=c.style.height=sz+"px";
+    const x=W*(.08+Math.random()*.84), dx=(Math.random()-.5)*W*.08, fl=H*(.72+Math.random()*.2)+sz, bo=H*(.04+Math.random()*.05);
+    const r0=(Math.random()-.5)*60, r1=r0+(Math.random()<.5?-1:1)*(160+Math.random()*200);
+    c.style.left=x+"px"; c.style.top=(-sz-10)+"px"; L.appendChild(c);
+    const dur=950+Math.random()*350, dl=Math.random()*380;
+    if(!c.animate){ setTimeout(()=>c.remove(),dur+dl); continue }
+    const T=(y,k,r)=>`translate(${dx*k}px,${y}px) rotate(${r}deg)`;
+    const a=c.animate([
+      {transform:T(0,0,r0),opacity:1,easing:"cubic-bezier(.45,0,1,1)"},
+      {transform:T(fl,.7,r1),opacity:1,offset:.62,easing:"cubic-bezier(0,0,.4,1)"},
+      {transform:T(fl-bo,.85,r1+40),opacity:1,offset:.76,easing:"cubic-bezier(.6,0,1,1)"},
+      {transform:T(fl,1,r1+70),opacity:1,offset:.88},
+      {transform:T(fl,1,r1+70),opacity:0}],{duration:dur,delay:dl,fill:"backwards"});
+    a.onfinish=()=>c.remove();
+  }
 }
 const THORN_IN={key:"fx_thorn_in",ms:[90,75,70,70,75,85,105,140],y:0.86,px:120};
 function thornInFX(side,slot){
@@ -28855,7 +28883,7 @@ function goldWatch(){
   const g=run.gold|0;
   if(typeof obolGoldTick==="function") obolGoldTick();   /* 오볼 약탈꾼 퀘스트 — 얻은 금화 */
   if(GOLDMEM===null){ GOLDMEM=g; return }
-  if(g>GOLDMEM) SFX.play("금화 얻기");
+  if(g>GOLDMEM){ SFX.play("금화 얻기"); if(view!=="battle"&&typeof goldRain==="function") goldRain(g-GOLDMEM) }   /* 하늘에서 금화 (사용자 2026-11-18) — 전투 화면은 빼고 */
   else if(g<GOLDMEM) SFX.play("금화 쓰기");
   GOLDMEM=g;
 }
@@ -29575,6 +29603,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 483, "v": "0.8", "d": "2026-11-18", "t": "금화를 얻으면 하늘에서 금화가 떨어진다 (전투 화면 밖)", "big": 0},
  {"b": 482, "v": "0.8", "d": "2026-11-18", "t": "전투 구역 — 막마다 길, 유물 다섯 (고대의 석판 · 석재 열쇠 · 잠긴 상자 · 강철 모루 · 녹슨 쇠창살)", "big": 0},
  {"b": 481, "v": "0.8", "d": "2026-11-18", "t": "전투 구역 — 특수 입구 드물게", "big": 0},
  {"b": 480, "v": "0.8", "d": "2026-11-18", "t": "전투 구역 — 입구 수치 표시 · 대가 안내 · 발걸음 · 비율 조정", "big": 0},
@@ -31250,7 +31279,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=482;
+const BUILD_NO=483;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
