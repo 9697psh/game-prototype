@@ -29658,6 +29658,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 496, "v": "0.8", "d": "2026-11-21", "t": "함정 피해 합쳐 한 줄로, 확률 글 뺌", "big": 0},
  {"b": 495, "v": "0.8", "d": "2026-11-21", "t": "입구 오염도 · 함정 피해도 흔든다", "big": 0},
  {"b": 494, "v": "0.8", "d": "2026-11-21", "t": "입구마다 보상 값을 흔든다", "big": 0},
  {"b": 493, "v": "0.8", "d": "2026-11-21", "t": "전투 입장 — 참여할 대원을 돌판 칸에", "big": 0},
@@ -31346,7 +31347,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=495;
+const BUILD_NO=496;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -37736,9 +37737,10 @@ function zmPick(i){
   got.forEach(x=>zmPut(d.zloot,x)); d.zlast=o.k;
   const tn=zmTaint(o); if(tn){ addTaint(tn); said.push(`오염도가 ${tn} 증가했습니다.`) }
   const tr=zmTrap(o);
-  if(tr){ let hit=0; for(let s=0;s<o.q;s++) if(Math.random()<zmTrapP(o)){ const v=tr[0]+Math.floor(Math.random()*(tr[1]-tr[0]+1)); hit++;
-      run.heroes.forEach(h=>{ if(!h.down&&h.hp>0) h.hp=Math.max(1,h.hp-v) }); said.push(`함정에 걸려 모든 대원이 피해를 ${v} 받았습니다.`) }
-    if(!hit) said.push("함정을 모두 피했습니다.") }
+  if(tr){ let hit=0, sum=0; for(let s=0;s<o.q;s++) if(Math.random()<zmTrapP(o)){ sum+=tr[0]+Math.floor(Math.random()*(tr[1]-tr[0]+1)); hit++ }
+    /* 15분마다 굴리되 피해는 합쳐 한 번, 한 줄로 (사용자 2026-11-21) */
+    if(hit){ run.heroes.forEach(h=>{ if(!h.down&&h.hp>0) h.hp=Math.max(1,h.hp-sum) }); said.push(`함정에 걸려 모든 대원이 피해를 ${sum} 받았습니다.`) }
+    else said.push("함정을 모두 피했습니다.") }
   z.at++; z.nd=door.id;   /* 이 입구 너머로 — 지나온 길은 이제 막힌다 */
   d.zgo={k:o.k,lines:said};   /* 고른 뒤 그 라운드에 들어가기 전 — 대가 안내 판, 저장 뒤 이어 해도 여기서 (zmGo 가 지운다) */
   spend(o.q*0.25,0);   /* 원정 시계 — 15분 단위 */
@@ -59567,7 +59569,7 @@ function zmPickPanel(door){
   door.offer.forEach((o,i)=>{
     const E=ZM_ENT[o.k], im=typeof ICON_PNG!=="undefined"&&ICON_PNG[E.ic], clk=iconImg("clock");
     const tn=zmTaint(o), tr=zmTrap(o);
-    const bad=[tn?`오염도 +${tn}`:"",tr?`함정 피해 ${tr[0]===tr[1]?tr[0]:tr[0]+"~"+tr[1]} (15분마다 ${Math.round(zmTrapP(o)*100)}%)`:""].filter(Boolean);
+    const bad=[tn?`오염도 +${tn}`:"",tr?`함정 피해 ${tr[0]===tr[1]?tr[0]:tr[0]+"~"+tr[1]}`:""   /* 확률 글은 뺐다 (사용자 2026-11-21) */].filter(Boolean);
     const c=el(`<div class="zment">
       <div class="zmei kw" data-kw="${esc(E.n)}" data-tip="${esc(E.d)}">${im?`<img src="${im}" alt="" draggable="false">`:""}</div>
       <b>${esc(E.n)}</b><div class="zmt">${clk}${o.q*15}분</div>
