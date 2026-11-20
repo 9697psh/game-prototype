@@ -6774,6 +6774,8 @@ body.cheerin .hand{visibility:hidden}   /* 입장 글과 겹치지 않게 — �
 .zmorow.off .zmopt,.zmorow.off .zmod{opacity:.45;cursor:default} .zmsm{font-size:12px;opacity:.8;margin-left:6px} .zmod .zmsm{display:inline}
 #goldrain{position:fixed;inset:0;pointer-events:none;z-index:9000;overflow:hidden}
 #goldrain .grcoin{position:absolute;image-rendering:pixelated;filter:drop-shadow(0 2px 2px rgba(0,0,0,.45))}
+.zmod.zmodc{flex-direction:column;align-items:flex-start;gap:2px} .zmodc>span:first-child{display:flex;align-items:center;gap:4px}
+.zmrl{font-size:13px;color:#9fd29a} .zmrl.bad{color:#ff7a6a}   /* 결과 줄 — 좋은 것 초록, 나쁜 것 붉게 (시안의 + / -) */
 .zmrit img,.zmrit svg{width:26px;height:26px;image-rendering:pixelated}
 .zmc.ruin img{width:100%;height:100%}   /* 거대 유적 — 네 조각이 이어 붙는다 */
 .dchip.dgood{color:#7fd39a}.dchip.dbad{color:#ff7a68}
@@ -29614,6 +29616,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 491, "v": "0.8", "d": "2026-11-20", "t": "전투 구역 지도 — 채택 유물 열둘 (균열 유물 시안)", "big": 0},
  {"b": 490, "v": "0.8", "d": "2026-11-19", "t": "가방 — 어디서든 왼쪽에서 미끄러져 나오는 판", "big": 0},
  {"b": 489, "v": "0.8", "d": "2026-11-19", "t": "전투 구역 지도 — 갈림길, 지나온 길 막기", "big": 0},
  {"b": 488, "v": "0.8", "d": "2026-11-19", "t": "전투 구역 지도 — 막마다 더 복잡하게, 입구 보상 아이콘", "big": 0},
@@ -31297,7 +31300,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=490;
+const BUILD_NO=491;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -37145,7 +37148,8 @@ function dungeonCleared(){
     backToMap(); return;
   }
   if(run.gimRes){ view="gimres"; render(); return }               /* 전용 구역 — 결과 화면 먼저, 그 다음 상자 */
-  if(d.cell&&d.cell.wagon&&d.rescued){ afterChest(); return }   /* 죄수를 살렸으면 상자 대신 중급 보상 하나 */
+  if(d.cell&&d.cell.wagon&&d.rescued){ afterChest(); return }
+  if(typeof zmAmbushWon==="function"&&zmAmbushWon(d)){ afterChest(); return }   /* 유물 기습 — 상자 없이 (2026-11-20) */   /* 죄수를 살렸으면 상자 대신 중급 보상 하나 */
   openChest(d.kind);
 }
 
@@ -37284,6 +37288,30 @@ function zmHurt(list,v){ list.forEach(h=>{ if(!h.down&&h.hp>0) h.hp=Math.max(1,h
 const zmUp=()=>run.heroes.filter(h=>!h.down&&h.hp>0);
 function zmLoot(t,n){ for(let i=0;i<(n||1);i++) zmPut(run.dun.zloot,{t:t}) }   /* 최종 상자에 — 상급 · 중급 보상 */
 const zmLootLine=(g,n)=>({ic:{"하급":"chest_bronze","중급":"chest_silver","상급":"chest_gold"}[g],txt:`${g} 보상${n>1?` ${n}개를`:"을"} 얻었습니다.`});
+/* ── 셋째 묶음의 손 (2026-11-20) ── */
+const ZM_GOLD_S=[[1,5],[4,12],[10,30]];   /* 「금화 조금」 — 버려진 상자와 같은 값 */
+const zmRS=A=>{ const r=A[zmAct()]; return r[0]===r[1]?""+r[0]:r[0]+"~"+r[1] };   /* 막 값을 글로 */
+function zmGold(v){ run.gold+=v; return {ic:"currency_gold",txt:`${v}${zmEul(v)} 발견했습니다.`} }
+function zmShard(n){ const its=[]; for(let i=0;i<n;i++){ const it=Object.assign({},itemDef("검 파편")); (run.bag=run.bag||[]).push(it); its.push(it) }
+  return {items:its,txt:"검 파편을 얻었습니다."} }   /* 가방에 바로 — 녹슨 쇠창살 부수기에 쓴다 */
+function zmHurtOne(v){ const U=zmUp(), h=U.length?rnd(U):null; if(h) zmHurt([h],v);
+  return {txt:h?`${h.name}${jo(h.name,"ig")} 피해를 ${v} 받았습니다.`:"아무 일도 일어나지 않았습니다.",bad:1} }
+/* 성향 하나 — good 이면 선성향, 아니면 악성향. 이미 가진 것은 빼고 무작위 (성향을 끈 판 · 시뮬에서는 없음) */
+function zmDispAdd(h,good){ if(!h||(typeof dispOn==="function"&&!dispOn())) return null;
+  const has=n=>!!(h.disp&&(h.disp.good.indexOf(n)>=0||h.disp.bad.indexOf(n)>=0));
+  const L=Object.keys(good?DISP_GOOD:DISP_BAD).filter(n=>!has(n)); if(!L.length) return null;
+  const n=rnd(L); steleGive(h,good?{good:[n],bad:[]}:{good:[],bad:[n]});
+  return {txt:`${h.name}에게 [${n}] 성향이 생겼습니다.`,bad:good?0:1} }
+/* 구역 — 시안의 묶음 그대로 (all · prison · scrap · forest · arena · tower) */
+function zmZone(zs){ if(!zs||zs.indexOf("all")>=0) return true;
+  const f=(run&&run.field)||0, here=f===0?({"핏빛 감옥":"prison","고철의 무덤":"scrap"})[act1Name()]
+    :f===1?({"정령숲":"forest","광기의 투기장":"arena"})[act2Name()]:"tower";
+  return zs.indexOf(here)>=0 }
+/* 다음 라운드 버프 (녹슨 검 숫돌질) — 라운드에 들어갈 때 걸고(zmRoundStart), 대원을 놓을 때 붙고(zmDeploy), 지도로 돌아오면 끝 */
+function zmRoundStart(){ const d=run.dun; if(!d) return; d.zmAtkLive=d.zmAtk||0; d.zmAtk=0 }
+function zmRoundEnd(){ const d=run.dun; if(d) d.zmAtkLive=0 }
+function zmDeploy(h){ const d=run&&run.dun; if(!d||!d.zmAtkLive||!h||typeof B==="undefined"||!B||h._zmAtkB===B) return;
+  h._zmAtkB=B; bumpTmp(h,"atk",d.zmAtkLive) }
 const ZM_RELIC={
  "버려진 상자":{ic:"battle_zone_relic_abandoned_chest",icDone:"battle_zone_relic_abandoned_chest_open",tier:"중",
    tip:"바닥에 내팽겨진 상자입니다.", d:"바닥에 내팽겨진 상자를 발견합니다.",
@@ -37356,7 +37384,149 @@ const ZM_RELIC={
         const U=zmUp(), h=U[Math.floor(Math.random()*U.length)], v=zmRR([3,7]); if(h) zmHurt([h],v);
         return {lines:[{txt:h?`${h.name}${jo(h.name,"ig")} 피해를 ${v} 받았습니다.`:"아무 일도 일어나지 않았습니다.",bad:1}]} }},
       {t:"부수기",d:"검 파편을 2개 소모합니다. 즉시 보상을 얻습니다.",why:"(검 파편을 2개 이상 보유할 때 선택할 수 있습니다.)",ok:()=>zmHasN("검 파편")>=2,
-        f:()=>{ zmTakeN("검 파편",2); zmLoot("중급"); return {lines:[zmLootLine("중급",1)]} }}]}
+        f:()=>{ zmTakeN("검 파편",2); zmLoot("중급"); return {lines:[zmLootLine("중급",1)]} }}]},
+ /* ── 2026-11-20 셋째 묶음 — 균열 유물 시안(https://claude.ai/artifact/PCmGrJhcBENvdjNKxbez24)에서 「채택」된 열둘.
+    그림 GameProject2/art/maps/rift-relic-map-icons-v1. zones : 나오는 구역 (zmZone) ── */
+ "해골 무더기":{ic:"rift_relic_skull_pile",icDone:"rift_relic_skull_pile_searched",tier:"상",zones:["prison","scrap"],
+   tip:"안타깝지만, 챙길 건 챙겨야죠.", d:"안타깝지만, 챙길 건 챙겨야죠.",
+   kinds:["battle1","battle2","battle3"], acts:[0,1,2],
+   o:[{t:"뒤지기",d:"{clock}15분 소요됩니다. 뼈 사이를 뒤집니다.",
+        r:()=>[{t:"60% 검 파편 1"},{t:`25% 금화 ${zmRS(ZM_GOLD_S)}`},{t:`15% 무작위 대원 하나 피해 ${zmRS([[1,3],[3,7],[4,8]])}`,bad:1}],
+        f:()=>{ zmSpend(.25); const r=Math.random();
+          if(r<.6) return {lines:[zmShard(1)]};
+          if(r<.85) return {lines:[zmGold(zmRR(ZM_GOLD_S[zmAct()]))]};
+          return {lines:[zmHurtOne(zmRR([[1,3],[3,7],[4,8]][zmAct()]))]} }},
+      {t:"지나가기",d:"지나갑니다.",f:()=>({pass:1})}]},
+ "꺼진 모닥불":{ic:"rift_relic_extinguished_campfire",tier:"상",zones:["prison","scrap","forest","arena"],
+   tip:"아직 따뜻합니다.", d:"아직 따뜻합니다.",
+   kinds:["battle1","battle2","battle3","elite"], acts:[0,1,2],
+   o:[{t:"불 지피기",d:"{clock}30분 소요됩니다. 잠시 몸을 녹입니다.",
+        r:()=>[{t:`모든 대원 피로도 −${[5,10,15][zmAct()]}`},{t:`체력 ${zmRS([[1,3],[3,5],[5,7]])} 회복`}],
+        f:()=>{ zmSpend(.5); const fv=[5,10,15][zmAct()], hv=zmRR([[1,3],[3,5],[5,7]][zmAct()]);
+          zmUp().forEach(h=>{ fatAdd(h,-fv); healUp(h,hv,1) });
+          return {icDone:"rift_relic_extinguished_campfire_lit",lines:[{txt:`모든 대원의 피로도가 ${fv} 감소했습니다.`},{ic:"life",txt:`모든 대원이 체력을 ${hv} 회복했습니다.`}]} }},
+      {t:"잿더미 뒤지기",d:"{clock}15분 소요됩니다.",
+        r:()=>[{t:`50% 금화 ${zmRS(ZM_GOLD_S)}`},{t:"50% 없음"}],
+        f:()=>{ zmSpend(.25); return {lines:[Math.random()<.5?zmGold(zmRR(ZM_GOLD_S[zmAct()])):{txt:"아무것도 발견하지 못했습니다."}]} }}]},
+ "낡은 배낭":{ic:"rift_relic_old_backpack",icDone:"rift_relic_old_backpack_searched",tier:"상",zones:["prison","scrap"],
+   tip:"끈이 끊어진 배낭입니다.", d:"끈이 끊어진 배낭입니다.",
+   kinds:["battle1","battle2","battle3"], acts:[0,1,2],
+   o:[{t:"뒤지기",d:"{clock}15분 소요됩니다. 배낭 속을 뒤집니다.",
+        r:()=>[{t:"45% 하급 보상"},{t:`35% 금화 ${zmRS(ZM_GOLD_S)}`},{t:"20% 없음"}],
+        f:()=>{ zmSpend(.25); const r=Math.random();
+          if(r<.45){ zmLoot("하급"); return {lines:[zmLootLine("하급",1)]} }
+          if(r<.8) return {lines:[zmGold(zmRR(ZM_GOLD_S[zmAct()]))]};
+          return {lines:[{txt:"아무것도 발견하지 못했습니다."}]} }}]},
+ "녹슨 검":{ic:"rift_relic_rusted_sword",tier:"상",zones:["all"],
+   tip:"누군가의 녹슨 검이 놓여져 있습니다.", d:"누군가의 녹슨 검이 놓여져 있습니다.",
+   kinds:["battle1","battle2","battle3"], acts:[0,1,2],
+   o:[{t:"챙기기",d:"{clock}45분 소요됩니다.",
+        r:()=>[{t:["무작위 파편 장신구 1","무작위 일반 장신구 1","무작위 일반 장신구 1~2"][zmAct()]}],
+        f:()=>{ zmSpend(.75); const a=zmAct(), g=a===0?"파편":"일반", n=a===2?zmRR([1,2]):1;
+          const its=[]; for(let i=0;i<n;i++) its.push(Object.assign({},rnd(ITEMS.filter(x=>x.g===g))));
+          its.forEach(it=>(run.after=run.after||[]).push({item:it}));   /* 장신구는 최종 보상 뒤에 하나씩 */
+          return {lines:[{items:its,txt:`장신구 ${its.length}개를 얻었습니다.`}]} }},
+      {t:"숫돌질",d:`{clock}30분 소요됩니다. {ore} ${[1,2,3][0]}개를 소모합니다.`,
+        dd:()=>`{clock}30분 소요됩니다. {ore} ${[1,2,3][zmAct()]}개를 소모합니다.`,
+        why:"(제련석이 모자랍니다.)", ok:()=>(run.stone||0)>=[1,2,3][zmAct()],
+        r:()=>[{t:`다음 라운드 동안 모든 대원의 추가 공격력 +${[1,1,2][zmAct()]}`}],
+        f:()=>{ zmSpend(.5); const a=zmAct(), c=[1,2,3][a], v=[1,1,2][a]; run.stone=Math.max(0,(run.stone||0)-c);
+          run.dun.zmAtk=(run.dun.zmAtk||0)+v;   /* 다음 라운드에 들어갈 때 걸린다 (zmRoundStart → zmDeploy) */
+          return {lines:[{txt:`다음 라운드 동안 모든 대원의 추가 공격력이 ${v} 증가합니다.`}]} }}]},
+ "묘비":{ic:"rift_relic_gravestone",tier:"중",zones:["forest","arena"],
+   tip:"이름이 지워진 묘비입니다.", d:"이름이 지워진 묘비입니다.",
+   kinds:["battle1","battle2","battle3","elite"], acts:[0,1,2],
+   o:[{t:"경의 표하기",d:"{clock}15분 소요됩니다.",
+        r:()=>[{t:`모든 대원 경험치 ${zmRS([[4,6],[8,12],[16,24]])}`}],
+        f:()=>{ zmSpend(.25); const v=zmRR([[4,6],[8,12],[16,24]][zmAct()]); giveExp(v,zmUp(),true);
+          return {lines:[{ic:"exp_arrow",txt:`모든 대원이 경험치를 ${v} 얻었습니다.`}]} }},
+      {t:"도굴하기",d:"{clock}15분 소요됩니다. 오염도가 10~20 증가합니다.",
+        r:()=>[{t:"일반 장신구 1"},{t:"30% 무작위 대원에게 악성향 하나",bad:1}],
+        f:()=>{ zmSpend(.25); const tv=zmRR([10,20]); addTaint(tv);
+          const it=Object.assign({},rnd(ITEMS.filter(x=>x.g==="일반"))); (run.after=run.after||[]).push({item:it});
+          const L=[{txt:`오염도가 ${tv} 증가했습니다.`,bad:1},{items:[it],txt:"장신구 1개를 얻었습니다."}];
+          if(Math.random()<.3){ const s=zmDispAdd(rnd(zmUp()),false); if(s) L.push(s) }
+          return {lines:L} }}]},
+ "기도하는 석상":{ic:"rift_relic_praying_statue",tier:"중",zones:["all"],
+   tip:"'저 이방인들을 몰아내어 주소서'", d:"'저 이방인들을 몰아내어 주소서'",
+   kinds:["battle1","battle2","battle3"], acts:[0,1,2],
+   o:[{t:"기도하기",d:"{clock}15분 소요됩니다.",
+        r:()=>[{t:`오염도 −${[10,20,30][zmAct()]}`}],
+        f:()=>{ zmSpend(.25); const v=[10,20,30][zmAct()]; addTaint(-v); return {lines:[{txt:`오염도가 ${v} 감소했습니다.`}]} }},
+      {t:"공물 바치기",d:"금화 10을 소모합니다.",dd:()=>`금화 ${[10,20,30][zmAct()]}을 소모합니다.`,
+        why:"(금화가 모자랍니다.)", ok:()=>run.gold>=[10,20,30][zmAct()],
+        r:()=>[{t:`오염도 −${[30,40,50][zmAct()]}`}],
+        f:()=>{ const a=zmAct(); run.gold-=[10,20,30][a]; const v=[30,40,50][a]; addTaint(-v); return {lines:[{txt:`오염도가 ${v} 감소했습니다.`}]} }}]},
+ "행상인의 수레":{ic:"rift_relic_merchant_cart",tier:"상",zones:["all"],
+   tip:"다양한 먹거리들이 많습니다! 썩어있지만요.", d:"다양한 먹거리들이 많습니다! 썩어있지만요.",
+   kinds:["battle2","battle3"], acts:[0,1,2],
+   o:[{t:"짐 뒤지기",d:"{clock}15분 소요됩니다.",
+        r:()=>[{t:"무작위 상점 카드 1~2장"}],
+        f:()=>{ zmSpend(.25); const P=typeof cheatCards==="function"?cheatCards():[], n=zmRR([1,2]), got=[];
+          for(let i=0;i<n&&P.length;i++){ const c=rnd(P); addCard(run,c,1); got.push(c) }
+          return {icDone:"rift_relic_merchant_cart_searched",lines:got.length?got.map(c=>({txt:`[${c}] 카드를 얻었습니다.`})):[{txt:"아무것도 발견하지 못했습니다."}]} }},
+      {t:"썩은 음식 먹기",d:"{clock}15분 소요됩니다.",
+        r:()=>[{t:"모든 대원의 체력 20% 회복"},{t:"모든 대원의 피로도 20% 증가",bad:1}],
+        f:()=>{ zmSpend(.25); const fv=Math.round(FAT_MAX*.2);
+          zmUp().forEach(h=>{ healUp(h,Math.max(1,Math.round((h.maxHp||0)*.2)),1); fatAdd(h,fv) });
+          return {lines:[{ic:"life",txt:"모든 대원이 최대 체력의 20%만큼 회복했습니다."},{txt:`모든 대원의 피로도가 ${fv} 증가했습니다.`,bad:1}]} }}]},
+ "낡은 우물":{ic:"rift_relic_old_well",tier:"하",zones:["all"],
+   tip:"끝이 보이지 않는 우물을 발견합니다. 저 공허한 공간이 어딘가 익숙합니다.", d:"끝이 보이지 않는 우물을 발견합니다. 저 공허한 공간이 어딘가 익숙합니다.",
+   kinds:["battle1","battle2","battle3"], acts:[0,1,2],
+   o:[{t:"동전 던지기",d:"금화 5를 소모합니다.",dd:()=>`금화 ${[5,10,15][zmAct()]}${zmEul([5,10,15][zmAct()])} 소모합니다.`,
+        why:"(금화가 모자랍니다.)", ok:()=>run.gold>=[5,10,15][zmAct()],
+        r:()=>[{t:"40% 무작위 대원에게 선성향 하나"}],
+        f:()=>{ run.gold-=[5,10,15][zmAct()];
+          if(Math.random()<.4){ const s=zmDispAdd(rnd(zmUp()),true); if(s) return {lines:[s]} }
+          return {lines:[{txt:"아무 일도 일어나지 않았습니다."}]} }},
+      {t:"물 긷기",d:"{clock}15분 소요됩니다.",
+        r:()=>[{t:`모든 대원 체력 ${zmRS([[1,3],[3,5],[5,7]])} 회복`},{t:`20% 오염도 +${[5,10,15][zmAct()]}`,bad:1}],
+        f:()=>{ zmSpend(.25); const hv=zmRR([[1,3],[3,5],[5,7]][zmAct()]); zmUp().forEach(h=>healUp(h,hv,1));
+          const L=[{ic:"life",txt:`모든 대원이 체력을 ${hv} 회복했습니다.`}];
+          if(Math.random()<.2){ const tv=[5,10,15][zmAct()]; addTaint(tv); L.push({txt:`오염도가 ${tv} 증가했습니다.`,bad:1}) }
+          return {lines:L} }}]},
+ "의문의 상자":{ic:"rift_relic_mysterious_chest",tier:"하",zones:["prison","scrap"],
+   tip:"...방금 움직이지 않았어요?", d:"...방금 움직이지 않았어요?",
+   kinds:["battle1","battle2","battle3","elite"], acts:[0,1,2],
+   o:[{t:"열기",d:"",
+        r:()=>[{t:"65% 중급 보상"},{t:"35% 미믹이 깨어나 기습 (이기면 중급 보상 2개)",bad:1}],
+        f:()=>{ if(Math.random()<.65){ zmLoot("중급"); return {icDone:"rift_relic_mysterious_chest_open",lines:[zmLootLine("중급",1)]} }
+          return {icDone:"rift_relic_mysterious_chest_mimic",lines:[{txt:"상자가 이빨을 드러냅니다! 미믹입니다.",bad:1}],
+            ambush:{force:[["미믹",1]],noLoot:1,win:["중급","중급"]}} }},
+      {t:"지나가기",d:"지나갑니다.",f:()=>({pass:1})}]},
+ "잠든 괴물":{ic:"rift_relic_sleeping_monster",icDone:"rift_relic_sleeping_monster_awake",tier:"하",zones:["forest","arena","tower"],
+   tip:"거대한 무언가가 길을 막고 있습니다. 다행히 잠에 든 것 같긴 하지만...", d:"거대한 무언가가 길을 막고 있습니다. 다행히 잠에 든 것 같긴 하지만...",
+   kinds:["battle2","battle3"], acts:[0,1,2],
+   o:[{t:"몰래 지나가기",d:"",
+        r:()=>[{t:"85% 아무 일 없음"},{t:"15% 깨어나 기습 (보상 없음)",bad:1}],
+        f:()=>{ if(Math.random()<.85) return {icDone:"rift_relic_sleeping_monster",lines:[{txt:"무사히 지나갔습니다."}]};
+          return {lines:[{txt:"괴물이 깨어났습니다!",bad:1}],ambush:{noLoot:1}} }},
+      {t:"깨우기",d:"괴물을 깨웁니다!",
+        r:()=>[{t:"이기면 중급 보상 2개"}],
+        f:()=>({lines:[{txt:"괴물이 깨어났습니다!",bad:1}],ambush:{noLoot:1,win:["중급","중급"]}})}]},
+ "피의 제단":{ic:"rift_relic_blood_altar",tier:"하",zones:["forest","arena"],
+   tip:"그대의 피로 번성하고, 그대의 피로 몰락하리", d:"그대의 피로 번성하고, 그대의 피로 몰락하리",
+   kinds:["battle2","battle3","elite"], acts:[0,1,2],
+   o:[{t:"피 바치기",d:"모든 대원이 체력을 60% 잃습니다.",
+        r:()=>[{t:"상급 보상"}],
+        f:()=>{ zmUp().forEach(h=>{ h.hp=Math.max(1,h.hp-Math.floor(h.hp*.6)) }); zmLoot("상급");
+          return {lines:[{txt:"모든 대원이 체력을 60% 잃었습니다.",bad:1},zmLootLine("상급",1)]} }},
+      {t:"지나가기",d:"지나갑니다.",f:()=>({pass:1})}]},
+ "균열의 틈":{ic:"rift_relic_rift_fissure",tier:"하",zones:["all"],
+   tip:"\"종말! 세상의 종말이로다!\"", d:"\"종말! 세상의 종말이로다!\"",
+   kinds:["battle2","battle3","elite"], acts:[0,1,2],
+   o:[{t:"손 넣기",d:"오염도가 10 증가합니다.",dd:()=>`오염도가 ${[10,20,30][zmAct()]} 증가합니다.`,
+        why:"(악성향이 있는 대원이 있을 때만 선택할 수 있습니다.)", ok:()=>zmUp().some(h=>h.disp&&h.disp.bad&&h.disp.bad.length),
+        r:()=>[{t:"무작위 대원의 악성향 1개 제거"}],
+        f:()=>{ const tv=[10,20,30][zmAct()]; addTaint(tv); const L=[{txt:`오염도가 ${tv} 증가했습니다.`,bad:1}];
+          const H=zmUp().filter(h=>h.disp&&h.disp.bad&&h.disp.bad.length), h=H.length?rnd(H):null;
+          if(h){ const n=rnd(h.disp.bad); h.disp.bad.splice(h.disp.bad.indexOf(n),1); L.push({txt:`${h.name}의 [${n}] 성향이 사라졌습니다.`}) }
+          return {lines:L} }},
+      {t:"들여다보기",d:"{clock}15분 소요됩니다.",dd:()=>`{clock}15분 소요됩니다. 오염도가 ${["1~5","3~10","5~15"][zmAct()]} 증가합니다.`,
+        r:()=>[{t:`모든 대원 경험치 ${zmRS([[4,6],[8,12],[16,24]])}`}],
+        f:()=>{ zmSpend(.25); const a=zmAct(), tv=zmRR([[1,5],[3,10],[5,15]][a]), v=zmRR([[4,6],[8,12],[16,24]][a]);
+          addTaint(tv); giveExp(v,zmUp(),true);
+          return {lines:[{txt:`오염도가 ${tv} 증가했습니다.`,bad:1},{ic:"exp_arrow",txt:`모든 대원이 경험치를 ${v} 얻었습니다.`}]} }}]}
 
 };
 const zmKind=()=>{ const d=run.dun; return d.kind==="elite"?"elite":"battle"+Math.min(3,d.waves||1) };
@@ -37364,7 +37534,7 @@ const zmKind=()=>{ const d=run.dun; return d.kind==="elite"?"elite":"battle"+Mat
 function zmRelicRoll(){
   const r=Math.random(), n=r<.7?0:r<.97?1:2; if(!n) return [];
   const a=zmAct(), k=zmKind(), Wt=x=>ZM_TIER[ZM_RELIC[x].tier]*(ZM_RELIC[x].aw?ZM_RELIC[x].aw[a]:1);
-  const L=Object.keys(ZM_RELIC).filter(x=>{ const R=ZM_RELIC[x]; return R.kinds.indexOf(k)>=0&&R.acts.indexOf(a)>=0&&(!R.only||R.only())&&Wt(x)>0 });
+  const L=Object.keys(ZM_RELIC).filter(x=>{ const R=ZM_RELIC[x]; return R.kinds.indexOf(k)>=0&&R.acts.indexOf(a)>=0&&(!R.only||R.only())&&(!R.zones||zmZone(R.zones))&&Wt(x)>0 });
   const out=[]; for(let i=0;i<n&&L.length;i++){ let tot=L.reduce((s,x)=>s+Wt(x),0), y=Math.random()*tot, pick=L[0];
     for(const x of L){ y-=Wt(x); if(y<0){ pick=x; break } } out.push(pick) }
   return out }
@@ -37488,7 +37658,12 @@ function zmPick(i){
   spend(o.q*0.25,0);   /* 원정 시계 — 15분 단위 */
   return said }
 /* 유물에서 기습 — 지금 구역(run.dun)을 run.zmHold 에 맡기고 습격 전투. 이기고 상자까지 받으면 backToMap 이 이 지도로 돌려보낸다 */
-function zmAmbush(){ run.zmHold=run.dun; startDungeon({t:"ambush",waves:1,zmAmb:1},null,null) }
+function zmAmbush(o){ o=o||{}; run.zmHold=run.dun;
+  startDungeon({t:"ambush",waves:1,zmAmb:1,force:o.force||null,zmNoLoot:o.noLoot?1:0,zmWin:o.win||null},null,null) }
+/* 유물 기습을 이겼다 — 상자 없이(zmNoLoot) 약속한 보상을 맡겨 둔 구역의 최종 상자에 (의문의 상자 · 잠든 괴물) */
+function zmAmbushWon(d){ if(!d||!d.cell||!d.cell.zmNoLoot) return false;
+  if(d.cell.zmWin&&run.zmHold) d.cell.zmWin.forEach(g=>zmPut(run.zmHold.zloot=run.zmHold.zloot||[],{t:g}));
+  return true }
 /* 마지막 라운드를 이겼다 — 모은 것으로 상자를 연다 (openChest) */
 function zmChestList(kind){
   const d=run.dun, L=(d.zloot||[]).map(x=>Object.assign({},x));
@@ -51347,6 +51522,7 @@ function colTrophyDeploy(h){
 }
 function onSummon(h){
   handOpenFor(h);
+  if(typeof zmDeploy==="function") zmDeploy(h);   /* 녹슨 검 숫돌질 — 다음 라운드 추가 공격력 (2026-11-20) */
   dispDeploy(h);    /* 성향 — 배려심 · 담력 · 침착 · 도벽 · 엄살 (2026-11-10) */
   rayStance(h,1);   /* 레이 적응성 — 배치하는 그 순간에 태세가 정해진다 (노트 20-0, 2026-10-21) */
   reiDeploy(h);     /* 레이의 「대원 배치 후」 보상 — 태세를 보고 갈린다 (2026-10-21) */
@@ -59211,15 +59387,16 @@ function drawZoneMap(app){
 function zmRelicPanel(j){
   const c=run.dun.zm.cells[j], R=ZM_RELIC[c.relic], res=c.relicRes;
   const im=k=>(k&&typeof ICON_PNG!=="undefined"&&ICON_PNG[k])?`<img src="${ICON_PNG[k]}" alt="" draggable="false">`:"";
-  const big=zmIc(R,res&&R.icDone?R.icDone:R.ic);
+  const big=zmIc(R,res&&(res.icDone||R.icDone)?(res.icDone||R.icDone):R.ic);
   const tok=s=>esc(s).replace("{clock}",iconImg("clock")).replace("{ore}",iconImg("ore")).replace("{i}",'<i class="zmsm">').replace("{/i}","</i>");
   const line=L=>`<p class="zmrr${L.bad?" zmbad2":""}">${L.ic?iconImg(L.ic):""}${(L.items||[]).map(it=>`<span class="zmrit">${itemIcon(it,26)}</span>`).join("")}${esc(L.txt||"")}</p>`;
   const w=el(`<div class="zmpick zmrel"><div class="zmrb"><b>${esc(c.relic)}</b><div class="zmri">${im(big)}</div>
     ${res?(res.lines||[]).map(line).join(""):`<p>${esc(R.d)}</p><div class="zmro"></div>`}</div></div>`);
-  if(res){ w.onclick=()=>{ ZM_UI.relic=null; if(res.ambush){ delete res.ambush; blackout(()=>zmAmbush()); return } render() }; return w }   /* 석판 기습 — 닫으면 습격 전투 */
+  if(res){ w.onclick=()=>{ ZM_UI.relic=null; if(res.ambush){ const o=typeof res.ambush==="object"?res.ambush:{}; delete res.ambush; blackout(()=>zmAmbush(o)); return } render() }; return w }   /* 석판 기습 — 닫으면 습격 전투 */
   const ro=w.querySelector(".zmro");
   R.o.forEach((o,i)=>{ const off=!!(o.ok&&!o.ok());
-    const b=el(`<div class="zmorow${off?" off":""}"><button type="button" class="zmopt"${off?" disabled":""}>${esc(o.t)}</button>${o.d?`<span class="zmod">${tok(o.d)}${off&&o.why?`<i class="zmsm">${esc(o.why)}</i>`:""}</span>`:""}</div>`);
+    const od=o.dd?o.dd():o.d, rr=o.r?o.r():null;   /* 막 값이 든 글 · 결과 줄 (2026-11-20) */
+    const b=el(`<div class="zmorow${off?" off":""}"><button type="button" class="zmopt"${off?" disabled":""}>${esc(o.t)}</button>${od||rr?`<span class="zmod${rr?" zmodc":""}">${rr?`<span>${tok(od||"")}${off&&o.why?`<i class="zmsm">${esc(o.why)}</i>`:""}</span>`+rr.map(x=>`<span class="zmrl${x.bad?" bad":""}">${esc(x.t)}</span>`).join(""):`${tok(od)}${off&&o.why?`<i class="zmsm">${esc(o.why)}</i>`:""}`}</span>`:""}</div>`);
     b.querySelector("button").onclick=e=>{ e.stopPropagation(); if(c.relicDone||off) return; try{ SFX.play("click") }catch(_){}
       const r=zmRelicPick(j,i); if(run.lost) return; if(r&&r.pass) ZM_UI.relic=null; render() };
     ro.appendChild(b) });
@@ -59288,7 +59465,7 @@ function zmPickPanel(door){
     row.appendChild(c) });
   return w }
 /* 그 라운드로 — 암전 → 전투 */
-function zmGo(){ if(ZM_UI.going) return; ZM_UI.going=1; blackout(()=>{ ZM_UI.going=0; if(!run.dun) return; delete run.dun.zgo; if(view==="zmap") nextWave() }) }
+function zmGo(){ if(ZM_UI.going) return; ZM_UI.going=1; blackout(()=>{ ZM_UI.going=0; if(!run.dun) return; delete run.dun.zgo; if(view==="zmap"){ zmRoundStart(); nextWave() } }) }
 /* 대가 안내 — 위험한 · 오염된 입구에서 받은 것. 아무 데나 누르면 전투로 */
 function zmGoPanel(g){
   const E=ZM_ENT[g.k]||{}, im=typeof ICON_PNG!=="undefined"&&ICON_PNG[E.ic];
@@ -59296,7 +59473,7 @@ function zmGoPanel(g){
     ${(g.lines||[]).map(t=>`<p class="zmbad2">${esc(t)}</p>`).join("")}</div></div>`);
   w.onclick=()=>zmGo(); return w }
 /* 라운드를 이기고 남은 라운드가 있다 — 암전 → 지도 (claimGo 가 부른다) */
-function zmBack(){ blackout(()=>{ ZM_UI.pick=0; ZM_UI.walk=0; ZM_UI.relic=null; view="zmap"; render() }) }
+function zmBack(){ zmRoundEnd(); blackout(()=>{ ZM_UI.pick=0; ZM_UI.walk=0; ZM_UI.relic=null; view="zmap"; render() }) }
 try{ requestAnimationFrame(()=>requestAnimationFrame(iconsFxLoad)) }catch(e){}
 txtApply();
 render();
