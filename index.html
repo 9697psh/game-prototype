@@ -29658,6 +29658,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 494, "v": "0.8", "d": "2026-11-21", "t": "입구마다 보상 값을 흔든다", "big": 0},
  {"b": 493, "v": "0.8", "d": "2026-11-21", "t": "전투 입장 — 참여할 대원을 돌판 칸에", "big": 0},
  {"b": 492, "v": "0.8", "d": "2026-11-21", "t": "대원 단추 — 가방 옆, 정면 얼굴을 누르면 그 대원의 지금 정보", "big": 0},
  {"b": 491, "v": "0.8", "d": "2026-11-20", "t": "전투 구역 지도 — 채택 유물 열둘 (균열 유물 시안)", "big": 0},
@@ -31344,7 +31345,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=493;
+const BUILD_NO=494;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -37338,8 +37339,18 @@ function zmOffer(){
     const L=Object.keys(ZM_ENT).filter(k=>k==="stone"||!out.some(o=>o.k===k)); if(!L.length) break;   /* 석조는 겹쳐도 된다 — 특수 입구가 억지로 끼지 않게 */
     let tot=L.reduce((s,k)=>s+W(k),0), x=Math.random()*tot, k=L[0];
     for(const kk of L){ x-=W(kk); if(x<0){ k=kk; break } }
-    const T=ZM_ENT[k].t; out.push({k:k,q:T[0]+Math.floor(Math.random()*(T[1]-T[0]+1))}) }
+    const T=ZM_ENT[k].t; out.push({k:k,q:T[0]+Math.floor(Math.random()*(T[1]-T[0]+1)),v:zmVary(k)}) }
   return out }
+/* 입구마다 값을 흔든다 (사용자 2026-11-21 「두 입구가 똑같은 경우가 많다」) — 묶음의 갈래마다 배수.
+   양(금화 · 경험치 · 제련석) : 아래 끝 ×0.6~1.2 · 위 끝 ×0.8~1.4 (3~5 도 되고 2~5 도 된다), 25% 는 한 값으로 굳는다 (가운데 ×0.75~1.25).
+   확률 : ×0.6~1.4 (15% 가 13% · 19% 로). 평균은 그대로 1 근처. 옛 저장본의 입구(v 없음)는 배수 1 */
+function zmVary(k){ const E=ZM_ENT[k], B=Object.assign({},E.b,E.b3||{}), v={}, U=(a,b)=>a+Math.random()*(b-a);
+  Object.keys(B).forEach(key=>{ const r=B[key];
+    if(Array.isArray(r)){ if(Math.random()<.25){ const mid=(r[0]+r[1])/2*U(.75,1.25); v[key]=[mid/r[0],mid/r[1]] } else v[key]=[U(.6,1.2),U(.8,1.4)] }
+    else v[key]=U(.6,1.4) });
+  return v }
+/* 한 묶음(15분)의 양 범위 — [아래, 위], 1 아래로는 안 내린다 */
+function zmAmtR(r,f,mul){ f=f||[1,1]; const L=Math.max(1,Math.round(r[0]*f[0]*mul)), H=Math.max(1,Math.round(r[1]*f[1]*mul)); return [Math.min(L,H),Math.max(L,H)] }
 /* ═══ 유물 (사용자 2026-11-18) — 입구까지 이어지는 길목(구간마다)에 0개 70% · 1개 · 아주 드물게 2개.
    있으면 등급 무게(상 70 · 중 40 · 하 15)로 어느 유물인지. kinds 는 그 유물이 나오는 전투(battle1~3 · elite), acts 는 막(0~2).
    칸에 닿으면 멈추고 유물 판 — 설명 · 선택지(이름 · 한 줄). 고른 결과는 바로 받는다. o.d 의 {clock} {ore} 는 화면이 그림으로 바꾼다.
@@ -37688,8 +37699,8 @@ function zmPreview(o){
   const E=ZM_ENT[o.k], a=zmAct(), boost=(run.dun&&run.dun.cell&&run.dun.cell.boost)||[], amt={}, miss={}, sure={}, out=[];
   for(let s=1;s<=o.q;s++){ const B=Object.assign({},E.b,s===3&&E.b3?E.b3:{}), m=zmMul()*zmStepW(s);
     Object.keys(B).forEach(key=>{ const v=B[key];
-      if(Array.isArray(v)){ const A=amt[key]||(amt[key]=[0,0]); A[0]+=Math.max(1,Math.round(v[0]*ZM_ACT_AMT[a]*m)); A[1]+=Math.max(1,Math.round(v[1]*ZM_ACT_AMT[a]*m)); return }
-      let p=v*ZM_ACT_P[a]*m; if(p<1&&boost.indexOf(key)>=0) p=Math.min(1,Math.min(p*1.5,p+0.25));
+      if(Array.isArray(v)){ const A=amt[key]||(amt[key]=[0,0]), R2=zmAmtR(v,o.v&&o.v[key],ZM_ACT_AMT[a]*m); A[0]+=R2[0]; A[1]+=R2[1]; return }
+      let p=v*ZM_ACT_P[a]*m*((o.v&&o.v[key])||1); if(p<1&&boost.indexOf(key)>=0) p=Math.min(1,Math.min(p*1.5,p+0.25));
       if(p>=1) sure[key]=(sure[key]||0)+Math.floor(p);
       miss[key]=(miss[key]==null?1:miss[key])*(1-Math.min(1,p%1||(p>=1?0:p))) }) }
   /* 한 줄 = {ic: 상자 줄 이름(chestIcon 이 그림을 고른다), nm: 이름, v: 값} — 화면은 아이콘 + 값, 커서를 대면 이름 (사용자 2026-11-19) */
@@ -37699,12 +37710,13 @@ function zmPreview(o){
   return out }
 /* 15분 한 묶음 — 상자 줄(rollChest 와 같은 꼴)을 out 에 */
 function zmRollOne(k,step,out){
+  const o=typeof k==="object"?k:{k:k}, F=o.v||{}; k=o.k;   /* 입구(흔든 값 v 를 가진) 또는 입구 종류 이름 */
   const E=ZM_ENT[k], a=zmAct(), m=zmMul()*zmStepW(step), boost=(run.dun&&run.dun.cell&&run.dun.cell.boost)||[];
   const B=Object.assign({},E.b,step===3&&E.b3?E.b3:{});
-  const amt=(key,t)=>{ const r=B[key]; if(!r) return; const v=Math.max(1,Math.round((r[0]+Math.floor(Math.random()*(r[1]-r[0]+1)))*ZM_ACT_AMT[a]*m)); out.push({t:t,v:v}) };
+  const amt=(key,t)=>{ const r=B[key]; if(!r) return; const R2=zmAmtR(r,F[key],ZM_ACT_AMT[a]*m); out.push({t:t,v:R2[0]+Math.floor(Math.random()*(R2[1]-R2[0]+1))}) };
   amt("gold","금화"); amt("exp","경험치"); amt("stone","제련석");
   Object.keys(B).forEach(key=>{ if(typeof B[key]!=="number") return;
-    let p=B[key]*ZM_ACT_P[a]*m; if(p<1&&boost.indexOf(key)>=0) p=Math.min(1,Math.min(p*1.5,p+0.25));
+    let p=B[key]*ZM_ACT_P[a]*m*(F[key]||1); if(p<1&&boost.indexOf(key)>=0) p=Math.min(1,Math.min(p*1.5,p+0.25));
     let n=Math.floor(p); if(Math.random()<p-n) n++; for(let i=0;i<n;i++) out.push({t:key}) }) }
 /* 같은 갈래의 양(금화 · 경험치 · 제련석)은 한 줄로 */
 function zmPut(list,x){ if(x.v!=null){ const y=list.find(z=>z.t===x.t&&z.v!=null); if(y){ y.v+=x.v; return } } list.push(Object.assign({},x)) }
@@ -37714,7 +37726,7 @@ function zmPick(i){
   const o=door.offer[i]; if(!o) return null;
   const E=ZM_ENT[o.k], said=[];
   door.used=o.k; door.q=o.q;
-  const got=[]; for(let s=1;s<=o.q;s++) zmRollOne(o.k,s,got);
+  const got=[]; for(let s=1;s<=o.q;s++) zmRollOne(o,s,got);
   got.forEach(x=>zmPut(d.zloot,x)); d.zlast=o.k;
   const tn=zmTaint(o); if(tn){ addTaint(tn); said.push(`오염도가 ${tn} 증가했습니다.`) }
   const tr=zmTrap(o);
