@@ -29658,6 +29658,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 495, "v": "0.8", "d": "2026-11-21", "t": "입구 오염도 · 함정 피해도 흔든다", "big": 0},
  {"b": 494, "v": "0.8", "d": "2026-11-21", "t": "입구마다 보상 값을 흔든다", "big": 0},
  {"b": 493, "v": "0.8", "d": "2026-11-21", "t": "전투 입장 — 참여할 대원을 돌판 칸에", "big": 0},
  {"b": 492, "v": "0.8", "d": "2026-11-21", "t": "대원 단추 — 가방 옆, 정면 얼굴을 누르면 그 대원의 지금 정보", "big": 0},
@@ -31345,7 +31346,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=494;
+const BUILD_NO=495;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -37348,6 +37349,10 @@ function zmVary(k){ const E=ZM_ENT[k], B=Object.assign({},E.b,E.b3||{}), v={}, U
   Object.keys(B).forEach(key=>{ const r=B[key];
     if(Array.isArray(r)){ if(Math.random()<.25){ const mid=(r[0]+r[1])/2*U(.75,1.25); v[key]=[mid/r[0],mid/r[1]] } else v[key]=[U(.6,1.2),U(.8,1.4)] }
     else v[key]=U(.6,1.4) });
+  /* 대가도 (사용자 2026-11-21) — 오염도 ×0.6~1.4, 함정 피해는 양처럼(끝마다 · 25% 한 값), 함정 확률 ×0.7~1.3 */
+  if(E.taint) v.$taint=U(.6,1.4);
+  if(E.trap){ const r=E.trap; if(Math.random()<.25){ const mid=(r[0]+r[1])/2*U(.75,1.25); v.$trap=[mid/r[0],mid/r[1]] } else v.$trap=[U(.6,1.2),U(.8,1.4)];
+    v.$trapP=U(.7,1.3) }
   return v }
 /* 한 묶음(15분)의 양 범위 — [아래, 위], 1 아래로는 안 내린다 */
 function zmAmtR(r,f,mul){ f=f||[1,1]; const L=Math.max(1,Math.round(r[0]*f[0]*mul)), H=Math.max(1,Math.round(r[1]*f[1]*mul)); return [Math.min(L,H),Math.max(L,H)] }
@@ -37691,8 +37696,9 @@ function zmRoute(j){
 const zmReach=j=>!!zmRoute(j);
 /* 그 입구의 값 — 대가 · 깊이 · 정예 · 막을 먹인 것 */
 function zmMul(){ const d=run.dun; return ZM_DEPTH[Math.min(2,(d.zm&&d.zm.at)||0)]*(d.kind==="elite"?ZM_ELITE:1) }
-function zmTaint(o){ const E=ZM_ENT[o.k]; return E.taint?Math.round(E.taint*o.q*ZM_ACT_P[zmAct()]):0 }
-function zmTrap(o){ const E=ZM_ENT[o.k]; return E.trap?E.trap.map(v=>v*ZM_ACT_AMT[zmAct()]):null }
+function zmTaint(o){ const E=ZM_ENT[o.k]; return E.taint?Math.max(1,Math.round(E.taint*o.q*ZM_ACT_P[zmAct()]*((o.v&&o.v.$taint)||1))):0 }
+function zmTrap(o){ const E=ZM_ENT[o.k]; return E.trap?zmAmtR(E.trap,o.v&&o.v.$trap,ZM_ACT_AMT[zmAct()]):null }
+function zmTrapP(o){ const E=ZM_ENT[o.k]; return Math.min(.9,(E.trapP||.5)*((o.v&&o.v.$trapP)||1)) }   /* 15분마다 함정에 걸릴 확률 */
 /* 고르는 화면에 보일 값 — 그 입구에서 얻을 수 있는 양(합)과 하나라도 나올 확률 (사용자 2026-11-18 : 입구마다 수치가 달라야) */
 const ZM_NM={gold:"금화",exp:"경험치",stone:"제련석","하급":"하급 보상","중급":"중급 보상","상급":"상급 보상","파편":"파편 장신구","일반":"일반 장신구","희귀":"희귀 장신구","각인서":"각인서"};
 function zmPreview(o){
@@ -37730,7 +37736,7 @@ function zmPick(i){
   got.forEach(x=>zmPut(d.zloot,x)); d.zlast=o.k;
   const tn=zmTaint(o); if(tn){ addTaint(tn); said.push(`오염도가 ${tn} 증가했습니다.`) }
   const tr=zmTrap(o);
-  if(tr){ let hit=0; for(let s=0;s<o.q;s++) if(Math.random()<(E.trapP||.5)){ const v=tr[0]+Math.floor(Math.random()*(tr[1]-tr[0]+1)); hit++;
+  if(tr){ let hit=0; for(let s=0;s<o.q;s++) if(Math.random()<zmTrapP(o)){ const v=tr[0]+Math.floor(Math.random()*(tr[1]-tr[0]+1)); hit++;
       run.heroes.forEach(h=>{ if(!h.down&&h.hp>0) h.hp=Math.max(1,h.hp-v) }); said.push(`함정에 걸려 모든 대원이 피해를 ${v} 받았습니다.`) }
     if(!hit) said.push("함정을 모두 피했습니다.") }
   z.at++; z.nd=door.id;   /* 이 입구 너머로 — 지나온 길은 이제 막힌다 */
@@ -59561,7 +59567,7 @@ function zmPickPanel(door){
   door.offer.forEach((o,i)=>{
     const E=ZM_ENT[o.k], im=typeof ICON_PNG!=="undefined"&&ICON_PNG[E.ic], clk=iconImg("clock");
     const tn=zmTaint(o), tr=zmTrap(o);
-    const bad=[tn?`오염도 +${tn}`:"",tr?`함정 피해 ${tr[0]}~${tr[1]} (15분마다 ${Math.round((E.trapP||.5)*100)}%)`:""].filter(Boolean);
+    const bad=[tn?`오염도 +${tn}`:"",tr?`함정 피해 ${tr[0]===tr[1]?tr[0]:tr[0]+"~"+tr[1]} (15분마다 ${Math.round(zmTrapP(o)*100)}%)`:""].filter(Boolean);
     const c=el(`<div class="zment">
       <div class="zmei kw" data-kw="${esc(E.n)}" data-tip="${esc(E.d)}">${im?`<img src="${im}" alt="" draggable="false">`:""}</div>
       <b>${esc(E.n)}</b><div class="zmt">${clk}${o.q*15}분</div>
