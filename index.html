@@ -6463,6 +6463,23 @@ body.vbattle .bagbtn,body.vnew .bagbtn{top:7px;left:20px;height:32px;box-sizing:
 body.vbattle .bagbtn .bgt,body.vnew .bagbtn .bgt{display:none}
 body.vbattle .bagbtn:hover,body.vnew .bagbtn:hover{background:none;filter:brightness(1.2)}
 body.vbattle .bagbtn img.npx,body.vnew .bagbtn img.npx{width:40px;height:40px;margin:-8px 0}
+/* ── 전투 입장 — 참여할 대원 (사용자 2026-11-21). 960×540 판을 --es 배로 (drawEntry 가 잰다) ── */
+.entry{position:fixed;left:50%;top:50%;width:960px;height:540px;margin:-270px 0 0 -480px;transform:scale(var(--es,1));transform-origin:50% 50%;z-index:5}
+.entry .enttl{position:absolute;left:0;right:0;top:66px;text-align:center;font-family:var(--serif);font-size:26px;color:#f0e2c0;text-shadow:0 2px 0 #000,0 0 12px rgba(0,0,0,.8);letter-spacing:.04em}
+.entry .enslab{position:absolute;left:195px;top:118px;width:570px;height:267px;background:url("ui/battle-entry-gray-slate-790x370.png") 0 0/100% 100% no-repeat;image-rendering:pixelated}
+.entry .enslot{position:absolute;top:15.68%;width:23.04%;height:68.65%}
+.entry .enslot[data-s="0"]{left:8.61%} .entry .enslot[data-s="1"]{left:38.48%} .entry .enslot[data-s="2"]{left:68.35%}
+.entry .enslot.over{box-shadow:0 0 0 2px rgba(244,214,124,.85),0 0 18px rgba(244,214,124,.45)}
+.entry .encard{position:absolute;left:0;top:0;width:160px;height:224px;transform:scale(.8208);transform-origin:0 0;cursor:grab;touch-action:none}
+.entry .encard .ccard.cf{margin:0;animation:none}
+.entry .engo{position:absolute;left:790px;top:228px;width:150px;text-align:center}
+.entry .engo .go{min-width:118px}
+.entry .enhand{position:absolute;left:0;right:0;top:382px;height:200px}
+.entry .enhand .encard{left:calc(400px + var(--k)*78px);top:0;transform:scale(.8208) rotate(calc(var(--k)*7deg));transform-origin:50% 100%;transition:top .12s}
+.entry .enhand .encard:hover{top:-26px;z-index:2}
+.entry .encard.endrag{opacity:.25}
+.encard.enghost{position:fixed;z-index:3000;pointer-events:none;transform:none!important;width:auto;height:auto}
+.encard.enghost .ccard.cf{transform:scale(calc(var(--es,1)*.8208));transform-origin:0 0}
 /* 대원 단추 — 가방 옆 (사용자 2026-11-21). 그 밖의 화면에서는 가방 단추 위 */
 .herobtn{position:fixed;right:18px;bottom:74px;z-index:60;cursor:pointer;display:flex;align-items:center;justify-content:center;height:40px;font-weight:inherit}
 .herobtn img{width:36px;height:36px;image-rendering:pixelated}
@@ -28849,6 +28866,7 @@ function render(){
   if(typeof shutGate==="function"&&shutGate()) return;   /* 지도 ↔ 쉼터 · 미지의 구역 · 전용 구역 — 가운데 덧판이 닫힌 뒤에 그린다 */
   if(typeof document!=="undefined"&&!(typeof run!=="undefined"&&run&&run.qShow&&(view==="map"||(typeof placeMode==="function"&&placeMode())))) document.querySelectorAll("#qmodal").forEach(x=>x.remove());   /* 퀘스트 완료 상자 — 받았거나 화면이 바뀌면 걷는다 */
   if(FOE_VIEW&&(B!==FOE_VIEW.battle||view!=="battle")) FOE_VIEW=null;
+  if(typeof run!=="undefined"&&run&&run.bench&&!run.dun&&!run.zmHold) benchBack();   /* 전투가 끝났는데 비켜 선 대원이 남았다 — 빠뜨린 길의 그물 */
   if(typeof BAG_SLIDE!=="undefined"&&BAG_SLIDE&&(_lastView!==view||view==="map"||view==="title")) bagSlide(0);
   if(typeof HERO_SLIDE!=="undefined"&&HERO_SLIDE&&(_lastView!==view||view==="map"||view==="title"||!run)) heroSlide(0);   /* 대원 판도 같이 */   /* 화면이 바뀌면 가방 판을 걷는다 (지도는 제 왼쪽 판) */
   /* 전투를 떠나면 되풀이 녹음을 끈다 (사용자 2026-10-13 : 훈련장에서 복수귀가 켜진 채 나오면 소리가 따라왔다).
@@ -29005,7 +29023,7 @@ document.addEventListener("keydown",e=>{
   if(!run||view==="title"||view==="map"||(typeof placeMode==="function"&&placeMode())) return;
   if(e.key==="m"||e.key==="M"||e.key==="ㅡ"){ run.mapPeek=!run.mapPeek; mapTipHide(); render() }
 });
-const NEW_UI=["chest","reward","bloot","questpick","questdone","winnew","item","shop","relic","rest","recruit","pickhero","clear","wavegap","forge","gear","over","runs","bag","camp","gimres","mastpick"];
+const NEW_UI=["entry","chest","reward","bloot","questpick","questdone","winnew","item","shop","relic","rest","recruit","pickhero","clear","wavegap","forge","gear","over","runs","bag","camp","gimres","mastpick"];
 function render0(){
   const app=document.getElementById("app");
   /* 연습장 띠는 body 에 붙어 있어 화면을 갈아도 저절로 사라지지 않는다 — 여기서 걷고,
@@ -29120,7 +29138,8 @@ function render0(){
   if(view==="garrison") return drawGarrison(app);   /* 주둔지 — 건물 다섯 (2026-11-10) */
   if(view==="camp"){ view="map"; run.mapSel=null; return render() }   /* 주둔지 따로 화면은 없앴다 — 지도의 주둔지 판 (사용자 2026-10-05) */
   if(view==="battle")   return drawBattle(app);
-  if(view==="zmap")     return drawZoneMap(app);   /* 전투 구역 지도 (2026-11-18) */
+  if(view==="zmap")     return drawZoneMap(app);   /* (아래) */
+  if(view==="entry")    return drawEntry(app);     /* 전투 입장 — 참여할 대원 (2026-11-21) */   /* 전투 구역 지도 (2026-11-18) */
   if(view==="chest")    return drawChest(app);
   if(view==="bloot")     return drawBossLoot(app);   /* 우두머리 전리품 — 상자보다 먼저 (2026-10-23) */
   if(view==="reward")   return drawReward(app);
@@ -29582,6 +29601,7 @@ function loadGame(i){
     heroes.forEach(h=>{ try{ syncSkillDefs(h) }catch(e){} });
     run=decRef(s.run,heroes) || {};
     run.heroes=heroes;
+    (run.bench||[]).forEach(h=>{ try{ syncSkillDefs(h) }catch(e){} });   /* 비켜 선 대원 (전투 입장, 2026-11-21) */
     if(run.introSeen==null&&run.field!=null&&(run.day>1||!run.mapUnfold)) run.introSeen=run.field;   /* 옛 저장본 — 지도를 이미 펼친 판이면 첫 펼침 연출을 본 것으로 (2026-11-15) */
     /* 희귀 장신구 이름이 노트를 따라 바뀌었다 (2026-09-13). 옛 저장본의 장신구는 이름·설명만 새것으로 */
     try{ heroes.forEach(h=>(h.items||[]).forEach(renameItem)); (run.bag||[]).forEach(renameItem) }catch(e){}
@@ -29638,6 +29658,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 493, "v": "0.8", "d": "2026-11-21", "t": "전투 입장 — 참여할 대원을 돌판 칸에", "big": 0},
  {"b": 492, "v": "0.8", "d": "2026-11-21", "t": "대원 단추 — 가방 옆, 정면 얼굴을 누르면 그 대원의 지금 정보", "big": 0},
  {"b": 491, "v": "0.8", "d": "2026-11-20", "t": "전투 구역 지도 — 채택 유물 열둘 (균열 유물 시안)", "big": 0},
  {"b": 490, "v": "0.8", "d": "2026-11-19", "t": "가방 — 어디서든 왼쪽에서 미끄러져 나오는 판", "big": 0},
@@ -31323,7 +31344,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=492;
+const BUILD_NO=493;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -37059,12 +37080,36 @@ function startDungeon(cell,r,c){
   if(cell.trial) run.dun.trial=cell.trial;                          /* 시련의 문 몇 단 */
   /* 이 전투에서 내내 쓸 곡을 여기서 한 번 고른다 */
   run.dun.bgm=pickBattleBgm();
+  if(entryNeed(cell)){ run.dun.entry=1; if(typeof ENTRY_PICK!=="undefined") ENTRY_PICK=null; view="entry"; render(); return }   /* 참여할 대원부터 (사용자 2026-11-21) */
+  startDungeonGo();
+}
+/* 대원을 고른 뒤 — 피로도 · 성향은 참여한 대원만 받는다 */
+function startDungeonGo(){ const cell=run.dun.cell;
   fatBattleIn();   /* 피로도 — 전투 입장 50% +1~5 (사용자 2026-11-10) */
   dispBattleIn();  /* 성향 — 겁 (밤 전투) */
   run.lastBattleBgm=run.dun.bgm;
   if(zmOn(cell)){ zmStart(); render(); return }   /* 전투 구역 지도 — 입구를 고른 뒤에 첫 라운드 (사용자 2026-11-18) */
   nextWave();
 }
+/* ═══ 전투 입장 — 참여할 대원 고르기 (사용자 2026-11-21) ═══
+   전투에 들어설 때 돌판 칸에 대원 카드를 올린다. 그 전투(전투 구역 지도 · 라운드 · 그 안의 기습까지)에서는
+   **참여한 대원만 run.heroes 에 남고** 나머지는 run.bench 에 비켜 선다 — 「모든 대원」, 손패, 조합, 피로도가 다 참여한 대원만 본다.
+   전투가 끝나면(benchBack) 원래 순서로 돌아온다. 참여한 대원이 모두 쓰러져도 비켜 선 대원이 성하면 원정은 끝나지 않는다 (battleLost).
+   설 대원이 하나뿐이면 고르지 않는다. 연습장 · 화면 없는 시뮬레이터도 고르지 않는다 */
+function entryNeed(cell){
+  if(!run||run.sandbox||run.bench||(cell&&cell.zmAmb)) return false;
+  if(typeof document==="undefined"||!document.getElementById||!document.getElementById("app")) return false;
+  return run.heroes.filter(h=>!h.down).length>=2 }
+function entryGo(names){ const d=run.dun; if(!d||!d.entry) return;
+  const keep=names.map(n=>run.heroes.find(h=>h.name===n&&!h.down)).filter(Boolean); if(!keep.length) return;
+  const bench=run.heroes.filter(h=>keep.indexOf(h)<0);
+  if(bench.length){ run.benchOrd=run.heroes.map(h=>h.name); run.bench=bench; run.heroes=keep }
+  delete d.entry; startDungeonGo() }
+function benchBack(){ if(!run||!run.bench) return;
+  const all=run.heroes.concat(run.bench), out=[];
+  (run.benchOrd||[]).forEach(n=>{ const h=all.find(x=>x.name===n&&out.indexOf(x)<0); if(h) out.push(h) });
+  all.forEach(h=>{ if(out.indexOf(h)<0) out.push(h) });
+  run.heroes=out; run.bench=null; run.benchOrd=null }
 function nextWave(){
   run.dun.wave++;
   /* 싸우는 동안 시계는 멈춘다.
@@ -38049,6 +38094,7 @@ function payNodeTime(){
   return !!run.lost;
 }
 function backToMap(){
+  if(!run.zmHold) benchBack();   /* 전투가 끝났다 — 비켜 선 대원이 돌아온다 (구역 지도 안의 기습이면 아직) */
   run.stimOn=0; run.fireOn=0; run.hangOn=0;   /* 각성제 · 모닥불 이야기는 전투 하나까지 */
   try{ scrapQuestSync() }catch(e){}   /* 동료가 늘거나 쓰러져 조합이 바뀌었을 수 있다 */
   /* 끝낸 퀘스트 — 보상 화면 (우두머리 뒤 구역 넘김보다 먼저, 구역 만료에 휩쓸리지 않게).
@@ -38102,7 +38148,7 @@ function fleeFX(word){
 function fleeBattle(toCamp,msg){
   if(B) B.over=1;
   B=null; BSNAP=null; sel=null;
-  run.dun=null; run.pendingEnter=null; run.here=null; run.route=null;
+  run.dun=null; run.pendingEnter=null; run.here=null; run.route=null; benchBack();
   if(toCamp){
     let c=null;
     for(let r=0;r<run.size;r++) for(let q=0;q<run.size;q++)
@@ -42171,7 +42217,7 @@ function trialStart(stage){
 function trialWon(stage){
   run.trialBag=run.trialBag||[];
   (TRIAL_RW[stage]||[]).forEach(x=>run.trialBag.push(x.item?{item:evItem(x.item)}:Object.assign({},x)));
-  run.dun=null;
+  run.dun=null; benchBack();
   run.evSub={t:"trial",stage:stage}; run.evMsg=null; view="relic"; render();
 }
 function trialLost(){
@@ -42179,7 +42225,7 @@ function trialLost(){
   run.heroes.forEach(clearTmp); run.heroes.forEach(clearTurnTmp); run.heroes.forEach(clearRndTmp);
   const pre=run.trialDown||[], st=(run.dun&&run.dun.trial)||1;
   run.heroes.forEach(h=>{ h.slot=0; if(pre.indexOf(h.name)>=0){ h.hp=0; h.down=1; return } h.down=0; h.hp=Math.max(1,Math.ceil(h.maxHp/2)) });
-  run.dun=null; run.pendingEnter=null;
+  run.dun=null; run.pendingEnter=null; benchBack();
   fx({s:sfxOr("뼈 으스러짐","down"),gap:0}); veil("radial-gradient(circle,rgba(122,90,168,.5),transparent 70%)");   /* 뼈 으스러지는 소리 (사용자 2026-10-06) */
   say("차원문이 대원들을 바깥으로 뱉어 냅니다. 절반의 체력으로 벗어납니다.","t3");
   setTimeout(()=>{ if(view==="over") return; run.evSub={t:"trial",stage:st-1,fled:1}; run.evMsg=null; view="relic"; render() },1300);
@@ -44040,6 +44086,7 @@ function bossIntroFX(){
     const q=document.querySelector(".bfstage"); if(q) q.classList.remove("foehide") },Math.round(4600*K));
 }
 function startBattle(kind,pinned){
+  if(!pinned&&run&&run.dun&&run.dun.entry){ view="entry"; render(); return }   /* 아직 대원을 고르는 중 — 고른 뒤 startDungeonGo 가 연다 */
   if(run&&!run.sandbox&&!pinned) run.battles=(run.battles||0)+1;
   const _k=kind;
   if(!pinned){
@@ -56854,6 +56901,7 @@ function battleLost(){
   if(Date.now()-BONE_AT>1500) fx({s:sfxOr("뼈 으스러짐","down"),gap:0});   /* 방금 대원이 쓰러지며 울렸으면 한 번만. 원정 실패 직전 — 뼈 으스러지는 소리 (사용자 2026-10-06, 옛 합성음 대신) */
   veil("radial-gradient(circle,rgba(142,43,43,.5),transparent 70%)");
   run.dun=null; run.pendingEnter=null;
+  benchBack();   /* 비켜 선 대원이 돌아온다 — 그들이 성하면 원정은 이어진다 (사용자 2026-11-21) */
   /* 전장의 승자 — 쓰러져도 잃지 않는다 (사용자 2026-11-09). prideFall 은 분노 전환의 덤만 준다.
      '분노 전환'을 가졌으면 잃는 대신 그만큼 더 얻는다. */
   /* 자부심은 '패배' 가 아니라 '쓰러짐' 에 잃는다 — unitDown 이 이미 처리했다. 여기서는 쓰러진 채 남은 몫만 */
@@ -59522,6 +59570,66 @@ function zmGoPanel(g){
   w.onclick=()=>zmGo(); return w }
 /* 라운드를 이기고 남은 라운드가 있다 — 암전 → 지도 (claimGo 가 부른다) */
 function zmBack(){ zmRoundEnd(); blackout(()=>{ ZM_UI.pick=0; ZM_UI.walk=0; ZM_UI.relic=null; view="zmap"; render() }) }
+/* ═══ 전투 입장 — 참여할 대원을 돌판 칸에 (사용자 2026-11-21, 그림 GameProject2/art/ui/battle-entry-stone-slots-v3) ═══
+   탁자 위 돌판(790×370, 칸 182×254 가 (68,58) (304,58) (540,58))에 대원 카드를 끌어 올린다. 누르기만 해도 빈 칸으로 / 칸에서 내려온다.
+   판은 960×540 을 기준으로 그리고 화면에 맞춰 키운다 (--es) */
+let ENTRY_PICK=null, ENTRY_DRAG=null;
+function entryCard(h){
+  const hst=(h.atk?`<span class="at">${ic("atk")} ${h.atk}</span>`:"")+(h.mag?`<span class="mg">${ic("mag")} ${h.mag}</span>`:"")+(h.def?`<span class="df">${ic("def")} ${h.def}</span>`:"");
+  const skf=typeof skinOn==="function"&&skinOn(h.name), cfu=skf&&skf.cardFrame&&ICON_PNG[skf.cardFrame], cfk=cfu?" cfk-"+skf.cardFrame.replace(/^ui_card_frame_/,""):"";
+  return `<div class="card ccard cf c-hero${cfk}"${cfu?` style="--cardframe:url(${cfu})"`:""}>
+    <div class="cc-top"><span class="cc-own cc-level">레벨 ${h.lv}</span></div>
+    <div class="cc-art">${faceArt(h.name)}</div>
+    <div class="cc-n">${esc(h.name)}</div>
+    <div class="cc-type">${cfType(CARD_TYPE_W.hero,[])}</div>
+    <div class="cc-d"><div class="cc-di">${hst?`<div class="cc-hst">${hst}</div>`:""}${(h.disp||typeof fatChip==="function")?`<div class="ccdl">${h.disp?dispChips(h,null,"ccdisp"):""}${typeof fatChip==="function"?fatChip(h,"ccfat"):""}</div>`:""}</div></div>
+    <div class="cc-st"><span class="hp">${ic("hp")} ${h.hp}/${h.maxHp}</span><span class="mn">${ic("mana")} ${h.maxMana}</span></div></div>`;
+}
+function entryScale(){ const st=document.querySelector(".entry"); if(st) st.style.setProperty("--es",Math.min(innerWidth/960,innerHeight/540).toFixed(4)) }
+if(typeof window!=="undefined"&&!window.__entryRs){ window.__entryRs=1; window.addEventListener("resize",entryScale) }
+function drawEntry(app){
+  if(!run||!run.dun||!run.dun.entry){ view="map"; return render() }
+  document.body.classList.add("rwtable");
+  const H=run.heroes.filter(h=>!h.down), N=PARTY_MAX;
+  if(!ENTRY_PICK) ENTRY_PICK=[];
+  ENTRY_PICK=Array.from({length:N},(_,i)=>{ const n=ENTRY_PICK[i]; return n&&H.some(h=>h.name===n)&&ENTRY_PICK.indexOf(n)===i?n:null });
+  const st=el(`<div class="entry"><div class="enttl">전투에 참여할 대원을 선택하세요</div>
+    <div class="enslab">${ENTRY_PICK.map((n,i)=>`<div class="enslot" data-s="${i}"></div>`).join("")}</div>
+    <div class="engo"><button class="go">전투 시작</button></div><div class="enhand"></div></div>`);
+  const put=(n,box,from)=>{ const h=H.find(x=>x.name===n); if(!h) return; const w=el(`<div class="encard">${entryCard(h)}</div>`); w.dataset.n=n; w.dataset.from=from; entryDrag(w); box.appendChild(w); return w };
+  ENTRY_PICK.forEach((n,i)=>{ if(n) put(n,st.querySelectorAll(".enslot")[i],"s"+i) });
+  const rest=H.filter(h=>ENTRY_PICK.indexOf(h.name)<0), hd=st.querySelector(".enhand");
+  rest.forEach((h,k)=>{ const w=put(h.name,hd,"h"); const m=(rest.length-1)/2; w.style.setProperty("--k",k-m) });
+  const go=st.querySelector(".engo .go"); go.disabled=!ENTRY_PICK.some(Boolean);
+  go.onclick=()=>{ const L=ENTRY_PICK.filter(Boolean); if(!L.length) return; ENTRY_PICK=null; try{ SFX.play("click") }catch(e){} entryGo(L) };
+  app.appendChild(st); entryScale();
+}
+/* 끌어 놓기 — 칸 위에 놓으면 그 칸으로(있던 카드는 자리를 바꾼다), 칸 밖에 놓으면 손으로. 끌지 않고 누르면 빈 칸으로 / 손으로 */
+function entryDrag(w){
+  w.addEventListener("pointerdown",e=>{ if(e.button!==0) return; e.preventDefault();
+    const r=w.getBoundingClientRect(); ENTRY_DRAG={w:w,x:e.clientX,y:e.clientY,dx:e.clientX-r.left,dy:e.clientY-r.top,go:0,es:parseFloat(getComputedStyle(document.querySelector(".entry")).getPropertyValue("--es"))||1} });
+}
+function entryMoveTo(n,from,to){   /* to : 칸 번호, -1 이면 손 */
+  const P=ENTRY_PICK, fi=from&&from[0]==="s"?+from.slice(1):-1;
+  if(to<0){ if(fi>=0) P[fi]=null }
+  else { const old=P[to]; P[to]=n; if(fi>=0&&fi!==to) P[fi]=old||null }
+  try{ SFX.play("click") }catch(e){} render() }
+if(typeof document!=="undefined"&&!window.__entryDrag){ window.__entryDrag=1;
+  document.addEventListener("pointermove",e=>{ const D=ENTRY_DRAG; if(!D) return;
+    if(!D.go&&Math.hypot(e.clientX-D.x,e.clientY-D.y)<6) return;
+    if(!D.go){ D.go=1; const r=D.w.getBoundingClientRect(); const g=D.w.cloneNode(true); g.classList.add("enghost"); g.style.width=r.width+"px"; g.style.height=r.height+"px";
+      g.style.setProperty("--es",D.es); document.body.appendChild(g); D.g=g; D.w.classList.add("endrag") }
+    D.g.style.left=(e.clientX-D.dx)+"px"; D.g.style.top=(e.clientY-D.dy)+"px";
+    document.querySelectorAll(".enslot.over").forEach(x=>x.classList.remove("over"));
+    const s=document.elementsFromPoint(e.clientX,e.clientY).find(x=>x.classList&&x.classList.contains("enslot")); if(s) s.classList.add("over") });
+  document.addEventListener("pointerup",e=>{ const D=ENTRY_DRAG; if(!D) return; ENTRY_DRAG=null;
+    const n=D.w.dataset.n, from=D.w.dataset.from;
+    if(D.g) D.g.remove(); D.w.classList.remove("endrag");
+    if(view!=="entry"||!ENTRY_PICK) return;
+    if(!D.go){ if(from==="h"){ const i=ENTRY_PICK.indexOf(null); if(i>=0) entryMoveTo(n,from,i) } else entryMoveTo(n,from,-1); return }
+    const s=document.elementsFromPoint(e.clientX,e.clientY).find(x=>x.classList&&x.classList.contains("enslot"));
+    if(s) entryMoveTo(n,from,+s.dataset.s); else if(from!=="h") entryMoveTo(n,from,-1); else render() });
+}
 try{ requestAnimationFrame(()=>requestAnimationFrame(iconsFxLoad)) }catch(e){}
 txtApply();
 render();
