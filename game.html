@@ -6809,6 +6809,10 @@ body.cheerin .hand{visibility:hidden}   /* 입장 글과 겹치지 않게 — �
 #goldrain{position:fixed;inset:0;pointer-events:none;z-index:9000;overflow:hidden}
 #goldrain .grcoin{position:absolute;image-rendering:pixelated;filter:drop-shadow(0 2px 2px rgba(0,0,0,.45))}
 .zmod.zmodc{flex-direction:column;align-items:flex-start;gap:2px} .zmodc>span:first-child{display:flex;align-items:center;gap:4px}
+.zmhpick{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:0 0 4px}   /* 대원 고르기 (낡은 거울) */
+.zmhface{width:52px;height:52px;padding:4px;box-sizing:border-box;background:url("ui/menu-portrait-frame-160.png") center/100% 100% no-repeat;border:0;cursor:pointer;image-rendering:pixelated}
+.zmhface:hover{background-image:url("ui/menu-portrait-frame-highlight-160.png"),url("ui/menu-portrait-frame-160.png")}
+.zmhface img,.zmhface svg{width:100%;height:100%;object-fit:contain}
 .zmrl{font-size:13px;color:#9fd29a} .zmrl.bad{color:#ff7a6a}   /* 결과 줄 — 좋은 것 초록, 나쁜 것 붉게 (시안의 + / -) */
 .zmrit img,.zmrit svg{width:26px;height:26px;image-rendering:pixelated}
 .zmc.ruin img{width:100%;height:100%}   /* 거대 유적 — 네 조각이 이어 붙는다 */
@@ -29658,6 +29662,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 498, "v": "0.8", "d": "2026-11-21", "t": "유물 둘 — 낡은 거울, 낡은 이정표", "big": 0},
  {"b": 497, "v": "0.8", "d": "2026-11-21", "t": "함정 피해 설명을 합계 범위로", "big": 0},
  {"b": 496, "v": "0.8", "d": "2026-11-21", "t": "함정 피해 합쳐 한 줄로, 확률 글 뺌", "big": 0},
  {"b": 495, "v": "0.8", "d": "2026-11-21", "t": "입구 오염도 · 함정 피해도 흔든다", "big": 0},
@@ -31348,7 +31353,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=497;
+const BUILD_NO=498;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -37398,6 +37403,19 @@ function zmRoundStart(){ const d=run.dun; if(!d) return; d.zmAtkLive=d.zmAtk||0;
 function zmRoundEnd(){ const d=run.dun; if(d) d.zmAtkLive=0 }
 function zmDeploy(h){ const d=run&&run.dun; if(!d||!d.zmAtkLive||!h||typeof B==="undefined"||!B||h._zmAtkB===B) return;
   h._zmAtkB=B; bumpTmp(h,"atk",d.zmAtkLive) }
+/* 성향 하나를 뒤집는다 (낡은 거울) — good 이면 악성향 하나가 선성향으로, 아니면 선성향 하나가 악성향으로. 뒤집을 것이 없으면 아무 일 없음 */
+function zmDispFlip(h,good){
+  const none={txt:"아무 일도 일어나지 않았습니다."};
+  if(!h||(typeof dispOn==="function"&&!dispOn())) return none;
+  const Dp=h.disp||(h.disp={good:[],bad:[]}), from=good?Dp.bad:Dp.good;
+  const pool=Object.keys(good?DISP_GOOD:DISP_BAD).filter(n=>Dp.good.indexOf(n)<0&&Dp.bad.indexOf(n)<0);
+  if(!from.length||!pool.length) return none;
+  const a=rnd(from), b=rnd(pool); from.splice(from.indexOf(a),1); steleGive(h,good?{good:[b],bad:[]}:{good:[],bad:[b]});
+  return {txt:`${h.name}의 [${a}] 성향이 [${b}] 성향으로 바뀌었습니다.`,bad:good?0:1} }
+/* 다음 입구(지금 구간의 아직 안 고른 입구들)의 선택지를 셋으로 (낡은 이정표) */
+function zmWiden(){ const z=run.dun&&run.dun.zm; if(!z) return;
+  z.cells.filter(c=>zmNext(z,c)).forEach(c=>{ const o=c.offer||(c.offer=[]);
+    for(let t=0;o.length<3&&t<20;t++){ const x=zmOffer().find(y=>y.k==="stone"||!o.some(q=>q.k===y.k)); if(x) o.push(x) } }) }
 const ZM_RELIC={
  "버려진 상자":{ic:"battle_zone_relic_abandoned_chest",icDone:"battle_zone_relic_abandoned_chest_open",tier:"중",
    tip:"바닥에 내팽겨진 상자입니다.", d:"바닥에 내팽겨진 상자를 발견합니다.",
@@ -37612,8 +37630,25 @@ const ZM_RELIC={
         r:()=>[{t:`모든 대원 경험치 ${zmRS([[4,6],[8,12],[16,24]])}`}],
         f:()=>{ zmSpend(.25); const a=zmAct(), tv=zmRR([[1,5],[3,10],[5,15]][a]), v=zmRR([[4,6],[8,12],[16,24]][a]);
           addTaint(tv); giveExp(v,zmUp(),true);
-          return {lines:[{txt:`오염도가 ${tv} 증가했습니다.`,bad:1},{ic:"exp_arrow",txt:`모든 대원이 경험치를 ${v} 얻었습니다.`}]} }}]}
-
+          return {lines:[{txt:`오염도가 ${tv} 증가했습니다.`,bad:1},{ic:"exp_arrow",txt:`모든 대원이 경험치를 ${v} 얻었습니다.`}]} }}]},
+ "낡은 거울":{ic:"rift_relic_old_mirror",tier:"하",zones:["all"],
+   tip:"\"나는 누구인가?\"", d:"\"나는 누구인가?\"",
+   kinds:["battle1","battle2","battle3"], acts:[0,1,2],
+   o:[{t:"들여다보기",d:"대원 하나를 선택합니다. 내면을 들여다 봅니다...",hero:1,
+        r:()=>[{t:"50% 악성향 하나가 선성향으로"},{t:"50% 선성향 하나가 악성향으로",bad:1}],
+        f:h=>{ const L=[zmDispFlip(h,Math.random()<.5)]; return {lines:L} }},
+      {t:"깨기",d:"거울을 깨드립니다.",
+        r:()=>[{t:`금화 ${zmRS([[4,8],[9,13],[12,18]])}`},{t:`무작위 대원 피해 ${zmRS([[2,5],[5,10],[8,13]])}`,bad:1}],
+        f:()=>{ const a=zmAct(); return {icDone:"rift_relic_old_mirror_broken",lines:[zmGold(zmRR([[4,8],[9,13],[12,18]][a])),zmHurtOne(zmRR([[2,5],[5,10],[8,13]][a]))]} }}]},
+ "낡은 이정표":{ic:"rift_relic_old_signpost",tier:"상",zones:["all"],
+   tip:"\"그대의 앞길에 축복을\"...이라고 쓰여져 있네요.", d:"\"그대의 앞길에 축복을\"...이라고 쓰여져 있네요.",
+   kinds:["battle2","battle3","elite"], acts:[0,1,2],
+   o:[{t:"살피기",d:"",
+        r:()=>[{t:"다음 입구의 선택지가 3개가 됩니다."}],
+        f:()=>{ zmWiden(); return {lines:[{txt:"다음 입구의 선택지가 3개가 됩니다."}]} }},
+      {t:"이정표 돌리기",d:"지름길을 찾아봅니다.",
+        r:()=>[{t:"활동량을 1 얻습니다."}],
+        f:()=>{ run.act=Math.max(0,run.act||0)+1; return {icDone:"rift_relic_old_signpost_turned",lines:[{txt:"활동량을 1 얻었습니다."}]} }}]}
 };
 const zmKind=()=>{ const d=run.dun; return d.kind==="elite"?"elite":"battle"+Math.min(3,d.waves||1) };
 /* 구간 하나의 유물 이름들 */
@@ -37647,8 +37682,10 @@ function zmRelicPlace(cells){
     const L=cells.filter(x=>x.seg===s&&x.k==="road"&&!x.relic), by=L.filter(x=>x.bypass);
     const c=(by.length&&Math.random()<.5)?by[0]:L[Math.floor(Math.random()*L.length)]; if(c) c.relic=nm }) }) }
 /* 유물을 고른다 — 결과를 돌려준다 (지나가기면 판만 닫고 유물은 남는다) */
-function zmRelicPick(j,i){ const z=run.dun.zm, c=z.cells[j], R=c&&ZM_RELIC[c.relic]; if(!R||c.relicDone) return null;
-  const o=R.o[i]; if(!o||(o.ok&&!o.ok())) return null; const res=o.f()||{};
+function zmRelicPick(j,i,hi){ const z=run.dun.zm, c=z.cells[j], R=c&&ZM_RELIC[c.relic]; if(!R||c.relicDone) return null;
+  const o=R.o[i]; if(!o||(o.ok&&!o.ok())) return null;
+  if(o.hero&&!(hi!=null&&zmUp()[hi])) return null;   /* 대원 하나를 고르는 선택지 (낡은 거울, 2026-11-21) */
+  const res=o.f(o.hero?zmUp()[hi]:undefined)||{};
   if(res.pass){ c.relicSeen=1; return res }
   c.relicDone=1;
   if(c.grp&&R.all&&z.cells.filter(x=>x.grp===c.grp).every(x=>x.relicDone)) res.lines=(res.lines||[]).concat(R.all());   /* 거대 유적 — 네 칸 다 */
@@ -59515,8 +59552,14 @@ function zmRelicPanel(j){
     const od=o.dd?o.dd():o.d, rr=o.r?o.r():null;   /* 막 값이 든 글 · 결과 줄 (2026-11-20) */
     const b=el(`<div class="zmorow${off?" off":""}"><button type="button" class="zmopt"${off?" disabled":""}>${esc(o.t)}</button>${od||rr?`<span class="zmod${rr?" zmodc":""}">${rr?`<span>${tok(od||"")}${off&&o.why?`<i class="zmsm">${esc(o.why)}</i>`:""}</span>`+rr.map(x=>`<span class="zmrl${x.bad?" bad":""}">${esc(x.t)}</span>`).join(""):`${tok(od)}${off&&o.why?`<i class="zmsm">${esc(o.why)}</i>`:""}`}</span>`:""}</div>`);
     b.querySelector("button").onclick=e=>{ e.stopPropagation(); if(c.relicDone||off) return; try{ SFX.play("click") }catch(_){}
-      const r=zmRelicPick(j,i); if(run.lost) return; if(r&&r.pass) ZM_UI.relic=null; render() };
-    ro.appendChild(b) });
+      if(o.hero){ ZM_UI.rhero=(ZM_UI.rhero===i)?null:i; render(); return }   /* 대원을 고르는 선택지 — 얼굴 줄을 편다 */
+      ZM_UI.rhero=null; const r=zmRelicPick(j,i); if(run.lost) return; if(r&&r.pass) ZM_UI.relic=null; render() };
+    ro.appendChild(b);
+    if(o.hero&&ZM_UI.rhero===i){ const hp=el(`<div class="zmhpick"></div>`);
+      zmUp().forEach((h,hi)=>{ const f=el(`<button type="button" class="zmhface kw" data-kw="${esc(h.name)}" data-tip=" ">${faceArt(h.name)}</button>`);
+        f.onclick=e=>{ e.stopPropagation(); try{ SFX.play("click") }catch(_){} ZM_UI.rhero=null; zmRelicPick(j,i,hi); if(run.lost) return; render() };
+        hp.appendChild(f) });
+      ro.appendChild(hp) } });
   return w }
 /* 마른 먹선과 드문 빗금 (사용자 그림 GameProject2/art/maps/exploration-boundaries-v1 「exploration-ink-b」 의 build.cjs 를 옮긴 것).
    길 칸들을 하나로 이은 바깥 테두리만 — 칸 사이 선 · 안쪽 채움은 없다. 그림 한 점 = 2px (원본도 두 배로 키운다).
