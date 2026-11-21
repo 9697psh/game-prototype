@@ -26831,7 +26831,93 @@ const REC=[
   more:h=>fatOf(h)<=40,
   intro:"\"세상 무서운 법을 모르는 그녀는 돈이 되는 것들은 절대 놓치지 않습니다.\"",
   d:a=>`오늘 하루동안 미지의 구역에 방문하면 금화를 ${[2,4,6][a]}개 얻습니다.`, day:a=>({unknownGold:[2,4,6][a]})},
+ /* ── 시안에서 채택 (사용자 2026-11-21) — 그림은 나중에 (art 없음) ── */
+ {id:"nk_nightmare", hero:"나이코스", n:"패배의 악몽", ic:"atk", w:"하", acts:[0,1,2], bad:1,
+  more:h=>fatOf(h)>=70,
+  intro:"관중의 야유. 날아오는 돌덩이.",
+  d:()=>"오늘 하루동안 나이코스가 자부심을 얻지 못합니다.", day:()=>({noPride:1})},   /* 시안 글은 「승리해도」 — 맞수 리메이크로 자부심은 승리로 안 얻어 「얻지 못합니다」로 */
+ {id:"dr_bounty", hero:"데린저", n:"현상금 사냥", ic:"gold", w:"하", acts:[0,1,2],
+  only:h=>(h.lv||1)>=5,
+  intro:"안타깝게도, 저 괴물은 오늘 데린저의 눈에 걸렸군요.",
+  d:a=>`오늘 하루동안 정예 전투에서 승리하면 데린저가 보물 점수를 ${[3,6,12][a]} 얻습니다.`, day:a=>({eliteTrea:[3,6,12][a]})},
+ {id:"kz_song", hero:"카제", n:"바람의 노래", ic:"def", w:"중", acts:[0,1,2],
+  more:h=>fatOf(h)<=40,
+  intro:"새벽바람이 칼끝을 스치고, 정령들은 나에게 속삭이네.",
+  d:a=>`오늘 하루동안 회오리 장막으로 얻는 보호막이 ${[1,2,3][a]} 늘어납니다.`, day:a=>({veilPlus:[1,2,3][a]})},
+ {id:"kz_storm", hero:"카제", n:"폭풍 전야", ic:"move", w:"하", acts:[0,1,2], zone:"forest",
+  intro:"구름이 낮게 깔리고, 나뭇잎이 거꾸로 뒤집힙니다. 정령숲이 다시 돌아온 카제를 축복합니다.",
+  d:()=>"오늘 하루 동안 내 턴이 시작할 때, 30% 확률로 무작위 적 하나가 공중에 뜸 상태가 됩니다.", day:()=>({stormLift:30})},
+ {id:"gl_hunger", hero:"굴라", n:"끝없는 허기", ic:"hp", w:"중", acts:[0,1,2],
+  more:()=>(run.taint||0)>=50,
+  intro:"어젯밤 굴라가 무엇을 먹었는지는 아무도 모릅니다. 아침에 대원 수를 세어 보았고, 다행히 모두 있었습니다.",
+  d:()=>"오늘 하루 동안 굴라가 폭식으로 얻는 최대 체력이 2배가 됩니다.", day:()=>({greedX:1})},
+ {id:"it_overcharge", hero:"이테리오", n:"과충전", ic:"mag", w:"중", acts:[0,1,2],
+  only:h=>(h.lv||1)>=5, more:h=>fatOf(h)<=40,
+  intro:"하늘이 번쩍이고, 프로토타입은 다시 태어났습니다. 구원자가 탄생하는 순간이었습니다.",
+  d:()=>"오늘 하루동안 이테리오가 전투 첫 턴에 마나를 1 더 얻고 시작합니다.", day:()=>({firstMana:1})},
+ {id:"tr_banner", hero:"트리스탄", n:"옛 군대의 깃발", ic:"atk", w:"중", acts:[0,1,2],
+  intro:"모두 힘을 합쳐 싸웠습니다. 그리고, 모두 힘을 합쳐 싸웠습니다...",
+  d:a=>`트리스탄이 사명감을 ${[1,2,3][a]} 얻습니다.`,
+  now:(h,a)=>{ const v=[1,2,3][a]; dutyGain(h,v); return `트리스탄이 사명감을 ${v} 얻었습니다.` }},
+ {id:"tr_order", hero:"트리스탄", n:"마지막 명령", ic:"atk", w:"하", acts:[1,2],
+  more:h=>fatOf(h)<=30,
+  intro:"\"맞서 싸워라!!! 절대로 물러서지 마라!!!\"",
+  d:a=>`오늘 하루 동안 트리스탄의 명중 피해가 ${[5,15,30][a]} 증가합니다.`, day:a=>({snipe:[5,15,30][a]}),
+  on:(h,x)=>addMod(h,"명중","dmg",x.v.snipe,"마지막 명령"), off:h=>recModOff(h,"명중","마지막 명령")},   /* 기술 칸 숫자에도 보이게 mods 로 — 날이 밝으면 걷는다 */
+ {id:"ir_memory", hero:"이라", n:"고통스러운 기억", ic:"atk", w:"중", acts:[0,1,2],
+  more:()=>(run.taint||0)>=40,
+  intro:"피의 투기장은 패배한 검투사들을 노예를 부리는 것으로 악명 높은 곳이었습니다.",
+  d:()=>"오늘 하루 동안 복수귀 상태에서 적을 공격 시 5% 확률로 적을 기절시킵니다.", day:()=>({rageStun:5})},
+ {id:"ir_liberation", hero:"이라", n:"해방의 함성", ic:"atk", w:"하", acts:[1], zone:"arena",
+  intro:"누군가에겐 끔찍한 침공, 누군가에겐 달콤한 해방.",
+  d:()=>"퀘스트: 오늘 하루 동안 이라가 적을 15회 처치할 때마다 영구적으로 추가 공격력을 1 얻습니다.", day:()=>({killAtk:15})},
+ {id:"ob_return", hero:"오볼", n:"귀항", ic:"gold", w:"중", acts:[0,1,2],
+  intro:"\"덧없는 죽음과, 끝없는 항해를 계속하네...\"",
+  d:()=>"다음에 방문하는 선박 상점의 무작위 품목 1개의 비용이 0이 됩니다.", day:()=>({shipFree:1})},
+ {id:"pb_pebble", hero:"페블", n:"반짝이는 조약돌", ic:"def", w:"중", acts:[0,1,2],
+  more:h=>typeof pebbleLyth==="function"&&pebbleLyth(h)>0,
+  intro:"영웅은 항상 반짝여야 한다고 책에서 읽었습니다.",
+  d:a=>`오늘 하루 동안 페블이 추가 보호력을 ${[1,2,3][a]} 얻습니다.`, day:a=>({def:[1,2,3][a]})},
+ {id:"cm_morning", n:"맑은 아침", ic:"hp", w:"상", acts:[0,1,2],
+  more:()=>(run.taint||0)<=10,
+  intro:"간만에 맑은 하늘이 보입니다. 좋은 일이 일어날 것만 같습니다.",
+  d:a=>`모든 대원의 피로도가 ${[5,8,10][a]} 감소합니다.`,
+  now:(h,a)=>{ const v=[5,8,10][a]; run.heroes.filter(x=>!x.down).forEach(x=>fatAdd(x,-v)); return `모든 대원의 피로도가 ${v} 감소했습니다.` }},
+ {id:"cm_barker", n:"호객 행위", ic:"gold", w:"중", acts:[0,1,2],
+  intro:"\"싸다 싸! 안오면 손해에요옳!\"",
+  d:a=>`오늘 하루 동안 상점 품목 가격이 ${[10,15,20][a]}% 감소합니다.`, day:a=>({shopPct:[10,15,20][a]})},
+ {id:"cm_star", n:"길잡이 별", ic:"move", w:"중", acts:[0,1,2],
+  intro:"유난히 밝은 별 하나가 길을 가리킵니다.",
+  d:()=>"활동량을 1 얻습니다.", now:()=>{ run.act=(run.act||0)+1; return "활동량을 1 얻었습니다." }},
+ {id:"cm_smith", n:"대장장이의 편지", ic:"gold", w:"하", acts:[0,1,2],
+  intro:"'요즘 제련석이 풍년이라네. 부담없이 오게나'",
+  d:a=>`오늘 하루 동안 제련에 필요한 제련석이 ${[1,2,3][a]}개 감소합니다.`, day:a=>({forgeCut:[1,2,3][a]})},
+ {id:"cm_fog", n:"짙은 안개", ic:"move", w:"중", acts:[0,1,2], bad:1,
+  more:()=>run.heroes.filter(x=>!x.down).every(x=>fatOf(x)>=60),
+  intro:"한 치 앞도 보이지 않습니다. 오늘은 조심해야겠군요.",
+  d:()=>"오늘 하루 동안 지도에서 한 칸 이동할 때마다 시간이 5분 더 소요됩니다.", day:()=>({moveMin:5})},
+ {id:"cm_bloodmoon", n:"핏빛 달", ic:"hp", w:"하", acts:[0,1,2], bad:1,
+  more:()=>run.heroes.some(x=>!x.down&&x.hp<=x.maxHp*0.4),
+  intro:"붉은 달이 떠오르고, 헛것이 보이기 시작합니다.",
+  d:()=>"오늘 밤의 습격 확률이 20% 증가합니다. 습격 전투 시작 시 모든 대원의 피로도가 5 증가합니다.", day:()=>({raidUp:20,raidFat:5})},
+ {id:"cm_nightmare", n:"악몽", ic:"atk", w:"중", acts:[0,1,2], bad:1,
+  more:()=>run.heroes.some(x=>!x.down&&fatOf(x)>=60),
+  intro:"누군가 비명을 지르며 깨어났습니다. 심한 악몽이었나 보네요.",
+  d:a=>`피로도가 가장 높은 대원이 오늘 하루 동안 추가 공격력과 마법력을 ${[1,2,3][a]} 잃습니다.`, day:a=>({malus:[1,2,3][a]}),
+  pick:()=>{ const L=run.heroes.filter(x=>!x.down); return L.length?L.reduce((p,q)=>fatOf(q)>fatOf(p)?q:p):null }},   /* 그날 그 대원에게 붙는다 */
 ];
+/* 오늘 켜진 기록의 몫 — hero 를 주면 그 대원 것만 (쓰러진 대원 몫은 안 센다) */
+function recOnV(k,hero){
+  if(typeof run==="undefined"||!run||!run.recOn) return 0;
+  let v=0; run.recOn.forEach(x=>{ if(!x.day||!x.v||!x.v[k]) return;
+    if(hero&&x.hero!==hero) return;
+    if(x.hero){ const h=run.heroes.find(y=>y.name===x.hero); if(!h||h.down) return }
+    v+=x.v[k] }); return v }
+/* 기술에 붙인 기록 몫을 걷는다 — 같은 mods 배열을 나눠 쥔 복사본이 있어 제자리에서 뺀다 */
+function recModOff(h,skName,label){
+  const seen=new Set();
+  (h&&h.sk||[]).concat(h&&h.skAlt||[]).forEach(t=>{ if(!t||t.n!==skName||!t.mods||seen.has(t.mods)) return; seen.add(t.mods);
+    const i=t.mods.findIndex(m=>m.n===label); if(i>=0) t.mods.splice(i,1) }) }
 const recDef=id=>REC.find(r=>r.id===id);
 function recZoneOk(z){ if(!z) return true;
   if(z==="arena") return run.field===1&&typeof onArena==="function"&&onArena();
@@ -26858,6 +26944,8 @@ function recPool(){
 function recNewDay(){
   if(!run||run.sandbox) return;
   if(typeof CLAIM_WAIT!=="undefined"&&!CLAIM_WAIT) return;   /* 화면 없는 시뮬 — 난수 순서를 흔들지 않게 */
+  (run.recOn||[]).forEach(x=>{ if(!x.day) return; const r=recDef(x.id), h=x.hero&&run.heroes.find(y=>y.name===x.hero);
+    if(r&&r.off&&h) try{ r.off(h,x) }catch(e){ console.error(e) } });
   run.recOn=(run.recOn||[]).filter(x=>!x.day);                        /* 오늘 하루 몫은 날이 밝으면 끝 */
   let x=Math.random(), n=0; for(const [k,p] of REC_N){ if(x<p){ n=k; break } x-=p }
   const pool=recPool(), got=[];
@@ -26869,15 +26957,51 @@ function recNewDay(){
   run.recLast=run.recLast||{}; run.recPend=run.recPend||[];
   const a=recAct();
   got.forEach(({r,h})=>{ run.recLast[r.id]=run.day;
+    if(r.pick){ h=r.pick(); if(!h) return }                             /* 악몽 — 그날 피로도가 가장 높은 대원 */
     let eff=r.d(a);
+    if(r.pick) eff=`${h.name} — `+eff;
     if(r.now) eff=r.now(h,a)||eff;
-    const on={id:r.id,hero:r.hero||null,txt:eff,dayN:run.day};
+    const on={id:r.id,hero:r.hero||(r.pick?h.name:null),txt:eff,dayN:run.day};
     if(r.day){ on.day=1; on.v=r.day(a) } else on.perm=1;
+    if(r.on&&h) try{ r.on(h,on) }catch(e){ console.error(e) }
     run.recOn.push(on); run.recPend.push({id:r.id,txt:eff}) }) }
 /* 전투 시작 (첫 라운드) — 오늘 하루 능력치 몫 */
 function recBattleStart(){
-  (run.recOn||[]).forEach(x=>{ if(!x.day||!x.v||!x.v.atk) return;
-    const h=run.heroes.find(y=>y.name===x.hero&&!y.down); if(h) bumpTmp(h,"atk",x.v.atk) }) }
+  (run.recOn||[]).forEach(x=>{ if(!x.day||!x.v) return;
+    const h=run.heroes.find(y=>y.name===x.hero&&!y.down); if(!h) return;
+    if(x.v.atk) bumpTmp(h,"atk",x.v.atk);
+    if(x.v.def) bumpTmp(h,"def",x.v.def);                               /* 반짝이는 조약돌 */
+    if(x.v.malus){ bumpTmp(h,"atk",-x.v.malus); bumpTmp(h,"mag",-x.v.malus);   /* 악몽 */
+      say(`악몽 — ${h.name} 추가 공격력 · 마법력 −${x.v.malus}`,"t3") } });
+  /* 핏빛 달 — 밤의 습격 전투가 시작되면 모든 대원 피로도 +5 */
+  const rf=recOnV("raidFat");
+  if(rf&&B&&B.kind==="ambush"&&run.night){ run.heroes.filter(h=>!h.down).forEach(h=>fatAdd(h,rf)); say(`핏빛 달 — 모든 대원 피로도 +${rf}`,"t3") } }
+/* 내 턴이 시작될 때 — 폭풍 전야 (30% 로 무작위 적 하나가 공중에 뜸) */
+function recTurnStart(){
+  const p=recOnV("stormLift","카제"); if(!p||!B||B.over) return;
+  if(Math.random()*100>=p) return;
+  const L=B.foes.filter(f=>f.alive&&!f.air&&!f.isPhantom); if(!L.length) return;
+  const f=L[Math.floor(Math.random()*L.length)], k=run.heroes.find(h=>h.name==="카제");
+  say(`폭풍 전야 — 바람이 ${f.name}${jo(f.name,"eul")} 들어 올립니다.`,"t2"); airborne(k,f) }
+/* 처치 — 해방의 함성 (이라가 오늘 15회 처치할 때마다 영구 추가 공격력 1) */
+function recOnKill(by){
+  if(!by||by.name!=="이라") return;
+  (run.recOn||[]).forEach(x=>{ if(!x.day||!x.v||!x.v.killAtk||x.hero!=="이라") return;
+    x.cnt=(x.cnt||0)+1;
+    if(x.cnt%x.v.killAtk===0){ by.atk++; by.recAtk=(by.recAtk||0)+1;
+      say(`해방의 함성 — 처치 ${x.cnt}회, ${by.name} 추가 공격력 영구 +1`,"t1") } }) }
+/* 정예 전투 승리 — 현상금 사냥 (데린저 보물 점수) */
+function recEliteWon(){
+  const v=recOnV("eliteTrea","데린저"); if(!v||!B||B.kind!=="elite") return;
+  const d=run.heroes.find(h=>h.name==="데린저"&&!h.down); if(!d) return;
+  say(`현상금 사냥 — 데린저 보물 점수 +${v}`,"t1"); treaGain(d,v) }
+/* 선박 상점 — 귀항 (오늘 처음 들르는 선박 상점의 무작위 품목 하나가 0) */
+function recShipFree(goods){
+  const x=(run.recOn||[]).find(y=>y.day&&y.v&&y.v.shipFree&&!y.used); if(!x||!goods||!goods.length) return;
+  const L=goods.filter(g=>g&&g.k!=="shipup"&&((g.cost||0)>0||(g.gcost||0)>0)); if(!L.length) return;
+  const g=L[Math.floor(Math.random()*L.length)]; x.used=1;
+  if(g.cost>0){ if(g.cost0==null) g.cost0=g.cost; g.cost=0 } if(g.gcost>0) g.gcost=0; g.repFree=1;
+  toast(`귀항 — ${g.n||g.name||"품목 하나"}의 비용이 0이 됩니다.`) }
 /* 미지의 구역에 들어설 때 — 무법자 */
 function recOnUnknown(){
   (run.recOn||[]).forEach(x=>{ if(!x.day||!x.v||!x.v.unknownGold) return;
@@ -28911,7 +29035,11 @@ function grantRunReward(hero,r,progress=true){
         if(dq&&run.highGot>=3){ dq.tag.treaX=1; toast("부와 명예 — 이제 보물 점수를 두 배로 얻습니다.") } }
       const d0=run.heroes.find(x=>x.name==="데린저");
       const pts=({"하급":1,"중급":2,"상급":3}[r.g]||0)*(1+((d0&&d0.tag&&d0.tag.treaX)||0));
-      if(pts&&d0){
+      if(pts&&d0) treaGain(d0,pts);
+}
+
+/* 보물 점수를 얻는다 — 금화(GOLD_PER 마다) · 공격력(TREA_PER 마다). 보상 · 기록(현상금 사냥)이 같이 쓴다 */
+function treaGain(d0,pts){
         run.treasure=(run.treasure||0)+pts;
         const d=d0;
         /* 금화 — **보물 점수 GOLD_PER 점마다 1개** (사용자 2026-10-15 : 전에는 보상마다 1개였다).
@@ -28924,9 +29052,7 @@ function grantRunReward(hero,r,progress=true){
         const want=Math.floor(run.treasure/TREA_PER);
         if((d.treaAtk||0)<want){ const add=want-(d.treaAtk||0); d.treaAtk=want; d.atk+=add;
           toast(`전리품 사냥꾼 — ${d.name}의 공격력이 ${add} 올랐습니다.`) }
-      }
 }
-
 function autoLvReward(h,grade){
   /* 7레벨 특성 · 데린저 총 고르기는 지웠다 (사용자 2026-11-10) */
   const own0=heroOwnPool(h,grade);
@@ -29910,6 +30036,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 505, "v": "0.8", "d": "2026-11-21", "t": "기록 — 시안에서 채택된 19개 (그림은 나중에)", "big": 0},
  {"b": 504, "v": "0.8", "d": "2026-11-21", "t": "처치 결정타 개편(다가감 · 결정타 정지 · 무너짐 · 치명타 충격 · 마지막 적 당김), 출혈 디버프", "big": 0},
  {"b": 503, "v": "0.8", "d": "2026-11-21", "t": "적 행동 강조 개편(공격자 1.23 · 대상 1.13 · 근접 적이 다가옴), 나이코스 전장의 승자 맞수 리메이크 + 아이콘", "big": 0},
  {"b": 502, "v": "0.8", "d": "2026-11-21", "t": "비늘 돋힌 야수 — 잠든 괴물의 기습 상대", "big": 0},
@@ -31607,7 +31734,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=504;
+const BUILD_NO=505;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -34267,7 +34394,7 @@ function walkRoute(){
     const seen0=run.seen?Object.keys(run.seen).length:0;
     run.pos={r:p.r,c:p.c}; fogLift(p.r,p.c);
     const newly=run.seen?Object.keys(run.seen).length>seen0:false;   /* 지도 밝히기 — 이 걸음에 새로 보인 칸이 있나 */
-    spend(stepHours(),0); addTaint(moveTaint()); fatStep();   /* 피로도 — 한 칸 5% +1~2 */   /* 이동은 활동량을 안 쓴다 (2026-10-08) */
+    spend(stepHours()+recOnV("moveMin")/60,0); addTaint(moveTaint()); fatStep();   /* 피로도 — 한 칸 5% +1~2 */   /* 이동은 활동량을 안 쓴다 (2026-10-08) */
     crowdStep(cell);   /* 광기의 투기장 관중석 — 환호 +5 */ questProgress("mapWalk",null);   /* 지도에서 한 칸 (기중기 바퀴, 2026-10-21) */
     if(run.taint>=taintMax()||run.lost) return;
     if(run.day!==day0){ toast("길에서 날이 밝아 발길을 멈춥니다."); view="map"; render(); return }
@@ -34334,7 +34461,7 @@ function ambushChance(cell,r,c){
 function ambushChance0(cell,r,c){
   if(!cell) return 0;
   if(r!=null&&nestNear(r,c)) return 0;   /* 반딧불 둥지 둘레 2칸 — 밤에도 습격 없음 (2026-10-01) */
-  const night=run.night?Math.min(0.85, 0.30+nightDepth()*0.05):0;   /* 기본 45% → 30% (사용자 2026-10-12: 55% → 40%. 밤이 깊을수록 5%p 씩 오르는 것은 그대로) */
+  const night=run.night?Math.min(0.85, 0.30+nightDepth()*0.05+recOnV("raidUp")/100):0;   /* 핏빛 달 +20% (기록) */   /* 기본 45% → 30% (사용자 2026-10-12: 55% → 40%. 밤이 깊을수록 5%p 씩 오르는 것은 그대로) */
   /* 간수 초소 둘레 2칸 — 빈 칸이 아니어도 25%. 순찰로의 빈 칸 — 낮에도 25% (사용자 2026-09-15) */
   if(r!=null&&postNear(r,c)&&cell.t!=="camp"&&cell.t!=="boss"&&cell.t!=="wall"&&cell.t!=="post") return Math.max(night,0.25);
   if(cell.t!=="empty") return 0;
@@ -34354,7 +34481,7 @@ function moveTo2(r,c){
   SFX.play(sfxHas("발걸음")?"발걸음":"tock");   /* 발걸음 (사용자 2026-10-05) — 셋 중 하나 */ /* 한 칸 = 1시간 (사용자 2026-10-08 — 30분에서 되돌림). 초침이 넘어간다 */
   run.route=null; run.mapSel=null;
   run.pos={r:r,c:c}; fogLift(r,c);
-  spend(stepHours(),0); addTaint(moveTaint()); fatStep();   /* 피로도 — 한 칸 5% +1~2 */   /* 이동은 활동량을 안 쓴다 (2026-10-08) */
+  spend(stepHours()+recOnV("moveMin")/60,0); addTaint(moveTaint()); fatStep();   /* 피로도 — 한 칸 5% +1~2 */   /* 이동은 활동량을 안 쓴다 (2026-10-08) */
   crowdStep(cell);   /* 광기의 투기장 관중석 — 환호 +5 */ questProgress("mapWalk",null);   /* 지도에서 한 칸 (기중기 바퀴, 2026-10-21) */
   /* ⚠️ **졌으면 여기서 멈춘다.** 아래 `arriveAt` 이 `view="map"` 으로 되돌려 버린다 —
      브라우저는 패배 연출의 뒷정리가 다시 `over` 로 돌려 주지만, 화면이 없는 덩이에는
@@ -37139,6 +37266,7 @@ function forgePlan(){
     made=Object.assign({},FORGE_LUX,{cost:made.cost});
   /* 장인의 눈 — 값을 깎은 사본을 쓴다. forgeRun 도 이 사본을 받으므로 값이 한 곳에서만 정해진다 */
   if(made&&forgeCut()) made=Object.assign({},made,{cost:Math.max(0,made.cost-forgeCut())});
+  { const rc=recOnV("forgeCut"); if(made&&rc) made=Object.assign({},made,{cost:Math.max(0,made.cost-rc)}) }   /* 대장장이의 편지 (기록) */
   /* 제련공 브란의 평판 — 제련석 값 ± (2026-11-12). 범위 안의 자리는 들어설 때 한 번 */
   if(made&&made.cost>0) made=Object.assign({},made,{cost:smithCost(made.cost)});
   const stock=forgeStock();
@@ -39163,7 +39291,8 @@ function makeShop(){
     goods.push({n:g.n,d:g.d,k:g.k,card:g.card,item:g.item,
                 cost:rr(pr), left:q0, qty:q0});
   }
-  if(repK==="merchant") repShopApply(goods,repK);   /* 평판 — 할인 · 값 오름 · 수량 · 공짜 품목 (마른숲은 오염도 값으로 바꾼 뒤에) */
+  if(repK==="merchant") repShopApply(goods,repK);
+  { const p=recOnV("shopPct"); if(p) goods.forEach(g=>{ if(g&&g.cost>0){ if(g.cost0==null) g.cost0=g.cost; g.cost=Math.max(1,Math.round(g.cost*(1-p/100))) } }) }   /* 호객 행위 (기록) */   /* 평판 — 할인 · 값 오름 · 수량 · 공짜 품목 (마른숲은 오염도 값으로 바꾼 뒤에) */
   /* 생산라인 (폐기물 더미 전리품, 2026-10-23) — **다음에 들어선 상점 한 번**만 */
   if(run.lineShop){ run.lineShop=0;
     const g0=SHOP_STOCK.find(x=>x.k==="pickrare");
@@ -39448,6 +39577,7 @@ function shipFixed(goods){
 }
 /* 선박 상점에 들어선다 — 지도 칸(enterCell0)과 해적의 부름이 같이 쓴다 */
 function shipOpen(){
+  try{ if(run.ship&&run.ship.goods) recShipFree(run.ship.goods) }catch(e){ console.error(e) }   /* 귀항 (기록) */
   obolEnsure();
   run.shopKind="ship"; run.sellPick=null; run.sellOpen=0;
   if(!run.ship.goods||run.ship.day!==run.day) makeShipShop();
@@ -44474,7 +44604,7 @@ function startBattle(kind,pinned){
     h.first=h.first||{}; h.first.cut=0; h.first.shot=0;
     windReset(h);                    /* 진선풍도 중첩도 라운드마다, 회오리로 바뀐 칸은 진선풍도로 */
     altReset(h);                     /* 전환 기술은 라운드마다 처음 꼴로 (헥토 방패 막기 · 선두 방어, 사용자 2026-10-06) */
-    h.mana=h.maxMana+itemBt(h,"firstMana")+(h.tag.firstMana||0)+((typeof pillarBonus==="function")?pillarBonus():0);   /* 마나석 기둥 — 이 층의 기둥을 모두 켰다면 (마나 제련소) */
+    h.mana=h.maxMana+itemBt(h,"firstMana")+(h.tag.firstMana||0)+recOnV("firstMana",h.name)+((typeof pillarBonus==="function")?pillarBonus():0);   /* 마나석 기둥 — 이 층의 기둥을 모두 켰다면 (마나 제련소) */
     if(itemBt(h,"negMana")&&itemBt(h,"negShield")) h.mana+=itemBt(h,"negMana");   /* 봉인된 어둠 — 배치하며 얻은 부정 보호막, 그 턴 마나 +1 (점검 2026-10-07) */   /* 사파이어 파편 — 각 라운드 첫 턴 (사용자 2026-10-03, 전에는 전투 첫 라운드만) */
     if(fresh){
       /* ── 전투 하나에 한 번만 (표 BATTLE_RESET) ── */
@@ -52607,7 +52737,7 @@ function veilCheck(h){
   const done=h.veilDone||0;
   if((h.acts||0)<need*(done+1)) return;
   h.veilDone=done+1;
-  const v=(h.tag.veilAmt||1)+h.def;          /* 보호막 1 — 피해마다 세므로 (사용자 2026-09-17) */
+  const v=(h.tag.veilAmt||1)+h.def+recOnV("veilPlus","카제");   /* 바람의 노래 (기록) */          /* 보호막 1 — 피해마다 세므로 (사용자 2026-09-17) */
   addShield(h,v);
   pulseFX("mine",h.slot,"#5fd8cf",3);
   edgeGlow("rgba(95,216,207,.34)");
@@ -53767,6 +53897,8 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
   if(B&&d>0) B._hpHit=(B._hpHit||0)+Math.min(d,Math.max(0,f.hp));   /* 흡수 — 체력에 닿은 몫 (2026-10-05) */
   f.hp-=d;
   arenaFoeHurt(f,amt);   /* 채점 · 관중의 촉망 · 비추기 · 도전장 */
+  /* 기록 「고통스러운 기억」 — 복수귀 상태의 이라가 기술로 때리면 5% 로 기절 (기록이 켜졌을 때만 주사위를 굴린다) */
+  if(d>0&&f.hp>0&&B&&B._ef&&B._efHero&&B._efHero.name==="이라"&&B._efHero.rageOn>0&&B.foes.indexOf(f)>=0){ const p=recOnV("rageStun","이라"); if(p&&Math.random()*100<p){ addDeb(f,"stun",1,B._efHero); say(`고통스러운 기억 — ${f.name} 기절`,"t2") } }
   if(d>0) merchantPotion(f);   /* 떠돌이 상인 — 비상 물약 (2026-11-11) */
   if(d>0&&f.obolShip) obolShipHit(f);   /* 약탈꾼 (오볼 중급) */
   if(d>0&&f.hp>0&&foePas(f,"shift")) setTimeout(()=>shiftIntent(f),0);   /* 균열 군체 — 변화 (2026-10-01) */
@@ -54167,6 +54299,7 @@ function kfinHold(K){ const c=KFIN[K.kind]||KFIN.normal; return c.stop+(K.crit?5
 function onKill(by,f,tag){
   if(!by||!by.name||!run||run.heroes.indexOf(by)<0||!by.tag) return;
   rivalKill(by,f);   /* 나이코스 맞수 (2026-11-21) */
+  recOnKill(by);     /* 기록 — 해방의 함성 */
   /* '소환물이 아닌 적을 처치한 후' — 어느 기술로 죽였든 (진선풍도 · 기침 · 숙주 폭발 …) (점검 2026-10-07) */
   if(f&&!f.isPhantom&&!f.summoned){ const h=by;
     const ke=itemBt(h,"killEsh"); if(ke) h.eshield=(h.eshield||0)+ke;
@@ -54358,7 +54491,7 @@ function onDeath(kind,who){
     });
   }
   run.heroes.forEach(h=>{
-    if(kind!=="min"&&!(who&&who.summoned)&&h.name==="굴라"&&h.slot>0&&h.greed<greedCapOf(h)){ h.greed++; h.maxHp++; h.hp++ }   /* 적의 소환물도 소환물이다 */
+    if(kind!=="min"&&!(who&&who.summoned)&&h.name==="굴라"&&h.slot>0&&h.greed<greedCapOf(h)){ const gx=recOnV("greedX","굴라")?2:1; h.greed++; h.maxHp+=gx; h.hp+=gx }   /* 끝없는 허기 — 2배 (기록) */   /* 적의 소환물도 소환물이다 */
     /* 주인님을 받들어라 — 내 소환물이 죽으면 굴라가 회복 */
     /* 전우애 (상급) — 사냥개가 죽으면 그 추가 능력치가 오리온에게 넘어온다 (노트 2026-10-15) */
     if(kind==="min"&&h.name==="오리온"&&h.slot>0&&h.hp>0&&h.tag.houndWill&&who&&who.name==="사냥개"){
@@ -58252,6 +58385,7 @@ function startMyTurn(){
   try{ colIdle() }catch(e){}
   if(B&&B.foes) B.foes.forEach(f=>{ if(f.alive&&f.bounty>0){ f.bounty=Math.max(0,f.bounty-(f.bountyDn||2)); say(`죽음 — ${f.name}의 금화가 ${f.bounty}개로 줄었습니다.`,"t3") } });   /* 미믹 — 적 턴이 끝날 때마다 -2 */
   if(!B||B.over) return;
+  recTurnStart();   /* 기록 — 폭풍 전야 */
   B.disc={};
   onField().forEach(u=>{ if(u) u.skTurn={} });   /* 간수장의 방패 — 「한 턴에 같은 기술」 셈을 턴마다 비운다 (2026-10-23) */
   if(B.hand) B.hand.forEach(c=>{ if(c.arrive) delete c.arrive });   /* 감시 카드 날아오기 — 연출이 끊겼어도 내 턴엔 보인다 */
@@ -58589,6 +58723,7 @@ const RIVAL_TIP="나이코스가 이 적을 처치하면 자부심을 얻고, �
 /* 자부심을 얻는 곳은 여기 하나 — 맞수 처치 · 숙련. 돈은 벌어야지는 「얻은」 자부심 2마다 금화 (h.prideGot 에 센다) */
 function prideAdd(h,n,why){
   if(!h||h.name!=="나이코스"||!(n>0)) return;
+  if(recOnV("noPride","나이코스")){ if(typeof say==="function") say("패배의 악몽 — 오늘은 자부심을 얻지 못합니다.","t3"); return }   /* 기록 (2026-11-21) */
   const g0=Math.floor((h.prideGot||0)/2);
   h.pride=(h.pride||0)+n; h.prideGot=(h.prideGot||0)+n;
   const t=h.tag||{}, gold=(Math.floor(h.prideGot/2)-g0)*(t.winGold||0);
@@ -58632,7 +58767,8 @@ function rivalKill(by,f){
   if(t.rivalChain) rivalPick("분노 전환");
 }
 function battleWon(){
-  fatBattleWon();   /* 피로도 — 전투 승리 40% −1~3 */
+  fatBattleWon();
+  try{ recEliteWon() }catch(e){ console.error(e) }   /* 기록 — 현상금 사냥 (정예 승리) */   /* 피로도 — 전투 승리 40% −1~3 */
   /* 피의 계약서 (사탄 전리품, 2026-11-11) — 전투 종료 시 피해 5. 겹쳐 받으면 그만큼. 체력 1 밑으로는 안 내린다 */
   run.heroes.forEach(h=>{ const n=(h.tag&&h.tag.bloodPact)||0; if(!n||h.down||h.hp<=0) return;
     const v=Math.min(5*n,Math.max(0,h.hp-1)); if(v>0){ h.hp-=v; say(`피의 계약서 — ${h.name} 피해 ${v}`,"t3") } });
