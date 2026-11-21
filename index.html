@@ -23136,6 +23136,16 @@ const FOE={
     {n:"깨물기",w:3,tg:"near",dmg:4,hits:2,drainNext:1,chase:1,d:"가장 가까운 상대에게 공격 피해를 4씩 2번 줍니다. 다음 턴에 흡수 +100%를 얻습니다."},
     {n:"강한 물기",w:3,tg:"near",dmg:4,buff:2,buffAfter:1,chase:1,d:"가장 가까운 상대에게 공격 피해를 4 줍니다. 공격력을 2 얻습니다."}],
    hit:"물기"},
+ /* 비늘 돋힌 야수 (사용자 총괄 노트 2026-11-21) — 유물 「잠든 괴물」에서 깨어나 기습. 그림 GameProject2/art/enemies/relic-event-beast-v1 */
+ "비늘 돋힌 야수":{hp:50,atk:3,def:0,rng:7,exp:8,elite:1,race:"야수",
+   el:"공격",
+   sk:[
+    {n:"찢어발기기",w:4,tg:"near",dmg:3,deb:{wound:1},d:"가장 가까운 대상에게 공격 피해를 3 주고, 상처를 남깁니다."},
+    {n:"할퀴기",w:3,tg:"near",dmg:7,d:"가장 가까운 대상에게 공격 피해를 7 줍니다."},
+    {n:"가시 비늘",w:2,tg:"self",armorT:{v:5,turns:2},thorn:{v:1,turns:2},cd:2,d:"2턴 동안 갑피 5, 가시 1을 얻습니다."},
+    {n:"물어뜯기",w:3,tg:"dist",dmg:3,hits:2,heal:5,d:"사거리 내 무작위 대상에게 공격 피해를 3씩 2번 줍니다. 체력을 5 회복합니다."},
+    {n:"화내기",w:2,tg:"self",buff:1,d:"추가 공격력을 1 얻습니다."}],
+   hit:"할퀴기"},
  "술집 난동꾼":{hp:38,atk:7,def:6,rng:2,exp:6,
    el:"공격",
    gim:{taunt:1},
@@ -29752,6 +29762,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 502, "v": "0.8", "d": "2026-11-21", "t": "비늘 돋힌 야수 — 잠든 괴물의 기습 상대", "big": 0},
  {"b": 501, "v": "0.8", "d": "2026-11-21", "t": "기록 화면 시안대로, 지속 효과 아이콘, 주둔지 효과음", "big": 0},
  {"b": 500, "v": "0.8", "d": "2026-11-21", "t": "기록 시스템 — 아침 양피지, 지속 효과 탭, 기록 셋", "big": 0},
  {"b": 499, "v": "0.8", "d": "2026-11-21", "t": "장소 이름 띠 삭제, 홀로 떠나기 삭제, 버려진 시계 레벨 2", "big": 0},
@@ -31446,7 +31457,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=501;
+const BUILD_NO=502;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -37703,10 +37714,10 @@ const ZM_RELIC={
    o:[{t:"몰래 지나가기",d:"",
         r:()=>[{t:"85% 아무 일 없음"},{t:"15% 깨어나 기습 (보상 없음)",bad:1}],
         f:()=>{ if(Math.random()<.85) return {icDone:"rift_relic_sleeping_monster",lines:[{txt:"무사히 지나갔습니다."}]};
-          return {lines:[{txt:"괴물이 깨어났습니다!",bad:1}],ambush:{noLoot:1}} }},
+          return {lines:[{txt:"괴물이 깨어났습니다!",bad:1}],ambush:{force:[["비늘 돋힌 야수",1]],noLoot:1}} }},
       {t:"깨우기",d:"괴물을 깨웁니다!",
         r:()=>[{t:"이기면 중급 보상 2개"}],
-        f:()=>({lines:[{txt:"괴물이 깨어났습니다!",bad:1}],ambush:{noLoot:1,win:["중급","중급"]}})}]},
+        f:()=>({lines:[{txt:"괴물이 깨어났습니다!",bad:1}],ambush:{force:[["비늘 돋힌 야수",1]],noLoot:1,win:["중급","중급"]}})}]},   /* 비늘 돋힌 야수 (2026-11-21) */
  "피의 제단":{ic:"rift_relic_blood_altar",tier:"하",zones:["forest","arena"],
    tip:"그대의 피로 번성하고, 그대의 피로 몰락하리", d:"그대의 피로 번성하고, 그대의 피로 몰락하리",
    kinds:["battle2","battle3","elite"], acts:[0,1,2],
@@ -45130,7 +45141,7 @@ function morphFoe(f,name,opt){
   if(!m){ f.alive=1; return null }         /* 자리를 못 잡으면 없던 일로 */
   m.maxHp=hp; m.hp=hp;
   m.deb={}; m.shield=0; m.eshield=0; m.negShield=(FOE[name].gim&&FOE[name].gim.neg)||0; m.armor=(FOE[name].gim&&FOE[name].gim.armor)||0; m.echoGift=0;
-  m.thorn=0; m.thornTurn=0; m.taunt=0; m.tauntTurn=0; m.evade=0; m.hide=0;
+  m.thorn=0; m.thornTurn=0; m.armorTurn=0; m.taunt=0; m.tauntTurn=0; m.evade=0; m.hide=0;
   m.stun=0; m.burn=0; m.weak=0; m.weakAtk=0; m.atkUp=0; m.magUp=0; m.defUp=0; m.buffs=0;
   m.rew=0; m.stop=0; m.chg=0;
   m.morphBack=opt.back?{name:was,hp:hp}:null;   /* 되돌아올 것 (미치광이 인형사) */
@@ -47199,6 +47210,8 @@ function skExec0(f,I){
   if(s.shield){ const v=skShield(f,s.shield); addShield(f,v); fx({side:"foe",slot:f.slot,s:"shield"}); say(`${f.name} 보호막 +${v}`) }
   if(s.eshield){ const v=foeGive(s.eshield); f.eshield=(f.eshield||0)+v;   /* 강화 배율 1/4 몫만 — skShield 를 겹쳐 쓰지 않는다 (2026-10-20) */
     fx({side:"foe",slot:f.slot,s:"shield",ring:"#5fd8cf",txt:"에너지 보호막 +"+v,cls:"shd",gap:140}); say(`${f.name} 에너지 보호막 +${v}`,"t2") }
+  if(s.armorT){ f.armor=s.armorT.v; f.armorTurn=(s.armorT.turns||2)+1;   /* N턴 동안 갑피 (비늘 돋힌 야수 가시 비늘, 2026-11-21) */
+    fx({side:"foe",slot:f.slot,ring:"#e0c85a",txt:"갑피"+f.armor,cls:"shd",gap:120}); say(`${f.name} 갑피 ${f.armor} (${f.armorTurn-1}턴)`,"t3") }
   if(s.thorn){ f.thorn=s.thorn.v; f.thornTurn=(s.thorn.turns||2)+1;   /* +1 — 내 턴 머리에 하나 줄어도 그 턴 동안 남게 (도발과 같은 셈) (점검 2026-10-07) */
     fx({side:"foe",slot:f.slot,thornIn:1,txt:"가시"+f.thorn,cls:"shd"}); say(`${f.name} 가시 ${f.thorn} (${f.thornTurn-1}턴)`,"t3") }
   if(s.taunt){ f.taunt=99; f.tauntTurn=s.taunt+1;
@@ -48401,6 +48414,7 @@ function skEffectHtml(s,f){
   if(s.shield) P.push(`${ic("def")}${f?shieldAfter(f,skShield(f,s.shield)):s.shield}`);
   if(s.eshield) P.push(`<span class="ideb kw" data-kw="에너지 보호막">${bdIcon("g","에너지 보호막","에너지 보호막")}${f?foeGive(s.eshield):s.eshield}</span>`);
   if(s.taunt) P.push(`도발${s.taunt}`);
+  if(s.armorT) P.push(`갑피${s.armorT.v}`);
   if(s.thorn) P.push(`가시${s.thorn.v||s.thorn}`);
   if(s.heal) P.push(`${ic("hp")}+${f?foeGive(s.heal):s.heal}`);
   if(s.buff&&s.defUp&&s.buff===s.defUp&&(!s.magUp||s.magUp===s.buff)) P.push(`<span class="ideb" style="color:#e0c85a">모든 능력치 +${s.buff}</span>`);
@@ -58126,6 +58140,7 @@ function startMyTurn(){
   run.heroes.forEach(soloCheck);
   B.foes.forEach(f=>{ f.air=0; f.weakAtk=0; if(f.deb&&f.deb.dmgDn) f.deb.dmgDn=0; if(f.willWeak) f.wkGrowAt=Date.now(); f.willWeak=0; f.willAtk=0;
     if(f.willDef){ f.weak=Math.max(0,(f.weak||0)-f.willDef); f.willDef=0 }   /* 의지 약화의 보호력 몫도 걷는다 — 전투 내내 남던 것 (점검 2026-10-07) */
+    if(f.armorTurn>0&&--f.armorTurn<=0){ f.armor=0; say(`${f.name}의 갑피가 풀렸습니다.`,"t2") }   /* N턴 동안 갑피 (2026-11-21) */
     if(f.thornTurn>0&&--f.thornTurn<=0){ f.thorn=0;
       say(`${f.name}의 사슬이 늘어집니다 — 가시가 풀렸습니다.`,"t2") }
     if(f.tauntTurn>0&&--f.tauntTurn<=0){ f.taunt=0;
