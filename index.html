@@ -2264,8 +2264,12 @@ body:has(.rwq) .hpanel{top:auto;bottom:16px;max-height:min(52vh,calc(100vh - 100
    위아래로 쌓으면 대원 판이 반쯤 잘리고 목록이 그 위에 겹쳐 보였다. */
 @media(min-width:1400px){
   body:has(.rwq) .hpanel{top:98px;bottom:auto;max-height:calc(100vh - 118px)}
-  .rwq{right:340px;top:98px;width:238px;max-height:calc(100vh - 118px);overflow-y:auto}
-  body:has(.rwq) #app{max-width:none;margin:0 600px 0 0;padding-right:16px}
+  .rwq{right:16px;top:98px;width:238px;max-height:calc(100vh - 118px);overflow-y:auto}
+  /* 대원 판이 있을 때만 세 단 — 없으면 그 자리를 비워 두느라 본문이 왼쪽으로 쏠렸다 (사용자 2026-11-22).
+     없으면 본문은 가운데, 목록은 오른쪽 끝. 양옆을 같이 비워 가운데가 그대로 가운데다 */
+  body:has(.rwq):has(.hpanel) .rwq{right:340px}
+  body:has(.rwq):has(.hpanel) #app{max-width:none;margin:0 600px 0 0;padding-right:16px}
+  body:has(.rwq):not(:has(.hpanel)) #app{max-width:none;margin:0 auto;padding-left:120px;padding-right:120px}
 }
 /* 더 좁으면 오른쪽에 설 자리가 없다. 본문 아래로 내린다 */
 @media(max-width:899px){
@@ -30036,6 +30040,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 506, "v": "0.8", "d": "2026-11-22", "t": "입구 보상 목록이 입구마다 다르게 · 특수 입구 균형, 유물 기습도 대원 고르기, 보상 화면 가운데 정렬", "big": 0},
  {"b": 505, "v": "0.8", "d": "2026-11-21", "t": "기록 — 시안에서 채택된 19개 (그림은 나중에)", "big": 0},
  {"b": 504, "v": "0.8", "d": "2026-11-21", "t": "처치 결정타 개편(다가감 · 결정타 정지 · 무너짐 · 치명타 충격 · 마지막 적 당김), 출혈 디버프", "big": 0},
  {"b": 503, "v": "0.8", "d": "2026-11-21", "t": "적 행동 강조 개편(공격자 1.23 · 대상 1.13 · 근접 적이 다가옴), 나이코스 전장의 승자 맞수 리메이크 + 아이콘", "big": 0},
@@ -31734,7 +31739,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=505;
+const BUILD_NO=506;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -37494,7 +37499,7 @@ function startDungeonGo(){ const cell=run.dun.cell;
    전투가 끝나면(benchBack) 원래 순서로 돌아온다. 참여한 대원이 모두 쓰러져도 비켜 선 대원이 성하면 원정은 끝나지 않는다 (battleLost).
    설 대원이 하나뿐이면 고르지 않는다. 연습장 · 화면 없는 시뮬레이터도 고르지 않는다 */
 function entryNeed(cell){
-  if(!run||run.sandbox||run.bench||(cell&&cell.zmAmb)) return false;
+  if(!run||run.sandbox||run.bench) return false;   /* 유물 기습(zmAmb)도 고른다 (사용자 2026-11-22) */
   if(typeof document==="undefined"||!document.getElementById||!document.getElementById("app")) return false;
   return run.heroes.filter(h=>!h.down).length>=2 }
 function entryGo(names){ const d=run.dun; if(!d||!d.entry) return;
@@ -37633,22 +37638,34 @@ function dungeonCleared(){
    ★ 시뮬(CLAIM_WAIT 끔) · 연습장에서는 안 편다. 그물은 ZONE_MAP=false 로 끌 수 있다.
    ★ 중간 이벤트 칸은 나중에 (사용자가 따로 준다). */
 let ZONE_MAP=true;
-/* 입구 — t 는 시간(15분 몇 번) 범위, w 는 막마다 나올 무게, b 는 15분마다 한 묶음(1막 · 첫 입구 기준),
+/* 균형 (사용자 2026-11-22) — 한 묶음 기대 가치(금화 1 · 경험치 1.2 · 하급 8 · 파편 10 · 중급 20 · 상급 50 · 제련석 4 · 일반 20 · 각인서 15) :
+   석조 ≈6.6 · 금빛 ≈7.5 · 고대 ≈8.7 · 유적 ≈7.7 · 오염된 ≈7.6(+오염도) · 위험한 ≈7.9(+함정 · 긴 시간). 특수 입구가 늘 석조보다 낫게.
+   입구 — t 는 시간(15분 몇 번) 범위, w 는 막마다 나올 무게, b 는 15분마다 한 묶음(1막 · 첫 입구 기준),
    b3 은 세 번째 15분 묶음에만 더하는 것, up 은 고르는 화면의 「무엇이 좋은가」 줄 */
 const ZM_ENT={
  stone:  {n:"석조 입구",  ic:"dungeon_entrance",           t:[1,2], w:[60,50,40], d:"일반적인 보상을 얻을 수 있습니다.",
           b:{gold:[2,3],exp:[1,3],"하급":.10,"파편":.05,"중급":.02}, up:["일반적인 보상"]},   /* = 예전 1막 1라운드 상자 */
  gold:   {n:"금빛 입구",  ic:"dungeon_entrance_gold",      t:[1,2], w:[8,8,7], d:"금화 획득량이 증가합니다.",
-          b:{gold:[4,5]}, up:["금화 획득량 증가"]},
+          b:{gold:[6,9]}, up:["금화 획득량 증가"]},   /* 4~5 → 6~9 : 석조보다 이득이게 (사용자 2026-11-22) */
  ruins:  {n:"유적 입구",  ic:"dungeon_entrance_ruins",     t:[1,3], w:[6,6,6], d:"제련석 및 장신구 관련 보상 획득량이 증가합니다.",
-          b:{stone:[1,1],"파편":.10,"각인서":.05}, b3:{"일반":.06}, up:["제련석 획득량 증가","장신구 보상 확률 증가"]},
+          b:{stone:[1,2],"파편":.10,"각인서":.05}, b3:{"일반":.06},   /* 제련석 1 → 1~2 */ up:["제련석 획득량 증가","장신구 보상 확률 증가"]},
  cursed: {n:"오염된 입구",ic:"dungeon_entrance_corrupted", t:[1,2], w:[4,6,7], d:"오염도가 증가하지만, 희귀한 보상을 얻을 수 있습니다.",
-          b:{"하급":.12,"중급":.07,"상급":.01}, taint:6, up:["중급 보상 확률 증가","상급 보상 확률 증가"]},
+          b:{"하급":.25,"중급":.18,"상급":.04}, taint:6,   /* 오염도 대가만큼 — .12 · .07 · .01 → .25 · .18 · .04 */ up:["중급 보상 확률 증가","상급 보상 확률 증가"]},
  ancient:{n:"고대의 입구",ic:"dungeon_entrance_ancient",   t:[1,3], w:[6,6,6], d:"경험치 획득량이 증가합니다.",
-          b:{exp:[3,4],"하급":.04}, up:["경험치 획득량 증가"]},
+          b:{exp:[6,8],"하급":.04}, up:["경험치 획득량 증가"]},   /* 3~4 → 6~8 */
  danger: {n:"위험한 입구",ic:"dungeon_entrance_dangerous", t:[2,4], w:[4,4,7], d:"함정을 헤쳐나가 시간이 들고 피해를 받을 수 있지만, 희귀한 보상을 얻을 수 있습니다.",
-          b:{gold:[1,2],"중급":.10,"상급":.02,"일반":.04}, trap:[2,5], trapP:.5, up:["중급 보상 확률 증가","상급 보상 확률 증가"]}
+          b:{gold:[1,2],"중급":.16,"상급":.04,"일반":.06}, trap:[2,5],   /* 함정 · 긴 시간 대가만큼 — 중급 .10 → .16 · 상급 .02 → .04 · 일반 .04 → .06 */ trapP:.5, up:["중급 보상 확률 증가","상급 보상 확률 증가"]}
 };
+/* 입구마다 보상 목록도 다르게 (사용자 2026-11-22 「목록이 항상 고정 — 어떨 때는 금화 · 경험치만 있거나」).
+   core — 그 입구의 얼굴이라 늘 남는 갈래. 나머지는 40% 로 빠진다 (min 줄은 남긴다).
+   ZM_EXTRA — 30% 로 그 종류에 없던 갈래 하나가 붙는다 (값은 1막 · 첫 입구 기준 한 묶음, 막 · 깊이 배수는 같이 먹는다) */
+const ZM_CORE={stone:{core:[],min:2},gold:{core:["gold"],min:1},ruins:{core:["stone"],min:1},cursed:{core:["중급"],min:1},ancient:{core:["exp"],min:1},danger:{core:["중급"],min:1}};
+const ZM_EXTRA={stone:[["stone",[1,1]],["각인서",.03],["일반",.03]], gold:[["exp",[1,2]],["하급",.06]], ruins:[["gold",[1,2]],["일반",.04]],
+  cursed:[["gold",[2,3]],["파편",.06]], ancient:[["gold",[1,2]],["파편",.04]], danger:[["exp",[2,3]],["희귀",.02]]};
+/* 그 입구 · 그 15분의 묶음 — 기본(b) + 세 번째 묶음(b3) + 붙은 것($add) − 빠진 것($drop). 미리보기 · 굴림이 같이 쓴다 */
+function zmBundle(o,step){ const E=ZM_ENT[o.k], v=o.v||{};
+  const B=Object.assign({},E.b,step===3&&E.b3?E.b3:{},v.$add||{});
+  (v.$drop||[]).forEach(k=>{ delete B[k] }); return B }
 const ZM_ACT_AMT=[1,2,4], ZM_ACT_P=[1,1.5,2], ZM_DEPTH=[1,1.15,1.3], ZM_ELITE=3, ZM_STELE=[.2,.4,.6];
 const zmStepW=s=>s===1?1:.5;   /* 첫 15분은 한 묶음, 그다음 15분마다 반 묶음 (사용자 2026-11-18 비율 조정) */
 const ZM_N=[[2,.7],[1,.2],[3,.1]];   /* 입구 칸에서 고를 입구 수 */
@@ -37740,7 +37757,14 @@ function zmOffer(){
 /* 입구마다 값을 흔든다 (사용자 2026-11-21 「두 입구가 똑같은 경우가 많다」) — 묶음의 갈래마다 배수.
    양(금화 · 경험치 · 제련석) : 아래 끝 ×0.6~1.2 · 위 끝 ×0.8~1.4 (3~5 도 되고 2~5 도 된다), 25% 는 한 값으로 굳는다 (가운데 ×0.75~1.25).
    확률 : ×0.6~1.4 (15% 가 13% · 19% 로). 평균은 그대로 1 근처. 옛 저장본의 입구(v 없음)는 배수 1 */
-function zmVary(k){ const E=ZM_ENT[k], B=Object.assign({},E.b,E.b3||{}), v={}, U=(a,b)=>a+Math.random()*(b-a);
+function zmVary(k){ const E=ZM_ENT[k], v={}, U=(a,b)=>a+Math.random()*(b-a);
+  /* 목록 — 빠질 갈래 · 붙을 갈래 */
+  { const all=Object.keys(Object.assign({},E.b,E.b3||{})), C=ZM_CORE[k]||{core:[],min:1}, drop=[];
+    all.filter(x=>C.core.indexOf(x)<0).sort(()=>Math.random()-.5).forEach(x=>{ if(all.length-drop.length>C.min&&Math.random()<.4) drop.push(x) });
+    if(drop.length) v.$drop=drop;
+    const X=(ZM_EXTRA[k]||[]).filter(([x])=>all.indexOf(x)<0);
+    if(X.length&&Math.random()<.3){ const [x,val]=X[Math.floor(Math.random()*X.length)]; v.$add={[x]:val} } }
+  const B=Object.assign({},E.b,E.b3||{},v.$add||{}); (v.$drop||[]).forEach(x=>{ delete B[x] });
   Object.keys(B).forEach(key=>{ const r=B[key];
     if(Array.isArray(r)){ if(Math.random()<.25){ const mid=(r[0]+r[1])/2*U(.75,1.25); v[key]=[mid/r[0],mid/r[1]] } else v[key]=[U(.6,1.2),U(.8,1.4)] }
     else v[key]=U(.6,1.4) });
@@ -38130,7 +38154,7 @@ function zmTrapP(o){ const E=ZM_ENT[o.k]; return Math.min(.9,(E.trapP||.5)*((o.v
 const ZM_NM={gold:"금화",exp:"경험치",stone:"제련석","하급":"하급 보상","중급":"중급 보상","상급":"상급 보상","파편":"파편 장신구","일반":"일반 장신구","희귀":"희귀 장신구","각인서":"각인서"};
 function zmPreview(o){
   const E=ZM_ENT[o.k], a=zmAct(), boost=(run.dun&&run.dun.cell&&run.dun.cell.boost)||[], amt={}, miss={}, sure={}, out=[];
-  for(let s=1;s<=o.q;s++){ const B=Object.assign({},E.b,s===3&&E.b3?E.b3:{}), m=zmMul()*zmStepW(s);
+  for(let s=1;s<=o.q;s++){ const B=zmBundle(o,s), m=zmMul()*zmStepW(s);
     Object.keys(B).forEach(key=>{ const v=B[key];
       if(Array.isArray(v)){ const A=amt[key]||(amt[key]=[0,0]), R2=zmAmtR(v,o.v&&o.v[key],ZM_ACT_AMT[a]*m); A[0]+=R2[0]; A[1]+=R2[1]; return }
       let p=v*ZM_ACT_P[a]*m*((o.v&&o.v[key])||1); if(p<1&&boost.indexOf(key)>=0) p=Math.min(1,Math.min(p*1.5,p+0.25));
@@ -38145,7 +38169,7 @@ function zmPreview(o){
 function zmRollOne(k,step,out){
   const o=typeof k==="object"?k:{k:k}, F=o.v||{}; k=o.k;   /* 입구(흔든 값 v 를 가진) 또는 입구 종류 이름 */
   const E=ZM_ENT[k], a=zmAct(), m=zmMul()*zmStepW(step), boost=(run.dun&&run.dun.cell&&run.dun.cell.boost)||[];
-  const B=Object.assign({},E.b,step===3&&E.b3?E.b3:{});
+  const B=zmBundle(o,step);
   const amt=(key,t)=>{ const r=B[key]; if(!r) return; const R2=zmAmtR(r,F[key],ZM_ACT_AMT[a]*m); out.push({t:t,v:R2[0]+Math.floor(Math.random()*(R2[1]-R2[0]+1))}) };
   amt("gold","금화"); amt("exp","경험치"); amt("stone","제련석");
   Object.keys(B).forEach(key=>{ if(typeof B[key]!=="number") return;
