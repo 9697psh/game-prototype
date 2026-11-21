@@ -30051,6 +30051,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 510, "v": "0.8", "d": "2026-11-22", "t": "용광로 제조도 끌어다 고르기", "big": 0},
  {"b": 509, "v": "0.8", "d": "2026-11-22", "t": "장신구 고르는 이벤트 — 가방에서 가운데 칸으로 끌어다 놓기, 처치 확대 1.75/1.5 · 암전", "big": 0},
  {"b": 508, "v": "0.8", "d": "2026-11-22", "t": "처치 직전 슬로 모션 · 공격자 · 대상 확대", "big": 0},
  {"b": 507, "v": "0.8", "d": "2026-11-22", "t": "주둔지 장식품 소리 · 입장 소리 때, 지속 효과 탭 대원 얼굴", "big": 0},
@@ -31753,7 +31754,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=509;
+const BUILD_NO=510;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -36060,17 +36061,10 @@ const GIM_EV={
     t:cell.done?"불이 꺼진 용광로입니다. 더 쓸 수 없습니다."
       :"아직 불이 꺼지지 않은 용광로입니다. 쇳물이 느리게 돌고 있습니다.",
     o:[{t:"제조",d:"가방의 파편 장신구를 하나 골라 무작위 일반 장신구로 바꿉니다.",
-        when:()=>!cell.done&&((run&&run.bag)||[]).some(i=>i&&i.g==="파편"),end:1,
-        f:()=>{ const idx=[]; (run.bag||[]).forEach((it,i)=>{ if(it&&it.g==="파편") idx.push(i) });
-          if(!idx.length) return "녹일 파편이 없습니다.";
-          const i=rnd(idx), was=run.bag[i].n;
-          const pool=ITEMS.filter(x=>x.g==="일반");
-          if(!pool.length){ return "바꿔 줄 장신구가 없습니다." }
-          const got=rnd(pool); run.bag.splice(i,1);
-          (run.after=run.after||[]).push({item:got});   /* 가방에 바로 넣지 않는다 — 장착 화면으로 (사용자 2026-10-23) */
-          try{ dexSee("item",got.n) }catch(e){}
-          gimBreak(cell,r,c);
-          return `${was}${jo(was,"eul")} 녹여 ${got.n}${jo(got.n,"eul")} 얻었습니다.` }},
+        when:()=>!cell.done&&((run&&run.bag)||[]).some(i=>i&&i.g==="파편"),
+        /* 고르기는 EV_GAME.gpick 의 가운데 칸 — 가방의 파편을 끌어다 놓는다 (사용자 2026-11-22. 전에는 무작위였다) */
+        f:()=>{ if(!(run.bag||[]).some(i=>i&&i.g==="파편")) return "녹일 파편이 없습니다.";
+          run.evSub={t:"gpick",g:"파편",bagOnly:1,then:"furnace",at:[r,c]}; return null }},
        {t:"오염된 용광로",d:"무작위 일반 장신구 2개를 얻습니다. 다음 3번의 전투에서 무작위 빈 자리에 균열 용광로가 섭니다.",
         when:()=>!cell.done,end:1,
         f:()=>{ const pool=ITEMS.filter(x=>x.g==="일반"); const got=[];
@@ -42747,15 +42741,22 @@ const GPICK_THEN={
     f:it=>{ const L=ITEMS.filter(i=>i.g==="파편");
       for(let k=0;k<3&&L.length;k++) (run.after=run.after||[]).push({item:rnd(L)});
       return `${it.n}${jo(it.n,"ig")} 틀 안에서 으스러집니다. 부스러기 가운데 쓸 만한 파편 셋을 골라 냅니다.` }},
+  /* 용광로 제조 — 가방의 파편 하나를 녹여 무작위 일반 장신구 (map-gim-enter.js furnace). 다 쓰면 그 칸은 꺼진다 */
+  furnace:{say:"쇳물이 느리게 돕니다. 녹일 파편을 고르세요.",
+    f:(it,st)=>{ const pool=ITEMS.filter(x=>x.g==="일반"); if(!pool.length) return "바꿔 줄 장신구가 없습니다.";
+      const got=rnd(pool); (run.after=run.after||[]).push({item:got});   /* 가방에 바로 넣지 않는다 — 장착 화면으로 (사용자 2026-10-23) */
+      try{ dexSee("item",got.n) }catch(e){}
+      const at=st&&st.at, cell=at&&run.grid&&run.grid[at[0]]&&run.grid[at[0]][at[1]]; if(cell) gimBreak(cell,at[0],at[1]);
+      return `${it.n}${jo(it.n,"eul")} 녹여 ${got.n}${jo(got.n,"eul")} 얻었습니다.` }},
   appraise:{say:"사내가 손을 내밉니다. 감정을 맡길 파편을 고르세요.",
     f:it=>{ if(Math.random()<0.5){ run.after=[{item:rnd(ITEMS.filter(i=>i.g==="일반"))}];
         return `${it.n}이 다듬어져 쓸 만한 물건이 됩니다.` }
       return `${it.n}이 사내의 손에서 바스러졌습니다.` }}};
 /* 등급(st.g)을 안 대면 **가진 것 모두**. st.keep 이면 고른 것을 빼지 않는다 (복제 틀, 2026-10-23) */
-const gpickList=g=>ownedItems().filter(x=>!g||x.it.g===g);
+const gpickList=(g,bagOnly)=>ownedItems().filter(x=>(!g||x.it.g===g)&&(!bagOnly||x.bag));   /* bagOnly — 가방 것만 (용광로) */
 EV_GAME.gpick={draw(row,api){
   const st=api.st(), T=GPICK_THEN[st.then]||{};
-  const L=api.act(()=>gpickList(st.g).map(x=>({it:x.it,who:x.bag?"가방":(x.h&&x.h.name)||""})));
+  const L=api.act(()=>gpickList(st.g,st.bagOnly).map(x=>({it:x.it,who:x.bag?"가방":(x.h&&x.h.name)||""})));
   api.say(T.say||`${st.g?st.g+" ":""}장신구를 하나 고르세요.`);
   /* 선택지 대신 가운데 칸 — 왼쪽 가방의 장신구 탭이 저절로 열리고, 가방(자루)이나 대원 칸에서 끌어다 놓는다 (사용자 2026-11-22).
      화면이 없는 길(시뮬)은 이 그리기를 안 지나므로 규칙은 그대로 */
@@ -42769,15 +42770,15 @@ EV_GAME.gpick={draw(row,api){
     <p class="evdh">${L.length?`가방에서 ${st.g?st.g+" ":""}장신구를 끌어다 이 칸에 놓으세요`:`넣을 수 있는 ${st.g?st.g+" ":""}장신구가 없습니다`}</p></div>`);
   row.appendChild(slot);
   const box=slot.querySelector(".evdrop");
-  const at=p=>{ const M=gpickList(st.g); return M.findIndex(x=>p.bag?(x.bag&&x.i===p.i):(!x.bag&&x.h===run.heroes[p.h]&&x.i===p.i)) };
+  const at=p=>{ const M=gpickList(st.g,st.bagOnly); return M.findIndex(x=>p.bag?(x.bag&&x.i===p.i):(!x.bag&&x.h===run.heroes[p.h]&&x.i===p.i)) };
   const go=p=>{ const k=at(p);
     if(k<0){ toast(st.g?`${st.g} 장신구만 넣을 수 있습니다.`:"이 장신구는 넣을 수 없습니다."); return }
-    const pk=gpickList(st.g)[k]; shut(); SFX.play("click");
+    const pk=gpickList(st.g,st.bagOnly)[k]; shut(); SFX.play("click");
     box.classList.remove("empty"); box.classList.add("on"); box.querySelector(".evdi").innerHTML=rewardIcon(pk.it);   /* 칸에 들어앉는 모습을 잠깐 */
     setTimeout(()=>{ const msg=api.act(()=>{
-        const M=gpickList(st.g), pick=M[k]; if(!pick) return "…";
+        const M=gpickList(st.g,st.bagOnly), pick=M[k]; if(!pick) return "…";
         if(!st.keep){ if(pick.bag) run.bag.splice(pick.i,1); else unequip(pick.h,pick.i,1) }
-        return T.f?T.f(pick.it):"…" });
+        return T.f?T.f(pick.it,st):"…" });
       api.finish(msg) },380) };
   EV_DROP={fn:go};
   dropTo(box,go);   /* 대원 칸에서 끄는 것(HTML 끌기) */
