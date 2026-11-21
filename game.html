@@ -6795,6 +6795,27 @@ body.cheerin .hand{visibility:hidden}   /* 입장 글과 겹치지 않게 — �
 #goldrain{position:fixed;inset:0;pointer-events:none;z-index:9000;overflow:hidden}
 #goldrain .grcoin{position:absolute;image-rendering:pixelated;filter:drop-shadow(0 2px 2px rgba(0,0,0,.45))}
 .zmod.zmodc{flex-direction:column;align-items:flex-start;gap:2px} .zmodc>span:first-child{display:flex;align-items:center;gap:4px}
+/* 기록 — 아침 양피지 (768×720 판, 자리는 그림의 usage.json) */
+#recpop{position:fixed;inset:0;z-index:940;display:flex;align-items:center;justify-content:center;background:rgba(10,7,4,.55)}
+#recpop .rcp{position:relative;width:min(768px,92vw,calc(92vh * 768 / 720));aspect-ratio:768/720;background:url("ui/daybreak-record-parchment-768x720.png") 0 0/100% 100% no-repeat;image-rendering:pixelated;container-type:inline-size;color:#3a2a1c}
+#recpop .rct{position:absolute;left:9.4%;top:6.7%;width:81.25%;height:8.9%;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:5cqw;font-weight:700;letter-spacing:.12em;color:#3a2414}
+#recpop .rci{position:absolute;left:12.5%;top:20.6%;width:16.67%;height:17.8%}
+#recpop .rci img{width:100%;height:100%;image-rendering:pixelated}
+#recpop .rcb{position:absolute;left:31.25%;top:21.9%;width:59.4%;height:16.4%;display:flex;flex-direction:column;justify-content:center;gap:1cqw}
+#recpop .rcb b{font-family:var(--serif);font-size:3.2cqw;color:#5a2e14}
+#recpop .rcb i{font-style:normal;font-size:2.35cqw;line-height:1.55;color:#4a3828}
+#recpop .rcd{position:absolute;left:9.4%;top:42%;width:81.25%;height:48%;display:flex;flex-direction:column;align-items:center;text-align:center;gap:1.4cqw}
+#recpop .rcd p{margin:2cqw 0 0;font-size:2.9cqw;line-height:1.6;color:#2e2016;font-weight:600}
+#recpop .rcd small{font-size:2.1cqw;color:#7a5a3a;letter-spacing:.08em}
+#recpop .rcgo{margin-top:auto;padding-bottom:3cqw}
+/* 지속 효과 탭 */
+.lgtabs{display:flex;gap:4px;margin-bottom:8px}
+.lgtabs button{flex:1;background:none;border:0;border-bottom:2px solid transparent;color:#a8977a;font-family:var(--serif);font-size:14px;padding:4px 0;cursor:pointer}
+.lgtabs button.on{color:#f0d892;border-bottom-color:#c9a227}
+.recl{display:flex;flex-direction:column;gap:8px}
+.recrow{display:grid;grid-template-columns:44px minmax(0,1fr);gap:8px;align-items:start}
+.recrow img{width:44px;height:44px;image-rendering:pixelated;background:#e8d9b8;border-radius:4px}   /* 먹선 그림 — 양피지 빛 바탕이어야 보인다 */
+.recrow b{display:block;font-size:13px;color:#f0d892} .recrow span{display:block;font-size:11px;color:#a8977a} .recrow p{margin:2px 0 0;font-size:12px;line-height:1.5;color:#e6d6b2}
 .zmhpick{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:0 0 4px}   /* 대원 고르기 (낡은 거울) */
 .zmhface{width:52px;height:52px;padding:4px;box-sizing:border-box;background:url("ui/menu-portrait-frame-160.png") center/100% 100% no-repeat;border:0;cursor:pointer;image-rendering:pixelated}
 .zmhface:hover{background-image:url("ui/menu-portrait-frame-highlight-160.png"),url("ui/menu-portrait-frame-160.png")}
@@ -26616,6 +26637,84 @@ function taintChip(extra){
   const cr=run.crystal==null?CRYSTAL_MAX:run.crystal;
   return tc+`<span class="res crystal use kw ${extra||""} ${cr<=0?"empty":""}" role="button" data-kw="푸른 수정" data-tip="누르면 수정 1칸으로 오염도를 ${CRYSTAL_CURE} 걷어 냅니다. 기력의 샘, 마른숲 상점의 파편으로 채웁니다.">${iconImg("item_spirit_blue_crystal")?`<span class="ri">${iconImg("item_spirit_blue_crystal")}</span>`:""}<b>${cr}</b><i>/${CRYSTAL_MAX}</i><em class="cruse">사용</em><u style="width:${cr/CRYSTAL_MAX*100}%"></u></span>`;
 }
+/* ═══ 기록 (사용자 2026-11-21, 구상 노트 「기록」) ═══
+   날이 밝을 때(아침 · 종탑 종) 대원에 관한 기록 사건이 0~2개 — 없음 30% · 1개 50% · 2개 20%.
+   고르는 무게 : 등급(상 3 · 중 2 · 하 1) × 조건이 맞으면 2배(more) × 카드 뽑기처럼 — 나온 기록은 크게 줄었다가 날이 갈수록 돌아오고,
+   오래 안 나온 기록은 조금씩 는다. 쓰러진 대원 · 파티에 없는 대원의 기록은 나오지 않는다. 구역(zone) · 막(acts) 이 맞아야.
+   효과 : day(오늘 하루 — 다음 날이 밝으면 사라진다) · now(그 자리에서 — 영구 몫 등).
+   값은 막마다 [1막, 2막, 3막]. 그림은 ICON_PNG[art] (GameProject2/art/records). 시안 → https://claude.ai (기록 시안 아티팩트) */
+const REC_TIER={"상":3,"중":2,"하":1};
+const REC_N=[[0,.3],[1,.5],[2,.2]];
+const recAct=()=>Math.min(2,(run&&run.field)||0);
+const REC=[
+ {id:"nk_undefeated", hero:"나이코스", n:"무패의 검투사", art:"record_naikos_arena_salute", w:"중", acts:[0,1,2],
+  more:h=>fatOf(h)<=40,
+  intro:"\"지는 법을 모르는 자!!! 역대 투기장 최고의 검투사!!! 지금 바로 입장합니다!!! 함성 부탁드립니다!!!\"",
+  d:a=>`오늘 하루동안 나이코스가 추가 공격력을 ${[1,2,3][a]} 얻습니다.`, day:a=>({atk:[1,2,3][a]})},
+ {id:"nk_fought", hero:"나이코스", n:"맞서 싸운 자", art:"record_naikos_fought_back", w:"하", acts:[0,1,2], zone:"arena",
+  more:h=>fatOf(h)<=30||(run.taint||0)<=20,
+  intro:"\"그는 최후까지 맞서 싸운 자며, 마지막까지 용맹한 검투사의 기상을 보여주었다네\"",
+  d:()=>"관중의 환호도에 따라 나이코스가 영구적으로 추가 공격력을 얻습니다.",
+  now:h=>{ const c=(typeof cheerNow==="function")?cheerNow():0, v=c<=40?1:c<=80?2:3;
+    h.atk+=v; h.recAtk=(h.recAtk||0)+v;
+    return `관중의 환호 ${c} — 나이코스가 영구적으로 추가 공격력을 ${v} 얻었습니다.` }},
+ {id:"dr_outlaw", hero:"데린저", n:"무법자", art:"record_derringer_outlaw", w:"중", acts:[0,1,2],
+  more:h=>fatOf(h)<=40,
+  intro:"\"세상 무서운 법을 모르는 그녀는 돈이 되는 것들은 절대 놓치지 않습니다.\"",
+  d:a=>`오늘 하루동안 미지의 구역에 방문하면 금화를 ${[2,4,6][a]}개 얻습니다.`, day:a=>({unknownGold:[2,4,6][a]})},
+];
+const recDef=id=>REC.find(r=>r.id===id);
+function recZoneOk(z){ if(!z) return true;
+  if(z==="arena") return run.field===1&&typeof onArena==="function"&&onArena();
+  if(z==="forest") return run.field===1&&typeof onForest==="function"&&onForest();
+  if(z==="prison"||z==="scrap") return run.field===0&&typeof act1Name==="function"&&act1Name()===(z==="prison"?"핏빛 감옥":"고철의 무덤");
+  if(z==="tower") return run.field===2;
+  return true }
+/* 고르는 무게 — 카드 뽑기처럼 (run.recLast[id] = 마지막으로 나온 날) */
+function recWeight(r,h){
+  let w=REC_TIER[r.w]||1; if(r.more&&r.more(h)) w*=2;
+  const L=run.recLast||{}, last=L[r.id];
+  if(last==null) w*=1+Math.min(1,(run.day||1)*0.05);                 /* 오래 안 나온 것일수록 조금씩 오른다 */
+  else w*=Math.min(1.5,0.15+0.1*Math.max(0,(run.day||1)-last));       /* 나온 것은 크게 줄었다가 날마다 돌아온다 */
+  return w }
+function recPool(){
+  const a=recAct(), out=[];
+  REC.forEach(r=>{ if(r.acts&&r.acts.indexOf(a)<0) return; if(!recZoneOk(r.zone)) return;
+    const h=r.hero?run.heroes.find(x=>x.name===r.hero):null;
+    if(r.hero&&(!h||h.down)) return;                                  /* 쓰러진 · 없는 대원의 기록은 없다 */
+    if(r.only&&!r.only(h)) return;
+    out.push({r:r,h:h,w:recWeight(r,h)}) });
+  return out }
+/* 날이 밝을 때 (nextDay) — 어제의 「오늘 하루」 기록을 걷고 새로 굴린다. 보여 줄 것은 run.recPend */
+function recNewDay(){
+  if(!run||run.sandbox) return;
+  if(typeof CLAIM_WAIT!=="undefined"&&!CLAIM_WAIT) return;   /* 화면 없는 시뮬 — 난수 순서를 흔들지 않게 */
+  run.recOn=(run.recOn||[]).filter(x=>!x.day);                        /* 오늘 하루 몫은 날이 밝으면 끝 */
+  let x=Math.random(), n=0; for(const [k,p] of REC_N){ if(x<p){ n=k; break } x-=p }
+  const pool=recPool(), got=[];
+  for(let i=0;i<n&&pool.length;i++){
+    let tot=pool.reduce((s,q)=>s+q.w,0), y=Math.random()*tot, k=0;
+    for(;k<pool.length-1;k++){ y-=pool[k].w; if(y<0) break }
+    got.push(pool.splice(k,1)[0]) }
+  if(!got.length) return;
+  run.recLast=run.recLast||{}; run.recPend=run.recPend||[];
+  const a=recAct();
+  got.forEach(({r,h})=>{ run.recLast[r.id]=run.day;
+    let eff=r.d(a);
+    if(r.now) eff=r.now(h,a)||eff;
+    const on={id:r.id,hero:r.hero||null,txt:eff,dayN:run.day};
+    if(r.day){ on.day=1; on.v=r.day(a) } else on.perm=1;
+    run.recOn.push(on); run.recPend.push({id:r.id,txt:eff}) }) }
+/* 전투 시작 (첫 라운드) — 오늘 하루 능력치 몫 */
+function recBattleStart(){
+  (run.recOn||[]).forEach(x=>{ if(!x.day||!x.v||!x.v.atk) return;
+    const h=run.heroes.find(y=>y.name===x.hero&&!y.down); if(h) bumpTmp(h,"atk",x.v.atk) }) }
+/* 미지의 구역에 들어설 때 — 무법자 */
+function recOnUnknown(){
+  (run.recOn||[]).forEach(x=>{ if(!x.day||!x.v||!x.v.unknownGold) return;
+    const h=run.heroes.find(y=>y.name===x.hero&&!y.down); if(!h) return;
+    run.gold+=x.v.unknownGold; try{ if(sfxHas("금화 얻기")) SFX.play("금화 얻기") }catch(e){}
+    toast(`${recDef(x.id).n} — 금화 +${x.v.unknownGold}`) }) }
 function nextDay(quiet){   /* quiet — 아침 탁자 연출 없이 (종탑 종 울리기 : 문이 닫혔다 주둔지로, 사용자 2026-11-12) */
   leaveVisited();
   run.mapUnfold=1;                    /* 자고 나면 지도를 다시 펼친다 (사용자 2026-09-14) */
@@ -26633,7 +26732,8 @@ function nextDay(quiet){   /* quiet — 아침 탁자 연출 없이 (종탑 종 
   shipNewDay();   /* 오볼 — 선박 상점이 자리를 옮기고 진열이 바뀐다 */
   arenaNewDay();   /* 광기의 투기장 — 배당판 승률 · 대기실 다시 서기 (src/rules/arena-gim.js) */
   ugNewDay();   /* 지하 조합 — 땅굴 한 쌍이 새 자리에 */
-  try{ if(!run.sandbox) garNewDay() }catch(e){ console.error(e) }   /* 주둔지 종탑 — 은화 · 정찰대 귀환 (2026-11-10) */
+  try{ if(!run.sandbox) garNewDay() }catch(e){ console.error(e) }
+  try{ recNewDay() }catch(e){ console.error(e) }   /* 기록 — 날이 밝을 때 0~2개 (src/rules/records.js, 2026-11-21) */   /* 주둔지 종탑 — 은화 · 정찰대 귀환 (2026-11-10) */
   { const u=coreFx("dayUnknown");   /* 폭풍 세계핵 — 날이 밝을 때 빈 구역에 미지의 구역 */
     if(u){ const put=sprinkleCell("event",u);
       if(put) toast(`폭풍 세계핵 — 지도에 미지의 구역 ${put}곳이 나타납니다.`) } }
@@ -28875,6 +28975,9 @@ function render(){
   const oldFoes=foeSlideBefore(),oldIdle=idleFramesBefore(),oldMap=mapPanelBefore();
   render0();
   if(typeof BAG_SLIDE!=="undefined"&&BAG_SLIDE&&view!=="battle") bagSlideFill();
+  /* 기록 — 아침 연출 · 덧판이 끝난 지도 · 주둔지에서 양피지를 (2026-11-21) */
+  if(typeof run!=="undefined"&&run&&run.recPend&&run.recPend.length&&(view==="map"||view==="garrison")&&typeof recShow==="function"
+     &&!(typeof DAWN_ON!=="undefined"&&DAWN_ON)&&!(typeof CV_BUSY!=="undefined"&&CV_BUSY)&&!document.getElementById("recpop")) setTimeout(()=>{ if(!(typeof DAWN_ON!=="undefined"&&DAWN_ON)) recShow() },650);
   if(typeof HERO_SLIDE!=="undefined"&&HERO_SLIDE&&view!=="battle") heroSlideFill();   /* 대원 판 — 체력 · 경험치가 바뀐 뒤 */   /* 가방 판이 떠 있으면 속도 새로 (장신구를 끼고 뺀 뒤) */
   if(typeof coverIdle==="function") coverIdle();   /* 탐험 탁자 덮개 — 지도에서만 경첩 (그린 판 자리에 맞춘다) */
   if(typeof resTidy==="function"){ if(!RES_OK) resLoad(); resTidy() }   /* 결과 연출 — 미리 받고, 화면이 바뀌면 걷는다 */
@@ -29637,6 +29740,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 500, "v": "0.8", "d": "2026-11-21", "t": "기록 시스템 — 아침 양피지, 지속 효과 탭, 기록 셋", "big": 0},
  {"b": 499, "v": "0.8", "d": "2026-11-21", "t": "장소 이름 띠 삭제, 홀로 떠나기 삭제, 버려진 시계 레벨 2", "big": 0},
  {"b": 498, "v": "0.8", "d": "2026-11-21", "t": "유물 둘 — 낡은 거울, 낡은 이정표", "big": 0},
  {"b": 497, "v": "0.8", "d": "2026-11-21", "t": "함정 피해 설명을 합계 범위로", "big": 0},
@@ -31329,7 +31433,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=499;
+const BUILD_NO=500;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -33657,9 +33761,14 @@ function drawMap(app){
         const go=box.querySelector(".bag-foot .mgo");
         if(go) go.onclick=()=>{ MAP_PANEL=""; render() };   /* 닫기는 판만 접는다 — 화면을 옮기지 않는다 */
       } else if(MAP_PANEL==="quest"){
-        box.appendChild(el(`<div class="lgh">퀘스트</div>`));
-        const qp=questPanel();
-        box.appendChild(qp||el(`<div class="hint" style="font-size:12px;padding:6px 0;text-align:center">진행 중인 퀘스트가 없습니다.</div>`));
+        /* 퀘스트 · 지속 효과 두 탭 (사용자 2026-11-21) */
+        const tab=(typeof MAP_QTAB!=="undefined"&&MAP_QTAB)||"q";
+        const tb=el(`<div class="lgtabs"><button type="button" data-t="q" class="${tab==="q"?"on":""}">퀘스트</button><button type="button" data-t="e" class="${tab==="e"?"on":""}">지속 효과</button></div>`);
+        tb.querySelectorAll("button").forEach(b=>b.onclick=e=>{ e.stopPropagation(); MAP_QTAB=b.dataset.t; try{ SFX.play("click") }catch(_){} render() });
+        box.appendChild(tb);
+        if(tab==="e") box.appendChild(recEffectsPanel());
+        else { const qp=questPanel();
+          box.appendChild(qp||el(`<div class="hint" style="font-size:12px;padding:6px 0;text-align:center">진행 중인 퀘스트가 없습니다.</div>`)) }
       }
       board.querySelector(".mb-left").appendChild(box);
     }
@@ -33708,6 +33817,7 @@ function fatChip(h,cls){
   const pg=Math.round(dispP(h,1)*100), pb=Math.round(dispP(h,0)*100);
   return `<span class="fatchip ${cls||""} ${v>=70?"hi":v>=50?"mid":""} kw" data-kw="피로도" data-tip="피로도 ${v}/${FAT_MAX}. 선성향 발동 확률 ${pg}%, 악성향 발동 확률 ${pb}%.">${u?`<img src="${u}" alt="">`:""}${v}</span>` }
 /* 대원 카드 — 받은 세로 카드 위에 그림·이름·체력·경험치 막대 (사용자 2026-09-18) */
+let MAP_QTAB="q";   /* 퀘스트 판의 탭 — q 퀘스트 · e 지속 효과 */
 function heroCardM(h,i){
   const hp=Math.max(0,Math.min(100,h.hp/h.maxHp*100)), ex=Math.max(0,Math.min(100,h.exp/needExp(h.lv)*100));
   const c=el(`<div class="mcard kw ${h.down?"down":""} ${run.showHero===i?"on":""}" data-kw="${esc(h.name)}" data-tip="눌러서 자세히 봅니다.">
@@ -35292,7 +35402,8 @@ function enterCell0(r,c){
       if(!again&&synOn("모험가",1)){ const g=synOn("모험가",2)?5:2; run.gold+=g; toast(`모험가 — 금화 +${g}`) }   /* 모험가 (노트 2026-10-04) */
       questProgress("visit");   /* 퀘스트 — 미지의 구역 방문 (무엇이 나오든 한 번) */
       if(!again) coreTally("unknown",1);   /* 세계핵 — 미지의 구역 방문 (다시 들어온 것은 안 센다) */
-      { const a=again?0:tagSum("exploreAct"); if(a){ run.act+=a; toast(`탐험 정신 — 활동량 +${a}`) } }   /* 최대치가 없어져 자르지 않는다 (2026-10-08) */
+      { const a=again?0:tagSum("exploreAct"); if(a){ run.act+=a; toast(`탐험 정신 — 활동량 +${a}`) } }
+      if(!again&&typeof recOnUnknown==="function") recOnUnknown();   /* 기록 — 무법자 (2026-11-21) */   /* 최대치가 없어져 자르지 않는다 (2026-10-08) */
       const k=cell.pre||unknownKind(); delete cell.pre;   /* enterCell 이 미리 굴렸으면 그것 */
       if(k==="shop"){ run.shopKind=null; makeShop(); view="shop"; shopVoice("enter");
         questProgress("shopVisit",null);   /* 작업 지시판 — 뜻밖의 상점도 센다 (2026-10-21) */
@@ -43030,6 +43141,33 @@ function drawQuestDone(app){
     <button class="go">보상 받기</button></div></div>`));
   app.querySelector("button").onclick=()=>questClaim(id);
 }
+/* ═══ 기록 — 아침 양피지 · 지속 효과 탭 (사용자 2026-11-21) ═══
+   양피지 GameProject2/art/ui/daybreak-record-parchment-v1 (768×720) : 제목은 위 칸, 128px 기록 그림은 구분선 아래 왼쪽,
+   본문 첫 줄은 그림 오른쪽, 그 아래는 전체 폭. 글자는 그림에 들어 있지 않다 — 여기서 얹는다 */
+function recShow(){
+  if(typeof document==="undefined"||!run||!(run.recPend&&run.recPend.length)||document.getElementById("recpop")) return;
+  const p=run.recPend[0], r=recDef(p.id); if(!r){ run.recPend.shift(); return recShow() }
+  const art=r.art&&typeof ICON_PNG!=="undefined"&&ICON_PNG[r.art];
+  const left=run.recPend.length;
+  const w=el(`<div id="recpop"><div class="rcp">
+    <div class="rct">${esc(r.n)}</div>
+    <div class="rci">${art?`<img src="${art}" alt="" draggable="false">`:""}</div>
+    <div class="rcb"><b>${esc(r.hero||"공용")}</b><i>${esc(r.intro||"")}</i></div>
+    <div class="rcd"><p>${esc(p.txt)}</p><small>${r.day?"오늘 하루":"영구"}</small>
+      <div class="rcgo"><button class="go">${left>1?"다음 기록":"확인"}</button></div></div>
+  </div></div>`);
+  w.querySelector("button").onclick=()=>{ try{ SFX.play("click") }catch(e){} run.recPend.shift(); w.remove(); if(run.recPend.length) setTimeout(recShow,160); else render() };
+  document.body.appendChild(w);
+}
+/* 지속 효과 탭 — 켜져 있는 기록 (오늘 하루 · 영구) */
+function recEffectsPanel(){
+  const L=(run.recOn||[]);
+  if(!L.length) return el(`<div class="hint" style="font-size:12px;padding:6px 0;text-align:center">진행 중인 지속 효과가 없습니다.</div>`);
+  const box=el(`<div class="recl"></div>`);
+  L.slice().reverse().forEach(x=>{ const r=recDef(x.id); if(!r) return;
+    const art=r.art&&typeof ICON_PNG!=="undefined"&&ICON_PNG[r.art];
+    box.appendChild(el(`<div class="recrow">${art?`<img src="${art}" alt="" draggable="false">`:""}<div><b>${esc(r.n)}</b><span>${esc(r.hero||"공용")} · ${x.day?"오늘 하루":"영구"}</span><p>${esc(x.txt)}</p></div></div>`)) });
+  return box }
 function questClaim(id){
   const i=(run.quests||[]).findIndex(x=>x.id===id), q=i>=0?run.quests[i]:null, Q=QUESTS[id];
   if(i>=0) run.quests.splice(i,1);
@@ -44171,6 +44309,7 @@ function startBattle(kind,pinned){
     if(!h.down) handAdd({type:"hero",hero:h});
   });
   if(fresh) applySynergy();
+  if(fresh&&typeof recBattleStart==="function") recBattleStart();   /* 기록 — 오늘 하루 능력치 (2026-11-21) */
   if(fresh) obolBattleStart();   /* 오볼 — 짐칸 개방 · 물욕 · 유체화 셈 (전투 시작 후) */   /* 조합 몫(wanderBonus · archerBonus …)은 BATTLE_RESET 이 먼저 비웠다 */
   if(curse){
     run.heroes.forEach(h=>{ if(!h.down){ h.deb=h.deb||{}; h.deb.stun=(h.deb.stun||0)+1 } });
@@ -58281,7 +58420,8 @@ function statWatch(label,persist,fn){
 function statRows(u,k,total,baseLabel){
   const R=[];
   ((u&&u.items)||[]).forEach(it=>{ const v=it&&itemStats(it)[k]; if(v) R.push({n:it.n||"장신구",v}) });   /* 각인까지 */
-  if(k==="atk"&&u&&u.prideAtk) R.push({n:"전장의 승자",v:u.prideAtk});   /* 나이코스 — 전투가 끝날 때 오른 몫은 길목 밖이라 「기본」에 들어갔다 (사용자 2026-11-04) */
+  if(k==="atk"&&u&&u.prideAtk) R.push({n:"전장의 승자",v:u.prideAtk});
+  if(k==="atk"&&u&&u.recAtk) R.push({n:"기록",v:u.recAtk});   /* 맞서 싸운 자 (2026-11-21) */   /* 나이코스 — 전투가 끝날 때 오른 몫은 길목 밖이라 「기본」에 들어갔다 (사용자 2026-11-04) */
   const P=(u&&u.ssrc&&u.ssrc[k])||{}; Object.keys(P).forEach(n=>{ if(P[n]) R.push({n:n==="레벨업"?n:`보상(${n})`,v:P[n]}) });   /* 원정 내내 남는 몫은 레벨업 말고는 다 보상이다 — 읽을 때 붙여 지난 저장도 같이 (사용자 2026-11-04) */
   const S=statBStore(), bx=S&&S.get(u), BB=(bx&&bx[k])||{}; Object.keys(BB).forEach(n=>{ if(BB[n]&&n!=="열광") R.push({n,v:BB[n]}) });
   if(k==="mag"&&u&&u.cheerMag) R.push({n:"열광",v:u.cheerMag});   /* 관중단 — 환호 10 당. 라운드가 바뀌어 쪽지가 비어도 지금 몫 그대로 (2026-11-14) */
