@@ -2486,6 +2486,8 @@ body:has(.rwq) .hpanel{top:auto;bottom:16px;max-height:min(52vh,calc(100vh - 100
   100%{opacity:0;transform:translate(-50%,-160%) scale(1)}}
 .pop.moved{color:#ff6a55;font-size:25px;font-weight:900;letter-spacing:.06em;   /* 밀려남·당겨짐 (사용자 2026-09-29) */
   text-shadow:0 2px 0 #000,0 0 12px rgba(224,60,40,.95),0 0 22px rgba(224,60,40,.6)}
+@keyframes critpop{0%{opacity:0;transform:translate(-50%,-50%) scale(.7)}10%{opacity:1;transform:translate(-50%,-60%) scale(1.45)}
+  24%{transform:translate(-50%,-66%) scale(1)}70%{opacity:1;transform:translate(-50%,-100%) scale(1)}100%{opacity:0;transform:translate(-50%,-130%) scale(.96)}}   /* 치명타 숫자 — 한 번 커졌다 자리 잡는다 (2026-11-21) */
 @keyframes pop{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}
   18%{opacity:1;transform:translate(-50%,-70%) scale(1.12)}
   32%{transform:translate(-50%,-72%) scale(1)}
@@ -4648,6 +4650,12 @@ body.vbattle .sk .skv{font-size:10.5px}
 .bfstage .field.kimp.kgold .slot.k-hero{filter:brightness(1.25) drop-shadow(0 0 20px rgba(255,214,120,.75))}
 .bfstage .field.kimp.kgold .slot.k-dead{filter:brightness(1.2) saturate(.9) drop-shadow(0 0 18px rgba(232,184,64,.6))}
 @keyframes kflash{from{opacity:.9}to{opacity:0}}
+/* 처치 결정타 (2026-11-21) — 공격자 · 대상은 제자리에서 밝게, 나머지는 어둡게. 다가감 · 무너짐은 .art 의 WAAPI 가 맡는다 */
+.bfstage .field.kimp .slot.k-hero,.bfstage .field.kimp .slot.k-dead{transform:translateX(-50%);opacity:1;filter:brightness(1.12);z-index:40}
+.bfstage .field.kimp .slot.k-dead{z-index:39}
+.bfstage .field.kimp.kgold .slot.k-hero,.bfstage .field.kimp.kgold .slot.k-dead{transform:translateX(-50%)}
+.bfstage .field.kimp .slot:not(.k-hero):not(.k-dead){opacity:1;filter:brightness(.42) saturate(.6)}
+.bfstage .field.kimp::before{background:rgba(4,5,8,.55)}
 .bfstage .field.kimp .slot.k-hero .art::after{background:radial-gradient(ellipse at center,rgba(244,214,124,.6),rgba(244,214,124,0) 70%);filter:none;width:90px;height:18px}
 @media(max-width:900px){.bfstage .slot{bottom:42%} .bfstage .art img.pxs{height:44px} .bfq,.bfwcore{display:none}}
 /* ── 나머지 화면 (v0.5, 2026-09-19) — 감옥 방 배경, 철 테 판, 세로 카드, 가로 카드 단추 ── */
@@ -5249,7 +5257,7 @@ kbd{display:inline-block;min-width:20px;text-align:center;padding:1px 7px;font-s
 /* 집행관의 환영(명부에 묶인 잔영) — 금빛 사슬이 묻히지 않게 금빛 그림자, 덜 투명하게 (2026-10-03) */
 .art img.pxs.ph[data-nm="명부에 묶인 잔영"],.slot.foe .art img.pxs.ph[data-nm="명부에 묶인 잔영"]{opacity:.92;
   filter:drop-shadow(0 0 6px rgba(255,214,130,.65)) drop-shadow(0 2px 0 rgba(0,0,0,.45))}
-.pop.critbig{color:#ffd45e;font-size:34px;font-weight:900;
+.pop.critbig{color:#ffb35a;font-size:40px;font-weight:900;animation:critpop 1s ease-out forwards;
   text-shadow:0 0 12px rgba(255,140,40,.9),0 2px 0 #4a1b1b}
 .field.quake{animation:qk .5s}
 .field.quakeB,.mboard.gonequake{animation:qkB .6s}
@@ -9875,6 +9883,13 @@ function rivalMarkFX(slot){
     {transform:"scale(1)",opacity:1,filter:"none",offset:.62},{transform:`translate(${tx-x}px,${ty-y}px) scale(${ts})`,opacity:1,filter:"none"}],
     {duration:Math.round(1500*K),easing:"cubic-bezier(.3,.7,.3,1)",fill:"forwards"});
 }
+/* 출혈 발동 — 디버프 칸의 출혈 아이콘이 한 번 크게 튀고, 몸이 붉게 번쩍 (750ms) */
+function bleedPopFX(side,slot){
+  const c=ctrOf(side,slot); if(!c) return;
+  const b=c.e.querySelector('.bd[data-kw="출혈"]'), art=c.e.querySelector(".art");
+  if(b&&b.animate) b.animate([{transform:"scale(1)"},{transform:"scale(1.7)",filter:"brightness(1.6)",offset:.25},{transform:"scale(1)",filter:"none"}],{duration:Math.round(750*(SPD<1?0.8:SPD)),easing:"cubic-bezier(.2,1.4,.4,1)"});
+  if(art&&art.animate) art.animate([{filter:"none"},{filter:"brightness(1.3) drop-shadow(0 0 8px rgba(190,30,40,.85))",offset:.3},{filter:"none"}],{duration:Math.round(420*(SPD<1?0.8:SPD))});
+}
 /* 맞수 처치 — 쓰러진 적 자리에서 표식이 나이코스에게 돌아와 스민다 */
 function rivalBackFX(fromSlot,heroSlot){
   const src=typeof ICON_PNG!=="undefined"&&ICON_PNG.status_naikos_rival, a=ctrOf("foe",fromSlot), b=ctrOf("mine",heroSlot); if(!src||!a||!b) return;
@@ -10506,7 +10521,7 @@ function playFX(o){
   if(o.foeBark){ foeBarkPlay(o.foeBark); return }
   if(o.foeFocus){ foeFocusStart(o.foeFocus); return }
   if(o.foeFocusEnd){ foeFocusEnd(); return }
-  if(o.crit){ critFX(o.side,o.slot); return }
+  if(o.crit){ critFX(o.side,o.slot,o.kfin); return }
   if(o.s) SFX.play(o.s);
   /* 화살비는 칸 하나에 매인 연출이 아니다 — slot 을 보기 전에 처리한다 */
   if(o.rain){ arrowRainFX(o.side,o.rain); return }
@@ -10576,6 +10591,7 @@ function playFX(o){
   if(o.glow){ p.e.classList.remove("flashg"); void p.e.offsetWidth; p.e.classList.add("flashg"); }
   if(o.evade) evadeFX(o.side,o.slot);
   if(o.rivalMark) rivalMarkFX(o.slot);
+  if(o.bleedPop) bleedPopFX(o.side,o.slot);
   if(o.rivalBack!=null) rivalBackFX(o.rivalBack,o.slot);
   if(o.mhit) magicHitFX(o.side,o.slot);
   if(o.expgain) expGainFX(o.side,o.slot);
@@ -10595,7 +10611,7 @@ function playFX(o){
   if(o.fuelWrench)fuelWrenchFX(o.fuelWrench.from,o.slot);
   if(o.strip) poseStripFX(o.side,o.slot,o.strip.k,o.strip.ms,o.strip.opt);   /* 자세 띠 한 바퀴 (76) */
   if(o.flareShot) flareShotFX(o.side,o.slot,o.flareShot);
-  if(o.spot!=null){ if(KIMP) spotFX(o.slot,o.spot,o.foeName,o.barkU,o.barkLine); else if(o.barkLine&&o.barkU) barkShow(o.barkU,o.barkLine,Date.now(),1) }
+  if(o.spot!=null){ if(KIMP) spotFX(o.slot,o.spot,o.foeName,o.barkU,o.barkLine,o.kfin); else if(o.barkLine&&o.barkU) barkShow(o.barkU,o.barkLine,Date.now(),1) }
   if(o.fn) o.fn();
   /* 깃발로 건다 — art: 를 쓰면 문지기(ART[o.art])를 또 고쳐야 한다.
      o.blowup 이 s.burst(인비디아 숙주 폭발)와 다른 이름인 까닭이기도 하다 */
@@ -10710,15 +10726,15 @@ function shadeDash(from,to){
   if(b.e){ b.e.classList.remove("emerge"); void b.e.offsetWidth;
     setTimeout(()=>b.e.classList.add("emerge"),300) }
 }
-function critFX(side,slot){
+/* 치명타 (처치 결정타 개편과 같이, 사용자 2026-11-21) — 대상 그림만 번쩍, 「치명타」 글자, 큰 따뜻한 숫자(.pop.critbig).
+   맞는 순간 55ms 정지 → 210ms 감쇠 흔들림(타격 방향) + 240ms 1.8% 카메라 줌. 화면 전체 금빛 막(veil) · 가장자리 빛 · 전장 흔들기(critshk)는 뺐다.
+   kfin — 그 치명타로 적이 죽었다 : 정지 · 흔들림 · 줌은 처치 결정타가 한 번에 맡는다(더하지 않는다) */
+function critFX(side,slot,kfin){
   SFX.play("crit");
   const p=ctrOf(side,slot); if(!p) return;
-  veil("rgba(255,190,60,.22)");
-  const f=document.querySelector(".field");
-  if(f){ f.classList.remove("critshk"); void f.offsetWidth; f.classList.add("critshk") }
   if(p.e){ p.e.classList.remove("critflash"); void p.e.offsetWidth; p.e.classList.add("critflash") }
   at(spawn('<div class="critburst"></div>'),p);
-  bigSlash(side,slot,"#ffd45e",3); punchIn(side,slot); edgeGlow("rgba(255,190,60,.5)");
+  bigSlash(side,slot,"#ffd45e",3); punchIn(side,slot);
   at(spawn('<div class="critring"></div>'),p);
   at(spawn('<div class="critring r2"></div>'),p);
   for(let i=0;i<3;i++){
@@ -10739,6 +10755,18 @@ function critFX(side,slot){
   }
   const w=spawn('<div class="critword">치명타</div>');
   if(w){ w.style.left=p.x+"px"; w.style.top=(p.y-40)+"px" }
+  if(!kfin) critImpact(side);
+}
+/* 살아남은 치명타의 충격 — 55ms 정지 뒤 감쇠 흔들림 · 짧은 줌. 전장(.field)만 움직인다 */
+function critImpact(side){
+  if(typeof KFIN_RM!=="undefined"&&KFIN_RM) return;
+  const fld=document.querySelector(".bfstage .field"); if(!fld||!fld.animate||(typeof FOE_FOCUS!=="undefined"&&FOE_FOCUS&&FOE_FOCUS.cam)) return;
+  const st=fld.closest(".bfstage"), W=st?st.clientWidth:1200, sc=W/1200, dir=side==="foe"?1:-1, k=Math.max(.7,SPD||1);
+  const L=fld.getAnimations({subtree:true}).filter(x=>!x._kf&&x.playState==="running"); L.forEach(x=>x.pause());
+  setTimeout(()=>{ L.forEach(x=>{ try{ x.play() }catch(e){} });
+    const n=14, K=[]; for(let i=0;i<=n;i++){ const kp=i/n, t=kp*240, sh=t<210?(1-t/210)**2:0;
+      K.push({offset:kp,translate:`${(dir*Math.cos(t/210*Math.PI*5)*8*sc*sh).toFixed(1)}px ${(Math.cos(t/210*Math.PI*4)*3*sc*sh).toFixed(1)}px`,scale:String((1+.018*Math.sin(kp*Math.PI)).toFixed(4))}) }
+    const an=fld.animate(K,{duration:Math.round(240*k)}); an._kf=1 },Math.round(55*k));
 }
 /* 두 칸 사이를 잇는 광선 — 뽑아내기·마나 화살 */
 function beamFX(a,b,color,w){
@@ -24118,13 +24146,30 @@ const DEBUFF={
  star :{n:"집중",d:"이번 라운드 동안 받는 피해가 그만큼 증가합니다.",c:"#e0c85a"},
  duel :{n:"도전장",d:"유망주에게 피해를 100 줄 때까지 다른 모든 대상이 정지 상태가 됩니다.",c:"#c04040"},
  exec :{n:"처형",d:"턴이 끝날 때, 누적된 처형보다 체력이 낮다면 쓰러집니다. 부정 보호막 1개가 처형 10을 지웁니다.",c:"#8a1c1c"},
- dmgDn:{n:"감소",d:"감소 수치만큼 줄 수 있는 피해량이 감소합니다.",c:"#d95a50"}   /* 이름 · 글 — 사용자 2026-11-03 */
+ dmgDn:{n:"감소",d:"감소 수치만큼 줄 수 있는 피해량이 감소합니다.",c:"#d95a50"},   /* 이름 · 글 — 사용자 2026-11-03 */
+ bleed:{n:"출혈",d:"이 대상이 피해를 받을 때, 중첩만큼 추가 피해를 입고 출혈이 1 감소합니다.",c:"#b8323a"}   /* 사용자 2026-11-21 — 기술로 맞을 때만 (bleedPop) */
 };
 const INFECT_TIP="턴이 끝날 때 피해를 1(추가 ∴) 주고 감염 중첩을 1 감소";
 const DEB_KEYS=Object.keys(DEBUFF);
 /* 무작위로 거는 상태 이상 — 광기의 투기장 셋(상처 · 오늘의 주인공 · 도전장)은 적이 대원에게만 거는 것이라 뺀다 (2026-11-03) */
-const DEB_RAND=DEB_KEYS.filter(k=>["wound","star","duel","exec","dmgDn"].indexOf(k)<0);
+const DEB_RAND=DEB_KEYS.filter(k=>["wound","star","duel","exec","dmgDn","bleed"].indexOf(k)<0);
 function deb(u,k){ return (u&&u.deb&&u.deb[k])||0 }
+/* 출혈 (사용자 2026-11-21) — 이 대상이 피해를 받을 때 중첩만큼 추가 피해, 출혈 −1.
+   ⚠️ 출혈 피해도 「피해」라 그냥 두면 출혈이 출혈을 다시 터뜨려 끝없이 돈다 — B._bleeding 깃발로 막는다.
+   ⚠️ 터지는 것은 **기술로 때렸을 때만**. 화상 · 감염 · 감전 · 냉각 같은 지속 피해, 가시는 터뜨리지 않는다
+      (화상 하나에 출혈 10 이 한꺼번에 날아가 셈이 무너진다). 부르는 곳 : hurt(적) · hurtAlly(대원) 둘뿐 */
+const BLEED_NO={"화상":1,"감염":1,"감전":1,"냉각":1,"출혈":1};
+function bleedOk(u,tag){ return !!(B&&!B._bleeding&&!B._thornHit&&deb(u,"bleed")>0&&!BLEED_NO[tag]) }
+function bleedPop(u,src){
+  const n=deb(u,"bleed"); if(!(n>0)) return;
+  u.deb.bleed=n-1;
+  const foe=!!(B.foes&&B.foes.indexOf(u)>=0);
+  fx({side:foe?"foe":"mine",slot:u.slot,bleedPop:1,gap:0});   /* 디버프 칸의 아이콘이 한 번 튄다 */
+  say(`출혈 — ${u.name} 추가 피해 ${n} (남은 출혈 ${n-1})`,"t2");
+  B._bleeding=1;
+  try{ if(foe) hurt(u,n,"출혈"); else hurtAlly(src||{name:"출혈",alive:0},u,n,"출혈","고정") }
+  finally{ B._bleeding=0 }
+}
 const uid=x=>!x?"":(x.isFoe||x.id!=null&&x.maxHp!=null&&!x.sk?"F"+x.id:"H"+x.name);
 /* 걸리는 순간의 녹음 — art/소리/<이름>.wav (사용자 2026-10-06) */
 const DEB_SND={exec:"처형 부여",wound:"상처 부여",dmgDn:"감소 부여",fear:"공포",bind:"속박",stun:"기절",
@@ -24303,6 +24348,7 @@ const KW_ICON={
   "마력의 고리":"status_transcendent_mana_ring",
   "장군의 표식":"status_tristan_generals_mark",
   "맞수":"status_naikos_rival",   /* 나이코스 (2026-11-21) */
+  "출혈":"status_bleeding",   /* 새 디버프 (2026-11-21) */
   "마나 상한":"status_mana_limit",
   "타락의 초읽기":"skill_ira_corruption_countdown_no_frame",   /* 이라 상급 보상 — 사용자가 고른 테두리 없는 쪽 (2026-10-13) */
   "기억":"status_someone_memory_stack",   /* 「누군가의 기억」의 기억 중첩 — 수는 따로 얹는다 (㊿) */
@@ -29113,6 +29159,7 @@ function render(){
   try{ reiZoneSync() }catch(e){}   /* 뇌관 — 폭풍 지대 표시 (사용자 2026-10-22) */
   try{ plagueZoneSync() }catch(e){}   /* 역병 지대 — 가장자리 띠 (2026-10-22) */
   foeFocusSync();
+  if(typeof killSync==="function") killSync();   /* 처치 결정타 — 다시 그려도 이어서 (2026-11-21) */
   try{ ringSync() }catch(e){}
   dashKeep();   /* 헥토 돌진 — 연출이 시작될 때까지 옛 칸에 그려 둔다 */
   if(typeof view!=="undefined"&&view!=="battle") try{ colLoopSync() }catch(e){}   /* 전투를 떠나면 충전 띠 · 충전음을 걷는다 */
@@ -29863,6 +29910,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 504, "v": "0.8", "d": "2026-11-21", "t": "처치 결정타 개편(다가감 · 결정타 정지 · 무너짐 · 치명타 충격 · 마지막 적 당김), 출혈 디버프", "big": 0},
  {"b": 503, "v": "0.8", "d": "2026-11-21", "t": "적 행동 강조 개편(공격자 1.23 · 대상 1.13 · 근접 적이 다가옴), 나이코스 전장의 승자 맞수 리메이크 + 아이콘", "big": 0},
  {"b": 502, "v": "0.8", "d": "2026-11-21", "t": "비늘 돋힌 야수 — 잠든 괴물의 기습 상대", "big": 0},
  {"b": 501, "v": "0.8", "d": "2026-11-21", "t": "기록 화면 시안대로, 지속 효과 아이콘, 주둔지 효과음", "big": 0},
@@ -31559,7 +31607,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=503;
+const BUILD_NO=504;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -49275,47 +49323,136 @@ function bark(u,cat,force,quiet){
 /* 처치 임팩트 효과 — 화면이 암전되고, 대원 칸과 쓰러진 적 칸이 제자리에서 가운데로 모이며 커진다.
    화면이 떨리고 처치 대사가 크게 뜬다. 실제 칸은 건드리지 않는다 — 덮개 위에 베낀 것을 움직인다.
    기술 창·손패는 덮개 아래에 묻힌다. KIMP=0 이면 아무 일도 없다 */
-function spotFX(slot,foeSlot,foeName,barkU,barkLine){
-  if(!KIMP) return;
-  const fld=document.querySelector(".field"); if(!fld) return;
-  const my=fld.querySelector(".side.mine"), fs=fld.querySelector("#foeSide");
-  const a=ctrOf("mine",slot), b=ctrOf("foe",foeSlot);
-  if(!my||!fs||!a||!a.e) return;
-  const k=SPD<1?0.8:SPD;                         /* 연출 빠르게여도 처치 임팩트는 0.8배까지만 (사용자 2026-10-03: 0.5배는 너무 빨라 안 보였다) */
-  fld.style.setProperty("--kd",(0.5*k)+"s");
-  fld.classList.add("kimp");
-  my.classList.add("k-mine"); fs.classList.add("k-foe");
-  a.e.classList.add("k-hero");
-  let ghost=null;
-  const kk=barkU&&!barkU.isFoe&&run&&run.heroes.indexOf(barkU)>=0&&skinOn(barkU.name), KL=kk&&kk.kill;   /* 외형 처치 연출 (집행관, 2026-10-03) */
-  if(KL&&KL.tone) fld.classList.add("k"+KL.tone);
-  if(KL&&KL.pose) setTimeout(()=>setPose("mine",slot,KL.pose,Math.round(1300*k/SPD)),60);
-  if(b&&b.e){ b.e.classList.add("k-dead");
-    /* 쓰러진 적은 이미 치워졌다 — 그 자리에 맞는 자세로 다시 세운다 */
-    if(foeName&&!b.e.querySelector(".art")){
-      ghost=el(`<div class="art spotdead"><div class="nm">${esc(foeName)}</div>${figure(foeName,"hurt")}</div>`);
-      b.e.appendChild(ghost) } }
-  /* 화면 떨림 — 모인 순간. 무대면 적 자리에서 붉은 빛이 터지고 흰 베기 자국·번쩍 (2026-09-19) */
-  setTimeout(()=>{ document.body.classList.remove("shakeall","noscrY"); void document.body.offsetWidth;
-    document.body.classList.add("shakeall",...(document.documentElement.scrollHeight<=innerHeight+1?["noscrY"]:[])); setTimeout(()=>document.body.classList.remove("shakeall","noscrY"),620*k) },380*k);
-  const stage=fld.closest(".bfstage");
-  if(stage&&b&&b.e) setTimeout(()=>{ if(!document.body.contains(b.e)) return;
-    const sr=stage.getBoundingClientRect(), r=b.e.getBoundingClientRect(), x=r.left+r.width/2-sr.left, y=r.top+r.height*0.62-sr.top;
-    const tone=KL&&KL.tone?" "+KL.tone:"";
-    const fl=el(`<div class="kflash${tone}"></div>`), bu=el(`<div class="kburst${tone}" style="left:${x}px;top:${y}px"></div>`), sl=el(`<div class="kslash${tone}" style="left:${x}px;top:${y}px"></div>`);
-    stage.appendChild(fl); stage.appendChild(bu); if(!(KL&&KL.sheet)) stage.appendChild(sl);   /* 외형 띠가 있으면 하얀 베기 대신 그 띠 */
-    if(KL&&KL.sheet){ const rr=b.e.getBoundingClientRect(); kuremSeq(KL.sheet,{x:rr.left+rr.width/2,y:rr.bottom-rr.height*0.1},KUREM_Z*1.6) }
-    if(KL&&KL.bloom){ const rr=b.e.getBoundingClientRect();   /* 봄의 정원사 — 꽃잎이 모여 한 송이로 피었다 흩어진다 (2026-10-04) */
-      stripFX(KL.bloom,{x:rr.left+rr.width/2,y:rr.top+rr.height*0.5},128,128,[100,100,110,130,150,180],{z:Math.max(1.4,rr.height/128*1.25),zi:3}) }
-    if(KL&&KL.banner&&a.e){ const ar=(a.e.querySelector(".art")||a.e).getBoundingClientRect(), rr=b.e.getBoundingClientRect();   /* 승전 깃발 — 쓰러진 적 자리에 떨어져 꽂힌다 (사용자 2026-10-04: 대원 위가 아니라 적 위). 크기는 대원 키에 맞춘다 */
-      stripFX(KL.banner,{x:rr.left+rr.width/2,y:rr.bottom-rr.height*0.08},96,128,[90,70,70,150,250,600],{feet:true,z:ar.height/128*1.1,zi:3}) }
-    setTimeout(()=>{ fl.remove(); bu.remove(); sl.remove() },700*k) },360*k);
-  /* 처치 대사 — 크게 */
-  if(barkLine&&barkU) setTimeout(()=>barkShow(barkU,barkLine,Date.now(),1),400*k);
-  setTimeout(()=>{ fld.classList.remove("kimp","kgold"); my.classList.remove("k-mine"); fs.classList.remove("k-foe");
-    a.e.classList.remove("k-hero"); if(b&&b.e) b.e.classList.remove("k-dead");
-    if(ghost) setTimeout(()=>ghost.remove(),400*k) },1400*k);
+/* ═══ 처치 결정타 (시안 kill-finisher-preview-v1, 사용자 2026-11-21) ═══
+   공격 → 결정타 순간의 짧은 정지 → 적이 무너짐 → 공격자 복귀.
+   · 줄(FXQ)은 멈출 수 없다 — 정지는 ① 죽인 타격의 gap 을 늘려(onKill) 다음 연출을 미루고 ② 그 순간 전장의 다른 움직임을 잠깐 세워서 만든다.
+   · 근거리는 대상 앞까지 다가가 치고(onKill 이 이 칸의 gap 으로 다가갈 틈을 준다) 마무리 자세로 버틴 뒤 돌아온다. 원거리는 제자리 — 강조는 맞는 순간(이 칸이 그 타격 바로 앞).
+   · 무너짐 — 죽음 그림(dead)이 있으면 그것, 없으면 피격 그림을 타격 방향으로 밀고 기울이며 흐린다. 즉시 지우지 않는다.
+   · 흔들림 · 줌은 전장(.field · 배경)만. 정예 · 마지막 적 · 치명타 흔들림은 더하지 않고 큰 것 하나 (상한 10px @1200).
+   · 다시 그려져도(render) killSync 가 지난 시간에서 이어 붙인다. 전투가 끝나거나 화면을 떠나면 다 걷는다.
+   · 옛 진영 확대(k-mine/k-foe) · 하얀 섬광(kflash) · 붉은 빛(kburst) · 코드 베기(kslash) · 화면 전체 흔들림(shakeall)은 뺐다. 대사 · 외형 처치 연출은 그대로 */
+const KFIN={normal:{stop:70,col:290,kick:0,zoom:0},elite:{stop:95,col:370,kick:5,zoom:0},last:{stop:120,col:480,kick:7,zoom:.04}};
+const KFIN_DASH=210;   /* 근거리 — 물러섰다(0.43) 파고드는 데 드는 시간. onKill 이 이만큼 그 타격을 늦춘다 */
+const KFIN_RM=typeof matchMedia==="function"&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+let K_FIN=null;
+function kfinTimes(o){
+  const c=KFIN[o.kind]||KFIN.normal, k=Math.max(.7,SPD||1);
+  const dash=o.melee?Math.round(KFIN_DASH*(SPD||1)):0, stop=Math.round((c.stop+(o.crit?55:0))*k), col=Math.round(c.col*k);
+  const tc=dash+stop, tr=tc+Math.round(col*.6), back=Math.round(300*k);
+  return {c,dash,stop,col,ti:dash,tc,tr,back,te:Math.max(tc+col,tr+back)+Math.round(120*k)};
 }
+/* 배치 좌표 (등장 연출 · 확대에 흔들리지 않게) */
+function kfinLx(e){ let x=0; while(e&&!(e.classList&&e.classList.contains("bfstage"))){ x+=e.offsetLeft||0; e=e.offsetParent } return x }
+function spotFX(slot,foeSlot,foeName,barkU,barkLine,kf){
+  if(!KIMP) return;
+  const fld=document.querySelector(".bfstage .field")||document.querySelector(".field"); if(!fld) return;
+  const o=kf||{kind:"normal",crit:false,melee:false,foes:[{slot:foeSlot,name:foeName}],only:1};   /* only — 처치가 아닌 조명(그슨대 공포) : 무너짐 없이 */
+  if(K_FIN) kfinClear(1);
+  const kk=barkU&&!barkU.isFoe&&run&&run.heroes.indexOf(barkU)>=0&&skinOn(barkU.name), KL=kk&&kk.kill;   /* 외형 처치 연출 (집행관, 2026-10-03) */
+  const T=kfinTimes(o);
+  K_FIN={battle:B,at:Date.now(),hero:slot,o:o,T:T,KL:KL,anims:{},timers:[],dx:null,ctr:null,ghosts:{}};
+  kfinSync();
+  const A=K_FIN, tm=(fn,ms)=>A.timers.push(setTimeout(()=>{ if(K_FIN===A) fn() },ms));
+  /* 맞는 순간 — 전장의 다른 움직임을 잠깐 세운다 (우리 것은 그 정지를 이미 품고 있다) · 외형 처치 연출 */
+  tm(()=>{
+    const f2=document.querySelector(".bfstage .field")||document.querySelector(".field");
+    if(f2&&f2.getAnimations&&!KFIN_RM){ const L=f2.getAnimations({subtree:true}).filter(x=>!x._kf&&x.playState==="running"); L.forEach(x=>x.pause()); setTimeout(()=>L.forEach(x=>{ try{ x.play() }catch(e){} }),T.stop) }
+    if(KL&&KL.pose) setPose("mine",slot,KL.pose,Math.round((T.stop+T.col+300)/Math.max(.5,SPD)));
+    const b=ctrOf("foe",o.foes[0].slot), stage=f2&&f2.closest(".bfstage");
+    if(KL&&b&&b.e){ const rr=b.e.getBoundingClientRect(), a=ctrOf("mine",slot);
+      if(KL.sheet) kuremSeq(KL.sheet,{x:rr.left+rr.width/2,y:rr.bottom-rr.height*0.1},KUREM_Z*1.6);
+      if(KL.bloom) stripFX(KL.bloom,{x:rr.left+rr.width/2,y:rr.top+rr.height*0.5},128,128,[100,100,110,130,150,180],{z:Math.max(1.4,rr.height/128*1.25),zi:3});   /* 봄의 정원사 (2026-10-04) */
+      if(KL.banner&&a&&a.e){ const ar=(a.e.querySelector(".art")||a.e).getBoundingClientRect();   /* 승전 깃발 — 쓰러진 적 자리에 꽂힌다 */
+        stripFX(KL.banner,{x:rr.left+rr.width/2,y:rr.bottom-rr.height*0.08},96,128,[90,70,70,150,250,600],{feet:true,z:ar.height/128*1.1,zi:3}) } }
+    void stage;
+  },T.ti);
+  /* 죽음 그림이 있으면 무너지는 순간 그 자세로 */
+  if(!o.only) o.foes.forEach(x=>{ if(kfinDeadArt(x.name)) tm(()=>setPose("foe",x.slot,"dead",Math.round((T.col+2000)/Math.max(.5,SPD))),T.tc) });
+  /* 처치 대사 — 크게, 정지가 풀리는 때 */
+  if(barkLine&&barkU) tm(()=>barkShow(barkU,barkLine,Date.now(),1),T.tc);
+  tm(()=>kfinClear(0),T.te);
+}
+const kfinDeadArt=n=>{ try{ const set=PNG_SPRITE[skinSprite(n)]; return !!(set&&set.dead) }catch(e){ return false } };
+/* 한 몸의 움직임 — 판이 다시 그려져도 지난 시간에서 (foeFocusPlay 와 같은 꼴) */
+function kfinPlay(key,el,keys,dur,origin){
+  const A=K_FIN; if(!A||!el||!el.animate) return;
+  if(A.anims[key]&&A.anims[key].effect&&A.anims[key].effect.target===el) return;
+  if(A.anims[key]) A.anims[key].cancel();
+  if(origin) el.style.transformOrigin=origin;
+  const an=el.animate(keys,{duration:Math.max(1,dur),fill:"forwards"}); an._kf=1;
+  an.currentTime=Math.min(dur,Math.max(0,Date.now()-A.at)); A.anims[key]=an;
+}
+/* 충격 — 흔들림(감쇠 코사인) + 치명타의 짧은 카메라 줌 + 마지막 적의 당김을 한 줄의 키프레임으로 */
+function kfinFieldKeys(A,W){
+  const o=A.o, T=A.T, c=T.c, sc=W/1200, n=36, out=[];
+  const amp=Math.min(10,Math.max(c.kick,o.crit?(o.melee?10:8):0))*sc, ampY=(o.crit?(o.melee?7:2):(c.kick?2:0))*sc, kl=o.crit?210:180;
+  const zIn=Math.round(210*Math.max(.7,SPD||1)), zEnd=T.te-Math.round(120*Math.max(.7,SPD||1));
+  for(let i=0;i<=n;i++){ const t=T.te*i/n, ka=t-T.tc, kp=Math.min(1,Math.max(0,ka/kl));
+    const on=ka>=0&&ka<kl, damp=(1-kp)*(1-kp);
+    const x=on?Math.cos(kp*Math.PI*5)*amp*damp:0, y=on?Math.cos(kp*Math.PI*4)*ampY*damp:0;
+    const pulse=o.crit&&ka>=0&&ka<240?.018*Math.sin(ka/240*Math.PI):0;
+    const env=c.zoom?c.zoom*Math.min(1,t/zIn)*(1-Math.min(1,Math.max(0,(t-(zEnd-350))/350))):0;
+    out.push({offset:i/n,translate:`${x.toFixed(1)}px ${y.toFixed(1)}px`,scale:String((1+env+pulse).toFixed(4)),_z:1+env});
+  }
+  return out;
+}
+function kfinSync(){
+  const A=K_FIN; if(!A) return;
+  if(view!=="battle"||B!==A.battle){ kfinClear(1); return }
+  const fld=document.querySelector(".bfstage .field")||document.querySelector(".field"); if(!fld) return;
+  const o=A.o, T=A.T;
+  fld.classList.add("kimp"); if(A.KL&&A.KL.tone) fld.classList.add("k"+A.KL.tone);
+  const h=ctrOf("mine",A.hero); if(h&&h.e) h.e.classList.add("k-hero");
+  o.foes.forEach(x=>{ const c=ctrOf("foe",x.slot); if(!c||!c.e) return; c.e.classList.add("k-dead");
+    /* 쓰러진 적이 이미 치워졌다 — 그 자리에 피격 자세로 다시 세운다 (빈 칸이면) */
+    if(!c.e.querySelector(".art")&&x.name){ const g=el(`<div class="art spotdead">${figure(x.name,kfinDeadArt(x.name)?"dead":"hurt")}</div>`); c.e.appendChild(g) } });
+  const rm=KFIN_RM;
+  /* 공격자 — 근거리는 대상 앞까지 (실제 칸 너비로 멈출 자리) */
+  if(o.melee&&!rm&&h&&h.e){
+    if(A.dx==null){ const t=ctrOf("foe",o.foes[0].slot), hx=kfinLx(h.e)+h.e.offsetWidth/2;
+      const tx=t&&t.e?kfinLx(t.e)+t.e.offsetWidth/2:hx; A.dx=Math.max(0,Math.round(tx-Math.max(64,h.e.offsetWidth*.5)-hx)) }
+    const d=A.dx, tot=T.tr+T.back;
+    kfinPlay("hero",h.e.querySelector(".art"),[{translate:"0px 0px",offset:0},{translate:"-10px 0px",offset:T.dash*.43/tot},{translate:`${d}px 0px`,offset:T.dash/tot},
+      {translate:`${d}px 0px`,offset:T.tr/tot},{translate:"0px 0px",offset:1}],tot,"50% 100%");
+  }
+  /* 대상 — 정지 동안 밝게(치명타는 더), 그다음 타격 방향으로 밀리며 무너진다 */
+  if(!o.only) o.foes.forEach((x,i)=>{ const c=ctrOf("foe",x.slot); if(!c||!c.e) return;
+    const art=c.e.querySelector(".art"); if(!art) return;
+    const dead=kfinDeadArt(x.name), tot=T.tc+T.col, f=T.ti/tot, g=T.tc/tot, br=o.crit?2.3:1.65;
+    const push=rm?0:Math.round(c.e.offsetWidth*.28), drop=rm?0:12, rot=rm||dead?0:24;
+    kfinPlay("foe"+i,art,[{offset:0,filter:"none",translate:"0px 0px",rotate:"0deg",opacity:1},
+      {offset:f,filter:"none",translate:"0px 0px",rotate:"0deg",opacity:1},
+      {offset:Math.min(g,f+.0001),filter:`brightness(${br})`,translate:"0px 0px",rotate:"0deg",opacity:1},
+      {offset:g,filter:`brightness(${br})`,translate:"0px 0px",rotate:"0deg",opacity:1},
+      {offset:g+(1-g)*.35,filter:"brightness(1)",translate:`${push*.75}px ${drop*.3}px`,rotate:`${rot*.5}deg`,opacity:1},
+      {offset:g+(1-g)*(dead?.7:.55),filter:"grayscale(.4) brightness(.85)",translate:`${push*.92}px ${drop*.7}px`,rotate:`${rot*.85}deg`,opacity:dead?1:.85},
+      {offset:1,filter:"grayscale(1) brightness(.5)",translate:`${push}px ${drop}px`,rotate:`${rot}deg`,opacity:0}],tot,"50% 100%");
+  });
+  /* 전장 — 흔들림 · 치명타 줌 · 마지막 적 당김 (배경도 같은 줌으로) */
+  if(!rm&&!(typeof FOE_FOCUS!=="undefined"&&FOE_FOCUS)){
+    const st=fld.closest(".bfstage"), c=T.c;
+    if(c.kick||o.crit||c.zoom){
+      const W=st?st.clientWidth:1200, H=st?st.clientHeight:640;
+      if(!A.ctr){ const t=ctrOf("foe",o.foes[0].slot), cx=((h&&h.e?kfinLx(h.e)+h.e.offsetWidth/2:W*.4)+(t&&t.e?kfinLx(t.e)+t.e.offsetWidth/2:W*.6))/2;
+        A.ctr={x:Math.round(Math.max(.3*W,Math.min(.7*W,cx))),y:Math.round(H*.66)} }
+      const K=kfinFieldKeys(A,W);
+      fld.style.transformOrigin=A.ctr.x+"px "+A.ctr.y+"px";
+      kfinPlay("field",fld,K.map(k=>({offset:k.offset,translate:k.translate,scale:k.scale})),T.te);
+      if(c.zoom&&st) kfinPlay("bg",st,K.map(k=>({offset:k.offset,backgroundSize:`${(k._z*100).toFixed(2)}% ${(k._z*100).toFixed(2)}%`,
+        backgroundPosition:`${Math.round(A.ctr.x*(1-k._z))}px ${Math.round(A.ctr.y*(1-k._z))}px`})),T.te);
+    }
+  }
+}
+/* 끝 — 조명 · 전장 움직임을 걷는다. 무너진 적의 마지막 모습(흐려진 채)은 남겨 두고, 다음 그리기(tidy)가 칸을 비운다 */
+function kfinClear(hard){
+  const A=K_FIN; if(!A) return; K_FIN=null;
+  A.timers.forEach(clearTimeout);
+  Object.entries(A.anims).forEach(([k,x])=>{ if(hard||!/^foe/.test(k)) try{ x.cancel() }catch(e){} });
+  document.querySelectorAll(".field.kimp").forEach(f=>f.classList.remove("kimp","kgold","kpink"));
+  document.querySelectorAll(".k-hero,.k-dead").forEach(e=>e.classList.remove("k-hero","k-dead"));
+  setTimeout(()=>document.querySelectorAll(".art.spotdead").forEach(g=>{ if(!K_FIN) g.remove() }),Math.round(300*Math.max(.7,SPD||1)));
+}
+function killSync(){ if(K_FIN) kfinSync() }
 /* 대사 한 줄 고르기 (띄우지는 않는다) — barkPick 과 같은 주머니 */
 function barkLine(u,cats){
   const T=(u&&skinTable(BARK,u.of||u.name))||{};   /* 외형 처치 대사 (2026-10-03) */
@@ -53683,6 +53820,7 @@ function hurt(f,amt,tag,art,pierce,crit,ownFx){
   if(d>0&&!f.isPhantom){ const k=foeSnd(f,"피해받음"); if(k&&(!(f.name==="사탄"||f.name==="분노의 대군주")||fxRand()<0.3)) fx({s:k,gap:0}) }   /* 적의 녹음 — 맞는 소리와 함께 (미믹). 사탄 쪽은 확률로 (사용자 2026-11-04) — 연출 주사위라 규칙이 안 밀린다 */
   say(`${tag} → ${f.name}(${foeNo(f.slot)}번) ${crit?"치명타 ":""}피해 ${amt}${
     pr?` (관통 ${pr}%${pr<100?`, 체력 ${thru}`:""})`:""}${s?` (보호막 ${s})`:""} 남은 ${Math.max(0,f.hp)}`,crit?"t1":undefined);
+  if(amt>0&&f.alive&&f.hp>0&&B._ef&&bleedOk(f,tag)) bleedPop(f);   /* 출혈 — 대원의 기술로 맞았을 때만 (2026-11-21) */
   if(f.thorn&&f.alive&&amt>0&&!f.thornBusy&&!B._thornHit&&tag!=="화상"&&tag!=="감염"){   /* 가시에 맞은 것은 가시를 깨우지 않는다 (사용자 2026-11-03) */   /* 보호막에 막혀도 맞은 것 — 대원 가시와 같게 (사용자 2026-10-07).
      화상 · 감염이 타는 것은 때린 게 아니다 — 가시가 되받지 않는다. 전에는 마지막에 때린 대원(B.lastAttacker)이 턴 끝에 가시를 맞았고, 예고에도 없었다 (2026-10-30 probe-endshield) */
     /* ⚠️ **되받는 것은 「이름」이 아니라 「몸」이다.** 하수인 골렘의 죽음 몫은 주인(파벨) 이름으로
@@ -54000,6 +54138,32 @@ function orionKill(by,f,tag){
     say(`재빠른 본성 — ${by.name} 회피 +${T.houndKillEvade}`,"t2") }
 }
 /* 대원 by 의 피해로 적 f 가 죽었다. tag 는 피해 이름(기술 이름 등) */
+/* 처치 결정타 칸 (사용자 2026-11-21, src/fx/bark.js spotFX) — 그 타격 바로 앞에 끼우고, 연출에 쓸 것만 적어 둔다.
+   · 같은 기술의 범위 처치는 한 칸으로 묶는다 — 정지 · 흔들림은 한 번, 쓰러짐은 함께.
+   · 치명타로 죽였으면 치명타 칸을 조명 뒤로(조명 → 치명타 → 타격) 옮기고 kfin 표시 — 충격을 둘이 더하지 않게.
+   · 근거리는 이 칸의 gap 으로 다가갈 틈을, 그 타격의 gap 으로 정지 · 무너짐 몫을 둔다 (줄은 멈출 수 없다).
+   피해 · 판정은 손대지 않는다 — 줄의 칸과 틈만 */
+function killSpot(by,f,at,line){
+  const D=FOE[f.name]||{}, last=!B.foes.some(x=>x!==f&&x.alive&&!x.isPhantom);
+  const kind=last?"last":(D.elite||D.boss||f.elite)?"elite":"normal";
+  const on=typeof KIMP!=="undefined"&&KIMP, prev=B._kfin, pi=prev?FXQ.indexOf(prev):-1;
+  if(prev&&pi>=0&&prev.slot===by.slot&&at-pi<=12&&!prev.kfin.only){
+    const K=prev.kfin; K.foes.push({slot:f.slot,name:f.name});
+    if(kind==="last"||(kind==="elite"&&K.kind==="normal")){ K.kind=kind; if(on&&prev._hit) prev._hit.gap=prev._hitGap0+kfinHold(K) }
+    return }
+  const cr=at>0&&FXQ[at-1]&&FXQ[at-1].crit&&FXQ[at-1].slot===f.slot, pos=cr?at-1:at;
+  const sk=B._efSk||{};   /* 범위(allHit) · 자기 칸 · 전장 전체 기술은 제자리에서 */
+  const melee=B._efEl==="공격"&&!sk.allHit&&sk.tg!=="self"&&!isArcher(by)&&["데린저","오리온"].indexOf(by.name)<0
+    &&!FXQ.slice(Math.max(0,at-10),at).some(o=>o.arrow||o.derr||o.orion||o.shot||o.flareShot||o.rayOrb);
+  const K={kind:kind,crit:!!cr,melee:!!melee,foes:[{slot:f.slot,name:f.name}]};
+  if(cr) FXQ[at-1].kfin=1;
+  const e={side:"mine",slot:by.slot,spot:f.slot,foeName:f.name,barkU:by,barkLine:line,gap:(on&&melee)?KFIN_DASH:0,kfin:K};
+  FXQ.splice(pos,0,e); B._kfin=e;
+  const hit=FXQ.slice(pos+1).find(o=>o.hit&&o.side==="foe"&&o.slot===f.slot);
+  if(hit&&on){ e._hit=hit; e._hitGap0=hit.gap!=null?hit.gap:110; hit.gap=e._hitGap0+kfinHold(K) }
+}
+/* 그 타격 뒤에 더 기다릴 몫 — 정지 + 무너짐의 대부분 (전투 속도는 줄이 곱한다) */
+function kfinHold(K){ const c=KFIN[K.kind]||KFIN.normal; return c.stop+(K.crit?55:0)+Math.round(c.col*.8) }
 function onKill(by,f,tag){
   if(!by||!by.name||!run||run.heroes.indexOf(by)<0||!by.tag) return;
   rivalKill(by,f);   /* 나이코스 맞수 (2026-11-21) */
@@ -54040,7 +54204,7 @@ function onKill(by,f,tag){
     /* 줄 맨 앞에 — 타격·쓰러짐 연출보다 먼저 켜져서 그 위로 맞는 장면이 흐른다. 기다리는 몫(gap)은 안 둔다 */
     /* 줄 맨 앞에 두면 여러 번 때린 기술의 첫 타보다 먼저 쓰러지는 장면이 켜졌다 (사용자 2026-10-03) — 죽인 타격 바로 앞으로 */
     const at=(f._hitAt!=null&&f._hitAt<=FXQ.length)?f._hitAt:0;
-    FXQ.splice(at,0,{side:"mine",slot:by.slot,spot:f.slot,foeName:f.name,barkU:by,barkLine:barkLine(by,cats),gap:0});
+    killSpot(by,f,at,barkLine(by,cats));
   }
   if(by.name==="굴라"&&tag==="씹어먹기"&&by.tag.chompKillHeal&&by.hp>0){
     const got=healUp(by,by.tag.chompKillHeal);
@@ -55455,9 +55619,9 @@ function runEffect(h,i,s,target){
   fortSync(h); domHateSync(h);   /* 진지 구축 · 악마 혐오 — 화면을 안 그리는 시뮬레이터에서도 기술 직전에 맞춘다 */
   B._ef=(B._ef||0)+1;
   if(B._ef===1) B._hpMark=B._hpHit||0;   /* 흡수 — 이 기술이 체력에 준 몫은 여기서부터 센다 */
-  const sv=[B._efHero,B._efEl]; B._efHero=h; B._efEl=(s&&!s.verdict)?s.el:null;   /* 치명적인 마법 — hurt 가 본다 */
+  const sv=[B._efHero,B._efEl,B._efSk]; B._efHero=h; B._efEl=(s&&!s.verdict)?s.el:null; B._efSk=s||null;   /* 치명적인 마법 — hurt 가 본다 · 지금 기술(처치 결정타가 근거리를 가린다) */
   try{ return runEffect0(h,i,s,target) }
-  finally{ if(B){ B._efHero=sv[0]; B._efEl=sv[1] } if(B&&--B._ef<=0){ B._ef=0; const Q=B._efQ||[]; B._efQ=[]; Q.forEach(fn=>{ try{ fn() }catch(e){ console.error(e) } });
+  finally{ if(B){ B._efHero=sv[0]; B._efEl=sv[1]; B._efSk=sv[2] } if(B&&--B._ef<=0){ B._ef=0; const Q=B._efQ||[]; B._efQ=[]; Q.forEach(fn=>{ try{ fn() }catch(e){ console.error(e) } });
     try{ wrenchThrow(h) }catch(e){ console.error(e) } } }
 }
 /* 간수장의 방패 (전리품) — 한 턴에 **같은 기술**을 셋째로 쓸 때마다 보호막 (사용자 2026-10-23).
@@ -57356,6 +57520,7 @@ function hurtAlly(f,t,raw,label,el,evMsg,pierce,ownFx){   /* evMsg — 회피했
     if(th&&f.alive&&!t.thornBusy&&!B._thornHit&&B.foes.indexOf(f)>=0){   /* 적의 가시에 맞은 것은 내 가시를 깨우지 않는다 (사용자 2026-11-03) */   /* 가시는 적에게만 — 아군이 아군을 칠 때(두려움 잠식 · 연료 장치 폭발) 대원에게 hurt 를 부르지 않게 */
       fx({side:"mine",slot:t.slot,trig:"가시",gap:0});
       t.thornBusy=1; B._thornHit=1; try{ asSrc(t,()=>hurt(f,th,`${t.name}의 가시`,"slash")) } finally { B._thornHit=0 } t.thornBusy=0; } }
+  if(raw>0&&t.hp>0&&f&&B.foes.indexOf(f)>=0&&bleedOk(t,label)) bleedPop(t,f);   /* 출혈 — 적의 기술에 맞았을 때만 (2026-11-21) */
   gsdHurt(t,raw);   /* 커져가는 악몽 · 그림자 이동 회복 (src/rules/gsd.js) */
   if(t.hp>0&&!t.isMin&&!t.beastUsed&&t.hp<=t.maxHp/2&&hasTag(t,"야수")&&synOn("야수",2)){ t.beastUsed=1;
     const ev=3+synUp("야수"); t.evade=(t.evade||0)+ev;   /* 야수 2 (노트 2026-10-04) */
