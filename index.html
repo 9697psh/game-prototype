@@ -30069,6 +30069,7 @@ const GAME_VER="0.8";   /* 0.8 — 대체 막(고철의 무덤 · 광기의 투�
 /* 업데이트 기록 — 타이틀 오른쪽 패널. 새 줄은 배포 때 tools/changelog-add.py 가 맨 앞에 더한다 (메시지 앞에 ★ 를 두면 중요 표시).
    옛 기록은 pages 저장소의 배포 커밋에서 뽑았다 (2026-09-16). 판이 바뀐 첫 빌드는 저절로 중요 */
 const CHANGELOG=[
+ {"b": 512, "v": "0.8", "d": "2026-11-23", "t": "기록 양피지 효과음 — 등장 · 넘김 · 삽화 · 닫기", "big": 0},
  {"b": 511, "v": "0.8", "d": "2026-11-23", "t": "아침 기록 연출(보상 탁자 · 양피지 안착 · 덮개 여닫기) · 기록 그림 19장", "big": 0},
  {"b": 510, "v": "0.8", "d": "2026-11-22", "t": "용광로 제조도 끌어다 고르기", "big": 0},
  {"b": 509, "v": "0.8", "d": "2026-11-22", "t": "장신구 고르는 이벤트 — 가방에서 가운데 칸으로 끌어다 놓기, 처치 확대 1.75/1.5 · 암전", "big": 0},
@@ -31773,7 +31774,7 @@ const CHANGELOG=[
  {"b": 2, "v": "0.1", "d": "2026-09-07", "t": "필드 격자 맵, 시간/일차/오염도, 주둔지, 상점/미지의 구역 UI, 보상 36종, 디버프 시스템", "big": 0},
  {"b": 1, "v": "0.1", "d": "2026-09-07", "t": "균열 전투 프로토타입 첫 배포", "big": 1},
 ];
-const BUILD_NO=511;
+const BUILD_NO=512;
 const UI_TXT={
   title:"균 열",
   sub:"갈라진 세상을 닫으러 간다",
@@ -43541,6 +43542,8 @@ function drawQuestDone(app){
      끝난 애니메이션의 뒷일은 tok 이 같을 때만 (취소된 것이 다음 기록을 열지 않게) */
 const REC_T={paper:350,title:160,art:260,artMs:450,intro:350,eff:620,ok:800,turn:280,drop:240,rise:38,gap:180};
 let REC_UI=null;
+/* 소리 (사용자 2026-11-23, ElevenLabs 에서 고름) — 등장 · 넘김은 같은 「기록 넘김」, 삽화가 드러날 때 「기록 삽화」, 마지막 확인 「기록 닫기」 */
+const recSnd=k=>{ try{ if(typeof sfxHas!=="function"||sfxHas(k)) SFX.play(k) }catch(e){} };
 const recReduce=()=>typeof matchMedia!=="undefined"&&matchMedia("(prefers-reduced-motion: reduce)").matches;
 /* 효과 성격 — 오늘 하루(day) · 영구(keep : 그 자리에서 영구 몫). 바로 얻고 끝나는 것(활동량 · 피로도 …)은 이름표를 안 단다 */
 const recKind=r=>r.day?"day":r.keep?"keep":"";
@@ -43613,6 +43616,8 @@ function recPaper(mode){
     A(q(".rcd"),red?fade:[{opacity:0,transform:"translateY(4px)"},{opacity:1,transform:"none"}],250,REC_T.eff),
     A(q(".rcok"),fade,160,REC_T.ok),
     A(q(".rcpg"),fade,160,REC_T.ok)].filter(Boolean);
+  if(mode!=="swap") recSnd("기록 넘김");                                              /* 첫 등장 — 넘김은 recNext 가 이미 울렸다 */
+  if(q(".rci img")) setTimeout(()=>{ if(REC_UI===R&&R.tok===tok) recSnd("기록 삽화") },red?0:REC_T.art);   /* 먹선이 드러나기 시작할 때 */
   Promise.all(L.map(x=>x.finished.catch(()=>{}))).then(()=>{ if(REC_UI!==R||R.tok!==tok) return; recReady(R,0) });
 }
 function recReady(R,gap){ if(!R.revealing) return; R.revealing=false; R.ready=performance.now()+gap;
@@ -43631,10 +43636,10 @@ function recKey(e){ const R=REC_UI; if(!R) return;
   if(e.key==="Enter"||e.key===" "||e.key==="Spacebar"){ if(R.revealing) recReveal(); else recNext() } }
 function recNext(){ const R=REC_UI; if(!R||R.turning||R.revealing||performance.now()<R.ready) return;
   R.turning=true; const tok=++R.tok, red=recReduce(); R.anims=[];
-  try{ SFX.play("click") }catch(e){}
   if(run===R.run&&run.recPend&&run.recPend.length) run.recPend.shift();   /* 효과는 recNewDay 가 이미 걸었다 — 덜어 내기만 */
   R.idx++;
   const old=R.paper, more=run===R.run&&run.recPend.length>0; R.paper=null;
+  recSnd(more?"기록 넘김":"기록 닫기");
   if(old){ old.classList.add("out"); old.style.pointerEvents="none";
     const pw=old.offsetWidth||650, dy=Math.round(REC_T.rise*1.3*Math.max(.55,Math.min(1.25,pw/650)));
     const f=red?[{opacity:1},{opacity:0}]
